@@ -1,0 +1,12 @@
+﻿  ObjectDef.c
+  StaticMeshObj.c
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\StaticMesh\ObjectDef.c(33,2): warning C4113: 'void *(__stdcall *)()' differs in parameter lists from 'void *(__stdcall *)(void)'
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\StaticMesh\StaticMeshObj.h(37,19): warning C4276: 'CreateInstance': no prototype provided; assumed no parameters
+  (compiling source file 'ObjectDef.c')
+  
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\StaticMesh\StaticMeshObj.c(389,32): warning C4133: 'function': incompatible types - from 'StaticMeshObject *' to 'jeStaticMesh *'
+  Generating Code...
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VC\v180\Microsoft.CppBuild.targets(1412,5): warning MSB8012: TargetPath(C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\StaticMesh\Debug\StaticMeshObj.ddl) does not match the Linker's OutputFile property value (C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\bin\objects\StaticMeshObj.ddl). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+ObjectDef.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
+     Creating library Debug\StaticMeshObj.lib and object Debug\StaticMeshObj.exp
+  StaticMesh.vcxproj -> C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\StaticMesh\Debug\StaticMeshObj.ddl

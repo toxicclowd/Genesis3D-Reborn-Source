@@ -1,0 +1,12 @@
+﻿  ObjectDef.c
+  PortalObject.c
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Tools\Editor\EditMsg.h(38,2): warning C4091: 'typedef ': ignored on left of '<unnamed-enum-JETEDITOR_GET_JEBRUSH>' when no variable is declared
+  (compiling source file 'PortalObject.c')
+  
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\Portals\PortalObject.c(382,2): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  Find the correct amount to scale by to put the camera on the new frustum front plane
+  Generating Code...
+C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VC\v180\Microsoft.CppBuild.targets(1412,5): warning MSB8012: TargetPath(C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\Portals\Debug\PortalObj.ddl) does not match the Linker's OutputFile property value (C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\bin\objects\PortalObj.ddl). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+ObjectDef.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
+     Creating library Debug\PortalObj.lib and object Debug\PortalObj.exp
+  Portals.vcxproj -> C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\Portals\Debug\PortalObj.ddl

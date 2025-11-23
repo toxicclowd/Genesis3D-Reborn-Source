@@ -1,0 +1,4 @@
+^C:\USERS\JAMES\DOWNLOADS\JSTUDIO_CLASSIC_11_2023_SOURCE\JSTUDIO_CLASSIC11_2023\SOURCE\ENGINE\JETENGINE\BITMAP\COMPRESSION\CACHE3DN.ASM
+"ml.exe" -c -coff  /Fo "Debug\cache3dn.obj" "C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Engine\JetEngine\bitmap\compression\cache3dn.asm"
+^C:\USERS\JAMES\DOWNLOADS\JSTUDIO_CLASSIC_11_2023_SOURCE\JSTUDIO_CLASSIC11_2023\SOURCE\ENGINE\JETENGINE\BITMAP\COMPRESSION\RUNGASM.ASM
+"ml.exe" -Zi -c -coff  /Fo "Debug\rungasm.obj" "C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Engine\JetEngine\Bitmap\Compression\rungasm.asm"

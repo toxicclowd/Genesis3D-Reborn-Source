@@ -1,0 +1,893 @@
+/****************************************************************************************/
+/*  DIRECT3D12DRIVER.CPP                                                                */
+/*                                                                                      */
+/*  DirectX 12 Driver Implementation - Phase 1: Basic Infrastructure                   */
+/*                                                                                      */
+/****************************************************************************************/
+#include "Direct3D12Driver.h"
+#include "D3D12Common.h"
+#include <stdio.h>
+
+// Enable D3D12 debug layer in debug builds
+#ifdef _DEBUG
+#define ENABLE_D3D12_DEBUG_LAYER
+#endif
+
+//================================================================================
+//	Global Variables
+//================================================================================
+HWND									g_hWnd = nullptr;
+ComPtr<ID3D12Device>					g_pDevice;
+ComPtr<ID3D12CommandQueue>				g_pCommandQueue;
+ComPtr<IDXGISwapChain3>					g_pSwapChain;
+ComPtr<ID3D12GraphicsCommandList>		g_pCommandList;
+ComPtr<ID3D12DescriptorHeap>			g_pRTVHeap;
+ComPtr<ID3D12DescriptorHeap>			g_pDSVHeap;
+ComPtr<ID3D12Resource>					g_pDepthStencil;
+ComPtr<ID3D12Fence>						g_pFence;
+
+float									g_fGamma = 1.0f;
+UINT									g_nRTVDescriptorSize = 0;
+UINT									g_nCurrentFrameIndex = 0;
+UINT64									g_nFenceValue = 0;
+HANDLE									g_hFenceEvent = nullptr;
+
+FrameResources							g_FrameResources[FRAME_COUNT];
+
+bool									g_bInitialized = false;
+bool									g_bActive = false;
+bool									g_bInScene = false;
+
+int32									g_nScreenWidth = 0;
+int32									g_nScreenHeight = 0;
+
+DRV_EngineSettings						g_EngineSettings;
+char									g_szLastError[512] = "No error";
+
+//================================================================================
+//	Utility Functions
+//================================================================================
+
+void D3D12Matrix_ToXForm3d(const D3D12Matrix* mat, jeXForm3d* XForm)
+{
+	XForm->AX = mat->m[0][0];
+	XForm->AY = mat->m[0][1];
+	XForm->AZ = mat->m[0][2];
+
+	XForm->BX = mat->m[1][0];
+	XForm->BY = mat->m[1][1];
+	XForm->BZ = mat->m[1][2];
+
+	XForm->CX = mat->m[2][0];
+	XForm->CY = mat->m[2][1];
+	XForm->CZ = mat->m[2][2];
+
+	XForm->Translation.X = mat->m[3][0];
+	XForm->Translation.Y = mat->m[3][1];
+	XForm->Translation.Z = mat->m[3][2];
+}
+
+void jeXForm3d_ToD3D12Matrix(const jeXForm3d* XForm, D3D12Matrix* mat)
+{
+	mat->m[0][0] = XForm->AX;
+	mat->m[0][1] = XForm->AY;
+	mat->m[0][2] = XForm->AZ;
+	mat->m[0][3] = 0.0f;
+
+	mat->m[1][0] = XForm->BX;
+	mat->m[1][1] = XForm->BY;
+	mat->m[1][2] = XForm->BZ;
+	mat->m[1][3] = 0.0f;
+
+	mat->m[2][0] = XForm->CX;
+	mat->m[2][1] = XForm->CY;
+	mat->m[2][2] = XForm->CZ;
+	mat->m[2][3] = 0.0f;
+
+	mat->m[3][0] = XForm->Translation.X;
+	mat->m[3][1] = XForm->Translation.Y;
+	mat->m[3][2] = XForm->Translation.Z;
+	mat->m[3][3] = 1.0f;
+}
+
+static void WaitForGPU()
+{
+	if (!g_pCommandQueue || !g_pFence || !g_hFenceEvent)
+		return;
+
+	const UINT64 fence = g_nFenceValue;
+	g_pCommandQueue->Signal(g_pFence.Get(), fence);
+	g_nFenceValue++;
+
+	if (g_pFence->GetCompletedValue() < fence)
+	{
+		g_pFence->SetEventOnCompletion(fence, g_hFenceEvent);
+		WaitForSingleObject(g_hFenceEvent, INFINITE);
+	}
+}
+
+static void MoveToNextFrame()
+{
+	const UINT64 currentFenceValue = g_nFenceValue;
+	g_pCommandQueue->Signal(g_pFence.Get(), currentFenceValue);
+	g_nFenceValue++;
+
+	g_nCurrentFrameIndex = g_pSwapChain->GetCurrentBackBufferIndex();
+
+	if (g_pFence->GetCompletedValue() < g_FrameResources[g_nCurrentFrameIndex].FenceValue)
+	{
+		g_pFence->SetEventOnCompletion(g_FrameResources[g_nCurrentFrameIndex].FenceValue, g_hFenceEvent);
+		WaitForSingleObject(g_hFenceEvent, INFINITE);
+	}
+
+	g_FrameResources[g_nCurrentFrameIndex].FenceValue = currentFenceValue;
+}
+
+//================================================================================
+//	Enumeration Functions
+//================================================================================
+
+jeBoolean DRIVERCC D3D12Drv_EnumSubDrivers(DRV_ENUM_DRV_CB* Cb, void* Context)
+{
+	D3D12Log::GetPtr()->Printf("EnumSubDrivers called");
+	
+	// Report this driver
+	Cb(0, "DirectX 12 Driver", Context);
+	
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_EnumModes(S32 Driver, char* DriverName, DRV_ENUM_MODES_CB* Cb, void* Context)
+{
+	D3D12Log::GetPtr()->Printf("EnumModes called for driver: %s", DriverName);
+	
+	ComPtr<IDXGIFactory4> pFactory;
+	HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&pFactory));
+	if (FAILED(hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create DXGI factory");
+		return JE_FALSE;
+	}
+
+	ComPtr<IDXGIAdapter1> pAdapter;
+	pFactory->EnumAdapters1(0, &pAdapter);
+	if (!pAdapter)
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: No adapter found");
+		return JE_FALSE;
+	}
+
+	ComPtr<IDXGIOutput> pOutput;
+	pAdapter->EnumOutputs(0, &pOutput);
+	if (!pOutput)
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: No output found");
+		return JE_FALSE;
+	}
+
+	// Enumerate display modes
+	DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	UINT numModes = 0;
+	pOutput->GetDisplayModeList(format, 0, &numModes, nullptr);
+
+	if (numModes == 0)
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: No display modes found");
+		return JE_FALSE;
+	}
+
+	DXGI_MODE_DESC* pModes = new DXGI_MODE_DESC[numModes];
+	pOutput->GetDisplayModeList(format, 0, &numModes, pModes);
+
+	// Report modes to callback
+	for (UINT i = 0; i < numModes; i++)
+	{
+		char modeName[256];
+		sprintf_s(modeName, "%dx%d %dHz",
+			pModes[i].Width,
+			pModes[i].Height,
+			pModes[i].RefreshRate.Numerator / pModes[i].RefreshRate.Denominator);
+
+		Cb(i, modeName, pModes[i].Width, pModes[i].Height, 32, Context);
+	}
+
+	delete[] pModes;
+
+	// Also add a windowed mode
+	Cb(numModes, "Windowed", -1, -1, 32, Context);
+
+	D3D12Log::GetPtr()->Printf("Enumerated %d display modes", numModes + 1);
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_EnumPixelFormats(DRV_ENUM_PFORMAT_CB* Cb, void* Context)
+{
+	D3D12Log::GetPtr()->Printf("EnumPixelFormats called");
+	
+	jeRDriver_PixelFormat format;
+	
+	// ARGB 32-bit format - jePixelFormat is a uint32 value, not a struct
+	memset(&format, 0, sizeof(format));
+	format.PixelFormat = JE_PIXELFORMAT_32BIT_ARGB;  // Assign directly, it's a uint32
+	format.Flags = RDRIVER_PF_3D | RDRIVER_PF_COMBINE_LIGHTMAP | RDRIVER_PF_CAN_DO_COLORKEY | RDRIVER_PF_ALPHA;
+	
+	Cb(&format, Context);
+	
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_GetDeviceCaps(jeDeviceCaps* DeviceCaps)
+{
+	D3D12Log::GetPtr()->Printf("GetDeviceCaps called");
+	
+	if (!DeviceCaps)
+		return JE_FALSE;
+
+	// Fill in capabilities - jeDeviceCaps only has these two members
+	DeviceCaps->SuggestedDefaultRenderFlags = JE_RENDER_FLAG_BILINEAR_FILTER;
+	DeviceCaps->CanChangeRenderFlags = 0xFFFFFFFF;  // All flags can be changed
+	
+	return JE_TRUE;
+}
+
+//================================================================================
+//	Initialization Functions
+//================================================================================
+
+jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
+{
+	D3D12Log::GetPtr()->Printf("===========================================");
+	D3D12Log::GetPtr()->Printf("D3D12Drv_Init called");
+	D3D12Log::GetPtr()->Printf("Window: 0x%p", hook->hWnd);
+	D3D12Log::GetPtr()->Printf("Mode: %s (%dx%d)", hook->ModeName, hook->Width, hook->Height);
+	D3D12Log::GetPtr()->Printf("===========================================");
+
+	if (g_bInitialized)
+	{
+		D3D12Log::GetPtr()->Printf("WARNING: Driver already initialized");
+		return JE_TRUE;
+	}
+
+	g_hWnd = hook->hWnd;
+	g_nScreenWidth = hook->Width;
+	g_nScreenHeight = hook->Height;
+
+	HRESULT hr;
+
+	// Enable debug layer in debug builds
+#ifdef ENABLE_D3D12_DEBUG_LAYER
+	{
+		ComPtr<ID3D12Debug> debugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+		{
+			debugController->EnableDebugLayer();
+			D3D12Log::GetPtr()->Printf("D3D12 Debug layer enabled");
+		}
+	}
+#endif
+
+	// Create DXGI Factory
+	ComPtr<IDXGIFactory4> pFactory;
+	hr = CreateDXGIFactory1(IID_PPV_ARGS(&pFactory));
+	if (FAILED(hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create DXGI factory - HR: 0x%08X", hr);
+		strcpy_s(g_szLastError, "Failed to create DXGI factory");
+		return JE_FALSE;
+	}
+
+	// Get hardware adapter
+	ComPtr<IDXGIAdapter1> pAdapter;
+	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &pAdapter); ++adapterIndex)
+	{
+		DXGI_ADAPTER_DESC1 desc;
+		pAdapter->GetDesc1(&desc);
+
+		// Skip software adapter
+		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+			continue;
+
+		// Check if adapter supports D3D12
+		if (SUCCEEDED(D3D12CreateDevice(pAdapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+		{
+			D3D12Log::GetPtr()->Printf("Found D3D12 compatible adapter: %ls", desc.Description);
+			break;
+		}
+	}
+
+	if (!pAdapter)
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: No D3D12 compatible adapter found");
+		strcpy_s(g_szLastError, "No D3D12 compatible adapter found");
+		return JE_FALSE;
+	}
+
+	// Create D3D12 Device
+	hr = D3D12CreateDevice(pAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&g_pDevice));
+	if (FAILED(hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create D3D12 device - HR: 0x%08X", hr);
+		strcpy_s(g_szLastError, "Failed to create D3D12 device");
+		return JE_FALSE;
+	}
+	D3D12Log::GetPtr()->Printf("D3D12 Device created successfully");
+
+	// Create Command Queue
+	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+	hr = g_pDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&g_pCommandQueue));
+	if (FAILED(hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create command queue - HR: 0x%08X", hr);
+		strcpy_s(g_szLastError, "Failed to create command queue");
+		return JE_FALSE;
+	}
+	D3D12Log::GetPtr()->Printf("Command queue created");
+
+	// Create Swap Chain
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+	swapChainDesc.BufferCount = FRAME_COUNT;
+	swapChainDesc.Width = g_nScreenWidth > 0 ? g_nScreenWidth : 1024;
+	swapChainDesc.Height = g_nScreenHeight > 0 ? g_nScreenHeight : 768;
+	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.SampleDesc.Count = 1;
+
+	ComPtr<IDXGISwapChain1> pSwapChain1;
+	hr = pFactory->CreateSwapChainForHwnd(
+		g_pCommandQueue.Get(),
+		g_hWnd,
+		&swapChainDesc,
+		nullptr,
+		nullptr,
+		&pSwapChain1);
+
+	if (FAILED(hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create swap chain - HR: 0x%08X", hr);
+		strcpy_s(g_szLastError, "Failed to create swap chain");
+		return JE_FALSE;
+	}
+
+	hr = pSwapChain1.As(&g_pSwapChain);
+	if (FAILED(hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to query IDXGISwapChain3 - HR: 0x%08X", hr);
+		strcpy_s(g_szLastError, "Failed to query swap chain interface");
+		return JE_FALSE;
+	}
+	D3D12Log::GetPtr()->Printf("Swap chain created (%dx%d)", swapChainDesc.Width, swapChainDesc.Height);
+
+	// Disable Alt+Enter fullscreen toggle
+	pFactory->MakeWindowAssociation(g_hWnd, DXGI_MWA_NO_ALT_ENTER);
+
+	g_nCurrentFrameIndex = g_pSwapChain->GetCurrentBackBufferIndex();
+
+	// Create RTV Descriptor Heap
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.NumDescriptors = FRAME_COUNT;
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+	hr = g_pDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&g_pRTVHeap));
+	if (FAILED(hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create RTV heap - HR: 0x%08X", hr);
+		strcpy_s(g_szLastError, "Failed to create RTV descriptor heap");
+		return JE_FALSE;
+	}
+	D3D12Log::GetPtr()->Printf("RTV descriptor heap created");
+
+	g_nRTVDescriptorSize = g_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	// Create RTVs for each frame
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = g_pRTVHeap->GetCPUDescriptorHandleForHeapStart();
+	for (UINT i = 0; i < FRAME_COUNT; i++)
+	{
+		hr = g_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&g_FrameResources[i].pRenderTarget));
+		if (FAILED(hr))
+		{
+			D3D12Log::GetPtr()->Printf("ERROR: Failed to get swap chain buffer %d - HR: 0x%08X", i, hr);
+			strcpy_s(g_szLastError, "Failed to get swap chain buffers");
+			return JE_FALSE;
+		}
+
+		g_pDevice->CreateRenderTargetView(g_FrameResources[i].pRenderTarget.Get(), nullptr, rtvHandle);
+		g_FrameResources[i].RTVHandle = rtvHandle;
+		rtvHandle.ptr += g_nRTVDescriptorSize;
+
+		// Create command allocator for this frame
+		hr = g_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_FrameResources[i].pCommandAllocator));
+		if (FAILED(hr))
+		{
+			D3D12Log::GetPtr()->Printf("ERROR: Failed to create command allocator %d - HR: 0x%08X", i, hr);
+			strcpy_s(g_szLastError, "Failed to create command allocators");
+			return JE_FALSE;
+		}
+
+		g_FrameResources[i].FenceValue = 0;
+	}
+	D3D12Log::GetPtr()->Printf("Frame resources created (%d frames)", FRAME_COUNT);
+
+	// Create Command List
+	hr = g_pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+		g_FrameResources[0].pCommandAllocator.Get(), nullptr, IID_PPV_ARGS(&g_pCommandList));
+	if (FAILED(hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create command list - HR: 0x%08X", hr);
+		strcpy_s(g_szLastError, "Failed to create command list");
+		return JE_FALSE;
+	}
+
+	// Command lists are created in recording state, close it
+	g_pCommandList->Close();
+	D3D12Log::GetPtr()->Printf("Command list created");
+
+	// Create Fence
+	hr = g_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&g_pFence));
+	if (FAILED(hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create fence - HR: 0x%08X", hr);
+		strcpy_s(g_szLastError, "Failed to create fence");
+		return JE_FALSE;
+	}
+
+	g_nFenceValue = 1;
+
+	// Create fence event
+	g_hFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (!g_hFenceEvent)
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create fence event");
+		strcpy_s(g_szLastError, "Failed to create fence event");
+		return JE_FALSE;
+	}
+	D3D12Log::GetPtr()->Printf("Fence created");
+
+	g_bInitialized = true;
+	g_bActive = true;
+
+	D3D12Log::GetPtr()->Printf("===========================================");
+	D3D12Log::GetPtr()->Printf("DirectX 12 Driver initialized successfully!");
+	D3D12Log::GetPtr()->Printf("===========================================");
+
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_Shutdown()
+{
+	D3D12Log::GetPtr()->Printf("D3D12Drv_Shutdown called");
+
+	if (!g_bInitialized)
+	{
+		D3D12Log::GetPtr()->Printf("WARNING: Driver not initialized");
+		return JE_TRUE;
+	}
+
+	// Wait for GPU to finish
+	WaitForGPU();
+
+	// Close fence event
+	if (g_hFenceEvent)
+	{
+		CloseHandle(g_hFenceEvent);
+		g_hFenceEvent = nullptr;
+	}
+
+	// Release resources
+	g_pFence.Reset();
+	g_pCommandList.Reset();
+
+	for (UINT i = 0; i < FRAME_COUNT; i++)
+	{
+		g_FrameResources[i].pCommandAllocator.Reset();
+		g_FrameResources[i].pRenderTarget.Reset();
+		g_FrameResources[i].FenceValue = 0;
+	}
+
+	g_pRTVHeap.Reset();
+	g_pDSVHeap.Reset();
+	g_pDepthStencil.Reset();
+	g_pSwapChain.Reset();
+	g_pCommandQueue.Reset();
+	g_pDevice.Reset();
+
+	g_bInitialized = false;
+	g_bActive = false;
+	g_hWnd = nullptr;
+
+	D3D12Log::GetPtr()->Printf("DirectX 12 Driver shut down successfully");
+	D3D12Log::Destroy();
+
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_Reset()
+{
+	D3D12Log::GetPtr()->Printf("D3D12Drv_Reset called");
+	
+	// For D3D12, we don't need to reset the device like in D3D9
+	// Just wait for GPU and reset command allocators
+	WaitForGPU();
+	
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_UpdateWindow()
+{
+	D3D12Log::GetPtr()->Printf("D3D12Drv_UpdateWindow called");
+	
+	// Handle window size changes if needed
+	// For now, just return success
+	
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_SetActive(jeBoolean Active)
+{
+	D3D12Log::GetPtr()->Printf("D3D12Drv_SetActive: %d", Active);
+	
+	g_bActive = (Active != JE_FALSE);
+	
+	return JE_TRUE;
+}
+
+//================================================================================
+//	Scene Management Functions
+//================================================================================
+
+jeBoolean DRIVERCC D3D12Drv_BeginScene(jeBoolean Clear, jeBoolean ClearZ, RECT* WorldRect, jeBoolean Wireframe)
+{
+	if (!g_bInitialized || !g_bActive)
+		return JE_FALSE;
+
+	if (g_bInScene)
+	{
+		D3D12Log::GetPtr()->Printf("WARNING: BeginScene called while already in scene");
+		return JE_FALSE;
+	}
+
+	// Reset command allocator for this frame
+	g_FrameResources[g_nCurrentFrameIndex].pCommandAllocator->Reset();
+
+	// Reset command list
+	g_pCommandList->Reset(g_FrameResources[g_nCurrentFrameIndex].pCommandAllocator.Get(), nullptr);
+
+	// Transition render target to RENDER_TARGET state
+	D3D12_RESOURCE_BARRIER barrier = {};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = g_FrameResources[g_nCurrentFrameIndex].pRenderTarget.Get();
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	g_pCommandList->ResourceBarrier(1, &barrier);
+
+	// Set render target
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = g_FrameResources[g_nCurrentFrameIndex].RTVHandle;
+	g_pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+	// Clear if requested
+	if (Clear)
+	{
+		const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f }; // Dark blue
+		g_pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	}
+
+	// Set viewport and scissor rect
+	D3D12_VIEWPORT viewport = {};
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.Width = static_cast<float>(g_nScreenWidth > 0 ? g_nScreenWidth : 1024);
+	viewport.Height = static_cast<float>(g_nScreenHeight > 0 ? g_nScreenHeight : 768);
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+	g_pCommandList->RSSetViewports(1, &viewport);
+
+	D3D12_RECT scissorRect = {};
+	scissorRect.left = 0;
+	scissorRect.top = 0;
+	scissorRect.right = g_nScreenWidth > 0 ? g_nScreenWidth : 1024;
+	scissorRect.bottom = g_nScreenHeight > 0 ? g_nScreenHeight : 768;
+	g_pCommandList->RSSetScissorRects(1, &scissorRect);
+
+	g_bInScene = true;
+
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_EndScene(void)
+{
+	if (!g_bInScene)
+		return JE_FALSE;
+
+	// Transition render target back to PRESENT state
+	D3D12_RESOURCE_BARRIER barrier = {};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = g_FrameResources[g_nCurrentFrameIndex].pRenderTarget.Get();
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	g_pCommandList->ResourceBarrier(1, &barrier);
+
+	// Close and execute command list
+	g_pCommandList->Close();
+
+	ID3D12CommandList* ppCommandLists[] = { g_pCommandList.Get() };
+	g_pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	// Present
+	g_pSwapChain->Present(1, 0);
+
+	// Move to next frame
+	MoveToNextFrame();
+
+	g_bInScene = false;
+
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_BeginBatch(void)
+{
+	// For now, batching is handled internally
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_EndBatch(void)
+{
+	// For now, batching is handled internally
+	return JE_TRUE;
+}
+
+//================================================================================
+//	Stub Implementations (Phase 1 - Not Yet Implemented)
+//================================================================================
+
+// Texture functions
+jeTexture* DRIVERCC D3D12_THandle_Create(int32 Width, int32 Height, int32 NumMipLevels, const jeRDriver_PixelFormat* PixelFormat)
+{
+	D3D12Log::GetPtr()->Printf("THandle_Create called (stub) - %dx%d, %d mips", Width, Height, NumMipLevels);
+	return nullptr;
+}
+
+jeTexture* DRIVERCC D3D12_THandle_CreateFromFile(jeVFile* File)
+{
+	D3D12Log::GetPtr()->Printf("THandle_CreateFromFile called (stub)");
+	return nullptr;
+}
+
+jeBoolean DRIVERCC D3D12_THandle_Destroy(jeTexture* THandle)
+{
+	D3D12Log::GetPtr()->Printf("THandle_Destroy called (stub)");
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12_THandle_Lock(jeTexture* THandle, int32 MipLevel, void** Data)
+{
+	D3D12Log::GetPtr()->Printf("THandle_Lock called (stub)");
+	return JE_FALSE;
+}
+
+jeBoolean DRIVERCC D3D12_THandle_Unlock(jeTexture* THandle, int32 MipLevel)
+{
+	D3D12Log::GetPtr()->Printf("THandle_Unlock called (stub)");
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12_THandle_GetInfo(jeTexture* THandle, int32 MipLevel, jeTexture_Info* Info)
+{
+	D3D12Log::GetPtr()->Printf("THandle_GetInfo called (stub)");
+	return JE_FALSE;
+}
+
+// Render functions
+jeBoolean DRIVERCC D3D12Drv_RenderGouraudPoly(jeTLVertex* Pnts, int32 NumPoints, uint32 Flags)
+{
+	// Stub for Phase 1
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_RenderWorldPoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, void* LMapCBContext, uint32 Flags)
+{
+	// Stub for Phase 1
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_RenderMiscTexturePoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
+{
+	// Stub for Phase 1
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_DrawDecal(jeTexture* Handle, RECT* SrcRect, int32 x, int32 y)
+{
+	// Stub for Phase 1
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_Screenshot(const char* filename)
+{
+	D3D12Log::GetPtr()->Printf("Screenshot called (stub): %s", filename);
+	return JE_FALSE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_GetGamma(float* gamma)
+{
+	if (gamma)
+		*gamma = g_fGamma;
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_SetGamma(float gamma)
+{
+	g_fGamma = gamma;
+	D3D12Log::GetPtr()->Printf("SetGamma: %f", gamma);
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_SetMatrix(uint32 Type, jeXForm3d* Matrix)
+{
+	// Stub for Phase 1
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_GetMatrix(uint32 Type, jeXForm3d* Matrix)
+{
+	// Stub for Phase 1
+	return JE_FALSE;
+}
+
+uint32 DRIVERCC D3D12Drv_CreateStaticMesh(jeHWVertex* Points, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
+{
+	D3D12Log::GetPtr()->Printf("CreateStaticMesh called (stub) - %d points", NumPoints);
+	return 0;
+}
+
+jeBoolean DRIVERCC D3D12Drv_RemoveStaticMesh(uint32 id)
+{
+	D3D12Log::GetPtr()->Printf("RemoveStaticMesh called (stub) - id: %d", id);
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_RenderStaticMesh(uint32 id, int32 StartVertex, int32 NumPolys, jeXForm3d* XForm)
+{
+	// Stub for Phase 1
+	return JE_TRUE;
+}
+
+jeFont* DRIVERCC D3D12Drv_CreateFont(int32 Height, int32 Width, uint32 Weight, jeBoolean Italic, const char* facename)
+{
+	D3D12Log::GetPtr()->Printf("CreateFont called (stub): %s", facename);
+	return nullptr;
+}
+
+jeBoolean DRIVERCC D3D12Drv_DrawFont(jeFont* Font, int32 x, int32 y, uint32 Color, const char* text)
+{
+	// Stub for Phase 1
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_DestroyFont(jeFont** Font)
+{
+	D3D12Log::GetPtr()->Printf("DestroyFont called (stub)");
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_SetRenderState(uint32 state, uint32 value)
+{
+	// Stub for Phase 1
+	return JE_TRUE;
+}
+
+jeBoolean DRIVERCC D3D12Drv_DrawText(char* text, int x, int y, uint32 color)
+{
+	// Stub for Phase 1
+	return JE_TRUE;
+}
+
+//================================================================================
+//	Driver Structure
+//================================================================================
+
+DRV_Driver g_D3D12Drv =
+{
+	"DirectX 12 Driver v1.0",
+	DRV_VERSION_MAJOR,
+	DRV_VERSION_MINOR,
+
+	DRV_ERROR_NONE,
+	g_szLastError,
+
+	D3D12Drv_EnumSubDrivers,
+	D3D12Drv_EnumModes,
+	D3D12Drv_EnumPixelFormats,
+
+	D3D12Drv_GetDeviceCaps,
+
+	D3D12Drv_Init,
+	D3D12Drv_Shutdown,
+	D3D12Drv_Reset,
+	D3D12Drv_UpdateWindow,
+	D3D12Drv_SetActive,
+
+	D3D12_THandle_Create,
+	D3D12_THandle_CreateFromFile,
+	D3D12_THandle_Destroy,
+
+	D3D12_THandle_Lock,
+	D3D12_THandle_Unlock,
+
+	nullptr,  // SetPalette
+	nullptr,  // GetPalette
+
+	nullptr,  // SetAlpha
+	nullptr,  // GetAlpha
+
+	D3D12_THandle_GetInfo,
+
+	D3D12Drv_BeginScene,
+	D3D12Drv_EndScene,
+
+	D3D12Drv_BeginBatch,
+	D3D12Drv_EndBatch,
+
+	D3D12Drv_RenderGouraudPoly,
+	D3D12Drv_RenderWorldPoly,
+	D3D12Drv_RenderMiscTexturePoly,
+
+	D3D12Drv_DrawDecal,
+
+	0, 0, 0,  // NumWorldPixels, NumWorldSpans, NumRenderedPolys
+	nullptr,  // CacheInfo
+
+	D3D12Drv_Screenshot,
+
+	D3D12Drv_SetGamma,
+	D3D12Drv_GetGamma,
+
+	D3D12Drv_SetMatrix,
+	D3D12Drv_GetMatrix,
+	nullptr,  // SetCamera
+
+	&g_EngineSettings,
+
+	nullptr,  // SetupLightmap
+
+	D3D12Drv_DrawText,
+	nullptr,  // SetFog
+
+	D3D12Drv_CreateStaticMesh,
+	D3D12Drv_RemoveStaticMesh,
+	D3D12Drv_RenderStaticMesh,
+
+	D3D12Drv_CreateFont,
+	D3D12Drv_DrawFont,
+	D3D12Drv_DestroyFont,
+
+	D3D12Drv_SetRenderState
+};
+
+//================================================================================
+//	Driver Entry Points
+//================================================================================
+
+extern "C" DRIVERAPI BOOL DriverHook(DRV_Driver** Driver)
+{
+	D3D12Log::GetPtr()->Printf("DriverHook called");
+
+	g_EngineSettings.CanSupportFlags = (DRV_SUPPORT_ALPHA | DRV_SUPPORT_COLORKEY | DRV_SUPPORT_GAMMA);
+	g_EngineSettings.PreferenceFlags = 0;
+
+	*Driver = &g_D3D12Drv;
+
+	return TRUE;
+}
+
+extern "C" DRIVERAPI void* jeEngine_D3D12Driver(void)
+{
+	return (void*)DriverHook;
+}

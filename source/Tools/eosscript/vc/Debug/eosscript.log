@@ -1,0 +1,15 @@
+﻿cl : command line  warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+  eosvm.cpp
+  eosvariable.cpp
+  eosvalue.cpp
+  eosutillib.cpp
+  eosutil.cpp
+  eosparser.cpp
+  eosobject.cpp
+  eoslog.cpp
+  eosinstr.cpp
+  eosfunction.cpp
+  eosbase.cpp
+  eosanalyse.cpp
+  Generating Code...
+  eosscript.vcxproj -> C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Tools\GameShell\lib\eosscript_d.lib

@@ -1,0 +1,23 @@
+# Build Error Fixes Applied
+
+## Summary of Fixes:
+
+### 1. Fixed C1041 Errors (ActBuild Project)
+   - Added /FS compiler flag to ActBuild.vcxproj
+   - This allows multiple compiler instances to safely write to the same PDB file
+
+### 2. Fixed MSB8066 Assembly Error (Jet3D Project)
+   - Removed hardcoded MSVC version path for ml.exe
+   - Now uses 'ml.exe' which will be resolved automatically
+
+### 3. C1083 DirectX Errors - MANUAL ACTION REQUIRED
+
+   Option A: Install DirectX SDK June 2010
+   Download from: https://www.microsoft.com/en-us/download/details.aspx?id=6812
+
+   Option B: Exclude Direct3D9Driver from build
+
+## Next Steps:
+1. Close and reopen Visual Studio
+2. Address the DirectX SDK issue
+3. Rebuild solution

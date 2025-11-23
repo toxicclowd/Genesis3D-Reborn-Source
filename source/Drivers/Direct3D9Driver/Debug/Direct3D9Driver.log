@@ -1,0 +1,22 @@
+﻿cl : command line  warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+  PolyCache.cpp
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Drivers\Direct3D9Driver\Direct3D9Driver.h(10,10): error C1083: Cannot open include file: 'd3dx9.h': No such file or directory
+  (compiling source file '../../Drivers/Direct3D9Driver/PolyCache.cpp')
+  
+  jeVertexBuffer.cpp
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Drivers\Direct3D9Driver\jeVertexBuffer.h(11,10): error C1083: Cannot open include file: 'd3dx9.h': No such file or directory
+  (compiling source file '../../Drivers/Direct3D9Driver/jeVertexBuffer.cpp')
+  
+  Direct3D9Driver.cpp
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Drivers\Direct3D9Driver\Direct3D9Driver.h(10,10): error C1083: Cannot open include file: 'd3dx9.h': No such file or directory
+  (compiling source file '../../Drivers/Direct3D9Driver/Direct3D9Driver.cpp')
+  
+  D3D9TextureMgr.cpp
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Drivers\Direct3D9Driver\D3D9TextureMgr.h(28,10): error C1083: Cannot open include file: 'd3dx9.h': No such file or directory
+  (compiling source file '../../Drivers/Direct3D9Driver/D3D9TextureMgr.cpp')
+  
+  D3D9Log.cpp
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Drivers\Direct3D9Driver\D3D9Log.cpp(33,12): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Drivers\Direct3D9Driver\D3D9Log.cpp(61,2): warning C4996: 'vsprintf': This function or variable may be unsafe. Consider using vsprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Drivers\Direct3D9Driver\D3D9Log.cpp(64,12): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  Generating Code...

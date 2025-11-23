@@ -1,0 +1,24 @@
+===========================================
+DirectX 12 Driver Log
+Started: 2025-11-21 19:15:07
+===========================================
+
+DriverHook called
+===========================================
+D3D12Drv_Init called
+Window: 0x0039065C
+Mode: 1920x1080 60Hz (1920x1080)
+===========================================
+D3D12 Debug layer enabled
+Found D3D12 compatible adapter: NVIDIA GeForce RTX 4060
+D3D12 Device created successfully
+Command queue created
+Swap chain created (1920x1080)
+RTV descriptor heap created
+Frame resources created (3 frames)
+Command list created
+Fence created
+===========================================
+DirectX 12 Driver initialized successfully!
+===========================================
+THandle_Create called (stub) - 15x9, 1 mips

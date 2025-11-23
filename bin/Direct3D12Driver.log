@@ -1,0 +1,9 @@
+===========================================
+DirectX 12 Driver Log
+Started: 2025-11-21 19:41:52
+===========================================
+
+DriverHook called
+EnumSubDrivers called
+EnumModes called for driver: DirectX 12 Driver
+Enumerated 41 display modes
