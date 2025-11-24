@@ -8,6 +8,7 @@
 #include "D3D12Common.h"
 #include "D3D12TextureMgr.h"
 #include "D3D12PolyCache.h"
+#include "D3D12PSOManager.h"
 #include <stdio.h>
 
 // Enable D3D12 debug layer in debug builds
@@ -48,6 +49,9 @@ char									g_szLastError[512] = "No error";
 
 // PolyCache for geometry batching
 D3D12PolyCache*							g_pPolyCache = nullptr;
+
+// PSO Manager for pipeline states
+D3D12PSOManager*						g_pPSOManager = nullptr;
 
 //================================================================================
 //	Utility Functions
@@ -469,6 +473,15 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		return JE_FALSE;
 	}
 
+	// Create and initialize PSO Manager
+	g_pPSOManager = new D3D12PSOManager();
+	if (!g_pPSOManager || !g_pPSOManager->Initialize())
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to initialize PSO Manager");
+		strcpy_s(g_szLastError, "Failed to initialize PSO Manager");
+		return JE_FALSE;
+	}
+
 	g_bInitialized = true;
 	g_bActive = true;
 
@@ -487,6 +500,14 @@ jeBoolean DRIVERCC D3D12Drv_Shutdown()
 	{
 		D3D12Log::GetPtr()->Printf("WARNING: Driver not initialized");
 		return JE_TRUE;
+	}
+
+	// Shutdown PSO Manager
+	if (g_pPSOManager)
+	{
+		g_pPSOManager->Shutdown();
+		delete g_pPSOManager;
+		g_pPSOManager = nullptr;
 	}
 
 	// Shutdown PolyCache

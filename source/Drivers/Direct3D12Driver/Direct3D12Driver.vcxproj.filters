@@ -29,6 +29,9 @@
     <ClInclude Include="D3D12PolyCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="D3D12PSOManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Direct3D12Driver.cpp">
@@ -41,6 +44,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="D3D12PolyCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12PSOManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

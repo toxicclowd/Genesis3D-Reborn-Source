@@ -103,12 +103,14 @@
     <ClInclude Include="D3D12Log.h" />
     <ClInclude Include="D3D12TextureMgr.h" />
     <ClInclude Include="D3D12PolyCache.h" />
+    <ClInclude Include="D3D12PSOManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Direct3D12Driver.cpp" />
     <ClCompile Include="D3D12Log.cpp" />
     <ClCompile Include="D3D12TextureMgr.cpp" />
     <ClCompile Include="D3D12PolyCache.cpp" />
+    <ClCompile Include="D3D12PSOManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BUILD_SUCCESS.md" />
