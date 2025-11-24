@@ -12,8 +12,8 @@
 #include "D3D12Log.h"
 #include "D3D12Common.h"
 
-// Maximum number of textures
-#define MAX_THANDLES 20000
+// Maximum number of textures - matches MAX_TEXTURES from Direct3D12Driver.h
+#define MAX_THANDLES 4096
 
 // Global texture list
 static jeTexture g_TextureList[MAX_THANDLES];
