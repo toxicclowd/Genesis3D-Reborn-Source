@@ -6,6 +6,8 @@
 /****************************************************************************************/
 #include "Direct3D12Driver.h"
 #include "D3D12Common.h"
+#include "D3D12TextureMgr.h"
+#include "D3D12PolyCache.h"
 #include <stdio.h>
 
 // Enable D3D12 debug layer in debug builds
@@ -43,6 +45,9 @@ int32									g_nScreenHeight = 0;
 
 DRV_EngineSettings						g_EngineSettings;
 char									g_szLastError[512] = "No error";
+
+// PolyCache for geometry batching
+D3D12PolyCache*							g_pPolyCache = nullptr;
 
 //================================================================================
 //	Utility Functions
@@ -447,6 +452,23 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 	}
 	D3D12Log::GetPtr()->Printf("Fence created");
 
+	// Initialize texture manager
+	if (!D3D12_THandle_Startup())
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to initialize texture manager");
+		strcpy_s(g_szLastError, "Failed to initialize texture manager");
+		return JE_FALSE;
+	}
+
+	// Create and initialize PolyCache
+	g_pPolyCache = new D3D12PolyCache();
+	if (!g_pPolyCache || !g_pPolyCache->Initialize(10000))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to initialize PolyCache");
+		strcpy_s(g_szLastError, "Failed to initialize PolyCache");
+		return JE_FALSE;
+	}
+
 	g_bInitialized = true;
 	g_bActive = true;
 
@@ -466,6 +488,17 @@ jeBoolean DRIVERCC D3D12Drv_Shutdown()
 		D3D12Log::GetPtr()->Printf("WARNING: Driver not initialized");
 		return JE_TRUE;
 	}
+
+	// Shutdown PolyCache
+	if (g_pPolyCache)
+	{
+		g_pPolyCache->Shutdown();
+		delete g_pPolyCache;
+		g_pPolyCache = nullptr;
+	}
+
+	// Shutdown texture manager
+	D3D12_THandle_Shutdown();
 
 	// Wait for GPU to finish
 	WaitForGPU();
@@ -604,6 +637,12 @@ jeBoolean DRIVERCC D3D12Drv_EndScene(void)
 	if (!g_bInScene)
 		return JE_FALSE;
 
+	// Flush any cached geometry
+	if (g_pPolyCache)
+	{
+		g_pPolyCache->Flush();
+	}
+
 	// Transition render target back to PRESENT state
 	D3D12_RESOURCE_BARRIER barrier = {};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -644,60 +683,32 @@ jeBoolean DRIVERCC D3D12Drv_EndBatch(void)
 }
 
 //================================================================================
-//	Stub Implementations (Phase 1 - Not Yet Implemented)
+//	Rendering Functions
 //================================================================================
 
-// Texture functions
-jeTexture* DRIVERCC D3D12_THandle_Create(int32 Width, int32 Height, int32 NumMipLevels, const jeRDriver_PixelFormat* PixelFormat)
-{
-	D3D12Log::GetPtr()->Printf("THandle_Create called (stub) - %dx%d, %d mips", Width, Height, NumMipLevels);
-	return nullptr;
-}
-
-jeTexture* DRIVERCC D3D12_THandle_CreateFromFile(jeVFile* File)
-{
-	D3D12Log::GetPtr()->Printf("THandle_CreateFromFile called (stub)");
-	return nullptr;
-}
-
-jeBoolean DRIVERCC D3D12_THandle_Destroy(jeTexture* THandle)
-{
-	D3D12Log::GetPtr()->Printf("THandle_Destroy called (stub)");
-	return JE_TRUE;
-}
-
-jeBoolean DRIVERCC D3D12_THandle_Lock(jeTexture* THandle, int32 MipLevel, void** Data)
-{
-	D3D12Log::GetPtr()->Printf("THandle_Lock called (stub)");
-	return JE_FALSE;
-}
-
-jeBoolean DRIVERCC D3D12_THandle_Unlock(jeTexture* THandle, int32 MipLevel)
-{
-	D3D12Log::GetPtr()->Printf("THandle_Unlock called (stub)");
-	return JE_TRUE;
-}
-
-jeBoolean DRIVERCC D3D12_THandle_GetInfo(jeTexture* THandle, int32 MipLevel, jeTexture_Info* Info)
-{
-	D3D12Log::GetPtr()->Printf("THandle_GetInfo called (stub)");
-	return JE_FALSE;
-}
-
-// Render functions
 jeBoolean DRIVERCC D3D12Drv_RenderGouraudPoly(jeTLVertex* Pnts, int32 NumPoints, uint32 Flags)
 {
-	// Stub for Phase 1
-	return JE_TRUE;
+	if (!g_pPolyCache)
+		return JE_FALSE;
+
+	return g_pPolyCache->AddGouraudPoly(Pnts, NumPoints, Flags);
 }
 
 jeBoolean DRIVERCC D3D12Drv_RenderWorldPoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, void* LMapCBContext, uint32 Flags)
 {
-	// Stub for Phase 1
-	return JE_TRUE;
+	if (!g_pPolyCache)
+		return JE_FALSE;
+
+	return g_pPolyCache->AddWorldPoly(Pnts, NumPoints, Layers, NumLayers, LMapCBContext, Flags);
 }
 
 jeBoolean DRIVERCC D3D12Drv_RenderMiscTexturePoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
+{
+	if (!g_pPolyCache)
+		return JE_FALSE;
+
+	return g_pPolyCache->AddMiscTexturePoly(Pnts, NumPoints, Layers, NumLayers, Flags);
+}
 {
 	// Stub for Phase 1
 	return JE_TRUE;
@@ -741,22 +752,32 @@ jeBoolean DRIVERCC D3D12Drv_GetMatrix(uint32 Type, jeXForm3d* Matrix)
 	return JE_FALSE;
 }
 
+//================================================================================
+//	Static Mesh Functions
+//================================================================================
+
 uint32 DRIVERCC D3D12Drv_CreateStaticMesh(jeHWVertex* Points, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
 {
-	D3D12Log::GetPtr()->Printf("CreateStaticMesh called (stub) - %d points", NumPoints);
-	return 0;
+	if (!g_pPolyCache)
+		return 0;
+
+	return g_pPolyCache->AddStaticBuffer(Points, NumPoints, Layers, NumLayers, Flags);
 }
 
 jeBoolean DRIVERCC D3D12Drv_RemoveStaticMesh(uint32 id)
 {
-	D3D12Log::GetPtr()->Printf("RemoveStaticMesh called (stub) - id: %d", id);
-	return JE_TRUE;
+	if (!g_pPolyCache)
+		return JE_FALSE;
+
+	return g_pPolyCache->RemoveStaticBuffer(id);
 }
 
 jeBoolean DRIVERCC D3D12Drv_RenderStaticMesh(uint32 id, int32 StartVertex, int32 NumPolys, jeXForm3d* XForm)
 {
-	// Stub for Phase 1
-	return JE_TRUE;
+	if (!g_pPolyCache)
+		return JE_FALSE;
+
+	return g_pPolyCache->RenderStaticMesh(id, StartVertex, NumPolys, XForm);
 }
 
 jeFont* DRIVERCC D3D12Drv_CreateFont(int32 Height, int32 Width, uint32 Weight, jeBoolean Italic, const char* facename)
