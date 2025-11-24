@@ -59,6 +59,7 @@ class D3D12Log;
 class D3D12TextureManager;
 class D3D12GeometryBatcher;
 class D3D12DescriptorHeap;
+class D3D12PolyCache;
 
 //================================================================================
 //	Global State
