@@ -37,12 +37,12 @@ class CModel : public CDialog
 // Construction
 public:
 	CModel(CWnd* pParent = NULL);   // standard constructor
-	void SetCurrentDocument(CJweDoc *pDoc);
+	void SetCurrentDocument(CGweDoc *pDoc);
 	grBoolean AddObject( Object *pObject );
 	void RenameObject( Object *pObject );
-	void AddSelection(CJweDoc *pDoc);
+	void AddSelection(CGweDoc *pDoc);
 	void RemoveDeleted();
-	void Update(CJweDoc *pDoc);
+	void Update(CGweDoc *pDoc);
 	void Reset();
 
 // Dialog Data

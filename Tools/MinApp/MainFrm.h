@@ -58,14 +58,14 @@ public:
 
 private:
 //		CJetView		m_wndView;
-		bool			m_bJetInitializationDone;
+		bool			m_bG3DInitializationDone;
 		CMenu			m_menuMain;	
 
 public:
 
 
 	bool	RenderView(grFloat fElapsedTime);
-	bool	InitializeJet3D();
+	bool	InitializeG3D();
 private:
 
 	bool	SetAppPreferences();

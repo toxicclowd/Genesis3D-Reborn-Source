@@ -69,15 +69,15 @@ typedef enum {
 	VIEW_MODE_SELECT_RECT
 } VIEW_MODE;
 
-class CJweView : public CView
+class CGweView : public CView
 {
 protected: // create from serialization only
-	CJweView();
-	DECLARE_DYNCREATE(CJweView)
+	CGweView();
+	DECLARE_DYNCREATE(CGweView)
 
 // Attributes
 public:
-	CJweDoc* GetDocument();
+	CGweDoc* GetDocument();
 	void SetCameraPos( grVec3d * Pos );
 	void AbortMode();
 
@@ -104,7 +104,7 @@ public:
 
 // Implementation
 public:
-	virtual ~CJweView();
+	virtual ~CGweView();
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
@@ -206,8 +206,8 @@ private:
 };
 
 #ifndef _DEBUG  // debug version in View.cpp
-inline CJweDoc* CJweView::GetDocument()
-   { return (CJweDoc*)m_pDocument; }
+inline CGweDoc* CGweView::GetDocument()
+   { return (CGweDoc*)m_pDocument; }
 #endif
 
 /////////////////////////////////////////////////////////////////////////////

@@ -38,10 +38,10 @@ class CLists : public CDialog
 public:
 	void AddObject(Object *pObject);
 	void RenameObject( Object *pObject );
-	void AddSelection( CJweDoc *pDoc );
+	void AddSelection( CGweDoc *pDoc );
 	void RemoveDeleted( );
-	void Update( CJweDoc * pDoc );
-	void SetCurrentDocument( CJweDoc * pDoc );
+	void Update( CGweDoc * pDoc );
+	void SetCurrentDocument( CGweDoc * pDoc );
 	void Reset();
 	CLists(CWnd* pParent = NULL);   // standard constructor
 

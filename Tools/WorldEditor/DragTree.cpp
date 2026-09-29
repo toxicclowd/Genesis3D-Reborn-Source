@@ -19,7 +19,7 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "DragTree.h"
 
 #ifdef _DEBUG

@@ -41,13 +41,13 @@ extern "C" {
 #define	GRCC	__stdcall
 
 // paradoxnj - We don't care about static libs.  Changed to conventional DLL export
-#ifdef JETENGINE_EXPORTS
+#ifdef GENESIS3D_EXPORTS
 #define GRAPI					_declspec(dllexport)
 #else
 #define GRAPI					_declspec(dllimport)
 #endif
 
-#define JETLINE __inline //added (cyrius)
+#define G3DLINE __inline //added (cyrius)
 
 //------------------------------
 

@@ -28,7 +28,7 @@
 //	for Jet3D operations
 
 #include "stdafx.h"
-#include "jMinApp.h"
+#include "MinApp.h"
 #include "MainFrm.h"
 
 
@@ -111,7 +111,7 @@ CMainFrame::CMainFrame()
 	// TODO: add member initialization code here
 	//	*** initialize member variables ***	//
 
-	m_bJetInitializationDone = false;
+	m_bG3DInitializationDone = false;
 	m_bReadyToRender = false;
 	m_bShuttingDown = false;
 
@@ -435,11 +435,11 @@ void CMainFrame::OnSize(UINT nType, int cx, int cy)
 	{
 		if (GetSafeHwnd())
 		{
-			if (!m_bJetInitializationDone)
+			if (!m_bG3DInitializationDone)
 			{
-				m_bJetInitializationDone = true;			
-				if (!InitializeJet3D())
-					m_bJetInitializationDone = false;
+				m_bG3DInitializationDone = true;			
+				if (!InitializeG3D())
+					m_bG3DInitializationDone = false;
 
 			}
 		}
@@ -483,7 +483,7 @@ bool CMainFrame::ShowMainMenu(bool bShow)
 
 
 
-bool	CMainFrame::InitializeJet3D()
+bool	CMainFrame::InitializeG3D()
 {
 
 //	CMainFrame	*pMainFrame = NULL;
@@ -1099,7 +1099,7 @@ CString CMainFrame::BrowseForWorld()
 	int				itemtext = 0;
 	LPCTSTR			strDialogTitle = _T("Browse for *.j3d world");
 	LPCTSTR			bsp = NULL;
-	CFileDialog		fdJ3D
+	CFileDialog		fdG3D
 		(
 		TRUE,
 		bsp,
@@ -1110,21 +1110,21 @@ CString CMainFrame::BrowseForWorld()
 		_T("j3d files(.j3d)|*.j3d|")
 		);
 
-	fdJ3D.m_ofn.lpstrTitle = strDialogTitle;
-	fdJ3D.m_ofn.lpstrInitialDir = m_strBaseDir;	
+	fdG3D.m_ofn.lpstrTitle = strDialogTitle;
+	fdG3D.m_ofn.lpstrInitialDir = m_strBaseDir;	
 
 	//	open it 
-	if(IDOK !=fdJ3D.DoModal())
+	if(IDOK !=fdG3D.DoModal())
 	{
 		ShowCursor(FALSE);
 		return strBlank;
 	}
 	
 	//	the dialog box is closed. Get the results of our browse
-	POSITION pos = fdJ3D.GetStartPosition();
+	POSITION pos = fdG3D.GetStartPosition();
 	while (pos)
 	{
-		strUserWorldFile = fdJ3D.GetNextPathName(pos);
+		strUserWorldFile = fdG3D.GetNextPathName(pos);
 	}
 
 	//	hide the cursor again, and off we go...
@@ -1143,7 +1143,7 @@ bool CMainFrame::LoadWorld()
 {
 	bool			bNullWorld = false;
 	grVFile			*pvfTemp = NULL;
-	grVFile			*pvfJ3dFork = NULL;
+	grVFile			*pvfG3dFork = NULL;
 	CString			strNullPath = _T("NULL");
 	CString			strBlankPath = _T("");
 
@@ -1729,7 +1729,7 @@ bool CMainFrame::StartTimer()
 			//	set rendering gatekeeper
 		m_bReadyToRender = true;
 
-	if (SetTimer(IDT_JETVIEW_TIMER, TIMER_SPEED, NULL) == 0)
+	if (SetTimer(IDT_G3DVIEW_TIMER, TIMER_SPEED, NULL) == 0)
 		return false;
 
 	return true;
@@ -1743,7 +1743,7 @@ bool CMainFrame::StartTimer()
 ////////////////////////////////////////////////////////////////////////////////
 bool CMainFrame::StopTimer()
 {
-	if (!KillTimer(IDT_JETVIEW_TIMER))
+	if (!KillTimer(IDT_G3DVIEW_TIMER))
 	{
 		return false;
 	}
@@ -1763,7 +1763,7 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
 	//	pMainFrame = (CMainFrame*)AfxGetMainWnd();
 	//	if (pMainFrame)
 	{
-		if (nIDEvent == IDT_JETVIEW_TIMER)
+		if (nIDEvent == IDT_G3DVIEW_TIMER)
 		{
 			if (m_bReadyToRender)
 			{

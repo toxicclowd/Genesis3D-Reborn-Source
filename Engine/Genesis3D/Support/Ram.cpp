@@ -79,7 +79,7 @@ REPORT_VARS(MemoryAllocations);
 #endif
 
 // stupid stuff...
-#ifndef JETDLLVERSION
+#ifndef G3DDLLVERSION
 void *StupidUnusedPointer;
 #endif
 

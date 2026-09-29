@@ -19,7 +19,7 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "Light.h"
 #include "MainFrm.h"
 #include "MfcUtil.h"
@@ -127,7 +127,7 @@ BOOL CLightTemplate::OnInitDialog()
 void CLightTemplate::OnToolsPlacecube() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_BOX ) ;
@@ -138,7 +138,7 @@ void CLightTemplate::OnToolsPlacecube()
 void CLightTemplate::OnToolsPlaceentity() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -149,7 +149,7 @@ void CLightTemplate::OnToolsPlaceentity()
 void CLightTemplate::OnToolsPlaceterrain() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_TERRAIN, 0 ) ;
@@ -161,7 +161,7 @@ LRESULT CLightTemplate::Update( WPARAM wParam, LPARAM lParam )
 {
 	LightInfo		LightInfo ;
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	
 	if( pDoc != NULL )
 	{
@@ -194,7 +194,7 @@ void CLightTemplate::OnKillfocusEdName()
 		m_csName.LoadString( IDS_DEFAULTLIGHTTEMPLATENAME ) ;
 
 	UpdateData( false ) ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		Object_SetName( pDoc->GetTemplate(), m_csName, SELECT_INVALID_NNUMBER ) ;
@@ -231,7 +231,7 @@ void CLightTemplate::GetFields(LightInfo *pLightInfo)
 
 void CLightTemplate::UpdateTemplate(LightInfo *pLightInfo, int32 BlankFieldFlag )
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		Light_SetInfo( (Light*)pDoc->GetTemplate(), pLightInfo, BlankFieldFlag ) ;
@@ -242,7 +242,7 @@ LRESULT CLightTemplate::OnChangeColor( WPARAM wParam, LPARAM lParam )
 {
 	COLORREF	color  = (COLORREF)lParam ;
 	LightInfo	sLightInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		sLightInfo.Color.X = (grFloat)GetRValue( color ) ;
@@ -258,7 +258,7 @@ LRESULT CLightTemplate::OnChangeColor( WPARAM wParam, LPARAM lParam )
 void CLightTemplate::OnToolsPlacespheroid() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SPHERE ) ;
@@ -269,7 +269,7 @@ void CLightTemplate::OnToolsPlacespheroid()
 
 void CLightTemplate::OnToolsPlacelight() 
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 
 	UpdateData( true );
 	pDoc->SetTemplateVisable( m_Light );
@@ -279,7 +279,7 @@ void CLightTemplate::OnToolsPlacelight()
 BOOL CLightTemplate::OnCommand(WPARAM wParam, LPARAM lParam) 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( wParam == 1 )
 	{
 		pDoc->Addbrush();
@@ -291,7 +291,7 @@ BOOL CLightTemplate::OnCommand(WPARAM wParam, LPARAM lParam)
 void CLightTemplate::OnToolsPlacecylinder() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_CYLINDER ) ;
@@ -303,7 +303,7 @@ void CLightTemplate::OnToolsPlacecylinder()
 void CLightTemplate::OnAdd() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	pDoc->Addbrush();
 	
 }
@@ -329,7 +329,7 @@ void CLightTemplate::OnShowWindow(BOOL bShow, UINT nStatus)
 void CLightTemplate::OnToolsPlacesheet() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SHEET ) ;

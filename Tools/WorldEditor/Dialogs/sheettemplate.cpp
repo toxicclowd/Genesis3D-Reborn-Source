@@ -20,7 +20,7 @@
 /****************************************************************************************/
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "sheettemplate.h"
 #include "MainFrm.h"
 #include "MfcUtil.h"
@@ -116,7 +116,7 @@ void CSheetTemplate::OnKillfocusEdName()
 		m_csName.LoadString( IDS_DEFAULTLIGHTTEMPLATENAME ) ;
 
 	UpdateData( false ) ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		Object_SetName( pDoc->GetTemplate(), m_csName, SELECT_INVALID_NNUMBER ) ;
@@ -146,7 +146,7 @@ void CSheetTemplate::OnShowWindow(BOOL bShow, UINT nStatus)
 void CSheetTemplate::OnAdd() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	pDoc->Addbrush();
 	
 }
@@ -154,7 +154,7 @@ void CSheetTemplate::OnAdd()
 void CSheetTemplate::OnToolsPlacecube() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_BOX ) ;
@@ -165,7 +165,7 @@ void CSheetTemplate::OnToolsPlacecube()
 void CSheetTemplate::OnToolsPlacecylinder() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_CYLINDER ) ;
@@ -177,7 +177,7 @@ void CSheetTemplate::OnToolsPlacecylinder()
 void CSheetTemplate::OnToolsPlaceentity() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -188,7 +188,7 @@ void CSheetTemplate::OnToolsPlaceentity()
 void CSheetTemplate::OnToolsPlacelight() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_LIGHT, 0 ) ;
@@ -198,7 +198,7 @@ void CSheetTemplate::OnToolsPlacelight()
 
 void CSheetTemplate::OnToolsPlacesheet() 
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 
 	UpdateData( true );
 	pDoc->SetTemplateVisable( m_Sheet );
@@ -209,7 +209,7 @@ void CSheetTemplate::OnToolsPlacesheet()
 void CSheetTemplate::OnToolsPlacespheroid() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SPHERE ) ;
@@ -220,7 +220,7 @@ void CSheetTemplate::OnToolsPlacespheroid()
 void CSheetTemplate::OnToolsPlaceterrain() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_TERRAIN, 0 ) ;
@@ -231,7 +231,7 @@ void CSheetTemplate::OnToolsPlaceterrain()
 void CSheetTemplate::OnReset() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->ResetTemplate();

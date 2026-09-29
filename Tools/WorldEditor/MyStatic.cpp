@@ -21,7 +21,7 @@
 #include "stdafx.h"
 
 #include "Bmp.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "materiallist.h"
 #include "Ram.h"
 
@@ -63,7 +63,7 @@ void CMyStatic::OnPaint()
 	RECT					rect ;
 	CPaintDC				dc(this); // device context for painting
 	CDC						MemDC ;
-	CJweApp				*	pApp = (CJweApp*)AfxGetApp() ;
+	CGweApp				*	pApp = (CGweApp*)AfxGetApp() ;
 	MaterialList_Struct	*	pMaterials ;
 	Material_Struct		*	pMaterial = NULL ;
 	MaterialIterator		MI ;
@@ -273,7 +273,7 @@ void CMyStatic::SetTile(const eTHUMBSIZE eTile)
 int CMyStatic::GetVirtualHeight()
 {
 	int						nItems ;
-	CJweApp				*	pApp = (CJweApp*)AfxGetApp() ;
+	CGweApp				*	pApp = (CGweApp*)AfxGetApp() ;
 	MaterialList_Struct	*	pMaterials ;
 
 	pMaterials = pApp->GetMaterialList( ) ;
@@ -310,7 +310,7 @@ Material_Struct * CMyStatic::GetMaterialAtPoint(const CPoint &rPoint)
 		nMaterial *= 4 ;
 	nMaterial += vPoint.x / m_nTile ;
 
-	pMaterials = ((CJweApp*)AfxGetApp())->GetMaterialList() ;
+	pMaterials = ((CGweApp*)AfxGetApp())->GetMaterialList() ;
 	if( nMaterial >= MaterialList_GetNumItems( pMaterials ) )
 		return NULL ;	// Past the end
 
@@ -331,7 +331,7 @@ int CMyStatic::ScrollMaterialInView(const Material_Struct *pMaterial)
 	int						vy ;
 	RECT					rect ;
 
-	pMaterials = ((CJweApp*)AfxGetApp())->GetMaterialList() ;
+	pMaterials = ((CGweApp*)AfxGetApp())->GetMaterialList() ;
 
 	// Get Material Index
 	nIndex = 0 ;

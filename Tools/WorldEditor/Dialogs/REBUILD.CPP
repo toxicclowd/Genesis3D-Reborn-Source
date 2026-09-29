@@ -20,7 +20,7 @@
 /****************************************************************************************/
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "rebuild.h"
 #include "MainFrm.h"
 
@@ -150,7 +150,7 @@ void CRebuild::OnCancel()
 void CRebuild::OnLightsonly() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	UpdateData( true );
 	UpdateData( false );

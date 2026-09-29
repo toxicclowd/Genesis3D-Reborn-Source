@@ -21,7 +21,7 @@
 #include "stdafx.h"
 #include <CommCtrl.h>
 
-#include "jwe.h"
+#include "GWE.H"
 #include "Util.h"
 
 #include "MainFrm.h"
@@ -56,9 +56,9 @@ static const TCHAR * pszPlacementKey = _T("PLACEMENT");
 /////////////////////////////////////////////////////////////////////////////
 // CMainFrame
 
-IMPLEMENT_DYNAMIC(CMainFrame, CJ3DMainFrame)
+IMPLEMENT_DYNAMIC(CMainFrame, CG3DMfcMainFrame)
 
-BEGIN_MESSAGE_MAP(CMainFrame, CJ3DMainFrame)
+BEGIN_MESSAGE_MAP(CMainFrame, CG3DMfcMainFrame)
 	//{{AFX_MSG_MAP(CMainFrame)
 	ON_WM_CREATE()
 	ON_WM_CLOSE()
@@ -177,9 +177,9 @@ BOOL CALLBACK AutosaveTimerChildProc( HWND hwnd,  LPARAM lParam)
 {
 		//	if the window being tested is a CtDirectorView, then send that
 		//	window a message that "it is time to autosave"
-	if (DYNAMIC_DOWNCAST(CJweView,CWnd::FromHandle(hwnd)) != NULL)
+	if (DYNAMIC_DOWNCAST(CGweView,CWnd::FromHandle(hwnd)) != NULL)
 	{
-		::PostMessage(hwnd,WM_JWEVIEW_AUTOSAVETIMER,0,0);
+		::PostMessage(hwnd,WM_GWEVIEW_AUTOSAVETIMER,0,0);
 	}
 	return(TRUE);
 }
@@ -541,7 +541,7 @@ BOOL CMainFrame::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 		SetCommandPanelTab( (MAINFRM_COMMANDPANEL_TAB)TabCtrl_GetCurSel( pnmh->hwndFrom ) ) ;
 	}
 
-	return CJ3DMainFrame::OnNotify(wParam, lParam, pResult);
+	return CG3DMfcMainFrame::OnNotify(wParam, lParam, pResult);
 }// OnNotify
 
 bool CMainFrame::InitCommandPanel()
@@ -628,7 +628,7 @@ void CMainFrame::SetStatusPos (grFloat X,grFloat Y,grFloat Z)
 void CMainFrame::CloseCurDoc( void )
 {
 	CMDIChildWnd* pActiveChild = MDIGetActive();
-	CJweDoc* pDoc{};
+	CGweDoc* pDoc{};
 
 	pDoc =  GetCurrentDocument();
 	if( pDoc != NULL && pDoc->HasChanged() )
@@ -764,18 +764,18 @@ void CMainFrame::OnClose()
 		wndplace.showCmd = SW_SHOW; // force the window to show normally next time
 	AfxGetApp()->WriteProfileBinary( pszDesktopKey, pszPlacementKey, (BYTE*)&wndplace, sizeof(WINDOWPLACEMENT) );
 	
-	CJ3DMainFrame::OnClose();
+	CG3DMfcMainFrame::OnClose();
 }// OnClose
 
 // NOTE: This can return NULL
-CJweDoc * CMainFrame::GetCurrentDocument()
+CGweDoc * CMainFrame::GetCurrentDocument()
 {
 	CMDIChildWnd* pActiveChild = MDIGetActive();
 
 	if( pActiveChild == NULL )
 		return nullptr ;
 
-	return (CJweDoc*)pActiveChild->GetActiveDocument() ;
+	return (CGweDoc*)pActiveChild->GetActiveDocument() ;
 }// GetActiveDocument
 
 
@@ -812,7 +812,7 @@ void CMainFrame::UpdateProperties( grProperty_List * pArray )
 }
 
 
-void CMainFrame::RebuildLists( CJweDoc *pDoc )
+void CMainFrame::RebuildLists( CGweDoc *pDoc )
 {
 	m_ListsDialog.SetCurrentDocument( pDoc ) ;
 	m_GroupDialog.SetCurrentDocument( pDoc ) ;
@@ -822,7 +822,7 @@ void CMainFrame::RebuildLists( CJweDoc *pDoc )
 	//	end tom morris feb 2005
 }
 
-void CMainFrame::SetCurrentDocument(CJweDoc *pDoc)
+void CMainFrame::SetCurrentDocument(CGweDoc *pDoc)
 {
     if( pDoc == nullptr ) {
         m_pCurrentDoc = nullptr;
@@ -847,7 +847,7 @@ void CMainFrame::SetCurrentDocument(CJweDoc *pDoc)
 
 void CMainFrame::UpdatePanel( MAINFRM_PANEL ePanel )
 {
-	CJweDoc * pDoc = GetCurrentDocument() ;
+	CGweDoc * pDoc = GetCurrentDocument() ;
 	
 	if( pDoc == nullptr )
 	{
@@ -894,7 +894,7 @@ void CMainFrame::RenameObject(Object *pObject)
 }// AddObject
 
 // World selections added, update UI
-void CMainFrame::AddSelection(CJweDoc *pDoc)
+void CMainFrame::AddSelection(CGweDoc *pDoc)
 {
 	ASSERT( pDoc != NULL ) ;
 	m_ListsDialog.AddSelection( pDoc ) ;
@@ -949,17 +949,17 @@ void CMainFrame::OnViewAllmaterials()
 
 void CMainFrame::OnSizing(UINT fwSide, LPRECT pRect) 
 {
-	CJ3DMainFrame::OnSizing(fwSide, pRect);
+	CG3DMfcMainFrame::OnSizing(fwSide, pRect);
 }
 
 void CMainFrame::OnSize(UINT nType, int cx, int cy) 
 {
-	CJ3DMainFrame::OnSize(nType, cx, cy);
+	CG3DMfcMainFrame::OnSize(nType, cx, cy);
 }
 
 void CMainFrame::RecalcLayout(BOOL bNotify) 
 {
-	CJ3DMainFrame::RecalcLayout(bNotify);
+	CG3DMfcMainFrame::RecalcLayout(bNotify);
 }
 
 /*
@@ -1007,7 +1007,7 @@ void CMainFrame::OnMove(int x, int y)
 
 void CMainFrame::OnInitMenu(CMenu* pMenu) 
 {
-	CJweDoc * pDoc;
+	CGweDoc * pDoc;
 	pDoc =  GetCurrentDocument();
 
 	if( pDoc != nullptr )
@@ -1015,13 +1015,13 @@ void CMainFrame::OnInitMenu(CMenu* pMenu)
 		pDoc->RenderAnimate( GR_FALSE );
 //		SetCurAnimateState( GR_FALSE );
 	}
-	CJ3DMainFrame::OnInitMenu(pMenu);
+	CG3DMfcMainFrame::OnInitMenu(pMenu);
 }
 
 BOOL CMainFrame::OnCommand(WPARAM wParam, LPARAM lParam) 
 {
 	// TODO: Add your specialized code here and/or call the base class
-	return CJ3DMainFrame::OnCommand(wParam, lParam);
+	return CG3DMfcMainFrame::OnCommand(wParam, lParam);
 }
 
 LRESULT CMainFrame::OnRebuildProperties( WPARAM wParam, LPARAM lParam )

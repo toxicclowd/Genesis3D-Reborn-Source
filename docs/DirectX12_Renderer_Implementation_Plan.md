@@ -225,13 +225,13 @@ struct VS_OUTPUT {
 
 **Solution:**
 - Pre-allocate large descriptor heap
-- Map jeTexture* to descriptor heap offsets
+- Map grTexture* to descriptor heap offsets
 - Implement descriptor allocation/recycling
 
 ## Project Structure
 
 ```
-source/Drivers/Direct3D12Driver/
+Renderer/Direct3D12/
 ??? Direct3D12Driver.h          # Main header
 ??? Direct3D12Driver.cpp        # Driver implementation
 ??? D3D12TextureManager.h       # Texture management
@@ -274,11 +274,11 @@ source/Drivers/Direct3D12Driver/
 
 ## Vertex Format Mapping
 
-### Jet3D Vertex Types
+### Engine Vertex Types
 
-**jeTLVertex** (Transformed & Lit):
+**grTLVertex** (Transformed & Lit):
 ```cpp
-struct jeTLVertex {
+struct grTLVertex {
     float x, y, z;        // Position
     float rhw;            // Reciprocal homogeneous W
     float r, g, b, a;     // Color
@@ -329,7 +329,7 @@ D3D12_INPUT_ELEMENT_DESC layout[] = {
 ## Backward Compatibility
 
 ### Compatibility Layer
-The driver will be binary-compatible with existing Jet3D applications:
+The driver will be binary-compatible with existing Genesis3D applications:
 - Same DRV_Driver structure layout
 - Same calling conventions (DRIVERCC = _fastcall)
 - Same error codes
@@ -342,7 +342,7 @@ extern "C" DRIVERAPI BOOL DriverHook(DRV_Driver** Driver) {
     return TRUE;
 }
 
-extern "C" JETAPI void* JETCC jeEngine_D3D12Driver(void) {
+extern "C" GRAPI void* GRCC grEngine_D3D12Driver(void) {
     return (void*)DriverHook;
 }
 ```

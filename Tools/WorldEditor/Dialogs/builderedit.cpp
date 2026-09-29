@@ -19,7 +19,7 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "builderedit.h"
 
 #ifdef _DEBUG
@@ -64,7 +64,7 @@ END_MESSAGE_MAP()
 void CBuilderEdit::SetProperty()
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	grProperty_Data Data;
 	char	  TempBuffer[265];
 
@@ -114,7 +114,7 @@ void CBuilderEdit::Increment( BOOL bDown )
 	grProperty_Data Data;
 	char	  TempBuffer[265];
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	
 	GetWindowText(TempBuffer, 256 );
 	switch( m_DataType )

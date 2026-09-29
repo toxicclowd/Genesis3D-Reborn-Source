@@ -6,7 +6,7 @@
 
 #include "MainFrm.h"
 #include "ActorWorkbenchView.h"
-#include "Jet3DView.h"
+#include "G3DView.h"
 #include ".\mainfrm.h"
 
 #ifdef _DEBUG
@@ -270,7 +270,7 @@ grBoolean CMainFrame::LoadActor(const char * filename, const char *actorname)
 		Item = pTree->InsertItem(grMotion_GetName(Motion), MotionsItem);
 	}
 
-	((CJet3DView*)GetActiveView())->SetActiveActor(Object);
+	((CG3DView*)GetActiveView())->SetActiveActor(Object);
 
 	return GR_TRUE;
 }

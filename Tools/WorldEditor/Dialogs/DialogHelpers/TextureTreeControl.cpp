@@ -21,7 +21,7 @@
 /****************************************************************************************/
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "TextureTreeControl.h"
 #include "TexturesDlg.h"

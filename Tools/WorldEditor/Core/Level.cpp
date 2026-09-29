@@ -40,7 +40,7 @@
 #include "ObjectList.h"
 #include "Ram.h"
 #include "../Resource.h"
-#include "jeresource.h" //added CyRiuS
+#include "grResource.h" //added CyRiuS
 #include "Util.h"
 #include "BrushTemplate.h"
 #include "Level.h"
@@ -48,7 +48,7 @@
 
 #include "Settings.h"
 
-#include "jwe.h"
+#include "GWE.H"
 
 #define SIGNATURE (0xACDCABBA)
 #define LEVEL_VERSION	(1)
@@ -483,7 +483,7 @@ grBoolean Level_SetFaceInfoToCurMaterial( Level * pLevel )
 {
 	grMaterial_ArrayIndex MaterialIndex;
 	Material_Struct * Material = nullptr;
-	CJweApp* pApp = (CJweApp*)AfxGetApp();
+	CGweApp* pApp = (CGweApp*)AfxGetApp();
 
 	assert( pLevel );
 	assert( pLevel->nSignature == SIGNATURE ) ;
@@ -1211,7 +1211,7 @@ void Level_SetDefaultBoxTexture( Level * pLevel, Object	* pBoxObject )
 	Material_Struct *	pMaterial;
 	MaterialIterator	MI;
 	Brush *				pBrush = (Brush*)pBoxObject;
-	CJweApp*            pApp = (CJweApp*)AfxGetApp();
+	CGweApp*            pApp = (CGweApp*)AfxGetApp();
 
 	pMaterial =	MaterialList_SearchByName( pApp->GetMaterialList(), &MI, "jet3d" );
 	if( pMaterial == nullptr )
@@ -1613,7 +1613,7 @@ grMaterialSpec *	Level_GetCurMaterialSpec( const Level * pLevel )
 	assert( pLevel );
 	assert( SIGNATURE == pLevel->nSignature ) ;
 
-    CJweApp*            pApp = (CJweApp*)AfxGetApp();
+    CGweApp*            pApp = (CGweApp*)AfxGetApp();
 
 	pCurMaterial = MaterialList_GetCurMaterial( pApp->GetMaterialList() );
 
@@ -1629,7 +1629,7 @@ grMaterialSpec * Level_GetMaterialSpecByName( const Level * pLevel, char* szMatN
 {
 	Material_Struct *	pMaterial;
 	MaterialIterator	MI;
-	CJweApp*            pApp = (CJweApp*)AfxGetApp();
+	CGweApp*            pApp = (CGweApp*)AfxGetApp();
 
 	pMaterial = MaterialList_SearchByName(pApp->GetMaterialList(), &MI, szMatName);
 

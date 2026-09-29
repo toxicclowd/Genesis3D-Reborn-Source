@@ -20,7 +20,7 @@
 /****************************************************************************************/
 #include "stdafx.h"
 
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 #include "Ram.h"
@@ -89,7 +89,7 @@ void CLists ::OnSize(UINT nType, int cx, int cy)
         pWnd->MoveWindow(4,4,cx-8,cy-8);
 }
 
-void CLists::SetCurrentDocument(CJweDoc *pDoc)
+void CLists::SetCurrentDocument(CGweDoc *pDoc)
 {
 
 	// Doc has changed, lists need complete rebuild
@@ -106,7 +106,7 @@ void CLists::Reset()
 
 }
 
-void CLists::AddSelection(CJweDoc *pDoc)
+void CLists::AddSelection(CGweDoc *pDoc)
 {
 
 	pDoc->EnumSelected( &m_List, AddSelectionCB ) ;
@@ -165,7 +165,7 @@ void CLists::RenameObject( Object *pObject )
 }
 
 // SELECTION has changed
-void CLists::Update(CJweDoc *pDoc)
+void CLists::Update(CGweDoc *pDoc)
 {
 	m_List.ClearSelection( false ) ;	// From derived TV
 	pDoc->EnumSelected( &m_List, SelectCB ) ;	
@@ -221,7 +221,7 @@ HTREEITEM CLists::AddObjectKind( CTreeCtrlEx * pList, char * pszDisplayName, int
 	HTREEITEM			hItem = NULL ;
 	Class				* pClass;
 
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
@@ -337,7 +337,7 @@ void CLists::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 	//HTREEITEM		hParentItem ;
 	NM_TREEVIEW*	pNMTreeView = (NM_TREEVIEW*)pNMHDR;
 	Object	*		pObject ;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 	if( pNMTreeView->action != TVC_BYCTREECTRL )
 		return ;

@@ -35,7 +35,7 @@ class CLights : public CDialog
 {
 // Construction
 public:
-	void Update( CJweDoc *pDoc );
+	void Update( CGweDoc *pDoc );
 	CLights(CWnd* pParent = NULL);   // standard constructor
 
 // Dialog Data

@@ -21,7 +21,7 @@
 
 #include <assert.h>
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 #include "Ram.h"
@@ -92,7 +92,7 @@ BOOL CTextures::OnInitDialog()
 //	CWnd				*	pWnd ;
 //	RECT					rect ;
 //	int						nTextureHeight ;
-	CJweApp				*	pApp = (CJweApp*)AfxGetApp() ;
+	CGweApp				*	pApp = (CGweApp*)AfxGetApp() ;
 	HICON					hIcon ;
 	
 	m_pMaterials = pApp->GetMaterialList( ) ;
@@ -355,7 +355,7 @@ void CTextures::OnLButtonUp(UINT nFlags, CPoint point)
 	if( PtInRect( &rect, point ) )
 	{
 		Material_Struct	* pMaterial ;
-		CJweDoc*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
+		CGweDoc*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
 		
 		point.x -= rect.left ;
 		point.y -= rect.top ;
@@ -444,7 +444,7 @@ void CTextures::OnSelchangeCbName()
 	pMaterial = (Material_Struct*)m_Names.GetItemData( nIndex ) ;
 	if( pMaterial != MaterialList_GetCurMaterial( m_pMaterials ) )
 	{
-		CJweDoc*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
+		CGweDoc*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
 
 		nScrollTop = m_Bitmap.ScrollMaterialInView( pMaterial ) ;
 		m_Scroll.SetScrollPos( nScrollTop, true ) ;

@@ -21,7 +21,7 @@
 /****************************************************************************************/
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "TextureListControl.h"
 #include "TexturesDlg.h"
@@ -60,7 +60,7 @@ END_MESSAGE_MAP()
 
 void	CTextureListControl::ActivateHighlightedTexture(LPNMLISTVIEW pNMLV)
 {
-	CJweApp				*pApp = (CJweApp*) AfxGetApp();
+	CGweApp				*pApp = (CGweApp*) AfxGetApp();
 	Material_Struct		*pMaterial = NULL;
 	//MaterialIterator	MI ;
 	CTexturesDlg		*pParent = NULL;

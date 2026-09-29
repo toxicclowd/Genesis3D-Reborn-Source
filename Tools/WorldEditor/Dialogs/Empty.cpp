@@ -20,7 +20,7 @@
 /****************************************************************************************/
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MfcUtil.h"
 
 #include "Empty.h"

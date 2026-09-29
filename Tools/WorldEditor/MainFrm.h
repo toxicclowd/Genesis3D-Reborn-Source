@@ -52,8 +52,8 @@
 #include "MyBar.h"
 //	end tom morris feb 2005
 
-#include "jetdialog.h"
-#include "J3DMainFrm.h"
+#include "G3DDialog.h"
+#include "G3DMfcMainFrm.h"
 
 #include "CTextToolBar.h"
 
@@ -99,7 +99,7 @@ typedef enum
 #define MAINFRM_ADDOBJECT_GROUP 0x0002
 #define MAINFRM_ADDOBJECT_MODEL 0x0004
 
-class CMainFrame : public CJ3DMainFrame
+class CMainFrame : public CG3DMfcMainFrame
 {
 	DECLARE_DYNAMIC(CMainFrame)
 public:
@@ -127,18 +127,18 @@ public:
 	virtual ~CMainFrame();
 
 	//List Management
-	void AddSelection( CJweDoc * pDoc );
+	void AddSelection( CGweDoc * pDoc );
 	void RemoveDeleted();
 	void AddObject( Object * pObject );
 	void AddObjectEx(Object *pObject, uint32 flags); // Krouer: specify where to add object in the flags
 	void RenameObject( Object * pObject );
 	void ResetLists( void );
-	void RebuildLists( CJweDoc *pDoc );
+	void RebuildLists( CGweDoc *pDoc );
 	void InitObjectList( void );
 
 	//Document Management
-	void SetCurrentDocument( CJweDoc * pDoc );
-	CJweDoc * GetCurrentDocument( void );
+	void SetCurrentDocument( CGweDoc * pDoc );
+	CGweDoc * GetCurrentDocument( void );
 	void CloseCurDoc( void );
 
 	//Commnad Pannel Management
@@ -262,14 +262,14 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
-	CJweDoc* m_pCurrentDoc;
+	CGweDoc* m_pCurrentDoc;
 	void		DockControlBarLeftOf( CToolBar* Bar,CToolBar* LeftOf ) ;
 	CDialog *	DialogFromIndex( MAINFRM_COMMANDPANEL_TAB nTab );
 
 
 
 //	CDialogBar					m_CommandPanel;
-    CJetTabDialog               m_CommandPanel;
+    CG3DTabDialog               m_CommandPanel;
 //	CDialogBar					m_wndObjectBar ;
 //	CDialogBar					m_MaterialsBar;
 //	CDialogBar					m_PropertiesBar;

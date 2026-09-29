@@ -19,7 +19,7 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "models.h"
 #include "AddModel.h"
 #include "MainFrm.h"
@@ -105,7 +105,7 @@ void CModel::OnSize(UINT nType, int cx, int cy)
         pWnd->MoveWindow(cx-68,4,64,24);
 }
 
-void CModel::SetCurrentDocument(CJweDoc *pDoc)
+void CModel::SetCurrentDocument(CGweDoc *pDoc)
 {
 	Model *pModel;
 	int		ComboItem;
@@ -342,7 +342,7 @@ grBoolean CModel::AddSelectionCB(Object *pObject, void *lParam)
 	return( GR_FALSE );
 }
 
-void CModel::AddSelection(CJweDoc *pDoc)
+void CModel::AddSelection(CGweDoc *pDoc)
 {
 
 	pDoc->EnumSelected( &m_List, AddSelectionCB ) ;
@@ -350,7 +350,7 @@ void CModel::AddSelection(CJweDoc *pDoc)
 
 void CModel::UpdateCurModel()
 {
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 	Model *		pCurModel;
 	char * pName;
 
@@ -425,7 +425,7 @@ void CModel::ChangeModels( HTREEITEM hItem )
 	Model	* pModel;
 	Model	* pOldModel;
 	Brush   * pBrush;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	hParentItem = m_List.GetParentItem( hItem );
@@ -453,7 +453,7 @@ void CModel::SelectGroup( HTREEITEM hGroupItem, grBoolean bSelect )
 	HTREEITEM		hItem;
 	LEVEL_STATE		State;
 	Object *		pObject;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
@@ -479,7 +479,7 @@ void CModel::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 	HTREEITEM		hItem ;
 	NM_TREEVIEW*	pNMTreeView = (NM_TREEVIEW*)pNMHDR;
 	Object	*		pObject ;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 	if(  pNMTreeView->action == TVC_DRAG_END )
 	{
@@ -538,7 +538,7 @@ grBoolean CModel::SelectCB(Object *pObject, void *lParam)
 // SELECTION has changed
 
 
-void CModel::Update(CJweDoc *pDoc)
+void CModel::Update(CGweDoc *pDoc)
 {
 	LEVEL_SEL	SelType ;
 	m_List.SelectItem( NULL );
@@ -589,7 +589,7 @@ void CModel::OnAddmodel()
 	CAddModel		AddModelDialog ;
 	Model *			pModel;
 	CMainFrame*		pMainFrm;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 	char *			Name;
 
 	pMainFrm = (CMainFrame*)AfxGetMainWnd();
@@ -639,7 +639,7 @@ void CModel::OnSelchangeCbCurrent()
 {
 	int nIndex;
 	Model * pModel;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	nIndex = m_CBList.GetCurSel();
@@ -652,7 +652,7 @@ void CModel::OnSelchangeCbCurrent()
 
 void CModel::OnLock() 
 {
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 	Model * pModel;
 
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();

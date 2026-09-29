@@ -20,7 +20,7 @@
 /****************************************************************************************/
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 #include "Resource.h"
@@ -54,7 +54,7 @@ typedef struct tagGroupInfo
 	Group*			pGroup;
 	CTreeCtrlEx	*	pList ;
 	HTREEITEM		hItemGroup ;
-	CJweDoc*		pDoc;
+	CGweDoc*		pDoc;
 } GroupInfo ;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ void CGroups::OnSize(UINT nType, int cx, int cy)
         pWnd->MoveWindow(cx-68,4,64,24);
 }
 
-void CGroups::SetCurrentDocument(CJweDoc *pDoc)
+void CGroups::SetCurrentDocument(CGweDoc *pDoc)
 {
 	Group *pGroup;
 	int		ComboItem;
@@ -374,7 +374,7 @@ HTREEITEM CGroups::GetObjectItem( CTreeCtrl *pList, Object *pObject )
 }
 
 
-void CGroups::AddSelection(CJweDoc *pDoc)
+void CGroups::AddSelection(CGweDoc *pDoc)
 {
 	pDoc->EnumSelected( &m_List, AddSelectionCB ) ;
 }// AddSelection
@@ -437,7 +437,7 @@ void CGroups::SelectGroup( HTREEITEM hGroupItem, grBoolean bSelect )
 	HTREEITEM		hItem;
 	LEVEL_STATE		State;
 	Object *		pObject;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
@@ -463,7 +463,7 @@ void CGroups::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 	HTREEITEM		hItem ;
 	NM_TREEVIEW*	pNMTreeView = (NM_TREEVIEW*)pNMHDR;
 	Object	*		pObject ;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 	int				State;
 
     // Krouer: the tree control is know able to send multiple messages when draging multiple items
@@ -539,7 +539,7 @@ grBoolean CGroups::SelectCB(Object *pObject, void *lParam)
 // SELECTION has changed
 
 
-void CGroups::Update(CJweDoc *pDoc)
+void CGroups::Update(CGweDoc *pDoc)
 {
 	LEVEL_SEL	SelType ;
 	m_List.SelectItem( NULL );
@@ -564,7 +564,7 @@ void CGroups::OnAddgroup()
 	HTREEITEM		hItem ;
 	CAddModel		AddModelDialog ;
 	Group *			pGroup;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 
@@ -600,7 +600,7 @@ void CGroups::OnSelchangeCbCurrent()
 {
 	int nIndex;
 	Group * pGroup;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	nIndex = m_CBList.GetCurSel();
@@ -613,7 +613,7 @@ void CGroups::OnSelchangeCbCurrent()
 
 void CGroups::OnLock() 
 {
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 	Group * pGroup;
 
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
@@ -734,7 +734,7 @@ void CGroups::OnWorldGroupExporttoprefab()
 	grVFile* pFS;
 	grVFile* pFile;
 	CMainFrame*		pMainFrm;
-	CJweDoc	*		pDoc ;
+	CGweDoc	*		pDoc ;
 
 	uint32 Signature = PREFAB_SIGNATURE;
 	uint32 Version = PREFAB_VERSION;
@@ -968,7 +968,7 @@ void CGroups::OnWorldGroupImportfrom()
 	grVFile* pFile;
 
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd();
-	CJweDoc	*	pDoc = pMainFrm->GetCurrentDocument();
+	CGweDoc	*	pDoc = pMainFrm->GetCurrentDocument();
 
 	uint32 Signature = PREFAB_SIGNATURE;
 	uint32 Version = PREFAB_VERSION;
@@ -1114,7 +1114,7 @@ void CGroups::OnWorldGroupCreate()
 void CGroups::OnWorldmodelInvertshow()
 {
 	CMainFrame*		pMainFrm = (CMainFrame*) AfxGetMainWnd();
-	CJweDoc	*		pDoc = pMainFrm->GetCurrentDocument();
+	CGweDoc	*		pDoc = pMainFrm->GetCurrentDocument();
 
     HTREEITEM hItem = m_List.GetRootItem();
     HTREEITEM hSelItem = m_List.GetFirstSelectedItem();
@@ -1125,7 +1125,7 @@ void CGroups::OnWorldmodelInvertshow()
 void CGroups::OnWorldmodelShow()
 {
 	CMainFrame*		pMainFrm = (CMainFrame*) AfxGetMainWnd();
-	CJweDoc	*		pDoc = pMainFrm->GetCurrentDocument();
+	CGweDoc	*		pDoc = pMainFrm->GetCurrentDocument();
 
     HTREEITEM hItem = m_List.GetFirstSelectedItem();
     if (hItem == NULL)
@@ -1167,7 +1167,7 @@ void CGroups::ShowAllGroups()
     HTREEITEM hItem = m_List.GetRootItem();
 
 	CMainFrame*		pMainFrm = (CMainFrame*) AfxGetMainWnd();
-	CJweDoc	*		pDoc = pMainFrm->GetCurrentDocument();
+	CGweDoc	*		pDoc = pMainFrm->GetCurrentDocument();
 
     while (hItem) {
 	    pObject = (Object*) m_List.GetItemData(hItem);

@@ -36,9 +36,9 @@
 #include "Draw.h"
 #include "Draw3d.h"
 #include "Genesis3D.h"
-#include "JetView.h"
+#include "G3DView.h"
 #include "grWorld.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "Rect.h"
 #include "Transform.h"
@@ -78,9 +78,9 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CJweDoc
 
-IMPLEMENT_DYNCREATE(CJweDoc, CJ3DDoc)
+IMPLEMENT_DYNCREATE(CGweDoc, CG3DMfcDoc)
 
-BEGIN_MESSAGE_MAP(CJweDoc, CJ3DDoc)
+BEGIN_MESSAGE_MAP(CGweDoc, CG3DMfcDoc)
 	//{{AFX_MSG_MAP(CJweDoc)
 	ON_COMMAND(IDM_TOOLS_PLACECUBE, OnToolsPlacecube)
 	ON_UPDATE_COMMAND_UI(IDM_TOOLS_PLACECUBE, OnUpdateToolsPlacecube)
@@ -189,7 +189,7 @@ BEGIN_MESSAGE_MAP(CJweDoc, CJ3DDoc)
     ON_COMMAND(ID_FILE_CLOSE, OnFileClose)
     END_MESSAGE_MAP()
 
-BEGIN_DISPATCH_MAP(CJweDoc, CJ3DDoc)
+BEGIN_DISPATCH_MAP(CGweDoc, CG3DMfcDoc)
 	//{{AFX_DISPATCH_MAP(CJweDoc)
 		// NOTE - the ClassWizard will add and remove mapping macros here.
 		//      DO NOT EDIT what you see in these blocks of generated code!
@@ -204,15 +204,15 @@ END_DISPATCH_MAP()
 static const IID IID_IGwe =
 { 0x37f4562b, 0xc0e1, 0x11d2, { 0x8b, 0x41, 0x0, 0x10, 0x4b, 0x70, 0xd7, 0x6d } };
 
-BEGIN_INTERFACE_MAP(CJweDoc, CJ3DDoc)
-	INTERFACE_PART(CJweDoc, IID_IGwe, Dispatch)
+BEGIN_INTERFACE_MAP(CGweDoc, CG3DMfcDoc)
+	INTERFACE_PART(CGweDoc, IID_IGwe, Dispatch)
 END_INTERFACE_MAP()
 
 
 /////////////////////////////////////////////////////////////////////////////
 // CJweDoc construction/destruction
 
-CJweDoc::CJweDoc() : m_pLevel(nullptr), 
+CGweDoc::CGweDoc() : m_pLevel(nullptr), 
 m_Mode(MODE_POINTER_BB), 
 m_LastFOV( 2.0f ), 
 m_bLoaded( GR_FALSE ), 
@@ -238,7 +238,7 @@ m_strRebuild("Rebuild All to reveal actors...")/*end tom morris*/
    m_RenderMode = RenderMode_TexturedAndLit;
 }
 
-CJweDoc::~CJweDoc()
+CGweDoc::~CGweDoc()
 {
 	grBoolean Result{};
 
@@ -262,7 +262,7 @@ CJweDoc::~CJweDoc()
 	AfxOleUnlockApp();
 }
 
-grBitmap *	CJweDoc::InitBitmap( WORD Resource)
+grBitmap *	CGweDoc::InitBitmap( WORD Resource)
 {
 	// Jeff:  Load light bitmap from resources - 8/18/2005
 	grVFile* BmpFile{};
@@ -293,8 +293,8 @@ grBitmap *	CJweDoc::InitBitmap( WORD Resource)
 		{
 			pView = GetNextView(pos);
 			ASSERT_VALID(pView);
-			if( pView->IsKindOf( RUNTIME_CLASS (CJetView)))
-				if( !((CJetView*)pView)->RegisterBitmap( Bmp ) )
+			if( pView->IsKindOf( RUNTIME_CLASS (CG3DView)))
+				if( !((CG3DView*)pView)->RegisterBitmap( Bmp ) )
 					return( nullptr );
 		}
 	}
@@ -303,7 +303,7 @@ grBitmap *	CJweDoc::InitBitmap( WORD Resource)
 	return( Bmp );
 }
 
-grMaterialSpec * CJweDoc::InitMaterial( WORD Resource )
+grMaterialSpec * CGweDoc::InitMaterial( WORD Resource )
 {
 	grMaterialSpec* pMat = nullptr;
 
@@ -325,16 +325,16 @@ grMaterialSpec * CJweDoc::InitMaterial( WORD Resource )
                             		&Context,GR_VFILE_OPEN_READONLY  );
 
 	if (BmpFile) {
-		pMat = grMaterialSpec_Create(GetJetEngine(), GetResourceMgr());
+		pMat = grMaterialSpec_Create(GetG3DEngine(), GetResourceMgr());
 		grMaterialSpec_AddLayerFromFile(pMat, 0, BmpFile, GR_TRUE, 255);
 		grVFile_Close( BmpFile );
 	}
 	return pMat;
 }
 
-BOOL CJweDoc::OnNewDocument()
+BOOL CGweDoc::OnNewDocument()
 {
-	CJetView	*pJetView = (CJetView *)GetJetView();
+	CG3DView	*pG3DView = (CG3DView *)GetG3DView();
 
 	LightBitmap      = nullptr;
 	CMainFrame	* pMainFrm{};
@@ -343,15 +343,15 @@ BOOL CJweDoc::OnNewDocument()
 	if (!CDocument::OnNewDocument())
 		return FALSE;
 
-	CJweApp		* pApp{};
-	pApp = (CJweApp*)AfxGetApp();
+	CGweApp		* pApp{};
+	pApp = (CGweApp*)AfxGetApp();
 
-	m_pResourceMgr = Level_CreateResourceMgr(pJetView->GetEngine());
+	m_pResourceMgr = Level_CreateResourceMgr(pG3DView->GetEngine());
 	if( m_pResourceMgr == nullptr )
 		return( FALSE );
 
 	if (!pApp->HasInitMaterialList()) {
-		pApp->InitMaterialList(pJetView->GetEngine(), m_pResourceMgr);
+		pApp->InitMaterialList(pG3DView->GetEngine(), m_pResourceMgr);
 	}
 
 	m_pWorld = grWorld_Create(m_pResourceMgr) ;
@@ -395,7 +395,7 @@ BOOL CJweDoc::OnNewDocument()
 	return TRUE;
 }// OnNewDocument
 
-void CJweDoc::SetNewBrushBoundInvalid()
+void CGweDoc::SetNewBrushBoundInvalid()
 {
 	m_NewBrushBounds.Min.X = 1.0f;
 	m_NewBrushBounds.Min.Y = 1.0f;
@@ -405,7 +405,7 @@ void CJweDoc::SetNewBrushBoundInvalid()
 	m_NewBrushBounds.Max.Z = -1.0f;
 }
 
-void CJweDoc::SetNewBrushBound( Ortho * pOrtho, Point * pMousePt, Point *pAnchor )
+void CGweDoc::SetNewBrushBound( Ortho * pOrtho, Point * pMousePt, Point *pAnchor )
 {
 	grExtBox BrushBounds{};
 	grVec3d MouseVec{};
@@ -443,7 +443,7 @@ void CJweDoc::SetNewBrushBound( Ortho * pOrtho, Point * pMousePt, Point *pAnchor
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&m_NewBrushBounds );
 }
 
-void CJweDoc::SetNewBrushHeight( Ortho * pOrtho, Point * pMousePt, Point *pAnchor )
+void CGweDoc::SetNewBrushHeight( Ortho * pOrtho, Point * pMousePt, Point *pAnchor )
 {
 	float NewHeight{};
 	float Plane{};
@@ -506,12 +506,12 @@ void CJweDoc::SetNewBrushHeight( Ortho * pOrtho, Point * pMousePt, Point *pAncho
 
 }
 
-const grExtBox * CJweDoc::GetNewBrushBounds()
+const grExtBox * CGweDoc::GetNewBrushBounds()
 {
 	return( &m_NewBrushBounds );
 }
 
-BOOL CJweDoc::CreateLevel()
+BOOL CGweDoc::CreateLevel()
 {
 	grProperty_List *pArray = nullptr;
 //	tom morris feb 2005 -- to support setting bsp rebuild defaults
@@ -519,8 +519,8 @@ BOOL CJweDoc::CreateLevel()
 	grBSP_Logic			Logic = Logic_Smart;
 	grBSP_LogicBalance	LogicBalance = 3;
 //	end tom morris feb 2005
-	CJweApp		*App{};
-	App = (CJweApp*)AfxGetApp();
+	CGweApp		*App{};
+	App = (CGweApp*)AfxGetApp();
 	CMainFrame	*pMainFrm{};
 	pMainFrm = (CMainFrame*)AfxGetMainWnd();
 	
@@ -551,7 +551,7 @@ BOOL CJweDoc::CreateLevel()
 /////////////////////////////////////////////////////////////////////////////
 // CJweDoc serialization
 
-void CJweDoc::Serialize(CArchive& ar)
+void CGweDoc::Serialize(CArchive& ar)
 {
 	if (ar.IsStoring())
 	{
@@ -567,12 +567,12 @@ void CJweDoc::Serialize(CArchive& ar)
 // CJweDoc diagnostics
 
 #ifdef _DEBUG
-void CJweDoc::AssertValid() const
+void CGweDoc::AssertValid() const
 {
 	CDocument::AssertValid();
 }
 
-void CJweDoc::Dump(CDumpContext& dc) const
+void CGweDoc::Dump(CDumpContext& dc) const
 {
 	CDocument::Dump(dc);
 }
@@ -581,7 +581,7 @@ void CJweDoc::Dump(CDumpContext& dc) const
 /////////////////////////////////////////////////////////////////////////////
 // CJweDoc commands
 
-BOOL CJweDoc::RenderLights( grCamera* pCamera )
+BOOL CGweDoc::RenderLights( grCamera* pCamera )
 {
 	LightList	*pLightList{};
 	Light		*pLight{};
@@ -624,7 +624,7 @@ typedef struct DrawFaceInfo_Struct {
 	grBitmap* pBitmap;
 } DrawFaceInfo_Struct;
 
-void CJweDoc::DrawFaceCB(const grTLVertex *Verts, int32 NumVerts, void *Context)
+void CGweDoc::DrawFaceCB(const grTLVertex *Verts, int32 NumVerts, void *Context)
 {
 	grTLVertex *ModVerts{};
 	int i;
@@ -649,7 +649,7 @@ void CJweDoc::DrawFaceCB(const grTLVertex *Verts, int32 NumVerts, void *Context)
 	grRam_Free( ModVerts );
 }
 
-grBoolean CJweDoc::SetModelFaceCB( Model *pModel, void * pVoid ) 
+grBoolean CGweDoc::SetModelFaceCB( Model *pModel, void * pVoid ) 
 {
 	if (pVoid)
 		grModel_SetBrushFaceCB( Model_GetguModel( pModel ), DrawFaceCB, pVoid );
@@ -660,7 +660,7 @@ grBoolean CJweDoc::SetModelFaceCB( Model *pModel, void * pVoid )
 }
 
 
-BOOL CJweDoc::SetDrawFaceCB(grEngine *Engine, grBoolean Enable)
+BOOL CGweDoc::SetDrawFaceCB(grEngine *Engine, grBoolean Enable)
 {
 	DrawFaceInfo_Struct DrawFaceInfo; 
 
@@ -674,18 +674,18 @@ BOOL CJweDoc::SetDrawFaceCB(grEngine *Engine, grBoolean Enable)
 	return TRUE;
 }
 
-BOOL CJweDoc::Render( class CJ3DView * pJ3DView )
+BOOL CGweDoc::Render( class CG3DMfcView * pG3DMfcView )
 {
-	CJetView* pView{};
+	CG3DView* pView{};
 	grEngine* pEngine{};
 	grCamera* pCamera{};
 	DrawFaceInfo_Struct DrawFaceInfo{}; 
 	grXForm3d	CamXForm{};
 	float FOV{};
 	
-	ASSERT(pJ3DView != nullptr);
-	ASSERT(pJ3DView->GetDocument() == this);
-	ASSERT(pJ3DView->IsKindOf(RUNTIME_CLASS(CJetView)));
+	ASSERT(pG3DMfcView != nullptr);
+	ASSERT(pG3DMfcView->GetDocument() == this);
+	ASSERT(pG3DMfcView->IsKindOf(RUNTIME_CLASS(CG3DView)));
 
 	if( m_bLoaded == GR_FALSE )
 		return( TRUE );
@@ -693,7 +693,7 @@ BOOL CJweDoc::Render( class CJ3DView * pJ3DView )
 	if( m_pLevel == nullptr )
 		return( TRUE );
 
-	pView = (CJetView*)pJ3DView;
+	pView = (CG3DView*)pG3DMfcView;
 
 	pEngine = pView->GetEngine();
 	ASSERT(pEngine != nullptr);
@@ -743,7 +743,7 @@ BOOL CJweDoc::Render( class CJ3DView * pJ3DView )
 	return(TRUE);
 }
 
-void CJweDoc::DeleteContents() 
+void CGweDoc::DeleteContents() 
 {
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 
@@ -763,14 +763,14 @@ void CJweDoc::DeleteContents()
 		m_pWorld = nullptr;
 	}
 
-	CJ3DDoc::DeleteContents();
+	CG3DMfcDoc::DeleteContents();
 }// DeleteContents
 
 //
 // MENU HANDLING
 //
 
-void CJweDoc::OnToolsPlacecube() 
+void CGweDoc::OnToolsPlacecube() 
 {
 
 	if( m_Mode == MODE_POINTER_CUBE )
@@ -785,7 +785,7 @@ void CJweDoc::OnToolsPlacecube()
 	
 }// OnToolsPlacecube
 
-void CJweDoc::OnUpdateToolsPlacecube(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateToolsPlacecube(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( TRUE ) ;
 }// OnUpdateToolsPlacecube
@@ -793,7 +793,7 @@ void CJweDoc::OnUpdateToolsPlacecube(CCmdUI* pCmdUI)
 
 
 // Added 31.01.2000: gaspode
-void CJweDoc::OnToolsPlacesheet() 
+void CGweDoc::OnToolsPlacesheet() 
 {
 
 	if( m_Mode == MODE_POINTER_SHEET )
@@ -808,7 +808,7 @@ void CJweDoc::OnToolsPlacesheet()
 	
 }// OnToolsPlacesheet
 
-void CJweDoc::OnUpdateToolsPlacesheet(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateToolsPlacesheet(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( TRUE ) ;
 }// OnUpdateToolsPlacesheet
@@ -819,91 +819,91 @@ void CJweDoc::OnUpdateToolsPlacesheet(CCmdUI* pCmdUI)
 
 
 
-void CJweDoc::OnToolsNextface() 
+void CGweDoc::OnToolsNextface() 
 {
 	Select_NextFace( m_pLevel );
 	UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)Level_GetSelDrawBounds( m_pLevel ) ) ;
 }// OnToolsNextface
 
-void CJweDoc::OnUpdateToolsNextface(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateToolsNextface(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( MODE_POINTER_FM == m_Mode && Level_HasSelections(m_pLevel) ) ;
 }// OnUpdateToolsNextface
 
-void CJweDoc::OnToolsPrevface() 
+void CGweDoc::OnToolsPrevface() 
 {
 	Select_PrevFace( m_pLevel );
 	UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)Level_GetSelDrawBounds( m_pLevel ) ) ;
 
 }//OnToolsPrevface
 
-void CJweDoc::OnUpdateToolsPrevface(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateToolsPrevface(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( MODE_POINTER_FM == m_Mode && Level_HasSelections(m_pLevel) ) ;
 }// OnUpdateToolsPrevface
 
 
-void CJweDoc::OnViewShowallgroups() 
+void CGweDoc::OnViewShowallgroups() 
 {
     CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	pMainFrame->m_GroupDialog.ShowAllGroups();
 }
 
-void CJweDoc::OnUpdateViewShowallgroups(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateViewShowallgroups(CCmdUI* pCmdUI) 
 {
     CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	pCmdUI->Enable( pMainFrame->m_GroupDialog.HasHiddenItem() ) ;
 }// OnUpdateViewShowallgroups
 
-void CJweDoc::OnViewShowvisiblegroups() 
+void CGweDoc::OnViewShowvisiblegroups() 
 {
 	
 }
 
-void CJweDoc::OnUpdateViewShowvisiblegroups(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateViewShowvisiblegroups(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( false ) ;	
 }
 
-void CJweDoc::OnViewShowCurrentgroup() 
+void CGweDoc::OnViewShowCurrentgroup() 
 {
     CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	pMainFrame->m_GroupDialog.ToggleSelectionVisibleState();
 }
 
-void CJweDoc::OnUpdateViewShowCurrentgroup(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateViewShowCurrentgroup(CCmdUI* pCmdUI) 
 {
     CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	pCmdUI->Enable( pMainFrame->m_GroupDialog.IsCurrentSelectionShowable() ) ;	
 }// OnUpdateViewCurrentgroup
 
-void CJweDoc::OnViewHideCurrentgroup() 
+void CGweDoc::OnViewHideCurrentgroup() 
 {
     CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	pMainFrame->m_GroupDialog.ToggleSelectionVisibleState();
 }
 
-void CJweDoc::OnUpdateViewHideCurrentgroup(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateViewHideCurrentgroup(CCmdUI* pCmdUI) 
 {
     CMainFrame* pMainFrame = (CMainFrame*) AfxGetMainWnd();
 	pCmdUI->Enable( pMainFrame->m_GroupDialog.IsCurrentSelectionHidable() ) ;	
 }// OnUpdateViewCurrentgroup
 
-void CJweDoc::OnEditAddtogroup() 
+void CGweDoc::OnEditAddtogroup() 
 {
 }
 
-void CJweDoc::OnUpdateEditAddtogroup(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditAddtogroup(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }// OnUpdateEditAddtogroup
 
-void CJweDoc::OnEditRemovefromgroup() 
+void CGweDoc::OnEditRemovefromgroup() 
 {
 	
 }
 
-void CJweDoc::OnUpdateEditRemovefromgroup(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditRemovefromgroup(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;	
 }// OnUpdateEditRemovefromgroup
@@ -912,32 +912,32 @@ void CJweDoc::OnUpdateEditRemovefromgroup(CCmdUI* pCmdUI)
 // END MENU HANDLING
 //
 
-void CJweDoc::DrawGrid( CDC *pDC, Ortho *pOrtho)
+void CGweDoc::DrawGrid( CDC *pDC, Ortho *pOrtho)
 {
 	Draw_Grid( m_pLevel, pOrtho, pDC->m_hDC );
 }
 
-void CJweDoc::DrawOrthoName( CDC *pDC, Ortho *pOrtho)
+void CGweDoc::DrawOrthoName( CDC *pDC, Ortho *pOrtho)
 {
 	Draw_OrthoName( pOrtho, pDC->m_hDC );
 }
 
-void CJweDoc::DrawConstructorLine( CDC *pDC, Ortho *pOrtho )
+void CGweDoc::DrawConstructorLine( CDC *pDC, Ortho *pOrtho )
 {
 	Draw_ConstructorLine( m_pLevel, pOrtho, pDC->m_hDC );
 }
 
-void CJweDoc::DrawSelected( CDC *pDC, Ortho *pOrtho )
+void CGweDoc::DrawSelected( CDC *pDC, Ortho *pOrtho )
 {
 	Draw_Selected( m_pLevel, pOrtho, pDC->m_hDC, m_Mode );
 }
 
-void CJweDoc::DrawObjects( CDC *pDC, Ortho *pOrtho )
+void CGweDoc::DrawObjects( CDC *pDC, Ortho *pOrtho )
 {
 	Draw_Objects( m_pLevel, pOrtho, pDC->m_hDC );
 }
 
-void CJweDoc::DrawSelectBounds( CDC *pDC, Ortho *pOrtho )
+void CGweDoc::DrawSelectBounds( CDC *pDC, Ortho *pOrtho )
 {
 	const grExtBox *	pSelWorldBounds;
 	Rect				SelBounds{};
@@ -967,7 +967,7 @@ void CJweDoc::DrawSelectBounds( CDC *pDC, Ortho *pOrtho )
 	}	
 }
 
-void CJweDoc::DrawSelectElipse( CDC *pDC, Ortho *pOrtho )
+void CGweDoc::DrawSelectElipse( CDC *pDC, Ortho *pOrtho )
 {
 	const grExtBox* pSelWorldBounds{};
 
@@ -978,7 +978,7 @@ void CJweDoc::DrawSelectElipse( CDC *pDC, Ortho *pOrtho )
 	}
 }
 
-void CJweDoc::DrawSelectAxis( Ortho * pOrtho, HDC hDC )
+void CGweDoc::DrawSelectAxis( Ortho * pOrtho, HDC hDC )
 {
 
 	Draw_SelectAxis( m_pLevel, pOrtho, hDC );
@@ -986,7 +986,7 @@ void CJweDoc::DrawSelectAxis( Ortho * pOrtho, HDC hDC )
 
 
 // Added JH 3.3.2000 // fixed again on 30.3.2000
-void CJweDoc::PrintRectDimensions( CDC *pDC,const Ortho * pOrtho, const grExtBox	*pselBox )
+void CGweDoc::PrintRectDimensions( CDC *pDC,const Ortho * pOrtho, const grExtBox	*pselBox )
 {
 	char	sTempString1[200];
 	char	sTempString2[200];
@@ -1043,7 +1043,7 @@ void CJweDoc::PrintRectDimensions( CDC *pDC,const Ortho * pOrtho, const grExtBox
 
 
 
-grBoolean CJweDoc::GetSelRadiusBox( Ortho *pOrtho, Rect *pBox )
+grBoolean CGweDoc::GetSelRadiusBox( Ortho *pOrtho, Rect *pBox )
 {
 	const grExtBox* pSelWorldBounds{};
 	pSelWorldBounds =	Level_GetSelDrawBounds( m_pLevel ) ;
@@ -1055,7 +1055,7 @@ grBoolean CJweDoc::GetSelRadiusBox( Ortho *pOrtho, Rect *pBox )
 	return( GR_FALSE );
 }
 
-void CJweDoc::RenderOrthoView(CDC *pDC, Ortho *pOrtho)
+void CGweDoc::RenderOrthoView(CDC *pDC, Ortho *pOrtho)
 {
 	ASSERT( pDC != nullptr ) ;
 	ASSERT( pOrtho != nullptr ) ;
@@ -1064,7 +1064,7 @@ void CJweDoc::RenderOrthoView(CDC *pDC, Ortho *pOrtho)
 		return;
 }// RenderOrthoView
 
-grBoolean CJweDoc::isPlaceBrushMode()
+grBoolean CGweDoc::isPlaceBrushMode()
 {
 
 	return( MODE_POINTER_CUBE		== m_Mode ||
@@ -1074,7 +1074,7 @@ grBoolean CJweDoc::isPlaceBrushMode()
 			MODE_POINTER_ARCH		== m_Mode);
 }
 
-grBoolean CJweDoc::isPlaceLightMode()
+grBoolean CGweDoc::isPlaceLightMode()
 {
 
 	return( MODE_POINTER_LIGHT == m_Mode ||
@@ -1082,7 +1082,7 @@ grBoolean CJweDoc::isPlaceLightMode()
 			MODE_POINTER_USEROBJ == m_Mode );
 }
 
-void CJweDoc::GetModeKind( int *Kind, int *SubKind )
+void CGweDoc::GetModeKind( int *Kind, int *SubKind )
 {
 	switch( m_Mode )
 	{
@@ -1131,7 +1131,7 @@ void CJweDoc::GetModeKind( int *Kind, int *SubKind )
 	}
 }
 
-void CJweDoc::PlaceObject(grExtBox	*pObjectBounds, grBoolean bSubtract )
+void CGweDoc::PlaceObject(grExtBox	*pObjectBounds, grBoolean bSubtract )
 {
 	grExtBox		WorldBounds{} ;
 	int Kind = KIND_INVALID;
@@ -1181,7 +1181,7 @@ void CJweDoc::PlaceObject(grExtBox	*pObjectBounds, grBoolean bSubtract )
 	}
 }
 
-void CJweDoc::PlaceBrush( grBoolean bSubtract )
+void CGweDoc::PlaceBrush( grBoolean bSubtract )
 {
     if (!grExtBox_IsValid( &m_NewBrushBounds )) {
         return;
@@ -1211,7 +1211,7 @@ void CJweDoc::PlaceBrush( grBoolean bSubtract )
 
 #define DEFAULT_OBJECT_SIZE 64.0f
 
-void CJweDoc::PlaceAtPoint( const Ortho * pOrtho, Point * pPoint,  grBoolean bSubtract )
+void CGweDoc::PlaceAtPoint( const Ortho * pOrtho, Point * pPoint,  grBoolean bSubtract )
 {
 	grVec3d WorldPt{};
 	grVec3d SnapDelta{};
@@ -1250,7 +1250,7 @@ void CJweDoc::PlaceAtPoint( const Ortho * pOrtho, Point * pPoint,  grBoolean bSu
 	SetMode( m_PrevMode );
 }
 
-grBoolean CJweDoc::Select( const Ortho * pOrtho, const Point *pViewPt, LEVEL_STATE eState, grBoolean bControl_Held )
+grBoolean CGweDoc::Select( const Ortho * pOrtho, const Point *pViewPt, LEVEL_STATE eState, grBoolean bControl_Held )
 {
 	grExtBox		WorldBounds{};
 	CMainFrame* pMainFrm{};
@@ -1293,7 +1293,7 @@ grBoolean CJweDoc::Select( const Ortho * pOrtho, const Point *pViewPt, LEVEL_STA
 	return( SELECT_RESULT_CHANGED == SelResult ) ;
 }// Select
 
-grBoolean CJweDoc::SelectObject(Object *pObject, LEVEL_STATE eState)
+grBoolean CGweDoc::SelectObject(Object *pObject, LEVEL_STATE eState)
 {
 	grBoolean b{};
 	Group* pGroup{};
@@ -1320,7 +1320,7 @@ grBoolean CJweDoc::SelectObject(Object *pObject, LEVEL_STATE eState)
 	return b ;
 }//SelectObject
 
-grBoolean CJweDoc::SubSelectgeObject(grObject *pgeObject, LEVEL_STATE eState)
+grBoolean CGweDoc::SubSelectgeObject(grObject *pgeObject, LEVEL_STATE eState)
 {
 	grBoolean b{};
 	CMainFrame* pMainFrm{};
@@ -1332,7 +1332,7 @@ grBoolean CJweDoc::SubSelectgeObject(grObject *pgeObject, LEVEL_STATE eState)
 	return b ;
 }//SelectObject
 
-grBoolean CJweDoc::MarkSubSelect(grObject *pgeObject, int32 flag)
+grBoolean CGweDoc::MarkSubSelect(grObject *pgeObject, int32 flag)
 {
 	grBoolean b{};
 	CMainFrame* pMainFrm{};
@@ -1346,7 +1346,7 @@ grBoolean CJweDoc::MarkSubSelect(grObject *pgeObject, int32 flag)
 
 // Append or Toggle on CTRL?  Desktop uses toggle
 
-grBoolean CJweDoc::RectangleSelect( grExtBox *pBox, grBoolean bAppend )
+grBoolean CGweDoc::RectangleSelect( grExtBox *pBox, grBoolean bAppend )
 {
 	grExtBox	ChangedBounds{};
 	grBoolean	bSelChanged = GR_FALSE ;
@@ -1387,7 +1387,7 @@ grBoolean CJweDoc::RectangleSelect( grExtBox *pBox, grBoolean bAppend )
 }// RectangleSelect
 
 
-grBoolean CJweDoc::Select3d( const grCamera * pCamera, const Point *pViewPt )
+grBoolean CGweDoc::Select3d( const grCamera * pCamera, const Point *pViewPt )
 {
 	grBoolean	bSelChanged{};
 	uint32		c1{}, c2{};
@@ -1419,7 +1419,7 @@ grBoolean CJweDoc::Select3d( const grCamera * pCamera, const Point *pViewPt )
 	return bSelChanged ;
 }// Select
 
-void CJweDoc::DeselectAllSub()
+void CGweDoc::DeselectAllSub()
 {
 	grExtBox  WorldBounds{};
 	Level_DeselectAllSub( m_pLevel, &WorldBounds );
@@ -1427,7 +1427,7 @@ void CJweDoc::DeselectAllSub()
 }
 
 
-SELECT_HANDLE CJweDoc::ViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox )
+SELECT_HANDLE CGweDoc::ViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox )
 {
 	SELECT_HANDLE Handle{};
 	int32 XFormMod{};
@@ -1446,7 +1446,7 @@ SELECT_HANDLE CJweDoc::ViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBo
 	return( Handle );
 }
 
-SELECT_HANDLE CJweDoc::SubViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox )
+SELECT_HANDLE CGweDoc::SubViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox )
 {
 	SELECT_HANDLE Handle{};
 	int32 XFormMod{};
@@ -1465,7 +1465,7 @@ SELECT_HANDLE CJweDoc::SubViewPointHandle( Ortho * pOrtho, Point * pViewPt, grEx
 	return( Handle );
 }
 
-void CJweDoc::DeselectAll( grBoolean UpadatePannel )
+void CGweDoc::DeselectAll( grBoolean UpadatePannel )
 {
 	grBoolean	bSelChanged{};
 	grExtBox	WorldBounds{};
@@ -1484,7 +1484,7 @@ void CJweDoc::DeselectAll( grBoolean UpadatePannel )
 	UpadatePannel;
 }// DeselectAll
 
-void CJweDoc::DeselectAllFaces()
+void CGweDoc::DeselectAllFaces()
 {
 	const grExtBox* pWorldBounds{};
 	Select_DeselectAllFaces( m_pLevel );
@@ -1492,7 +1492,7 @@ void CJweDoc::DeselectAllFaces()
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)pWorldBounds ) ;
 }
 
-void CJweDoc::BeginMove( const Ortho * pOrtho, SELECT_HANDLE eCorner, grBoolean bCopy )
+void CGweDoc::BeginMove( const Ortho * pOrtho, SELECT_HANDLE eCorner, grBoolean bCopy )
 {
 	grVec3d		Distance{};
 	grVec3d		SnapDelta{};
@@ -1534,7 +1534,7 @@ void CJweDoc::BeginMove( const Ortho * pOrtho, SELECT_HANDLE eCorner, grBoolean 
 
 }// BeginMove
 
-void CJweDoc::BeginMoveSub( )
+void CGweDoc::BeginMoveSub( )
 {
 
 	Select_DragBeginSub( m_pLevel ) ;
@@ -1543,7 +1543,7 @@ void CJweDoc::BeginMoveSub( )
 
 }// BeginMove
 
-void CJweDoc::EndMove()
+void CGweDoc::EndMove()
 {
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	Select_DragEnd( m_pLevel ) ;
@@ -1556,7 +1556,7 @@ void CJweDoc::EndMove()
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED ) ;
 }// EndMove
 
-void CJweDoc::EndMoveSub()
+void CGweDoc::EndMoveSub()
 {
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	ObjectList* SubSelList{};
@@ -1575,7 +1575,7 @@ void CJweDoc::EndMoveSub()
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED, nullptr ) ;
 }// EndMoveSub
 
-void CJweDoc::MoveSelected( SELECT_HANDLE eCorner, grVec3d *pWorldDistance )
+void CGweDoc::MoveSelected( SELECT_HANDLE eCorner, grVec3d *pWorldDistance )
 {
 	grExtBox	WorldBounds{};
 	grVec3d		SnapPoint{};
@@ -1624,7 +1624,7 @@ void CJweDoc::MoveSelected( SELECT_HANDLE eCorner, grVec3d *pWorldDistance )
 
 }// MoveSelected
 
-void CJweDoc::MoveSelectedSub( SELECT_HANDLE eCorner, grVec3d *pWorldDistance )
+void CGweDoc::MoveSelectedSub( SELECT_HANDLE eCorner, grVec3d *pWorldDistance )
 {
 	grExtBox	WorldBounds{};
 	grVec3d		SnapPoint{};
@@ -1661,7 +1661,7 @@ void CJweDoc::MoveSelectedSub( SELECT_HANDLE eCorner, grVec3d *pWorldDistance )
 
 }// MoveSelected
 
-grBoolean CJweDoc::BeginMoveVerts(const Ortho *pOrtho)
+grBoolean CGweDoc::BeginMoveVerts(const Ortho *pOrtho)
 {
 	CMainFrame *pMainFrm = nullptr;
 	pMainFrm = (CMainFrame*)AfxGetMainWnd();
@@ -1672,7 +1672,7 @@ grBoolean CJweDoc::BeginMoveVerts(const Ortho *pOrtho)
 	pOrtho ;
 }//BeginMoveVerts
 
-grBoolean CJweDoc::MoveVerts(const Ortho *pOrtho, grVec3d *pWorldDistance)
+grBoolean CGweDoc::MoveVerts(const Ortho *pOrtho, grVec3d *pWorldDistance)
 {
 	grVec3d		SnapPoint{};
 	grVec3d		GridPoint{};
@@ -1705,13 +1705,13 @@ grBoolean CJweDoc::MoveVerts(const Ortho *pOrtho, grVec3d *pWorldDistance)
 }// MoveVerts
 
 
-void CJweDoc::EndMoveVerts( void )
+void CGweDoc::EndMoveVerts( void )
 {
 	UpdateStats();
 }// EndMoveVerts
 
 
-grBoolean CJweDoc::HasSelections( grExtBox * pSelBounds )
+grBoolean CGweDoc::HasSelections( grExtBox * pSelBounds )
 {
 	grBoolean	bHasSelections{};
 
@@ -1727,7 +1727,7 @@ grBoolean CJweDoc::HasSelections( grExtBox * pSelBounds )
 	return bHasSelections ;
 }// HasSelections
 
-grBoolean CJweDoc::HasSubSelections( grExtBox * pSelBounds )
+grBoolean CGweDoc::HasSubSelections( grExtBox * pSelBounds )
 {
 	grBoolean	bHasSelections{};
 
@@ -1740,17 +1740,17 @@ grBoolean CJweDoc::HasSubSelections( grExtBox * pSelBounds )
 	return bHasSelections ;
 }// HasSelections
 
-int32 CJweDoc::SubSelXFormModFlags()
+int32 CGweDoc::SubSelXFormModFlags()
 {
 	return( Level_SubSelXFormModFlags( m_pLevel ));
 }
 
-LEVEL_SEL CJweDoc::GetSelType()
+LEVEL_SEL CGweDoc::GetSelType()
 {
 	return Level_GetSelType( m_pLevel ) ;
 }// GetSelType
 
-DOC_CONSTRUCTORS CJweDoc::ViewPointConstructor( Ortho * pOrtho, Point * pViewPt)
+DOC_CONSTRUCTORS CGweDoc::ViewPointConstructor( Ortho * pOrtho, Point * pViewPt)
 {
 	grVec3d WorldPt{};
 	ORTHO_AXIS HAxis{};
@@ -1787,7 +1787,7 @@ DOC_CONSTRUCTORS CJweDoc::ViewPointConstructor( Ortho * pOrtho, Point * pViewPt)
 	return( Constructor );
 }
 
-void   CJweDoc::MoveConstructor( Ortho *pOrtho, DOC_CONSTRUCTORS Constructor, Point * pMousePt, Point *pAnchor )
+void   CGweDoc::MoveConstructor( Ortho *pOrtho, DOC_CONSTRUCTORS Constructor, Point * pMousePt, Point *pAnchor )
 {
 	ORTHO_AXIS HAxis{};
 	ORTHO_AXIS VAxis{};
@@ -1837,7 +1837,7 @@ void   CJweDoc::MoveConstructor( Ortho *pOrtho, DOC_CONSTRUCTORS Constructor, Po
 }
 
 
-LPCTSTR CJweDoc::GetConstructorCursor(Ortho *pOrtho, POINT *pViewPt)
+LPCTSTR CGweDoc::GetConstructorCursor(Ortho *pOrtho, POINT *pViewPt)
 {
 	DOC_CONSTRUCTORS Constructor{};
 	LPCTSTR CursorId = IDC_ARROW;
@@ -1867,7 +1867,7 @@ LPCTSTR CJweDoc::GetConstructorCursor(Ortho *pOrtho, POINT *pViewPt)
 
 }
 
-void CJweDoc::SetCursor(Ortho *pOrtho, POINT *pViewPt)
+void CGweDoc::SetCursor(Ortho *pOrtho, POINT *pViewPt)
 {
 	int				nID{};
 	LPCTSTR			nIDStd{};
@@ -2024,7 +2024,7 @@ void CJweDoc::SetCursor(Ortho *pOrtho, POINT *pViewPt)
 
 }// SetCursor
 
-grBoolean CJweDoc::BeginRotateSub( )
+grBoolean CGweDoc::BeginRotateSub( )
 {
 	BeginRotate();
 	Select_DragBeginSub( m_pLevel ) ;
@@ -2032,7 +2032,7 @@ grBoolean CJweDoc::BeginRotateSub( )
 	return GR_TRUE ;
 }// BeginRotateSub
 
-grBoolean CJweDoc::BeginMoveHandle( const Ortho * pOrtho, SELECT_HANDLE eHandle, DOC_HANDLE_MODE *HandleMode )
+grBoolean CGweDoc::BeginMoveHandle( const Ortho * pOrtho, SELECT_HANDLE eHandle, DOC_HANDLE_MODE *HandleMode )
 {
 	grExtBox	WorldBounds{};
 	grVec3d		Distance{};
@@ -2089,7 +2089,7 @@ grBoolean CJweDoc::BeginMoveHandle( const Ortho * pOrtho, SELECT_HANDLE eHandle,
 	return GR_TRUE ;
 }// BeginSize
 
-void CJweDoc::RotateSelectedSub(const Ortho * pOrtho,  Point * pMousePt, Point *pAnchor )
+void CGweDoc::RotateSelectedSub(const Ortho * pOrtho,  Point * pMousePt, Point *pAnchor )
 {
 	grFloat RotationAngle{};
 	grVec3d SelCenter{};
@@ -2134,7 +2134,7 @@ void CJweDoc::RotateSelectedSub(const Ortho * pOrtho,  Point * pMousePt, Point *
 
 }
 
-void CJweDoc::MoveHandle(const Ortho * pOrtho, grVec3d *pWorldDistance, SELECT_HANDLE eSizeType, Point * pMousePt, Point *pAnchor, grVec3d *pCenter3d )
+void CGweDoc::MoveHandle(const Ortho * pOrtho, grVec3d *pWorldDistance, SELECT_HANDLE eSizeType, Point * pMousePt, Point *pAnchor, grVec3d *pCenter3d )
 {
 	grExtBox	WorldBounds{};
 	grVec3d		SnapPoint{};
@@ -2241,7 +2241,7 @@ void CJweDoc::MoveHandle(const Ortho * pOrtho, grVec3d *pWorldDistance, SELECT_H
 	}
 }// SizeSelected
 
-void CJweDoc::UpdateStats()
+void CGweDoc::UpdateStats()
 {
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	Model* pModel{};
@@ -2266,7 +2266,7 @@ void CJweDoc::UpdateStats()
 
 }
 
-void CJweDoc::OnToolsRebuildall() 
+void CGweDoc::OnToolsRebuildall() 
 {
 	int Result{};
 	grBSP_Options Options = 0;
@@ -2326,28 +2326,28 @@ void CJweDoc::OnToolsRebuildall()
 	}
 }// OnToolsRebuildall
 
-void CJweDoc::OnUpdateToolsRebuildall(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateToolsRebuildall(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( m_pLevel != nullptr ) ;
 }// OnUpdateToolsRebuildall
 
-void CJweDoc::OnModeAdjust() 
+void CGweDoc::OnModeAdjust() 
 {
 	SetMode( MODE_POINTER_BB ) ;
 }// OnModeAdjust
 
-void CJweDoc::OnUpdateModeAdjust(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateModeAdjust(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 	pCmdUI->SetCheck( MODE_POINTER_BB == m_Mode ) ;
 }// OnUpdateModeAdjust
 
-void CJweDoc::OnModeRotateshear() 
+void CGweDoc::OnModeRotateshear() 
 {
 	SetMode( MODE_POINTER_RS ) ;
 }// OnModeRotateshear
 
-void CJweDoc::OnUpdateModeRotateshear(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateModeRotateshear(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 	pCmdUI->SetCheck( MODE_POINTER_RS == m_Mode ) ;
@@ -2364,25 +2364,25 @@ void CJweDoc::OnUpdateModeVertex(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck( MODE_POINTER_VM == m_Mode ) ;
 }// OnUpdateModeVertex
 */
-void CJweDoc::OnModeFacemanipulation() 
+void CGweDoc::OnModeFacemanipulation() 
 {
 	SetMode( MODE_POINTER_FM ) ;	
 }// OnModeFacemanipulation
 
-void CJweDoc::OnUpdateModeFacemanipulation(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateModeFacemanipulation(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 	pCmdUI->SetCheck( MODE_POINTER_FM == m_Mode ) ;
 }// OnUpdateModeFacemanipulation
 
 
-void CJweDoc::OnAnim() 
+void CGweDoc::OnAnim() 
 {
 	m_Anim_State = m_Anim_State ? 0:1;
 	RenderAnimate( m_Anim_State );
 }// OnModeAdjust
 
-void CJweDoc::OnUpdateAnim(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateAnim(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 	pCmdUI->SetCheck(m_Anim_State) ;
@@ -2391,22 +2391,22 @@ void CJweDoc::OnUpdateAnim(CCmdUI* pCmdUI)
 
 
 // Added JH 7.3.2000
-void CJweDoc::OnFullscreen() 
+void CGweDoc::OnFullscreen() 
 {
 	// Switch to fullscreen
 	char cFullscreenRes[400];
 		// Get Screenmode setting
-	Settings_GetJet_Fullscreen (cFullscreenRes,399);
+	Settings_GetG3D_Fullscreen (cFullscreenRes,399);
 		// if Screenmode not set, then start Screenmodeselectiondialog
 
 	CView* pView{};
 
-	pView = GetJetView();
+	pView = GetG3DView();
 	assert( pView != nullptr );
 
-	( (CJetView*)pView )->SetFullscreenModeByString (cFullscreenRes);
+	( (CG3DView*)pView )->SetFullscreenModeByString (cFullscreenRes);
 
-	if ( ( (CJetView*)pView )->FullscreenView() == GR_FALSE )
+	if ( ( (CG3DView*)pView )->FullscreenView() == GR_FALSE )
 	{
 		grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode" );
 		return ;
@@ -2414,111 +2414,111 @@ void CJweDoc::OnFullscreen()
 
 }
 
-void CJweDoc::OnUpdateFullscreen(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateFullscreen(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
 
 
-void CJweDoc::OnUpdateAll() 
+void CGweDoc::OnUpdateAll() 
 {
 	UpdateAll();
 }
 
-void CJweDoc::OnUpdateUpdateAll(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateUpdateAll(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
 
-void CJweDoc::OnToolsUpdateSelection() 
+void CGweDoc::OnToolsUpdateSelection() 
 {
 	UpdateSelection();
 }
 
-void CJweDoc::OnUpdateToolsUpdateSelection(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateToolsUpdateSelection(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
 
 
 
-void CJweDoc::OnUpdateEditAlignLeft(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditAlignLeft(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
 
-void CJweDoc::OnEditAlignLeft() 
+void CGweDoc::OnEditAlignLeft() 
 {
 	AlignObjects (DOC_ALIGN_LEFT);
 }
 
 
 
-void CJweDoc::OnUpdateEditAlignRight(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditAlignRight(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
 
-void CJweDoc::OnEditAlignRight() 
+void CGweDoc::OnEditAlignRight() 
 {
 	AlignObjects (DOC_ALIGN_RIGHT);
 }
 
 
 
-void CJweDoc::OnUpdateEditAlignBottom(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditAlignBottom(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
 
-void CJweDoc::OnEditAlignBottom() 
+void CGweDoc::OnEditAlignBottom() 
 {
 	AlignObjects (DOC_ALIGN_BOTTOM);
 }
 
 
 
-void CJweDoc::OnUpdateEditAlignTop(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditAlignTop(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
 
-void CJweDoc::OnEditAlignTop() 
+void CGweDoc::OnEditAlignTop() 
 {
 	AlignObjects (DOC_ALIGN_TOP);
 }
 
 
 
-void CJweDoc::OnEditRotR() 
+void CGweDoc::OnEditRotR() 
 {  RotateObjects (-90);
 }
 
-void CJweDoc::OnEditRotL() 
+void CGweDoc::OnEditRotL() 
 {  RotateObjects ( 90);
 }
 
-void CJweDoc::OnUpdateEditRotL(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditRotL(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
-void CJweDoc::OnUpdateEditRotR(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditRotR(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
 
 
-void CJweDoc::OnEditToFront() 
+void CGweDoc::OnEditToFront() 
 {
 	ObjectsToFront();
 }
 
-void CJweDoc::OnUpdateEditToFront(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditToFront(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }
 
-void CJweDoc::ObjectsToFront()
+void CGweDoc::ObjectsToFront()
 {
 	CMainFrame		*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 
@@ -2607,7 +2607,7 @@ Free:
 }
 
 
-void CJweDoc::RotateObjects (grFloat Angle )
+void CGweDoc::RotateObjects (grFloat Angle )
 {
 	Ortho* pOrtho{};
 	CMDIFrameWnd	*	pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
@@ -2624,9 +2624,9 @@ void CJweDoc::RotateObjects (grFloat Angle )
 	if (pView == nullptr) return;
 
 
-	if(! pView->IsKindOf( RUNTIME_CLASS (CJweView))) return;
+	if(! pView->IsKindOf( RUNTIME_CLASS (CGweView))) return;
 
-	pOrtho=((CJweView*)pView)->GetOrtho();
+	pOrtho=((CGweView*)pView)->GetOrtho();
 	if (pOrtho == nullptr) return;	
 	
 	SelList = Level_GetSelList( m_pLevel );
@@ -2652,7 +2652,7 @@ void CJweDoc::RotateObjects (grFloat Angle )
 }
 
 
-void CJweDoc::AlignObjects (DOC_ALIGN_MODE Align_Mode )
+void CGweDoc::AlignObjects (DOC_ALIGN_MODE Align_Mode )
 {
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	ObjectList* SelList{};
@@ -2671,9 +2671,9 @@ void CJweDoc::AlignObjects (DOC_ALIGN_MODE Align_Mode )
 		//pMainFrm->GetActiveView();
 	if (pView == nullptr) return;
 
-	if(! pView->IsKindOf( RUNTIME_CLASS (CJweView))) return;
+	if(! pView->IsKindOf( RUNTIME_CLASS (CGweView))) return;
 
-	pOrtho=((CJweView*)pView)->GetOrtho();
+	pOrtho=((CGweView*)pView)->GetOrtho();
 	if (pOrtho == nullptr) return;
 
 	grFloat XSource,  YSource,  ZSource;
@@ -2765,7 +2765,7 @@ void CJweDoc::AlignObjects (DOC_ALIGN_MODE Align_Mode )
 // EOF JH
 
 
-MODE CJweDoc::SetMode( const MODE eMode )
+MODE CGweDoc::SetMode( const MODE eMode )
 {
 	MODE			OldMode{};
 
@@ -2803,18 +2803,18 @@ MODE CJweDoc::SetMode( const MODE eMode )
 	return OldMode ;
 }// SetMode
 
-grBoolean CJweDoc::IsVertexManipulationMode()
+grBoolean CGweDoc::IsVertexManipulationMode()
 {
 	return (MODE_POINTER_VM == m_Mode) ? GR_TRUE : GR_FALSE ;
 }//IsVertexManipulationMode
 
-void CJweDoc::EndMoveHandle()
+void CGweDoc::EndMoveHandle()
 {
 	Select_DragEnd( m_pLevel ) ;
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED, nullptr ) ;
 }
 
-void CJweDoc::EndRotateSub()
+void CGweDoc::EndRotateSub()
 {
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	ObjectList* SubSelList{};
@@ -2833,12 +2833,12 @@ void CJweDoc::EndRotateSub()
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED, nullptr ) ;
 }
 
-void CJweDoc::OnOptionsSnaptogrid() 
+void CGweDoc::OnOptionsSnaptogrid() 
 {
 	Level_SetSnapGrid( m_pLevel, !Level_IsSnapGrid( m_pLevel ) ) ;
 }// OnOptionsSnaptogrid
 
-void CJweDoc::OnUpdateOptionsSnaptogrid(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateOptionsSnaptogrid(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 	pCmdUI->SetCheck( Level_IsSnapGrid( m_pLevel ) ) ;
@@ -2873,7 +2873,7 @@ void CJweDoc::OnUpdateOptionsGrid(CCmdUI* pCmdUI)
 }// OnUpdateOptionsGrid
 */
 
-void CJweDoc::UpdateAllViews(CView* pSender, LPARAM lHint, CObject* pHint)
+void CGweDoc::UpdateAllViews(CView* pSender, LPARAM lHint, CObject* pHint)
 {
 	POSITION	pos{};
 	CView* pView{};
@@ -2891,8 +2891,8 @@ void CJweDoc::UpdateAllViews(CView* pSender, LPARAM lHint, CObject* pHint)
 			{
 				pView = GetNextView(pos);
 				ASSERT_VALID(pView);
-				if( pView != pSender && pView->IsKindOf( RUNTIME_CLASS (CJweView)) )
-					((CJweView*)pView)->OnUpdate(pSender, lHint, pHint);
+				if( pView != pSender && pView->IsKindOf( RUNTIME_CLASS (CGweView)) )
+					((CGweView*)pView)->OnUpdate(pSender, lHint, pHint);
 			}				
 			break ;
 
@@ -2901,8 +2901,8 @@ void CJweDoc::UpdateAllViews(CView* pSender, LPARAM lHint, CObject* pHint)
 			{
 				pView = GetNextView(pos);
 				ASSERT_VALID(pView);
-				if( pView != pSender && pView->IsKindOf( RUNTIME_CLASS (CJetView)))
-					((CJetView*)pView)->OnUpdate(pSender, lHint, pHint);
+				if( pView != pSender && pView->IsKindOf( RUNTIME_CLASS (CG3DView)))
+					((CG3DView*)pView)->OnUpdate(pSender, lHint, pHint);
 			}
 			// Update/Rebuild the selected objects so the changes
 			// appear in the 3D window
@@ -2920,7 +2920,7 @@ void CJweDoc::UpdateAllViews(CView* pSender, LPARAM lHint, CObject* pHint)
 				pView = GetNextView(pos);
 				ASSERT_VALID(pView);
 				if( pView != pSender )
-					((CJetView*)pView)->OnUpdate(pSender, lHint, pHint);
+					((CG3DView*)pView)->OnUpdate(pSender, lHint, pHint);
 			}
 			break ;
 
@@ -2934,7 +2934,7 @@ void CJweDoc::UpdateAllViews(CView* pSender, LPARAM lHint, CObject* pHint)
 }// UpdateAllViews
 
 
-BOOL CJweDoc::OnSaveDocument(LPCTSTR lpszPathName) 
+BOOL CGweDoc::OnSaveDocument(LPCTSTR lpszPathName) 
 {
 	grVFile *	pFS = nullptr ;
 	grVFile	*	pF = nullptr ;	// File Fork (Editor or Jet3D)
@@ -3115,11 +3115,11 @@ BOOL CJweDoc::OnSaveDocument(LPCTSTR lpszPathName)
 			goto SAVE_DOC_ERR;
 		}
 
-		CJetView * pJetView;
-		pJetView = (CJetView *)GetJetView();
-		Render(pJetView);
+		CG3DView * pG3DView;
+		pG3DView = (CG3DView *)GetG3DView();
+		Render(pG3DView);
 
-		if (WriteWindowToDIB (pF, pPtrMgr, pJetView)==GR_FALSE)
+		if (WriteWindowToDIB (pF, pPtrMgr, pG3DView)==GR_FALSE)
 		{
 			AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Writing
 			grErrorLog_AddString( GR_ERR_FILEIO_CLOSE, "OnSaveDocument:grWorld_WriteToFile LevelThumbnail", "Jet3D");
@@ -3224,9 +3224,9 @@ SAVE_DOC_ERR:
 }// OnSaveDocument
 
 
-BOOL CJweDoc::OnOpenDocument(LPCTSTR lpszPathName) 
+BOOL CGweDoc::OnOpenDocument(LPCTSTR lpszPathName) 
 {
-	CJweApp			*	App = (CJweApp*)AfxGetApp();
+	CGweApp			*	App = (CGweApp*)AfxGetApp();
 	grVFile			*	pFS = nullptr ;
 	grVFile			*	pF = nullptr ;	// File Fork (Editor or Jet3D)
 	CString				Message ;
@@ -3239,8 +3239,8 @@ BOOL CJweDoc::OnOpenDocument(LPCTSTR lpszPathName)
 	grBSP_Options Options = 0;
 	grBSP_Logic Logic{};
 	grBSP_LogicBalance LogicBalance{};
-	CJetView* pJetView{};
-	pJetView = (CJetView*)GetJetView();
+	CG3DView* pG3DView{};
+	pG3DView = (CG3DView*)GetG3DView();
 
 
 	int32 Signature{};
@@ -3335,7 +3335,7 @@ BOOL CJweDoc::OnOpenDocument(LPCTSTR lpszPathName)
 		return false ;
 	}
 	
-	pResourceMgr = Level_CreateResourceMgr(pJetView->GetEngine());
+	pResourceMgr = Level_CreateResourceMgr(pG3DView->GetEngine());
 	if( pResourceMgr == nullptr )
 		return( FALSE );
 	pNewWorld = grWorld_CreateFromFile( pF, pPtrMgr, pResourceMgr );
@@ -3416,7 +3416,7 @@ BOOL CJweDoc::OnOpenDocument(LPCTSTR lpszPathName)
 }// OnOpenDocument
 
 
-void CJweDoc::OnEditUndo() 
+void CGweDoc::OnEditUndo() 
 {
 	Undo* pUndo{};
 	int Type{};
@@ -3445,7 +3445,7 @@ void CJweDoc::OnEditUndo()
 }
 
 #define UNDOREDOLENGTH	(10)	// Enough room for 'undo' mbcs
-void CJweDoc::OnUpdateEditUndo(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditUndo(CCmdUI* pCmdUI) 
 {
 	int32		nID{};
 	grBoolean	bEnable{};
@@ -3479,7 +3479,7 @@ void CJweDoc::OnUpdateEditRedo(CCmdUI* pCmdUI)
 }//OnUpdateEditUndo
 */
 
-void CJweDoc::DeleteSelection()
+void CGweDoc::DeleteSelection()
 {
 	grExtBox	WorldBounds{};
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
@@ -3490,22 +3490,22 @@ void CJweDoc::DeleteSelection()
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)&WorldBounds ) ;
 
 }
-void CJweDoc::OnEditClear() 
+void CGweDoc::OnEditClear() 
 {
 	DeleteSelection();
 }// OnEditClear (Delete)
 
-void CJweDoc::OnUpdateEditClear(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateEditClear(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( Level_HasSelections( m_pLevel ) ) ;
 }// OnUpdateEditClear (Delete)
 
-void CJweDoc::BeginSize()
+void CGweDoc::BeginSize()
 {
 
 }// BeginSize
 
-void CJweDoc::BeginRotate()
+void CGweDoc::BeginRotate()
 {
 	CMainFrame *pMainFrm = nullptr;
 	pMainFrm = (CMainFrame*)AfxGetMainWnd();
@@ -3514,13 +3514,13 @@ void CJweDoc::BeginRotate()
 
 }// BeginRotate
 
-void CJweDoc::BeginShear()
+void CGweDoc::BeginShear()
 {
 
 }// BeginShear
 
 
-void CJweDoc::ApplyMaterial( void )
+void CGweDoc::ApplyMaterial( void )
 {
 	Level_SetChanged( m_pLevel, GR_TRUE );
 	Select_ApplyCurMaterial( m_pLevel ) ;
@@ -3528,7 +3528,7 @@ void CJweDoc::ApplyMaterial( void )
 }// ApplyMaterial
 
 
-Model * CJweDoc::CreateModel(const char *pszName)
+Model * CGweDoc::CreateModel(const char *pszName)
 {
 	Model* pModel{};
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
@@ -3541,60 +3541,60 @@ Model * CJweDoc::CreateModel(const char *pszName)
 	return( pModel );
 }// CreateModel
 
-Class *	CJweDoc::CreateClass( const char * pszName, int Kind )
+Class *	CGweDoc::CreateClass( const char * pszName, int Kind )
 {
 	return( Level_AddClass( m_pLevel, pszName, Kind ) );
 }
 
-void CJweDoc::ModelLock( Model * pModel, grBoolean bLock )
+void CGweDoc::ModelLock( Model * pModel, grBoolean bLock )
 {
 	Level_ModelLock( m_pLevel, pModel, bLock );
 }
 
-const char * CJweDoc::GetSelectionName(int32 * pnNumber)
+const char * CGweDoc::GetSelectionName(int32 * pnNumber)
 {
 	return Select_GetName( m_pLevel, pnNumber ) ;
 }// GetSelectionName
 
-void CJweDoc::SetSelectionName(const char * pName)
+void CGweDoc::SetSelectionName(const char * pName)
 {
 	ASSERT( pName != nullptr ) ;
 	Select_SetName( m_pLevel, pName ) ;
 }// SetSelectionName
 
-ModelList * CJweDoc::GetModelList( void )
+ModelList * CGweDoc::GetModelList( void )
 {
 	return Level_GetModelList( m_pLevel ) ;
 }// GetModelList
 
-LightList * CJweDoc::GetLightList( void )
+LightList * CGweDoc::GetLightList( void )
 {
 	return Level_GetLightList( m_pLevel ) ;
 }// GetLightList
 
-CameraList * CJweDoc::GetCameraList( void )
+CameraList * CGweDoc::GetCameraList( void )
 {
 	return Level_GetCameraList( m_pLevel ) ;
 }// GetLightList
 
 
-GroupList * CJweDoc::GetGroupList( void )
+GroupList * CGweDoc::GetGroupList( void )
 {
 	return Level_GetGroupList( m_pLevel ) ;
 }// GetGroupList
 
-ObjectList * CJweDoc::GetSelectList( void )
+ObjectList * CGweDoc::GetSelectList( void )
 {
 	return Level_GetSelList( m_pLevel ) ;
 }// GetSelectList
 
-grBoolean CJweDoc::EnumSelected(void *lParam, ObjectListCB Callback)
+grBoolean CGweDoc::EnumSelected(void *lParam, ObjectListCB Callback)
 {
 	// This functions is used by Lists.cpp, which has it's own callback
 	return Level_EnumSelected( m_pLevel, lParam, Callback ) ;
 }// EnumSelected
 
-grBoolean CJweDoc::EnumObjects(void *lParam, ObjectListCB Callback)
+grBoolean CGweDoc::EnumObjects(void *lParam, ObjectListCB Callback)
 {
 	// This functions is used by Lists.cpp, which has it's own callback
 	return Level_EnumObjects( m_pLevel, lParam, Callback ) ;
@@ -3603,7 +3603,7 @@ grBoolean CJweDoc::EnumObjects(void *lParam, ObjectListCB Callback)
 
 
 
-void CJweDoc::CenterViewsOnSelection(  )
+void CGweDoc::CenterViewsOnSelection(  )
 {
 	POSITION	pos{};
 	CView* pView{};
@@ -3621,53 +3621,53 @@ void CJweDoc::CenterViewsOnSelection(  )
 	{
 		pView = GetNextView(pos);
 		ASSERT_VALID(pView);
-		if( pView->IsKindOf( RUNTIME_CLASS (CJweView)) )
-			((CJweView*)pView)->SetCameraPos( &Center );
-		if( pView->IsKindOf( RUNTIME_CLASS (CJetView)) )
-			((CJetView*)pView)->SetCameraPos( &Center );
+		if( pView->IsKindOf( RUNTIME_CLASS (CGweView)) )
+			((CGweView*)pView)->SetCameraPos( &Center );
+		if( pView->IsKindOf( RUNTIME_CLASS (CG3DView)) )
+			((CG3DView*)pView)->SetCameraPos( &Center );
 	}
 }
 
-Group * CJweDoc::AddGroup( const char * pszName )
+Group * CGweDoc::AddGroup( const char * pszName )
 {
 	return( Level_AddGroup( m_pLevel, pszName ) );
 }
 
 
-Group *	CJweDoc::GetCurrentGroup( void )
+Group *	CGweDoc::GetCurrentGroup( void )
 {
 	return( Level_GetCurrentGroup( m_pLevel ) );
 }
 
-void	CJweDoc::SetCurrentGroup( Group * pGroup )
+void	CGweDoc::SetCurrentGroup( Group * pGroup )
 {
 	Level_SetCurrentGroup( m_pLevel, pGroup );
 }
 
-Model *	CJweDoc::GetCurrentModel( void )
+Model *	CGweDoc::GetCurrentModel( void )
 {
 	ASSERT( m_pLevel );
 
 	return(Level_GetCurModel( m_pLevel ) );
 }
-void CJweDoc::SetCurrentModel( Model * pModel )
+void CGweDoc::SetCurrentModel( Model * pModel )
 {
 	Level_SetCurrentModel( m_pLevel, pModel );
 }
 
-void CJweDoc::OnToolsBuildlights() 
+void CGweDoc::OnToolsBuildlights() 
 {
 	Level_RebuildLights( m_pLevel );
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED ) ;
 }
 
-void CJweDoc::RebuildLights(  )
+void CGweDoc::RebuildLights(  )
 {
 	Level_RebuildLights( m_pLevel );
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED ) ;
 }
 
-void CJweDoc::SetProperty( int DataId, int DataType, grProperty_Data * pData )
+void CGweDoc::SetProperty( int DataId, int DataType, grProperty_Data * pData )
 {
 	grVec3d 		WorldDistance{};
 	grVec3d 		Center{};
@@ -3748,7 +3748,7 @@ void CJweDoc::SetProperty( int DataId, int DataType, grProperty_Data * pData )
 	pMainFrm->PostUpdateProperties();
 }
 
-void CJweDoc::UpdateProperties()
+void CGweDoc::UpdateProperties()
 {
 	grProperty_List* pArray{};
 	CMainFrame* pMainFrm{};
@@ -3762,7 +3762,7 @@ void CJweDoc::UpdateProperties()
 	}
 }
 
-void CJweDoc::OnToolsPlacecylinder() 
+void CGweDoc::OnToolsPlacecylinder() 
 {
 	if( m_Mode == MODE_POINTER_CYLINDER )
 	{
@@ -3775,13 +3775,13 @@ void CJweDoc::OnToolsPlacecylinder()
 	
 }
 
-void CJweDoc::OnUpdateToolsPlacecylinder(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateToolsPlacecylinder(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( TRUE ) ;
 	
 }
 
-void CJweDoc::OnToolsPlacespheroid() 
+void CGweDoc::OnToolsPlacespheroid() 
 {
 	if( m_Mode == MODE_POINTER_SPHERE )
 	{
@@ -3794,12 +3794,12 @@ void CJweDoc::OnToolsPlacespheroid()
 	
 }
 
-void CJweDoc::OnUpdateToolsPlacespheroid(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateToolsPlacespheroid(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( TRUE ) ;
 }
 
-void CJweDoc::OnToolsPlacelight() 
+void CGweDoc::OnToolsPlacelight() 
 {
 	if( m_Mode == MODE_POINTER_LIGHT )
 	{
@@ -3812,49 +3812,49 @@ void CJweDoc::OnToolsPlacelight()
 	
 }
 
-void CJweDoc::OnUpdateToolsPlacelight(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateToolsPlacelight(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( TRUE ) ;
 	
 }
 
-int CJweDoc::GetBrushUpdate( )
+int CGweDoc::GetBrushUpdate( )
 {
 	return( Level_GetBrushUpdate( m_pLevel ) );
 }
 
-int CJweDoc::GetLightUpdate(  )
+int CGweDoc::GetLightUpdate(  )
 {
 	return( Level_GetLightUpdate( m_pLevel ) );
 }
 
-grBoolean CJweDoc::GetBrushLighting(  )
+grBoolean CGweDoc::GetBrushLighting(  )
 {
 	return( Level_GetBrushLighting( m_pLevel ) );
 }
 
-void CJweDoc::SetBrushUpdate( int Update )
+void CGweDoc::SetBrushUpdate( int Update )
 {
 	Level_SetBrushUpdate( m_pLevel, Update );
 }
 
-void CJweDoc::SetLightUpdate( int Update )
+void CGweDoc::SetLightUpdate( int Update )
 {
 	Level_SetLightUpdate( m_pLevel, Update );
 }
 
-void CJweDoc::SetBrushLighting( int BrushLighting )
+void CGweDoc::SetBrushLighting( int BrushLighting )
 {
 	Level_SetBrushLighting( m_pLevel, BrushLighting );
 }
 
-void CJweDoc::UpdateAll()
+void CGweDoc::UpdateAll()
 {
 	Level_UpdateAll( m_pLevel );
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED, nullptr );
 }
 
-void CJweDoc::UpdateSelection()
+void CGweDoc::UpdateSelection()
 {
 	Level_UpdateSelected( m_pLevel );
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED, nullptr );
@@ -3862,55 +3862,55 @@ void CJweDoc::UpdateSelection()
 }
 
 
-void CJweDoc::RotCurCamX( float Radians )
+void CGweDoc::RotCurCamX( float Radians )
 {
 	Level_SetChanged( m_pLevel, GR_TRUE );
 	Level_RotCurCamX( m_pLevel, Radians );
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)nullptr );
 }
 
-void CJweDoc::RotCurCamY( float Radians )
+void CGweDoc::RotCurCamY( float Radians )
 {
 	Level_SetChanged( m_pLevel, GR_TRUE );
 	Level_RotCurCamY( m_pLevel, Radians );
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)nullptr );
 }
 
-void CJweDoc::TranslateCurCam( grVec3d * Offset )
+void CGweDoc::TranslateCurCam( grVec3d * Offset )
 {
 	Level_SetChanged( m_pLevel, GR_TRUE );
 	Level_TranslateCurCam( m_pLevel, Offset );
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)nullptr  );
 }
 
-grObject *	CJweDoc::GetCurCamObject( )
+grObject *	CGweDoc::GetCurCamObject( )
 {
 	return( Level_GetCurCamObject( m_pLevel ) );
 }
 
-void CJweDoc::GetCurCamXYRot( float *XRot, float *YRot )
+void CGweDoc::GetCurCamXYRot( float *XRot, float *YRot )
 {
 	Level_GetCurCamXYRot( m_pLevel, XRot, YRot );
 }
 
-void CJweDoc::SetCurCamXYRot( float XRot, float YRot )
+void CGweDoc::SetCurCamXYRot( float XRot, float YRot )
 {
 	Level_SetCurCamXYRot( m_pLevel, XRot, YRot );
 }
 
-grBoolean CJweDoc::HasChanged()
+grBoolean CGweDoc::HasChanged()
 {
 	if( m_pLevel == nullptr )
 		return( GR_FALSE );
 	return( Level_HasChanged( m_pLevel ) );
 }
 
-void CJweDoc::Save()
+void CGweDoc::Save()
 {
 	DoFileSave();
 }
 
-void CJweDoc::AbortMode()
+void CGweDoc::AbortMode()
 {
 	POSITION	pos{};
 	CView* pView{};
@@ -3920,15 +3920,15 @@ void CJweDoc::AbortMode()
 	{
 		pView = GetNextView(pos);
 		ASSERT_VALID(pView);
-		if( pView->IsKindOf( RUNTIME_CLASS (CJweView)) )
-			((CJweView*)pView)->AbortMode();
+		if( pView->IsKindOf( RUNTIME_CLASS (CGweView)) )
+			((CGweView*)pView)->AbortMode();
 	}
 	SetNewBrushBoundInvalid();
 	if( isPlaceBrushMode() || isPlaceLightMode() )
 		SetMode( m_PrevMode ) ;
 }
 
-void CJweDoc::OnToolsPlacecamera() 
+void CGweDoc::OnToolsPlacecamera() 
 {
 	if( m_Mode == MODE_POINTER_CAMERA )
 	{
@@ -3940,7 +3940,7 @@ void CJweDoc::OnToolsPlacecamera()
 	}
 }
 
-void CJweDoc::OnToolsPlaceuserobj() 
+void CGweDoc::OnToolsPlaceuserobj() 
 {
 	if( m_Mode == MODE_POINTER_USEROBJ )
 	{
@@ -3953,19 +3953,19 @@ void CJweDoc::OnToolsPlaceuserobj()
 	
 }
 
-grBoolean CJweDoc::SetRenderMode( int Mode )
+grBoolean CGweDoc::SetRenderMode( int Mode )
 {
    m_RenderMode = Mode;
 	return( Level_SetRenderMode( m_pLevel, Mode ) );
 }
 
-int CJweDoc::GetRenderMode()
+int CGweDoc::GetRenderMode()
 {
    return m_RenderMode;
 }
 
 
-void CJweDoc::UpdateTimeDelta(  float TimeDelta )
+void CGweDoc::UpdateTimeDelta(  float TimeDelta )
 {
 	CMainFrame* pMainFrm{};
 
@@ -3976,13 +3976,13 @@ void CJweDoc::UpdateTimeDelta(  float TimeDelta )
 }
 
 
-void CJweDoc::RenderAnimate( grBoolean bAnimate )
+void CGweDoc::RenderAnimate( grBoolean bAnimate )
 {
-	CJetView* pJetView{};
-	pJetView = (CJetView *)GetJetView();
-	if (pJetView==nullptr)
+	CG3DView* pG3DView{};
+	pG3DView = (CG3DView *)GetG3DView();
+	if (pG3DView==nullptr)
 		return;
-	pJetView->Animate( bAnimate );
+	pG3DView->Animate( bAnimate );
 	if( !bAnimate )
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)nullptr  );
 }
@@ -3992,7 +3992,7 @@ void CJweDoc::RenderAnimate( grBoolean bAnimate )
 //	CJweDoc::GetJetView()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-CView * CJweDoc::GetJetView()
+CView * CGweDoc::GetG3DView()
 {
 	// locals
 	POSITION	Pos{};
@@ -4011,7 +4011,7 @@ CView * CJweDoc::GetJetView()
 		{
 			pView = GetNextView( Pos );
 			ASSERT_VALID( pView );
-			if ( pView->IsKindOf( RUNTIME_CLASS( CJetView ) ) )
+			if ( pView->IsKindOf( RUNTIME_CLASS( CG3DView ) ) )
 			{
 				return pView;
 			}
@@ -4026,12 +4026,12 @@ CView * CJweDoc::GetJetView()
 
 } // CJweDoc::GetJetView()
 
-grEngine* CJweDoc::GetJetEngine()
+grEngine* CGweDoc::GetG3DEngine()
 {
-	CJetView * pJetView;
-	pJetView = (CJetView *) GetJetView();
+	CG3DView * pG3DView;
+	pG3DView = (CG3DView *) GetG3DView();
 
-	if (pJetView) return pJetView->GetEngine();
+	if (pG3DView) return pG3DView->GetEngine();
 	return nullptr;
 }
 
@@ -4041,7 +4041,7 @@ grEngine* CJweDoc::GetJetEngine()
 //	CJweDoc::OnFullscreenView()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void CJweDoc::OnFullscreenView() 
+void CGweDoc::OnFullscreenView() 
 {
 
 
@@ -4049,9 +4049,9 @@ void CJweDoc::OnFullscreenView()
 	CView* pView{};
 
 	// switch modes
-	pView = GetJetView();
+	pView = GetG3DView();
 	assert( pView != nullptr );
-	if ( ( (CJetView*)pView )->FullscreenView() == GR_FALSE )
+	if ( ( (CG3DView*)pView )->FullscreenView() == GR_FALSE )
 	{
 		grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode" );
 //		return GR_FALSE;
@@ -4070,16 +4070,16 @@ void CJweDoc::OnFullscreenView()
 //	CJweDoc::OnVideosettingsWindowmode()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void CJweDoc::OnVideosettingsWindowmode() 
+void CGweDoc::OnVideosettingsWindowmode() 
 {
 
 	// locals
 	CView* pView{};
 
 	// choose window video settings
-	pView = GetJetView();
+	pView = GetG3DView();
 	assert( pView != nullptr );
-	if ( ( (CJetView *)pView )->ChooseWindowVideoSettings() == GR_FALSE )
+	if ( ( (CG3DView *)pView )->ChooseWindowVideoSettings() == GR_FALSE )
 	{
 		grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnVideosettingsWindowmode", "TRACE" );
 //		return GR_FALSE;
@@ -4097,7 +4097,7 @@ void CJweDoc::OnVideosettingsWindowmode()
 //	CJweDoc::OnVideosettingsFullscreenmode()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void CJweDoc::OnVideosettingsFullscreenmode() 
+void CGweDoc::OnVideosettingsFullscreenmode() 
 {
 	OnFullscreen();
 	
@@ -4128,7 +4128,7 @@ void CJweDoc::OnVideosettingsFullscreenmode()
 //	CJweDoc::UpdateWindow()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-BOOL CJweDoc::UpdateWindow(
+BOOL CGweDoc::UpdateWindow(
 	int	x,	// new horz position
 	int	y )	// new vert position
 {
@@ -4143,12 +4143,12 @@ BOOL CJweDoc::UpdateWindow(
 		CView* pView{};
 
 		// get Jet view
-		pView = GetJetView();
+		pView = GetG3DView();
 		
 		// update it
 		if ( pView != nullptr )
 		{
-			Result &= ( (CJetView *)pView )->UpdateWindow();
+			Result &= ( (CG3DView *)pView )->UpdateWindow();
 		}
 	}
 
@@ -4166,7 +4166,7 @@ BOOL CJweDoc::UpdateWindow(
 // Added DJT
 //---------------------------------------------------
 
-void CJweDoc::SelectAll(grBoolean UpdatePanel, int32 Mask)
+void CGweDoc::SelectAll(grBoolean UpdatePanel, int32 Mask)
 {
 	grExtBox	ChangedBounds{};
 	grBoolean	bSelChanged = GR_FALSE ;
@@ -4188,30 +4188,30 @@ void CJweDoc::SelectAll(grBoolean UpdatePanel, int32 Mask)
 }
 
 
-void CJweDoc::OnUpdateEditSelectAll(CCmdUI* pCmdUI)
+void CGweDoc::OnUpdateEditSelectAll(CCmdUI* pCmdUI)
 {
 	// There must be something selectable 
 	pCmdUI->Enable(true) ;
 }
 
 
-void CJweDoc::OnEditSelectAll()
+void CGweDoc::OnEditSelectAll()
 {
 	this->SelectAll(GR_TRUE);
 }
 
 
-void CJweDoc::OnUpdateEditSelectNone(CCmdUI* pCmdUI)
+void CGweDoc::OnUpdateEditSelectNone(CCmdUI* pCmdUI)
 {
 	pCmdUI->Enable(Level_HasSelections(m_pLevel));
 }
 
-void CJweDoc::OnEditSelectNone()
+void CGweDoc::OnEditSelectNone()
 {
 	DeselectAll(GR_TRUE);
 }
 
-void CJweDoc::OnUpdateEditSelectInvert(CCmdUI* pCmdUI)
+void CGweDoc::OnUpdateEditSelectInvert(CCmdUI* pCmdUI)
 {
 	// No yet available
 	pCmdUI->Enable(false);
@@ -4220,12 +4220,12 @@ void CJweDoc::OnUpdateEditSelectInvert(CCmdUI* pCmdUI)
 	// select invert code is ready.
 //	pCmdUI->Enable(Level_HasSelections(m_pLevel));
 }
-void CJweDoc::OnEditSelectInvert()
+void CGweDoc::OnEditSelectInvert()
 {
 }
 
 
-void CJweDoc::OnUpdateEditSelectType(CCmdUI* pCmdUI)
+void CGweDoc::OnUpdateEditSelectType(CCmdUI* pCmdUI)
 {
 	grBoolean bEnabled;
 
@@ -4264,37 +4264,37 @@ void CJweDoc::OnUpdateEditSelectType(CCmdUI* pCmdUI)
 		pCmdUI->Enable(false);
 }
 
-void CJweDoc::OnEditSelectCameras()
+void CGweDoc::OnEditSelectCameras()
 {
 	this->SelectAll(GR_TRUE, KIND_CAMERA);
 }
 
-void CJweDoc::OnEditSelectBrushes()
+void CGweDoc::OnEditSelectBrushes()
 {
 	this->SelectAll(GR_TRUE, KIND_BRUSH);
 }
 
-void CJweDoc::OnEditSelectEntities()
+void CGweDoc::OnEditSelectEntities()
 {
 	this->SelectAll(GR_TRUE, KIND_ENTITY);
 }
 
-void CJweDoc::OnEditSelectLights()
+void CGweDoc::OnEditSelectLights()
 {
 	this->SelectAll(GR_TRUE, KIND_LIGHT);
 }
 
-void CJweDoc::OnEditSelectModels()
+void CGweDoc::OnEditSelectModels()
 {
 	this->SelectAll(GR_TRUE, KIND_MODEL);
 }
 
-void CJweDoc::OnEditSelectTerrain()
+void CGweDoc::OnEditSelectTerrain()
 {
 	this->SelectAll(GR_TRUE, KIND_TERRAIN);
 }
 
-void CJweDoc::OnEditSelectUser()
+void CGweDoc::OnEditSelectUser()
 {
 	this->SelectAll(GR_TRUE, KIND_USEROBJ);
 }
@@ -4304,12 +4304,12 @@ void CJweDoc::OnEditSelectUser()
 
 
 // CJP : Neccesary to update, enable vertex mode selection in menu.
-void CJweDoc::OnModeVertex() 
+void CGweDoc::OnModeVertex() 
 {
 	SetMode( MODE_POINTER_VM ) ;
 }// OnModeVertex
 
-void CJweDoc::OnUpdateModeVertex(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateModeVertex(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 	pCmdUI->SetCheck( MODE_POINTER_VM == m_Mode ) ;
@@ -4319,7 +4319,7 @@ void CJweDoc::OnUpdateModeVertex(CCmdUI* pCmdUI)
 // Added JH 07.02.2000
 //---------------------------------------------------
 
-void CJweDoc::OnPreferences()
+void CGweDoc::OnPreferences()
 {
 	//CPreferences	PrefsDialog;  // replace with class member variable
 	char			sTempString[200];
@@ -4339,15 +4339,15 @@ void CJweDoc::OnPreferences()
 			pMainFrm->SetAccelerator();
 
 			// Get Screenmode setting
-			Settings_GetJet_Window(cWindowRes, 399);
+			Settings_GetG3D_Window(cWindowRes, 399);
 
-			pView = GetJetView();
+			pView = GetG3DView();
 			if (pView)
 			{
 
-				((CJetView*)pView)->SetWindowModeByString(cWindowRes);
+				((CG3DView*)pView)->SetWindowModeByString(cWindowRes);
 
-				if (((CJetView*)pView)->ChooseWindowVideoSettings() == GR_FALSE)
+				if (((CG3DView*)pView)->ChooseWindowVideoSettings() == GR_FALSE)
 				{
 					grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode");
 					return;
@@ -4357,7 +4357,7 @@ void CJweDoc::OnPreferences()
 	}
 }
 
-void CJweDoc::OnUpdatePreferences(CCmdUI* pCmdUI)
+void CGweDoc::OnUpdatePreferences(CCmdUI* pCmdUI)
 {
 	// There must be something selectable 
 	pCmdUI->Enable(true) ;
@@ -4368,14 +4368,14 @@ void CJweDoc::OnUpdatePreferences(CCmdUI* pCmdUI)
 //---------------------------------------------------
 
 // Just one or two weeks till import, export works...:)
-void CJweDoc::OnImportBrush() 
+void CGweDoc::OnImportBrush() 
 {
 // Import Brush
 
 /*	Import_Objects (m_pLevel,"c:\\export.txt");*/
 }
 
-void CJweDoc::OnUpdateImportBrush(CCmdUI* pCmdUI)
+void CGweDoc::OnUpdateImportBrush(CCmdUI* pCmdUI)
 {
 	// There must be something selectable 
 	pCmdUI->Enable(false) ;
@@ -4383,7 +4383,7 @@ void CJweDoc::OnUpdateImportBrush(CCmdUI* pCmdUI)
 
 
 
-void CJweDoc::OnExportBrush() 
+void CGweDoc::OnExportBrush() 
 {	
 	CExtFileDialog *FileDlg= new CExtFileDialog( FALSE,
 										  "Export Objects as ASCII...",
@@ -4402,7 +4402,7 @@ void CJweDoc::OnExportBrush()
 		delete FileDlg;
 }
 
-void CJweDoc::OnUpdateExportBrush(CCmdUI* pCmdUI)
+void CGweDoc::OnUpdateExportBrush(CCmdUI* pCmdUI)
 {
 	// There must be something selectable 
 	pCmdUI->Enable(true) ;
@@ -4412,13 +4412,13 @@ void CJweDoc::OnUpdateExportBrush(CCmdUI* pCmdUI)
 //---------------------------------------------------
 // Added JH 14.03.2000 
 //---------------------------------------------------
-void CJweDoc::OnFileProps() 
+void CGweDoc::OnFileProps() 
 {	
 
 	m_pPropsDialog->DoModal();
 }
 
-void CJweDoc::OnUpdateFileProps(CCmdUI* pCmdUI)
+void CGweDoc::OnUpdateFileProps(CCmdUI* pCmdUI)
 {
 	pCmdUI->Enable(true) ;
 }
@@ -4427,13 +4427,13 @@ void CJweDoc::OnUpdateFileProps(CCmdUI* pCmdUI)
 // End JH 
 //---------------------------------------------------
 
-void CJweDoc::OnExportPrefab() 
+void CGweDoc::OnExportPrefab() 
 {
 	CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
 	pMainFrm->m_GroupDialog.ExportPrefab();
 }
 
-void CJweDoc::OnUpdateExportPrefab(CCmdUI* pCmdUI) 
+void CGweDoc::OnUpdateExportPrefab(CCmdUI* pCmdUI) 
 {
 	BOOL enable = FALSE;
 	Group* pGroup = GetCurrentGroup();
@@ -4443,7 +4443,7 @@ void CJweDoc::OnUpdateExportPrefab(CCmdUI* pCmdUI)
 	pCmdUI->Enable(enable);
 }
 
-void CJweDoc::OnImportPrefab() 
+void CGweDoc::OnImportPrefab() 
 {
 	CMainFrame* pMainFrm = (CMainFrame*)AfxGetMainWnd();
 	pMainFrm->m_GroupDialog.ImportPrefab();
@@ -4471,7 +4471,7 @@ struct EnumLevelData
 	CDWordArray                 IndexArray;
 
 	grWorld					    *pWorld;
-	CJweDoc						*pDoc;
+	CGweDoc						*pDoc;
 };
 
 grBoolean EnumLevelCB(Brush* curBrush, void* param)
@@ -4607,7 +4607,7 @@ grBoolean EnumLevelCB(Brush* curBrush, void* param)
 		((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24 ))
 #endif
 
-void CJweDoc::OnFileExportExportforbtprojectworkspacebtw() 
+void CGweDoc::OnFileExportExportforbtprojectworkspacebtw() 
 {
 	// Prompt a CFileDialog with default dir : /prefab, def ext *.j3p
 	static char* szFilter = "btProject from Jet (*.btj)|*.btj||";
@@ -4665,7 +4665,7 @@ void CJweDoc::OnFileExportExportforbtprojectworkspacebtw()
 	}
 }
 
-void CJweDoc::OnToolsPlacearch()
+void CGweDoc::OnToolsPlacearch()
 {
 	// TODO: Add your command handler code here
 	if( m_Mode == MODE_POINTER_ARCH )
@@ -4678,10 +4678,10 @@ void CJweDoc::OnToolsPlacearch()
 	}
 }
 
-void CJweDoc::OnFileClose()
+void CGweDoc::OnFileClose()
 {
     CMainFrame *	pMainFrame = (CMainFrame*)AfxGetMainWnd() ;
     pMainFrame->SetCurrentDocument(nullptr);
     // TODO: Add your command handler code here
-    CJ3DDoc::OnFileClose();
+    CG3DMfcDoc::OnFileClose();
 }

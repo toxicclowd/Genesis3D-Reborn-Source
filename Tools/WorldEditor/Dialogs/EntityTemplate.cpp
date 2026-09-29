@@ -25,7 +25,7 @@
 #include "AddModel.h"
 #include "EclipseNames.h"
 #include "EntityTable.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 
@@ -175,7 +175,7 @@ BOOL CEntityTemplate::OnInitDialog()
 void CEntityTemplate::OnToolsPlacecube() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_BOX ) ;
@@ -186,7 +186,7 @@ void CEntityTemplate::OnToolsPlacecube()
 void CEntityTemplate::OnToolsPlacelight() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_LIGHT, 0 ) ;
@@ -197,7 +197,7 @@ void CEntityTemplate::OnToolsPlacelight()
 void CEntityTemplate::OnToolsPlaceterrain() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_TERRAIN, 0 ) ;
@@ -624,8 +624,8 @@ void CEntityTemplate::OnBnRemovefield()
 		ASSERT( pEntity != NULL ) ;
 		
 		// The level must remove this field from all instances...
-		CJweDoc*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
-		ASSERT( pDoc->IsKindOf(RUNTIME_CLASS(CJweDoc)) ) ;
+		CGweDoc*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
+		ASSERT( pDoc->IsKindOf(RUNTIME_CLASS(CGweDoc)) ) ;
 
 		pDoc->RemoveEntityField( pEntity, pField ) ;
 		EntityTable_RemoveDefaultEntityField( m_pEntities, pField ) ;
@@ -812,7 +812,7 @@ LRESULT CEntityTemplate::Update( WPARAM wParam, LPARAM lParam )
 	iIndex = m_EntitiesCB.GetCurSel() ;
 	if( iIndex != -1 )
 	{
-		CJweDoc * pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
+		CGweDoc * pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
 
 		pEntityDef = (grSymbol*)m_EntitiesCB.GetItemData( iIndex ) ;
 		if( pDoc != NULL )
@@ -833,7 +833,7 @@ LRESULT CEntityTemplate::OnChangeColor( WPARAM wParam, LPARAM lParam )
 	COLORREF		Color  = (COLORREF)lParam ;
 	int				iEntity ;
 	int				iField ;
-	CJweDoc		*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc		*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	grSymbol	*	pEntityDef ;
 	grSymbol	*	pField ;
 	char			szValue[ENTITY_MAXSTRINGLENGTH] ;
@@ -878,7 +878,7 @@ void CEntityTemplate::OnKillfocusEdName()
 	}
 
 	UpdateData( false ) ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		Object_SetName( pDoc->GetTemplate(), m_csName, SELECT_INVALID_NNUMBER ) ;
@@ -888,7 +888,7 @@ void CEntityTemplate::OnKillfocusEdName()
 void CEntityTemplate::OnToolsPlacespheroid() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SPHERE ) ;
@@ -899,7 +899,7 @@ void CEntityTemplate::OnToolsPlacespheroid()
 
 void CEntityTemplate::OnToolsPlaceentity() 
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 
 	UpdateData( true );
 	pDoc->SetTemplateVisable( m_Entity );
@@ -909,7 +909,7 @@ void CEntityTemplate::OnToolsPlaceentity()
 BOOL CEntityTemplate::OnCommand(WPARAM wParam, LPARAM lParam) 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( wParam == 1 )
 	{
 		pDoc->Addbrush();
@@ -928,7 +928,7 @@ void CEntityTemplate::OnToolsAddbrush()
 void CEntityTemplate::OnToolsPlacecylinder() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_CYLINDER ) ;
@@ -940,7 +940,7 @@ void CEntityTemplate::OnToolsPlacecylinder()
 void CEntityTemplate::OnAdd() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	pDoc->Addbrush();
 }
 
@@ -965,7 +965,7 @@ void CEntityTemplate::OnShowWindow(BOOL bShow, UINT nStatus)
 void CEntityTemplate::OnToolsPlacesheet() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SHEET ) ;

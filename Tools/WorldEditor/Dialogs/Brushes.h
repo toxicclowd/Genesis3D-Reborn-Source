@@ -24,7 +24,7 @@
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
-#include "jwe.h"
+#include "GWE.H"
 
 // Brushes.h : header file
 //
@@ -36,7 +36,7 @@ class CBrushes : public CDialog
 // Construction
 public:
 	CBrushes(CWnd* pParent = NULL);   // standard constructor
-	void Update( CJweDoc *pDoc );
+	void Update( CGweDoc *pDoc );
 	void FillFields( uint32 Contents, int32 BlankFieldFlag );
 
 // Dialog Data

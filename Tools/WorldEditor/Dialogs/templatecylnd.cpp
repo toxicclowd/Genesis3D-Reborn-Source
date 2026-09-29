@@ -21,7 +21,7 @@
 
 #include "stdafx.h"
 #include "Defs.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 
@@ -181,7 +181,7 @@ void TemplateCylnd::OnKillfocusEdTopz()
 void TemplateCylnd::OnToolsPlacecube() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_BOX ) ;
@@ -191,7 +191,7 @@ void TemplateCylnd::OnToolsPlacecube()
 
 void TemplateCylnd::OnToolsPlacecylinder() 
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 
 	UpdateData( true );
 	pDoc->SetTemplateVisable( m_Cylinder );
@@ -201,7 +201,7 @@ void TemplateCylnd::OnToolsPlacecylinder()
 void TemplateCylnd::OnToolsPlaceentity() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -212,7 +212,7 @@ void TemplateCylnd::OnToolsPlaceentity()
 void TemplateCylnd::OnToolsPlacelight() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_LIGHT, 0 ) ;
@@ -223,7 +223,7 @@ void TemplateCylnd::OnToolsPlacelight()
 void TemplateCylnd::OnToolsPlacespheroid() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SPHERE ) ;
@@ -234,7 +234,7 @@ void TemplateCylnd::OnToolsPlacespheroid()
 void TemplateCylnd::OnToolsPlaceterrain() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_TERRAIN, 0 ) ;
@@ -245,7 +245,7 @@ void TemplateCylnd::OnToolsPlaceterrain()
 
 void TemplateCylnd::UpdateTemplate()
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		pDoc->SetCylndInfo( m_TopX, m_BotX, m_Stripes, m_TopZ, m_BotZ );
@@ -255,7 +255,7 @@ void TemplateCylnd::UpdateTemplate()
 BOOL TemplateCylnd::OnCommand(WPARAM wParam, LPARAM lParam) 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	
 	if( wParam == 1 )
 	{
@@ -272,14 +272,14 @@ BOOL TemplateCylnd::OnCommand(WPARAM wParam, LPARAM lParam)
 void TemplateCylnd::OnAdd() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	pDoc->Addbrush();
 }
 
 void TemplateCylnd::OnSubtract() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	pDoc->Subtractbrush();	
 }
 
@@ -304,7 +304,7 @@ void TemplateCylnd::OnShowWindow(BOOL bShow, UINT nStatus)
 void TemplateCylnd::OnToolsPlacesheet() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SHEET ) ;
@@ -316,7 +316,7 @@ void TemplateCylnd::OnToolsPlacesheet()
 void TemplateCylnd::OnReset() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->ResetTemplate();

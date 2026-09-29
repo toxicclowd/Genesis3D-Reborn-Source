@@ -11,28 +11,28 @@
 
 #include "eosscript.h"
 
-class CJetRect;
+class CG3DRect;
 class CCamera;
 
-class CJetRect : public eosobject
+class CG3DRect : public eosobject
 {
 public:
-	CJetRect()
+	CG3DRect()
 	{
-		register_func("SetLeft", cpp_method(this, CJetRect, EOSSetLeft));
-		register_func("SetRight", cpp_method(this, CJetRect, EOSSetRight));
-		register_func("SetTop", cpp_method(this, CJetRect, EOSSetTop));
-		register_func("SetBottom", cpp_method(this, CJetRect, EOSSetBottom));
+		register_func("SetLeft", cpp_method(this, CG3DRect, EOSSetLeft));
+		register_func("SetRight", cpp_method(this, CG3DRect, EOSSetRight));
+		register_func("SetTop", cpp_method(this, CG3DRect, EOSSetTop));
+		register_func("SetBottom", cpp_method(this, CG3DRect, EOSSetBottom));
 
-		register_func("GetLeft", cpp_method(this, CJetRect, EOSGetLeft));
-		register_func("GetRight", cpp_method(this, CJetRect, EOSGetRight));
-		register_func("GetTop", cpp_method(this, CJetRect, EOSGetTop));
-		register_func("GetBottom", cpp_method(this, CJetRect, EOSGetBottom));
+		register_func("GetLeft", cpp_method(this, CG3DRect, EOSGetLeft));
+		register_func("GetRight", cpp_method(this, CG3DRect, EOSGetRight));
+		register_func("GetTop", cpp_method(this, CG3DRect, EOSGetTop));
+		register_func("GetBottom", cpp_method(this, CG3DRect, EOSGetBottom));
 
-		register_func("SetRect", cpp_method(this, CJetRect, EOSSetRect));
+		register_func("SetRect", cpp_method(this, CG3DRect, EOSSetRect));
 	}
 
-	virtual ~CJetRect()							{}
+	virtual ~CG3DRect()							{}
 
 public:
 	grRect								m_Rect;
@@ -62,7 +62,7 @@ public:
 	}
 
 public:
-	inline void operator =(CJetRect &rect)
+	inline void operator =(CG3DRect &rect)
 	{
 		m_Rect.Left = rect.m_Rect.Left;
 		m_Rect.Right = rect.m_Rect.Right;
@@ -129,7 +129,7 @@ public:
 private:
 	grCamera							*m_pCamera;
 	float								m_FOV;
-	CJetRect							m_Rect;
+	CG3DRect							m_Rect;
 
 	float								m_FarClipPlane;
 	grBoolean							m_bFarClipEnabled;
@@ -137,7 +137,7 @@ private:
 	grXForm3d							m_XForm;
 	
 public:
-	grBoolean							Create(float fov, CJetRect *Rect);
+	grBoolean							Create(float fov, CG3DRect *Rect);
 	void								Destroy();
 
 	void								SetFarClipPlane(grBoolean Enable, float val);
@@ -148,8 +148,8 @@ public:
 	void								SetFOV(float fov);
 	float								GetFOV();
 
-	void								SetViewRect(CJetRect *Rect);
-	void								GetViewRect(CJetRect *Rect);
+	void								SetViewRect(CG3DRect *Rect);
+	void								GetViewRect(CG3DRect *Rect);
 
 	void								SetXForm(grXForm3d *XForm);
 	void								GetXForm(grXForm3d *XForm);

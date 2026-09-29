@@ -36,7 +36,7 @@ class CRender : public CDialog
 public:
 	CRender(CWnd* pParent = NULL);   // standard constructor
 	void SetData( const grBSP_DebugInfo * pDebugInfo );
-	void SetCurrentDocument( CJweDoc *pDoc );
+	void SetCurrentDocument( CGweDoc *pDoc );
 
 
 // Dialog Data

@@ -26,7 +26,7 @@
 #include "Doc.h"
 #include "EclipseNames.h"
 #include "EntityTable.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 
@@ -438,8 +438,8 @@ void CEntityDef::OnBnRemovefield()
 		ASSERT( pEntity != NULL ) ;
 		
 		// The level must remove this field from all instances...
-		CJweDoc*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
-		ASSERT( pDoc->IsKindOf(RUNTIME_CLASS(CJweDoc)) ) ;
+		CGweDoc*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
+		ASSERT( pDoc->IsKindOf(RUNTIME_CLASS(CGweDoc)) ) ;
 
 		pDoc->RemoveEntityField( pEntity, pField ) ;
 		EntityTable_RemoveDefaultEntityField( m_pEntities, pField ) ;

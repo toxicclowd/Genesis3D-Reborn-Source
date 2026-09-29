@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "PressKey.h"
 
 #ifdef _DEBUG

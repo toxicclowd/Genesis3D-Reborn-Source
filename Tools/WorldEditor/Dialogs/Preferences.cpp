@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "Util.h"
 #include "doc.h"
 #include "MainFrm.h"
@@ -10,7 +10,7 @@
 #include "Preferences.h"
 #include "Settings.h"
 
-#include "JetView.h"
+#include "G3DView.h"
 #include "DRVLIST.h"
 
 #include "PressKey.h"
@@ -132,10 +132,10 @@ BEGIN_MESSAGE_MAP(CPreferences, CDialog)
 		ON_BN_CLICKED (IDC_PREFS_KEYBOARD,OnKeyboard)
 		ON_BN_CLICKED (IDC_PREFS_PATHS,OnPath)
 		ON_BN_CLICKED (IDC_PREFS_MOUSE,OnMouse)
-		ON_BN_CLICKED (IDC_PREFS_JET,OnJet)
+		ON_BN_CLICKED (IDC_PREFS_G3D,OnG3D)
 		ON_BN_CLICKED (IDC_CHOOSE_WINDOW,OnEngine_GetWindowMode)
 		ON_BN_CLICKED (IDC_CHOOSE_FULLSCREEN,OnEngine_GetFullscreenMode)
-		ON_BN_CLICKED (IDC_JET_STAIR, OnJet_Stairs)
+		ON_BN_CLICKED (IDC_G3D_STAIR, OnG3D_Stairs)
 
 		ON_BN_CLICKED (IDC_CHECK_CONTROL,OnKey_CheckControl)
 		ON_BN_CLICKED (IDC_CHECK_SHIFT,OnKey_CheckShift)
@@ -171,8 +171,8 @@ BOOL CPreferences::OnInitDialog()
 {
 	HINSTANCE				hRes{};
 	hRes = AfxGetResourceHandle() ;
-	CJweApp* pApp{};
-	pApp = (CJweApp*)AfxGetApp() ;
+	CGweApp* pApp{};
+	pApp = (CGweApp*)AfxGetApp() ;
 	CMainFrame* pMainFrm{};
 	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;	
 
@@ -197,10 +197,10 @@ BOOL CPreferences::OnInitDialog()
 				GRID_CB_ALWAYSSNAPVISIBLE,GRID_RB_1,GRID_RB_2,GRID_RB_3,GRID_RB_4,GRID_RB_5,GRID_RB_6,
 				IDC_SNAPVERTEXMANIP,IDC_EDIT_STATIC,IDC_EDIT_WINDOW,IDC_EDIT_CROSSING,-1);
 
-	m_pPreferencesIconTab->Group_AddObjects (2,"Jet Engine Settings...",IDC_PREFS_JET,IDI_PREFS_JET,IDI_PREFS_JET,
-				IDC_STATIC_JET_TEXT1,IDC_JET_WINDOW,IDC_CHOOSE_WINDOW,IDC_JET_FULLSCREEN,IDC_CHOOSE_FULLSCREEN,
-				IDC_STATIC_JET_TEXT2,IDC_STATIC_JET_TEXT3,IDC_STATIC_JET_TEXT4,
-				IDC_JET_COLL,IDC_JET_GRAV,IDC_JET_SLID,IDC_JET_STAIR,IDC_JET_HEIGHT,-1);
+	m_pPreferencesIconTab->Group_AddObjects (2,"Jet Engine Settings...",IDC_PREFS_G3D,IDI_PREFS_G3D,IDI_PREFS_G3D,
+				IDC_STATIC_G3D_TEXT1,IDC_G3D_WINDOW,IDC_CHOOSE_WINDOW,IDC_G3D_FULLSCREEN,IDC_CHOOSE_FULLSCREEN,
+				IDC_STATIC_G3D_TEXT2,IDC_STATIC_G3D_TEXT3,IDC_STATIC_G3D_TEXT4,
+				IDC_G3D_COLL,IDC_G3D_GRAV,IDC_G3D_SLID,IDC_G3D_STAIR,IDC_G3D_HEIGHT,-1);
 
 	m_pPreferencesIconTab->Group_AddObjects (3,"Keyboard Settings...",IDC_PREFS_KEYBOARD,IDI_PREFS_KEYS,IDI_PREFS_KEYS,
 				IDC_KEYS,IDC_ASSIGN,
@@ -248,20 +248,20 @@ BOOL CPreferences::OnInitDialog()
 	GetDlgItem( IDC_ASSIGN )->EnableWindow(false);
 
 	// Save Colors
-	coSelected		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelected"	,  RGB( 255, 0, 0 ) );
-	coSubSelected	= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubSelected"	,  RGB( 255, 0, 255));
-	coSelectedBk	= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelectedBk"		,  RGB( 0, 0, 0 ) );
-	coGridBackgroud	= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGridBackgroud"	,  RGB( 128, 128, 128 ) );
-	coGrid			= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGrid"			,  RGB( 100, 100, 100 ) );
-	coConstructorLine=((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coConstructorLine",  RGB(0, 200, 200 ) );
-	coGridSnap		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGridSnap"		,  RGB( 0xc0, 0xc0, 0xc0  ) );
-	coSubtractBrush	= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubtractBrush"	,  RGB(  255, 0, 255) );
-	coAddBrush		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coAddBrush"		,  RGB(  0, 0, 0) );
-	coSubtractNoAssoc=((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubtractNoAssoc",  RGB( 0, 0, 0 ) );
-	coSelectedFace	= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelectedFace"	,  RGB( 255, 0, 255) );
-	coCutBrush		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coCutBrush"		,  RGB( 255, 128, 64 ));
+	coSelected		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelected"	,  RGB( 255, 0, 0 ) );
+	coSubSelected	= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubSelected"	,  RGB( 255, 0, 255));
+	coSelectedBk	= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelectedBk"		,  RGB( 0, 0, 0 ) );
+	coGridBackgroud	= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGridBackgroud"	,  RGB( 128, 128, 128 ) );
+	coGrid			= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGrid"			,  RGB( 100, 100, 100 ) );
+	coConstructorLine=((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coConstructorLine",  RGB(0, 200, 200 ) );
+	coGridSnap		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGridSnap"		,  RGB( 0xc0, 0xc0, 0xc0  ) );
+	coSubtractBrush	= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubtractBrush"	,  RGB(  255, 0, 255) );
+	coAddBrush		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coAddBrush"		,  RGB(  0, 0, 0) );
+	coSubtractNoAssoc=((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubtractNoAssoc",  RGB( 0, 0, 0 ) );
+	coSelectedFace	= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelectedFace"	,  RGB( 255, 0, 255) );
+	coCutBrush		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coCutBrush"		,  RGB( 255, 128, 64 ));
 
-	coTemplate		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coTemplate"		,  RGB( 0, 255, 255 ) );
+	coTemplate		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coTemplate"		,  RGB( 0, 255, 255 ) );
     
 	CButton* pButton{};
 	pButton= (CButton*)GetDlgItem(GRID_VIEW_VIEW1);
@@ -363,19 +363,19 @@ int CPreferences::SaveSettings()
 	Settings_SetMouse_HotSelect(((CButton*)GetDlgItem( IDC_HOTSELECT1))->GetState()&0x0003);
 
 //--------------------- Save Settings for Engine
-	Settings_SetJet_Coll	(((CButton*)GetDlgItem( IDC_JET_COLL))->GetState()&0x0003);
-	Settings_SetJet_Grav	(((CButton*)GetDlgItem( IDC_JET_GRAV))->GetState()&0x0003);
-	Settings_SetJet_Slid	(((CButton*)GetDlgItem( IDC_JET_SLID))->GetState()&0x0003);
-	Settings_SetJet_Stair	(((CButton*)GetDlgItem( IDC_JET_STAIR))->GetState()&0x0003);
+	Settings_SetG3D_Coll	(((CButton*)GetDlgItem( IDC_G3D_COLL))->GetState()&0x0003);
+	Settings_SetG3D_Grav	(((CButton*)GetDlgItem( IDC_G3D_GRAV))->GetState()&0x0003);
+	Settings_SetG3D_Slid	(((CButton*)GetDlgItem( IDC_G3D_SLID))->GetState()&0x0003);
+	Settings_SetG3D_Stair	(((CButton*)GetDlgItem( IDC_G3D_STAIR))->GetState()&0x0003);
 
-	GetDlgItem( IDC_JET_HEIGHT)->GetWindowText(sPrefsString,1999);
-    Settings_SetJet_Height(sPrefsString);
+	GetDlgItem( IDC_G3D_HEIGHT)->GetWindowText(sPrefsString,1999);
+    Settings_SetG3D_Height(sPrefsString);
 
-	GetDlgItem( IDC_JET_WINDOW)->GetWindowText(sPrefsString,1999);
-    Settings_SetJet_Window(sPrefsString);
+	GetDlgItem( IDC_G3D_WINDOW)->GetWindowText(sPrefsString,1999);
+    Settings_SetG3D_Window(sPrefsString);
 
-	GetDlgItem( IDC_JET_FULLSCREEN)->GetWindowText(sPrefsString,1999);
-    Settings_SetJet_Fullscreen(sPrefsString);
+	GetDlgItem( IDC_G3D_FULLSCREEN)->GetWindowText(sPrefsString,1999);
+    Settings_SetG3D_Fullscreen(sPrefsString);
 
 //--------------------- Save Settings for Paths
 
@@ -466,23 +466,23 @@ int CPreferences::LoadSettings()
 
 //--------------------- Load Settings for Engine
 
-	((CButton*)GetDlgItem(IDC_JET_COLL))->SetCheck(Settings_GetJet_Coll());
-	((CButton*)GetDlgItem(IDC_JET_GRAV))->SetCheck(Settings_GetJet_Grav());
-	((CButton*)GetDlgItem(IDC_JET_SLID))->SetCheck(Settings_GetJet_Slid());
-	((CButton*)GetDlgItem(IDC_JET_STAIR))->SetCheck(Settings_GetJet_Stair());
-	if(Settings_GetJet_Stair())
-			{	GetDlgItem( IDC_JET_HEIGHT)->EnableWindow (true);
-				GetDlgItem( IDC_STATIC_JET_TEXT4)->EnableWindow (true);
+	((CButton*)GetDlgItem(IDC_G3D_COLL))->SetCheck(Settings_GetG3D_Coll());
+	((CButton*)GetDlgItem(IDC_G3D_GRAV))->SetCheck(Settings_GetG3D_Grav());
+	((CButton*)GetDlgItem(IDC_G3D_SLID))->SetCheck(Settings_GetG3D_Slid());
+	((CButton*)GetDlgItem(IDC_G3D_STAIR))->SetCheck(Settings_GetG3D_Stair());
+	if(Settings_GetG3D_Stair())
+			{	GetDlgItem( IDC_G3D_HEIGHT)->EnableWindow (true);
+				GetDlgItem( IDC_STATIC_G3D_TEXT4)->EnableWindow (true);
 			}
-	else	{ GetDlgItem( IDC_JET_HEIGHT)->EnableWindow (false);
-			  GetDlgItem( IDC_STATIC_JET_TEXT4)->EnableWindow (false);
+	else	{ GetDlgItem( IDC_G3D_HEIGHT)->EnableWindow (false);
+			  GetDlgItem( IDC_STATIC_G3D_TEXT4)->EnableWindow (false);
 			}
 
 
-	GetDlgItem( IDC_JET_HEIGHT)->SetWindowText(Settings_GetJet_Height(sPrefsString,299));
-	GetDlgItem( IDC_JET_WINDOW)->SetWindowText(Settings_GetJet_Window(sPrefsString,299));
+	GetDlgItem( IDC_G3D_HEIGHT)->SetWindowText(Settings_GetG3D_Height(sPrefsString,299));
+	GetDlgItem( IDC_G3D_WINDOW)->SetWindowText(Settings_GetG3D_Window(sPrefsString,299));
 
-	GetDlgItem( IDC_JET_FULLSCREEN)->SetWindowText(Settings_GetJet_Fullscreen(sPrefsString,299));
+	GetDlgItem( IDC_G3D_FULLSCREEN)->SetWindowText(Settings_GetG3D_Fullscreen(sPrefsString,299));
 
 //--------------------- Load Settings for Paths
 
@@ -699,7 +699,7 @@ void CPreferences::OnPaint()
 	
 	// Get Pointer to CJweDoc
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	if( !pDoc->m_bLoaded )
 		return;
@@ -765,7 +765,7 @@ void	CPreferences::OnPath()
 {		m_pPreferencesIconTab->Group_Display(0);
 }
 
-void	CPreferences::OnJet()
+void	CPreferences::OnG3D()
 {		m_pPreferencesIconTab->Group_Display(2);
 }
 
@@ -791,11 +791,11 @@ void CPreferences::OnEngine_GetWindowMode()
 	const char* cWindowDriver{};
 	const char* cWindowMode{};
 
-	CJweApp				*	pApp = (CJweApp*)AfxGetApp() ;
+	CGweApp				*	pApp = (CGweApp*)AfxGetApp() ;
 
 	CMainFrame			*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	
-	CJweDoc				*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc				*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	CView* pView=nullptr;
 
@@ -803,7 +803,7 @@ void CPreferences::OnEngine_GetWindowMode()
     while (pos != nullptr)
 		   {
 			  pView =pDoc->GetNextView(pos);
-			  if (pView->IsKindOf(RUNTIME_CLASS(CJ3DView)))
+			  if (pView->IsKindOf(RUNTIME_CLASS(CG3DMfcView)))
 			  { break;
 			  }
 			 // pDoc->pView->UpdateWindow();
@@ -812,14 +812,14 @@ void CPreferences::OnEngine_GetWindowMode()
 	if (pView!=nullptr)
 	{
 		// save last driver and mode
-		grEngine_GetDriverAndMode( ((CJ3DView*)pView)->GetEngine(), &LastDriver, &LastMode );
+		grEngine_GetDriverAndMode( ((CG3DMfcView*)pView)->GetEngine(), &LastDriver, &LastMode );
 		WindowDriver = LastDriver;
 		WindowMode = LastMode;
 
 		// display video mode dialog box
 		Result = DrvList_PickDriver(	AfxGetInstanceHandle(),
 										GetSafeHwnd(),
-										((CJ3DView*)pView)->GetEngine(), 
+										((CG3DMfcView*)pView)->GetEngine(), 
 										&WindowDriver, 
 										&WindowMode,
 										GR_TRUE,
@@ -829,7 +829,7 @@ void CPreferences::OnEngine_GetWindowMode()
 			  grDriver_ModeGetName( WindowMode, &cWindowMode );
 
 			  sprintf_s (VideoName,"%s,%s",cWindowDriver,cWindowMode);
-			  GetDlgItem( IDC_JET_WINDOW )->SetWindowText(VideoName);
+			  GetDlgItem( IDC_G3D_WINDOW )->SetWindowText(VideoName);
 			}
 	}
 }
@@ -846,11 +846,11 @@ void CPreferences::OnEngine_GetFullscreenMode()
 	const char* cWindowDriver{};
 	const char* cWindowMode{};
 
-	CJweApp				*	pApp = (CJweApp*)AfxGetApp() ;
+	CGweApp				*	pApp = (CGweApp*)AfxGetApp() ;
 
 	CMainFrame			*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	
-	CJweDoc				*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc				*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	CView* pView=nullptr;
 
@@ -858,7 +858,7 @@ void CPreferences::OnEngine_GetFullscreenMode()
     while (pos != nullptr)
 		   {
 			  pView =pDoc->GetNextView(pos);
-			  if (pView->IsKindOf(RUNTIME_CLASS(CJ3DView)))
+			  if (pView->IsKindOf(RUNTIME_CLASS(CG3DMfcView)))
 			  { break;
 			  }
 			 // pDoc->pView->UpdateWindow();
@@ -867,14 +867,14 @@ void CPreferences::OnEngine_GetFullscreenMode()
 	if (pView!=nullptr)
 	{
 		// save last driver and mode
-		grEngine_GetDriverAndMode( ((CJ3DView*)pView)->GetEngine(), &LastDriver, &LastMode );
+		grEngine_GetDriverAndMode( ((CG3DMfcView*)pView)->GetEngine(), &LastDriver, &LastMode );
 		WindowDriver = LastDriver;
 		WindowMode = LastMode;
 
 		// display video mode dialog box
 		Result = DrvList_PickDriver(	AfxGetInstanceHandle(),
 										GetSafeHwnd(),
-										((CJ3DView*)pView)->GetEngine(), 
+										((CG3DMfcView*)pView)->GetEngine(), 
 										&WindowDriver, 
 										&WindowMode,
 										GR_TRUE,
@@ -884,7 +884,7 @@ void CPreferences::OnEngine_GetFullscreenMode()
 			  grDriver_ModeGetName( WindowMode, &cWindowMode );
 
 			  sprintf_s (VideoName,"%s,%s",cWindowDriver,cWindowMode);
-			  GetDlgItem( IDC_JET_FULLSCREEN )->SetWindowText(VideoName);
+			  GetDlgItem( IDC_G3D_FULLSCREEN )->SetWindowText(VideoName);
 			}
 	}
 }
@@ -892,14 +892,14 @@ void CPreferences::OnEngine_GetFullscreenMode()
 
 
 
-void CPreferences::OnJet_Stairs()
+void CPreferences::OnG3D_Stairs()
 {
-	if (((CButton*)GetDlgItem( IDC_JET_STAIR))->GetState()&0x0003)
-			{	GetDlgItem( IDC_JET_HEIGHT)->EnableWindow (true);
-				GetDlgItem( IDC_STATIC_JET_TEXT4)->EnableWindow (true);
+	if (((CButton*)GetDlgItem( IDC_G3D_STAIR))->GetState()&0x0003)
+			{	GetDlgItem( IDC_G3D_HEIGHT)->EnableWindow (true);
+				GetDlgItem( IDC_STATIC_G3D_TEXT4)->EnableWindow (true);
 			}
-	else	{ GetDlgItem( IDC_JET_HEIGHT)->EnableWindow (false);
-			  GetDlgItem( IDC_STATIC_JET_TEXT4)->EnableWindow (false);
+	else	{ GetDlgItem( IDC_G3D_HEIGHT)->EnableWindow (false);
+			  GetDlgItem( IDC_STATIC_G3D_TEXT4)->EnableWindow (false);
 			}
 }
 

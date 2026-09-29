@@ -1075,7 +1075,7 @@ BOOL CDialogBuilderDlg::HandleComboMsg( FieldStruct* pField, int nCode )
 		grProperty_Data Data;
 		CComboBox *pCombo;
 		CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-		CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+		CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 		int curSel;
 
 		pCombo = (CComboBox *)pField->FieldCntl;
@@ -1318,7 +1318,7 @@ LONG CDialogBuilderDlg::OnChangeColor(UINT lParam, LONG wParam)
 	if(pFoundField)
 	{
 		CMainFrame*	pMainFrm = nullptr;
-		CJweDoc*	pDoc = nullptr; 
+		CGweDoc*	pDoc = nullptr; 
 		PROPERTY_FIELD_TYPE fieldType = pFoundField->Type ;
 		UINT dataID = pFoundField->DataId;
 

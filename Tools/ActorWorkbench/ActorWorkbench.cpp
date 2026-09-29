@@ -7,7 +7,7 @@
 
 #include "ActorWorkbenchDoc.h"
 #include "ActorWorkbenchView.h"
-#include "Jet3DView.h"
+#include "G3DView.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -78,7 +78,7 @@ BOOL CActorWorkbenchApp::InitInstance()
 		IDR_MAINFRAME,
 		RUNTIME_CLASS(CActorWorkbenchDoc),
 		RUNTIME_CLASS(CMainFrame),       // main SDI frame window
-		RUNTIME_CLASS(CJet3DView));
+		RUNTIME_CLASS(CG3DView));
 	if (!pDocTemplate)
 		return FALSE;
 	AddDocTemplate(pDocTemplate);

@@ -11,7 +11,7 @@
 #include "Genesis3D.h"
 #include "ErrorLog.h"
 
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "Properties.h"
 

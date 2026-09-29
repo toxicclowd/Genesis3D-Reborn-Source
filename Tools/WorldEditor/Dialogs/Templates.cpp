@@ -23,7 +23,7 @@
 
 #include "stdafx.h"
 #include "Defs.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 
@@ -150,7 +150,7 @@ void CTemplates::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 void CTemplates::OnToolsPlacelight() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_LIGHT, 0 ) ;
@@ -161,7 +161,7 @@ void CTemplates::OnToolsPlacelight()
 void CTemplates::OnToolsPlaceentity() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -172,7 +172,7 @@ void CTemplates::OnToolsPlaceentity()
 void CTemplates::OnToolsPlaceterrain() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_TERRAIN, 0 ) ;
@@ -184,7 +184,7 @@ void CTemplates::OnToolsPlaceterrain()
 void CTemplates::OnToolsPlacespheroid() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SPHERE ) ;
@@ -235,7 +235,7 @@ void CTemplates::OnKillfocusEdY()
 
 void CTemplates::UpdateTemplate()
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		pDoc->SetBoxInfo( m_TopX, m_BotX, m_Y, m_TopZ, m_BotZ );
@@ -251,7 +251,7 @@ void CTemplates::OnKillfocusEdName()
 		m_Name.LoadString( IDS_DEFAULTSPHERETEMPLATENAME ) ;
 
 	UpdateData( false ) ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		Object_SetName( pDoc->GetTemplate(), m_Name, SELECT_INVALID_NNUMBER ) ;
@@ -260,7 +260,7 @@ void CTemplates::OnKillfocusEdName()
 
 void CTemplates::OnToolsPlacecube() 
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 
 	UpdateData( true );
 	pDoc->SetTemplateVisable( m_Cube );
@@ -295,7 +295,7 @@ void CTemplates::OnClose()
 BOOL CTemplates::OnCommand(WPARAM wParam, LPARAM lParam) 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	
 	if( wParam == 1 )
 	{
@@ -320,7 +320,7 @@ void CTemplates::OnToolsAddbrush()
 void CTemplates::OnToolsPlacecylinder() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_CYLINDER ) ;
@@ -331,14 +331,14 @@ void CTemplates::OnToolsPlacecylinder()
 void CTemplates::OnAdd() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	pDoc->Addbrush();
 }
 
 void CTemplates::OnReset() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->ResetTemplate();
@@ -349,7 +349,7 @@ void CTemplates::OnReset()
 void CTemplates::OnSubtract() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	pDoc->Subtractbrush();	
 	
 }
@@ -357,7 +357,7 @@ void CTemplates::OnSubtract()
 void CTemplates::OnToolsPlacesheet() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SHEET ) ;

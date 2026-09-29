@@ -22,7 +22,7 @@
 
 #include "Doc.h"
 #include "grFaceInfo.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 #include "Units.h"
@@ -128,11 +128,11 @@ BOOL CFaces::OnInitDialog()
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }// OnInitDialog
 
-void CFaces::Update(CJweDoc *pDoc)
+void CFaces::Update(CGweDoc *pDoc)
 {
 	grFaceInfo	FaceInfo ;
 	int32		BlankFieldFlag ;
-	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CJweDoc)) ) ;
+	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CGweDoc)) ) ;
 
 	pDoc->GetFaceInfo( &FaceInfo, &BlankFieldFlag ) ;
 
@@ -225,7 +225,7 @@ void CFaces::FillFields(grFaceInfo *pFaceInfo, int32 BlankFieldFlag)
 void CFaces::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar) 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc ;
+	CGweDoc	*	pDoc ;
 
 	// UP/DOWN (Spin) controls come here as well as scroll-bars
 	if( nSBCode == SB_ENDSCROLL  )
@@ -314,7 +314,7 @@ grFloat CFaces::Increment(grFloat fCur, grFloat fMin, grFloat fMax, grFloat fInc
 void CFaces::OnKillfocusEdTexturex() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
@@ -329,7 +329,7 @@ void CFaces::OnKillfocusEdTexturex()
 void CFaces::OnKillfocusEdTexturey() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
@@ -344,7 +344,7 @@ void CFaces::OnKillfocusEdTexturey()
 void CFaces::OnKillfocusEdAngle() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
@@ -355,7 +355,7 @@ void CFaces::OnKillfocusEdAngle()
 void CFaces::OnKillfocusEdDrawscalex() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
@@ -370,7 +370,7 @@ void CFaces::OnKillfocusEdDrawscalex()
 void CFaces::OnKillfocusEdDrawscaley() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
@@ -385,7 +385,7 @@ void CFaces::OnKillfocusEdDrawscaley()
 void CFaces::OnKillfocusEdLightmapx() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
@@ -400,7 +400,7 @@ void CFaces::OnKillfocusEdLightmapx()
 void CFaces::OnKillfocusEdLightmapy() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
@@ -417,7 +417,7 @@ void CFaces::OnKillfocusEdLightmapy()
 void CFaces::OnCkGouraud() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	if( m_ckGouraud.GetCheck( ) )
@@ -435,7 +435,7 @@ void CFaces::OnCkInvisible()
 void CFaces::OnCkPortal() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	if( m_ckPortal.GetCheck( ) )
@@ -449,7 +449,7 @@ void CFaces::OnCkPortal()
 void CFaces::OnKillfocusEdTransparent() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
@@ -464,7 +464,7 @@ void CFaces::OnKillfocusEdTransparent()
 void CFaces::OnCkTransparent() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	if( m_ckTranparent.GetCheck( ) )
@@ -479,7 +479,7 @@ void CFaces::OnCkTransparent()
 void CFaces::OnCkMirror() 
 {
 	grFaceInfo	FaceInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	if( m_CkMirror.GetCheck( ) )

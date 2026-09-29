@@ -20,7 +20,7 @@
 /****************************************************************************************/
 #include <assert.h>
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "globalmaterials.h"
 #include "errorlog.h"
 #include "ram.h"

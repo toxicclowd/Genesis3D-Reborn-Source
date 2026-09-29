@@ -37,7 +37,7 @@
 //#include "stdafx.h"
 //
 #include "afx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "Ram.h"
 #include "Ram.h"
 
@@ -96,20 +96,20 @@ Settings * Settings_Create( void )
 
 	memset( pSettings, 0, sizeof *pSettings ) ;
 
-	pSettings->coSelected		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelected"	,  RGB( 255, 0, 0 ) );
-	pSettings->coSubSelected	= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubSelected"	,  RGB( 255, 0, 255));
-	pSettings->coSelectedBk		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelectedBk"		,  RGB( 0, 0, 0 ) );
-	pSettings->coGridBackgroud	= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGridBackgroud"	,  RGB( 128, 128, 128 ) );
-	pSettings->coGrid			= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGrid"			,  RGB( 100, 100, 100 ) );
-	pSettings->coConstructorLine= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coConstructorLine",  RGB(0, 200, 200 ) );
-	pSettings->coGridSnap		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGridSnap"		,  RGB( 0xc0, 0xc0, 0xc0  ) );
-	pSettings->coSubtractBrush	= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubtractBrush"	,  RGB(  255, 0, 255) );
-	pSettings->coAddBrush		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coAddBrush"		,  RGB(  0, 0, 0) );
-	pSettings->coSubtractNoAssoc= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubtractNoAssoc",  RGB( 0, 0, 0 ) );
-	pSettings->coSelectedFace	= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelectedFace"	,  RGB( 255, 0, 255) );
-	pSettings->coCutBrush		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coCutBrush"		,  RGB( 255, 128, 64 ));
+	pSettings->coSelected		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelected"	,  RGB( 255, 0, 0 ) );
+	pSettings->coSubSelected	= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubSelected"	,  RGB( 255, 0, 255));
+	pSettings->coSelectedBk		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelectedBk"		,  RGB( 0, 0, 0 ) );
+	pSettings->coGridBackgroud	= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGridBackgroud"	,  RGB( 128, 128, 128 ) );
+	pSettings->coGrid			= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGrid"			,  RGB( 100, 100, 100 ) );
+	pSettings->coConstructorLine= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coConstructorLine",  RGB(0, 200, 200 ) );
+	pSettings->coGridSnap		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coGridSnap"		,  RGB( 0xc0, 0xc0, 0xc0  ) );
+	pSettings->coSubtractBrush	= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubtractBrush"	,  RGB(  255, 0, 255) );
+	pSettings->coAddBrush		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coAddBrush"		,  RGB(  0, 0, 0) );
+	pSettings->coSubtractNoAssoc= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSubtractNoAssoc",  RGB( 0, 0, 0 ) );
+	pSettings->coSelectedFace	= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coSelectedFace"	,  RGB( 255, 0, 255) );
+	pSettings->coCutBrush		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coCutBrush"		,  RGB( 255, 128, 64 ));
 
-	pSettings->coTemplate		= ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coTemplate"		,  RGB( 0, 255, 255 ) );
+	pSettings->coTemplate		= ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_GridColors", "coTemplate"		,  RGB( 0, 255, 255 ) );
 
 	return pSettings ;
 
@@ -136,68 +136,68 @@ void Settings_Destroy( Settings ** ppSettings )
 
 uint32 Settings_GetSelectedColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coSelected ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coSelected ;
 }// Settings_GetSelectedColor
 
 uint32 Settings_GetSubSelectedColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coSubSelected ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coSubSelected ;
 }// Settings_GetSelectedColor
 
 
 uint32 Settings_GetTemplateColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coTemplate ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coTemplate ;
 }// Settings_GetTemplateColor
 
 uint32 Settings_GetSelectedBk( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coSelectedBk ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coSelectedBk ;
 }// Settings_GetSelectedBk
 
 uint32 Settings_GetGridBk( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coGridBackgroud ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coGridBackgroud ;
 }// Settings_GetSelectedBk
 
 uint32 Settings_GetGridColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coGrid ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coGrid ;
 }// Settings_GetGridColor
 
 uint32 Settings_GetConstructorColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coConstructorLine ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coConstructorLine ;
 }// Settings_GetConstructorColor
 
 uint32 Settings_GetGridSnapColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coGridSnap ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coGridSnap ;
 }// Settings_GetGridSnapColor
 
 uint32 Settings_GetSubtractBrushColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coSubtractBrush ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coSubtractBrush ;
 }// Settings_GetSubtractBrushColor
 
 uint32 Settings_GetAddBrushColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coAddBrush ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coAddBrush ;
 }// Settings_GetAddBrushColor
 
 uint32 Settings_GetAddSubtractEmptyColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coSubtractNoAssoc ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coSubtractNoAssoc ;
 }// Settings_GetAddBrushColor
 
 uint32 Settings_GetSelectedFaceColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coSelectedFace ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coSelectedFace ;
 }// Settings_GetSelectedFaceColor
 
 uint32 Settings_GetCutBrushColor( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coCutBrush ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pSettings->coCutBrush ;
 }// Settings_GetSelectedFaceColor
 
 grBoolean Settings_IsSelByEncompass( void )
@@ -262,7 +262,7 @@ void MouseSettings_Destroy( MouseSettings ** ppSettings )
 // Save mouse setting to registry
 grBoolean MouseSettings_Save(void)
 {
-	MouseSettings *pSettings = ((CJweApp*)AfxGetApp())->m_pMouseSettings;
+	MouseSettings *pSettings = ((CGweApp*)AfxGetApp())->m_pMouseSettings;
 	assert(pSettings);
 
 	// Save the mouse settings data to the registry
@@ -276,7 +276,7 @@ grBoolean MouseSettings_Save(void)
 grBoolean MouseSettings_Restore(void) 
 
 { 
-MouseSettings *pSettings = ((CJweApp*)AfxGetApp())->m_pMouseSettings; 
+MouseSettings *pSettings = ((CGweApp*)AfxGetApp())->m_pMouseSettings; 
 BYTE* buffer; 
 assert(pSettings); 
 
@@ -314,38 +314,38 @@ else
 // Get hot select setting
 grBoolean MouseSettings_GetHotSelect(void)
 {
-	return ((CJweApp*)AfxGetApp())->m_pMouseSettings->m_bHotSelect;
+	return ((CGweApp*)AfxGetApp())->m_pMouseSettings->m_bHotSelect;
 }
 // Set hot select setting
 void MouseSettings_SetHotSelect(grBoolean bHotSelect)
 {
-	((CJweApp*)AfxGetApp())->m_pMouseSettings->m_bHotSelect = bHotSelect;
+	((CGweApp*)AfxGetApp())->m_pMouseSettings->m_bHotSelect = bHotSelect;
 }
 
 // Get mouse middle button state
 eMouseMiddleButton MouseSettings_GetMiddleButtonState(void)
 {
-	return ((CJweApp*)AfxGetApp())->m_pMouseSettings->m_eMiddleButton;
+	return ((CGweApp*)AfxGetApp())->m_pMouseSettings->m_eMiddleButton;
 }
 // Set mouse middle button state
 void MouseSettings_SetMiddleButtonState(eMouseMiddleButton eState)
 {
 	if (eState >= mbInvalid)
 		return;
-	((CJweApp*)AfxGetApp())->m_pMouseSettings->m_eMiddleButton = eState;
+	((CGweApp*)AfxGetApp())->m_pMouseSettings->m_eMiddleButton = eState;
 }
 
 // Get mouse wheel state
 eMouseWheel MouseSettings_GetWheelState(void)
 {
-	return ((CJweApp*)AfxGetApp())->m_pMouseSettings->m_eWheel;
+	return ((CGweApp*)AfxGetApp())->m_pMouseSettings->m_eWheel;
 }
 // Set mouse wheel state
 void MouseSettings_SetWheelState(eMouseWheel eState)
 {
 	if (eState >= mwInvalid)
 		return;
-	((CJweApp*)AfxGetApp())->m_pMouseSettings->m_eWheel = eState;
+	((CGweApp*)AfxGetApp())->m_pMouseSettings->m_eWheel = eState;
 }
 //---------------------------------------------------
 // End DJT
@@ -357,81 +357,81 @@ void MouseSettings_SetWheelState(eMouseWheel eState)
 //---------------------------------------------------
 void Settings_SetSelectedColor( uint32 Color)
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coSelected = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSelected",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coSelected = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSelected",  Color);
 }// Settings_SetSelectedColor
 
 void Settings_SetSubSelectedColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coSubSelected = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSubSelected",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coSubSelected = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSubSelected",  Color);
 }// Settings_SetSelectedColor
 
 
 void Settings_SetTemplateColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coTemplate = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coTemplate",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coTemplate = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coTemplate",  Color);
 }// Settings_SetTemplateColor
 
 void Settings_SetSelectedBk( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coSelectedBk = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSelectedBk",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coSelectedBk = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSelectedBk",  Color);
 }// Settings_SetSelectedBk
 
 void Settings_SetGridBk( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coGridBackgroud = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coGridBackgroud",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coGridBackgroud = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coGridBackgroud",  Color);
 }// Settings_SetSelectedBk
 
 void Settings_SetGridColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coGrid = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coGrid",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coGrid = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coGrid",  Color);
 }// Settings_SetGridColor
 
 void Settings_SetConstructorColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coConstructorLine = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coConstructorLine",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coConstructorLine = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coConstructorLine",  Color);
 }// Settings_SetConstructorColor
 
 void Settings_SetGridSnapColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coGridSnap = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coGridSnap",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coGridSnap = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coGridSnap",  Color);
 }// Settings_SetGridSnapColor
 
 void Settings_SetSubtractBrushColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coSubtractBrush = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSubtractBrush",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coSubtractBrush = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSubtractBrush",  Color);
 }// Settings_SetSubtractBrushColor
 
 void Settings_SetAddBrushColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coAddBrush = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coAddBrush",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coAddBrush = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coAddBrush",  Color);
 }// Settings_SetAddBrushColor
 
 void Settings_SetAddSubtractEmptyColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coSubtractNoAssoc = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSubtractNoAssoc",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coSubtractNoAssoc = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSubtractNoAssoc",  Color);
 }// Settings_SetAddBrushColor
 
 void Settings_SetSelectedFaceColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coSelectedFace = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSelectedFace",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coSelectedFace = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coSelectedFace",  Color);
 }// Settings_SetSelectedFaceColor
 
 void Settings_SetCutBrushColor( uint32 Color )
 {
-	 ((CJweApp*)AfxGetApp())->m_pSettings->coCutBrush = Color;
- 	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coCutBrush",  Color);
+	 ((CGweApp*)AfxGetApp())->m_pSettings->coCutBrush = Color;
+ 	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_GridColors", "coCutBrush",  Color);
 
 }// Settings_SetSelectedFaceColor
 
@@ -445,158 +445,158 @@ void Settings_SetCutBrushColor( uint32 Color )
 
 void Settings_SetGrid_SnapDegrees(char *sPrefsString)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileString( "Settings_Grid", "SnapDegrees",  sPrefsString);
+	((CGweApp*)AfxGetApp())->WriteProfileString( "Settings_Grid", "SnapDegrees",  sPrefsString);
 } 
 void Settings_SetGrid_VertexSnap(int iPrefsInt)
 {
-	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Grid", "VertexSnap",  iPrefsInt);
+	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Grid", "VertexSnap",  iPrefsInt);
 }
 
 void Settings_SetGrid_SnapVertexManip(int iPrefsInt)
 {
-	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Grid", "SnapVertexManip",  iPrefsInt);
+	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Grid", "SnapVertexManip",  iPrefsInt);
 } 
 
 
 
 void Settings_SetMouse_LeftBut(int iPrefsInt)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "LeftBut",  iPrefsInt);
+	((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "LeftBut",  iPrefsInt);
 } 
 void Settings_SetMouse_MidBut(int iPrefsInt)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "MidBut",  iPrefsInt);
-	((CJweApp*)AfxGetApp())->m_pMouseSettings->m_eMiddleButton=(eMouseMiddleButton)iPrefsInt;
+	((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "MidBut",  iPrefsInt);
+	((CGweApp*)AfxGetApp())->m_pMouseSettings->m_eMiddleButton=(eMouseMiddleButton)iPrefsInt;
 } 
 void Settings_SetMouse_RightBut(int iPrefsInt)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "RightBut",  iPrefsInt);
-	((CJweApp*)AfxGetApp())->m_pMouseSettings->m_eRightButton=(eMouseRightButton)iPrefsInt;
+	((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "RightBut",  iPrefsInt);
+	((CGweApp*)AfxGetApp())->m_pMouseSettings->m_eRightButton=(eMouseRightButton)iPrefsInt;
 } 
 
 
 void Settings_SetMouse_Wheel(int iPrefsInt)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "Wheel",  iPrefsInt);
-	((CJweApp*)AfxGetApp())->m_pMouseSettings->m_eWheel=(eMouseWheel)iPrefsInt;
+	((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "Wheel",  iPrefsInt);
+	((CGweApp*)AfxGetApp())->m_pMouseSettings->m_eWheel=(eMouseWheel)iPrefsInt;
 } 
 
 void Settings_SetMouse_HotSelect(int iPrefsInt)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "HotSelect",  iPrefsInt);
-	((CJweApp*)AfxGetApp())->m_pMouseSettings->m_bHotSelect = iPrefsInt;
+	((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Mouse", "HotSelect",  iPrefsInt);
+	((CGweApp*)AfxGetApp())->m_pMouseSettings->m_bHotSelect = iPrefsInt;
 } 
 
 
 
-void Settings_SetJet_Coll(int iPrefsInt)
+void Settings_SetG3D_Coll(int iPrefsInt)
 {
-	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Jet", "Coll",  iPrefsInt);
+	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Jet", "Coll",  iPrefsInt);
 } 
-void Settings_SetJet_Grav(int iPrefsInt)
+void Settings_SetG3D_Grav(int iPrefsInt)
 {
-	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Jet", "Grav",  iPrefsInt);
+	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Jet", "Grav",  iPrefsInt);
 } 
-void Settings_SetJet_Slid(int iPrefsInt)
+void Settings_SetG3D_Slid(int iPrefsInt)
 {
-	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Jet", "Slid",  iPrefsInt);
+	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Jet", "Slid",  iPrefsInt);
 } 
-void Settings_SetJet_Stair(int iPrefsInt)
+void Settings_SetG3D_Stair(int iPrefsInt)
 {
-	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Jet", "Stair",  iPrefsInt);
+	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Jet", "Stair",  iPrefsInt);
 } 
-void Settings_SetJet_Height(char *sPrefsString)
+void Settings_SetG3D_Height(char *sPrefsString)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileString( "Settings_Jet", "Height",  sPrefsString);
+	((CGweApp*)AfxGetApp())->WriteProfileString( "Settings_Jet", "Height",  sPrefsString);
 } 
-void Settings_SetJet_Window(char *sPrefsString)
+void Settings_SetG3D_Window(char *sPrefsString)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileString( "Settings_Jet", "Window",  sPrefsString);
+	((CGweApp*)AfxGetApp())->WriteProfileString( "Settings_Jet", "Window",  sPrefsString);
 } 
-void Settings_SetJet_Fullscreen(char *sPrefsString)
+void Settings_SetG3D_Fullscreen(char *sPrefsString)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileString( "Settings_Jet", "Fullscreen",  sPrefsString);
+	((CGweApp*)AfxGetApp())->WriteProfileString( "Settings_Jet", "Fullscreen",  sPrefsString);
 } 
 
 
 
 void Settings_SetPath_UBrush(char *sPrefsString)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileString( "Settings_Path", "UBrush",  sPrefsString);
+	((CGweApp*)AfxGetApp())->WriteProfileString( "Settings_Path", "UBrush",  sPrefsString);
 } 
 
 void Settings_SetPath_Textures(char *sPrefsString)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileString( "Settings_Path", "Material",  sPrefsString);
+	((CGweApp*)AfxGetApp())->WriteProfileString( "Settings_Path", "Material",  sPrefsString);
 } 
 
 // Added JH 3.3.2000
 void Settings_SetView_ShowMousePos(int iPrefsInt)
-{	  ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_View", "ShowMousePos",  iPrefsInt);
+{	  ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_View", "ShowMousePos",  iPrefsInt);
 }
 
 void Settings_SetView_ShowSize(int iPrefsInt)		
-{	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_View", "ShowSize",  iPrefsInt);
+{	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_View", "ShowSize",  iPrefsInt);
 }
 
 void Settings_SetView_ShowRuler(int iPrefsInt)
-{	((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_View", "ShowRuler",  iPrefsInt);
+{	((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_View", "ShowRuler",  iPrefsInt);
 }
 
 void Settings_SetView_CrossCursor(int iPrefsInt)
-{	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_View", "CrossCursor",  iPrefsInt);
+{	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_View", "CrossCursor",  iPrefsInt);
 }
 
 // Added JH 6.3.2000
 void Settings_SetGlobal_ToolbarText(int iPrefsInt)		
-{	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Global", "ToolbarText",  iPrefsInt);
+{	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Global", "ToolbarText",  iPrefsInt);
 }
 
 void Settings_SetGlobal_ToolbarFlat(int iPrefsInt)		
-{	 ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Global", "ToolbarFlat",  iPrefsInt);
+{	 ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Global", "ToolbarFlat",  iPrefsInt);
 }
 
 void Settings_SetView_PreviewView(int iPrefsInt)		
-{	  ((CJweApp*)AfxGetApp())->WriteProfileInt("Settings_View", "PreviewView",  iPrefsInt);
+{	  ((CGweApp*)AfxGetApp())->WriteProfileInt("Settings_View", "PreviewView",  iPrefsInt);
 }
 
 void Settings_SetView_Nums(int iPrefsInt)		
-{	  ((CJweApp*)AfxGetApp())->WriteProfileInt("Settings_View", "NumViews",  iPrefsInt);
+{	  ((CGweApp*)AfxGetApp())->WriteProfileInt("Settings_View", "NumViews",  iPrefsInt);
 }
 
 // Added JH 11.3.2000
 void Settings_SetPath_Shaders(char *sPrefsString)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileString( "Settings_Path", "Shaders",  sPrefsString);
+	((CGweApp*)AfxGetApp())->WriteProfileString( "Settings_Path", "Shaders",  sPrefsString);
 }
 
 void Settings_SetGlobal_UndoBuffer(int iPrefsInt)		
-{	  ((CJweApp*)AfxGetApp())->WriteProfileInt("Settings_Global", "UndoBuffer",  iPrefsInt);
+{	  ((CGweApp*)AfxGetApp())->WriteProfileInt("Settings_Global", "UndoBuffer",  iPrefsInt);
 }
 
 void Settings_SetGlobal_BackupFile(int iPrefsInt)		
-{	  ((CJweApp*)AfxGetApp())->WriteProfileInt("Settings_Global", "BackupFile",  iPrefsInt);
+{	  ((CGweApp*)AfxGetApp())->WriteProfileInt("Settings_Global", "BackupFile",  iPrefsInt);
 }
 
 void Settings_SetGlobal_Thumbnail(int iPrefsInt)		
-{	  ((CJweApp*)AfxGetApp())->WriteProfileInt("Settings_Global", "Thumbnail",  iPrefsInt);
+{	  ((CGweApp*)AfxGetApp())->WriteProfileInt("Settings_Global", "Thumbnail",  iPrefsInt);
 }
 
 // Added JH 24.3.2000
 
 void Settings_SetJEdit_Version(int iPrefsInt)		
-{	  ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_JEdit", "Version", iPrefsInt );
+{	  ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_JEdit", "Version", iPrefsInt );
 }
 
 void Settings_SetJEdit_ShowDisclaimer(int iPrefsInt)		
-{	  ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_JEdit", "Disclaimer", iPrefsInt );
+{	  ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_JEdit", "Disclaimer", iPrefsInt );
 }
 
 
 // Added JH 30.3.2000
 
 void Settings_SetEdit_Selection(int iPrefsInt)		
-{	  ((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Edit", "Selection", iPrefsInt );
+{	  ((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Edit", "Selection", iPrefsInt );
 }
 
 // EOF_JH
@@ -610,80 +610,80 @@ void Settings_SetEdit_Selection(int iPrefsInt)
 
 char	* Settings_GetGrid_SnapDegrees(char *sRet, int istrlen)
 {
-	strncpy (sRet, (LPCSTR)  ((CJweApp*)AfxGetApp())->GetProfileString( "Settings_Grid", "SnapDegrees",  "15"),istrlen);
+	strncpy (sRet, (LPCSTR)  ((CGweApp*)AfxGetApp())->GetProfileString( "Settings_Grid", "SnapDegrees",  "15"),istrlen);
 	return sRet;
 } 
 
 int Settings_GetGrid_VertexSnap()
 {
-	return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Grid", "VertexSnap",  8);
+	return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Grid", "VertexSnap",  8);
 }
 
 int Settings_GetGrid_SnapVertexManip()
 {
-	return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Grid", "SnapVertexManip",  1);
+	return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Grid", "SnapVertexManip",  1);
 } 
 
 
 int	Settings_GetMouse_LeftBut()
 {
-	return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "LeftBut",  0);
+	return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "LeftBut",  0);
 } 
 int	Settings_GetMouse_MidBut()
 {
-	return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "MidBut",  0);
+	return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "MidBut",  0);
 } 
 
 int	Settings_GetMouse_RightBut()
 {
-	return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "RightBut",  0);
+	return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "RightBut",  0);
 } 
 
 int	Settings_GetMouse_Wheel()
 {
-	return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "Wheel",  0);
+	return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "Wheel",  0);
 } 
 
 int Settings_GetMouse_HotSelect()
 {
-	return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "HotSelect",  1);
+	return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Mouse", "HotSelect",  1);
 } 
 
 
 
-int Settings_GetJet_Coll()
+int Settings_GetG3D_Coll()
 {
-	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Jet", "Coll",  1);
+	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Jet", "Coll",  1);
 } 
 
-int Settings_GetJet_Grav()
+int Settings_GetG3D_Grav()
 {
-	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Jet", "Grav",  1);
+	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Jet", "Grav",  1);
 } 
 
-int Settings_GetJet_Slid()
+int Settings_GetG3D_Slid()
 {
-	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Jet", "Slid",  1);
+	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Jet", "Slid",  1);
 } 
-int Settings_GetJet_Stair()
+int Settings_GetG3D_Stair()
 {
-	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Jet", "Stair",  1);
+	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Jet", "Stair",  1);
 } 
 
-char	* Settings_GetJet_Height(char *sRet, int istrlen)
+char	* Settings_GetG3D_Height(char *sRet, int istrlen)
 {
-	strncpy (sRet, (LPCSTR)  ((CJweApp*)AfxGetApp())->GetProfileString( "Settings_Jet", "Height",  "22"),istrlen);
+	strncpy (sRet, (LPCSTR)  ((CGweApp*)AfxGetApp())->GetProfileString( "Settings_Jet", "Height",  "22"),istrlen);
 	return sRet;
 } 
 
-char	* Settings_GetJet_Window(char *sRet, int istrlen)
+char	* Settings_GetG3D_Window(char *sRet, int istrlen)
 {
-	strncpy (sRet, (LPCSTR)  ((CJweApp*)AfxGetApp())->GetProfileString( "Settings_Jet", "Window",  "???"),istrlen);
+	strncpy (sRet, (LPCSTR)  ((CGweApp*)AfxGetApp())->GetProfileString( "Settings_Jet", "Window",  "???"),istrlen);
 	return sRet;
 } 
-char	* Settings_GetJet_Fullscreen(char *sRet, int istrlen)
+char	* Settings_GetG3D_Fullscreen(char *sRet, int istrlen)
 {
-	strncpy (sRet, (LPCSTR)  ((CJweApp*)AfxGetApp())->GetProfileString( "Settings_Jet", "Fullscreen",  "???"),istrlen);
+	strncpy (sRet, (LPCSTR)  ((CGweApp*)AfxGetApp())->GetProfileString( "Settings_Jet", "Fullscreen",  "???"),istrlen);
 	return sRet;
 } 
 
@@ -691,13 +691,13 @@ char	* Settings_GetJet_Fullscreen(char *sRet, int istrlen)
 
 char	* Settings_GetPath_UBrush(char *sRet, int istrlen)
 {
-	strncpy (sRet, (LPCSTR)   ((CJweApp*)AfxGetApp())->GetProfileString( "Settings_Path", "UBrush",  ".\\UserBrush"),istrlen);
+	strncpy (sRet, (LPCSTR)   ((CGweApp*)AfxGetApp())->GetProfileString( "Settings_Path", "UBrush",  ".\\UserBrush"),istrlen);
 	return sRet;
 } 
 
 char	* Settings_GetPath_Textures(char *sRet, int istrlen)
 {
-	strncpy (sRet, (LPCSTR)  ((CJweApp*)AfxGetApp())->GetProfileString( "Settings_Path", "Material",  ".\\GlobalMaterials"),istrlen);
+	strncpy (sRet, (LPCSTR)  ((CGweApp*)AfxGetApp())->GetProfileString( "Settings_Path", "Material",  ".\\GlobalMaterials"),istrlen);
 	return sRet;
 } 
 
@@ -706,7 +706,7 @@ long	Settings_GetKey(int Function)
 {
 	char	KeyName[200];
 	sprintf (KeyName,"KeyToFunction%d",Function);
-	return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Key", KeyName,  0);
+	return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Key", KeyName,  0);
 }
 
 
@@ -715,7 +715,7 @@ void	Settings_SetKey(int Function, long lScanCode)
 {
 	char	KeyName[200];
 	sprintf (KeyName,"KeyToFunction%d",Function);
-	((CJweApp*)AfxGetApp())->WriteProfileInt( "Settings_Key", KeyName,  lScanCode);
+	((CGweApp*)AfxGetApp())->WriteProfileInt( "Settings_Key", KeyName,  lScanCode);
 }
 
 // EOF_JH
@@ -723,38 +723,38 @@ void	Settings_SetKey(int Function, long lScanCode)
 
 // Added JH 3.3.2000
 int Settings_GetView_ShowMousePos()
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "ShowMousePos",  0);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "ShowMousePos",  0);
 }
 
 int Settings_GetView_ShowSize()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "ShowSize",  0);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "ShowSize",  0);
 }
 
 int Settings_GetView_ShowRuler()
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "ShowRuler",  0);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "ShowRuler",  0);
 }
 
 int Settings_GetView_CrossCursor()
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "CrossCursor",  0);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "CrossCursor",  0);
 }
 // EOF_JH
 
 
 // Added JH 6.3.2000
 int Settings_GetGlobal_ToolbarFlat()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "ToolbarFlat",  1);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "ToolbarFlat",  1);
 }
 
 int Settings_GetGlobal_ToolbarText()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "ToolbarText",  1);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "ToolbarText",  1);
 }
 
 int Settings_GetView_PreviewView()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "PreviewView",  1);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "PreviewView",  1);
 }
 
 int Settings_GetView_Nums()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "NumViews",  4);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_View", "NumViews",  4);
 }
 
 // Added JH 11.3.2000
@@ -762,37 +762,37 @@ int Settings_GetView_Nums()
 
 char	* Settings_GetPath_Shaders(char *sRet, int istrlen)
 {
-	strncpy (sRet, (LPCSTR)  ((CJweApp*)AfxGetApp())->GetProfileString( "Settings_Path", "Shaders",  ".\\Shaders"),istrlen);
+	strncpy (sRet, (LPCSTR)  ((CGweApp*)AfxGetApp())->GetProfileString( "Settings_Path", "Shaders",  ".\\Shaders"),istrlen);
 	return sRet;
 } 
 
 int Settings_GetGlobal_UndoBuffer()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "UndoBuffer",  10);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "UndoBuffer",  10);
 }
 
 int Settings_GetGlobal_BackupFile()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "BackupFile",  10);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "BackupFile",  10);
 }
 
 int Settings_GetGlobal_Thumbnail()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "Thumbnail",  1);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Global", "Thumbnail",  1);
 }
 
 // Added JH 24.3.2000
 
 int Settings_GetJEdit_Version()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_JEdit", "Version",  0);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_JEdit", "Version",  0);
 }
 
 int Settings_GetJEdit_ShowDisclaimer()		
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_JEdit", "Disclaimer",  1);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_JEdit", "Disclaimer",  1);
 }
 
 // Added JH 30.3.2000
 // EOF_JH
 
 int Settings_GetEdit_Selection ()
-{	 return ((CJweApp*)AfxGetApp())->GetProfileInt( "Settings_Edit", "Selection",  0);
+{	 return ((CGweApp*)AfxGetApp())->GetProfileInt( "Settings_Edit", "Selection",  0);
 }
 
 //	END JH
@@ -806,8 +806,8 @@ bool	Settings_ResetTextureGroups()
 	CString	strTextureGroupFolder = m_strTextureGroupFolderKey;
 	strTextureGroupFolder.Left(strTextureGroupFolder.GetLength() -1);
 
-	((CJweApp*)AfxGetApp())->DelRegTree(((CJweApp*)AfxGetApp())->GetAppRegistryKey(),m_strTextureGroupNamesKey);
-	((CJweApp*)AfxGetApp())->DelRegTree(((CJweApp*)AfxGetApp())->GetAppRegistryKey(),strTextureGroupFolder);
+	((CGweApp*)AfxGetApp())->DelRegTree(((CGweApp*)AfxGetApp())->GetAppRegistryKey(),m_strTextureGroupNamesKey);
+	((CGweApp*)AfxGetApp())->DelRegTree(((CGweApp*)AfxGetApp())->GetAppRegistryKey(),strTextureGroupFolder);
 
 	return true;
 }
@@ -825,7 +825,7 @@ void	Settings_SetTexturesGroups(CStringList *pStrNewGroups)
 	{
 		strIterator.Format("%d", i);
 		strTemp = pStrNewGroups->GetNext(pos);
-		((CJweApp*)AfxGetApp())->WriteProfileString(m_strTextureGroupNamesKey, strIterator, strTemp);
+		((CGweApp*)AfxGetApp())->WriteProfileString(m_strTextureGroupNamesKey, strIterator, strTemp);
 
 		i++;
 	}
@@ -839,14 +839,14 @@ void	Settings_RestoreTexturesGroups(CStringList *pStringList)
 	CString		strNULL = _T("");
 	int i = 0;
 	strIterator.Format("%d", i);
-	strTemp = ((CJweApp*)AfxGetApp())->GetProfileString(m_strTextureGroupNamesKey, strIterator);
+	strTemp = ((CGweApp*)AfxGetApp())->GetProfileString(m_strTextureGroupNamesKey, strIterator);
 
 	while (strTemp != strNULL)
 	{
 		pStringList->AddTail(strTemp);
 		i ++;
 		strIterator.Format("%d", i);
-		strTemp = ((CJweApp*)AfxGetApp())->GetProfileString(m_strTextureGroupNamesKey, strIterator);
+		strTemp = ((CGweApp*)AfxGetApp())->GetProfileString(m_strTextureGroupNamesKey, strIterator);
 	}
 }
 
@@ -864,7 +864,7 @@ void	Settings_SetTexturesInGroup(CString strGroupName, CStringList *pSringListTe
 	{
 		strIterator.Format("%d", i);
 		strTemp = pSringListTextureNames->GetNext(pos);
-		((CJweApp*)AfxGetApp())->WriteProfileString(strPrefixxedGroupName, strIterator, strTemp);
+		((CGweApp*)AfxGetApp())->WriteProfileString(strPrefixxedGroupName, strIterator, strTemp);
 
 		i++;
 	}
@@ -879,14 +879,14 @@ void	Settings_RestoreTexturesInGroup(CString strGroupName, CStringList *pSringLi
 	CString		strNULL = _T("");
 	int i = 0;
 	strIterator.Format("%d", i);
-	strTemp = ((CJweApp*)AfxGetApp())->GetProfileString(strPrefixxedGroupName, strIterator);
+	strTemp = ((CGweApp*)AfxGetApp())->GetProfileString(strPrefixxedGroupName, strIterator);
 
 	while (strTemp != strNULL)
 	{
 		pSringListTextureNames->AddTail(strTemp);
 		i ++;
 		strIterator.Format("%d", i);
-		strTemp = ((CJweApp*)AfxGetApp())->GetProfileString(strPrefixxedGroupName, strIterator);
+		strTemp = ((CGweApp*)AfxGetApp())->GetProfileString(strPrefixxedGroupName, strIterator);
 	}
 }
 
@@ -896,36 +896,36 @@ void	Settings_RestoreTexturesInGroup(CString strGroupName, CStringList *pSringLi
 //	tom morris may 2005
 void	Settings_SetAutosaveMinutes(int iMiinutes)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileInt(m_strAutosaveKey, "Minutes", iMiinutes);
+	((CGweApp*)AfxGetApp())->WriteProfileInt(m_strAutosaveKey, "Minutes", iMiinutes);
 }
 
 
 int		Settings_GetAutosaveMinutes()
 {
-	return ((CJweApp*)AfxGetApp())->GetProfileInt(m_strAutosaveKey, "Minutes", 1);
+	return ((CGweApp*)AfxGetApp())->GetProfileInt(m_strAutosaveKey, "Minutes", 1);
 }
 
 
 void	Settings_SetAutosaveDirectory(CString strDir)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileString(m_strAutosaveKey, "Directory", strDir);
+	((CGweApp*)AfxGetApp())->WriteProfileString(m_strAutosaveKey, "Directory", strDir);
 }
 
 
 LPCTSTR	Settings_GetAutosaveDirectory()
 {
-	return	((CJweApp*)AfxGetApp())->GetProfileString(m_strAutosaveKey, "Directory", "C:\\Temp");
+	return	((CGweApp*)AfxGetApp())->GetProfileString(m_strAutosaveKey, "Directory", "C:\\Temp");
 }
 
 // BEGIN - Disable auto save option - paradoxnj 8/11/2005
 BOOL Settings_GetAutosaveDisabled()
 {
-	return (BOOL)((CJweApp*)AfxGetApp())->GetProfileInt(m_strAutosaveKey, "Disabled", 0);
+	return (BOOL)((CGweApp*)AfxGetApp())->GetProfileInt(m_strAutosaveKey, "Disabled", 0);
 }
 
 void Settings_SetAutosaveDisabled(BOOL disabled)
 {
-	((CJweApp*)AfxGetApp())->WriteProfileInt(m_strAutosaveKey, "Disabled", disabled);
+	((CGweApp*)AfxGetApp())->WriteProfileInt(m_strAutosaveKey, "Disabled", disabled);
 }
 // END - Disable auto save option - paradoxnj 8/11/2005
 

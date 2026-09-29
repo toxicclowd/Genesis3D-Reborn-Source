@@ -7,7 +7,7 @@
 #define IDP_OLE_INIT_FAILED             101
 #define IDP_SOCKETS_INIT_FAILED         104
 #define IDR_MAINFRAME                   128
-#define IDR_Jet3DActorTYPE              129
+#define IDR_G3DActorTYPE              129
 #define IDD_ACTOR_BROWSER               130
 #define IDD_BAR_BROWSER                 131
 #define IDB_BITMAP_MOTION               133

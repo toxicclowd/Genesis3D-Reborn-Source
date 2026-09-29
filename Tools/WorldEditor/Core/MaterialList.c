@@ -19,7 +19,7 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include "vfile.h"
-#include "jelist.h"
+#include "grList.h"
 #include <string.h>
 #include "assert.h"
 #include "errorlog.h"

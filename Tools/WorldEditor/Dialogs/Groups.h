@@ -37,12 +37,12 @@ class CGroups : public CDialog
 public:
 	CGroups(CWnd* pParent = NULL);   // standard constructor
 	~CGroups();
-	void SetCurrentDocument(CJweDoc *pDoc);
+	void SetCurrentDocument(CGweDoc *pDoc);
 	grBoolean AddObject( Object* pObject );
 	void RenameObject( Object *pObject );
-	void AddSelection(CJweDoc *pDoc);
+	void AddSelection(CGweDoc *pDoc);
 	void RemoveDeleted();
-	void Update(CJweDoc *pDoc);
+	void Update(CGweDoc *pDoc);
 	void Reset();
 	void ExportPrefab() { OnWorldGroupExporttoprefab(); }
 	void ImportPrefab() { OnWorldGroupImportfrom(); }

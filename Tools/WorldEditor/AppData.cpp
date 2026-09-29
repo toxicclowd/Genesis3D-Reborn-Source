@@ -29,7 +29,7 @@
 //	by trilobite jan. 2011
 //#include "stdafx.h"
 //
-#include "jwe.h"
+#include "GWE.H"
 #include "Ram.h"
 
 #include "AppData.h"
@@ -162,51 +162,51 @@ void AppData_Destroy( AppData ** ppAppData )
 
 uint32 AppData_GetHandleCornerBitmap( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMHandleCorner ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMHandleCorner ;
 }// AppData_GetHandleCornerBitmap
 
 uint32 AppData_GetHandleEdgeBitmap( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMHandleEdge ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMHandleEdge ;
 }// AppData_GetHandleEdgeBitmap
 
 uint32 AppData_GetHandleRotateTL( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMRotateTL ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMRotateTL ;
 }// AppData_GetHandleRotateTL
 
 uint32 AppData_GetHandleRotateTR( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMRotateTR ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMRotateTR ;
 }// AppData_GetHandleRotateTR
 
 uint32 AppData_GetHandleRotateBL( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMRotateBL ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMRotateBL ;
 }// AppData_GetHandleRotateBL
 
 uint32 AppData_GetHandleRotateBR( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMRotateBR ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMRotateBR ;
 }// AppData_GetHandleRotateBL
 
 uint32 AppData_GetHandleShearLR( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMShearLR ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMShearLR ;
 }// AppData_GetHandleShearLR
 
 uint32 AppData_GetHandleShearTB( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMShearTB ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMShearTB ;
 }// AppData_GetHandleShearTB
 
 uint32 AppData_GetVertex( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMVertex ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMVertex ;
 }//AppData_GetVertex
 
 uint32 AppData_GetSelectedVertex( void )
 {
-	return (uint32)((CJweApp*)AfxGetApp())->m_pAppData->hBMSelectedVertex ;
+	return (uint32)((CGweApp*)AfxGetApp())->m_pAppData->hBMSelectedVertex ;
 }//AppData_GetSelectedVertex
 

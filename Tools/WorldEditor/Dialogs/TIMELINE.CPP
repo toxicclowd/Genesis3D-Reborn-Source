@@ -29,7 +29,7 @@
 #include "ram.h"
 #include "grProperty.h"
 
-#include "jwe.h"
+#include "GWE.H"
 #include "timeline.h"
 #include "object.h"
 #include "objectlist.h"
@@ -57,7 +57,7 @@
 		<        SizeX				>
 */
 
-#ifndef JET_20
+#ifndef G3D_20
 #define GR_ERR_WINDOWS_API_FAILURE 99
 #define GR_ERR_SUBSYSTEM_FAILURE   98
 #define grErrorLog_IntToString(xx) NULL
@@ -352,7 +352,7 @@ END_MESSAGE_MAP()
 void CTimeLine::OnSetObjectNames()
 {
 	CMainFrame	*pMainFrm	= (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc		*pDoc		= pMainFrm->GetCurrentDocument() ;
+	CGweDoc		*pDoc		= pMainFrm->GetCurrentDocument() ;
 	grWorld		*World;
 	grObject	*CurrObject;
 	const char	*Name;
@@ -446,7 +446,7 @@ grBoolean	CTimeLine::UpdateTimeDelta(float TimeDelta )
 	int TimeLineNdx;
 	grBoolean PlayBack;
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	assert(m_TE);
 
@@ -3400,7 +3400,7 @@ grBoolean TimeEdit_GetPathObject(Object** op)
 {
 	ObjectList *OL;
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	ObjectIterator Iterator;
 
 	assert(pDoc);
@@ -3434,7 +3434,7 @@ void Callback_ReturnTime(TimeData *TD)
 {
 	grProperty_Data Data;
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	Data.Float = TD->CurrTime;
 	pDoc->SetProperty( TD->CurrTimeProp, PROPERTY_CURTIME_TYPE, &Data );
@@ -3445,7 +3445,7 @@ void Callback_ReturnData(TimeData *TD, int ChannelNdx)
 	int PropType[MAX_CHANNELS] = {PROPERTY_CHANNEL_POS_TYPE, PROPERTY_CHANNEL_ROT_TYPE, PROPERTY_CHANNEL_EVENT_TYPE};
 	grProperty_Data Data;
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	Data.Ptr = &TD->Channel[ChannelNdx];
 	pDoc->SetProperty( TD->ChannelPropID[ChannelNdx], PropType[ChannelNdx], &Data );
@@ -3507,7 +3507,7 @@ grObject *TimeEdit_GetObject(TimeEdit *TE, int TimeLineNdx)
 void TimeEdit_SelectObject(TimeEdit *TE)
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	grObject *obj;
 
 	obj = TimeEdit_GetObject(TE, TE->TimeLine - TE->TimeLineList);
@@ -3522,7 +3522,7 @@ void TimeEdit_SelectObject(TimeEdit *TE)
 void TimeEdit_MarkObject(TimeEdit *TE, int TimeLineNdx)
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	grObject *obj;
 
 	obj = TimeEdit_GetObject(TE, TimeLineNdx);

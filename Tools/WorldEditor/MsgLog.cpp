@@ -26,7 +26,7 @@
 //
 #include "WndReg.h"
 #include "ram.h"
-#include "jwe.h"
+#include "GWE.H"
 
 typedef enum {
 	LOGMODE_NONE,

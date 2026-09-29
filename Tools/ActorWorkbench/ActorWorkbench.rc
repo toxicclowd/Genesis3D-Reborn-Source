@@ -64,7 +64,7 @@ END
 // remains consistent on all systems.
 IDR_ICON_HEAD           ICON                    "res\\Head.ico"
 IDR_MAINFRAME           ICON                    "res\\ActorWorkbench.ico"
-IDR_Jet3DActorTYPE      ICON                    "res\\ActorWorkbenchDoc.ico"
+IDR_G3DActorTYPE      ICON                    "res\\ActorWorkbenchDoc.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

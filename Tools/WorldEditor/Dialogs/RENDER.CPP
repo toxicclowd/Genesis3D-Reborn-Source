@@ -20,7 +20,7 @@
 /****************************************************************************************/
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "render.h"
 #include "MfcUtil.h"
 #include "MainFrm.h"
@@ -123,7 +123,7 @@ BOOL CRender::OnInitDialog()
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }
 
-void CRender::SetCurrentDocument( CJweDoc *pDoc )
+void CRender::SetCurrentDocument( CGweDoc *pDoc )
 {
 	UpdateData( true );
 	m_BrushUpdate = pDoc->GetBrushUpdate();
@@ -135,7 +135,7 @@ void CRender::SetCurrentDocument( CJweDoc *pDoc )
 void CRender::UpdateLevelData()
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	UpdateData( true );
 	pDoc->SetBrushUpdate( m_BrushUpdate );
@@ -195,7 +195,7 @@ void CRender::OnLightRealtime()
 void CRender::OnUpdateSel() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	pDoc->UpdateSelection();
 	
@@ -204,7 +204,7 @@ void CRender::OnUpdateSel()
 void CRender::OnUpdateall() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	pDoc->UpdateAll();
 	

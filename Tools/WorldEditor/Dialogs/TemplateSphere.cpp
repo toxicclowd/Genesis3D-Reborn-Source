@@ -20,7 +20,7 @@
 /****************************************************************************************/
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "TemplateSphere.h"
 #include "MainFrm.h"
 #include "MfcUtil.h"
@@ -138,7 +138,7 @@ void TemplateSphere::OnKillfocusEdRadius()
 void TemplateSphere::OnToolsPlacecube() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_BOX ) ;
@@ -149,7 +149,7 @@ void TemplateSphere::OnToolsPlacecube()
 void TemplateSphere::OnToolsPlaceentity() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -160,7 +160,7 @@ void TemplateSphere::OnToolsPlaceentity()
 void TemplateSphere::OnToolsPlacelight() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_LIGHT, 0 ) ;
@@ -171,7 +171,7 @@ void TemplateSphere::OnToolsPlacelight()
 void TemplateSphere::OnToolsPlaceterrain() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_TERRAIN, 0 ) ;
@@ -181,7 +181,7 @@ void TemplateSphere::OnToolsPlaceterrain()
 
 void TemplateSphere::UpdateTemplate()
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		pDoc->SetSphereInfo( m_HBand, m_VBand, m_Radius );
@@ -197,7 +197,7 @@ void TemplateSphere::OnKillfocusEdName()
 		m_Name.LoadString( IDS_DEFAULTSPHERETEMPLATENAME ) ;
 
 	UpdateData( false ) ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
 		Object_SetName( pDoc->GetTemplate(), m_Name, SELECT_INVALID_NNUMBER ) ;
@@ -221,7 +221,7 @@ void TemplateSphere::OnKillfocusEdHband()
 
 void TemplateSphere::OnToolsPlacespheroid() 
 {
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 
 	UpdateData( true );
 	pDoc->SetTemplateVisable( m_ShowTemplate );
@@ -232,7 +232,7 @@ void TemplateSphere::OnToolsPlacespheroid()
 BOOL TemplateSphere::OnCommand(WPARAM wParam, LPARAM lParam) 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	
 	if( wParam == 1 )
 	{
@@ -248,7 +248,7 @@ BOOL TemplateSphere::OnCommand(WPARAM wParam, LPARAM lParam)
 void TemplateSphere::OnToolsPlacecylinder() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_CYLINDER ) ;
@@ -275,7 +275,7 @@ void TemplateSphere::OnShowWindow(BOOL bShow, UINT nStatus)
 void TemplateSphere::OnAdd() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	pDoc->Addbrush();
 	
 }
@@ -283,7 +283,7 @@ void TemplateSphere::OnAdd()
 void TemplateSphere::OnReset() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->ResetTemplate();
@@ -294,14 +294,14 @@ void TemplateSphere::OnReset()
 void TemplateSphere::OnSubtract() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	pDoc->Subtractbrush();	
 }
 
 void TemplateSphere::OnToolsPlacesheet() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SHEET ) ;

@@ -32,9 +32,9 @@ typedef struct Select3dContextDef
 
 typedef enum {
 	G3DEDITOR_GET_GRBRUSH = 4000,	// Context is pointer to grBrush pointer (grBrush**)
-	JETEDITOR_SELECT3D,				// Context is Select3dContextDef
-	JETEDITOR_APPLYMATERIAL,		// Context is grBitmap
-	JETEDITOR_APPLYMATERIALSPEC,	// Context is grMaterialSpec
+	G3DEDITOR_SELECT3D,				// Context is Select3dContextDef
+	G3DEDITOR_APPLYMATERIAL,		// Context is grBitmap
+	G3DEDITOR_APPLYMATERIALSPEC,	// Context is grMaterialSpec
 };
 
 #endif // EDITMSG_H

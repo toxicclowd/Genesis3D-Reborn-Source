@@ -21,7 +21,7 @@
 #include "stdafx.h"
 
 #include "Doc.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 
@@ -138,14 +138,14 @@ BOOL CLights::OnInitDialog()
 }// OnInitDialog
 
 // Selection has changed
-void CLights::Update(CJweDoc *pDoc)
+void CLights::Update(CGweDoc *pDoc)
 {
 	LightInfo			LightInfo ;
 	int32			BlankFieldFlag ;
 	int32			nNumber ;
 	const char *	pszName ;
 
-	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CJweDoc)) ) ;
+	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CGweDoc)) ) ;
 
 	pDoc->GetLightInfo( &LightInfo, &BlankFieldFlag ) ;
 
@@ -206,7 +206,7 @@ void CLights::FillFields(LightInfo *pLightInfo, int32 BlankFieldFlag, const char
 void CLights::OnKillfocusEdBrightness() 
 {
 	LightInfo LightInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc == NULL )
 		return ;
 	
@@ -222,7 +222,7 @@ void CLights::OnKillfocusEdBrightness()
 void CLights::OnKillfocusEdRadius() 
 {
 	LightInfo LightInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc == NULL )
 		return ;
 
@@ -238,7 +238,7 @@ void CLights::OnKillfocusEdRadius()
 void CLights::OnKillfocusEdX() 
 {
 	LightInfo LightInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc == NULL )
 		return ;
 	
@@ -288,7 +288,7 @@ LRESULT CLights::OnChangeColor( WPARAM wParam, LPARAM lParam )
 {
 	COLORREF	color  = (COLORREF)lParam ;
 	LightInfo		LightInfo ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc == NULL )
 		return 0 ;
 
@@ -305,7 +305,7 @@ LRESULT CLights::OnChangeColor( WPARAM wParam, LPARAM lParam )
 void CLights::OnKillfocusEdName() 
 {
 	int32		nNumber ;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc == NULL )
 		return ;
 	
@@ -329,7 +329,7 @@ void CLights::OnKillfocusEdName()
 void CLights::OnToolsPlaceterrain() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_TERRAIN, 0 ) ;
@@ -346,7 +346,7 @@ void CLights::OnToolsPlacestaircase()
 void CLights::OnToolsPlacespheroid() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SPHERE ) ;
@@ -358,7 +358,7 @@ void CLights::OnToolsPlacespheroid()
 void CLights::OnToolsPlacelight() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pMainFrm->SetTemplateSubtype( MAINFRM_TEMPLATE_LIGHT ) ;
@@ -369,7 +369,7 @@ void CLights::OnToolsPlacelight()
 void CLights::OnToolsPlacesheet() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SHEET ) ;
@@ -381,7 +381,7 @@ void CLights::OnToolsPlacesheet()
 void CLights::OnToolsPlacecylinder() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_CYLINDER ) ;
@@ -393,7 +393,7 @@ void CLights::OnToolsPlacecylinder()
 void CLights::OnToolsPlacecube() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_BOX ) ;
@@ -434,7 +434,7 @@ void CLights::OnShowWindow(BOOL bShow, UINT nStatus)
 void CLights::OnToolsPlaceentity() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode

@@ -21,7 +21,7 @@
 #include "stdafx.h"
 #include "Doc.h"
 #include "EntityTable.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "MfcUtil.h"
 #include "Ram.h"
@@ -135,7 +135,7 @@ typedef struct tagPropertyListInfo
 {
 	CListBox	*	pLB ;
 	grSymbol	*	pSelect ;
-	CJweDoc		*	pDoc  ;
+	CGweDoc		*	pDoc  ;
 } PropertyListInfo ;
 
 
@@ -355,7 +355,7 @@ void CEntityCP::SetCurrentDocument(grSymbol_Table *pEntities)
 	}
 }// SetCurrentDocument
 
-void CEntityCP::Update(CJweDoc *pDoc)
+void CEntityCP::Update(CGweDoc *pDoc)
 {
 	const char		*	pszType ;
 	const char		*	pszName ;
@@ -363,7 +363,7 @@ void CEntityCP::Update(CJweDoc *pDoc)
 	grSymbol_Table	*	pEntities ;
 	PropertyListInfo	pli ;
 
-	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CJweDoc)) ) ;
+	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CGweDoc)) ) ;
 	
 	// If all entity types are the same...
 	if( pDoc->GetSelType() & LEVEL_SELENTITYTYPE )
@@ -608,7 +608,7 @@ void CEntityCP::OnBnApply()
 {
 	int				iIndex ;
 	FieldInfo	*	pfi ;
-	CJweDoc		*	pDoc ;
+	CGweDoc		*	pDoc ;
 	int32			nDataSize = 0 ;
 	
 	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
@@ -701,7 +701,7 @@ LRESULT CEntityCP::OnChangeColor( WPARAM wParam, LPARAM lParam )
 	COLORREF		Color  = (COLORREF)lParam ;
 	int				iIndex ;
 	FieldInfo	*	pfi ;
-	CJweDoc		*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc		*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 
 	iIndex = m_Properties.GetCurSel( ) ;
 	if( iIndex != -1 && pDoc != NULL )
@@ -721,7 +721,7 @@ LRESULT CEntityCP::OnChangeColor( WPARAM wParam, LPARAM lParam )
 
 void CEntityCP::OnKillfocusEdName() 
 {
-	CJweDoc		*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc		*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 
 	UpdateData( true ) ;
 
@@ -739,7 +739,7 @@ void CEntityCP::OnKillfocusEdName()
 void CEntityCP::OnToolsPlaceterrain() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_TERRAIN, 0 ) ;
@@ -756,7 +756,7 @@ void CEntityCP::OnToolsPlacestaircase()
 void CEntityCP::OnToolsPlacespheroid() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SPHERE ) ;
@@ -768,7 +768,7 @@ void CEntityCP::OnToolsPlacespheroid()
 void CEntityCP::OnToolsPlacesheet() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SHEET ) ;
@@ -780,7 +780,7 @@ void CEntityCP::OnToolsPlacesheet()
 void CEntityCP::OnToolsPlacelight() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -791,7 +791,7 @@ void CEntityCP::OnToolsPlacelight()
 void CEntityCP::OnToolsPlaceentity() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -802,7 +802,7 @@ void CEntityCP::OnToolsPlaceentity()
 void CEntityCP::OnToolsPlacecylinder() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_CYLINDER ) ;
@@ -814,7 +814,7 @@ void CEntityCP::OnToolsPlacecylinder()
 void CEntityCP::OnToolsPlacecube() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_BOX ) ;

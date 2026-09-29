@@ -29,7 +29,7 @@
 
 #include "stdafx.h"
 
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "Ram.h"
 #include "Util.h"
@@ -50,15 +50,15 @@ static char THIS_FILE[] = __FILE__;
 #define AUTOSCROLL_PERIOD		100
 #define	AUTOSCROLL_DISTANCE		8
 
-int CJweView::m_CXDRAG = 2 ;
-int CJweView::m_CYDRAG = 2 ;
+int CGweView::m_CXDRAG = 2 ;
+int CGweView::m_CYDRAG = 2 ;
 
 /////////////////////////////////////////////////////////////////////////////
 // CJweView
 
-IMPLEMENT_DYNCREATE(CJweView, CView)
+IMPLEMENT_DYNCREATE(CGweView, CView)
 
-BEGIN_MESSAGE_MAP(CJweView, CView)
+BEGIN_MESSAGE_MAP(CGweView, CView)
 	//{{AFX_MSG_MAP(CJweView)
 	ON_WM_ERASEBKGND()
 	ON_WM_CREATE()
@@ -78,7 +78,7 @@ BEGIN_MESSAGE_MAP(CJweView, CView)
 	ON_WM_TIMER()
 	ON_WM_RBUTTONDOWN()
 	//	tom morris may 2005
-	ON_MESSAGE(WM_JWEVIEW_AUTOSAVETIMER,OnAutosaveTimer)
+	ON_MESSAGE(WM_GWEVIEW_AUTOSAVETIMER,OnAutosaveTimer)
 	//	end tom morris may 2005
 //---------------------------------------------------
 // Added DJT
@@ -104,7 +104,7 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CJweView construction/destruction
 
-CJweView::CJweView()	: m_nViewType(0), m_pOrtho(NULL), m_bCaptured(false), m_ScrollType(VIEW_SCROLL_NONE),
+CGweView::CGweView()	: m_nViewType(0), m_pOrtho(NULL), m_bCaptured(false), m_ScrollType(VIEW_SCROLL_NONE),
 							m_bDragging(false), m_Mode(VIEW_MODE_NONE),
 							m_bInit(false), m_bPanning(false)
 							
@@ -115,11 +115,11 @@ CJweView::CJweView()	: m_nViewType(0), m_pOrtho(NULL), m_bCaptured(false), m_Scr
 }
 
 
-CJweView::~CJweView()
+CGweView::~CGweView()
 {
 }
 
-BOOL CJweView::PreCreateWindow(CREATESTRUCT& cs)
+BOOL CGweView::PreCreateWindow(CREATESTRUCT& cs)
 {
 	// TODO: Modify the Window class or styles here by modifying
 	//  the CREATESTRUCT cs
@@ -133,7 +133,7 @@ BOOL CJweView::PreCreateWindow(CREATESTRUCT& cs)
 //	PostNcDestroy	-	tom morris may 2005
 //	
 //////////////////////////////////////////////////////////////////////////////////////
-void CJweView::PostNcDestroy() 
+void CGweView::PostNcDestroy() 
 {
 	//	three views use this class. Run this code only for a single view.
 	//	otherwise this will be done three times for each document
@@ -180,7 +180,7 @@ void CJweView::PostNcDestroy()
 //	OnAutosaveTimer	-	tom morris may 2005
 //	
 //////////////////////////////////////////////////////////////////////////////////////
-LRESULT CJweView::OnAutosaveTimer(WPARAM w, LPARAM l)
+LRESULT CGweView::OnAutosaveTimer(WPARAM w, LPARAM l)
 {
 	//	***********************************************************
 	//	Disable Autosave while testing stuff that crashes on saving
@@ -238,7 +238,7 @@ LRESULT CJweView::OnAutosaveTimer(WPARAM w, LPARAM l)
 
 			// Now, check for document name and extension
 			CString		findStringJDB = ".JDB";
-			CString		findStringJ3D = ".j3d";
+			CString		findStringG3D = ".j3d";
 			CString		fname;
 			CString		fileTitle = GetDocument()->GetTitle();	//	get our file name
 			CString		filePath = GetDocument()->GetPathName();
@@ -248,10 +248,10 @@ LRESULT CJweView::OnAutosaveTimer(WPARAM w, LPARAM l)
 				fname = (strAutosaveDir+"\\"+fileTitle); 
 			}
 
-			if (filePath.Find(findStringJ3D, 0) > 1)	//	is it a *.j3d file?
+			if (filePath.Find(findStringG3D, 0) > 1)	//	is it a *.j3d file?
 			{
 				//	delete the j3d extension
-				fileTitle.Delete(fileTitle.Find(findStringJ3D, 0),4);
+				fileTitle.Delete(fileTitle.Find(findStringG3D, 0),4);
 				//	add the TLB extension
 				fname = (strAutosaveDir+"\\"+fileTitle +".JDB"); 
 			}
@@ -279,7 +279,7 @@ LRESULT CJweView::OnAutosaveTimer(WPARAM w, LPARAM l)
 }
 
 
-void CJweView::OnViewType(UINT nID)
+void CGweView::OnViewType(UINT nID)
 {
 	Ortho_ViewType ovt ;
 
@@ -307,12 +307,12 @@ void CJweView::OnViewType(UINT nID)
 	
 
 // Added JH 11.3.2000
-Ortho	*CJweView::GetOrtho()
+Ortho	*CGweView::GetOrtho()
 { return m_pOrtho;
 }
 
 
-void CJweView::OnUpdateViewType( CCmdUI* pCmdUI )
+void CGweView::OnUpdateViewType( CCmdUI* pCmdUI )
 {
 	pCmdUI->Enable( TRUE ) ;
 	pCmdUI->SetCheck( pCmdUI->m_nID == m_nViewType ) ;
@@ -329,10 +329,10 @@ void CJweView::OnUpdateViewType( CCmdUI* pCmdUI )
 #define TRACE_PERF
 
 //	begin tom morris feb 2005
-void CJweView::OnDraw(CDC* pDC)
+void CGweView::OnDraw(CDC* pDC)
 {
 	CRect	r ;
-	CJweDoc* pDoc = GetDocument();
+	CGweDoc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
 	const grExtBox * pNewBrushBounds;
 
@@ -605,27 +605,27 @@ void CJweView::OnEndPrinting(CDC* pDC, CPrintInfo* pInfo)
 // CJweView diagnostics
 
 #ifdef _DEBUG
-void CJweView::AssertValid() const
+void CGweView::AssertValid() const
 {
 	CView::AssertValid();
 }
 
-void CJweView::Dump(CDumpContext& dc) const
+void CGweView::Dump(CDumpContext& dc) const
 {
 	CView::Dump(dc);
 }
 
-CJweDoc* CJweView::GetDocument() // non-debug version is inline
+CGweDoc* CGweView::GetDocument() // non-debug version is inline
 {
-	ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CJweDoc)));
-	return (CJweDoc*)m_pDocument;
+	ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CGweDoc)));
+	return (CGweDoc*)m_pDocument;
 }
 #endif //_DEBUG
 
 /////////////////////////////////////////////////////////////////////////////
 // CJweView message handlers
 
-BOOL CJweView::OnEraseBkgnd(CDC* pDC) 
+BOOL CGweView::OnEraseBkgnd(CDC* pDC) 
 {
 	//	tom morris feb 2005
 	return false;
@@ -638,7 +638,7 @@ BOOL CJweView::OnEraseBkgnd(CDC* pDC)
 }// OnEraseBkgnd
 
 
-int32 CJweView::GetViewSigniture()
+int32 CGweView::GetViewSigniture()
 {
 	switch( Ortho_GetViewType( m_pOrtho ) ) 
 	{
@@ -658,7 +658,7 @@ int32 CJweView::GetViewSigniture()
 	return( 0 );
 }
 
-void CJweView::OnInitialUpdate() 
+void CGweView::OnInitialUpdate() 
 {
 	grVec3d	Angles = { 0.0f, 0.0f, 0.0f } ;
 	grVec3d CameraPos = { 0.0f, 0.0f, 0.0f } ;
@@ -677,7 +677,7 @@ void CJweView::OnInitialUpdate()
 
 }// OnInitialUpdate
 
-int CJweView::OnCreate(LPCREATESTRUCT lpCreateStruct) 
+int CGweView::OnCreate(LPCREATESTRUCT lpCreateStruct) 
 {
 	if (CView::OnCreate(lpCreateStruct) == -1)
 		return -1;
@@ -690,7 +690,7 @@ int CJweView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return 0;
 }
 
-void CJweView::OnDestroy() 
+void CGweView::OnDestroy() 
 {
 	CView::OnDestroy();
 	
@@ -698,7 +698,7 @@ void CJweView::OnDestroy()
 		Ortho_Destroy( &m_pOrtho ) ;
 }// OnDestroy
 
-void CJweView::OnSize(UINT nType, int cx, int cy) 
+void CGweView::OnSize(UINT nType, int cx, int cy) 
 {
 	CView::OnSize(nType, cx, cy);
 	
@@ -707,9 +707,9 @@ void CJweView::OnSize(UINT nType, int cx, int cy)
 
 }// OnSize
 
-void CJweView::OnLButtonDown(UINT nFlags, CPoint point) 
+void CGweView::OnLButtonDown(UINT nFlags, CPoint point) 
 {
-	CJweDoc	* pDoc = GetDocument() ;
+	CGweDoc	* pDoc = GetDocument() ;
 	if( m_Mode == VIEW_MODE_DRAG_BRUSH_HEIGHT )
 	{
 
@@ -738,7 +738,7 @@ void CJweView::OnLButtonDown(UINT nFlags, CPoint point)
 	CView::OnLButtonDown(nFlags, point);
 }// OnLButtonDown
 
-int32 CJweView::GetAutoScrollRegion( POINT * ptCursor )
+int32 CGweView::GetAutoScrollRegion( POINT * ptCursor )
 {
 	CRect rect ;
 	int32 ScrollType = VIEW_SCROLL_NONE;
@@ -765,7 +765,7 @@ int32 CJweView::GetAutoScrollRegion( POINT * ptCursor )
 	return( ScrollType );
 }
 
-void CJweView::SetAutoScroll( int32 ScrollRegion )
+void CGweView::SetAutoScroll( int32 ScrollRegion )
 {
 	if( ScrollRegion == VIEW_SCROLL_NONE )
 	{
@@ -782,7 +782,7 @@ void CJweView::SetAutoScroll( int32 ScrollRegion )
 	}
 }
 
-void CJweView::SetUpRotateBox(grExtBox  *pSelBounds)
+void CGweView::SetUpRotateBox(grExtBox  *pSelBounds)
 {
 	float dx, dy;
 
@@ -797,7 +797,7 @@ void CJweView::SetUpRotateBox(grExtBox  *pSelBounds)
 	m_RotateBox.bottom = m_SelCenter.y + (int)m_RotateRadius;
 }
 
-void CJweView::DrawRotateBox( HDC hDC)
+void CGweView::DrawRotateBox( HDC hDC)
 {
 	HBRUSH				hOldBrush ;
 	COLORREF			coBackGround ;
@@ -854,7 +854,7 @@ void CJweView::DrawRotateBox( HDC hDC)
 }
 
 
-void CJweView::SetBeginDragViewMode(POINT ptCursor)
+void CGweView::SetBeginDragViewMode(POINT ptCursor)
 {
 	grBoolean bHasSelection;
 	grBoolean bHasSubSelection;
@@ -866,7 +866,7 @@ void CJweView::SetBeginDragViewMode(POINT ptCursor)
 	SELECT_HANDLE	SubHandle ;
 	DOC_HANDLE_MODE	HandleMode;
 	int32			SubModFlags = 0;
-	CJweDoc	* pDoc = GetDocument() ;
+	CGweDoc	* pDoc = GetDocument() ;
 	DOC_CONSTRUCTORS Constructor;
 
 	bShiftHeld = Util_IsKeyDown( VK_SHIFT ) ;
@@ -967,7 +967,7 @@ void CJweView::SetBeginDragViewMode(POINT ptCursor)
 		m_Mode = VIEW_MODE_SELECT_RECT;
 	
 }
-void CJweView::Pan( grVec3d *pWorldDistance )
+void CGweView::Pan( grVec3d *pWorldDistance )
 {
 	m_bPanning = true;
    	grVec3d_Scale( pWorldDistance, -1.0f, pWorldDistance ) ;
@@ -975,7 +975,7 @@ void CJweView::Pan( grVec3d *pWorldDistance )
 	Invalidate(false);		//TRUE
 }
 
-grBoolean CJweView::IsBeginDrag( POINT ptCursor )
+grBoolean CGweView::IsBeginDrag( POINT ptCursor )
 {
 	return(		m_Mode != VIEW_MODE_PLACELIGHT	&& //We are not placing a light
 				false == m_bDragging			&& //We are not already draging
@@ -983,9 +983,9 @@ grBoolean CJweView::IsBeginDrag( POINT ptCursor )
 		   abs( ptCursor.y - m_ptAnchor.y) > m_CYDRAG )); // Or moved enough in the Y
 }
 
-void CJweView::Drag( POINT ptCursor, grVec3d *pWorldDistance )
+void CGweView::Drag( POINT ptCursor, grVec3d *pWorldDistance )
 {
-	CJweDoc	* pDoc = GetDocument() ;
+	CGweDoc	* pDoc = GetDocument() ;
 
 	switch( m_Mode )
 	{
@@ -1059,7 +1059,7 @@ void CJweView::Drag( POINT ptCursor, grVec3d *pWorldDistance )
 	}
 }
 
-void CJweView::OnMouseMove(UINT nFlags, CPoint point) 
+void CGweView::OnMouseMove(UINT nFlags, CPoint point) 
 {
 	grVec3d			WorldDistance ;
 	POINT			ptCursor ;
@@ -1151,9 +1151,9 @@ void CJweView::OnMouseMove(UINT nFlags, CPoint point)
 	CView::OnMouseMove(nFlags, point);
 }// OnMouseMove
 
-void CJweView::DragEnd(CPoint point)
+void CGweView::DragEnd(CPoint point)
 {
-	CJweDoc* pDoc = GetDocument() ;
+	CGweDoc* pDoc = GetDocument() ;
 	grExtBox	WorldBounds ;
 	grBoolean	bControlHeld ;
 
@@ -1225,14 +1225,14 @@ void CJweView::DragEnd(CPoint point)
 	}
 }
 
-void CJweView::OnLButtonUp(UINT nFlags, CPoint point) 
+void CGweView::OnLButtonUp(UINT nFlags, CPoint point) 
 {
 	grBoolean	bControlHeld ;
 	grVec3d		World ;
 
 	if( m_bCaptured )
 	{
-		CJweDoc* pDoc = GetDocument() ;
+		CGweDoc* pDoc = GetDocument() ;
 
 		bControlHeld = Util_IsKeyDown( VK_CONTROL ) ;
 
@@ -1271,10 +1271,10 @@ void CJweView::OnLButtonUp(UINT nFlags, CPoint point)
 	CView::OnLButtonUp(nFlags, point);
 }// OnLButtonUp
 
-BOOL CJweView::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message) 
+BOOL CGweView::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message) 
 {
 	POINT		ptCursor ;
-	CJweDoc* pDoc = GetDocument() ;
+	CGweDoc* pDoc = GetDocument() ;
 
 	if( HTCLIENT == nHitTest )
 	{
@@ -1302,9 +1302,9 @@ BOOL CJweView::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 	return CView::OnSetCursor(pWnd, nHitTest, message);
 }// OnSetCursor
 // TEST CODE
-void CJweView::OnRButtonUp(UINT nFlags, CPoint point) 
+void CGweView::OnRButtonUp(UINT nFlags, CPoint point) 
 {
-	CJweDoc* pDoc = GetDocument() ;
+	CGweDoc* pDoc = GetDocument() ;
 
 	if( m_Mode == VIEW_MODE_PLACELIGHT ||  m_Mode == VIEW_MODE_PLACEBRUSH )
 	{
@@ -1336,7 +1336,7 @@ void CJweView::OnRButtonUp(UINT nFlags, CPoint point)
 // Mouse wheel's action contingent upon
 // MouseSettings_GetWheelState()
 //---------------------------------------------------
-BOOL CJweView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt) 
+BOOL CGweView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt) 
 {
 	eMouseWheel  eState = MouseSettings_GetWheelState();
 
@@ -1360,7 +1360,7 @@ BOOL CJweView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 //---------------------------------------------------
 
 
-void CJweView::DoZoom( grFloat fZoomInc )
+void CGweView::DoZoom( grFloat fZoomInc )
 {
 	Ortho_ZoomChange( m_pOrtho, fZoomInc ) ;
 
@@ -1368,7 +1368,7 @@ void CJweView::DoZoom( grFloat fZoomInc )
 
 }// DoZoom
 
-void CJweView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint) 
+void CGweView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint) 
 {
 	grExtBox *	pWorldBounds ;
 	Rect		ViewRect ;
@@ -1389,7 +1389,7 @@ void CJweView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 	pSender;
 }// OnUpdate
 
-void CJweView::OnActivateView(BOOL bActivate, CView* pActivateView, CView* pDeactiveView) 
+void CGweView::OnActivateView(BOOL bActivate, CView* pActivateView, CView* pDeactiveView) 
 {
 	Invalidate( false ) ;	//TRUE // Force our red-frame on active to draw
 	CView::OnActivateView(bActivate, pActivateView, pDeactiveView);
@@ -1399,33 +1399,33 @@ void CJweView::OnActivateView(BOOL bActivate, CView* pActivateView, CView* pDeac
 	}
 }// OnActivateView
 
-void CJweView::OnViewZoomin() 
+void CGweView::OnViewZoomin() 
 {
 	DoZoom( 0.1f ) ;
 }// OnViewZoomin
 
-void CJweView::OnUpdateViewZoomin(CCmdUI* pCmdUI) 
+void CGweView::OnUpdateViewZoomin(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }//OnUpdateViewZoomin
 
-void CJweView::OnViewZoomout() 
+void CGweView::OnViewZoomout() 
 {
 	DoZoom( -0.1f ) ;
 }// OnViewZoomout
 
-void CJweView::OnUpdateViewZoomout(CCmdUI* pCmdUI) 
+void CGweView::OnUpdateViewZoomout(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable( true ) ;
 }// OnUpdateViewZoomout
 
-void CJweView::SetCameraPos( grVec3d * Pos )
+void CGweView::SetCameraPos( grVec3d * Pos )
 {
 	Ortho_SetCameraPos( m_pOrtho, Pos );
 	Invalidate(false);	// TRUE
 }
 
-void CJweView::AbortMode()
+void CGweView::AbortMode()
 {
 	if( m_bCaptured )
 	{
@@ -1444,9 +1444,9 @@ void CJweView::AbortMode()
 	Invalidate(false);	//TRUE
 }
 
-void CJweView::OnViewCenterselction() 
+void CGweView::OnViewCenterselction() 
 {
-	CJweDoc * pDoc;
+	CGweDoc * pDoc;
 
 	pDoc = GetDocument();
 	ASSERT( pDoc != NULL );
@@ -1454,7 +1454,7 @@ void CJweView::OnViewCenterselction()
 	pDoc->CenterViewsOnSelection(  );
 }
 
-void CJweView::OnTimer(UINT nIDEvent) 
+void CGweView::OnTimer(UINT nIDEvent) 
 {
 	if( nIDEvent == AUTOSCROLL_TIMER )
 	{
@@ -1495,9 +1495,9 @@ void CJweView::OnTimer(UINT nIDEvent)
 	CView::OnTimer(nIDEvent);
 }
 
-void CJweView::OnRButtonDown(UINT nFlags, CPoint point) 
+void CGweView::OnRButtonDown(UINT nFlags, CPoint point) 
 {
-	CJweDoc* pDoc = GetDocument() ;
+	CGweDoc* pDoc = GetDocument() ;
 
 	Rect MenuRect = { 4, 4, 128, 20 };  // Need to figure out true text box
 
@@ -1547,7 +1547,7 @@ void CJweView::OnRButtonDown(UINT nFlags, CPoint point)
 	CView::OnRButtonDown(nFlags, point);
 }
 
-void CJweView::ShowMenu( CPoint point) 
+void CGweView::ShowMenu( CPoint point) 
 {
 	CMenu ContextMenu;
 	CMenu *SubMenu;
@@ -1563,16 +1563,16 @@ void CJweView::ShowMenu( CPoint point)
 //---------------------------------------------------
 // Added DJT
 //---------------------------------------------------
-void CJweView::OnUpdateEditClone(CCmdUI* pCmdUI) 
+void CGweView::OnUpdateEditClone(CCmdUI* pCmdUI) 
 {
 	pCmdUI->Enable(Level_HasSelections(GetDocument()->GetLevel())) ;
 }
 
-void CJweView::OnEditClone() 
+void CGweView::OnEditClone() 
 {
 	grProperty_List *pArray;
 	CMainFrame *	pMainFrm;
-	CJweDoc	*       pDoc = GetDocument();
+	CGweDoc	*       pDoc = GetDocument();
 	Level *         pLevel = pDoc->GetLevel();
 
 
@@ -1593,14 +1593,14 @@ void CJweView::OnEditClone()
 }
 
 
-void CJweView::OnMButtonUp(UINT nFlags, CPoint point) 
+void CGweView::OnMButtonUp(UINT nFlags, CPoint point) 
 {
 	CView::OnMButtonUp(nFlags, point);
 }
 
-void CJweView::OnMButtonDown(UINT nFlags, CPoint point) 
+void CGweView::OnMButtonDown(UINT nFlags, CPoint point) 
 {
-	CJweDoc* pDoc = GetDocument() ;
+	CGweDoc* pDoc = GetDocument() ;
 	eMouseMiddleButton  eState = MouseSettings_GetMiddleButtonState();
 
 	switch (eState)

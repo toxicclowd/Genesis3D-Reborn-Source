@@ -50,7 +50,7 @@ grBoolean CGameMgr::Initialize(HWND hWnd)
 {
 	GLOG("CGameMgr - Initializing game manager...");
 
-	m_pEngine = grEngine_Create(hWnd, "JetShell", ".");
+	m_pEngine = grEngine_Create(hWnd, "G3DGameShell", ".");
 	if (!m_pEngine)
 	{
 		GLOG("CGameMgr - Could not create engine!!");
@@ -62,8 +62,8 @@ grBoolean CGameMgr::Initialize(HWND hWnd)
 	//CScriptMgr::GetPtr()->SetGlobal("Game", (eosobject*)this);
 
 	GLOG("CGameMgr - Loading main script...");
-	CScriptMgr::GetPtr()->LoadScript(".\\Scripts\\JetMain.eos");
-	CScriptMgr::GetPtr()->Call("JetMain");
+	CScriptMgr::GetPtr()->LoadScript(".\\Scripts\\G3DMain.eos");
+	CScriptMgr::GetPtr()->Call("G3DMain");
 
 	return GR_TRUE;
 }

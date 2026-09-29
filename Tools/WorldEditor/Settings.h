@@ -183,13 +183,13 @@ void Settings_SetMouse_RightBut(int iPrefsInt);
 void Settings_SetMouse_Wheel(int iPrefsInt);
 void Settings_SetMouse_HotSelect(int iPrefsInt);
 
-void Settings_SetJet_Coll(int iPrefsInt);
-void Settings_SetJet_Grav(int iPrefsInt);
-void Settings_SetJet_Slid(int iPrefsInt);
-void Settings_SetJet_Stair(int iPrefsInt);
-void Settings_SetJet_Height(char *sPrefsString);
-void Settings_SetJet_Window(char *sPrefsString);
-void Settings_SetJet_Fullscreen(char *sPrefsString);
+void Settings_SetG3D_Coll(int iPrefsInt);
+void Settings_SetG3D_Grav(int iPrefsInt);
+void Settings_SetG3D_Slid(int iPrefsInt);
+void Settings_SetG3D_Stair(int iPrefsInt);
+void Settings_SetG3D_Height(char *sPrefsString);
+void Settings_SetG3D_Window(char *sPrefsString);
+void Settings_SetG3D_Fullscreen(char *sPrefsString);
 
 void Settings_SetPath_UBrush(char *sPrefsString);
 void Settings_SetPath_Textures(char *sPrefsString);
@@ -204,13 +204,13 @@ int		Settings_GetMouse_RightBut();
 int		Settings_GetMouse_Wheel();
 int		Settings_GetMouse_HotSelect();
 
-int		Settings_GetJet_Coll();
-int		Settings_GetJet_Grav();
-int		Settings_GetJet_Slid();
-int		Settings_GetJet_Stair();
-char	* Settings_GetJet_Height(char *sRet, int istrlen);
-char	* Settings_GetJet_Window(char *sRet, int istrlen);
-char	* Settings_GetJet_Fullscreen(char *sRet, int istrlen);
+int		Settings_GetG3D_Coll();
+int		Settings_GetG3D_Grav();
+int		Settings_GetG3D_Slid();
+int		Settings_GetG3D_Stair();
+char	* Settings_GetG3D_Height(char *sRet, int istrlen);
+char	* Settings_GetG3D_Window(char *sRet, int istrlen);
+char	* Settings_GetG3D_Fullscreen(char *sRet, int istrlen);
 
 char	* Settings_GetPath_UBrush(char *sRet, int istrlen);
 char	* Settings_GetPath_Textures(char *sRet, int istrlen);

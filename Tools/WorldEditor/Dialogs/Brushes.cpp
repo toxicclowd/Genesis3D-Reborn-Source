@@ -19,7 +19,7 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MfcUtil.h"
 #include "MainFrm.h"
 
@@ -98,7 +98,7 @@ BOOL CBrushes::OnInitDialog()
 void CBrushes::OnToolsPlaceterrain() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_TERRAIN, 0 ) ;
@@ -115,7 +115,7 @@ void CBrushes::OnToolsPlacestaircase()
 void CBrushes::OnToolsPlacespheroid() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_SPHERE ) ;
@@ -127,7 +127,7 @@ void CBrushes::OnToolsPlacespheroid()
 void CBrushes::OnToolsPlacesheet() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -139,7 +139,7 @@ void CBrushes::OnToolsPlacesheet()
 void CBrushes::OnToolsPlacelight() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -151,7 +151,7 @@ void CBrushes::OnToolsPlacelight()
 void CBrushes::OnToolsPlaceentity() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		// DO NOT call SetTemplateMode
@@ -162,7 +162,7 @@ void CBrushes::OnToolsPlaceentity()
 void CBrushes::OnToolsPlacecylinder() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_CYLINDER ) ;
@@ -174,7 +174,7 @@ void CBrushes::OnToolsPlacecylinder()
 void CBrushes::OnToolsPlacecube() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	if( pDoc != NULL ) 
 	{
 		pDoc->SetTemplateMode( KIND_BRUSH, BRUSH_BOX ) ;
@@ -212,11 +212,11 @@ void CBrushes::OnShowWindow(BOOL bShow, UINT nStatus)
 	
 }
 
-void CBrushes::Update( CJweDoc *pDoc )
+void CBrushes::Update( CGweDoc *pDoc )
 {
 	uint32		Contents ;
 	int32		BlankFieldFlag ;
-	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CJweDoc)) ) ;
+	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CGweDoc)) ) ;
 
 	pDoc->GetBrushInfo( &Contents, &BlankFieldFlag );
 
@@ -255,7 +255,7 @@ void CBrushes::FillFields( uint32 Contents, int32 BlankFieldFlag )
 void CBrushes::OnCkFlocking() 
 {
 	int32 Contents;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	if( m_Flocking.GetCheck( ) )
@@ -270,7 +270,7 @@ void CBrushes::OnCkFlocking()
 void CBrushes::SetDrawMode()
 {
 	int32 Contents;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true );
@@ -313,7 +313,7 @@ void CBrushes::OnRadioSolid()
 void CBrushes::OnCkLocktexture() 
 {
 	int32 Contents;
-	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
+	CGweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	if( m_LockTextures.GetCheck( ) )

@@ -1,11 +1,11 @@
 #include "sizecbar.h"
 
-class CJetBar : public CSizingControlBar
+class CG3DBar : public CSizingControlBar
 {
 public:
-                                    CJetBar() 
+                                    CG3DBar() 
                                     { m_wndChild = NULL; };
-                                   ~CJetBar() 
+                                   ~CG3DBar() 
                                     {};
 
 protected:

@@ -21,7 +21,7 @@
 /****************************************************************************************/
 
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "MainFrm.h"
 #include "TexturesDlg.h"
 #include "BitmapResize.h"
@@ -87,8 +87,8 @@ BOOL CTexturesDlg::OnInitDialog()
 	UNREFERENCED_PARAMETER(br);
 
 	// TODO:  Add extra initialization here
-	CJweApp		*pApp = NULL;
-	pApp = (CJweApp*)AfxGetApp();
+	CGweApp		*pApp = NULL;
+	pApp = (CGweApp*)AfxGetApp();
 	if (pApp)
 	{
 		//	initialize the groups tree
@@ -195,7 +195,7 @@ void	CTexturesDlg::SaveTexturesGroupsAll()
 
 bool	CTexturesDlg::InitGroupImageList()
 {
-	CJweApp				*pApp = NULL;
+	CGweApp				*pApp = NULL;
 	CString				strMaterialName;
 	int					iNumberofMaterials, iDivider, iRange;
 	Material_Struct		*pMaterial = NULL;
@@ -206,7 +206,7 @@ bool	CTexturesDlg::InitGroupImageList()
 
 	iDivider = 20;
 
-	pApp = (CJweApp*)AfxGetApp();
+	pApp = (CGweApp*)AfxGetApp();
 	if (pApp)
 	{
 
@@ -380,7 +380,7 @@ bool	CTexturesDlg::InitGroupImageList()
 
 bool	CTexturesDlg::InitMasterImageLists()
 {
-	CJweApp				*pApp = NULL;
+	CGweApp				*pApp = NULL;
 	CString				strMaterialName;
 	int					iNumberofMaterials;
 	Material_Struct		*pMaterial = NULL;
@@ -389,7 +389,7 @@ bool	CTexturesDlg::InitMasterImageLists()
 	BOOL				bResult;
 	LPSTR				strProgressStart = _T("Preparing thumbnails...");
 
-	pApp = (CJweApp*)AfxGetApp();
+	pApp = (CGweApp*)AfxGetApp();
 	if (pApp)
 	{
 		bResult = pApp->PostThreadMessage(IDM_PROGRESS_CONTROL_CREATE, (WPARAM)strProgressStart, NULL);
@@ -1024,8 +1024,8 @@ void CTexturesDlg::OnBnClickedButtonTexRefresh()
 {
 	if (m_hWnd)
 	{
-		CJweApp				*pApp = NULL;
-		pApp = (CJweApp*)AfxGetApp();
+		CGweApp				*pApp = NULL;
+		pApp = (CGweApp*)AfxGetApp();
 
 		if (!m_bWorkerThreadActive)
 		{
@@ -1118,13 +1118,13 @@ bool	CTexturesDlg::SetSelectedTexture(CString strTexture, CWnd *pOrigin)
 		Material_Struct		*pSelectedMaterial = NULL;
 		Material_Struct		*pMaterial = NULL;
 		MaterialIterator	MI ;
-		CJweApp				*pApp = NULL;
+		CGweApp				*pApp = NULL;
 
-		pApp = (CJweApp*)AfxGetApp();
+		pApp = (CGweApp*)AfxGetApp();
 
 		if (pApp)
 		{
-			CJweDoc*	pDoc = NULL;
+			CGweDoc*	pDoc = NULL;
 			pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument() ;
 
 			if (pDoc)

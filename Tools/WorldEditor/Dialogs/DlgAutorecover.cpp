@@ -19,7 +19,7 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "DlgAutorecover.h"
 #include ".\dlgautorecover.h"
 #include "Doc.h"
@@ -134,12 +134,12 @@ void CDlgAutorecover::OnBnClickedAutorecoverOpen()
 	ShowWindow(SW_HIDE);
 
 	BOOL		bFileFound = TRUE;
-	CJweDoc		*pDoc = NULL;
+	CGweDoc		*pDoc = NULL;
 	CString		strLevelPath;
 	char		charAppPath[MAX_PATH];
 	char		*pcharAppPath = charAppPath;
 
-	((CJweApp*)AfxGetApp())->GetAppPath(pcharAppPath, MAX_PATH);
+	((CGweApp*)AfxGetApp())->GetAppPath(pcharAppPath, MAX_PATH);
 	
 	strLevelPath = charAppPath;
 #if _MFC_VER < 0x0700
@@ -170,7 +170,7 @@ void CDlgAutorecover::OnBnClickedAutorecoverOpen()
 			if (pDoc)
 			{
 				pDoc->OnCloseDocument();
-				pDoc = (CJweDoc *)AfxGetApp()->OpenDocumentFile(strNewPath);
+				pDoc = (CGweDoc *)AfxGetApp()->OpenDocumentFile(strNewPath);
 			}
 		}
 	}
@@ -182,7 +182,7 @@ void	CDlgAutorecover::SetToAppDirectory()
 {
 	char	charAppPath[MAX_PATH];
 	char	*pcharAppPath = charAppPath;
-	((CJweApp*)AfxGetApp())->GetAppPath(pcharAppPath, MAX_PATH);
+	((CGweApp*)AfxGetApp())->GetAppPath(pcharAppPath, MAX_PATH);
 
 	::SetCurrentDirectory(pcharAppPath);
 

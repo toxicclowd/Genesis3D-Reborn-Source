@@ -3,9 +3,9 @@
 // Used by jMinApp.rc
 //
 #define IDD_ABOUTBOX                    100
-#define IDT_JETVIEW_TIMER               101
+#define IDT_G3DVIEW_TIMER               101
 #define IDR_MAINFRAME                   128
-#define IDR_jMinAppTYPE                 129
+#define IDR_MinAppTYPE                 129
 #define ID_MOVE_FORWARD                 32771
 #define ID_MOVE_BACK                    32772
 #define ID_MOVE_LEFT                    32773

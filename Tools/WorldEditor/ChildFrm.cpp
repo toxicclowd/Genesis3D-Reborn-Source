@@ -20,8 +20,8 @@
 /****************************************************************************************/
 #include "stdafx.h"
 
-#include "JetView.h"		// Rendered view class
-#include "jwe.h"
+#include "G3DView.h"		// Rendered view class
+#include "GWE.H"
 #include "View.h"
 #include "Settings.h"
 
@@ -124,20 +124,20 @@ BOOL CChildFrame::OnCreateClient( LPCREATESTRUCT /*lpcs*/, CCreateContext* pCont
 		{	
 			if (aViewType[iSplitWnd] == IDM_VIEW_WIREFRAME)
 			{
-				if( !m_wndSplitter.CreateView(SplitX, SplitY, RUNTIME_CLASS(CJetView), CSize(x, y), pContext))
+				if( !m_wndSplitter.CreateView(SplitX, SplitY, RUNTIME_CLASS(CG3DView), CSize(x, y), pContext))
 				{
 					TRACE0("CCF::OCC\n");
 					return FALSE;
 				}
 				else 	
 				{ 
-					((CJetView *)m_wndSplitter.GetPane(SplitX, SplitY))->OnViewType( IDM_VIEW_WIREFRAME );
+					((CG3DView *)m_wndSplitter.GetPane(SplitX, SplitY))->OnViewType( IDM_VIEW_WIREFRAME );
 					SetActiveView( (CView*)m_wndSplitter.GetPane(SplitX, SplitY));
 				}
 			}		
 			else
 			{
-				if( !m_wndSplitter.CreateView(SplitX, SplitY, RUNTIME_CLASS(CJweView), CSize(x, y), pContext) )
+				if( !m_wndSplitter.CreateView(SplitX, SplitY, RUNTIME_CLASS(CGweView), CSize(x, y), pContext) )
 				{
 					TRACE0("CCF::OCC\n");
 					return FALSE;	
@@ -153,7 +153,7 @@ BOOL CChildFrame::OnCreateClient( LPCREATESTRUCT /*lpcs*/, CCreateContext* pCont
 					else
 						((CJweView *)m_wndSplitter.GetPane(SplitX, SplitY))->OnViewType( IDM_VIEW_SIDE ) ;
 */
-					((CJweView *)m_wndSplitter.GetPane(SplitX, SplitY))->OnViewType( aViewType[iSplitWnd]);
+					((CGweView *)m_wndSplitter.GetPane(SplitX, SplitY))->OnViewType( aViewType[iSplitWnd]);
 				}
 			}
 			iSplitWnd++;		

@@ -37,7 +37,7 @@ Comments:  1) New menu items. Selection options, Mouse Properties, etc.
 #define DOC_MAX_CAMERAS		(1)
 
 #include "Defs.h"
-#include "J3DDoc.h"
+#include "G3DMfcDoc.h"
 #include "Level.h"
 #include "Ortho.h"
 #include "Select.h"
@@ -82,13 +82,13 @@ typedef enum
 
 // foward definition
 class CRebuild;
-class CJetView;
+class CG3DView;
 
-class CJweDoc : public CJ3DDoc
+class CGweDoc : public CG3DMfcDoc
 {
 protected: // create from serialization only
-   CJweDoc();
-   DECLARE_DYNCREATE(CJweDoc)
+   CGweDoc();
+   DECLARE_DYNCREATE(CGweDoc)
       
       // Attributes
 public:
@@ -274,12 +274,12 @@ public:
    //---------------------------------------------------
 	// Krouer: add few accessor
 	inline grResourceMgr* GetResourceMgr() { return m_pResourceMgr; }
-	grEngine* GetJetEngine();
+	grEngine* GetG3DEngine();
 	// end Krouer adds
    
    virtual BOOL SetDrawFaceCB(grEngine *Engine, grBoolean Enable);
-   virtual BOOL Render( class CJ3DView * pView );
-   virtual ~CJweDoc();
+   virtual BOOL Render( class CG3DMfcView * pView );
+   virtual ~CGweDoc();
 #ifdef _DEBUG
    virtual void AssertValid() const;
    virtual void Dump(CDumpContext& dc) const;
@@ -407,7 +407,7 @@ public:
     grMaterialSpec *	InitMaterial( WORD Resource );
     static void			DrawFaceCB(const grTLVertex *Verts, int32 NumVerts, void *Context);
     static grBoolean	SetModelFaceCB( Model *pModel, void * pVoid );
-    CView *		GetJetView();
+    CView *		GetG3DView();
     CRebuild	*RebuildDlg;
     grBoolean	m_bCopying ;
     grVec3d		m_DragPoint;

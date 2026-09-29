@@ -84,10 +84,10 @@ protected:
 		void	OnKeyboard();
 		void	OnPath();
 		void	OnMouse();
-		void	OnJet();
+		void	OnG3D();
 		void	OnEngine_GetFullscreenMode();
 		void	OnEngine_GetWindowMode();
-		void    OnJet_Stairs();
+		void    OnG3D_Stairs();
 		void    OnKey_PressKey();
 		void	OnKey_Import();
 		void	OnKey_Export();

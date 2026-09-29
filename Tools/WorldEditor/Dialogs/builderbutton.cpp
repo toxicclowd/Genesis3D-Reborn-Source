@@ -19,7 +19,7 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include "stdafx.h"
-#include "jwe.h"
+#include "GWE.H"
 #include "builderbutton.h"
 
 
@@ -95,7 +95,7 @@ END_MESSAGE_MAP()
 void CBuilderButton::OnClicked() 
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
-	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
+	CGweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 	grProperty_Data Data;
 	CWnd* pWnd = GetParent();
 

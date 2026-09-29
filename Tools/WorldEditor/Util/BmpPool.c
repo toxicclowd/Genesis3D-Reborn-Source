@@ -22,7 +22,7 @@
 #include "BmpPool.h"
 #include "Ram.h"
 #include "string.h"
-#include "jelist.h"
+#include "grList.h"
 
 #define NAME_MAX 64
 

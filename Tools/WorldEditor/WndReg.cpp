@@ -27,7 +27,7 @@
 
 #include "WndReg.h"
 #include "ram.h"
-#include "jwe.h"
+#include "GWE.H"
 
 #define DEFAULT_ARRAY_SIZE 20
 typedef struct tagWindowEntry
@@ -94,7 +94,7 @@ grBoolean WndReg_EnlargeArray( WindowRegister *pWndReg )
 
 grBoolean WndReg_RegisterWindow( HWND pHwnd, int32 Signiture )
 {
-	WindowRegister *pWndReg = ((CJweApp*)AfxGetApp())->m_WndReg;
+	WindowRegister *pWndReg = ((CGweApp*)AfxGetApp())->m_WndReg;
 	if( pWndReg->EntryN ==  pWndReg->ArraySize )
 	{
 		if( !WndReg_EnlargeArray( pWndReg ) )
@@ -109,7 +109,7 @@ grBoolean WndReg_RegisterWindow( HWND pHwnd, int32 Signiture )
 
 int32 WndReg_GetSigniture( HWND pHwnd )
 {
-	WindowRegister *pWndReg = ((CJweApp*)AfxGetApp())->m_WndReg;
+	WindowRegister *pWndReg = ((CGweApp*)AfxGetApp())->m_WndReg;
 	int i;
 
 	for( i = 0; i < pWndReg->EntryN; i++ )
@@ -123,7 +123,7 @@ int32 WndReg_GetSigniture( HWND pHwnd )
 
 HWND  WndReg_GetWindow( int32 Signiture )
 {
-	WindowRegister *pWndReg = ((CJweApp*)AfxGetApp())->m_WndReg;
+	WindowRegister *pWndReg = ((CGweApp*)AfxGetApp())->m_WndReg;
 	int i;
 
 	for( i = 0; i < pWndReg->EntryN; i++ )

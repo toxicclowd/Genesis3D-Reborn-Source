@@ -54,7 +54,7 @@ class CEntityCP : public CDialog
 // Construction
 public:
 	grBoolean GetField( FieldInfo * pfi );
-	void Update( CJweDoc * pDoc );
+	void Update( CGweDoc * pDoc );
 	void SetCurrentDocument( grSymbol_Table * pEntities );
 	grSymbol_Table * m_pEntities;
 	void FillProperties( void );

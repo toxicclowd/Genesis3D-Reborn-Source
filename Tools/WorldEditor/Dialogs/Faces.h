@@ -33,7 +33,7 @@ class CFaces : public CDialog
 {
 // Construction
 public:
-	void Update( CJweDoc * pDoc );
+	void Update( CGweDoc * pDoc );
 	CFaces(CWnd* pParent = NULL);   // standard constructor
 
 // Dialog Data

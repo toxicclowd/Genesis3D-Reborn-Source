@@ -2595,7 +2595,7 @@ static grBoolean	GRCC grTerrain_SendMessage	(void * T, int32 Msg, void * Data)
 	switch(Msg)
 	{
 
-	case JETEDITOR_SELECT3D:
+	case G3DEDITOR_SELECT3D:
 	{
 	Select3dContextDef *pContext;
 	int OldSelX,OldSelY;
@@ -2619,7 +2619,7 @@ static grBoolean	GRCC grTerrain_SendMessage	(void * T, int32 Msg, void * Data)
 		return GR_TRUE;
 	}
 
-	case JETEDITOR_APPLYMATERIAL:
+	case G3DEDITOR_APPLYMATERIAL:
 	{
 		if ( Ter->HasSelection )
 		{
@@ -2629,7 +2629,7 @@ static grBoolean	GRCC grTerrain_SendMessage	(void * T, int32 Msg, void * Data)
 
 		return GR_FALSE;
 	}
-	case JETEDITOR_APPLYMATERIALSPEC:
+	case G3DEDITOR_APPLYMATERIALSPEC:
 	{
 		if ( Ter->HasSelection )
 		{

@@ -1,0 +1,12 @@
+function G3DMain()
+{
+	%Game = global.GetGameManager();
+	
+	%Game.EnableFrameRateCounter(1);
+	%Game.SetGamma(1.0);
+	
+	%Game.SetDriver("(D3D) DirectX 12");
+	%Game.SetDriverMode(0, 0, 0);
+	
+	%Game.LoadWorld("Levels\tutorial2_complete.j3d");
+}

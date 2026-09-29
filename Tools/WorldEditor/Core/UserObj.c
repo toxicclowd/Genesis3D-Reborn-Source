@@ -377,7 +377,7 @@ void UserObj_Select3d( UserObj* pUserObj, grVec3d * Front, grVec3d * Back, grVec
 	Context.Back = *Back;
 	Context.Impact = *Impact;
 
-	grObject_SendMessage( pUserObj->pgeObject, JETEDITOR_SELECT3D,	&Context );
+	grObject_SendMessage( pUserObj->pgeObject, G3DEDITOR_SELECT3D,	&Context );
 }
 
 #ifdef _USE_BITMAPS
@@ -388,7 +388,7 @@ void UserObj_ApplyMatr( UserObj* pUserObj, grBitmap * pBitmap )
 	assert( pUserObj->pgeObject );
 
 
-	grObject_SendMessage( pUserObj->pgeObject, JETEDITOR_APPLYMATERIAL,	pBitmap );
+	grObject_SendMessage( pUserObj->pgeObject, G3DEDITOR_APPLYMATERIAL,	pBitmap );
 }
 #else
 void UserObj_ApplyMatr( UserObj* pUserObj, grMaterialSpec * pMatSpec )
@@ -397,7 +397,7 @@ void UserObj_ApplyMatr( UserObj* pUserObj, grMaterialSpec * pMatSpec )
 	assert( pMatSpec );
 	assert( pUserObj->pgeObject );
 
-	grObject_SendMessage( pUserObj->pgeObject, JETEDITOR_APPLYMATERIALSPEC,	pMatSpec );
+	grObject_SendMessage( pUserObj->pgeObject, G3DEDITOR_APPLYMATERIALSPEC,	pMatSpec );
 }
 #endif
 
