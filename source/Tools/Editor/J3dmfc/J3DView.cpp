@@ -275,8 +275,6 @@ int CJ3DView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return(-1);
 	m_bEngineEnabled = JE_FALSE;
 	
-	jeEngine_RegisterDriver( m_pEngine, jeEngine_D3DDriver() ) ;
-
 	jeEngine_EnableFrameRateCounter(m_pEngine, JE_FALSE );
     //jeEngine_SetGamma(m_pEngine, 2.5f);	//trilobite orig  
 	jeEngine_SetGamma(m_pEngine, JET3DVIEW_GAMMA);	//trilobite revise	

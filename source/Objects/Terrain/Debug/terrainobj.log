@@ -1,5 +1,0 @@
-﻿  terrainobjectdef.c
-C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VC\v180\Microsoft.CppBuild.targets(1412,5): warning MSB8012: TargetPath(C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\Terrain\Debug\terrainobj.ddl) does not match the Linker's OutputFile property value (C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\bin\objects\terrainobj.ddl). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
-terrainobjectdef.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
-     Creating library Debug\terrainobj.lib and object Debug\terrainobj.exp
-  terrainobj.vcxproj -> C:\Users\James\Downloads\JStudio_Classic_11_2023_Source\JSTUDIO_CLASSIC11_2023\source\Objects\Terrain\Debug\terrainobj.ddl

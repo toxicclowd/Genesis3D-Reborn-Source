@@ -1,14 +1,42 @@
 /****************************************************************************************/
 /*  D3D12POLYCACHE.CPP                                                                  */
 /*                                                                                      */
-/*  DirectX 12 Polygon Cache Implementation                                            */
-/*  Handles geometry batching for efficient rendering                                  */
-/*                                                                                      */
+/*  Dynamic transformed-polygon batching for the Jet3D rendering contract.              */
 /****************************************************************************************/
+#include <algorithm>
+#include <cmath>
+#include <cstring>
+
 #include "D3D12PolyCache.h"
-#include "Direct3D12Driver.h"
+#include "D3D12PSOManager.h"
 #include "D3D12Log.h"
-#include <string.h>
+
+namespace
+{
+	float NormalizeColor(float Value)
+	{
+		return (std::max)(0.0f, (std::min)(Value, 255.0f)) * (1.0f / 255.0f);
+	}
+
+	float SafeReciprocal(float Value)
+	{
+		return (std::fabs(Value) > 0.000001f) ? (1.0f / Value) : 1.0f;
+	}
+
+	D3D12_RESOURCE_DESC VertexBufferDescription(UINT64 Size)
+	{
+		D3D12_RESOURCE_DESC Desc = {};
+		Desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		Desc.Width = Size;
+		Desc.Height = 1;
+		Desc.DepthOrArraySize = 1;
+		Desc.MipLevels = 1;
+		Desc.Format = DXGI_FORMAT_UNKNOWN;
+		Desc.SampleDesc.Count = 1;
+		Desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		return Desc;
+	}
+}
 
 D3D12PolyCache::D3D12PolyCache()
 	: m_NumVerts(0)
@@ -22,412 +50,324 @@ D3D12PolyCache::~D3D12PolyCache()
 	Shutdown();
 }
 
-jeBoolean D3D12PolyCache::Initialize(int32 maxVerts)
+jeBoolean D3D12PolyCache::Initialize(int32 MaxVerts)
 {
-	D3D12Log::GetPtr()->Printf("D3D12PolyCache::Initialize - MaxVerts: %d", maxVerts);
+	if (!g_pDevice || MaxVerts < 3)
+		return JE_FALSE;
 
-	m_MaxVerts = maxVerts;
+	Shutdown();
+	m_MaxVerts = MaxVerts;
 	m_NumVerts = 0;
-
-	// Create vertex buffer
-	UINT64 bufferSize = sizeof(PolyVert) * m_MaxVerts;
-
-	D3D12_HEAP_PROPERTIES heapProps = {};
-	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
-	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	heapProps.CreationNodeMask = 1;
-	heapProps.VisibleNodeMask = 1;
-
-	D3D12_RESOURCE_DESC bufferDesc = {};
-	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	bufferDesc.Alignment = 0;
-	bufferDesc.Width = bufferSize;
-	bufferDesc.Height = 1;
-	bufferDesc.DepthOrArraySize = 1;
-	bufferDesc.MipLevels = 1;
-	bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-	bufferDesc.SampleDesc.Count = 1;
-	bufferDesc.SampleDesc.Quality = 0;
-	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-	HRESULT hr = g_pDevice->CreateCommittedResource(
-		&heapProps,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferDesc,
-		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
-		nullptr,
-		IID_PPV_ARGS(&m_pVertexBuffer)
-	);
-
-	if (FAILED(hr))
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: Failed to create vertex buffer - HR: 0x%08X", hr);
-		return JE_FALSE;
-	}
-
-	// Create upload buffer
-	D3D12_HEAP_PROPERTIES uploadHeapProps = {};
-	uploadHeapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
-	uploadHeapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	uploadHeapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	uploadHeapProps.CreationNodeMask = 1;
-	uploadHeapProps.VisibleNodeMask = 1;
-
-	hr = g_pDevice->CreateCommittedResource(
-		&uploadHeapProps,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&m_pVertexUploadBuffer)
-	);
-
-	if (FAILED(hr))
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: Failed to create upload buffer - HR: 0x%08X", hr);
-		return JE_FALSE;
-	}
-
-	// Set up vertex buffer view
-	m_VertexBufferView.BufferLocation = m_pVertexBuffer->GetGPUVirtualAddress();
-	m_VertexBufferView.SizeInBytes = static_cast<UINT>(bufferSize);
-	m_VertexBufferView.StrideInBytes = sizeof(PolyVert);
-
+	m_Vertices.reserve(static_cast<size_t>(MaxVerts));
+	m_Cache.reserve(static_cast<size_t>(MaxVerts / 3));
 	m_bInitialized = true;
-	D3D12Log::GetPtr()->Printf("PolyCache initialized successfully");
+	D3D12Log::GetPtr()->Printf("D3D12 polygon cache initialized for %d vertices", MaxVerts);
 	return JE_TRUE;
 }
 
 void D3D12PolyCache::Shutdown()
 {
-	if (!m_bInitialized)
-		return;
-
-	D3D12Log::GetPtr()->Printf("D3D12PolyCache::Shutdown");
-
-	// Clear static buffers
-	for (auto& buffer : m_StaticBuffers)
+	for (auto& Buffer : m_StaticBuffers)
 	{
-		if (buffer.Active)
-		{
-			buffer.pVertexBuffer.Reset();
-			if (buffer.Layers)
-			{
-				delete[] buffer.Layers;
-				buffer.Layers = nullptr;
-			}
-			buffer.Active = JE_FALSE;
-		}
+		Buffer.pVertexBuffer.Reset();
+		delete[] Buffer.Layers;
+		Buffer.Layers = nullptr;
+		Buffer.Active = JE_FALSE;
 	}
 	m_StaticBuffers.clear();
 
-	// Release resources
-	m_pVertexBuffer.Reset();
-	m_pVertexUploadBuffer.Reset();
-
+	for (UINT Frame = 0; Frame < FRAME_COUNT; ++Frame)
+		m_FrameVertexBuffers[Frame].clear();
 	m_Cache.clear();
 	m_Vertices.clear();
+	m_NumVerts = 0;
+	m_MaxVerts = 0;
 	m_bInitialized = false;
+}
+
+void D3D12PolyCache::BeginFrame(UINT FrameIndex)
+{
+	if (FrameIndex < FRAME_COUNT)
+		m_FrameVertexBuffers[FrameIndex].clear();
+
+	// A completed EndScene always empties these. Clearing here also recovers cleanly
+	// if an application abandoned a scene after an error.
+	m_Cache.clear();
+	m_Vertices.clear();
+	m_NumVerts = 0;
+}
+
+jeBoolean D3D12PolyCache::AddPolygon(
+	jeTLVertex* Pnts,
+	int32 NumPoints,
+	jeRDriver_Layer* Layers,
+	int32 NumLayers,
+	uint32 Flags,
+	jeBoolean WorldCoordinates)
+{
+	if (!m_bInitialized || !g_bInScene || !Pnts || NumPoints < 3)
+		return JE_FALSE;
+
+	const int32 TriangleVertexCount = (NumPoints - 2) * 3;
+	if (m_NumVerts + TriangleVertexCount > m_MaxVerts && !m_Cache.empty())
+	{
+		if (!Flush())
+			return JE_FALSE;
+	}
+	if (TriangleVertexCount > m_MaxVerts)
+		m_MaxVerts = TriangleVertexCount;
+
+	int32 UsableLayers = NumLayers;
+	if (UsableLayers < 0)
+		UsableLayers = 0;
+	if (UsableLayers > MAX_LAYERS)
+		UsableLayers = MAX_LAYERS;
+	for (int32 Layer = 0; Layer < UsableLayers; ++Layer)
+	{
+		if (!Layers || !Layers[Layer].THandle || !D3D12_THandle_GetResource(Layers[Layer].THandle))
+		{
+			UsableLayers = Layer;
+			break;
+		}
+	}
+
+	std::vector<PolyVert> Converted(static_cast<size_t>(NumPoints));
+	for (int32 i = 0; i < NumPoints; ++i)
+	{
+		PolyVert& Vertex = Converted[static_cast<size_t>(i)];
+		Vertex.x = Pnts[i].x;
+		Vertex.y = Pnts[i].y;
+		Vertex.z = Pnts[i].z;
+		Vertex.rhw = SafeReciprocal(Pnts[i].z);
+		Vertex.r = NormalizeColor(Pnts[i].r);
+		Vertex.g = NormalizeColor(Pnts[i].g);
+		Vertex.b = NormalizeColor(Pnts[i].b);
+		Vertex.a = NormalizeColor(Pnts[i].a);
+		Vertex.u = Pnts[i].u;
+		Vertex.v = Pnts[i].v;
+		Vertex.lu = Pnts[i].pad1;
+		Vertex.lv = Pnts[i].pad2;
+
+		if (WorldCoordinates && UsableLayers > 0)
+		{
+			const jeRDriver_Layer& TextureLayer = Layers[0];
+			const float TextureScale = static_cast<float>(1u << TextureLayer.THandle->Log);
+			Vertex.u = (Pnts[i].u * SafeReciprocal(TextureLayer.ScaleU) + TextureLayer.ShiftU) /
+				TextureScale;
+			Vertex.v = (Pnts[i].v * SafeReciprocal(TextureLayer.ScaleV) + TextureLayer.ShiftV) /
+				TextureScale;
+
+			if (UsableLayers > 1)
+			{
+				const jeRDriver_Layer& LightLayer = Layers[1];
+				const float LightScale = static_cast<float>((1u << LightLayer.THandle->Log) << 4);
+				Vertex.lu = (Pnts[i].u - LightLayer.ShiftU + 8.0f) / LightScale;
+				Vertex.lv = (Pnts[i].v - LightLayer.ShiftV + 8.0f) / LightScale;
+			}
+		}
+	}
+
+	PolyCacheEntry Entry = {};
+	Entry.StartVertex = m_NumVerts;
+	Entry.NumVertices = TriangleVertexCount;
+	Entry.NumLayers = UsableLayers;
+	Entry.Flags = Flags;
+	for (int32 Layer = 0; Layer < MAX_LAYERS; ++Layer)
+		Entry.Layers[Layer] = (Layer < UsableLayers) ? Layers[Layer].THandle : nullptr;
+
+	// D3D12 has no triangle-fan topology, so expand each convex Jet3D polygon.
+	for (int32 i = 1; i < NumPoints - 1; ++i)
+	{
+		m_Vertices.push_back(Converted[0]);
+		m_Vertices.push_back(Converted[static_cast<size_t>(i)]);
+		m_Vertices.push_back(Converted[static_cast<size_t>(i + 1)]);
+	}
+	m_NumVerts += TriangleVertexCount;
+	m_Cache.push_back(Entry);
+
+	if (Flags & JE_RENDER_FLAG_FLUSHBATCH)
+		return Flush();
+	return JE_TRUE;
 }
 
 jeBoolean D3D12PolyCache::AddGouraudPoly(jeTLVertex* Pnts, int32 NumPoints, uint32 Flags)
 {
-	if (!m_bInitialized || !Pnts || NumPoints < 3)
-		return JE_FALSE;
-
-	// Check if we have room
-	if (m_NumVerts + NumPoints > m_MaxVerts)
-	{
-		Flush();
-	}
-
-	// Convert vertices to PolyVert format
-	int32 startVertex = m_NumVerts;
-	for (int32 i = 0; i < NumPoints; i++)
-	{
-		PolyVert vert;
-		vert.x = Pnts[i].x;
-		vert.y = Pnts[i].y;
-		vert.z = Pnts[i].z;
-		vert.rhw = 1.0f / Pnts[i].z;  // Perspective divide
-		vert.diffuse = (Pnts[i].r << 16) | (Pnts[i].g << 8) | Pnts[i].b | (Pnts[i].a << 24);
-		vert.u = Pnts[i].u;
-		vert.v = Pnts[i].v;
-		vert.lu = 0.0f;
-		vert.lv = 0.0f;
-
-		m_Vertices.push_back(vert);
-		m_NumVerts++;
-	}
-
-	// Add to cache
-	PolyCacheEntry entry;
-	entry.StartVertex = startVertex;
-	entry.NumVertices = NumPoints;
-	entry.NumLayers = 0;
-	entry.Flags = Flags;
-	for (int i = 0; i < MAX_LAYERS; i++)
-		entry.Layers[i] = nullptr;
-
-	m_Cache.push_back(entry);
-
-	return JE_TRUE;
+	return AddPolygon(Pnts, NumPoints, nullptr, 0, Flags, JE_FALSE);
 }
 
-jeBoolean D3D12PolyCache::AddMiscTexturePoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
+jeBoolean D3D12PolyCache::AddMiscTexturePoly(
+	jeTLVertex* Pnts,
+	int32 NumPoints,
+	jeRDriver_Layer* Layers,
+	int32 NumLayers,
+	uint32 Flags)
 {
-	if (!m_bInitialized || !Pnts || NumPoints < 3)
-		return JE_FALSE;
-
-	// Check if we have room
-	if (m_NumVerts + NumPoints > m_MaxVerts)
-	{
-		Flush();
-	}
-
-	// Convert vertices
-	int32 startVertex = m_NumVerts;
-	for (int32 i = 0; i < NumPoints; i++)
-	{
-		PolyVert vert;
-		vert.x = Pnts[i].x;
-		vert.y = Pnts[i].y;
-		vert.z = Pnts[i].z;
-		vert.rhw = 1.0f / Pnts[i].z;
-		vert.diffuse = (Pnts[i].r << 16) | (Pnts[i].g << 8) | Pnts[i].b | (Pnts[i].a << 24);
-		vert.u = Pnts[i].u;
-		vert.v = Pnts[i].v;
-		vert.lu = 0.0f;
-		vert.lv = 0.0f;
-
-		m_Vertices.push_back(vert);
-		m_NumVerts++;
-	}
-
-	// Add to cache
-	PolyCacheEntry entry;
-	entry.StartVertex = startVertex;
-	entry.NumVertices = NumPoints;
-	entry.NumLayers = (NumLayers < MAX_LAYERS) ? NumLayers : MAX_LAYERS;
-	entry.Flags = Flags;
-
-	for (int i = 0; i < MAX_LAYERS; i++)
-	{
-		if (i < NumLayers && Layers)
-			entry.Layers[i] = Layers[i].THandle;
-		else
-			entry.Layers[i] = nullptr;
-	}
-
-	m_Cache.push_back(entry);
-
-	return JE_TRUE;
+	return AddPolygon(Pnts, NumPoints, Layers, NumLayers, Flags, JE_FALSE);
 }
 
-jeBoolean D3D12PolyCache::AddWorldPoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, void* LMapCBContext, uint32 Flags)
+jeBoolean D3D12PolyCache::AddWorldPoly(
+	jeTLVertex* Pnts,
+	int32 NumPoints,
+	jeRDriver_Layer* Layers,
+	int32 NumLayers,
+	void* LMapCBContext,
+	uint32 Flags)
 {
-	// For now, treat world polys like misc texture polys
-	// TODO: Implement lightmap callback handling
-	return AddMiscTexturePoly(Pnts, NumPoints, Layers, NumLayers, Flags);
+	if (LMapCBContext && Layers && NumLayers > 1 && Layers[1].THandle &&
+		g_D3D12Drv.SetupLightmap)
+	{
+		jeRDriver_LMapCBInfo LightInfo = {};
+		g_D3D12Drv.SetupLightmap(&LightInfo, LMapCBContext);
+		if (LightInfo.RGBLight[0] && (LightInfo.Dynamic || !Layers[1].THandle->Lightmap))
+		{
+			if (!D3D12_THandle_UpdateLightmap(
+				Layers[1].THandle,
+				static_cast<const uint8*>(LightInfo.RGBLight[0])))
+			{
+				D3D12Log::GetPtr()->Printf("WARNING: Lightmap upload failed; drawing base texture only");
+				NumLayers = 1;
+			}
+		}
+	}
+
+	return AddPolygon(Pnts, NumPoints, Layers, NumLayers, Flags, JE_TRUE);
+}
+
+jeBoolean D3D12PolyCache::UploadVertices(
+	ComPtr<ID3D12Resource>& VertexBuffer,
+	D3D12_VERTEX_BUFFER_VIEW& VertexBufferView)
+{
+	if (m_Vertices.empty())
+		return JE_TRUE;
+
+	const UINT64 BufferSize = static_cast<UINT64>(m_Vertices.size()) * sizeof(PolyVert);
+	D3D12_HEAP_PROPERTIES UploadHeap = {};
+	UploadHeap.Type = D3D12_HEAP_TYPE_UPLOAD;
+	D3D12_RESOURCE_DESC BufferDesc = VertexBufferDescription(BufferSize);
+	HRESULT Hr = g_pDevice->CreateCommittedResource(
+		&UploadHeap,
+		D3D12_HEAP_FLAG_NONE,
+		&BufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&VertexBuffer));
+	if (FAILED(Hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Vertex upload buffer creation failed - HR: 0x%08X", Hr);
+		return JE_FALSE;
+	}
+
+	void* Destination = nullptr;
+	D3D12_RANGE ReadRange = { 0, 0 };
+	Hr = VertexBuffer->Map(0, &ReadRange, &Destination);
+	if (FAILED(Hr))
+		return JE_FALSE;
+	std::memcpy(Destination, m_Vertices.data(), static_cast<size_t>(BufferSize));
+	D3D12_RANGE WrittenRange = { 0, static_cast<SIZE_T>(BufferSize) };
+	VertexBuffer->Unmap(0, &WrittenRange);
+
+	VertexBufferView.BufferLocation = VertexBuffer->GetGPUVirtualAddress();
+	VertexBufferView.SizeInBytes = static_cast<UINT>(BufferSize);
+	VertexBufferView.StrideInBytes = sizeof(PolyVert);
+	return JE_TRUE;
 }
 
 jeBoolean D3D12PolyCache::Flush()
 {
 	if (!m_bInitialized || m_Cache.empty())
 		return JE_TRUE;
-
-	D3D12Log::GetPtr()->Printf("PolyCache::Flush - %d polys, %d verts", (int)m_Cache.size(), m_NumVerts);
-
-	// Upload vertices to GPU
-	if (!UploadVertices())
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: Failed to upload vertices");
+	if (!g_bInScene || !g_pCommandList || !g_pPSOManager)
 		return JE_FALSE;
+
+	ComPtr<ID3D12Resource> VertexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferView = {};
+	if (!UploadVertices(VertexBuffer, VertexBufferView))
+		return JE_FALSE;
+	m_FrameVertexBuffers[g_nCurrentFrameIndex].push_back(VertexBuffer);
+
+	ID3D12DescriptorHeap* TextureHeap = D3D12_THandle_GetDescriptorHeap();
+	if (TextureHeap)
+		g_pCommandList->SetDescriptorHeaps(1, &TextureHeap);
+	g_pCommandList->SetGraphicsRootSignature(g_pPSOManager->GetRootSignature());
+	g_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	g_pCommandList->IASetVertexBuffers(0, 1, &VertexBufferView);
+
+	struct DrawConstants
+	{
+		float Width;
+		float Height;
+		uint32 Flags;
+		uint32 Padding;
+	};
+
+	for (const PolyCacheEntry& Entry : m_Cache)
+	{
+		int32 NumLayers = Entry.NumLayers;
+		if (NumLayers > 0 && Entry.Layers[0]->ResourceState != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
+			NumLayers = 0;
+		if (NumLayers > 1 && Entry.Layers[1]->ResourceState != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
+			NumLayers = 1;
+
+		D3D12_PSO_TYPE Type = PSO_GOURAUD;
+		if (NumLayers == 1)
+			Type = PSO_TEXTURE;
+		else if (NumLayers > 1)
+			Type = PSO_MULTITEX;
+
+		ID3D12PipelineState* Pipeline = g_pPSOManager->GetPSO(
+			Type,
+			Entry.Flags,
+			g_bWireframe ? JE_TRUE : JE_FALSE);
+		if (!Pipeline)
+			return JE_FALSE;
+		g_pCommandList->SetPipelineState(Pipeline);
+
+		const DrawConstants Constants = {
+			static_cast<float>((g_nScreenWidth > 1) ? g_nScreenWidth : 1),
+			static_cast<float>((g_nScreenHeight > 1) ? g_nScreenHeight : 1),
+			Entry.Flags,
+			0
+		};
+		g_pCommandList->SetGraphicsRoot32BitConstants(0, 4, &Constants, 0);
+		if (NumLayers > 0)
+			g_pCommandList->SetGraphicsRootDescriptorTable(1, D3D12_THandle_GetGPUSRV(Entry.Layers[0]));
+		if (NumLayers > 1)
+			g_pCommandList->SetGraphicsRootDescriptorTable(2, D3D12_THandle_GetGPUSRV(Entry.Layers[1]));
+
+		g_pCommandList->DrawInstanced(
+			static_cast<UINT>(Entry.NumVertices),
+			1,
+			static_cast<UINT>(Entry.StartVertex),
+			0);
+		++g_D3D12Drv.NumRenderedPolys;
 	}
 
-	// TODO: Set up PSO and render the cached polygons
-	// This would involve:
-	// 1. Setting the appropriate PSO based on poly flags
-	// 2. Binding textures
-	// 3. Drawing each cached entry
-	// For now, we just clear the cache
-
-	// Clear cache
 	m_Cache.clear();
 	m_Vertices.clear();
 	m_NumVerts = 0;
-
 	return JE_TRUE;
 }
 
-jeBoolean D3D12PolyCache::UploadVertices()
+// Hardware-transformed static meshes are deliberately not advertised in device caps.
+// Returning failure is safer than the old placeholder, which returned a valid-looking
+// handle without ever uploading or drawing its vertex data.
+uint32 D3D12PolyCache::AddStaticBuffer(
+	jeHWVertex*,
+	int32,
+	jeRDriver_Layer*,
+	int32,
+	uint32)
 {
-	if (m_Vertices.empty())
-		return JE_TRUE;
-
-	// Map upload buffer
-	void* pData = nullptr;
-	HRESULT hr = m_pVertexUploadBuffer->Map(0, nullptr, &pData);
-	if (FAILED(hr))
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: Failed to map upload buffer - HR: 0x%08X", hr);
-		return JE_FALSE;
-	}
-
-	// Copy vertex data
-	memcpy(pData, m_Vertices.data(), m_NumVerts * sizeof(PolyVert));
-
-	m_pVertexUploadBuffer->Unmap(0, nullptr);
-
-	// Copy from upload buffer to vertex buffer
-	// TODO: This should be done via command list during rendering
-	// For now, we just acknowledge the upload
-
-	return JE_TRUE;
+	D3D12Log::GetPtr()->Printf("Static hardware buffers are not enabled for the transformed-vertex DX12 path");
+	return 0;
 }
 
-void D3D12PolyCache::EnableAlpha(jeBoolean Enable)
+jeBoolean D3D12PolyCache::RemoveStaticBuffer(uint32)
 {
-	// TODO: Set blend state in PSO
-	// For now, just log
-	D3D12Log::GetPtr()->Printf("EnableAlpha: %d", Enable);
+	return JE_FALSE;
 }
 
-//================================================================================
-//	Static Mesh Management
-//================================================================================
-
-uint32 D3D12PolyCache::AddStaticBuffer(jeHWVertex* Points, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
+jeBoolean D3D12PolyCache::RenderStaticBuffer(uint32, int32, int32, jeXForm3d*)
 {
-	D3D12Log::GetPtr()->Printf("AddStaticBuffer: %d points, %d layers", NumPoints, NumLayers);
-
-	// Find free slot
-	uint32 index = 0;
-	for (size_t i = 0; i < m_StaticBuffers.size(); i++)
-	{
-		if (!m_StaticBuffers[i].Active)
-		{
-			index = static_cast<uint32>(i);
-			break;
-		}
-	}
-
-	// Add new buffer if no free slot
-	if (index == 0 && (m_StaticBuffers.empty() || m_StaticBuffers[0].Active))
-	{
-		StaticBuffer newBuffer;
-		memset(&newBuffer, 0, sizeof(StaticBuffer));
-		m_StaticBuffers.push_back(newBuffer);
-		index = static_cast<uint32>(m_StaticBuffers.size() - 1);
-	}
-
-	StaticBuffer& buffer = m_StaticBuffers[index];
-	buffer.Active = JE_TRUE;
-	buffer.NumVerts = NumPoints;
-	buffer.Flags = Flags;
-
-	// Create vertex buffer for static mesh
-	UINT64 bufferSize = sizeof(jeHWVertex) * NumPoints;
-
-	D3D12_HEAP_PROPERTIES heapProps = {};
-	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
-
-	D3D12_RESOURCE_DESC bufferDesc = {};
-	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	bufferDesc.Width = bufferSize;
-	bufferDesc.Height = 1;
-	bufferDesc.DepthOrArraySize = 1;
-	bufferDesc.MipLevels = 1;
-	bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-	bufferDesc.SampleDesc.Count = 1;
-	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	HRESULT hr = g_pDevice->CreateCommittedResource(
-		&heapProps,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferDesc,
-		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
-		nullptr,
-		IID_PPV_ARGS(&buffer.pVertexBuffer)
-	);
-
-	if (FAILED(hr))
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: Failed to create static vertex buffer");
-		buffer.Active = JE_FALSE;
-		return 0;
-	}
-
-	// Set up vertex buffer view
-	buffer.VertexBufferView.BufferLocation = buffer.pVertexBuffer->GetGPUVirtualAddress();
-	buffer.VertexBufferView.SizeInBytes = static_cast<UINT>(bufferSize);
-	buffer.VertexBufferView.StrideInBytes = sizeof(jeHWVertex);
-
-	// Copy layer info
-	if (NumLayers > 0 && Layers)
-	{
-		buffer.NumLayers = NumLayers;
-		buffer.Layers = new jeRDriver_Layer[NumLayers];
-		memcpy(buffer.Layers, Layers, NumLayers * sizeof(jeRDriver_Layer));
-	}
-	else
-	{
-		buffer.NumLayers = 0;
-		buffer.Layers = nullptr;
-	}
-
-	// TODO: Upload vertex data via command list
-
-	D3D12Log::GetPtr()->Printf("Static buffer created - ID: %d", index);
-	return index + 1;  // Return 1-based index
-}
-
-jeBoolean D3D12PolyCache::RemoveStaticBuffer(uint32 id)
-{
-	if (id == 0 || id > m_StaticBuffers.size())
-		return JE_FALSE;
-
-	uint32 index = id - 1;
-	StaticBuffer& buffer = m_StaticBuffers[index];
-
-	if (!buffer.Active)
-		return JE_FALSE;
-
-	D3D12Log::GetPtr()->Printf("RemoveStaticBuffer: %d", id);
-
-	buffer.pVertexBuffer.Reset();
-	if (buffer.Layers)
-	{
-		delete[] buffer.Layers;
-		buffer.Layers = nullptr;
-	}
-	buffer.Active = JE_FALSE;
-
-	return JE_TRUE;
-}
-
-jeBoolean D3D12PolyCache::RenderStaticBuffer(uint32 id, int32 StartVertex, int32 NumPolys, jeXForm3d* XForm)
-{
-	if (id == 0 || id > m_StaticBuffers.size())
-		return JE_FALSE;
-
-	uint32 index = id - 1;
-	StaticBuffer& buffer = m_StaticBuffers[index];
-
-	if (!buffer.Active)
-		return JE_FALSE;
-
-	// TODO: Render the static mesh
-	// This would involve:
-	// 1. Setting the world matrix from XForm
-	// 2. Binding the appropriate PSO
-	// 3. Binding textures from layers
-	// 4. Drawing the geometry
-	// For now, just acknowledge the call
-
-	D3D12Log::GetPtr()->Printf("RenderStaticBuffer: ID %d, Start %d, NumPolys %d", id, StartVertex, NumPolys);
-
-	return JE_TRUE;
+	return JE_FALSE;
 }

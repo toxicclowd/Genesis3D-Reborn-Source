@@ -68,4 +68,30 @@ JETAPI jeBoolean JETCC jeVec3d_IsValid(const jeVec3d *V);
 }
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+typedef struct jeVec3d grVec3d;
+
+#define grVec3d_GetElement               jeVec3d_GetElement
+#define grVec3d_SetElement               jeVec3d_SetElement
+#define grVec3d_Set                      jeVec3d_Set
+#define grVec3d_Get                      jeVec3d_Get
+#define grVec3d_DotProduct               jeVec3d_DotProduct
+#define grVec3d_CrossProduct             jeVec3d_CrossProduct
+#define grVec3d_Compare                  jeVec3d_Compare
+#define grVec3d_Normalize                jeVec3d_Normalize
+#define grVec3d_IsNormalized             jeVec3d_IsNormalized
+#define grVec3d_Scale                    jeVec3d_Scale
+#define grVec3d_Length                   jeVec3d_Length
+#define grVec3d_LengthSquared            jeVec3d_LengthSquared
+#define grVec3d_Subtract                 jeVec3d_Subtract
+#define grVec3d_Add                      jeVec3d_Add
+#define grVec3d_Copy                     jeVec3d_Copy
+#define grVec3d_Clear                    jeVec3d_Clear
+#define grVec3d_Inverse                  jeVec3d_Inverse
+#define grVec3d_MA                       jeVec3d_MA
+#define grVec3d_AddScaled                jeVec3d_AddScaled
+#define grVec3d_DistanceBetween          jeVec3d_DistanceBetween
+#define grVec3d_DistanceBetweenSquared   jeVec3d_DistanceBetweenSquared
+#define grVec3d_IsValid                  jeVec3d_IsValid
+
 #endif

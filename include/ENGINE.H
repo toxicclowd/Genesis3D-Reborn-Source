@@ -285,4 +285,48 @@ JETAPI jeBoolean JETCC jeEngine_SetCamera(jeEngine *Engine, jeCamera *Camera);
 }
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+typedef struct jeEngine grEngine;
+typedef struct jeDriver grDriver;
+typedef struct jeDriver_Mode grDriver_Mode;
+typedef struct jeDriver_System grDriver_System;
+typedef struct jeTexture grTexture;
+typedef struct jeShader grShader;
+typedef struct jeVertexBuffer grVertexBuffer;
+typedef struct jeIndexBuffer grIndexBuffer;
+typedef struct jeFont grFont;
+
+#define GR_FONT_NORMAL			JE_FONT_NORMAL
+#define GR_FONT_BOLD			JE_FONT_BOLD
+#define GR_ENGINE_BITMAP_TYPE_2D JE_ENGINE_BITMAP_TYPE_2D
+#define GR_ENGINE_BITMAP_TYPE_3D JE_ENGINE_BITMAP_TYPE_3D
+typedef jeEngine_BitmapType grEngine_BitmapType;
+typedef jeEngine_FrameState grEngine_FrameState;
+
+#define grEngine_Create                  jeEngine_Create
+#define grEngine_CreateRef               jeEngine_CreateRef
+#define grEngine_Free                    jeEngine_Free
+#define grEngine_Destroy                 jeEngine_Destroy
+#define grEngine_IsValid                 jeEngine_IsValid
+#define grEngine_EnableFrameRateCounter  jeEngine_EnableFrameRateCounter
+#define grEngine_Activate                jeEngine_Activate
+#define grEngine_UpdateWindow            jeEngine_UpdateWindow
+#define grEngine_GetFrameState           jeEngine_GetFrameState
+#define grEngine_SetDriverAndMode        jeEngine_SetDriverAndMode
+#define grEngine_GetDriverAndMode        jeEngine_GetDriverAndMode
+#define grEngine_GetDriverSystem         jeEngine_GetDriverSystem
+#define grEngine_ShutdownDriver          jeEngine_ShutdownDriver
+#define grEngine_BeginFrame              jeEngine_BeginFrame
+#define grEngine_EndFrame                jeEngine_EndFrame
+#define grEngine_FlushScene              jeEngine_FlushScene
+#define grEngine_SetGamma                jeEngine_SetGamma
+#define grEngine_GetGamma                jeEngine_GetGamma
+#define grEngine_UpdateGamma             jeEngine_UpdateGamma
+#define grEngine_GetFPS                  jeEngine_GetFPS
+#define grEngine_DrawText                jeEngine_DrawText
+#define grEngine_SetFog                  jeEngine_SetFog
+#define grEngine_SetMatrix               jeEngine_SetMatrix
+#define grEngine_GetMatrix               jeEngine_GetMatrix
+#define grEngine_SetCamera               jeEngine_SetCamera
+
 #endif // JE_ENGINE_H

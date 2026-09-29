@@ -284,4 +284,46 @@ JETAPI uint32 JETCC jeVFile_OpenCount(void);
 }
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+typedef struct jeVFile grVFile;
+typedef struct jeVFile_Finder grVFile_Finder;
+typedef struct jeVFile_Properties grVFile_Properties;
+typedef struct jeVFile_Time grVFile_Time;
+typedef jeVFile_Attributes grVFile_Attributes;
+typedef jeVFile_TypeIdentifier grVFile_TypeIdentifier;
+typedef jeVFile_Whence grVFile_Whence;
+
+#define GR_VFILE_ATTRIB_READONLY         JE_VFILE_ATTRIB_READONLY
+#define GR_VFILE_ATTRIB_DIRECTORY        JE_VFILE_ATTRIB_DIRECTORY
+#define GR_VFILE_ATTRIB_REMOTE           JE_VFILE_ATTRIB_REMOTE
+#define GR_VFILE_OPEN_READONLY           JE_VFILE_OPEN_READONLY
+#define GR_VFILE_OPEN_UPDATE             JE_VFILE_OPEN_UPDATE
+#define GR_VFILE_OPEN_CREATE             JE_VFILE_OPEN_CREATE
+#define GR_VFILE_OPEN_DIRECTORY          JE_VFILE_OPEN_DIRECTORY
+#define GR_VFILE_OPEN_RAW                JE_VFILE_OPEN_RAW
+
+#define grVFile_Open                     jeVFile_Open
+#define grVFile_OpenNewSystem            jeVFile_OpenNewSystem
+#define grVFile_Close                    jeVFile_Close
+#define grVFile_Destroy                  jeVFile_Destroy
+#define grVFile_CreateRef                jeVFile_CreateRef
+#define grVFile_Read                     jeVFile_Read
+#define grVFile_Write                    jeVFile_Write
+#define grVFile_Seek                     jeVFile_Seek
+#define grVFile_Tell                     jeVFile_Tell
+#define grVFile_EOF                      jeVFile_EOF
+#define grVFile_Size                     jeVFile_Size
+#define grVFile_SetSize                  jeVFile_SetSize
+#define grVFile_Printf                   jeVFile_Printf
+#define grVFile_GetS                     jeVFile_GetS
+#define grVFile_GetName                  jeVFile_GetName
+#define grVFile_GetProperties            jeVFile_GetProperties
+#define grVFile_SetAttributes            jeVFile_SetAttributes
+#define grVFile_SetTime                  jeVFile_SetTime
+#define grVFile_Rewind                   jeVFile_Rewind
+#define grVFile_IsValid                  jeVFile_IsValid
+#define grVFile_FileExists               jeVFile_FileExists
+#define grVFile_DeleteFile               jeVFile_DeleteFile
+#define grVFile_RenameFile               jeVFile_RenameFile
+
 #endif

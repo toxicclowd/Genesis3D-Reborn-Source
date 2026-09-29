@@ -542,7 +542,7 @@ BEGIN
     BEGIN
         MENUITEM "&Help Topics",                ID_HELP_FINDER
         MENUITEM SEPARATOR
-        MENUITEM "&About jDesignerClassic11...", ID_APP_ABOUT
+        MENUITEM "&About Genesis3D: Reborn...", ID_APP_ABOUT
     END
 END
 
@@ -877,7 +877,7 @@ END
 
 IDD_DISCLAIMER DIALOGEX 0, 0, 297, 276
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "jDesignerClassic11"
+CAPTION "Genesis3D: Reborn World Editor"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     RTEXT           "",IDC_STATIC,170,40,55,8,SS_NOPREFIX
@@ -938,7 +938,7 @@ END
 
 IDD_ERROR DIALOG 0, 0, 418, 199
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
-CAPTION "Jet Editor Error"
+CAPTION "Genesis3D: Reborn Editor Error"
 FONT 8, "MS Sans Serif"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,299,66,50,14
@@ -960,7 +960,7 @@ END
 
 IDD_DRIVERDIALOG DIALOG 0, 0, 242, 231
 STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "jDesignerClassic7 2.7"
+CAPTION "Genesis3D: Reborn Video Mode Selection"
 FONT 8, "MS Sans Serif"
 BEGIN
     LISTBOX         IDC_DRIVERLIST,10,37,225,170,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
@@ -974,14 +974,14 @@ END
 
 IDD_ABOUTBOX DIALOGEX 0, 0, 307, 294
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "jDesignerClassic11"
+CAPTION "Genesis3D: Reborn World Editor"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,252,276,50,14,BS_CENTER | WS_GROUP,WS_EX_RIGHT
     EDITTEXT        IDC_EDIT1,5,60,298,146,ES_MULTILINE | ES_READONLY | WS_VSCROLL
     CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,6,240,298,1
     RTEXT           "",IDC_STATIC,180,40,55,8,SS_NOPREFIX
-    RTEXT           "jDesignerClassic11 - About",IDC_STATIC_PROP,105,5,195,23,SS_CENTERIMAGE
+    RTEXT           "Genesis3D: Reborn - About",IDC_STATIC_PROP,105,5,195,23,SS_CENTERIMAGE
     LTEXT           "http://www.jet3d.com",IDC_TEXT_JETLINK,167,211,114,8
     LTEXT           "http://sourceforge.net/projects/jetpp/",IDC_TEXT_JETLINK2,167,231,133,8
     RTEXT           "Official Jet3D web site:",IDC_STATIC,66,211,85,8
@@ -1258,7 +1258,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "Open autorecovered file (recommended)",ID_AUTORECOVER_OPEN,114,78,152,14
     PUSHBUTTON      "Delete autorecovered file",ID_AUTORECOVER_DELETE,6,78,96,14
-    CTEXT           "jDesigner Autorecovery Services",IDC_STATIC,9,6,252,8
+    CTEXT           "Genesis3D: Reborn Autorecovery Services",IDC_STATIC,9,6,252,8
     LTEXT           "Static",IDC_STATIC_AUTORECOVER,15,24,240,42
 END
 
@@ -1293,13 +1293,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "Eclipse Entertainment LLC"
-            VALUE "FileDescription", "Jet3D World Designer"
+            VALUE "CompanyName", "Genesis3D: Reborn Team"
+            VALUE "FileDescription", "Genesis3D: Reborn World Editor"
             VALUE "FileVersion", "1, 0, 0, 1"
             VALUE "InternalName", "jwe"
-            VALUE "LegalCopyright", "Copyright (C) 2023"
+            VALUE "LegalCopyright", "Copyright (C) 1999-2026 Genesis3D: Reborn Team"
             VALUE "OriginalFilename", "jDesigner3D.exe"
-            VALUE "ProductName", "jDesignerClassic11"
+            VALUE "ProductName", "Genesis3D: Reborn Designer"
             VALUE "ProductVersion", "2.7.1.1"
         END
     END
@@ -1749,7 +1749,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "jDesignerClassic11 2.7.1.1 for Jet3D"
+    IDR_MAINFRAME           "Genesis3D: Reborn World Editor"
     IDR_GWFTYPE             "\nLevel\nLevel\nJet World Files (*.j3d)\n.j3d\nJDesigner3D.Level\nJet World Document"
     IDR_PREFABDESC          "\nPrefab\nPrefab\nJet Prefab Files (*.j3p)\n.j3p\nJDesigner3D.Prefab\nJet Prefab Document"
 END
@@ -1796,7 +1796,7 @@ END
 
 STRINGTABLE
 BEGIN
-    AFX_IDS_APP_TITLE       "jDesignerClassic11 2.7.0 for Jet3D"
+    AFX_IDS_APP_TITLE       "Genesis3D: Reborn World Editor"
     AFX_IDS_IDLEMESSAGE     " "
     AFX_IDS_HELPMODEMESSAGE "Select an object on which to get Help"
 END

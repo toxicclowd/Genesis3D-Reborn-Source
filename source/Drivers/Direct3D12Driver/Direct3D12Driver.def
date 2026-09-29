@@ -1,0 +1,5 @@
+LIBRARY "Direct3D12Driver"
+
+EXPORTS
+    DriverHook
+    jeEngine_D3D12Driver

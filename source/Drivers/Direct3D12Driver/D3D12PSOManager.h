@@ -39,16 +39,13 @@ public:
 	void Shutdown();
 
 	// Get a PSO by type
-	ID3D12PipelineState* GetPSO(D3D12_PSO_TYPE type);
+	ID3D12PipelineState* GetPSO(D3D12_PSO_TYPE type, uint32 flags, jeBoolean sceneWireframe);
 	ID3D12RootSignature* GetRootSignature();
 
 private:
 	// Create all PSOs
 	jeBoolean CreateRootSignature();
-	jeBoolean CreateGouraudPSO();
-	jeBoolean CreateTexturePSO();
-	jeBoolean CreateMultiTexPSO();
-	jeBoolean CreateAlphaPSOs();
+	jeBoolean CreatePSO(D3D12_PSO_TYPE type, uint32 stateIndex);
 
 	// Compile shaders
 	jeBoolean CompileShaders();
@@ -56,14 +53,13 @@ private:
 
 	// Root signature and PSOs
 	ComPtr<ID3D12RootSignature> m_pRootSignature;
-	ComPtr<ID3D12PipelineState> m_PSOs[PSO_COUNT];
+	static const uint32 PSO_STATE_COUNT = 16;
+	ComPtr<ID3D12PipelineState> m_PSOs[PSO_COUNT][PSO_STATE_COUNT];
 
 	// Compiled shaders
 	ComPtr<ID3DBlob> m_VS_Gouraud;
 	ComPtr<ID3DBlob> m_PS_Gouraud;
-	ComPtr<ID3DBlob> m_VS_Texture;
 	ComPtr<ID3DBlob> m_PS_Texture;
-	ComPtr<ID3DBlob> m_VS_MultiTex;
 	ComPtr<ID3DBlob> m_PS_MultiTex;
 
 	bool m_bInitialized;

@@ -352,5 +352,34 @@ struct jeObjectDef
 }
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+typedef struct jeObject grObject;
+typedef struct jeObjectDef grObject_Def;
+typedef struct jeObjectDef jeObject_Def;
+typedef jeObject_Type grObject_Type;
+typedef jeObject_RenderFlags grObject_RenderFlags;
+
+#define grObject_Create                  jeObject_Create
+#define grObject_Duplicate               jeObject_Duplicate
+#define grObject_Destroy                 jeObject_Destroy
+#define grObject_SetName                 jeObject_SetName
+#define grObject_GetName                 jeObject_GetName
+#define grObject_WriteToFile             jeObject_WriteToFile
+#define grObject_CreateFromFile          jeObject_CreateFromFile
+#define grObject_GetType                 jeObject_GetType
+#define grObject_GetTypeName             jeObject_GetTypeName
+#define grObject_GetPropertyList         jeObject_GetPropertyList
+#define grObject_SetProperty             jeObject_SetProperty
+#define grObject_GetProperty             jeObject_GetProperty
+#define grObject_GetInstance             jeObject_GetInstance
+#define grObject_CreateInstanceRef       jeObject_CreateInstanceRef
+#define grObject_Free                    jeObject_Free
+#define grObject_CreateRef               jeObject_CreateRef
+#define grObject_Render                  jeObject_Render
+#define grObject_Frame                   jeObject_Frame
+#define grObject_Collision               jeObject_Collision
+#define grObject_ChangeBoxCollision      jeObject_ChangeBoxCollision
+#define grObject_IsValid                 jeObject_IsValid
+
 #endif
 

@@ -22,9 +22,6 @@
     <Filter Include="Source Files\Engine\Drivers">
       <UniqueIdentifier>{fac4d8e5-723a-4fb7-9e7c-62839758a0c2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Engine\Drivers\D3DDrv">
-      <UniqueIdentifier>{e8b92fc6-21aa-476f-97d6-dcebc82d8a8c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\guWorld">
       <UniqueIdentifier>{8c696bc3-2c05-4603-b9e6-3733fae1b3f3}</UniqueIdentifier>
     </Filter>
@@ -341,42 +338,6 @@
     </ClCompile>
     <ClCompile Include="Engine\splash_bmp.cpp">
       <Filter>Source Files\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_DDMemMgr.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_err.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_fx.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_gspan.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_main.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_pcache.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_render.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_Scene.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_thandle.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_tpage.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3dcache.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3ddrv.cpp">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
     </ClCompile>
     <ClCompile Include="guWorld\jeBrush.cpp">
       <Filter>Source Files\guWorld</Filter>
@@ -799,42 +760,6 @@
     </ClInclude>
     <ClInclude Include="Engine\Drivers\Dcommon.h">
       <Filter>Source Files\Engine\Drivers</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_DDMemMgr.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3d_err.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3d_fx.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_GSPAN.H">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3d_main.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_Pcache.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_RENDER.H">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_Scene.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_THandle.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_TPage.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3dcache.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3ddrv.h">
-      <Filter>Source Files\Engine\Drivers\D3DDrv</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\jeBrush.h">
       <Filter>Source Files\guWorld</Filter>

@@ -51,8 +51,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,1,1,1
- PRODUCTVERSION 2,7,0,0
+ FILEVERSION 1,0,52,0
+ PRODUCTVERSION 1,0,52,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -67,14 +67,14 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "Eclipse Entertainment"
-            VALUE "FileDescription", "Jet3D Engine"
-            VALUE "FileVersion", "2, 1, 1, 1"
-            VALUE "InternalName", "Jet3DClassic10"
-            VALUE "LegalCopyright", "Copyright © 1999-2019, Eclipse Entertainment"
-            VALUE "OriginalFilename", "JET3D.DLL"
-            VALUE "ProductName", "Jet3D Rendering Engine"
-            VALUE "ProductVersion", "2.7.0.0"
+            VALUE "CompanyName", "Genesis3D: Reborn Team"
+            VALUE "FileDescription", "Genesis3D: Reborn Engine"
+            VALUE "FileVersion", "1, 0, 52, 0"
+            VALUE "InternalName", "Genesis3DReborn"
+            VALUE "LegalCopyright", "Copyright (C) 1999-2026 Genesis3D: Reborn Team"
+            VALUE "OriginalFilename", "Genesis3DReborn.dll"
+            VALUE "ProductName", "Genesis3D: Reborn Rendering Engine"
+            VALUE "ProductVersion", "1.0.52.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -97,4 +97,3 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-

@@ -212,6 +212,26 @@ JETAPI     void JETCC jeRam_AddAllocation(int n,uint32 size);
 jeBoolean jeRam_IsValidPtr(const void *ptr);
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+#define grRam_CriticalCallbackFunction jeRam_CriticalCallbackFunction
+#define grRam_SetCriticalCallback      jeRam_SetCriticalCallback
+#define grRam_EnableCriticalCallback   jeRam_EnableCriticalCallback
+#define grRam_Allocate                 jeRam_Allocate
+#define grRam_AllocateClear            jeRam_AllocateClear
+#define grRam_Free                     jeRam_Free
+#define grRam_Free_                    jeRam_Free_
+#define grRam_Realloc                  jeRam_Realloc
+#define grRam_ReportAllocations        jeRam_ReportAllocations
+#define grRam_ShowStats                jeRam_ShowStats
+#define grRam_AddAllocation            jeRam_AddAllocation
+#define grRam_IsValidPtr               jeRam_IsValidPtr
+
+#define GR_RAM_ALLOCATE_STRUCT         JE_RAM_ALLOCATE_STRUCT
+#define GR_RAM_ALLOCATE_STRUCT_CLEAR   JE_RAM_ALLOCATE_STRUCT_CLEAR
+#define GR_RAM_ALLOCATE_ARRAY          JE_RAM_ALLOCATE_ARRAY
+#define GR_RAM_ALLOCATE_ARRAY_CLEAR    JE_RAM_ALLOCATE_ARRAY_CLEAR
+#define GR_RAM_REALLOC_ARRAY           JE_RAM_REALLOC_ARRAY
+
 #ifdef __cplusplus
   }
 #endif

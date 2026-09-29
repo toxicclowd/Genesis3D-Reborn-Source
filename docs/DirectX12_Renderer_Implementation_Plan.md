@@ -1,7 +1,7 @@
-# DirectX 12 Renderer Implementation Plan for Jet3D
+# DirectX 12 Renderer Implementation Plan for Genesis3D: Reborn
 
 ## Overview
-Create a modern DirectX 12 renderer that implements the Jet3D driver interface (DRV_Driver) as a drop-in replacement for the legacy Direct3D9Driver.
+Create a modern DirectX 12 renderer that implements the Genesis3D: Reborn driver interface (DRV_Driver) as a high-performance modern hardware rasterizer.
 
 ## Driver Interface Analysis
 

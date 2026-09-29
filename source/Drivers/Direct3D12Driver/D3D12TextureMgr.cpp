@@ -1,426 +1,609 @@
 /****************************************************************************************/
 /*  D3D12TEXTUREMGR.CPP                                                                 */
 /*                                                                                      */
-/*  DirectX 12 Texture Manager Implementation                                           */
-/*  Modeled after D3D9TextureMgr for compatibility                                     */
-/*                                                                                      */
+/*  DirectX 12 texture storage, upload, and descriptor management.                      */
 /****************************************************************************************/
-#include <stdio.h>
-#include <string.h>
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <new>
+#include <vector>
+
 #include "D3D12TextureMgr.h"
 #include "Direct3D12Driver.h"
 #include "D3D12Log.h"
-#include "D3D12Common.h"
 
-// Maximum number of textures - matches MAX_TEXTURES from Direct3D12Driver.h
 #define MAX_THANDLES 4096
+#define MAX_TEXTURE_MIP_LEVELS 16
 
-// Global texture list
 static jeTexture g_TextureList[MAX_THANDLES];
-
-// SRV descriptor heap for textures
 static ComPtr<ID3D12DescriptorHeap> g_pSRVHeap;
 static UINT g_nSRVDescriptorSize = 0;
-static UINT g_nNextSRVIndex = 0;
 
-// Helper function to get log2 of texture size
+// Resources referenced by an open command list stay alive until its frame slot is
+// reused. D3D12_THandle_BeginFrame is called only after that slot's fence completes.
+static std::vector<ComPtr<ID3D12Resource>> g_FrameUploadResources[FRAME_COUNT];
+
 static int32 GetLog(int32 Width, int32 Height)
 {
 	int32 Size = (Width > Height) ? Width : Height;
 	int32 Log = 0;
-
 	while (Size > 1)
 	{
 		Size >>= 1;
-		Log++;
+		++Log;
 	}
-
 	return Log;
 }
 
-// Helper function to get next available texture handle
-static jeTexture* GetNextTHandle()
+static int32 BytesPerPixel(jePixelFormat Format)
 {
-	for (int i = 0; i < MAX_THANDLES; i++)
+	switch (Format)
 	{
-		if (g_TextureList[i].Active == JE_FALSE)
-		{
-			memset(&g_TextureList[i], 0, sizeof(jeTexture));
-			g_TextureList[i].id = i;
-			g_TextureList[i].Active = JE_TRUE;
-			g_TextureList[i].DriverOwned = JE_FALSE;
-			g_TextureList[i].Data = nullptr;
-			g_TextureList[i].Lightmap = JE_FALSE;
-			g_TextureList[i].Locked = JE_FALSE;
-			return &g_TextureList[i];
-		}
+	case JE_PIXELFORMAT_8BIT:
+		return 1;
+	case JE_PIXELFORMAT_16BIT_555_RGB:
+	case JE_PIXELFORMAT_16BIT_565_RGB:
+	case JE_PIXELFORMAT_16BIT_1555_ARGB:
+	case JE_PIXELFORMAT_16BIT_4444_ARGB:
+		return 2;
+	case JE_PIXELFORMAT_24BIT_RGB:
+		return 3;
+	case JE_PIXELFORMAT_32BIT_XRGB:
+	case JE_PIXELFORMAT_32BIT_ARGB:
+		return 4;
+	default:
+		return 0;
 	}
-
-	return nullptr;
 }
 
-// Helper function to convert pixel format to DXGI format
-static DXGI_FORMAT GetDXGIFormat(const jeRDriver_PixelFormat* PixelFormat)
+static DXGI_FORMAT ConvertPixelFormatToDXGI(const jeRDriver_PixelFormat* PixelFormat)
 {
 	if (!PixelFormat)
-		return DXGI_FORMAT_R8G8B8A8_UNORM;
+		return DXGI_FORMAT_B8G8R8A8_UNORM;
 
 	switch (PixelFormat->PixelFormat)
 	{
 	case JE_PIXELFORMAT_8BIT:
 		return DXGI_FORMAT_R8_UNORM;
 	case JE_PIXELFORMAT_16BIT_555_RGB:
+	case JE_PIXELFORMAT_16BIT_1555_ARGB:
 		return DXGI_FORMAT_B5G5R5A1_UNORM;
 	case JE_PIXELFORMAT_16BIT_565_RGB:
 		return DXGI_FORMAT_B5G6R5_UNORM;
-	case JE_PIXELFORMAT_16BIT_1555_ARGB:
-		return DXGI_FORMAT_B5G5R5A1_UNORM;
 	case JE_PIXELFORMAT_16BIT_4444_ARGB:
 		return DXGI_FORMAT_B4G4R4A4_UNORM;
 	case JE_PIXELFORMAT_24BIT_RGB:
-		return DXGI_FORMAT_R8G8B8A8_UNORM; // 24-bit not directly supported, use 32-bit
+		// DXGI has no three-byte RGB texture format. Unlock expands it to RGBA.
+		return DXGI_FORMAT_R8G8B8A8_UNORM;
 	case JE_PIXELFORMAT_32BIT_XRGB:
 		return DXGI_FORMAT_B8G8R8X8_UNORM;
 	case JE_PIXELFORMAT_32BIT_ARGB:
-		return DXGI_FORMAT_B8G8R8A8_UNORM;
 	default:
-		return DXGI_FORMAT_R8G8B8A8_UNORM;
+		// Jet3D ARGB DWORDs are B,G,R,A bytes on little-endian Windows.
+		return DXGI_FORMAT_B8G8R8A8_UNORM;
 	}
 }
 
-//================================================================================
-//	Texture Manager Initialization
-//================================================================================
+static void ResetTexture(jeTexture& Handle, int32 Id)
+{
+	for (int32 MipLevel = 0; MipLevel < MAX_TEXTURE_MIP_LEVELS; ++MipLevel)
+	{
+		delete[] Handle.MipData[MipLevel];
+		Handle.MipData[MipLevel] = nullptr;
+		Handle.MipDataCapacity[MipLevel] = 0;
+	}
+	Handle.pTexture.Reset();
+	Handle.id = Id;
+	Handle.Active = JE_FALSE;
+	Handle.Width = 0;
+	Handle.Height = 0;
+	Handle.NumMipLevels = 0;
+	Handle.stride = 0;
+	Handle.Log = 0;
+	Handle.Format = DXGI_FORMAT_UNKNOWN;
+	std::memset(&Handle.DriverFormat, 0, sizeof(Handle.DriverFormat));
+	Handle.Lightmap = JE_FALSE;
+	Handle.LockedMipMask = 0;
+	Handle.DriverOwned = JE_FALSE;
+	Handle.ResourceState = D3D12_RESOURCE_STATE_COMMON;
+	Handle.SRVHandle.ptr = 0;
+	Handle.SRVDescriptorIndex = 0;
+}
+
+static jeTexture* GetNextTHandle()
+{
+	for (int32 i = 0; i < MAX_THANDLES; ++i)
+	{
+		if (g_TextureList[i].Active == JE_FALSE)
+		{
+			ResetTexture(g_TextureList[i], i);
+			g_TextureList[i].Active = JE_TRUE;
+			return &g_TextureList[i];
+		}
+	}
+	return nullptr;
+}
+
+static D3D12_RESOURCE_DESC BufferDescription(UINT64 Size)
+{
+	D3D12_RESOURCE_DESC Desc = {};
+	Desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	Desc.Width = Size;
+	Desc.Height = 1;
+	Desc.DepthOrArraySize = 1;
+	Desc.MipLevels = 1;
+	Desc.Format = DXGI_FORMAT_UNKNOWN;
+	Desc.SampleDesc.Count = 1;
+	Desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	return Desc;
+}
+
+static jeBoolean FillUploadBuffer(
+	jeTexture* Handle,
+	int32 MipLevel,
+	ID3D12Resource* Upload,
+	const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& Footprint,
+	UINT NumRows,
+	UINT64 RowSize)
+{
+	void* Mapped = nullptr;
+	D3D12_RANGE ReadRange = { 0, 0 };
+	HRESULT Hr = Upload->Map(0, &ReadRange, &Mapped);
+	if (FAILED(Hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Texture upload map failed - HR: 0x%08X", Hr);
+		return JE_FALSE;
+	}
+
+	uint8* Destination = static_cast<uint8*>(Mapped) + Footprint.Offset;
+	const uint8* Source = Handle->MipData[MipLevel];
+	const int32 MipWidth = Handle->Width >> MipLevel;
+	const int32 Width = (MipWidth > 1) ? MipWidth : 1;
+	const int32 SourceBpp = BytesPerPixel(Handle->DriverFormat.PixelFormat);
+	const size_t SourcePitch = static_cast<size_t>(Width) * SourceBpp;
+
+	if (Handle->DriverFormat.PixelFormat == JE_PIXELFORMAT_24BIT_RGB)
+	{
+		for (UINT Row = 0; Row < NumRows; ++Row)
+		{
+			uint8* Dst = Destination + static_cast<size_t>(Row) * Footprint.Footprint.RowPitch;
+			const uint8* Src = Source + static_cast<size_t>(Row) * SourcePitch;
+			for (int32 X = 0; X < Width; ++X)
+			{
+				Dst[X * 4 + 0] = Src[X * 3 + 0];
+				Dst[X * 4 + 1] = Src[X * 3 + 1];
+				Dst[X * 4 + 2] = Src[X * 3 + 2];
+				Dst[X * 4 + 3] = 255;
+			}
+		}
+	}
+	else
+	{
+		const size_t CopyBytes = static_cast<size_t>((std::min)(RowSize, static_cast<UINT64>(SourcePitch)));
+		for (UINT Row = 0; Row < NumRows; ++Row)
+		{
+			std::memcpy(
+				Destination + static_cast<size_t>(Row) * Footprint.Footprint.RowPitch,
+				Source + static_cast<size_t>(Row) * SourcePitch,
+				CopyBytes);
+		}
+	}
+
+	D3D12_RANGE WrittenRange = {
+		static_cast<SIZE_T>(Footprint.Offset),
+		static_cast<SIZE_T>(Footprint.Offset + static_cast<UINT64>(Footprint.Footprint.RowPitch) * NumRows)
+	};
+	Upload->Unmap(0, &WrittenRange);
+	return JE_TRUE;
+}
+
+static void RecordTextureCopy(
+	ID3D12GraphicsCommandList* CommandList,
+	jeTexture* Handle,
+	int32 MipLevel,
+	ID3D12Resource* Upload,
+	const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& Footprint)
+{
+	if (Handle->ResourceState != D3D12_RESOURCE_STATE_COPY_DEST)
+	{
+		D3D12_RESOURCE_BARRIER ToCopy = {};
+		ToCopy.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		ToCopy.Transition.pResource = Handle->pTexture.Get();
+		ToCopy.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		ToCopy.Transition.StateBefore = Handle->ResourceState;
+		ToCopy.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+		CommandList->ResourceBarrier(1, &ToCopy);
+	}
+
+	D3D12_TEXTURE_COPY_LOCATION Destination = {};
+	Destination.pResource = Handle->pTexture.Get();
+	Destination.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+	Destination.SubresourceIndex = static_cast<UINT>(MipLevel);
+
+	D3D12_TEXTURE_COPY_LOCATION Source = {};
+	Source.pResource = Upload;
+	Source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+	Source.PlacedFootprint = Footprint;
+	CommandList->CopyTextureRegion(&Destination, 0, 0, 0, &Source, nullptr);
+
+	D3D12_RESOURCE_BARRIER ToShader = {};
+	ToShader.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	ToShader.Transition.pResource = Handle->pTexture.Get();
+	ToShader.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	ToShader.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	ToShader.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	CommandList->ResourceBarrier(1, &ToShader);
+	Handle->ResourceState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+}
+
+static jeBoolean UploadLockedTexture(jeTexture* Handle, int32 MipLevel)
+{
+	D3D12_RESOURCE_DESC TextureDesc = Handle->pTexture->GetDesc();
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT Footprint = {};
+	UINT NumRows = 0;
+	UINT64 RowSize = 0;
+	UINT64 UploadSize = 0;
+	g_pDevice->GetCopyableFootprints(
+		&TextureDesc,
+		static_cast<UINT>(MipLevel),
+		1,
+		0,
+		&Footprint,
+		&NumRows,
+		&RowSize,
+		&UploadSize);
+
+	D3D12_HEAP_PROPERTIES UploadHeap = {};
+	UploadHeap.Type = D3D12_HEAP_TYPE_UPLOAD;
+	D3D12_RESOURCE_DESC UploadDesc = BufferDescription(UploadSize);
+	ComPtr<ID3D12Resource> Upload;
+	HRESULT Hr = g_pDevice->CreateCommittedResource(
+		&UploadHeap,
+		D3D12_HEAP_FLAG_NONE,
+		&UploadDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&Upload));
+	if (FAILED(Hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Texture upload buffer creation failed - HR: 0x%08X", Hr);
+		return JE_FALSE;
+	}
+
+	if (!FillUploadBuffer(Handle, MipLevel, Upload.Get(), Footprint, NumRows, RowSize))
+		return JE_FALSE;
+
+	if (g_bInScene && g_pCommandList)
+	{
+		RecordTextureCopy(g_pCommandList.Get(), Handle, MipLevel, Upload.Get(), Footprint);
+		g_FrameUploadResources[g_nCurrentFrameIndex].push_back(Upload);
+		g_FrameUploadResources[g_nCurrentFrameIndex].push_back(Handle->pTexture);
+		return JE_TRUE;
+	}
+
+	ComPtr<ID3D12CommandAllocator> Allocator;
+	Hr = g_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Allocator));
+	if (FAILED(Hr))
+		return JE_FALSE;
+
+	ComPtr<ID3D12GraphicsCommandList> CommandList;
+	Hr = g_pDevice->CreateCommandList(
+		0,
+		D3D12_COMMAND_LIST_TYPE_DIRECT,
+		Allocator.Get(),
+		nullptr,
+		IID_PPV_ARGS(&CommandList));
+	if (FAILED(Hr))
+		return JE_FALSE;
+
+	RecordTextureCopy(CommandList.Get(), Handle, MipLevel, Upload.Get(), Footprint);
+	Hr = CommandList->Close();
+	if (FAILED(Hr))
+		return JE_FALSE;
+
+	ID3D12CommandList* Lists[] = { CommandList.Get() };
+	g_pCommandQueue->ExecuteCommandLists(1, Lists);
+	D3D12WaitForGPU();
+	return JE_TRUE;
+}
 
 jeBoolean D3D12_THandle_Startup()
 {
 	D3D12Log::GetPtr()->Printf("D3D12_THandle_Startup called");
+	for (int32 i = 0; i < MAX_THANDLES; ++i)
+		ResetTexture(g_TextureList[i], i);
+	for (UINT i = 0; i < FRAME_COUNT; ++i)
+		g_FrameUploadResources[i].clear();
 
-	// Initialize texture list
-	for (int i = 0; i < MAX_THANDLES; i++)
+	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
+	HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	HeapDesc.NumDescriptors = MAX_SRV_DESCRIPTORS;
+	HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	HRESULT Hr = g_pDevice->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&g_pSRVHeap));
+	if (FAILED(Hr))
 	{
-		memset(&g_TextureList[i], 0, sizeof(jeTexture));
-		g_TextureList[i].id = i;
-		g_TextureList[i].Active = JE_FALSE;
-	}
-
-	// Create SRV descriptor heap
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.NumDescriptors = MAX_SRV_DESCRIPTORS;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	srvHeapDesc.NodeMask = 0;
-
-	HRESULT hr = g_pDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&g_pSRVHeap));
-	if (FAILED(hr))
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: Failed to create SRV descriptor heap - HR: 0x%08X", hr);
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create SRV descriptor heap - HR: 0x%08X", Hr);
 		return JE_FALSE;
 	}
-
 	g_nSRVDescriptorSize = g_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	g_nNextSRVIndex = 0;
-
-	D3D12Log::GetPtr()->Printf("Texture Manager initialized - SRV heap created");
 	return JE_TRUE;
 }
 
 jeBoolean D3D12_THandle_Shutdown()
 {
-	D3D12Log::GetPtr()->Printf("D3D12_THandle_Shutdown called");
-
-	// Destroy all active textures
-	for (int i = 0; i < MAX_THANDLES; i++)
-	{
-		if (g_TextureList[i].Active == JE_TRUE)
-		{
-			D3D12_THandle_Destroy(&g_TextureList[i]);
-		}
-	}
-
-	// Release SRV heap
+	for (int32 i = 0; i < MAX_THANDLES; ++i)
+		ResetTexture(g_TextureList[i], i);
+	for (UINT i = 0; i < FRAME_COUNT; ++i)
+		g_FrameUploadResources[i].clear();
 	g_pSRVHeap.Reset();
-	g_nNextSRVIndex = 0;
-
-	D3D12Log::GetPtr()->Printf("Texture Manager shut down");
+	g_nSRVDescriptorSize = 0;
 	return JE_TRUE;
 }
 
-//================================================================================
-//	Texture Creation
-//================================================================================
-
-jeTexture* DRIVERCC D3D12_THandle_Create(int32 Width, int32 Height, int32 NumMipLevels, const jeRDriver_PixelFormat* PixelFormat)
+void D3D12_THandle_BeginFrame(UINT FrameIndex)
 {
-	D3D12Log::GetPtr()->Printf("THandle_Create: %dx%d, %d mips", Width, Height, NumMipLevels);
+	if (FrameIndex < FRAME_COUNT)
+		g_FrameUploadResources[FrameIndex].clear();
+}
 
-	// Get next available texture handle
+jeTexture* DRIVERCC D3D12_THandle_Create(
+	int32 Width,
+	int32 Height,
+	int32 NumMipLevels,
+	const jeRDriver_PixelFormat* PixelFormat)
+{
+	if (!g_pDevice || !g_pSRVHeap || Width <= 0 || Height <= 0)
+		return nullptr;
+
+	const int32 Bpp = PixelFormat ? BytesPerPixel(PixelFormat->PixelFormat) : 4;
+	if (Bpp == 0)
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: Unsupported Jet3D texture pixel format");
+		return nullptr;
+	}
+
+	int32 MaxMipLevels = 1;
+	for (int32 Dimension = (Width > Height) ? Width : Height; Dimension > 1; Dimension >>= 1)
+		++MaxMipLevels;
+
 	jeTexture* Handle = GetNextTHandle();
 	if (!Handle)
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: No more empty THandle slots!");
 		return nullptr;
+
+	if (PixelFormat)
+		Handle->DriverFormat = *PixelFormat;
+	else
+	{
+		Handle->DriverFormat.PixelFormat = JE_PIXELFORMAT_32BIT_ARGB;
+		Handle->DriverFormat.Flags = RDRIVER_PF_3D;
 	}
 
-	// Set texture properties
 	Handle->Width = Width;
 	Handle->Height = Height;
-	Handle->NumMipLevels = (NumMipLevels > 0) ? NumMipLevels : 1;
-	Handle->Log = (uint8)GetLog(Width, Height);
+	Handle->NumMipLevels = NumMipLevels;
+	if (Handle->NumMipLevels < 1)
+		Handle->NumMipLevels = 1;
+	if (Handle->NumMipLevels > MaxMipLevels)
+		Handle->NumMipLevels = MaxMipLevels;
+	Handle->Log = static_cast<uint8>(GetLog(Width, Height));
 	Handle->stride = Width;
-	Handle->Format = GetDXGIFormat(PixelFormat);
+	Handle->Format = ConvertPixelFormatToDXGI(&Handle->DriverFormat);
+	Handle->Lightmap = JE_FALSE;
+	Handle->ResourceState = D3D12_RESOURCE_STATE_COPY_DEST;
 
-	// Create texture resource
-	D3D12_RESOURCE_DESC textureDesc = {};
-	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	textureDesc.Alignment = 0;
-	textureDesc.Width = Width;
-	textureDesc.Height = Height;
-	textureDesc.DepthOrArraySize = 1;
-	textureDesc.MipLevels = Handle->NumMipLevels;
-	textureDesc.Format = Handle->Format;
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.SampleDesc.Quality = 0;
-	textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	D3D12_RESOURCE_DESC TextureDesc = {};
+	TextureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	TextureDesc.Width = static_cast<UINT64>(Width);
+	TextureDesc.Height = static_cast<UINT>(Height);
+	TextureDesc.DepthOrArraySize = 1;
+	TextureDesc.MipLevels = static_cast<UINT16>(Handle->NumMipLevels);
+	TextureDesc.Format = Handle->Format;
+	TextureDesc.SampleDesc.Count = 1;
+	TextureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
-	D3D12_HEAP_PROPERTIES heapProps = {};
-	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
-	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	heapProps.CreationNodeMask = 1;
-	heapProps.VisibleNodeMask = 1;
-
-	HRESULT hr = g_pDevice->CreateCommittedResource(
-		&heapProps,
+	D3D12_HEAP_PROPERTIES DefaultHeap = {};
+	DefaultHeap.Type = D3D12_HEAP_TYPE_DEFAULT;
+	HRESULT Hr = g_pDevice->CreateCommittedResource(
+		&DefaultHeap,
 		D3D12_HEAP_FLAG_NONE,
-		&textureDesc,
-		D3D12_RESOURCE_STATE_COMMON,
+		&TextureDesc,
+		Handle->ResourceState,
 		nullptr,
-		IID_PPV_ARGS(&Handle->pTexture)
-	);
-
-	if (FAILED(hr))
+		IID_PPV_ARGS(&Handle->pTexture));
+	if (FAILED(Hr))
 	{
-		D3D12Log::GetPtr()->Printf("ERROR: Failed to create texture resource - HR: 0x%08X", hr);
-		D3D12_THandle_Destroy(Handle);
+		D3D12Log::GetPtr()->Printf("ERROR: Failed to create texture - HR: 0x%08X", Hr);
+		const int32 Id = Handle->id;
+		ResetTexture(*Handle, Id);
 		return nullptr;
 	}
 
-	// Create upload buffer for texture data
-	UINT64 uploadBufferSize;
-	g_pDevice->GetCopyableFootprints(&textureDesc, 0, Handle->NumMipLevels, 0, nullptr, nullptr, nullptr, &uploadBufferSize);
-
-	D3D12_HEAP_PROPERTIES uploadHeapProps = {};
-	uploadHeapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
-	uploadHeapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	uploadHeapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	uploadHeapProps.CreationNodeMask = 1;
-	uploadHeapProps.VisibleNodeMask = 1;
-
-	D3D12_RESOURCE_DESC uploadBufferDesc = {};
-	uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	uploadBufferDesc.Alignment = 0;
-	uploadBufferDesc.Width = uploadBufferSize;
-	uploadBufferDesc.Height = 1;
-	uploadBufferDesc.DepthOrArraySize = 1;
-	uploadBufferDesc.MipLevels = 1;
-	uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-	uploadBufferDesc.SampleDesc.Count = 1;
-	uploadBufferDesc.SampleDesc.Quality = 0;
-	uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-	hr = g_pDevice->CreateCommittedResource(
-		&uploadHeapProps,
-		D3D12_HEAP_FLAG_NONE,
-		&uploadBufferDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&Handle->pUploadBuffer)
-	);
-
-	if (FAILED(hr))
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: Failed to create upload buffer - HR: 0x%08X", hr);
-		D3D12_THandle_Destroy(Handle);
-		return nullptr;
-	}
-
-	// Create SRV for the texture
-	if (g_nNextSRVIndex >= MAX_SRV_DESCRIPTORS)
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: SRV descriptor heap full!");
-		D3D12_THandle_Destroy(Handle);
-		return nullptr;
-	}
-
-	Handle->SRVDescriptorIndex = g_nNextSRVIndex++;
+	Handle->SRVDescriptorIndex = static_cast<UINT>(Handle->id);
 	Handle->SRVHandle = g_pSRVHeap->GetCPUDescriptorHandleForHeapStart();
-	Handle->SRVHandle.ptr += Handle->SRVDescriptorIndex * g_nSRVDescriptorSize;
+	Handle->SRVHandle.ptr += static_cast<SIZE_T>(Handle->SRVDescriptorIndex) * g_nSRVDescriptorSize;
 
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Format = Handle->Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Texture2D.MipLevels = Handle->NumMipLevels;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.PlaneSlice = 0;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
+	SrvDesc.Format = Handle->Format;
+	SrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	SrvDesc.Texture2D.MipLevels = static_cast<UINT>(Handle->NumMipLevels);
+	g_pDevice->CreateShaderResourceView(Handle->pTexture.Get(), &SrvDesc, Handle->SRVHandle);
 
-	g_pDevice->CreateShaderResourceView(Handle->pTexture.Get(), &srvDesc, Handle->SRVHandle);
-
-	D3D12Log::GetPtr()->Printf("Texture created successfully - ID: %d", Handle->id);
+	D3D12Log::GetPtr()->Printf(
+		"Texture created - ID %d, %dx%d, %d mip(s), format %d",
+		Handle->id,
+		Width,
+		Height,
+		Handle->NumMipLevels,
+		static_cast<int>(Handle->Format));
 	return Handle;
 }
 
-jeTexture* DRIVERCC D3D12_THandle_CreateFromFile(jeVFile* File)
+jeTexture* DRIVERCC D3D12_THandle_CreateFromFile(jeVFile*)
 {
-	D3D12Log::GetPtr()->Printf("THandle_CreateFromFile called (not yet implemented)");
-	// TODO: Implement loading texture from file using WIC or similar
-	// For now, return nullptr as this is less commonly used
 	return nullptr;
 }
 
-//================================================================================
-//	Texture Destruction
-//================================================================================
-
 jeBoolean DRIVERCC D3D12_THandle_Destroy(jeTexture* Handle)
 {
-	if (!Handle)
+	if (!Handle || !Handle->Active)
 		return JE_FALSE;
-
-	D3D12Log::GetPtr()->Printf("THandle_Destroy: ID %d", Handle->id);
-
-	// Free CPU data if allocated
-	if (Handle->Data)
-	{
-		delete[] Handle->Data;
-		Handle->Data = nullptr;
-	}
-
-	// Release D3D12 resources
-	Handle->pTexture.Reset();
-	Handle->pUploadBuffer.Reset();
-
-	// Mark as inactive
-	Handle->Active = JE_FALSE;
-	Handle->Locked = JE_FALSE;
-
+	const int32 Id = Handle->id;
+	ResetTexture(*Handle, Id);
 	return JE_TRUE;
 }
 
-//================================================================================
-//	Texture Locking and Unlocking
-//================================================================================
-
 jeBoolean DRIVERCC D3D12_THandle_Lock(jeTexture* Handle, int32 MipLevel, void** Bits)
 {
-	if (!Handle || !Bits)
+	if (!Handle || !Handle->Active || !Bits || Handle->DriverOwned ||
+		MipLevel < 0 || MipLevel >= Handle->NumMipLevels ||
+		MipLevel >= MAX_TEXTURE_MIP_LEVELS ||
+		(Handle->LockedMipMask & (1u << MipLevel)) != 0)
 		return JE_FALSE;
 
-	if (Handle->Locked)
+	const int32 ShiftedWidth = Handle->Width >> MipLevel;
+	const int32 ShiftedHeight = Handle->Height >> MipLevel;
+	const int32 Width = (ShiftedWidth > 1) ? ShiftedWidth : 1;
+	const int32 Height = (ShiftedHeight > 1) ? ShiftedHeight : 1;
+	const int32 Bpp = BytesPerPixel(Handle->DriverFormat.PixelFormat);
+	const size_t Required = static_cast<size_t>(Width) * Height * Bpp;
+	if (Required > Handle->MipDataCapacity[MipLevel])
 	{
-		D3D12Log::GetPtr()->Printf("WARNING: Texture already locked - ID: %d", Handle->id);
-		return JE_FALSE;
+		delete[] Handle->MipData[MipLevel];
+		Handle->MipData[MipLevel] = new (std::nothrow) uint8[Required];
+		if (!Handle->MipData[MipLevel])
+		{
+			Handle->MipDataCapacity[MipLevel] = 0;
+			return JE_FALSE;
+		}
+		Handle->MipDataCapacity[MipLevel] = Required;
 	}
 
-	// Calculate size for this mip level
-	int32 mipWidth = Handle->Width >> MipLevel;
-	int32 mipHeight = Handle->Height >> MipLevel;
-	if (mipWidth < 1) mipWidth = 1;
-	if (mipHeight < 1) mipHeight = 1;
-
-	// Allocate CPU-side buffer for texture data
-	int32 bytesPerPixel = 4; // Assume 32-bit RGBA for now
-	int32 dataSize = mipWidth * mipHeight * bytesPerPixel;
-
-	if (!Handle->Data)
-	{
-		Handle->Data = new uint8[dataSize];
-	}
-
-	if (!Handle->Data)
-	{
-		D3D12Log::GetPtr()->Printf("ERROR: Failed to allocate texture data buffer");
-		return JE_FALSE;
-	}
-
-	*Bits = Handle->Data;
-	Handle->Locked = JE_TRUE;
-
+	Handle->stride = Width;
+	Handle->LockedMipMask |= (1u << MipLevel);
+	*Bits = Handle->MipData[MipLevel];
 	return JE_TRUE;
 }
 
 jeBoolean DRIVERCC D3D12_THandle_Unlock(jeTexture* Handle, int32 MipLevel)
 {
-	if (!Handle)
+	if (!Handle || !Handle->Active || MipLevel < 0 ||
+		MipLevel >= Handle->NumMipLevels || MipLevel >= MAX_TEXTURE_MIP_LEVELS ||
+		(Handle->LockedMipMask & (1u << MipLevel)) == 0)
 		return JE_FALSE;
 
-	if (!Handle->Locked)
-	{
-		D3D12Log::GetPtr()->Printf("WARNING: Texture not locked - ID: %d", Handle->id);
-		return JE_TRUE;
-	}
-
-	// Upload texture data to GPU
-	// This would normally be done via command list, but for simplicity
-	// we'll just mark it as unlocked for now
-	// TODO: Implement proper upload via command list
-
-	Handle->Locked = JE_FALSE;
-
-	D3D12Log::GetPtr()->Printf("Texture unlocked - ID: %d, MipLevel: %d", Handle->id, MipLevel);
-	return JE_TRUE;
+	const jeBoolean Result = UploadLockedTexture(Handle, MipLevel);
+	Handle->LockedMipMask &= ~(1u << MipLevel);
+	return Result;
 }
-
-//================================================================================
-//	Texture Information
-//================================================================================
 
 jeBoolean DRIVERCC D3D12_THandle_GetInfo(jeTexture* Handle, int32 MipLevel, jeTexture_Info* Info)
 {
-	if (!Handle || !Info)
+	if (!Handle || !Handle->Active || !Info || MipLevel < 0 || MipLevel >= Handle->NumMipLevels)
 		return JE_FALSE;
 
-	// Calculate dimensions for this mip level
-	int32 mipWidth = Handle->Width >> MipLevel;
-	int32 mipHeight = Handle->Height >> MipLevel;
-	if (mipWidth < 1) mipWidth = 1;
-	if (mipHeight < 1) mipHeight = 1;
-
-	Info->Width = mipWidth;
-	Info->Height = mipHeight;
-	Info->Stride = mipWidth * 4; // Assume 32-bit RGBA
-	Info->Format.PixelFormat = JE_PIXELFORMAT_32BIT_ARGB; // Default format
-
+	Info->Width = Handle->Width >> MipLevel;
+	Info->Height = Handle->Height >> MipLevel;
+	if (Info->Width < 1)
+		Info->Width = 1;
+	if (Info->Height < 1)
+		Info->Height = 1;
+	Info->Stride = Info->Width;
+	Info->PixelFormat = Handle->DriverFormat;
+	Info->Flags = (Handle->DriverFormat.Flags & RDRIVER_PF_CAN_DO_COLORKEY)
+		? RDRIVER_THANDLE_HAS_COLORKEY
+		: 0;
+	Info->ColorKey = Info->Flags ? 1 : 0;
+	Info->Direct = Handle->pTexture.Get();
 	return JE_TRUE;
 }
 
 ID3D12Resource* D3D12_THandle_GetResource(jeTexture* Handle)
 {
-	if (!Handle)
-		return nullptr;
-
-	return Handle->pTexture.Get();
+	return (Handle && Handle->Active) ? Handle->pTexture.Get() : nullptr;
 }
 
 int32 D3D12_THandle_GetID(jeTexture* Handle)
 {
-	if (!Handle)
-		return -1;
-
-	return Handle->id;
+	return (Handle && Handle->Active) ? Handle->id : -1;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12_THandle_GetSRV(jeTexture* Handle)
 {
-	if (!Handle)
+	D3D12_CPU_DESCRIPTOR_HANDLE Result = {};
+	if (Handle && Handle->Active)
+		Result = Handle->SRVHandle;
+	return Result;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12_THandle_GetGPUSRV(jeTexture* Handle)
+{
+	D3D12_GPU_DESCRIPTOR_HANDLE Result = {};
+	if (!Handle || !Handle->Active || !g_pSRVHeap)
+		return Result;
+	Result = g_pSRVHeap->GetGPUDescriptorHandleForHeapStart();
+	Result.ptr += static_cast<UINT64>(Handle->SRVDescriptorIndex) * g_nSRVDescriptorSize;
+	return Result;
+}
+
+ID3D12DescriptorHeap* D3D12_THandle_GetDescriptorHeap()
+{
+	return g_pSRVHeap.Get();
+}
+
+jeBoolean D3D12_THandle_UpdateLightmap(jeTexture* Handle, const uint8* RGBData)
+{
+	if (!Handle || !RGBData)
+		return JE_FALSE;
+
+	void* Bits = nullptr;
+	if (!D3D12_THandle_Lock(Handle, 0, &Bits))
+		return JE_FALSE;
+
+	uint8* Destination = static_cast<uint8*>(Bits);
+	const size_t PixelCount = static_cast<size_t>(Handle->Width) * Handle->Height;
+	for (size_t i = 0; i < PixelCount; ++i)
 	{
-		D3D12_CPU_DESCRIPTOR_HANDLE nullHandle = {};
-		return nullHandle;
+		const uint8 R = RGBData[i * 3 + 0];
+		const uint8 G = RGBData[i * 3 + 1];
+		const uint8 B = RGBData[i * 3 + 2];
+		switch (Handle->DriverFormat.PixelFormat)
+		{
+		case JE_PIXELFORMAT_8BIT:
+			Destination[i] = static_cast<uint8>((static_cast<uint32>(R) + G + B) / 3);
+			break;
+		case JE_PIXELFORMAT_16BIT_555_RGB:
+		case JE_PIXELFORMAT_16BIT_1555_ARGB:
+			reinterpret_cast<uint16*>(Destination)[i] = static_cast<uint16>(
+				0x8000u | ((R >> 3) << 10) | ((G >> 3) << 5) | (B >> 3));
+			break;
+		case JE_PIXELFORMAT_16BIT_565_RGB:
+			reinterpret_cast<uint16*>(Destination)[i] = static_cast<uint16>(
+				((R >> 3) << 11) | ((G >> 2) << 5) | (B >> 3));
+			break;
+		case JE_PIXELFORMAT_16BIT_4444_ARGB:
+			reinterpret_cast<uint16*>(Destination)[i] = static_cast<uint16>(
+				0xF000u | ((R >> 4) << 8) | ((G >> 4) << 4) | (B >> 4));
+			break;
+		case JE_PIXELFORMAT_24BIT_RGB:
+			Destination[i * 3 + 0] = R;
+			Destination[i * 3 + 1] = G;
+			Destination[i * 3 + 2] = B;
+			break;
+		case JE_PIXELFORMAT_32BIT_XRGB:
+		case JE_PIXELFORMAT_32BIT_ARGB:
+		default:
+			Destination[i * 4 + 0] = B;
+			Destination[i * 4 + 1] = G;
+			Destination[i * 4 + 2] = R;
+			Destination[i * 4 + 3] = 255;
+			break;
+		}
 	}
 
-	return Handle->SRVHandle;
+	if (!D3D12_THandle_Unlock(Handle, 0))
+		return JE_FALSE;
+	Handle->Lightmap = JE_TRUE;
+	return JE_TRUE;
 }

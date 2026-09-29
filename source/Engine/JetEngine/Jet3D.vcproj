@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="amstrmid.lib oldnames.lib urlmon.lib winmm.lib quartz.lib dxguid.lib ddraw.lib vorbis_static_d.lib vorbisfile_static_d.lib ogg_static_d.lib"
+				AdditionalDependencies="amstrmid.lib oldnames.lib urlmon.lib winmm.lib quartz.lib dxguid.lib vorbis_static_d.lib vorbisfile_static_d.lib ogg_static_d.lib"
 				OutputFile="$(OutDir)/Jet3Dd.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
@@ -120,7 +120,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="amstrmid.lib oldnames.lib urlmon.lib winmm.lib quartz.lib  dxguid.lib ddraw.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib"
+				AdditionalDependencies="amstrmid.lib oldnames.lib urlmon.lib winmm.lib quartz.lib dxguid.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib"
 				OutputFile="$(OutDir)\Jet3D.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -769,82 +769,6 @@
 					<File
 						RelativePath=".\Engine\Drivers\Dcommon.h">
 					</File>
-					<Filter
-						Name="D3DDrv"
-						Filter="">
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_DDMemMgr.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_DDMemMgr.h">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_err.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\D3d_err.h">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_fx.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\D3d_fx.h">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_gspan.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_GSPAN.H">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_main.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\D3d_main.h">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_pcache.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_Pcache.h">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_render.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_RENDER.H">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_Scene.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_Scene.h">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_thandle.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_THandle.h">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_tpage.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3d_TPage.h">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3dcache.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\D3dcache.h">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\d3ddrv.cpp">
-						</File>
-						<File
-							RelativePath=".\Engine\Drivers\D3DDrv\D3ddrv.h">
-						</File>
-					</Filter>
 				</Filter>
 			</Filter>
 			<Filter

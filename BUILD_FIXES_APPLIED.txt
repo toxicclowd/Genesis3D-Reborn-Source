@@ -10,14 +10,13 @@
    - Removed hardcoded MSVC version path for ml.exe
    - Now uses 'ml.exe' which will be resolved automatically
 
-### 3. C1083 DirectX Errors - MANUAL ACTION REQUIRED
-
-   Option A: Install DirectX SDK June 2010
-   Download from: https://www.microsoft.com/en-us/download/details.aspx?id=6812
-
-   Option B: Exclude Direct3D9Driver from build
+### 3. DirectX Renderer Integration
+   - Direct3D12Driver is the only renderer project in Genesis3DReborn.sln
+   - Jet3D builds Direct3D12Driver as a project dependency
+   - Debug and Release renderer outputs are written to the repository bin directory
+   - Legacy Direct3D 7, Direct3D 9, and OpenGL renderer sources and libraries were removed
 
 ## Next Steps:
-1. Close and reopen Visual Studio
-2. Address the DirectX SDK issue
-3. Rebuild solution
+1. Open Genesis3DReborn.sln
+2. Build the desired Win32 configuration
+3. Run applications from the repository bin directory so Direct3D12Driver.dll is discovered

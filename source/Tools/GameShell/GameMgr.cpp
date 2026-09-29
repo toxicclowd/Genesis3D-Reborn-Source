@@ -24,7 +24,7 @@ CGameMgr::CGameMgr()
 
 	m_hWnd = NULL;
 	m_Width = m_Height = m_BPP = -1;
-	strcpy(m_DriverName, "Direct3D9");
+	strcpy(m_DriverName, "(D3D) DirectX 12");
 
 	this->register_func("EnableFrameRateCounter", cpp_method(this, CGameMgr, EOSEnableFrameRateCounter));
 	this->register_func("SetGamma", cpp_method(this, CGameMgr, EOSSetGamma));
@@ -56,8 +56,6 @@ jeBoolean CGameMgr::Initialize(HWND hWnd)
 		GLOG("CGameMgr - Could not create engine!!");
 		return JE_FALSE;
 	}
-
-	jeEngine_RegisterDriver(m_pEngine, jeEngine_D3DDriver());
 
 	m_hWnd = hWnd;
 
@@ -104,7 +102,6 @@ jeBoolean CGameMgr::SetDriverMode(int32 w, int32 h, int32 b)
 	jeDriver							*Driver = NULL;
 	jeDriver_Mode						*Mode = NULL;
 	int32								width, height, bpp;
-	char								drv;
 
 	GLOG("CGameMgr - Preparing video mode...");
 	assert(m_pEngine != NULL);
@@ -125,19 +122,12 @@ jeBoolean CGameMgr::SetDriverMode(int32 w, int32 h, int32 b)
 		return JE_FALSE;
 	}
 
-	if (!strcmp(m_DriverName, "Direct3D9"))
-		drv = 'D';
-	else if (!strcmp(m_DriverName, "OpenGL"))
-		drv = 'O';
-	else if (!strcmp(m_DriverName, "Direct3D7"))
-		drv = '(';
-
 	for (Driver = jeDriver_SystemGetNextDriver(DrvSys, NULL); Driver != NULL; Driver = jeDriver_SystemGetNextDriver(DrvSys, Driver))
 	{
 		const char						*drvname = NULL;
 
 		jeDriver_GetName(Driver, &drvname);
-		if (drvname[0] == drv)
+		if (drvname && !strcmp(drvname, m_DriverName))
 			break;
 	}
 
@@ -239,6 +229,11 @@ jeBoolean CGameMgr::Frame()
 
 	if (!jeEngine_EndFrame(m_pEngine))
 		return JE_FALSE;
+
+	// Temporary end-to-end renderer verification; removed after the capture build.
+	static jeBoolean CapturedFrame = JE_FALSE;
+	if (!CapturedFrame)
+		CapturedFrame = jeEngine_ScreenShot(m_pEngine, ".codex-gameshell-d3d12.bmp");
 
 	m_LastTime = currTime;
 

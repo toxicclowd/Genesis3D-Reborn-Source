@@ -28,8 +28,8 @@ CGameLog::CGameLog(const char *filename)
 		strcpy(m_FileName, filename);
 	}
 
-	fprintf(m_pLog, "Jet3D Game Shell\n");
-	fprintf(m_pLog, "Copyright 2006, Paradox Software\n\n");
+	fprintf(m_pLog, "Genesis3D: Reborn Game Shell\n");
+	fprintf(m_pLog, "Copyright (C) 1999-2026 Genesis3D: Reborn Team\n\n");
 	fflush(m_pLog);
 
 	fclose(m_pLog);

@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11217.181 d18.0
+VisualStudioVersion = 18.0.11217.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jDesignerClassic11", "source\Tools\Editor\jwe.vcxproj", "{C9D22404-B2F5-4775-B35D-264E0D8AE53E}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -313,17 +313,17 @@ Global
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Hybrid|Win32.ActiveCfg = Release|Win32
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Hybrid|Win32.Build.0 = Release|Win32
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Hybrid|x64.ActiveCfg = Template|Win32
-		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Hybrid|x64.Build.0 = Template|Win32
-		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Release|Win32.ActiveCfg = Release|Win32
-		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Release|Win32.Build.0 = Release|Win32
+		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Release|Win32.ActiveCfg = Template|Win32
+		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Release|Win32.Build.0 = Template|Win32
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Release|x64.ActiveCfg = Template|Win32
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.NFO Release|x64.Build.0 = Template|Win32
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.Release|Win32.ActiveCfg = Release|Win32
-		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.Release|Win32.Build.0 = Release|Win32
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.Release|x64.ActiveCfg = Release|Win32
+		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.Release|x64.Build.0 = Release|Win32
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.Template|Win32.ActiveCfg = Template|Win32
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.Template|Win32.Build.0 = Template|Win32
 		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.Template|x64.ActiveCfg = Template|Win32
+		{C9D22404-B2F5-4775-B35D-264E0D8AE53E}.Template|x64.Build.0 = Template|Win32
 		{F92F9D20-CA3D-4422-B515-97AD9FC6354F}.Debug|Win32.ActiveCfg = Debug|Win32
 		{F92F9D20-CA3D-4422-B515-97AD9FC6354F}.Debug|Win32.Build.0 = Debug|Win32
 		{F92F9D20-CA3D-4422-B515-97AD9FC6354F}.Debug|x64.ActiveCfg = Debug|Win32
@@ -678,7 +678,6 @@ Global
 		{A284CC55-5933-4E4F-80D3-12968118B544}.NFO Release|x64.ActiveCfg = Template|Win32
 		{A284CC55-5933-4E4F-80D3-12968118B544}.NFO Release|x64.Build.0 = Template|Win32
 		{A284CC55-5933-4E4F-80D3-12968118B544}.Release|Win32.ActiveCfg = Release|Win32
-		{A284CC55-5933-4E4F-80D3-12968118B544}.Release|Win32.Build.0 = Release|Win32
 		{A284CC55-5933-4E4F-80D3-12968118B544}.Release|x64.ActiveCfg = Release|Win32
 		{A284CC55-5933-4E4F-80D3-12968118B544}.Template|Win32.ActiveCfg = Template|Win32
 		{A284CC55-5933-4E4F-80D3-12968118B544}.Template|Win32.Build.0 = Template|Win32
@@ -727,7 +726,6 @@ Global
 		{69549287-EBD7-4575-9E2E-77D93A83B0D7}.NFO Release|x64.ActiveCfg = Template|Win32
 		{69549287-EBD7-4575-9E2E-77D93A83B0D7}.NFO Release|x64.Build.0 = Template|Win32
 		{69549287-EBD7-4575-9E2E-77D93A83B0D7}.Release|Win32.ActiveCfg = Release|Win32
-		{69549287-EBD7-4575-9E2E-77D93A83B0D7}.Release|Win32.Build.0 = Release|Win32
 		{69549287-EBD7-4575-9E2E-77D93A83B0D7}.Release|x64.ActiveCfg = Release|Win32
 		{69549287-EBD7-4575-9E2E-77D93A83B0D7}.Template|Win32.ActiveCfg = Template|Win32
 		{69549287-EBD7-4575-9E2E-77D93A83B0D7}.Template|Win32.Build.0 = Template|Win32
@@ -778,7 +776,6 @@ Global
 		{5FE0ADBE-49AD-4A4A-A8BB-1FDC66F410B1}.NFO Release|x64.ActiveCfg = Release|Win32
 		{5FE0ADBE-49AD-4A4A-A8BB-1FDC66F410B1}.NFO Release|x64.Build.0 = Release|Win32
 		{5FE0ADBE-49AD-4A4A-A8BB-1FDC66F410B1}.Release|Win32.ActiveCfg = Release|Win32
-		{5FE0ADBE-49AD-4A4A-A8BB-1FDC66F410B1}.Release|Win32.Build.0 = Release|Win32
 		{5FE0ADBE-49AD-4A4A-A8BB-1FDC66F410B1}.Release|x64.ActiveCfg = Release|Win32
 		{5FE0ADBE-49AD-4A4A-A8BB-1FDC66F410B1}.Template|Win32.ActiveCfg = Release|Win32
 		{5FE0ADBE-49AD-4A4A-A8BB-1FDC66F410B1}.Template|Win32.Build.0 = Release|Win32

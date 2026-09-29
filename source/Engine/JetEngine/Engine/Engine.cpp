@@ -2355,6 +2355,24 @@ static jeBoolean Engine_EnumSubDrivers(Engine_DriverInfo *DriverInfo, const char
 //===================================================================================
 //	jeEngine_RegisterDriver
 //===================================================================================
+JETAPI void* JETCC jeEngine_D3DDriver(void)
+{
+#ifdef WIN32
+	// Preserve ABI compatibility with checked-in applications while routing the
+	// old entry point to the sole supported external renderer.
+	static HMODULE Direct3D12Module = nullptr;
+	if (!Direct3D12Module)
+		Direct3D12Module = LoadLibraryA("Direct3D12Driver.dll");
+
+	if (!Direct3D12Module)
+		return nullptr;
+
+	return reinterpret_cast<void*>(GetProcAddress(Direct3D12Module, "DriverHook"));
+#else
+	return nullptr;
+#endif
+}
+
 JETAPI jeBoolean JETCC jeEngine_RegisterDriver(jeEngine *Engine, void* HookProc)
 {
 	DRV_Hook* DriverHook{};

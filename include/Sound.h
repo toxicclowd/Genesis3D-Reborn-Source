@@ -36,6 +36,10 @@ typedef struct jeSound_System	jeSound_System;
 typedef struct jeSound_Def		jeSound_Def;
 typedef struct jeSound			jeSound;
 
+typedef struct jeSound_System	grSound_System;
+typedef struct jeSound_Def		grSound_Def;
+typedef struct jeSound			grSound;
+
 
 #ifdef _INC_WINDOWS
 	// Windows.h must be previously included for this api to be exposed.
@@ -83,5 +87,21 @@ JETAPI	int JETCC jeMp3_PlaySound(jeSound_System *SoundS, int song_number, long V
 }
 #endif
 
+// Genesis3D: Reborn Aliases
+#define grSound_CreateSoundSystem     jeSound_CreateSoundSystem
+#define grSound_SetHwnd               jeSound_SetHwnd
+#define grSound_DestroySoundSystem    jeSound_DestroySoundSystem
+#define grSound_LoadSoundDef          jeSound_LoadSoundDef
+#define grSound_FreeSoundDef          jeSound_FreeSoundDef
+#define grSound_PlaySoundDef          jeSound_PlaySoundDef
+#define grSound_StopSound             jeSound_StopSound
+#define grSound_ModifySound           jeSound_ModifySound
+#define grSound_SoundIsPlaying        jeSound_SoundIsPlaying
+#define grSound_SetMasterVolume       jeSound_SetMasterVolume
+#define grSound_GetStatus             jeSound_GetStatus
+#define grMp3_LoadSound               jeMp3_LoadSound
+#define grMp3_PlaySound               jeMp3_PlaySound
+
 #endif
+
 

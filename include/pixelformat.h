@@ -146,4 +146,15 @@ JETAPI uint32		JETCC jePixelFormat_ConvertPixel(jePixelFormat Format,uint32 Pixe
 }
 #endif
 
+
+// Genesis3D: Reborn gr* Aliases
+typedef jePixelFormat grPixelFormat;
+#define grPixelFormat_ComposePixel jePixelFormat_ComposePixel
+#define grPixelFormat_DecomposePixel jePixelFormat_DecomposePixel
+#define grPixelFormat_GetColor jePixelFormat_GetColor
+#define grPixelFormat_PutColor jePixelFormat_PutColor
+#define grPixelFormat_GetPixel jePixelFormat_GetPixel
+#define grPixelFormat_PutPixel jePixelFormat_PutPixel
+#define grPixelFormat_ConvertPixel jePixelFormat_ConvertPixel
+
 #endif

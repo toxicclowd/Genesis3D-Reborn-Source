@@ -190,7 +190,7 @@ CAPTION "About"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     CONTROL         IDB_LOGO,IDC_STATIC,"Static",SS_BITMAP | SS_SUNKEN,103,15,150,62
-    CTEXT           "Jet3D Actor Studio Version 2.1",IDC_STATIC,119,110,119,8,SS_NOPREFIX
+    CTEXT           "Genesis3D: Reborn Actor Studio Version 2.1",IDC_STATIC,119,110,119,8,SS_NOPREFIX
     CTEXT           "Copyright © 1999, 2006 Eclipse Entertainment",IDC_STATIC,94,118,172,8
 END
 
@@ -230,12 +230,12 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "Jet3D Actor Studio"
+            VALUE "FileDescription", "Genesis3D: Reborn Actor Studio"
             VALUE "FileVersion", "1, 0, 0, 1"
             VALUE "InternalName", "AStudio"
             VALUE "LegalCopyright", "Copyright © 1990, 2006 Eclipse Entertainment"
             VALUE "OriginalFilename", "AStudio.EXE"
-            VALUE "ProductName", "jActorStudioClassic10"
+            VALUE "ProductName", "Genesis3D: Reborn Actor Studio"
             VALUE "ProductVersion", "1, 0, 0, 1"
         END
     END
@@ -409,15 +409,15 @@ BEGIN
     ID_PROJECTBUILD         "Build the project"
     ID_PROJECTBUILDALL      "Rebuild all project dependencies"
     ID_PROJECTCLEAN         "Deletes intermediate and output files"
-    IDS_CAPTION             "Jet3D Actor Studio - %1"
+    IDS_CAPTION             "Genesis3D: Reborn Actor Studio - %1"
     IDS_UNTITLEDFILE        "New file"
-    IDS_ACTFILEFILTER       "Jet3D Actor Files (.act)|*.act||"
+    IDS_ACTFILEFILTER       "Genesis3D: Reborn Actor Files (.act)|*.act||"
     IDS_ACTFILEEXT          "act"
-    IDS_BDYFILEFILTER       "Jet3D Body Files (.max;.nfo;.bdy;.act)|*.max;*.nfo;*.bdy;*.act||"
+    IDS_BDYFILEFILTER       "Genesis3D: Reborn Body Files (.max;.nfo;.bdy;.act)|*.max;*.nfo;*.bdy;*.act||"
     IDS_BDYFILEEXT          "bdy"
     IDS_BMPFILEFILTER       "Bitmap Files (.bmp)|*.bmp||"
     IDS_BMPFILEEXT          "bmp"
-    IDS_MOTFILEFILTER       "Jet3D Motion Files (.max;.key;.mot)|*.max;*.key;*.mot||"
+    IDS_MOTFILEFILTER       "Genesis3D: Reborn Motion Files (.max;.key;.mot)|*.max;*.key;*.mot||"
 END
 
 STRINGTABLE
@@ -425,7 +425,7 @@ BEGIN
     IDS_MOTFILEEXT          "mop"
     IDS_INIFILE_NAME        "AStudio.ini"
     IDS_WRITEERROR          "Error writing file '%1'."
-    IDS_ASPFILEFILTER       "Jet3D Actor Studio Projects (.apj)|*.apj||"
+    IDS_ASPFILEFILTER       "Genesis3D: Reborn Actor Studio Projects (.apj)|*.apj||"
     IDS_ASPFILEEXT          "apj"
     IDS_READERROR           "Error reading from file '%1'."
     IDS_SAVEPROJECTPROMPT   "Save Project As"

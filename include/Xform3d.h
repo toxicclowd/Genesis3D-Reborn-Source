@@ -263,4 +263,37 @@ JETAPI void JETCC jeXForm3d_Mirror(
 }
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+typedef struct jeXForm3d grXForm3d;
+
+#define GR_XFORM3D_NONORTHOGONALISOK     XFORM3D_NONORTHOGONALISOK
+#define grXForm3d_SetIdentity            jeXForm3d_SetIdentity
+#define grXForm3d_SetXRotation           jeXForm3d_SetXRotation
+#define grXForm3d_SetYRotation           jeXForm3d_SetYRotation
+#define grXForm3d_SetZRotation           jeXForm3d_SetZRotation
+#define grXForm3d_SetTranslation         jeXForm3d_SetTranslation
+#define grXForm3d_SetScaling             jeXForm3d_SetScaling
+#define grXForm3d_RotateX                jeXForm3d_RotateX
+#define grXForm3d_RotateY                jeXForm3d_RotateY
+#define grXForm3d_RotateZ                jeXForm3d_RotateZ
+#define grXForm3d_Translate              jeXForm3d_Translate
+#define grXForm3d_Scale                  jeXForm3d_Scale
+#define grXForm3d_Transform              jeXForm3d_Transform
+#define grXForm3d_TransformArray         jeXForm3d_TransformArray
+#define grXForm3d_TransformHomogeneous   jeXForm3d_TransformHomogeneous
+#define grXForm3d_Multiply               jeXForm3d_Multiply
+#define grXForm3d_Copy                   jeXForm3d_Copy
+#define grXForm3d_Clear                  jeXForm3d_Clear
+#define grXForm3d_GetLeft                jeXForm3d_GetLeft
+#define grXForm3d_GetUp                  jeXForm3d_GetUp
+#define grXForm3d_GetIn                  jeXForm3d_GetIn
+#define grXForm3d_GetTranspose           jeXForm3d_GetTranspose
+#define grXForm3d_GetInverse             jeXForm3d_GetInverse
+#define grXForm3d_SetEulerAngles         jeXForm3d_SetEulerAngles
+#define grXForm3d_GetEulerAngles         jeXForm3d_GetEulerAngles
+#define grXForm3d_SetFromOrthonormalVectors jeXForm3d_SetFromOrthonormalVectors
+#define grXForm3d_Mirror                 jeXForm3d_Mirror
+#define grXForm3d_IsValid                jeXForm3d_IsValid
+#define grXForm3d_IsOrthonormal          jeXForm3d_IsOrthonormal
+
 #endif

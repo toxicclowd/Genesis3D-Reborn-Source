@@ -134,5 +134,31 @@ JETAPI jeBoolean JETCC jeExtBox_ChangeBoxCollision(	const jeExtBox *B, const jeV
 	}
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+typedef struct jeExtBox grExtBox;
+
+#define grExtBox_Set                     jeExtBox_Set
+#define grExtBox_IsValid                 jeExtBox_IsValid
+#define grExtBox_IsPoint                 jeExtBox_IsPoint
+#define grExtBox_SetToPoint              jeExtBox_SetToPoint
+#define grExtBox_ExtendToEnclose         jeExtBox_ExtendToEnclose
+#define grExtBox_Intersection            jeExtBox_Intersection
+#define grExtBox_Union                   jeExtBox_Union
+#define grExtBox_ContainsPoint           jeExtBox_ContainsPoint
+#define grExtBox_GetTranslation          jeExtBox_GetTranslation
+#define grExtBox_SetTranslation          jeExtBox_SetTranslation
+#define grExtBox_Translate               jeExtBox_Translate
+#define grExtBox_SetNewOrigin            jeExtBox_SetNewOrigin
+#define grExtBox_MoveToOrigin            jeExtBox_MoveToOrigin
+#define grExtBox_TranslateAndMoveToOrigin jeExtBox_TranslateAndMoveToOrigin
+#define grExtBox_GetScaling              jeExtBox_GetScaling
+#define grExtBox_SetScaling              jeExtBox_SetScaling
+#define grExtBox_Scale                   jeExtBox_Scale
+#define grExtBox_LinearSweep             jeExtBox_LinearSweep
+#define grExtBox_RayCollision            jeExtBox_RayCollision
+#define grExtBox_GetPoint                jeExtBox_GetPoint
+#define grExtBox_Collision               jeExtBox_Collision
+#define grExtBox_ChangeBoxCollision      jeExtBox_ChangeBoxCollision
+
 #endif
 		

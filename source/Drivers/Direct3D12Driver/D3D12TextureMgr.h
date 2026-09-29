@@ -19,6 +19,7 @@ using Microsoft::WRL::ComPtr;
 // Texture Manager initialization and shutdown
 jeBoolean D3D12_THandle_Startup();
 jeBoolean D3D12_THandle_Shutdown();
+void D3D12_THandle_BeginFrame(UINT FrameIndex);
 
 // Texture creation and destruction
 jeTexture* DRIVERCC D3D12_THandle_Create(int32 Width, int32 Height, int32 NumMipLevels, const jeRDriver_PixelFormat* PixelFormat);
@@ -34,6 +35,9 @@ jeBoolean DRIVERCC D3D12_THandle_GetInfo(jeTexture* Handle, int32 MipLevel, jeTe
 ID3D12Resource* D3D12_THandle_GetResource(jeTexture* Handle);
 int32 D3D12_THandle_GetID(jeTexture* Handle);
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12_THandle_GetSRV(jeTexture* Handle);
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12_THandle_GetGPUSRV(jeTexture* Handle);
+ID3D12DescriptorHeap* D3D12_THandle_GetDescriptorHeap();
+jeBoolean D3D12_THandle_UpdateLightmap(jeTexture* Handle, const uint8* RGBData);
 
 // Texture structure for D3D12
 typedef struct jeTexture
@@ -42,7 +46,6 @@ typedef struct jeTexture
 
 	jeBoolean Active;
 	ComPtr<ID3D12Resource> pTexture;        // GPU texture resource
-	ComPtr<ID3D12Resource> pUploadBuffer;   // Upload buffer for texture data
 
 	int32 Width;
 	int32 Height;
@@ -51,13 +54,18 @@ typedef struct jeTexture
 	int32 stride;
 	uint8 Log;
 
-	DXGI_FORMAT Format;
+	DXGI_FORMAT Format;                     // Native DXGI format used on GPU
 
-	jeBoolean Locked;
+	// Original driver pixel format & flags (as requested at creation)
+	jeRDriver_PixelFormat DriverFormat;     // Preserve PixelFormat + Flags for queries
+
 	jeBoolean Lightmap;
+	uint32 LockedMipMask;                   // Jet3D may lock several mip levels together
 
-	uint8* Data;                            // CPU-side data when locked
+	uint8* MipData[16];                     // Independent CPU storage for each mip level
+	size_t MipDataCapacity[16];
 	jeBoolean DriverOwned;
+	D3D12_RESOURCE_STATES ResourceState;
 
 	D3D12_CPU_DESCRIPTOR_HANDLE SRVHandle;  // Shader Resource View handle
 	UINT SRVDescriptorIndex;                // Index in descriptor heap

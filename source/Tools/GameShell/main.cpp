@@ -24,7 +24,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
 	wc.hInstance = hInstance;
 	wc.lpfnWndProc = WndProc;
-	wc.lpszClassName = "Jet Game Shell";
+	wc.lpszClassName = "Genesis3D: Reborn Game Shell";
 	wc.lpszMenuName = NULL;
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 
@@ -33,7 +33,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	hWnd = CreateWindow(wc.lpszClassName, wc.lpszClassName, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, NULL, NULL, hInstance, NULL);
 	if (!hWnd)
 	{
-		MessageBox(NULL, "Could not create main window!!", "Jet Game Shell Error...", 48);
+		MessageBox(NULL, "Could not create main window!!", "Genesis3D: Reborn Game Shell Error...", 48);
 		return 0;
 	}
 
@@ -41,12 +41,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	UpdateWindow(hWnd);
 	SetFocus(hWnd);
 
-	InitializeGameLog("JetShell.log");
+	InitializeGameLog("Genesis3D_Reborn_GameShell.log");
 	CScriptMgr::GetPtr()->Initialize();
 
 	if (!CGameMgr::GetPtr()->Initialize(hWnd))
 	{
-		MessageBox(hWnd, "Could not hstart game manager!!", "Jet Game Shell Error...", 48);
+		MessageBox(hWnd, "Could not start game manager!!", "Genesis3D: Reborn Game Shell Error...", 48);
 		CGameMgr::GetPtr()->Release();
 		DestroyWindow(hWnd);
 		return 0;

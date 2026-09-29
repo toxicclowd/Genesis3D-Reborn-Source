@@ -175,4 +175,29 @@ JETAPI jeVec3d *JETCC jeCamera_GetPov2(jeCamera *Camera);
 }
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+typedef struct jeCamera grCamera;
+
+#define grCamera_Create                  jeCamera_Create
+#define grCamera_Destroy                 jeCamera_Destroy
+#define grCamera_SetXForm                jeCamera_SetXForm
+#define grCamera_GetXForm                jeCamera_GetXForm
+#define grCamera_SetAttributes           jeCamera_SetAttributes
+#define grCamera_GetAttributes           jeCamera_GetAttributes
+#define grCamera_SetZScale               jeCamera_SetZScale
+#define grCamera_GetZScale               jeCamera_GetZScale
+#define grCamera_SetZFar                 jeCamera_SetZFar
+#define grCamera_GetZFar                 jeCamera_GetZFar
+#define grCamera_SetPov                  jeCamera_SetPov
+#define grCamera_GetPov                  jeCamera_GetPov
+#define grCamera_ScreenPointToWorld      jeCamera_ScreenPointToWorld
+#define grCamera_WorldPointToScreen      jeCamera_WorldPointToScreen
+#define grCamera_SetYaw                  jeCamera_SetYaw
+#define grCamera_SetPitch                jeCamera_SetPitch
+#define grCamera_SetRoll                 jeCamera_SetRoll
+#define grCamera_GetYaw                  jeCamera_GetYaw
+#define grCamera_GetPitch                jeCamera_GetPitch
+#define grCamera_GetRoll                 jeCamera_GetRoll
+#define grCamera_GetPov2                 jeCamera_GetPov2
+
 #endif

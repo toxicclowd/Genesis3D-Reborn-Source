@@ -61,6 +61,8 @@ typedef struct jeArray_Defragmenter jeArray_Defragmenter;
     @brief The NULL jeArray Index value
 */
 #define JE_ARRAY_NULL_INDEX     (jeArray_MaxIndex+1)
+#define GR_ARRAY_NULL_INDEX     JE_ARRAY_NULL_INDEX
+
 
 /*! @typedef jeArray_IOFunc
 *   @brief A reference to the Read/Write function to load/save array elements.

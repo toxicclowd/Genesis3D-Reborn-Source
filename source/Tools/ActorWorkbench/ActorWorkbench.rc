@@ -175,7 +175,7 @@ END
 
 IDD_ABOUTBOX DIALOGEX 0, 0, 235, 55
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "About ActorWorkbench"
+CAPTION "About Genesis3D: Reborn Actor Workbench"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
@@ -221,12 +221,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "Paradox Software"
-            VALUE "FileDescription", "Actor Workbench Tool"
+            VALUE "FileDescription", "Genesis3D: Reborn Actor Workbench"
             VALUE "FileVersion", "1.0.0.1"
             VALUE "InternalName", "ActorWorkbench.exe"
             VALUE "LegalCopyright", "(c) Paradox Software.  All rights reserved."
             VALUE "OriginalFilename", "ActorWorkbench.exe"
-            VALUE "ProductName", "jActorWorkbenchClassic7"
+            VALUE "ProductName", "Genesis3D: Reborn Actor Workbench"
             VALUE "ProductVersion", "1.0.0.1"
         END
     END
@@ -285,12 +285,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "Actor Workbench\n\nJet3DActor\nJet3D Actor Files (*.act)\n.act\nJet3DActor.Document\nJet3DActor.Document"
+    IDR_MAINFRAME           "Genesis3D: Reborn Actor Workbench\n\nGenesisActor\nGenesis3D: Reborn Actor Files (*.act)\n.act\nGenesisActor.Document\nGenesisActor.Document"
 END
 
 STRINGTABLE
 BEGIN
-    AFX_IDS_APP_TITLE       "ActorWorkbench"
+    AFX_IDS_APP_TITLE       "Genesis3D: Reborn Actor Workbench"
     AFX_IDS_IDLEMESSAGE     "Ready"
 END
 

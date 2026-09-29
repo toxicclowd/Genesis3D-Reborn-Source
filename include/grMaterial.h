@@ -1,0 +1,411 @@
+/*!
+	@file grMaterial.h 
+	
+	@author John Pollard
+	@brief Material accessor and Material array usage
+
+	@par Licence
+	The contents of this file are subject to the Genesis3D: Reborn Public License       
+	Version 1.02 (the "License"); you may not use this file except in         
+	compliance with the License. You may obtain a copy of the License at       
+	http://www.genesis3d.com                                                        
+                                                                             
+	@par
+	Software distributed under the License is distributed on an "AS IS"           
+	basis, WITHOUT WARRANTY OF ANY KIND, either express or implied.  See           
+	the License for the specific language governing rights and limitations          
+	under the License.                                                               
+                                                                                  
+	@par
+	The Original Code is Genesis3D: Reborn, released December 12, 1999.                            
+	Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           
+*/
+
+#ifndef GR_MATERIAL_H
+#define GR_MATERIAL_H
+
+#include "grTypes.h"
+#include "Array.h"
+#include "Bitmap.h"
+#include "VFile.h"
+#include "Engine.h"
+#include "grPtrMgr.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//=======================================================================================
+//	
+//=======================================================================================
+/*! @def GR_MATERIAL_ARRAY_NULL_INDEX
+	@brief Define the NULL index indicator
+*/
+#define GR_MATERIAL_ARRAY_NULL_INDEX	GR_ARRAY_NULL_INDEX
+
+/*! @def GR_MATERIAL_MAX_NAME_SIZE
+	@brief Define the maximal lenght of a material name
+*/
+#define GR_MATERIAL_MAX_NAME_SIZE		256
+
+//=======================================================================================
+//	Function prototypes
+//=======================================================================================
+/*! @name grMaterialSpec related functions and data
+	@{
+*/
+/*! @def GR_MATERIALSPEC_DIFFUSE_INDEX
+	@brief Define the diffuse color index for function grMaterialSpec_SetColor
+*/
+#define GR_MATERIALSPEC_DIFFUSE_INDEX		0
+/*! @def GR_MATERIALSPEC_SPECULAR_INDEX
+	@brief Define the specular color index for function grMaterialSpec_SetColor
+*/
+#define GR_MATERIALSPEC_SPECULAR_INDEX		1
+/*! @def GR_MATERIALSPEC_AMBIENT_INDEX
+	@brief Define the ambient color index for function grMaterialSpec_SetColor
+*/
+#define GR_MATERIALSPEC_AMBIENT_INDEX		2
+/*! @def GR_MATERIALSPEC_EMISSIVE_INDEX
+	@brief Define the emissive color index for function grMaterialSpec_SetColor
+*/
+#define GR_MATERIALSPEC_EMISSIVE_INDEX		3
+
+typedef struct jeTexture grTexture;
+typedef struct jeTexture jeTexture;
+typedef struct jeShader grShader;
+typedef struct jeShader jeShader;
+typedef struct jeXForm3d grXForm3d;
+typedef struct jeXForm3d jeXForm3d;
+
+typedef enum grMaterialSpec_LayerType
+{
+    GR_MATERIAL_LAYER_BASE=0,
+    GR_MATERIAL_LAYER_ALPHA
+} grMaterialSpec_LayerType;
+typedef grMaterialSpec_LayerType jeMaterialSpec_LayerType;
+
+#define JE_MATERIAL_LAYER_BASE	GR_MATERIAL_LAYER_BASE
+#define JE_MATERIAL_LAYER_ALPHA	GR_MATERIAL_LAYER_ALPHA
+
+
+typedef struct jeMaterialSpec_Thumbnail
+{
+	uint8  width;
+	uint8  height;
+	uint8* contents;
+} grMaterialSpec_Thumbnail;
+
+/*! @typedef grMaterialSpec
+*   @brief A JMAT file content description
+*   @see grMaterial
+*	@see grTexture
+*/
+typedef struct jeMaterialSpec grMaterialSpec;
+typedef struct jeMaterialSpec jeMaterialSpec;	
+
+/*! @fn grMaterialSpec* grMaterialSpec_Create()
+*   @brief Create an empty grMaterialSpec instance
+	@param pEngine The engine associate with this material
+	@param pResourceMgr The resource manager for accessing dependancies
+	@return The grMaterialSpec instance created if succeed, NULL otherwise
+*   @see grMaterial
+*	@see grTexture
+*/
+GRAPI grMaterialSpec* GRCC grMaterialSpec_Create(grEngine* pEngine, grResourceMgr* pResourceMgr);
+
+GRAPI grBoolean GRCC grMaterialSpec_CreateRef(grMaterialSpec* MaterialSpec);
+
+/*! @fn grMaterialSpec* grMaterialSpec_CreateFromFile(grVFile *VFile, grPtrMgr *PtrMgr)
+*   @brief Create a grMaterialSpec instance from the JMAT file
+	@param VFile The file already opened for read operations
+	@param pEngine The engine associate with this material
+	@param ResMgr The resource manager instance
+	@return The grMaterialSpec instance created if succeed, NULL otherwise
+*   @see grMaterial
+*	@see grTexture
+*/
+GRAPI grMaterialSpec* GRCC grMaterialSpec_CreateFromFile(grVFile *VFile, grEngine* pEngine, grResourceMgr *ResMgr);
+
+/*! @fn void grMaterialSpec_Destroy(grMaterialSpec **ppMaterialSpec);
+*   @brief Destroy the grMaterialSpec instance
+	@param ppMaterialSpec The grMaterialSpec instance pointer address
+	@note The *ppMaterialSpec is set to NULL before returning
+*/
+GRAPI void GRCC grMaterialSpec_Destroy(grMaterialSpec **ppMaterialSpec);
+
+/*! @fn grBoolean grMaterialSpec_WriteToFile(grMaterialSpec* MatSpec, grVFile *VFile)
+*   @brief Write the grMaterialSpec instance into a JMAT file
+	@param MatSpec The grMaterialSpec instance to write
+	@param VFile The JMAT file already opened for write operations
+	@return GR_TRUE if succeed, GR_FALSE otherwise
+*/
+GRAPI grBoolean GRCC grMaterialSpec_WriteToFile(grMaterialSpec* MatSpec, grVFile *VFile);
+
+/*! @fn grBoolean grMaterialSpec_AddLayer(grMaterialSpec* MatSpec, int32 layerIndex, int32 Kind, grMaterialSpec_LayerType layerType, int32 layerMapper, const char* LayerName)
+*   @brief Add a layer from a resource identifier to the current grMaterialSpec instance
+	@param MatSpec The grMaterialSpec instance to modify
+	@param layerIndex The layer index 0 based of the grMaterialSpec to modify
+    @param Kind The resource type identifier
+    @param layerType The layer behavior identifier
+    @param layerMapper The UV mapper identifier
+    @param LayerNam The layer resource identifier
+	@return GR_TRUE if succeed, GR_FALSE otherwise
+
+    @todo check if layerType is not a duplicate of layerIndex
+    @see grResource.h for the Resource type list of possible values
+*/
+GRAPI grBoolean GRCC grMaterialSpec_AddLayer(grMaterialSpec* MatSpec, int32 layerIndex, int32 Kind, grMaterialSpec_LayerType layerType, int32 layerMapper, const char* LayerName);
+
+/*! @fn grBoolean grMaterialSpec_AddLayerFromFile(grMaterialSpec* MatSpec, int32 layerIndex, grVFile *File, grBoolean UseColorKey, uint32 ColorKey)
+*   @brief Add a layer from a file to the current grMaterialSpec instance
+	@param MatSpec The grMaterialSpec instance to modify
+	@param layerIndex The layer index 0 based of the grMaterialSpec to modify
+    @param File The file that contains the layer definition (grTexture or grBitmap)
+    @param UseColorKey Does the new material must use a colorkey, valid only if the File contains a grBitmap
+    @param ColorKey The Color key palette index value
+	@return GR_TRUE if succeed, GR_FALSE otherwise
+*/
+GRAPI grBoolean GRCC grMaterialSpec_AddLayerFromFile(grMaterialSpec* MatSpec, int32 layerIndex, grVFile *File, grBoolean UseColorKey, uint32 ColorKey);
+
+/*! @fn grBoolean grMaterialSpec_AddLayerFromBitmap(grMaterialSpec* MatSpec, int32 layerIndex, grBitmap* Bitmap)
+*   @brief Add a layer from a file to the current grMaterialSpec instance
+	@param MatSpec The grMaterialSpec instance to modify
+	@param layerIndex The layer index 0 based of the grMaterialSpec to modify
+    @param pBitmap The layer content provided by a grBitmap instance already initialised
+    @param ResName The resource name identifer for the grBitmap
+	@return GR_TRUE if succeed, GR_FALSE otherwise
+*/
+GRAPI grBoolean GRCC grMaterialSpec_AddLayerFromBitmap(grMaterialSpec* MatSpec, int32 layerIndex, grBitmap* Bitmap, const char* ResName);
+
+/*! @fn grBoolean grMaterialSpec_RemoveLayer(grMaterialSpec* MatSpec, int32 layerIndex)
+    @brief Remove the layer identified by its index from the current grMaterialSpec
+	@param MatSpec The grMaterialSpec instance to modify
+	@param layerIndex The layer index 0 based of the grMaterialSpec to remove
+	@return GR_TRUE if succeed, GR_FALSE otherwise
+*/
+GRAPI grBoolean GRCC grMaterialSpec_RemoveLayer(grMaterialSpec* MatSpec, int32 layerIndex);
+
+/*! @fn grBoolean grMaterialSpec_SetLayerTransform(grMaterialSpec* MatSpec, int32 layerIndex, grXForm3d* LayerXFrom)
+    @brief Change the transform matrix of the layer identified by its index from the current grMaterialSpec
+	@param MatSpec The grMaterialSpec instance to modify
+	@param layerIndex The layer index 0 based of the grMaterialSpec to modify
+    @param LayerXFrom The transform matrix to set
+	@return GR_TRUE if succeed, GR_FALSE otherwise
+*/
+GRAPI grBoolean GRCC grMaterialSpec_SetLayerTransform(grMaterialSpec* MatSpec, int32 layerIndex, grXForm3d* LayerXFrom);
+
+GRAPI grBoolean GRCC grMaterialSpec_SetShader(grMaterialSpec* MatSpec, grShader* Shader);
+
+GRAPI grBoolean GRCC grMaterialSpec_SetColor(grMaterialSpec* MatSpec, int32 ColorIndex, grRGBA* Color);
+
+GRAPI grBoolean GRCC grMaterialSpec_SetThumbnail(grMaterialSpec* MatSpec, grMaterialSpec_Thumbnail* pThumb);
+
+GRAPI uint32 GRCC grMaterialSpec_GetLayerCount(const grMaterialSpec* MatSpec);
+
+GRAPI grTexture* GRCC grMaterialSpec_GetLayerTexture(const grMaterialSpec* MatSpec, int32 layerIndex);
+
+GRAPI grBitmap* GRCC grMaterialSpec_GetLayerBitmap(const grMaterialSpec* MatSpec, int32 layerIndex);
+
+GRAPI grXForm3d* GRCC grMaterialSpec_GetLayerTransform(const grMaterialSpec* MatSpec, int32 layerIndex);
+
+GRAPI grShader* GRCC grMaterialSpec_GetShader(const grMaterialSpec* MatSpec);
+
+GRAPI grRGBA* GRCC grMaterialSpec_GetColor(const grMaterialSpec* MatSpec, int32 colorIndex);
+
+GRAPI uint32 GRCC grMaterialSpec_GetColors(const grMaterialSpec* MatSpec, grRGBA* Diffuse, grRGBA* Specular, grRGBA* Ambient, grRGBA* Emissive);
+
+GRAPI grMaterialSpec_Thumbnail* GRCC grMaterialSpec_GetThumbnail(const grMaterialSpec* MatSpec);
+
+GRAPI uint32 GRCC grMaterialSpec_Height(const grMaterialSpec* MatSpec);
+
+GRAPI uint32 GRCC grMaterialSpec_Width(const grMaterialSpec* MatSpec);
+
+/*!@}*/
+
+/*! @name grMaterial related functions and data
+	@{
+*/
+/*! @typedef grMaterial
+*   @brief A reference to a Material used by the Engine
+*/
+typedef struct jeMaterial grMaterial;
+typedef uint16 grMaterial_ArrayIndex;
+typedef uint16 jeMaterial_ArrayIndex;
+typedef struct jeMaterial jeMaterial;
+
+/*! @fn void grMaterial_Destroy(grMaterial **ppMaterial)
+*   @brief Destroy the current grMaterial
+*   @param[in] Material The grMaterial struct to destroy
+	@note The *ppMaterial is set to NULL before returning
+*/
+GRAPI void					GRCC grMaterial_Destroy(grMaterial **ppMaterial);
+
+/*! @fn grBoolean grMaterial_CreateRef(grMaterial *Material)
+*   @brief Reference the current Material
+*   @param[in] Material The Material to increment its reference counter
+*   @return GR_TRUE if success, GR_FALSE otherwise
+*/
+GRAPI grBoolean			GRCC grMaterial_CreateRef(grMaterial *Material);
+
+/*! @fn grMaterial* grMaterial_Create(const char *MatName)
+*   @brief Create a new Material.
+*   @param[in] MatName The name of the new Material.
+*   @return The grMaterial created. NULL if failed.
+*/
+GRAPI grMaterial			* GRCC grMaterial_Create(const char *MatName);
+GRAPI grBoolean			GRCC grMaterial_SetBitmap(grMaterial *Mat, grBitmap *Bitmap, const char *BitmapName);
+GRAPI const grBitmap	* GRCC grMaterial_GetBitmap(const grMaterial *Mat);
+
+/*! @fn const char* grMaterial_GetName( const grMaterial *Mat)
+*   @brief Read the name of the current Material.
+*   @param[in] Mat The grMaterial to read its name.
+*   @return The name if succeed, NULL otherwise.
+*/
+GRAPI const char			* GRCC grMaterial_GetName( const grMaterial *Mat);
+
+/*! @fn const char* grMaterial_GetBitmapName( const grMaterial *Mat)
+*   @brief Read the name of the Bitmap linked with the current Material
+*   @param[in] Mat The grMaterial to read its bitmap name
+*   @return The bitmap name if succeed, NULL otherwise
+*	@author Bruno Pettorelli (krouer@genesis3d.com)
+*/
+GRAPI const char			* GRCC grMaterial_GetBitmapName( const grMaterial *Mat);
+
+/*! @fn const grMaterialSpec* grMaterial_GetMaterialSpec( const grMaterial *Mat)
+*   @brief Grant access to the grMaterialSpec of the current Material
+*   @param[in] Mat The grMaterial to access its grMaterialSpec
+*   @return The grMaterialSpec member if succeed, NULL otherwise
+*	@author Bruno Pettorelli (krouer@genesis3d.com)
+*/
+GRAPI const grMaterialSpec	* GRCC grMaterial_GetMaterialSpec(const grMaterial *Mat);
+/*!@}*/
+
+/*! @name grMaterial_Array related functions and data
+	@{
+*/
+/*! @typedef grMaterial_Array
+*   @brief An Array of grMaterial struct
+*   @see grArray
+*/
+typedef struct jeMaterial_Array grMaterial_Array;
+typedef struct jeMaterial_Array jeMaterial_Array;	
+
+/*! @typedef grMaterial_Array
+*   @brief The index type
+*   @see grArray_Index
+*/
+typedef uint16					grMaterial_ArrayIndex;
+typedef uint16					jeMaterial_ArrayIndex;
+
+/*! @fn grMaterial_Array* grMaterial_ArrayCreate(int32 StartMaterials)
+*   @brief Create a material array
+*   @param[in] StartMaterials The count of grMaterial the array will hold
+*   @return A grMaterial_Array instance if succeed otherwise NULL
+*/
+GRAPI grMaterial_Array		* GRCC grMaterial_ArrayCreate(int32 StartMaterials);
+
+/*! @fn grMaterial_Array* grMaterial_ArrayCreateFromFile(grVFile *VFile, grPtrMgr *PtrMgr)
+*   @brief Create a material array from a file
+*   @param[in] VFile The file where to read array data
+*	@param[in] PtrMgr The pointer manager to use
+*   @return A grMaterial_Array instance if succeed otherwise NULL
+*/
+GRAPI grMaterial_Array		* GRCC grMaterial_ArrayCreateFromFile(grVFile *VFile, grPtrMgr *PtrMgr);
+
+/*! @fn grBoolean grMaterial_ArrayWriteToFile(grMaterial_Array *MatArray, grVFile *VFile, grPtrMgr *PtrMgr)
+*   @brief Write a material array to a file
+*	@param[in] MatArray The grMaterial_Array to write
+*   @param[in] VFile The file where to read array data
+*	@param[in] PtrMgr The pointer manager to use
+*   @return GR_TRUE if succeed, GR_FALSE otherwise
+*/
+GRAPI grBoolean			GRCC grMaterial_ArrayWriteToFile(grMaterial_Array *MatArray, grVFile *VFile, grPtrMgr *PtrMgr);
+
+/*! @fn grBoolean grMaterial_ArrayCreateRef(grMaterial_Array *MatArray)
+*   @brief Increment the grMaterial_Array reference counter
+*	@param[in] MatArray The grMaterial_Array to modify
+*   @return GR_TRUE if succeed, GR_FALSE otherwise
+*/
+GRAPI grBoolean			GRCC grMaterial_ArrayCreateRef(grMaterial_Array *MatArray);
+
+/*! @fn void grMaterial_ArrayDestroy(grMaterial_Array **ppArray)
+*   @brief Decrement the reference counter, destroy the instance if reach 0 and reset the address to NULL in all cases
+*	@param[in,out] ppArray The address of grMaterial_Array to destroy when its reference counter reach 0
+*   @return GR_TRUE if succeed, GR_FALSE otherwise
+	@note The *ppArray is set to NULL before returning
+*/
+GRAPI void					GRCC grMaterial_ArrayDestroy(grMaterial_Array **ppArray);
+GRAPI grMaterial_ArrayIndex GRCC grMaterial_ArrayCreateMaterial(grMaterial_Array *MatArray, const char *MatName);
+GRAPI void					GRCC grMaterial_ArrayDestroyMaterial(grMaterial_Array *MatArray, grMaterial_ArrayIndex *Index);
+GRAPI const grMaterial * GRCC grMaterial_ArrayGetMaterialByIndex(const grMaterial_Array *Array, grMaterial_ArrayIndex Index);
+GRAPI grMaterial_ArrayIndex GRCC grMaterial_ArrayGetMaterialIndex(const grMaterial_Array *Array, const grMaterial *Material);
+GRAPI grBoolean			GRCC grMaterial_ArraySetMaterialBitmap(grMaterial_Array *Array, grMaterial_ArrayIndex Index, grBitmap *Bitmap, const char *BitmapName);
+GRAPI grMaterial			* GRCC grMaterial_ArrayGetNextMaterial(grMaterial_Array *Array, const grMaterial *Start);
+GRAPI grBoolean			GRCC grMaterial_ArraySetMaterialSpec(grMaterial_Array *Array, grMaterial_ArrayIndex Index, grMaterialSpec *MatSpec, const char *MatName);
+/*!@}*/
+
+
+#ifdef __cplusplus
+}
+#endif
+
+
+//========================================================================================
+// Backward Compatibility Definitions (je -> gr)
+//========================================================================================
+#ifndef GENESIS_NO_JET_COMPAT
+
+#define JE_MATERIALSPEC_AMBIENT_INDEX            GR_MATERIALSPEC_AMBIENT_INDEX
+#define JE_MATERIALSPEC_DIFFUSE_INDEX            GR_MATERIALSPEC_DIFFUSE_INDEX
+#define JE_MATERIALSPEC_EMISSIVE_INDEX           GR_MATERIALSPEC_EMISSIVE_INDEX
+#define JE_MATERIALSPEC_SPECULAR_INDEX           GR_MATERIALSPEC_SPECULAR_INDEX
+#define JE_MATERIAL_ARRAY_NULL_INDEX             GR_MATERIAL_ARRAY_NULL_INDEX
+#define JE_MATERIAL_MAX_NAME_SIZE                GR_MATERIAL_MAX_NAME_SIZE
+#define jeMaterialSpec_AddLayer                  grMaterialSpec_AddLayer
+#define jeMaterialSpec_AddLayerFromBitmap        grMaterialSpec_AddLayerFromBitmap
+#define jeMaterialSpec_AddLayerFromFile          grMaterialSpec_AddLayerFromFile
+#define jeMaterialSpec_Create                    grMaterialSpec_Create
+#define jeMaterialSpec_CreateFromFile            grMaterialSpec_CreateFromFile
+#define jeMaterialSpec_CreateRef                 grMaterialSpec_CreateRef
+#define jeMaterialSpec_Destroy                   grMaterialSpec_Destroy
+#define jeMaterialSpec_GetColor                  grMaterialSpec_GetColor
+#define jeMaterialSpec_GetColors                 grMaterialSpec_GetColors
+#define jeMaterialSpec_GetLayerBitmap            grMaterialSpec_GetLayerBitmap
+#define jeMaterialSpec_GetLayerCount             grMaterialSpec_GetLayerCount
+#define jeMaterialSpec_GetLayerTexture           grMaterialSpec_GetLayerTexture
+#define jeMaterialSpec_GetLayerTransform         grMaterialSpec_GetLayerTransform
+#define jeMaterialSpec_GetShader                 grMaterialSpec_GetShader
+#define jeMaterialSpec_GetThumbnail              grMaterialSpec_GetThumbnail
+#define jeMaterialSpec_Height                    grMaterialSpec_Height
+#define jeMaterialSpec_RemoveLayer               grMaterialSpec_RemoveLayer
+#define jeMaterialSpec_SetColor                  grMaterialSpec_SetColor
+#define jeMaterialSpec_SetLayerTransform         grMaterialSpec_SetLayerTransform
+#define jeMaterialSpec_SetShader                 grMaterialSpec_SetShader
+#define jeMaterialSpec_SetThumbnail              grMaterialSpec_SetThumbnail
+#define jeMaterialSpec_Width                     grMaterialSpec_Width
+#define jeMaterialSpec_WriteToFile               grMaterialSpec_WriteToFile
+#define jeMaterial_ArrayCreate                   grMaterial_ArrayCreate
+#define jeMaterial_ArrayCreateFromFile           grMaterial_ArrayCreateFromFile
+#define jeMaterial_ArrayCreateMaterial           grMaterial_ArrayCreateMaterial
+#define jeMaterial_ArrayCreateRef                grMaterial_ArrayCreateRef
+#define jeMaterial_ArrayDestroy                  grMaterial_ArrayDestroy
+#define jeMaterial_ArrayDestroyMaterial          grMaterial_ArrayDestroyMaterial
+#define jeMaterial_ArrayGetMaterialByIndex       grMaterial_ArrayGetMaterialByIndex
+#define jeMaterial_ArrayGetMaterialIndex         grMaterial_ArrayGetMaterialIndex
+#define jeMaterial_ArrayGetNextMaterial          grMaterial_ArrayGetNextMaterial
+#define jeMaterial_ArraySetMaterialBitmap        grMaterial_ArraySetMaterialBitmap
+#define jeMaterial_ArraySetMaterialSpec          grMaterial_ArraySetMaterialSpec
+#define jeMaterial_ArrayWriteToFile              grMaterial_ArrayWriteToFile
+#define jeMaterial_Create                        grMaterial_Create
+#define jeMaterial_CreateRef                     grMaterial_CreateRef
+#define jeMaterial_Destroy                       grMaterial_Destroy
+#define jeMaterial_GetBitmap                     grMaterial_GetBitmap
+#define jeMaterial_GetBitmapName                 grMaterial_GetBitmapName
+#define jeMaterial_GetMaterialSpec               grMaterial_GetMaterialSpec
+#define jeMaterial_GetName                       grMaterial_GetName
+#define jeMaterial_SetBitmap                     grMaterial_SetBitmap
+
+#endif // GENESIS_NO_JET_COMPAT
+
+#endif

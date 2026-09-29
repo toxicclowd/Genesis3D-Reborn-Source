@@ -43,10 +43,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)bin\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)\Debug\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)bin\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)\Release\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
@@ -79,16 +80,16 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>amstrmid.lib;oldnames.lib;urlmon.lib;winmm.lib;quartz.lib;dxguid.lib;ddraw.lib;vorbis_static_d.lib;vorbisfile_static_d.lib;ogg_static_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>amstrmid.lib;oldnames.lib;urlmon.lib;winmm.lib;quartz.lib;dxguid.lib;vorbis_static_d.lib;vorbisfile_static_d.lib;ogg_static_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\..\lib;..\External\VorbisSDK\lib;..\External\EAXSDK\lib;..\External\DXSDK_81\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
       <ImportLibrary>..\..\..\lib\$(TargetName).lib</ImportLibrary>
-      <MapFileName>$(SolutionDir)bin\$(TargetName).map</MapFileName>
-      <OutputFile>$(SolutionDir)bin\$(TargetName)$(TargetExt)</OutputFile>
-      <ProgramDatabaseFile>$(SolutionDir)bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Midl>
@@ -125,16 +126,16 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>amstrmid.lib;oldnames.lib;urlmon.lib;winmm.lib;quartz.lib;dxguid.lib;ddraw.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>amstrmid.lib;oldnames.lib;urlmon.lib;winmm.lib;quartz.lib;dxguid.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\..\lib;..\External\VorbisSDK\lib;..\External\EAXSDK\lib;..\External\DXSDK_81\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateMapFile>true</GenerateMapFile>
-      <MapFileName>$(SolutionDir)bin\$(TargetName).map</MapFileName>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
       <ImportLibrary>..\..\..\lib\$(TargetName).lib</ImportLibrary>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OutputFile>..\..\..\bin\$(TargetName)$(TargetExt)</OutputFile>
-      <ProgramDatabaseFile>$(SolutionDir)bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Midl>
@@ -247,18 +248,6 @@
     <ClCompile Include="Engine\jePolyMgr.cpp" />
     <ClCompile Include="Engine\jeTexture.cpp" />
     <ClCompile Include="Engine\splash_bmp.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_DDMemMgr.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_err.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_fx.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_gspan.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_main.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_pcache.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_render.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_Scene.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_thandle.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3d_tpage.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3dcache.cpp" />
-    <ClCompile Include="Engine\Drivers\D3DDrv\d3ddrv.cpp" />
     <ClCompile Include="guWorld\jeBrush.cpp" />
     <ClCompile Include="guWorld\jeFaceInfo.cpp" />
     <ClCompile Include="guWorld\jeFrustum.cpp" />
@@ -401,18 +390,6 @@
     <ClInclude Include="Engine\jePolyMgr.h" />
     <ClInclude Include="..\..\..\include\jeTexture.h" />
     <ClInclude Include="Engine\Drivers\Dcommon.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_DDMemMgr.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3d_err.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3d_fx.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_GSPAN.H" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3d_main.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_Pcache.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_RENDER.H" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_Scene.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_THandle.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\d3d_TPage.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3dcache.h" />
-    <ClInclude Include="Engine\Drivers\D3DDrv\D3ddrv.h" />
     <ClInclude Include="..\..\..\include\jeBrush.h" />
     <ClInclude Include="..\..\..\include\jeFaceInfo.h" />
     <ClInclude Include="..\..\..\include\jeFrustum.h" />
@@ -480,6 +457,13 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="jet.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Drivers\Direct3D12Driver\Direct3D12Driver.vcxproj">
+      <Project>{1b6221f3-93fe-ca71-ba4d-0adc81cc80e0}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="Actor\Actor._h" />

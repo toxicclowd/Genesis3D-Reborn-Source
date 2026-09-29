@@ -120,7 +120,6 @@ void CJet3DView::OnInitialUpdate()
 	}
 
 	jeEngine_EnableFrameRateCounter(m_pEngine, JE_FALSE);
-	jeEngine_RegisterDriver(m_pEngine, jeEngine_D3DDriver());
 	jeEngine_RegisterObjects("Objects");
 	//jeEngine_SetGamma(m_pEngine, 1.0f);	//trilobite orig
 	jeEngine_SetGamma(m_pEngine, 1.5f);	//trilobite revise
@@ -133,18 +132,13 @@ void CJet3DView::OnInitialUpdate()
 		return;
 	}
 
-	//	by trilobite	Jan. 2011
 	jeDriver *Driver = NULL;
-	//for (jeDriver *Driver = jeDriver_SystemGetNextDriver(DrvSys, NULL); Driver != NULL; Driver = jeDriver_SystemGetNextDriver(DrvSys, Driver))
 	for (Driver = jeDriver_SystemGetNextDriver(DrvSys, NULL); Driver != NULL; Driver = jeDriver_SystemGetNextDriver(DrvSys, Driver))
-	//	
 	{
 		const char					*drvname = NULL;
 
 		jeDriver_GetName(Driver, &drvname);
-		//	by trilobite jan. 2011 -- reverting to engine's native (D3D) driver
-		//if (drvname[0] == 'D')
-		if (drvname[0] == '(')
+		if (drvname && !strcmp(drvname, "(D3D) DirectX 12"))
 			break;
 	}
 

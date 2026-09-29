@@ -1275,5 +1275,25 @@ enum ActorObjectIndexProperties
 }
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+typedef struct jeActor grActor;
+typedef struct jeActor_Def grActor_Def;
+typedef struct jeActor_Def jeActor_Def;
+typedef struct jeActor_TransformContext grActor_TransformContext;
+typedef struct jeActor_TransformContext jeActor_TransformContext;
+typedef struct jeActor_RenderHint grActor_RenderHint;
+typedef struct jeActor_RenderHint jeActor_RenderHint;
+
+#define grActor_Create                   jeActor_Create
+#define grActor_Destroy                  jeActor_Destroy
+#define grActor_CreateRef                jeActor_CreateRef
+#define grActor_Render                   jeActor_Render
+#define grActor_RenderThroughFrustum     jeActor_RenderThroughFrustum
+#define grActor_GetTransformContext      jeActor_GetTransformContext
+#define grActor_SetTransformContext      jeActor_SetTransformContext
+#define grActor_GetRenderHint            jeActor_GetRenderHint
+#define grActor_SetRenderHint            jeActor_SetRenderHint
+#define grActor_GetLightingOptions       jeActor_GetLightingOptions
+#define grActor_SetLightingOptions       jeActor_SetLightingOptions
 
 #endif

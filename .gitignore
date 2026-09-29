@@ -1,0 +1,47 @@
+# Visual Studio user/IDE state
+.vs/
+*.suo
+*.user
+*.aps
+*.ncb
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+ipch/
+CppProperties.json
+
+# Intermediate build output
+[Dd]ebug/
+[Rr]elease/
+build/obj/
+*.obj
+*.o
+*.pch
+*.pdb
+*.idb
+*.ilk
+*.sbr
+*.bsc
+*.map
+*.exp
+*.tlog
+*.lastbuildstate
+*.recipe
+*.log
+*.tmp
+*.bak
+
+# Built libraries (third-party libs under Engine/External are kept)
+/lib/
+
+# Built runtime binaries (assets in bin/ stay tracked)
+/bin/*.exe
+/bin/*.dll
+/bin/objects/*.dll
+/bin/objects/*.ddl
+/bin/errlog.txt
+/bin/scrlog.txt
+
+# Local smoke-test scratch output
+.codex-*

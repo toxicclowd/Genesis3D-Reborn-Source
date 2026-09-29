@@ -13,6 +13,7 @@
 #include <wrl/client.h>
 #include <vector>
 #include "DCommon.h"
+#include "Direct3D12Driver.h"
 #include "D3D12TextureMgr.h"
 
 using Microsoft::WRL::ComPtr;
@@ -24,7 +25,7 @@ using Microsoft::WRL::ComPtr;
 typedef struct PolyVert
 {
 	float x, y, z, rhw;
-	uint32 diffuse;
+	float r, g, b, a;
 	float u, v;
 	float lu, lv;  // Lightmap coordinates
 } PolyVert;
@@ -63,9 +64,7 @@ private:
 	std::vector<PolyVert> m_Vertices;
 	std::vector<StaticBuffer> m_StaticBuffers;
 
-	ComPtr<ID3D12Resource> m_pVertexBuffer;
-	ComPtr<ID3D12Resource> m_pVertexUploadBuffer;
-	D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
+	std::vector<ComPtr<ID3D12Resource>> m_FrameVertexBuffers[FRAME_COUNT];
 	
 	int32 m_NumVerts;
 	int32 m_MaxVerts;
@@ -75,6 +74,7 @@ public:
 	// Initialization
 	jeBoolean Initialize(int32 maxVerts = 10000);
 	void Shutdown();
+	void BeginFrame(UINT frameIndex);
 
 	// Static mesh management
 	uint32 AddStaticBuffer(jeHWVertex* Points, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags);
@@ -90,8 +90,10 @@ public:
 	jeBoolean Flush();
 
 private:
-	void EnableAlpha(jeBoolean Enable);
-	jeBoolean UploadVertices();
+	jeBoolean AddPolygon(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers,
+		int32 NumLayers, uint32 Flags, jeBoolean WorldCoordinates);
+	jeBoolean UploadVertices(ComPtr<ID3D12Resource>& VertexBuffer,
+		D3D12_VERTEX_BUFFER_VIEW& VertexBufferView);
 };
 
 #endif // D3D12_POLY_CACHE_H

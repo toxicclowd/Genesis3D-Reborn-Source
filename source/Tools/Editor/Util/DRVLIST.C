@@ -148,10 +148,8 @@ static DriverInfo * Drvlist_Build(
 
 			if ( !( ModeFilter & DRVLIST_HARDWARE ) )
 			{
-				if ( strnicmp( DriverName, "Direct3D 9 Driver", 8 ) != 0 )
-				{
-					ValidMode = JE_FALSE;
-				}
+				// DirectX 12 is the engine's hardware-only renderer.
+				ValidMode = JE_FALSE;
 			}
 
 			if ( ModeFilter & DRVLIST_ALL )
@@ -336,7 +334,7 @@ static	BOOL	CALLBACK	DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 //	Name:			DrvList_GetDriverByName
 //  Description:	Simple Funtion to get Driver and Mode via an Textstring 
 //					Format of Textstring: driver,mode 
-//					Example: (D3D)Primärer Anzeigetreiber,1024x768x8
+//					Example: (D3D) DirectX 12,WindowMode
 //	Author:			JH 7.3.2000
 // 
 //	

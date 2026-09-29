@@ -115,7 +115,7 @@ CMainFrame::CMainFrame()
 	m_bReadyToRender = false;
 	m_bShuttingDown = false;
 
-m_strGameName = _T("Jet3D_MinApp");
+m_strGameName = _T("Genesis3D_Reborn_MinApp");
 	
 	char		tempPathString[MAX_PATH+1];
 	DWORD		dwcNameSize = MAX_PATH+1;
@@ -152,15 +152,12 @@ m_strGameName = _T("Jet3D_MinApp");
 
 
 #ifdef NDEBUG
-	m_strDriverName = _T("D3D");
-//	m_strDriverName = _T("Direct3D 9");
-//	m_strDriverName = _T("OpenGL");
+	m_strDriverName = _T("(D3D) DirectX 12");
 	m_strDesiredMode = _T("");
 #endif
 
 #ifdef _DEBUG
-	m_strDriverName = _T("D3D");
-//	m_strDriverName = _T("Direct3D 9");
+	m_strDriverName = _T("(D3D) DirectX 12");
 #endif
 
 }
@@ -981,12 +978,6 @@ bool	CMainFrame::LoadDriver()
 
 	if (m_pEngine)
 	{
-		//	register display drivers
-//		if (!jeEngine_RegisterDriver(m_pEngine, jeEngine_SoftwareDriver()))
-//			return false;
-		if (!jeEngine_RegisterDriver(m_pEngine, jeEngine_D3DDriver()))
-			return false;
-
 		if (!m_pDrvSys)
 		{
 			SetCurrentDirectory(m_strBaseDir);
@@ -1388,9 +1379,7 @@ bool CMainFrame::RenderView(jeFloat fElapsedTime)
 
 		if (m_pEngine)
 		{
-			//	tom morris june 2005	
-			//jeEngine_Printf(m_pEngine, 0, 0, "jMinApp - Press ESC to close jMinApp.");
-			jeEngine_Printf(m_pEngine, 0, 10, 10, JE_COLOR_COLORVALUE(100,100,100,100), "jMinApp - Press ESC to close jMinApp.");
+			jeEngine_Printf(m_pEngine, 0, 10, 10, JE_COLOR_COLORVALUE(100,100,100,100), "Genesis3D: Reborn - Press ESC to close.");
 
 			//	flip the new rendered frame to the screen
 			if (!jeEngine_EndFrame(m_pEngine))

@@ -176,7 +176,9 @@ typedef struct
 
 #define RDRIVER_PF_MAJOR_MASK				((1<<RDRIVER_PF_OPTIONAL_SHIFT)-1)
 
-typedef struct
+#ifndef RDRIVER_PIXELFORMAT_DEFINED
+#define RDRIVER_PIXELFORMAT_DEFINED
+typedef struct jeRDriver_PixelFormat
 {
 	jePixelFormat	PixelFormat;
 	uint32			Flags;				
@@ -194,7 +196,7 @@ typedef enum
 } jeRDriver_Rop;
 
 // BEGIN - jeTexture implementation - paradoxnj 5/12/2005
-typedef struct
+typedef struct jeTexture_Info
 {
 	int32					Width;
 	int32					Height;
@@ -205,6 +207,7 @@ typedef struct
 	jeRDriver_PixelFormat	PixelFormat;
     void*                   Direct;
 } jeTexture_Info;
+#endif
 
 typedef struct
 {
@@ -227,6 +230,12 @@ typedef struct
 	void				*RGBLight[2];
 	jeBoolean			Dynamic;
 } jeRDriver_LMapCBInfo;
+
+typedef jeRDriver_PixelFormat grRDriver_PixelFormat;
+typedef jeRDriver_Rop grRDriver_Rop;
+typedef jeTexture_Info grTexture_Info;
+typedef jeRDriver_Layer grRDriver_Layer;
+typedef jeRDriver_LMapCBInfo grRDriver_LMapCBInfo;
 
 //===
 

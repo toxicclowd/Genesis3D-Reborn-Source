@@ -54,6 +54,9 @@
     <None Include="PHASE1_COMPLETE.md" />
     <None Include="QUICK_REFERENCE.md" />
     <None Include="BUILD_SUCCESS.md" />
+    <None Include="Direct3D12Driver.def">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="00_START_HERE.txt" />

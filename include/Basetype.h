@@ -37,27 +37,35 @@ extern "C" {
 // Krouer - change calling convention to __stdcall
 // keep __fastcall for internal call perhaps engine can increase the gain by using __inline instead
 // but __inline will increase the size
-#define	JETCF	__fastcall
-#define	JETCC	__stdcall
+#define	GRCF	__fastcall
+#define JETCF GRCF
+#define	GRCC	__stdcall
+#define JETCC GRCC
 
 // paradoxnj - We don't care about static libs.  Changed to conventional DLL export
 #ifdef JETENGINE_EXPORTS
-#define JETAPI					_declspec(dllexport)
+#define GRAPI					_declspec(dllexport)
+#define JETAPI GRAPI
 #else
-#define JETAPI					_declspec(dllimport)
+#define GRAPI					_declspec(dllimport)
+#define JETAPI GRAPI
 #endif
 
 #define JETLINE __inline //added (cyrius)
 
 //------------------------------
 
-typedef int			jeBoolean;
-#define JE_FALSE	((jeBoolean)0)
-#define JE_TRUE		((jeBoolean)1)
+typedef int			grBoolean;
+typedef grBoolean	jeBoolean;
+#define GR_FALSE	((grBoolean)0)
+#define JE_FALSE GR_FALSE
+#define GR_TRUE		((grBoolean)1)
+#define JE_TRUE GR_TRUE
 
 //------------------------------
 
-typedef float jeFloat;
+typedef float grFloat;
+typedef grFloat jeFloat;
 
 typedef signed long     int32;
 typedef signed short    int16;
@@ -205,7 +213,41 @@ public:
 	virtual uint32					AddRef() = 0;
 	virtual uint32					Release() = 0;
 };
+typedef jeUnknown grUnknown;
 #endif
+
+// Genesis3D: Reborn gr* Aliases
+#define GR_PI				JE_PI
+#define GR_TWOPI			JE_TWOPI
+#define GR_HALFPI			JE_HALFPI
+#define GR_DEGS_PER_RAD		JE_DEGS_PER_RAD
+#define GR_RADS_PER_DEG		JE_RADS_PER_DEG
+
+#define GR_COLOR_ARGB		JE_COLOR_ARGB
+#define GR_COLOR_RGBA		JE_COLOR_RGBA
+#define GR_COLOR_XRGB		JE_COLOR_XRGB
+#define GR_COLOR_XYUV		JE_COLOR_XYUV
+#define GR_COLOR_AYUV		JE_COLOR_AYUV
+#define GR_COLOR_COLORVALUE	JE_COLOR_COLORVALUE
+#define GR_COLOR_GETARGB	JE_COLOR_GETARGB
+
+#define grFloat_DegToRad	jeFloat_DegToRad
+#define grFloat_RadToDeg	jeFloat_RadToDeg
+#define GR_ABS				JE_ABS
+#define GR_CLAMP			JE_CLAMP
+#define GR_CLAMP8			JE_CLAMP8
+#define GR_CLAMP16			JE_CLAMP16
+#define GR_BOOLSAME			JE_BOOLSAME
+#define GR_EPSILON			JE_EPSILON
+#define GR_FLOATS_EQUAL		JE_FLOATS_EQUAL
+#define GR_FLOAT_ISZERO		JE_FLOAT_ISZERO
+#define grFloat_Sqr			jeFloat_Sqr
+#define grFloat_Cube		jeFloat_Cube
+#define grFloat_RoundToInt	jeFloat_RoundToInt
+#define grFloat_Sqrt		jeFloat_Sqrt
+#define grFloat_Sin			jeFloat_Sin
+#define grFloat_Cos			jeFloat_Cos
+#define grFloat_ToInt		jeFloat_ToInt
 
 #ifdef __cplusplus
 }

@@ -60,6 +60,7 @@ class D3D12TextureManager;
 class D3D12GeometryBatcher;
 class D3D12DescriptorHeap;
 class D3D12PolyCache;
+class D3D12PSOManager;
 
 //================================================================================
 //	Global State
@@ -68,7 +69,14 @@ extern HWND									g_hWnd;
 extern ComPtr<ID3D12Device>					g_pDevice;
 extern ComPtr<ID3D12CommandQueue>			g_pCommandQueue;
 extern ComPtr<IDXGISwapChain3>				g_pSwapChain;
+extern ComPtr<ID3D12GraphicsCommandList>	g_pCommandList;
 extern float									g_fGamma;
+extern UINT									g_nCurrentFrameIndex;
+extern int32									g_nScreenWidth;
+extern int32									g_nScreenHeight;
+extern bool									g_bInScene;
+extern bool									g_bWireframe;
+extern D3D12PSOManager*					g_pPSOManager;
 
 //================================================================================
 //	Helper Structures
@@ -105,6 +113,7 @@ struct ConstantBufferData
 //================================================================================
 void D3D12Matrix_ToXForm3d(const D3D12Matrix* mat, jeXForm3d* XForm);
 void jeXForm3d_ToD3D12Matrix(const jeXForm3d* XForm, D3D12Matrix* mat);
+void D3D12WaitForGPU();
 
 //================================================================================
 //	Driver Interface Functions (from DCommon.h)

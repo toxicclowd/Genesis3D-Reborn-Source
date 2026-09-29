@@ -635,5 +635,42 @@ int x,y;
 }
 #endif
 
+// Genesis3D: Reborn gr* Aliases
+typedef struct jeBitmap grBitmap;
+typedef struct jeBitmap_Palette grBitmap_Palette;
+typedef struct jeBitmap_Info grBitmap_Info;
+
+#define grBitmap_Create                  jeBitmap_Create
+#define grBitmap_CreateFromFile          jeBitmap_CreateFromFile
+#define grBitmap_Destroy                 jeBitmap_Destroy
+#define grBitmap_CreateRef               jeBitmap_CreateRef
+#define grBitmap_SetPalette              jeBitmap_SetPalette
+#define grBitmap_GetPalette              jeBitmap_GetPalette
+#define grBitmap_GetInfo                 jeBitmap_GetInfo
+#define grBitmap_LockForRead             jeBitmap_LockForRead
+#define grBitmap_LockForWrite            jeBitmap_LockForWrite
+#define grBitmap_LockForReadNative       jeBitmap_LockForReadNative
+#define grBitmap_LockForWriteNative      jeBitmap_LockForWriteNative
+#define grBitmap_UnLock                  jeBitmap_UnLock
+#define grBitmap_SetColorKey             jeBitmap_SetColorKey
+#define grBitmap_ClearColorKey           jeBitmap_ClearColorKey
+#define grBitmap_GetColorKey             jeBitmap_GetColorKey
+#define grBitmap_HasColorKey             jeBitmap_HasColorKey
+#define grBitmap_SetAlpha                jeBitmap_SetAlpha
+#define grBitmap_GetAlpha                jeBitmap_GetAlpha
+#define grBitmap_HasAlpha                jeBitmap_HasAlpha
+#define grBitmap_SetGamma                jeBitmap_SetGamma
+#define grBitmap_GetGamma                jeBitmap_GetGamma
+#define grBitmap_IsValid                 jeBitmap_IsValid
+#define grBitmap_Palette_Create          jeBitmap_Palette_Create
+#define grBitmap_Palette_CreateFromFile  jeBitmap_Palette_CreateFromFile
+#define grBitmap_Palette_Destroy         jeBitmap_Palette_Destroy
+#define grBitmap_Palette_CreateRef       jeBitmap_Palette_CreateRef
+#define grBitmap_Palette_LockForRead     jeBitmap_Palette_LockForRead
+#define grBitmap_Palette_LockForWrite    jeBitmap_Palette_LockForWrite
+#define grBitmap_Palette_UnLock          jeBitmap_Palette_UnLock
+#define grBitmap_Palette_GetData         jeBitmap_Palette_GetData
+#define grBitmap_Palette_SetData         jeBitmap_Palette_SetData
+#define grBitmap_Palette_IsValid         jeBitmap_Palette_IsValid
 
 #endif
