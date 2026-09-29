@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Genesis3D: Reborn - shared build settings.
+  MSBuild imports this file automatically for every project below this folder.
+-->
+<Project>
+  <PropertyGroup>
+    <!-- Repository root, with trailing backslash. Project files reference everything outside
+         their own folder through this property instead of ..\..\ chains. -->
+    <G3DRoot>$(MSBuildThisFileDirectory)</G3DRoot>
+    <G3DInclude>$(G3DRoot)Engine\Include\</G3DInclude>
+    <G3DBin>$(G3DRoot)bin\</G3DBin>
+    <G3DLib>$(G3DRoot)lib\</G3DLib>
+  </PropertyGroup>
+</Project>
