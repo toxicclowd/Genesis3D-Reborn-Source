@@ -39,9 +39,9 @@
  *
  */
 
-#define RamCalloc(size)			jeRam_AllocateClear(size)
-#define RamFree(mem)			jeRam_Free(mem)
-#define RamRealloc(mem,size)	jeRam_Realloc(mem,size)
+#define RamCalloc(size)			grRam_AllocateClear(size)
+#define RamFree(mem)			grRam_Free(mem)
+#define RamRealloc(mem,size)	grRam_Realloc(mem,size)
 
 #ifndef memclear
 #define memclear(mem,size)	memset(mem,0,size);
@@ -87,7 +87,7 @@ static int MemBlock_IsValid(MemBlock *mb)
 			return 0;
 	}
 
-	assert( jeRam_IsValidPtr(mb->MemBase) );
+	assert( grRam_IsValidPtr(mb->MemBase) );
 
 	if ( mb->MemFree < 0 || mb->MemFree > mb->MemLength )
 		return 0;

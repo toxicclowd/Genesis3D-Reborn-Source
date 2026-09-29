@@ -42,34 +42,34 @@ FILE						*errorlog = NULL;
 
 typedef struct
 {
-	jeErrorLog_ErrorIDEnumType ErrorID;
+	grErrorLog_ErrorIDEnumType ErrorID;
 	char String[MAX_USER_NAME_LEN+1];
 	char Context[MAX_CONTEXT_LEN+1];
-} jeErrorType;
+} grErrorType;
 
 typedef struct
 {
 	int ErrorCount;
 	int MaxErrors;
-	jeErrorType ErrorList[MAX_ERRORS];
-} jeErrorLogType;
+	grErrorType ErrorList[MAX_ERRORS];
+} grErrorLogType;
 
-jeErrorLogType jeErrorLog_Locals = {0,MAX_ERRORS};
+grErrorLogType grErrorLog_Locals = {0,MAX_ERRORS};
 
-JETAPI void JETCC jeErrorLog_Clear(void)
+GRAPI void GRCC grErrorLog_Clear(void)
 	// clears error history
 {
-	jeErrorLog_Locals.ErrorCount = 0;
+	grErrorLog_Locals.ErrorCount = 0;
 }
 	
-JETAPI int  JETCC jeErrorLog_Count(void)
+GRAPI int  GRCC grErrorLog_Count(void)
 	// reports size of current error log
 {
-	return 	jeErrorLog_Locals.ErrorCount;
+	return 	grErrorLog_Locals.ErrorCount;
 }
 
 
-JETAPI void JETCC jeErrorLog_AddExplicit(jeErrorLog_ErrorClassType Error, 
+GRAPI void GRCC grErrorLog_AddExplicit(grErrorLog_ErrorClassType Error, 
 	const char *ErrorIDString,
 	const char *ErrorFileString,
 	int LineNumber,
@@ -79,21 +79,21 @@ JETAPI void JETCC jeErrorLog_AddExplicit(jeErrorLog_ErrorClassType Error,
 	char	*SDst;
 	char	*CDst;
 	
-	assert( jeErrorLog_Locals.ErrorCount >= 0 );
+	assert( grErrorLog_Locals.ErrorCount >= 0 );
 
-	jeErrorLog_Locals.ErrorList[jeErrorLog_Locals.ErrorCount].ErrorID = (jeErrorLog_ErrorIDEnumType)Error;
-	if (jeErrorLog_Locals.ErrorCount>=MAX_ERRORS)
+	grErrorLog_Locals.ErrorList[grErrorLog_Locals.ErrorCount].ErrorID = (grErrorLog_ErrorIDEnumType)Error;
+	if (grErrorLog_Locals.ErrorCount>=MAX_ERRORS)
 	{	// scoot list down by one (loose oldest error)
 		memmove(
-			(char *)(&( jeErrorLog_Locals.ErrorList[0] )),
-			(char *)(&( jeErrorLog_Locals.ErrorList[1] )),
-			sizeof(jeErrorType) * (jeErrorLog_Locals.MaxErrors-1) );
-		jeErrorLog_Locals.ErrorCount = jeErrorLog_Locals.MaxErrors-1;
+			(char *)(&( grErrorLog_Locals.ErrorList[0] )),
+			(char *)(&( grErrorLog_Locals.ErrorList[1] )),
+			sizeof(grErrorType) * (grErrorLog_Locals.MaxErrors-1) );
+		grErrorLog_Locals.ErrorCount = grErrorLog_Locals.MaxErrors-1;
 	}
 
-	assert( jeErrorLog_Locals.ErrorCount < jeErrorLog_Locals.MaxErrors );
+	assert( grErrorLog_Locals.ErrorCount < grErrorLog_Locals.MaxErrors );
 
-	SDst = jeErrorLog_Locals.ErrorList[jeErrorLog_Locals.ErrorCount].String;
+	SDst = grErrorLog_Locals.ErrorList[grErrorLog_Locals.ErrorCount].String;
 
 	// Copy new error info
 	if (ErrorIDString != NULL)
@@ -129,7 +129,7 @@ JETAPI void JETCC jeErrorLog_AddExplicit(jeErrorLog_ErrorClassType Error,
 				}
 		}
 
-	CDst = jeErrorLog_Locals.ErrorList[jeErrorLog_Locals.ErrorCount].Context;
+	CDst = grErrorLog_Locals.ErrorList[grErrorLog_Locals.ErrorCount].Context;
 
 	// Clear the context string in the errorlog to prepare for a new one
 	memset(CDst, 0, sizeof(char)*MAX_CONTEXT_LEN);
@@ -143,7 +143,7 @@ JETAPI void JETCC jeErrorLog_AddExplicit(jeErrorLog_ErrorClassType Error,
 		}
 	}	
 
-	if (Error == JE_ERR_WINDOWS_API_FAILURE) 
+	if (Error == GR_ERR_WINDOWS_API_FAILURE) 
 	{
 		int     LastError;
 		char	*Buff;
@@ -174,7 +174,7 @@ JETAPI void JETCC jeErrorLog_AddExplicit(jeErrorLog_ErrorClassType Error,
 		#endif
 	}
 
-	jeErrorLog_Locals.ErrorCount++;
+	grErrorLog_Locals.ErrorCount++;
 
 //	#ifndef NDEBUG
 	{
@@ -198,45 +198,45 @@ JETAPI void JETCC jeErrorLog_AddExplicit(jeErrorLog_ErrorClassType Error,
 
 
 
-JETAPI jeBoolean JETCC jeErrorLog_AppendStringToLastError(const char *String)
+GRAPI grBoolean GRCC grErrorLog_AppendStringToLastError(const char *String)
 {
 	char *SDst;
 	if (String == NULL)
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
-	if (jeErrorLog_Locals.ErrorCount>0)
+	if (grErrorLog_Locals.ErrorCount>0)
 		{
-			SDst = jeErrorLog_Locals.ErrorList[jeErrorLog_Locals.ErrorCount-1].String;
+			SDst = grErrorLog_Locals.ErrorList[grErrorLog_Locals.ErrorCount-1].String;
 
 			strncat(SDst,String,MAX_USER_NAME_LEN);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	else
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 }
 
-JETAPI jeBoolean JETCC jeErrorLog_Report(int history, jeErrorLog_ErrorClassType *error, const char **UserString, const char **Context)
+GRAPI grBoolean GRCC grErrorLog_Report(int history, grErrorLog_ErrorClassType *error, const char **UserString, const char **Context)
 {
 	assert( error != NULL );
 
-	if ( (history > jeErrorLog_Locals.ErrorCount) || (history < 0))
+	if ( (history > grErrorLog_Locals.ErrorCount) || (history < 0))
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	
 	
-	*error = (jeErrorLog_ErrorClassType)jeErrorLog_Locals.ErrorList[history].ErrorID;
-	*UserString = jeErrorLog_Locals.ErrorList[history].String;
-	*Context = jeErrorLog_Locals.ErrorList[history].Context;
-	return JE_TRUE;
+	*error = (grErrorLog_ErrorClassType)grErrorLog_Locals.ErrorList[history].ErrorID;
+	*UserString = grErrorLog_Locals.ErrorList[history].String;
+	*Context = grErrorLog_Locals.ErrorList[history].Context;
+	return GR_TRUE;
 }
 
 
-JETAPI const char * JETCC jeErrorLog_IntToString(int Number)
+GRAPI const char * GRCC grErrorLog_IntToString(int Number)
 {
 	static char String[50];
 	itoa(Number,String,10);

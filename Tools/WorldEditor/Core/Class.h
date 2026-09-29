@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 #include "defs.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 
 typedef struct tagClass Class ;
 
@@ -43,9 +43,9 @@ void			Class_Destroy( Class ** ppClass ) ;
 
 int				Class_GetClassKind( Class * pClass );
 
-jeProperty_List *	Class_BuildDescriptor( Class * pClass );
+grProperty_List *	Class_BuildDescriptor( Class * pClass );
 void
-				Class_SetProperty( Class * pClass, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bUpdate );
+				Class_SetProperty( Class * pClass, int DataId, int DataType, grProperty_Data * pData, grBoolean bUpdate );
 #ifdef __cplusplus
 }
 #endif

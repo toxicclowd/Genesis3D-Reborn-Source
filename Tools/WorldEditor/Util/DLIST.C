@@ -30,7 +30,7 @@ static DList_NodeP DList_InitArray( int32 itemN, int32 dataSize )
 	DList_NodeP NodeArray, Node;
 	int i;
 
-	NodeArray = (DList_NodeP)jeRam_Allocate( itemN * (sizeof( DList_NodeS)+dataSize ) );
+	NodeArray = (DList_NodeP)grRam_Allocate( itemN * (sizeof( DList_NodeS)+dataSize ) );
 	if( NodeArray == NULL )
 		return( NULL );
 	Node = NodeArray;
@@ -48,7 +48,7 @@ DListP DList_Create( int32 itemN, int32 dataSize )
 {
 	DListP DList;
 
-	DList = (DListP)jeRam_Allocate( sizeof( DListS ) );
+	DList = (DListP)grRam_Allocate( sizeof( DListS ) );
 	if( DList == NULL )
 		return( NULL );
 	DList->Head = NULL;
@@ -87,7 +87,7 @@ static DList_NodeP DList_NewNode( DListP List )
 	}
 	else
 	{
-		Node = (DList_NodeP)jeRam_Allocate( sizeof( DList_NodeS)+List->DataSize );
+		Node = (DList_NodeP)grRam_Allocate( sizeof( DList_NodeS)+List->DataSize );
 		Node->Prev = NULL;
 		Node->Next = NULL;
 	}
@@ -108,13 +108,13 @@ static void DList_DestroyNode( DListP List, DList_NodeP Node, DList_DestroyCB Ca
 	}
 	else
 	{
-		jeRam_Free( Node );
+		grRam_Free( Node );
 	}
 	List->NodeN--;
 
 }
 
-jeBoolean DList_PreInsert( DListP List, DList_NodeHandle NodeH, void* Data )
+grBoolean DList_PreInsert( DListP List, DList_NodeHandle NodeH, void* Data )
 {
 	DList_NodeP Node, NewNode;
 
@@ -134,7 +134,7 @@ jeBoolean DList_PreInsert( DListP List, DList_NodeHandle NodeH, void* Data )
 	}
 	NewNode = DList_NewNode( List );
 	if( NewNode == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	
 	memcpy( NewNode->Data, Data, List->DataSize );
 	// the  List is empty.
@@ -143,7 +143,7 @@ jeBoolean DList_PreInsert( DListP List, DList_NodeHandle NodeH, void* Data )
 	{
 		List->Head = NewNode;
 		List->Tail = NewNode;
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
 	// we are preinserting before the header
 	// make the new node the head.
@@ -152,17 +152,17 @@ jeBoolean DList_PreInsert( DListP List, DList_NodeHandle NodeH, void* Data )
 		List->Head = NewNode;
 		Node->Prev = NewNode;
 		NewNode->Next = Node;
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
 
 	Node->Prev->Next = NewNode;
 	NewNode->Prev = Node->Prev;
 	Node->Prev = NewNode;
 	NewNode->Next = Node;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean DList_Insert( DListP List, DList_NodeHandle NodeH, void* Data )
+grBoolean DList_Insert( DListP List, DList_NodeHandle NodeH, void* Data )
 {
 	DList_NodeP Node, NewNode;
 
@@ -182,7 +182,7 @@ jeBoolean DList_Insert( DListP List, DList_NodeHandle NodeH, void* Data )
 	}
 	NewNode = DList_NewNode( List );
 	if( NewNode == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	
 	memcpy( NewNode->Data, Data, List->DataSize );
 	// the  List is empty.
@@ -191,7 +191,7 @@ jeBoolean DList_Insert( DListP List, DList_NodeHandle NodeH, void* Data )
 	{
 		List->Head = NewNode;
 		List->Tail = NewNode;
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
 	// we are inserting after the tail
 	// make the new node the tail.
@@ -200,17 +200,17 @@ jeBoolean DList_Insert( DListP List, DList_NodeHandle NodeH, void* Data )
 		List->Tail = NewNode;
 		Node->Next = NewNode;
 		NewNode->Prev = Node;
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
 
 	Node->Next->Prev = NewNode;
 	NewNode->Next = Node->Next;
 	Node->Next = NewNode;
 	NewNode->Prev = Node;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean DList_Get( DListP List, DList_NodeHandle *NodeH, void* Data )
+grBoolean DList_Get( DListP List, DList_NodeHandle *NodeH, void* Data )
 {
 	DList_NodeP Node;
 
@@ -230,14 +230,14 @@ jeBoolean DList_Get( DListP List, DList_NodeHandle *NodeH, void* Data )
 	}
 	*NodeH = (DList_NodeHandle)Node;
 	if( Node == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 	
 	if( Data )
 		memcpy( Data, Node->Data, List->DataSize );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean DList_Set( DListP List, DList_NodeHandle *NodeH, void* Data )
+grBoolean DList_Set( DListP List, DList_NodeHandle *NodeH, void* Data )
 {
 	DList_NodeP Node;
 
@@ -257,15 +257,15 @@ jeBoolean DList_Set( DListP List, DList_NodeHandle *NodeH, void* Data )
 	}
 	*NodeH = (DList_NodeHandle)Node;
 	if( Node == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 	
 	if( Data )
 		memcpy( Node->Data, Data, List->DataSize );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-jeBoolean DList_GetNext( DListP List, DList_NodeHandle* NodeH, void* Data )
+grBoolean DList_GetNext( DListP List, DList_NodeHandle* NodeH, void* Data )
 {
 	DList_NodeP Node;
 
@@ -278,7 +278,7 @@ jeBoolean DList_GetNext( DListP List, DList_NodeHandle* NodeH, void* Data )
 		break;
 
 	case DLIST_TAIL:
-		return( JE_FALSE );
+		return( GR_FALSE );
 
 	case 0:
 		Node = List->Head;
@@ -292,14 +292,14 @@ jeBoolean DList_GetNext( DListP List, DList_NodeHandle* NodeH, void* Data )
 	}
 	*NodeH = (DList_NodeHandle)Node;
 	if( Node == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	
 	if( Data )
 		memcpy( Data, Node->Data, List->DataSize );
-	return(JE_TRUE );
+	return(GR_TRUE );
 }
 
-jeBoolean DList_GetPrev( DListP List, DList_NodeHandle* NodeH, void* Data )
+grBoolean DList_GetPrev( DListP List, DList_NodeHandle* NodeH, void* Data )
 {
 	DList_NodeP Node;
 
@@ -312,7 +312,7 @@ jeBoolean DList_GetPrev( DListP List, DList_NodeHandle* NodeH, void* Data )
 		break;
 
 	case DLIST_TAIL:
-		return( JE_FALSE );
+		return( GR_FALSE );
 
 	case 0:
 		Node = List->Tail;
@@ -325,14 +325,14 @@ jeBoolean DList_GetPrev( DListP List, DList_NodeHandle* NodeH, void* Data )
 		break;
 	}
 	if( Node == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	
 	memcpy( Data, Node->Data, List->DataSize );
 	*NodeH = (DList_NodeHandle)Node;
-	return(JE_TRUE );
+	return(GR_TRUE );
 }
 
-jeBoolean DList_Unlink( DListP List, DList_NodeHandle NodeH, void* Data, DList_DestroyCB Callback, void * Context)
+grBoolean DList_Unlink( DListP List, DList_NodeHandle NodeH, void* Data, DList_DestroyCB Callback, void * Context)
 {
 	DList_NodeP Node;
 
@@ -353,7 +353,7 @@ jeBoolean DList_Unlink( DListP List, DList_NodeHandle NodeH, void* Data, DList_D
 		break;
 	}
 	if( !Node )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	if( Data )
 		memcpy( Data, Node->Data, List->DataSize );
 	if( Node == List->Head )
@@ -378,10 +378,10 @@ jeBoolean DList_Unlink( DListP List, DList_NodeHandle NodeH, void* Data, DList_D
 	}
 	DList_DestroyNode( List, Node, Callback, Context );
 
-	return(JE_TRUE );
+	return(GR_TRUE );
 }
 
-jeBoolean DList_Search( DListP List, DList_NodeHandle* NodeH, void* Data, DList_SearchCB CallBack )
+grBoolean DList_Search( DListP List, DList_NodeHandle* NodeH, void* Data, DList_SearchCB CallBack )
 {
 	DList_NodeP Node;
 
@@ -409,8 +409,8 @@ void DList_Destroy( DListP *List, DList_DestroyCB CallBack, void* Context )
 		DList_Unlink( *List, DLIST_HEAD, NULL, CallBack, Context );
 	}
 	if( (*List)->NodeArray )
-		jeRam_Free( (*List)->NodeArray  );
-	jeRam_Free( *List );
+		grRam_Free( (*List)->NodeArray  );
+	grRam_Free( *List );
 }
 
 

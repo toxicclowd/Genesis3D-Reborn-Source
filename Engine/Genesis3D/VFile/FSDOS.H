@@ -21,6 +21,6 @@
 #ifndef	FSDOS_H
 #define	FSDOS_H
 
-const	jeVFile_SystemAPIs *JETCC FSDos_GetAPIs(void);
+const	grVFile_SystemAPIs *GRCC FSDos_GetAPIs(void);
 
 #endif

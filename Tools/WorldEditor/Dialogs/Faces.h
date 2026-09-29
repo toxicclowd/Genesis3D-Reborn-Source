@@ -84,8 +84,8 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
-	jeFloat Increment( jeFloat fCur, jeFloat fMin, jeFloat fMax, jeFloat fInc, jeBoolean bDown );
-	void FillFields( jeFaceInfo * pFaceInfo, int32 BlankFieldFlag );
+	grFloat Increment( grFloat fCur, grFloat fMin, grFloat fMax, grFloat fInc, grBoolean bDown );
+	void FillFields( grFaceInfo * pFaceInfo, int32 BlankFieldFlag );
 };
 
 //{{AFX_INSERT_LOCATION}}

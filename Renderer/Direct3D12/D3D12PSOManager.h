@@ -35,20 +35,20 @@ public:
 	~D3D12PSOManager();
 
 	// Initialize PSO manager
-	jeBoolean Initialize();
+	grBoolean Initialize();
 	void Shutdown();
 
 	// Get a PSO by type
-	ID3D12PipelineState* GetPSO(D3D12_PSO_TYPE type, uint32 flags, jeBoolean sceneWireframe);
+	ID3D12PipelineState* GetPSO(D3D12_PSO_TYPE type, uint32 flags, grBoolean sceneWireframe);
 	ID3D12RootSignature* GetRootSignature();
 
 private:
 	// Create all PSOs
-	jeBoolean CreateRootSignature();
-	jeBoolean CreatePSO(D3D12_PSO_TYPE type, uint32 stateIndex);
+	grBoolean CreateRootSignature();
+	grBoolean CreatePSO(D3D12_PSO_TYPE type, uint32 stateIndex);
 
 	// Compile shaders
-	jeBoolean CompileShaders();
+	grBoolean CompileShaders();
 	ComPtr<ID3DBlob> CompileShader(const char* shaderCode, const char* entryPoint, const char* target);
 
 	// Root signature and PSOs

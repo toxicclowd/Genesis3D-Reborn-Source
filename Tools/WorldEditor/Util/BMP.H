@@ -33,9 +33,9 @@ extern "C" {
 #pragma warning(default : 4201 4214 4115; disable : 4514)
 
 #include "bitmap.h"
-#include "jeMaterial.h"
+#include "grMaterial.h"
 
-HBITMAP		CreateHBitmapFromgeBitmap (jeBitmap *Bitmap, HDC hdc);
+HBITMAP		CreateHBitmapFromgeBitmap (grBitmap *Bitmap, HDC hdc);
 HBITMAP		Bmp_CreateEmpty24BitDIB( HDC hDC, int32 nWidth, int32 nHeight, void * pBits ) ;
 
 // helper function prototypes
@@ -55,7 +55,7 @@ void EnlargeDataInt(BYTE *pInBuff,
                            WORD wNewWidth, 
                            WORD wNewHeight);
 
-jeBoolean CreateThumbnails(jeBitmap* pBmps, jeMaterialSpec_Thumbnail* pThumb);
+grBoolean CreateThumbnails(grBitmap* pBmps, grMaterialSpec_Thumbnail* pThumb);
 
 #ifdef __cplusplus
 }

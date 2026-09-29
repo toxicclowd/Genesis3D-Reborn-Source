@@ -23,7 +23,7 @@
 #ifndef ENTITYLIST_H
 #define ENTITYLIST_H
 
-#include "jeList.h"
+#include "grList.h"
 #include "Symbol.h"
 #include "Entity.h"
 
@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-typedef jeBoolean (*EntityListCB)( Entity * pEntity, void * pVoid ) ;
+typedef grBoolean (*EntityListCB)( Entity * pEntity, void * pVoid ) ;
 
 typedef List EntityList ;
 typedef ListIterator EntityIterator ;
@@ -53,9 +53,9 @@ int32			EntityList_Enum( EntityList * pList, void * pVoid, EntityListCB Callback
 
 // FILE HANDLING
 
-EntityList *	EntityList_CreateFromFile( jeVFile * pF, jeSymbol_Table * pEntities ) ;
-jeBoolean		EntityList_WriteToFile( EntityList * pList, jeVFile * pF ) ;
-jeBoolean		EntityList_Reattach( EntityList * pList ) ;
+EntityList *	EntityList_CreateFromFile( grVFile * pF, grSymbol_Table * pEntities ) ;
+grBoolean		EntityList_WriteToFile( EntityList * pList, grVFile * pF ) ;
+grBoolean		EntityList_Reattach( EntityList * pList ) ;
 
 #ifdef __cplusplus
 }

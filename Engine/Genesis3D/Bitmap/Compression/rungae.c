@@ -38,7 +38,7 @@ RUNGFUNC_PREFIX void ARITHCC rungModelInit(rung_t * rung)
 	*rung = ladder_start;
 }
 
-RUNGFUNC_PREFIX void ARITHCC rungModelEncBit(arithInfo * ari,jeBoolean bit,rung_t * rung)
+RUNGFUNC_PREFIX void ARITHCC rungModelEncBit(arithInfo * ari,grBoolean bit,rung_t * rung)
 {
 uint32 code,range;
 
@@ -114,9 +114,9 @@ ari->range = range;
 
 /*}{**********************************************************************************/
 
-RUNGFUNC_PREFIX jeBoolean ARITHCC rungModelDecBit(arithInfo * ari,rung_t * rung)
+RUNGFUNC_PREFIX grBoolean ARITHCC rungModelDecBit(arithInfo * ari,rung_t * rung)
 {
-jeBoolean bit;
+grBoolean bit;
 uint32 range,code;
 
 	range = ari->range;

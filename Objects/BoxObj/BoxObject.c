@@ -32,10 +32,10 @@
 #include <assert.h>
 
 #include "BoxObject.h"
-#include "jeTypes.h"
-#include "jeProperty.h"
-#include "jeUserPoly.h"
-#include "Jet.h"
+#include "grTypes.h"
+#include "grProperty.h"
+#include "grUserPoly.h"
+#include "Genesis3D.h"
 #include "Ram.h"
 #include "Bitmap.h"
 #include "VFile.h"
@@ -52,12 +52,12 @@ enum {
 	BOXOBJ_NAMLIST_ID
 };
 
-jeBrush *	pBrush;
+grBrush *	pBrush;
 
 typedef struct BoxObj {
-	jeUserPoly	*Faces[6];
-	jeLVertex	Vertex[8];
-	jeXForm3d	XForm;
+	grUserPoly	*Faces[6];
+	grLVertex	Vertex[8];
+	grXForm3d	XForm;
 	float		Size;
 	int			RefCnt;
 } BoxObj;
@@ -67,8 +67,8 @@ enum {
 	BOX_LAST_INDEX
 };
 
-jeProperty BoxProperties[BOX_LAST_INDEX];
-jeProperty_List BoxPropertyList = { 1, &BoxProperties[0] };
+grProperty BoxProperties[BOX_LAST_INDEX];
+grProperty_List BoxPropertyList = { 1, &BoxProperties[0] };
 
 char *NameList[3];
 
@@ -78,140 +78,140 @@ static char stringbuffer[UTIL_MAX_RESOURCE_LENGTH + 1];
 #define DEFAULT_SIZE 16.0f
 
 
-static jeBoolean CreateGlobalBrush()
+static grBoolean CreateGlobalBrush()
 {
-	pBrush = jeBrush_Create( 8 );
+	pBrush = grBrush_Create( 8 );
 	if( pBrush )
 	{
-		if( !jeBrush_CreateFace( pBrush, 4 ) )
+		if( !grBrush_CreateFace( pBrush, 4 ) )
 			goto CGB_ERROR;
-		if( !jeBrush_CreateFace( pBrush, 4 ) )
+		if( !grBrush_CreateFace( pBrush, 4 ) )
 			goto CGB_ERROR;
-		if( !jeBrush_CreateFace( pBrush, 4 ) )
+		if( !grBrush_CreateFace( pBrush, 4 ) )
 			goto CGB_ERROR;
-		if( !jeBrush_CreateFace( pBrush, 4 ) )
+		if( !grBrush_CreateFace( pBrush, 4 ) )
 			goto CGB_ERROR;
-		if( !jeBrush_CreateFace( pBrush, 4 ) )
+		if( !grBrush_CreateFace( pBrush, 4 ) )
 			goto CGB_ERROR;
-		if( !jeBrush_CreateFace( pBrush, 4 ) )
+		if( !grBrush_CreateFace( pBrush, 4 ) )
 			goto CGB_ERROR;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 CGB_ERROR:
-	jeBrush_Destroy( &pBrush );
+	grBrush_Destroy( &pBrush );
 	pBrush = NULL;
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
-static jeBoolean UpdateGlobalBrush( BoxObj *pBoxObject )
+static grBoolean UpdateGlobalBrush( BoxObj *pBoxObject )
 {
-	jeBrush_Face *pFace;
-	jeVec3d		  Vertex;
+	grBrush_Face *pFace;
+	grVec3d		  Vertex;
 
-	pFace = jeBrush_GetNextFace( pBrush, NULL );
+	pFace = grBrush_GetNextFace( pBrush, NULL );
 	if( pFace == NULL )
-		return(JE_FALSE );
+		return(GR_FALSE );
 
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[3].X, pBoxObject->Vertex[3].Y, pBoxObject->Vertex[3].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[2].X, pBoxObject->Vertex[2].Y, pBoxObject->Vertex[2].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[1].X, pBoxObject->Vertex[1].Y, pBoxObject->Vertex[1].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[0].X, pBoxObject->Vertex[0].Y, pBoxObject->Vertex[0].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[3].X, pBoxObject->Vertex[3].Y, pBoxObject->Vertex[3].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[2].X, pBoxObject->Vertex[2].Y, pBoxObject->Vertex[2].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[1].X, pBoxObject->Vertex[1].Y, pBoxObject->Vertex[1].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[0].X, pBoxObject->Vertex[0].Y, pBoxObject->Vertex[0].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
 
-	pFace = jeBrush_GetNextFace( pBrush, pFace );
+	pFace = grBrush_GetNextFace( pBrush, pFace );
 	if( pFace == NULL )
-		return(JE_FALSE );
+		return(GR_FALSE );
 
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[0].X, pBoxObject->Vertex[0].Y, pBoxObject->Vertex[0].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[1].X, pBoxObject->Vertex[1].Y, pBoxObject->Vertex[1].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[5].X, pBoxObject->Vertex[5].Y, pBoxObject->Vertex[5].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[4].X, pBoxObject->Vertex[4].Y, pBoxObject->Vertex[4].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[0].X, pBoxObject->Vertex[0].Y, pBoxObject->Vertex[0].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[1].X, pBoxObject->Vertex[1].Y, pBoxObject->Vertex[1].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[5].X, pBoxObject->Vertex[5].Y, pBoxObject->Vertex[5].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[4].X, pBoxObject->Vertex[4].Y, pBoxObject->Vertex[4].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
 
-	pFace = jeBrush_GetNextFace( pBrush, pFace );
+	pFace = grBrush_GetNextFace( pBrush, pFace );
 	if( pFace == NULL )
-		return(JE_FALSE );
+		return(GR_FALSE );
 
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[1].X, pBoxObject->Vertex[1].Y, pBoxObject->Vertex[1].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[2].X, pBoxObject->Vertex[2].Y, pBoxObject->Vertex[2].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[6].X, pBoxObject->Vertex[6].Y, pBoxObject->Vertex[6].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[5].X, pBoxObject->Vertex[5].Y, pBoxObject->Vertex[5].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[1].X, pBoxObject->Vertex[1].Y, pBoxObject->Vertex[1].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[2].X, pBoxObject->Vertex[2].Y, pBoxObject->Vertex[2].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[6].X, pBoxObject->Vertex[6].Y, pBoxObject->Vertex[6].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[5].X, pBoxObject->Vertex[5].Y, pBoxObject->Vertex[5].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
 
-	pFace = jeBrush_GetNextFace( pBrush, pFace );
+	pFace = grBrush_GetNextFace( pBrush, pFace );
 	if( pFace == NULL )
-		return(JE_FALSE );
+		return(GR_FALSE );
 
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[2].X, pBoxObject->Vertex[2].Y, pBoxObject->Vertex[2].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[3].X, pBoxObject->Vertex[3].Y, pBoxObject->Vertex[3].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[7].X, pBoxObject->Vertex[7].Y, pBoxObject->Vertex[7].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[6].X, pBoxObject->Vertex[6].Y, pBoxObject->Vertex[6].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[2].X, pBoxObject->Vertex[2].Y, pBoxObject->Vertex[2].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[3].X, pBoxObject->Vertex[3].Y, pBoxObject->Vertex[3].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[7].X, pBoxObject->Vertex[7].Y, pBoxObject->Vertex[7].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[6].X, pBoxObject->Vertex[6].Y, pBoxObject->Vertex[6].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
 
-	pFace = jeBrush_GetNextFace( pBrush, pFace );
+	pFace = grBrush_GetNextFace( pBrush, pFace );
 	if( pFace == NULL )
-		return(JE_FALSE );
+		return(GR_FALSE );
 
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[3].X, pBoxObject->Vertex[3].Y, pBoxObject->Vertex[3].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[0].X, pBoxObject->Vertex[0].Y, pBoxObject->Vertex[0].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[4].X, pBoxObject->Vertex[4].Y, pBoxObject->Vertex[4].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[7].X, pBoxObject->Vertex[7].Y, pBoxObject->Vertex[7].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[3].X, pBoxObject->Vertex[3].Y, pBoxObject->Vertex[3].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[0].X, pBoxObject->Vertex[0].Y, pBoxObject->Vertex[0].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[4].X, pBoxObject->Vertex[4].Y, pBoxObject->Vertex[4].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[7].X, pBoxObject->Vertex[7].Y, pBoxObject->Vertex[7].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
 
-	pFace = jeBrush_GetNextFace( pBrush, pFace );
+	pFace = grBrush_GetNextFace( pBrush, pFace );
 	if( pFace == NULL )
-		return(JE_FALSE );
+		return(GR_FALSE );
 
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[4].X, pBoxObject->Vertex[4].Y, pBoxObject->Vertex[4].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[5].X, pBoxObject->Vertex[5].Y, pBoxObject->Vertex[5].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[6].X, pBoxObject->Vertex[6].Y, pBoxObject->Vertex[6].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
-	jeVec3d_Set( &Vertex, pBoxObject->Vertex[7].X, pBoxObject->Vertex[7].Y, pBoxObject->Vertex[7].Z );
-	jeVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
-	jeBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[4].X, pBoxObject->Vertex[4].Y, pBoxObject->Vertex[4].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 0, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[5].X, pBoxObject->Vertex[5].Y, pBoxObject->Vertex[5].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 1, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[6].X, pBoxObject->Vertex[6].Y, pBoxObject->Vertex[6].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 2, &Vertex);
+	grVec3d_Set( &Vertex, pBoxObject->Vertex[7].X, pBoxObject->Vertex[7].Y, pBoxObject->Vertex[7].Z );
+	grVec3d_Scale( &Vertex, pBoxObject->Size, &Vertex );
+	grBrush_FaceSetVertByIndex( pFace, 3, &Vertex);
 
-	jeBrush_SetXForm( pBrush, &pBoxObject->XForm, JE_FALSE );
-	return( JE_TRUE );
+	grBrush_SetXForm( pBrush, &pBoxObject->XForm, GR_FALSE );
+	return( GR_TRUE );
 }
 
 #ifdef WIN32
@@ -240,15 +240,15 @@ static char * Util_LoadLibraryString(
 	Size = LoadString( hInstance, ID, StringBuf, MAX_STRING_SIZE );
 	if ( Size <= 0 )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// copy resource string
-	NewString = jeRam_Allocate( Size + 1 );
+	NewString = grRam_Allocate( Size + 1 );
 	if ( NewString == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 	strcpy( NewString, StringBuf );
@@ -299,7 +299,7 @@ static char *Util_LoadLibraryString(image_id libhinst, int32 resid)
 	//
  
 	// Allocate memory for the string
-	rcbuffer = (char*)jeRam_Allocate(strlen(loadedString) + 1);
+	rcbuffer = (char*)grRam_Allocate(strlen(loadedString) + 1);
 	strcpy(rcbuffer, loadedString);
  
 #ifndef NDEBUG
@@ -345,7 +345,7 @@ int Util_GetAppPath(
 } // Util_GetAppPath()
 #endif
 
-static jeBoolean BoxObject_InitBox( BoxObj * pBoxObj )
+static grBoolean BoxObject_InitBox( BoxObj * pBoxObj )
 {
 	int i;
 	assert( pBoxObj );
@@ -397,8 +397,8 @@ static jeBoolean BoxObject_InitBox( BoxObj * pBoxObj )
 	pBoxObj->Vertex[7].Z = 0.5f;
 
 
-	memset( pBoxObj->Faces, sizeof( jeUserPoly	*) * 6, 0 );
-	pBoxObj->Faces[0] = jeUserPoly_CreateQuad(	&pBoxObj->Vertex[3], 
+	memset( pBoxObj->Faces, sizeof( grUserPoly	*) * 6, 0 );
+	pBoxObj->Faces[0] = grUserPoly_CreateQuad(	&pBoxObj->Vertex[3], 
 												&pBoxObj->Vertex[2],
 												&pBoxObj->Vertex[1],
 												&pBoxObj->Vertex[0] ,
@@ -407,7 +407,7 @@ static jeBoolean BoxObject_InitBox( BoxObj * pBoxObj )
 	if( pBoxObj->Faces[0] == NULL )
 		goto INITBOX_ERR;
 
-	pBoxObj->Faces[1] = jeUserPoly_CreateQuad(	&pBoxObj->Vertex[0], 
+	pBoxObj->Faces[1] = grUserPoly_CreateQuad(	&pBoxObj->Vertex[0], 
 												&pBoxObj->Vertex[1],
 												&pBoxObj->Vertex[5],
 												&pBoxObj->Vertex[4] ,
@@ -416,7 +416,7 @@ static jeBoolean BoxObject_InitBox( BoxObj * pBoxObj )
 	if( pBoxObj->Faces[1] == NULL )
 		goto INITBOX_ERR;
 
-	pBoxObj->Faces[2] = jeUserPoly_CreateQuad(	&pBoxObj->Vertex[1], 
+	pBoxObj->Faces[2] = grUserPoly_CreateQuad(	&pBoxObj->Vertex[1], 
 												&pBoxObj->Vertex[2],
 												&pBoxObj->Vertex[6],
 												&pBoxObj->Vertex[5] ,
@@ -425,7 +425,7 @@ static jeBoolean BoxObject_InitBox( BoxObj * pBoxObj )
 	if( pBoxObj->Faces[2] == NULL )
 		goto INITBOX_ERR;
 
-	pBoxObj->Faces[3] = jeUserPoly_CreateQuad(	&pBoxObj->Vertex[2], 
+	pBoxObj->Faces[3] = grUserPoly_CreateQuad(	&pBoxObj->Vertex[2], 
 												&pBoxObj->Vertex[3],
 												&pBoxObj->Vertex[7],
 												&pBoxObj->Vertex[6] ,
@@ -434,7 +434,7 @@ static jeBoolean BoxObject_InitBox( BoxObj * pBoxObj )
 	if( pBoxObj->Faces[3] == NULL )
 		goto INITBOX_ERR;
 
-	pBoxObj->Faces[4] = jeUserPoly_CreateQuad(	&pBoxObj->Vertex[3], 
+	pBoxObj->Faces[4] = grUserPoly_CreateQuad(	&pBoxObj->Vertex[3], 
 												&pBoxObj->Vertex[0],
 												&pBoxObj->Vertex[4],
 												&pBoxObj->Vertex[7] ,
@@ -443,7 +443,7 @@ static jeBoolean BoxObject_InitBox( BoxObj * pBoxObj )
 	if( pBoxObj->Faces[4] == NULL )
 		goto INITBOX_ERR;
 
-	pBoxObj->Faces[5] = jeUserPoly_CreateQuad(	&pBoxObj->Vertex[4], 
+	pBoxObj->Faces[5] = grUserPoly_CreateQuad(	&pBoxObj->Vertex[4], 
 												&pBoxObj->Vertex[5],
 												&pBoxObj->Vertex[6],
 												&pBoxObj->Vertex[7] ,
@@ -452,18 +452,18 @@ static jeBoolean BoxObject_InitBox( BoxObj * pBoxObj )
 	if( pBoxObj->Faces[5] == NULL )
 		goto INITBOX_ERR;
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 INITBOX_ERR:
 	for( i = 0; i < 6; i++ )
 		if( pBoxObj->Faces[i] != NULL )
-			jeUserPoly_Destroy(&pBoxObj->Faces[i]);
-	return( JE_FALSE );
+			grUserPoly_Destroy(&pBoxObj->Faces[i]);
+	return( GR_FALSE );
 }				
 
-static void BoxObject_TransformVert( jeLVertex * pVertex, jeXForm3d * pXForm )
+static void BoxObject_TransformVert( grLVertex * pVertex, grXForm3d * pXForm )
 {
-	jeVec3d Point;
+	grVec3d Point;
 	assert( pVertex );
 	assert( pXForm );
 
@@ -473,21 +473,21 @@ static void BoxObject_TransformVert( jeLVertex * pVertex, jeXForm3d * pXForm )
 	Point.Y = pVertex->Y;
 	Point.Z = pVertex->Z;
 
-	jeXForm3d_Transform( pXForm, &Point, &Point );
+	grXForm3d_Transform( pXForm, &Point, &Point );
 
 	pVertex->X = Point.X;
 	pVertex->Y = Point.Y;
 	pVertex->Z = Point.Z;
 }
 
-static jeBoolean BoxObject_UpdateFaces( BoxObj * pBoxObj )
+static grBoolean BoxObject_UpdateFaces( BoxObj * pBoxObj )
 {
 
-	jeLVertex	Vertex[4];
-	jeXForm3d	ScaleXForm;
+	grLVertex	Vertex[4];
+	grXForm3d	ScaleXForm;
 
-	jeXForm3d_SetIdentity(&ScaleXForm);
-	jeXForm3d_Scale(&ScaleXForm, pBoxObj->Size, pBoxObj->Size, pBoxObj->Size);
+	grXForm3d_SetIdentity(&ScaleXForm);
+	grXForm3d_Scale(&ScaleXForm, pBoxObj->Size, pBoxObj->Size, pBoxObj->Size);
 
 	Vertex[0] = pBoxObj->Vertex[3];
 	BoxObject_TransformVert( &Vertex[0], &ScaleXForm );
@@ -502,14 +502,14 @@ static jeBoolean BoxObject_UpdateFaces( BoxObj * pBoxObj )
 	BoxObject_TransformVert( &Vertex[3], &ScaleXForm );
 	BoxObject_TransformVert( &Vertex[3], &pBoxObj->XForm );
 
-	 if( !jeUserPoly_UpdateQuad(				pBoxObj->Faces[0],	
+	 if( !grUserPoly_UpdateQuad(				pBoxObj->Faces[0],	
 												&Vertex[0], 
 												&Vertex[1],
 												&Vertex[2],
 												&Vertex[3] ,
 												NULL ) )
 	 {
-		 return( JE_FALSE );
+		 return( GR_FALSE );
 	 }
 
 	Vertex[0] = pBoxObj->Vertex[0];
@@ -525,14 +525,14 @@ static jeBoolean BoxObject_UpdateFaces( BoxObj * pBoxObj )
 	BoxObject_TransformVert( &Vertex[3], &ScaleXForm );
 	BoxObject_TransformVert( &Vertex[3], &pBoxObj->XForm );
 
-	 if( !jeUserPoly_UpdateQuad(				pBoxObj->Faces[1],	
+	 if( !grUserPoly_UpdateQuad(				pBoxObj->Faces[1],	
 												&Vertex[0], 
 												&Vertex[1],
 												&Vertex[2],
 												&Vertex[3] ,
 												NULL ) )
 	 {
-		 return( JE_FALSE );
+		 return( GR_FALSE );
 	 }
 
 	Vertex[0] = pBoxObj->Vertex[1];
@@ -548,14 +548,14 @@ static jeBoolean BoxObject_UpdateFaces( BoxObj * pBoxObj )
 	BoxObject_TransformVert( &Vertex[3], &ScaleXForm );
 	BoxObject_TransformVert( &Vertex[3], &pBoxObj->XForm );
 
-	 if( !jeUserPoly_UpdateQuad(				pBoxObj->Faces[2],	
+	 if( !grUserPoly_UpdateQuad(				pBoxObj->Faces[2],	
 												&Vertex[0], 
 												&Vertex[1],
 												&Vertex[2],
 												&Vertex[3] ,
 												NULL ) )
 	 {
-		 return( JE_FALSE );
+		 return( GR_FALSE );
 	 }
 
 	Vertex[0] = pBoxObj->Vertex[2];
@@ -571,14 +571,14 @@ static jeBoolean BoxObject_UpdateFaces( BoxObj * pBoxObj )
 	BoxObject_TransformVert( &Vertex[3], &ScaleXForm );
 	BoxObject_TransformVert( &Vertex[3], &pBoxObj->XForm );
 
-	 if( !jeUserPoly_UpdateQuad(				pBoxObj->Faces[3],	
+	 if( !grUserPoly_UpdateQuad(				pBoxObj->Faces[3],	
 												&Vertex[0], 
 												&Vertex[1],
 												&Vertex[2],
 												&Vertex[3] ,
 												NULL ) )
 	 {
-		 return( JE_FALSE );
+		 return( GR_FALSE );
 	 }
 
 	Vertex[0] = pBoxObj->Vertex[3];
@@ -594,14 +594,14 @@ static jeBoolean BoxObject_UpdateFaces( BoxObj * pBoxObj )
 	BoxObject_TransformVert( &Vertex[3], &ScaleXForm );
 	BoxObject_TransformVert( &Vertex[3], &pBoxObj->XForm );
 
-	 if( !jeUserPoly_UpdateQuad(				pBoxObj->Faces[4],
+	 if( !grUserPoly_UpdateQuad(				pBoxObj->Faces[4],
 												&Vertex[0], 
 												&Vertex[1],
 												&Vertex[2],
 												&Vertex[3] ,
 												NULL ) )
 	 {
-		 return( JE_FALSE );
+		 return( GR_FALSE );
 	 }
 
 	Vertex[0] = pBoxObj->Vertex[4];
@@ -617,17 +617,17 @@ static jeBoolean BoxObject_UpdateFaces( BoxObj * pBoxObj )
 	BoxObject_TransformVert( &Vertex[3], &ScaleXForm );
 	BoxObject_TransformVert( &Vertex[3], &pBoxObj->XForm );
 
-	 if( !jeUserPoly_UpdateQuad(				pBoxObj->Faces[5],	
+	 if( !grUserPoly_UpdateQuad(				pBoxObj->Faces[5],	
 												&Vertex[0], 
 												&Vertex[1],
 												&Vertex[2],
 												&Vertex[3] ,
 												NULL ) )
 	 {
-		 return( JE_FALSE );
+		 return( GR_FALSE );
 	 }
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 }				
 
@@ -639,7 +639,7 @@ void Init_Class( image_id hInstance )
 #endif
 {
 	BoxProperties[BOX_SIZE_INDEX].Type = PROPERTY_FLOAT_TYPE;
-	BoxProperties[BOX_SIZE_INDEX].bDisabled = JE_FALSE;
+	BoxProperties[BOX_SIZE_INDEX].bDisabled = GR_FALSE;
 	BoxProperties[BOX_SIZE_INDEX].Data.Float = 16.0f;
 	BoxProperties[BOX_SIZE_INDEX].DataId = BOXOBJ_SIZE_ID;
 	BoxProperties[BOX_SIZE_INDEX].DataSize = sizeof( float );
@@ -652,29 +652,29 @@ void Init_Class( image_id hInstance )
 
 
 
-void * JETCC CreateInstance( void )
+void * GRCC CreateInstance( void )
 {
 	BoxObj *pBoxObj;
 
-	pBoxObj = JE_RAM_ALLOCATE_STRUCT( BoxObj );
+	pBoxObj = GR_RAM_ALLOCATE_STRUCT( BoxObj );
 	if( pBoxObj == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "CreateInstance");
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "CreateInstance");
 		return( NULL );
 	}
-	jeXForm3d_SetIdentity( &pBoxObj->XForm );
+	grXForm3d_SetIdentity( &pBoxObj->XForm );
 	pBoxObj->Size = DEFAULT_SIZE;
 	pBoxObj->RefCnt = 1;
 	if( !BoxObject_InitBox( pBoxObj ) )
 	{
-		jeRam_Free( pBoxObj );
+		grRam_Free( pBoxObj );
 		return( NULL );
 	}
 	return( pBoxObj );
 
 }
 
-void * JETCC DuplicateInstance(void * Instance)
+void * GRCC DuplicateInstance(void * Instance)
 {
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 	BoxObj *pNewBoxObj;
@@ -682,7 +682,7 @@ void * JETCC DuplicateInstance(void * Instance)
 	pNewBoxObj = (BoxObj *)CreateInstance( );
 	if( pNewBoxObj == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "DuplicateInstance:CreateInstance");
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "DuplicateInstance:CreateInstance");
 		return( NULL );
 	}
 	SetXForm( pNewBoxObj, &pBoxObj->XForm );
@@ -690,13 +690,13 @@ void * JETCC DuplicateInstance(void * Instance)
 	if( !BoxObject_UpdateFaces( pNewBoxObj ) )
 	{
 		Destroy( (void **)&pNewBoxObj );
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "DuplicateInstance:BoxObject_UpdateFaces");
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "DuplicateInstance:BoxObject_UpdateFaces");
 		return( NULL );
 	}
 	return( pNewBoxObj );
 }
 
-void JETCC CreateRef(void * Instance)
+void GRCC CreateRef(void * Instance)
 {
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 
@@ -705,7 +705,7 @@ void JETCC CreateRef(void * Instance)
 	pBoxObj->RefCnt++;
 }
 
-jeBoolean JETCC Destroy(void **pInstance)
+grBoolean GRCC Destroy(void **pInstance)
 {
 	int i;
 	BoxObj **hBoxObj = (BoxObj**)pInstance;
@@ -719,150 +719,150 @@ jeBoolean JETCC Destroy(void **pInstance)
 	{
 		for( i = 0; i < 6; i++ )
 			if( pBoxObj->Faces[i] != NULL )
-				jeUserPoly_Destroy(&pBoxObj->Faces[i]);
-		jeRam_Free( pBoxObj );
+				grUserPoly_Destroy(&pBoxObj->Faces[i]);
+		grRam_Free( pBoxObj );
 	}
 	else
-		return( JE_FALSE );
-	return( JE_TRUE );
+		return( GR_FALSE );
+	return( GR_TRUE );
 }
 
 
-jeBoolean JETCC Render(const void * Instance, const jeWorld * pWorld, const jeEngine *Engine, const jeCamera *Camera, const jeFrustum *CameraSpaceFrustum, jeObject_RenderFlags RenderFlags)
+grBoolean GRCC Render(const void * Instance, const grWorld * pWorld, const grEngine *Engine, const grCamera *Camera, const grFrustum *CameraSpaceFrustum, grObject_RenderFlags RenderFlags)
 {
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 }
 
-jeBoolean	JETCC AttachWorld( void * Instance, jeWorld * pWorld )
-{
-	int i;
-	BoxObj *pBoxObj = (BoxObj*)Instance;
-
-	assert( Instance );
-	for( i = 0; i < 6; i++ )
-		if( !jeWorld_AddUserPoly(pWorld ,pBoxObj->Faces[i], JE_FALSE) )
-			return( JE_FALSE );
-	return( JE_TRUE );
-}
-
-jeBoolean	JETCC DettachWorld( void * Instance, jeWorld * pWorld )
+grBoolean	GRCC AttachWorld( void * Instance, grWorld * pWorld )
 {
 	int i;
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 
 	assert( Instance );
 	for( i = 0; i < 6; i++ )
-		if( !jeWorld_RemoveUserPoly(pWorld ,pBoxObj->Faces[i]) )
-			return( JE_FALSE );
-	return( JE_TRUE );
+		if( !grWorld_AddUserPoly(pWorld ,pBoxObj->Faces[i], GR_FALSE) )
+			return( GR_FALSE );
+	return( GR_TRUE );
+}
+
+grBoolean	GRCC DettachWorld( void * Instance, grWorld * pWorld )
+{
+	int i;
+	BoxObj *pBoxObj = (BoxObj*)Instance;
+
+	assert( Instance );
+	for( i = 0; i < 6; i++ )
+		if( !grWorld_RemoveUserPoly(pWorld ,pBoxObj->Faces[i]) )
+			return( GR_FALSE );
+	return( GR_TRUE );
 }
 				
-jeBoolean	JETCC AttachEngine ( void * Instance, jeEngine *Engine )
+grBoolean	GRCC AttachEngine ( void * Instance, grEngine *Engine )
 {
- return( JE_TRUE );
+ return( GR_TRUE );
  Engine;
  Instance;
 }
 
-jeBoolean	JETCC DettachEngine( void * Instance, jeEngine *Engine )
+grBoolean	GRCC DettachEngine( void * Instance, grEngine *Engine )
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 	Instance;
 }
 
-jeBoolean	JETCC AttachSoundSystem( void * Instance, jeSound_System *SoundSystem )
+grBoolean	GRCC AttachSoundSystem( void * Instance, grSound_System *SoundSystem )
 {
-	return( JE_TRUE );
-	Instance;
-	SoundSystem;
-}
-
-jeBoolean	JETCC DettachSoundSystem( void * Instance, jeSound_System *SoundSystem )
-{
-	return( JE_TRUE );
+	return( GR_TRUE );
 	Instance;
 	SoundSystem;
 }
 
-jeBoolean	JETCC Collision(const void * Instance, const jeExtBox *Box, const jeVec3d *Front, const jeVec3d *Back, jeVec3d *Impact, jePlane *Plane)
+grBoolean	GRCC DettachSoundSystem( void * Instance, grSound_System *SoundSystem )
 {
-	jeExtBox BBox;
-	jeVec3d  Normal;
-	jeFloat		T;
+	return( GR_TRUE );
+	Instance;
+	SoundSystem;
+}
+
+grBoolean	GRCC Collision(const void * Instance, const grExtBox *Box, const grVec3d *Front, const grVec3d *Back, grVec3d *Impact, grPlane *Plane)
+{
+	grExtBox BBox;
+	grVec3d  Normal;
+	grFloat		T;
 	
 	GetExtBox(Instance,&BBox);
 	if (Impact)
 	{
-		if( jeExtBox_RayCollision( &BBox, Front, Back, &T, &Normal ) )
+		if( grExtBox_RayCollision( &BBox, Front, Back, &T, &Normal ) )
 		{
-			jeVec3d_Subtract( Back, Front, Impact );
-			jeVec3d_Scale( Impact, T, Impact );
-			jeVec3d_Add( Back, Impact, Impact );
-			return( JE_TRUE );
+			grVec3d_Subtract( Back, Front, Impact );
+			grVec3d_Scale( Impact, T, Impact );
+			grVec3d_Add( Back, Impact, Impact );
+			return( GR_TRUE );
 		}
-		return( JE_FALSE );
+		return( GR_FALSE );
 	} else
-		return jeExtBox_RayCollision( &BBox, Front, Back, NULL, NULL );
+		return grExtBox_RayCollision( &BBox, Front, Back, NULL, NULL );
 }
 
 
-jeBoolean JETCC GetExtBox(const void * Instance,jeExtBox *BBox)
+grBoolean GRCC GetExtBox(const void * Instance,grExtBox *BBox)
 {
-	jeVec3d Point;
+	grVec3d Point;
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 	int i;
-	jeXForm3d	ScaleXForm;
+	grXForm3d	ScaleXForm;
 
 
 	assert( Instance );
 	assert( BBox );
 
-	jeXForm3d_SetIdentity(&ScaleXForm);
-	jeXForm3d_Scale(&ScaleXForm, pBoxObj->Size, pBoxObj->Size, pBoxObj->Size);
+	grXForm3d_SetIdentity(&ScaleXForm);
+	grXForm3d_Scale(&ScaleXForm, pBoxObj->Size, pBoxObj->Size, pBoxObj->Size);
 
 	Point.X = pBoxObj->Vertex[0].X;
 	Point.Y = pBoxObj->Vertex[0].Y;
 	Point.Z = pBoxObj->Vertex[0].Z;
-	jeXForm3d_Transform( &ScaleXForm, &Point, &Point );
-	jeXForm3d_Transform( &pBoxObj->XForm, &Point, &Point );
+	grXForm3d_Transform( &ScaleXForm, &Point, &Point );
+	grXForm3d_Transform( &pBoxObj->XForm, &Point, &Point );
 
-	jeExtBox_SetToPoint ( BBox, &Point );
+	grExtBox_SetToPoint ( BBox, &Point );
 	for( i = 1; i < 8 ; i ++ )
 	{
 		Point.X = pBoxObj->Vertex[i].X;
 		Point.Y = pBoxObj->Vertex[i].Y;
 		Point.Z = pBoxObj->Vertex[i].Z;
-		jeXForm3d_Transform( &ScaleXForm, &Point, &Point );
-		jeXForm3d_Transform( &pBoxObj->XForm, &Point, &Point );
-		jeExtBox_ExtendToEnclose( BBox, &Point );
+		grXForm3d_Transform( &ScaleXForm, &Point, &Point );
+		grXForm3d_Transform( &pBoxObj->XForm, &Point, &Point );
+		grExtBox_ExtendToEnclose( BBox, &Point );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
+void *	GRCC CreateFromFile(grVFile * File, grPtrMgr *PtrMgr)
 {
 	BoxObj * pBoxObj;
 	BYTE Version;
     uint32 Tag;
 
-	pBoxObj = JE_RAM_ALLOCATE_STRUCT( BoxObj );
+	pBoxObj = GR_RAM_ALLOCATE_STRUCT( BoxObj );
 	if( pBoxObj == NULL )
 		return( NULL );
 
- 	if(!jeVFile_Read(File, &Tag, sizeof(Tag)))
+ 	if(!grVFile_Read(File, &Tag, sizeof(Tag)))
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "BoxObject_CreateFromFile:Tag" );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "BoxObject_CreateFromFile:Tag" );
 		goto CFF_ERROR;
 	}
 
 	if (Tag == FILE_UNIQUE_ID)
 	{
-		if (!jeVFile_Read(File, &Version, sizeof(Version)))
+		if (!grVFile_Read(File, &Version, sizeof(Version)))
 		{
-    		jeErrorLog_Add( JE_ERR_FILEIO_READ, "BoxObject_CreateFromFile:Version" );
+    		grErrorLog_Add( GR_ERR_FILEIO_READ, "BoxObject_CreateFromFile:Version" );
 	       	goto CFF_ERROR;
 		}
 	}
@@ -870,21 +870,21 @@ void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
 	{
 		//for backwards compatibility with old object format
 		Version = 1;
-		jeVFile_Seek(File,-((int)sizeof(Tag)),JE_VFILE_SEEKCUR);
+		grVFile_Seek(File,-((int)sizeof(Tag)),GR_VFILE_SEEKCUR);
 	}
 	
 
 	if (Version >= 1)
 	{
-		if( !jeVFile_Read(	File, &pBoxObj->XForm, sizeof( pBoxObj->XForm) ) )
+		if( !grVFile_Read(	File, &pBoxObj->XForm, sizeof( pBoxObj->XForm) ) )
 		{
-	   	    jeErrorLog_Add(JE_ERR_FILEIO_READ, "BoxObject_CreateFromFile:XForm");
+	   	    grErrorLog_Add(GR_ERR_FILEIO_READ, "BoxObject_CreateFromFile:XForm");
         	goto CFF_ERROR;
 		}
 
-	    if( !jeVFile_Read(	File, &pBoxObj->Size, sizeof( pBoxObj->Size) ) )
+	    if( !grVFile_Read(	File, &pBoxObj->Size, sizeof( pBoxObj->Size) ) )
 		{
-	   	    jeErrorLog_Add(JE_ERR_FILEIO_READ, "BoxObject_CreateFromFile:Size");
+	   	    grErrorLog_Add(GR_ERR_FILEIO_READ, "BoxObject_CreateFromFile:Size");
 		    goto CFF_ERROR;
 		}
 	}
@@ -899,12 +899,12 @@ void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
 
 CFF_ERROR:
 
-	jeRam_Free( pBoxObj );
+	grRam_Free( pBoxObj );
 	return( NULL );
 }
 
 
-jeBoolean	JETCC WriteToFile(const void * Instance,jeVFile * File, jePtrMgr *PtrMgr)
+grBoolean	GRCC WriteToFile(const void * Instance,grVFile * File, grPtrMgr *PtrMgr)
 {
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 	BYTE Version = BOXOBJ_VERSION;
@@ -912,36 +912,36 @@ jeBoolean	JETCC WriteToFile(const void * Instance,jeVFile * File, jePtrMgr *PtrM
 
 	assert( Instance );
 
-	if(!jeVFile_Write(File,&Tag, sizeof(Tag)))
+	if(!grVFile_Write(File,&Tag, sizeof(Tag)))
 	{
-	   	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "BoxObject_WriteToFile:Tag");
-		return( JE_FALSE );
+	   	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "BoxObject_WriteToFile:Tag");
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write(	File, &Version, sizeof(Version) ) )
+	if( !grVFile_Write(	File, &Version, sizeof(Version) ) )
 	{
-	   	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "BoxObject_WriteToFile:Version");
-		return( JE_FALSE );
+	   	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "BoxObject_WriteToFile:Version");
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write(	File, &pBoxObj->XForm, sizeof( pBoxObj->XForm) ) )
+	if( !grVFile_Write(	File, &pBoxObj->XForm, sizeof( pBoxObj->XForm) ) )
 	{
-		jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "BoxObject_WriteToFile:XForm");
-		return( JE_FALSE );
+		grErrorLog_Add(GR_ERR_FILEIO_WRITE, "BoxObject_WriteToFile:XForm");
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write(	File, &pBoxObj->Size, sizeof( pBoxObj->Size) ) )
+	if( !grVFile_Write(	File, &pBoxObj->Size, sizeof( pBoxObj->Size) ) )
 	{
-		jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "BoxObject_WriteToFile:Size");
-		return( JE_FALSE );
+		grErrorLog_Add(GR_ERR_FILEIO_WRITE, "BoxObject_WriteToFile:Size");
+		return( GR_FALSE );
 	}
 
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-jeBoolean	JETCC GetPropertyList(void * Instance, jeProperty_List **List)
+grBoolean	GRCC GetPropertyList(void * Instance, grProperty_List **List)
 {
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 
@@ -949,13 +949,13 @@ jeBoolean	JETCC GetPropertyList(void * Instance, jeProperty_List **List)
 
 	BoxProperties[BOX_SIZE_INDEX].Data.Float = pBoxObj->Size;
 
-	*List = jeProperty_ListCopy( &BoxPropertyList);
+	*List = grProperty_ListCopy( &BoxPropertyList);
 	if( *List == NULL )
-		return( JE_FALSE );
-	return( JE_TRUE );
+		return( GR_FALSE );
+	return( GR_TRUE );
 }
 
-jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData )
+grBoolean	GRCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData )
 {
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 
@@ -965,10 +965,10 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 		pBoxObj->Size = pData->Float;
 		BoxObject_UpdateFaces( pBoxObj );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	JETCC SetXForm(void * Instance,const jeXForm3d *XF)
+grBoolean	GRCC SetXForm(void * Instance,const grXForm3d *XF)
 {
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 
@@ -976,70 +976,70 @@ jeBoolean	JETCC SetXForm(void * Instance,const jeXForm3d *XF)
 
 	pBoxObj->XForm = *XF;
 	if( !BoxObject_UpdateFaces( pBoxObj ) )
-		return JE_FALSE;
-	return( JE_TRUE );
+		return GR_FALSE;
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC GetXForm(const void * Instance,jeXForm3d *XF)
+grBoolean GRCC GetXForm(const void * Instance,grXForm3d *XF)
 {
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 
 	assert( Instance );
 	*XF = pBoxObj->XForm;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-int	JETCC GetXFormModFlags( const void * Instance )
+int	GRCC GetXFormModFlags( const void * Instance )
 {
 	Instance;
-	return( JE_OBJECT_XFORM_TRANSLATE | JE_OBJECT_XFORM_ROTATE );
+	return( GR_OBJECT_XFORM_TRANSLATE | GR_OBJECT_XFORM_ROTATE );
 }
 
-jeBoolean JETCC GetChildren(const void * Instance,jeObject * Children,int MaxNumChildren)
+grBoolean GRCC GetChildren(const void * Instance,grObject * Children,int MaxNumChildren)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC AddChild(void * Instance,const jeObject * Child)
+grBoolean GRCC AddChild(void * Instance,const grObject * Child)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC RemoveChild(void * Instance,const jeObject * Child)
+grBoolean GRCC RemoveChild(void * Instance,const grObject * Child)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 #ifdef WIN32
-jeBoolean JETCC EditDialog (void * Instance,HWND Parent)
+grBoolean GRCC EditDialog (void * Instance,HWND Parent)
 #endif
 #ifdef BUILD_BE
-jeBoolean JETCC EditDialog (void * Instance, class G3DView *Parent)
+grBoolean GRCC EditDialog (void * Instance, class G3DView *Parent)
 #endif
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC SendMsg(void * Instance, int32 Msg, void * Data)
+grBoolean GRCC SendMsg(void * Instance, int32 Msg, void * Data)
 {
 	BoxObj *pBoxObj = (BoxObj*)Instance;
 
-	if( Msg == JETEDITOR_GET_JEBRUSH )
+	if( Msg == G3DEDITOR_GET_GRBRUSH )
 	{
-		jeBrush **hBrush = (jeBrush**)Data;
+		grBrush **hBrush = (grBrush**)Data;
 		if( pBrush == NULL )
 			if( !CreateGlobalBrush() )
-				return(JE_FALSE);
+				return(GR_FALSE);
 		if( !UpdateGlobalBrush( pBoxObj ) )
-			return(JE_FALSE );
+			return(GR_FALSE );
 		*hBrush = pBrush;
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
 // Icestorm: Collision ignores Box=>ChangeBoxCollision ignores all
-jeBoolean	JETCC ChangeBoxCollision(const void *Instance,const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane)
+grBoolean	GRCC ChangeBoxCollision(const void *Instance,const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane)
 {
-	return( JE_FALSE );
+	return( GR_FALSE );
 }

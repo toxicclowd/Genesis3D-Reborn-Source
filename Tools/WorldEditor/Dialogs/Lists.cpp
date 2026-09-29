@@ -159,7 +159,7 @@ void CLists::RenameObject( Object *pObject )
 	if( pszDisplayName != NULL )
 	{
 		m_List.SetItemText( hItem, pszDisplayName );
-		jeRam_Free( pszDisplayName ) ;
+		grRam_Free( pszDisplayName ) ;
 	}
 
 }
@@ -172,10 +172,10 @@ void CLists::Update(CJweDoc *pDoc)
 }// Update
 
 
-jeBoolean CLists::ModelCB(Model *pModel, void *lParam)
+grBoolean CLists::ModelCB(Model *pModel, void *lParam)
 {
 	Model_EnumBrushes( pModel, lParam, (BrushListCB)CLists::ObjectCB );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// ModelCB
 
 HTREEITEM CLists::FindObjectKind( CTreeCtrlEx * pList, Object * pObject )
@@ -202,10 +202,10 @@ HTREEITEM CLists::FindObjectKind( CTreeCtrlEx * pList, Object * pObject )
 				{
 					if( strcmp( KindName, ItemText.GetBuffer(0) ) == 0 )
 					{
-						jeRam_Free( KindName );
+						grRam_Free( KindName );
 						return( hItem );
 					}
-					jeRam_Free( KindName );
+					grRam_Free( KindName );
 				}
 			}
 			else
@@ -239,7 +239,7 @@ HTREEITEM CLists::AddObjectKind( CTreeCtrlEx * pList, char * pszDisplayName, int
 	return( hItem );
 }
 
-jeBoolean CLists::ObjectCB(Object *pObject, void *lParam)
+grBoolean CLists::ObjectCB(Object *pObject, void *lParam)
 {
 	HTREEITEM			hItem = NULL ;
 	HTREEITEM			hParentItem;
@@ -256,11 +256,11 @@ jeBoolean CLists::ObjectCB(Object *pObject, void *lParam)
 		{
 			pszKindName = Object_CreateKindName(  pObject );
 			if( pszKindName == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			hParentItem = AddObjectKind( pList, pszKindName, Object_GetKind( pObject) );
-			jeRam_Free( pszKindName );
+			grRam_Free( pszKindName );
 			if( hParentItem == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 		}
 		hItem = pList->InsertItem( pszDisplayName, hParentItem, TVI_SORT ) ;
 		if( hItem != NULL )
@@ -268,9 +268,9 @@ jeBoolean CLists::ObjectCB(Object *pObject, void *lParam)
 			pList->SetItemData( hItem, (DWORD)pObject ) ;
 			Object_AddRef( pObject );
 		}
-		jeRam_Free( pszDisplayName ) ;
+		grRam_Free( pszDisplayName ) ;
 	}
-	return (hItem == NULL) ? JE_FALSE : JE_TRUE ;
+	return (hItem == NULL) ? GR_FALSE : GR_TRUE ;
 }// BrushCB
 
 
@@ -284,7 +284,7 @@ jeBoolean CLists::ObjectCB(Object *pObject, void *lParam)
 
 
 
-jeBoolean CLists::SelectCB(Object *pObject, void *lParam)
+grBoolean CLists::SelectCB(Object *pObject, void *lParam)
 {
 	CTreeCtrlEx	*	pList= (CTreeCtrlEx	*)lParam ;
 	char		*	pszDisplayName ;
@@ -297,7 +297,7 @@ jeBoolean CLists::SelectCB(Object *pObject, void *lParam)
 
 	pszDisplayName = Object_GetNameAndTag( pObject ) ;
 	if( pszDisplayName == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 	if( Object_GetKind( pObject ) == KIND_CLASS )
 	{ 
 		hClassItem = pList->GetRootItem();
@@ -317,7 +317,7 @@ jeBoolean CLists::SelectCB(Object *pObject, void *lParam)
 	{
 		hClassItem = FindObjectKind( pList, pObject  );
 		if( hClassItem == NULL )
-			return( JE_FALSE );
+			return( GR_FALSE );
 
 		hItem = TreeViewIsInBranch( pList, hClassItem, pszDisplayName ) ;
 	}
@@ -325,9 +325,9 @@ jeBoolean CLists::SelectCB(Object *pObject, void *lParam)
 	if( hItem != NULL )
 		pList->SelectItemEx( hItem, true ) ;	// From derived TV
 
-	jeRam_Free( pszDisplayName ) ;
+	grRam_Free( pszDisplayName ) ;
 
-	return (hItem == NULL) ? JE_FALSE : JE_TRUE ;
+	return (hItem == NULL) ? GR_FALSE : GR_TRUE ;
 }// SelectCB
 
 
@@ -353,7 +353,7 @@ void CLists::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 	if( hItem != NULL ) 
 	{
 		if( m_List.GetItemState( hItem, TVIS_SELECTED ) != TVIS_SELECTED )
-			pDoc->DeselectAll( JE_FALSE );
+			pDoc->DeselectAll( GR_FALSE );
 	}
 
 	hItem = pNMTreeView->itemNew.hItem ;
@@ -375,7 +375,7 @@ void CLists::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 }// OnSelchangedTvItems
 
 
-jeBoolean CLists::AddSelectionCB(Object *pObject, void *lParam)
+grBoolean CLists::AddSelectionCB(Object *pObject, void *lParam)
 {
 	HTREEITEM		hClassItem = NULL ;
 	HTREEITEM		hItem ;
@@ -390,24 +390,24 @@ jeBoolean CLists::AddSelectionCB(Object *pObject, void *lParam)
 		if( pszKindName == NULL )
 			return( FALSE );
 		hClassItem  = AddObjectKind( pList, pszKindName, Object_GetKind( pObject ));
-		jeRam_Free( pszKindName );
+		grRam_Free( pszKindName );
 		if( hClassItem == NULL )
 			return( FALSE );
 	}
 	pszDisplayName = Object_GetNameAndTag( pObject ) ;
 	if( pszDisplayName == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
 	hItem = pList->InsertItem( pszDisplayName, hClassItem, TVI_SORT ) ;
-	jeRam_Free( pszDisplayName ) ;
+	grRam_Free( pszDisplayName ) ;
 
 	if( hItem == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
 	pList->SetItemData( hItem, (DWORD)pObject ) ;
 	Object_AddRef( pObject );
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// AddSelectionCB
 
 HTREEITEM CLists::FindObjectItem( Object* pObject )
@@ -484,7 +484,7 @@ BOOL CLists::OnCommand(WPARAM wParam, LPARAM lParam)
 	// TODO: Add your specialized code here and/or call the base class
 	
 	if( wParam == 1 && lParam == 0 )
-		return(JE_TRUE );
+		return(GR_TRUE );
 	return CDialog::OnCommand(wParam, lParam);
 }
 

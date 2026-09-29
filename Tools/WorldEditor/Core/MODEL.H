@@ -25,11 +25,11 @@
 
 #include "BaseType.h"
 #include "Brush.h"
-#include "jeTypes.h"	// RGBA
-#include "jeModel.h"
+#include "grTypes.h"	// RGBA
+#include "grModel.h"
 #include "BrushList.h"
 #include "Group.h"
-#include "jePtrMgr.h"
+#include "grPtrMgr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,8 +40,8 @@ extern "C" {
 
 typedef struct tagModelReattachInfo
 {
-	jeModel *	pModel ;
-	jeWorld *	pWorld;
+	grModel *	pModel ;
+	grWorld *	pWorld;
 	uint32		IndexTag ;
 } ModelReattachInfo ;
 	
@@ -59,47 +59,47 @@ void			Model_Destroy( Model ** ppModel ) ;
 char  *			Model_CreateDefaultName( void );
 
 // ACCESSORS
-jeModel *		Model_GetguModel( Model * pModel ) ;
-Brush	*		Model_FindBrush( Model * pModel, jeBrush *pgeBrush );
-jeBoolean		Model_IsLocked( Model * pModel );
+grModel *		Model_GetguModel( Model * pModel ) ;
+Brush	*		Model_FindBrush( Model * pModel, grBrush *pgeBrush );
+grBoolean		Model_IsLocked( Model * pModel );
 
 // MODIFIERS
-jeBoolean		Model_AddBrush( Model * pModel, Brush * pBrush ) ;
-jeBoolean		Model_AddBrushWorld( Model * pModel, Brush * pBrush, jeBoolean bBrushUpdate, jeBoolean bLightUpdate );
+grBoolean		Model_AddBrush( Model * pModel, Brush * pBrush ) ;
+grBoolean		Model_AddBrushWorld( Model * pModel, Brush * pBrush, grBoolean bBrushUpdate, grBoolean bLightUpdate );
 void			Model_RemoveBrush( Model * pModel, Brush * pBrush ) ;
 void			Model_RemoveBrushWorld( Model * pModel, Brush * pBrush );
-void			Model_Move( Model * pModel, const jeVec3d * pWorldDistance ) ;
-void			Model_Rotate( Model * pModel, ORTHO_AXIS RAxis, jeFloat RadianAngle, const jeVec3d * pRotationCenter );
-void			Model_SetXForm( Model * pModel, const jeXForm3d * XForm );
+void			Model_Move( Model * pModel, const grVec3d * pWorldDistance ) ;
+void			Model_Rotate( Model * pModel, ORTHO_AXIS RAxis, grFloat RadianAngle, const grVec3d * pRotationCenter );
+void			Model_SetXForm( Model * pModel, const grXForm3d * XForm );
 void			Model_UpdateBounds( Model * pModel ) ;
-void			Model_Size( Model * pModel, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
-void			Model_SetLocked( Model * pModel, jeBoolean bLocked );
+void			Model_Size( Model * pModel, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
+void			Model_SetLocked( Model * pModel, grBoolean bLocked );
 void			Model_FreeBrushList( Model * pModel );
 void			Model_RestoreBrush( Model * pModel);
 
 // ACCESSORS
-jeBoolean		Model_GetXForm( const Model * pModel, jeXForm3d * XForm );
-jeBoolean		Model_GetWorldAxialBounds( const Model * pModel, jeExtBox *pExtBox ) ;
-jeObject	*	Model_GetjeObject( const Model * pModel );
-jeProperty_List *	Model_BuildDescriptor( Model * pModel );
+grBoolean		Model_GetXForm( const Model * pModel, grXForm3d * XForm );
+grBoolean		Model_GetWorldAxialBounds( const Model * pModel, grExtBox *pExtBox ) ;
+grObject	*	Model_GetgrObject( const Model * pModel );
+grProperty_List *	Model_BuildDescriptor( Model * pModel );
 BrushList	*	Model_GetBrushList( Model * pModel );
 
 // IS
-jeBoolean	Model_IsInRect( const Model * pModel, jeExtBox *pSelRect, jeBoolean bSelEncompeses );
+grBoolean	Model_IsInRect( const Model * pModel, grExtBox *pSelRect, grBoolean bSelEncompeses );
 
 // FILE HANDLING
-Model *			Model_CreateFromFile( jeVFile * pF, const int32 nVersion, jePtrMgr * pPtrMgr ) ;
-jeBoolean		Model_WriteToFile( Model * pModel, Brush_WriteInfo * pWriteInfo) ;
+Model *			Model_CreateFromFile( grVFile * pF, const int32 nVersion, grPtrMgr * pPtrMgr ) ;
+grBoolean		Model_WriteToFile( Model * pModel, Brush_WriteInfo * pWriteInfo) ;
 
 // CALLBACK
-jeBoolean		Model_ReattachCB( Model * pModel, void * lParam ) ;
+grBoolean		Model_ReattachCB( Model * pModel, void * lParam ) ;
 
 // ENUMS
 int32			Model_EnumBrushes( Model * pModel, void * pVoid, BrushListCB Callback );
 
 // DEBUGGING
 #ifdef _DEBUG
-jeBoolean		Model_IsValid( const Model * pModel ) ;
+grBoolean		Model_IsValid( const Model * pModel ) ;
 #endif ;
 
 #ifdef __cplusplus

@@ -18,99 +18,99 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_PUPPET_H
-#define JE_PUPPET_H
+#ifndef GR_PUPPET_H
+#define GR_PUPPET_H
 
 #include "Motion.h"
 #include "Camera.h"
 #include "Body.h"
 #include "Pose.h"
-#include "ExtBox.h"			// jeExtBox for jePuppet_RenderThroughFrustum
+#include "ExtBox.h"			// grExtBox for grPuppet_RenderThroughFrustum
 
 #include "VFile.h"
 #include "UVMap.h"
 
-#include "jeFrustum.h"
+#include "grFrustum.h"
 #include "Engine.h"
-#include "jeWorld.h"
+#include "grWorld.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-typedef struct jePuppet jePuppet;
+typedef struct grPuppet grPuppet;
 
 //	[MacroArt::Begin]
 //	Thanks Dee(cryscan@home.net)	
-float	JETCF jePuppet_GetAlpha(const jePuppet *P);
-void	JETCF jePuppet_SetAlpha(jePuppet *P,float Alpha);
+float	GRCF grPuppet_GetAlpha(const grPuppet *P);
+void	GRCF grPuppet_SetAlpha(grPuppet *P,float Alpha);
 //	[MacroArt::End]
 
-jePuppet* JETCF jePuppet_Create(jeVFile *TextureFS, const jeBody *B, jeEngine *pEngine);
+grPuppet* GRCF grPuppet_Create(grVFile *TextureFS, const grBody *B, grEngine *pEngine);
 
-void JETCF jePuppet_Destroy(jePuppet **P);
+void GRCF grPuppet_Destroy(grPuppet **P);
 
-jeBoolean jePuppet_RenderThroughFrustum(const jePuppet *P, 
-					const jePose		*Joints, 
-					const jeExtBox		*Box, 
-					jeEngine			*Engine, 
-					const jeWorld		*World,
-					const jeCamera		*Camera, 
-					const jeFrustum		*Frustum,
-					jeBoolean			updateStaticLighting);
+grBoolean grPuppet_RenderThroughFrustum(const grPuppet *P, 
+					const grPose		*Joints, 
+					const grExtBox		*Box, 
+					grEngine			*Engine, 
+					const grWorld		*World,
+					const grCamera		*Camera, 
+					const grFrustum		*Frustum,
+					grBoolean			updateStaticLighting);
 	
-jeBoolean jePuppet_Render(const jePuppet *P,
-					const jePose		*Joints,
-					jeEngine			*Engine, 
-					const jeWorld		*World,
-					const jeCamera		*Camera, 
-					jeExtBox			*Box,
-					jeBoolean			updateStaticLighting);
+grBoolean grPuppet_Render(const grPuppet *P,
+					const grPose		*Joints,
+					grEngine			*Engine, 
+					const grWorld		*World,
+					const grCamera		*Camera, 
+					grExtBox			*Box,
+					grBoolean			updateStaticLighting);
 
-int JETCF jePuppet_GetMaterialCount( jePuppet *P );
-jeBoolean jePuppet_GetMaterial( jePuppet *P, int MaterialIndex,
-									jeMaterialSpec **Bitmap, 
-									jeFloat *Red, jeFloat *Green, jeFloat *Blue,
-									jeUVMapper * pMapper);
-jeBoolean jePuppet_SetMaterial(jePuppet *P, int MaterialIndex, jeMaterialSpec *Bitmap, 
-										jeFloat Red, jeFloat Green, jeFloat Blue, jeUVMapper Mapper);
+int GRCF grPuppet_GetMaterialCount( grPuppet *P );
+grBoolean grPuppet_GetMaterial( grPuppet *P, int MaterialIndex,
+									grMaterialSpec **Bitmap, 
+									grFloat *Red, grFloat *Green, grFloat *Blue,
+									grUVMapper * pMapper);
+grBoolean grPuppet_SetMaterial(grPuppet *P, int MaterialIndex, grMaterialSpec *Bitmap, 
+										grFloat Red, grFloat Green, grFloat Blue, grUVMapper Mapper);
 
-void	  jePuppet_SetShadow(jePuppet *P, jeBoolean DoShadow, jeFloat Scale, 
-						const jeMaterialSpec *ShadowMap,int BoneIndex);
+void	  grPuppet_SetShadow(grPuppet *P, grBoolean DoShadow, grFloat Scale, 
+						const grMaterialSpec *ShadowMap,int BoneIndex);
 
-void	  jePuppet_GetLightingOptions(const jePuppet *P,
-	jeBoolean *UseFillLight,
-	jeVec3d *FillLightNormal,
-	jeFloat *FillLightRed,				
-	jeFloat *FillLightGreen,				
-	jeFloat *FillLightBlue,				
-	jeFloat *AmbientLightRed,			
-	jeFloat *AmbientLightGreen,			
-	jeFloat *AmbientLightBlue,			
-	jeBoolean *UseAmbientLightFromFloor,
+void	  grPuppet_GetLightingOptions(const grPuppet *P,
+	grBoolean *UseFillLight,
+	grVec3d *FillLightNormal,
+	grFloat *FillLightRed,				
+	grFloat *FillLightGreen,				
+	grFloat *FillLightBlue,				
+	grFloat *AmbientLightRed,			
+	grFloat *AmbientLightGreen,			
+	grFloat *AmbientLightBlue,			
+	grBoolean *UseAmbientLightFromFloor,
 	int32 *MaximumDynamicLightsToUse,
 	int32 *MaximumStaticLightsToUse,	
 	int32 *LightReferenceBoneIndex,
-	jeBoolean *PerBoneLighting
+	grBoolean *PerBoneLighting
 	);
 
-void	  jePuppet_SetLightingOptions(jePuppet *P,
-	jeBoolean UseFillLight,
-	const jeVec3d *FillLightNormal,
-	jeFloat FillLightRed,				// 0 .. 255
-	jeFloat FillLightGreen,				// 0 .. 255
-	jeFloat FillLightBlue,				// 0 .. 255
-	jeFloat AmbientLightRed,			// 0 .. 255
-	jeFloat AmbientLightGreen,			// 0 .. 255
-	jeFloat AmbientLightBlue,			// 0 .. 255
-	jeBoolean AmbientLightFromFloor,
+void	  grPuppet_SetLightingOptions(grPuppet *P,
+	grBoolean UseFillLight,
+	const grVec3d *FillLightNormal,
+	grFloat FillLightRed,				// 0 .. 255
+	grFloat FillLightGreen,				// 0 .. 255
+	grFloat FillLightBlue,				// 0 .. 255
+	grFloat AmbientLightRed,			// 0 .. 255
+	grFloat AmbientLightGreen,			// 0 .. 255
+	grFloat AmbientLightBlue,			// 0 .. 255
+	grBoolean AmbientLightFromFloor,
 	int MaximumDynamicLightsToUse,		// 0 for none
 	int MaximumStaticLightsToUse, // 0 for none
 	int LightReferenceBoneIndex,
 	int PerBoneLighting);
 
-jeEngine* JETCF jePuppet_GetEngine(jePuppet *P);
+grEngine* GRCF grPuppet_GetEngine(grPuppet *P);
 
 #ifdef __cplusplus
 }

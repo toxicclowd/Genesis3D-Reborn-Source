@@ -62,19 +62,19 @@ void showPopTSC(const char *tag)
 {
 double time;
 
-	jeCPU_PauseMMX();
+	grCPU_PauseMMX();
 	time = popTSC();
 		Log_Printf("%s : %f seconds\n",tag,time);
-	jeCPU_ResumeMMX();
+	grCPU_ResumeMMX();
 }
 
 void showPopTSCper(const char *tag,int items,const char *itemTag)
 {
 double time,hz,per;
 
-	jeCPU_PauseMMX();
+	grCPU_PauseMMX();
 	hz = popTSChz();
-	time = hz * jeCPU_SecondsPerClock;
+	time = hz * grCPU_SecondsPerClock;
 	per = (time/(double)items);
 	
 	Log_Printf("%s : %f secs = %2.1f cycles / %s = ",tag,time,hz/items,itemTag);
@@ -87,7 +87,7 @@ double time,hz,per;
 	{
 		Log_Printf("%f %ss /sec\n",(1.0/per),itemTag);
 	}
-	jeCPU_ResumeMMX();
+	grCPU_ResumeMMX();
 }
 
 void readTSC(uint32 *tsc)
@@ -123,16 +123,16 @@ double timeTSC(void)
 {
 uint32 tsc[2];
 	readTSC(tsc);
-return (tsc[0]*4294967296.0 + (double)tsc[1])*jeCPU_SecondsPerClock;
+return (tsc[0]*4294967296.0 + (double)tsc[1])*grCPU_SecondsPerClock;
 }
 
 double diffTSC(const uint32 *tsc1,const uint32 *tsc2)
 {
 double time1,time2;
 	time1 = ((double)tsc2[0] - (double)tsc1[0])*4294967296.0;
-	time1 *= jeCPU_SecondsPerClock;
+	time1 *= grCPU_SecondsPerClock;
 	time2 = (double)tsc2[1] - (double)tsc1[1];
-	time2 *= jeCPU_SecondsPerClock;
+	time2 *= grCPU_SecondsPerClock;
 return time1 + time2;
 }
 

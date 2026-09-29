@@ -41,7 +41,7 @@ Because that happens automagically.
 #define DO_RENDER_IMMEDIATE // else delay till all vis is done
 
 #include "Engine.h"
-#include "jeFrustum.h"
+#include "grFrustum.h"
 #include "Object.h"
 #include "List.h"
 #include "VisObject.h"
@@ -65,42 +65,42 @@ int NumObjectsPortalled = 0;
 #define DEBUG_INFO(x)
 #endif
 
-struct jeVisObject
+struct grVisObject
 {
 	uint32		VisFrame;	// you set these up
-	jeFrustum	VisFrustum;
-	jeBoolean	VisHasFrustum;	// if ! HasFrustum, use the whole camera frustum
-	jeBoolean	InOneArea;
+	grFrustum	VisFrustum;
+	grBoolean	VisHasFrustum;	// if ! HasFrustum, use the whole camera frustum
+	grBoolean	InOneArea;
 	uint32		AreaUID;
 
-	jeVisObjectList * MyOwner;
+	grVisObjectList * MyOwner;
 	uint32		PrepFrame,FrustumCount;
-	jeObject	Object;	
-	jeVisObject * VisList;	
+	grObject	Object;	
+	grVisObject * VisList;	
 	HashNode	* MyHashNode;
 };
 
-struct jeVisObjectList
+struct grVisObjectList
 {
-	jeVisObjectList * MySelf1;
+	grVisObjectList * MySelf1;
 
 	Hash * ObjectHash;
 	int NumObjects;
 	MemPool * VisObjectPool;
 
 	uint32		VisFrame;	// this stuff was set on this frame :
-	jeEngine *	Engine;
-	jeCamera *	Camera;
-	jeFrustum	CamFrustum;
+	grEngine *	Engine;
+	grCamera *	Camera;
+	grFrustum	CamFrustum;
 
-	// jeVisObject * VisList;
-	jeVisObjectList * MySelf2;
+	// grVisObject * VisList;
+	grVisObjectList * MySelf2;
 };
 
-jeVisObjectList *	jeVisObjectList_Create(void)
+grVisObjectList *	grVisObjectList_Create(void)
 {
-jeVisObjectList * List;
-	List = (jeVisObjectList *)jeRam_AllocateClear(sizeof(*List));
+grVisObjectList * List;
+	List = (grVisObjectList *)grRam_AllocateClear(sizeof(*List));
 	if ( ! List )	
 		return NULL;
 
@@ -109,14 +109,14 @@ jeVisObjectList * List;
 	List->ObjectHash = Hash_Create();
 	if ( ! List->ObjectHash )
 	{
-		jeVisObjectList_Destroy(&List);
+		grVisObjectList_Destroy(&List);
 		return NULL;
 	}
 
-	List->VisObjectPool = MemPool_Create(sizeof(jeVisObject),32,64);
+	List->VisObjectPool = MemPool_Create(sizeof(grVisObject),32,64);
 	if ( ! List->VisObjectPool )
 	{
-		jeVisObjectList_Destroy(&List);
+		grVisObjectList_Destroy(&List);
 		return NULL;
 	}
 
@@ -127,10 +127,10 @@ jeVisObjectList * List;
 return List;
 }
 
-void jeVisObjectList_Destroy(jeVisObjectList ** pList)
+void grVisObjectList_Destroy(grVisObjectList ** pList)
 {
-jeVisObjectList * List;
-jeVisObject * VO;
+grVisObjectList * List;
+grVisObject * VO;
 
 	assert(pList);
 	List = *pList;
@@ -138,12 +138,12 @@ jeVisObject * VO;
 	if ( ! List )
 		return;
 
-	VO = jeVisObjectList_GetNext(List,NULL);
+	VO = grVisObjectList_GetNext(List,NULL);
 	while( VO )
 	{
-	jeVisObject * VONext;
-		VONext = jeVisObjectList_GetNext(List,VO);
-		jeVisObjectList_DestroyObject(List,VO);
+	grVisObject * VONext;
+		VONext = grVisObjectList_GetNext(List,VO);
+		grVisObjectList_DestroyObject(List,VO);
 		VO = VONext;
 	}
 
@@ -155,28 +155,28 @@ jeVisObject * VO;
 	if ( List->VisObjectPool )
 		MemPool_Destroy(&(List->VisObjectPool));
 
-	jeRam_Free(List);
+	grRam_Free(List);
 }
 
-jeVisObject * jeVisObjectList_CreateObject(	jeVisObjectList * List,jeObject *Obj)
+grVisObject * grVisObjectList_CreateObject(	grVisObjectList * List,grObject *Obj)
 {
-jeVisObject * VO;
+grVisObject * VO;
 
 	assert( Obj);
-	assert( jeVisObjectList_IsValid(List) );
+	assert( grVisObjectList_IsValid(List) );
 
 	if ( Hash_Get(List->ObjectHash,(uint32)Obj->Instance,NULL) )
 	{
-		jeErrorLog_AddString(-1,"VisObjectList_CreateObject : Object already in list !",NULL);
+		grErrorLog_AddString(-1,"VisObjectList_CreateObject : Object already in list !",NULL);
 		return NULL;
 	}
 
-	VO = (jeVisObject *)MemPool_GetHunk(List->VisObjectPool);
+	VO = (grVisObject *)MemPool_GetHunk(List->VisObjectPool);
 	if ( ! VO )
 		return NULL;
 
 	VO->Object = *Obj;
-	jeObject_CreateRef(Obj);
+	grObject_CreateRef(Obj);
 
 	VO->VisFrame = -1;
 
@@ -197,11 +197,11 @@ jeVisObject * VO;
 return VO;
 }
 
-jeVisObject * jeVisObjectList_FindObject(	const jeVisObjectList * List,const jeObject *Obj)
+grVisObject * grVisObjectList_FindObject(	const grVisObjectList * List,const grObject *Obj)
 {
-jeVisObject * VO;
+grVisObject * VO;
 
-	assert( jeVisObjectList_IsValid(List) );
+	assert( grVisObjectList_IsValid(List) );
 
 	if ( ! Hash_Get(List->ObjectHash,(uint32)Obj->Instance,(uint32 *)&VO) )
 		return NULL;
@@ -209,10 +209,10 @@ jeVisObject * VO;
 return VO;
 }
 
-void jeVisObjectList_DestroyObject(jeVisObjectList * List,jeVisObject *VO)
+void grVisObjectList_DestroyObject(grVisObjectList * List,grVisObject *VO)
 {
 	assert( VO );
-	assert( jeVisObjectList_IsValid(List) );
+	assert( grVisObjectList_IsValid(List) );
 
 	assert( HashNode_Data(VO->MyHashNode) == (uint32)VO );
 	assert( Hash_NumMembers(List->ObjectHash) == List->NumObjects );
@@ -220,7 +220,7 @@ void jeVisObjectList_DestroyObject(jeVisObjectList * List,jeVisObject *VO)
 
 #ifdef _DEBUG
 	{
-	jeVisObject * VO2;
+	grVisObject * VO2;
 	HashNode * hn;
 
 		if ( ! (hn = Hash_Get(List->ObjectHash,(uint32)(VO->Object.Instance),(uint32 *)&VO2)) )
@@ -234,7 +234,7 @@ void jeVisObjectList_DestroyObject(jeVisObjectList * List,jeVisObject *VO)
 
 	Hash_DeleteNode(List->ObjectHash,VO->MyHashNode);
 
-	jeObject_Free(&(VO->Object));
+	grObject_Free(&(VO->Object));
 
 	List->NumObjects --;
 
@@ -243,20 +243,20 @@ void jeVisObjectList_DestroyObject(jeVisObjectList * List,jeVisObject *VO)
 	DEBUG_INFO(NumObjects--);
 }
 
-void jeVisObjectList_RenderStart(jeVisObjectList * List, const jeEngine *Engine, 
-							const jeCamera *Camera, uint32 VisFrame)
+void grVisObjectList_RenderStart(grVisObjectList * List, const grEngine *Engine, 
+							const grCamera *Camera, uint32 VisFrame)
 {
-	assert( jeVisObjectList_IsValid(List) );
+	assert( grVisObjectList_IsValid(List) );
 
 	DEBUG_INFO(NumObjectsVisible = NumObjectsPortalled = 0);
 
-	List->Engine = (jeEngine *)Engine;
-	List->Camera = (jeCamera *)Camera;
-	jeFrustum_SetWorldSpaceFromCamera(&(List->CamFrustum),Camera);
+	List->Engine = (grEngine *)Engine;
+	List->Camera = (grCamera *)Camera;
+	grFrustum_SetWorldSpaceFromCamera(&(List->CamFrustum),Camera);
 	List->VisFrame = VisFrame;
 }
 
-void jeVisObject_RenderInternal(const jeVisObjectList * List,const jeVisObject * VO,uint32 VisFrame)
+void grVisObject_RenderInternal(const grVisObjectList * List,const grVisObject * VO,uint32 VisFrame)
 {
 	assert(List->VisFrame == VisFrame);
 	if ( VisFrame == VO->VisFrame )
@@ -265,26 +265,26 @@ void jeVisObject_RenderInternal(const jeVisObjectList * List,const jeVisObject *
 		{
 			DEBUG_INFO(NumObjectsVisible++);
 
-			((jeVisObject *)VO)->PrepFrame = VisFrame;
+			((grVisObject *)VO)->PrepFrame = VisFrame;
 
-			//jeObject_RenderPrep(&(VO->Object),List->Camera);
+			//grObject_RenderPrep(&(VO->Object),List->Camera);
 		}
 	
 		if ( VO->VisHasFrustum )
 		{
-			//jeObject_RenderThroughFrustum(&(VO->Object),List->Engine,&(VO->VisFrustum),VisFrame);
+			//grObject_RenderThroughFrustum(&(VO->Object),List->Engine,&(VO->VisFrustum),VisFrame);
 			DEBUG_INFO(NumObjectsPortalled++);
 		}
 		else
 		{
-			//jeObject_RenderThroughFrustum(&(VO->Object),List->Engine,&(List->CamFrustum),VisFrame);
+			//grObject_RenderThroughFrustum(&(VO->Object),List->Engine,&(List->CamFrustum),VisFrame);
 		}
 		
-		DEBUG( ((jeVisObject *)VO)->VisFrame = -1 );
+		DEBUG( ((grVisObject *)VO)->VisFrame = -1 );
 	}
 }
 
-void jeVisObject_Render(jeVisObject *VO,const jeFrustum *Frustum,uint32 VisFrame)
+void grVisObject_Render(grVisObject *VO,const grFrustum *Frustum,uint32 VisFrame)
 {
 
 #ifdef DO_RENDER_IMMEDIATE
@@ -300,10 +300,10 @@ void jeVisObject_Render(jeVisObject *VO,const jeFrustum *Frustum,uint32 VisFrame
 			VO->PrepFrame = VisFrame;
 			VO->FrustumCount = 0;
 
-			//jeObject_RenderPrep(&(VO->Object),VO->MyOwner->Camera);
+			//grObject_RenderPrep(&(VO->Object),VO->MyOwner->Camera);
 		}
 
-		//jeObject_RenderThroughFrustum(&(VO->Object),VO->MyOwner->Engine,Frustum,VisFrame ^ VO->FrustumCount);
+		//grObject_RenderThroughFrustum(&(VO->Object),VO->MyOwner->Engine,Frustum,VisFrame ^ VO->FrustumCount);
 
 		VO->FrustumCount += 256;
 		VO->VisFrame = -1; // won't be rendered again
@@ -317,29 +317,29 @@ void jeVisObject_Render(jeVisObject *VO,const jeFrustum *Frustum,uint32 VisFrame
 	if ( VO->VisFrame == VisFrame )
 	{
 		// already seen this object this frame from a different frustum
-		VO->VisHasFrustum = JE_FALSE;
+		VO->VisHasFrustum = GR_FALSE;
 	}
 	else
 	{
 		VO->VisFrame = VisFrame;
-		VO->VisHasFrustum = JE_TRUE;
+		VO->VisHasFrustum = GR_TRUE;
 		VO->VisFrustum = *Frustum;
 	}
 }
 
-void jeVisObject_MarkVis(jeVisObject *VO,uint32 VisFrame)
+void grVisObject_MarkVis(grVisObject *VO,uint32 VisFrame)
 {
 	VO->VisFrame = VisFrame;
-	VO->VisHasFrustum = JE_FALSE;
+	VO->VisHasFrustum = GR_FALSE;
 }
 
-void jeVisObjectList_RenderAll(const jeVisObjectList * List,uint32 VisFrame)
+void grVisObjectList_RenderAll(const grVisObjectList * List,uint32 VisFrame)
 {
 HashNode * hn;
 DEBUG(int ObjsWalked=0);
 
 	assert(List->VisFrame == VisFrame);
-	assert( jeVisObjectList_IsValid(List) );
+	assert( grVisObjectList_IsValid(List) );
 
 	hn = NULL;
 
@@ -347,13 +347,13 @@ DEBUG(int ObjsWalked=0);
 
 	while( (hn = Hash_WalkNext(List->ObjectHash,hn)) )
 	{
-	jeVisObject * VO;
-		VO = (jeVisObject *)HashNode_Data(hn);
+	grVisObject * VO;
+		VO = (grVisObject *)HashNode_Data(hn);
 
 		assert( hn == VO->MyHashNode );
 		assert(VO->MyOwner == List);
 
-		jeVisObject_RenderInternal(List,VO,VisFrame);
+		grVisObject_RenderInternal(List,VO,VisFrame);
 		
 		DEBUG(ObjsWalked++);
 		assert(ObjsWalked <= List->NumObjects );
@@ -361,10 +361,10 @@ DEBUG(int ObjsWalked=0);
 	assert(ObjsWalked == List->NumObjects );
 }
 
-jeVisObject * jeVisObjectList_GetNext(const jeVisObjectList * List,jeVisObject *VO)
+grVisObject * grVisObjectList_GetNext(const grVisObjectList * List,grVisObject *VO)
 {
 HashNode * hn;
-	assert( jeVisObjectList_IsValid(List) );
+	assert( grVisObjectList_IsValid(List) );
 
 	if ( VO )
 		hn = VO->MyHashNode;
@@ -376,53 +376,53 @@ HashNode * hn;
 	if ( ! hn )
 		return NULL;
 			
-	VO = (jeVisObject *)HashNode_Data(hn);
+	VO = (grVisObject *)HashNode_Data(hn);
 
 	assert( ! VO || VO->MyOwner == List);
 
 return VO;
 }
 
-jeBoolean jeVisObjectList_IsValid(const jeVisObjectList * List)
+grBoolean grVisObjectList_IsValid(const grVisObjectList * List)
 {
-	if ( ! List) return JE_FALSE;
-	if ( ! (List->MySelf1 == List) ) return JE_FALSE;
-	if ( ! (List->MySelf2 == List) ) return JE_FALSE;
+	if ( ! List) return GR_FALSE;
+	if ( ! (List->MySelf1 == List) ) return GR_FALSE;
+	if ( ! (List->MySelf2 == List) ) return GR_FALSE;
 
 	if ( List->NumObjects < 0 )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( ! List->ObjectHash )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( ! MemPool_IsValid(List->VisObjectPool) )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( Hash_NumMembers(List->ObjectHash) != List->NumObjects )
-		return JE_FALSE;
+		return GR_FALSE;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-const jeObject *	jeVisObject_Object(const jeVisObject *VO)
+const grObject *	grVisObject_Object(const grVisObject *VO)
 {
 	assert(VO);
 	return &(VO->Object);
 }
 
-void				jeVisObject_AddArea(jeVisObject *VO,uint32 AreaUID)
+void				grVisObject_AddArea(grVisObject *VO,uint32 AreaUID)
 {
 	if ( AreaUID == 0 )
 	{
-		VO->InOneArea = JE_TRUE;
+		VO->InOneArea = GR_TRUE;
 	}
 	else if ( VO->AreaUID == 0 )
 	{
-		VO->InOneArea = JE_TRUE;
+		VO->InOneArea = GR_TRUE;
 	}
 	else if ( VO->AreaUID != AreaUID )
 	{
-		VO->InOneArea = JE_FALSE;
+		VO->InOneArea = GR_FALSE;
 	}
 	VO->AreaUID = AreaUID;
 }

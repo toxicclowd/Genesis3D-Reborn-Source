@@ -46,12 +46,12 @@ typedef struct MkMotion_Options
 	MK_Boolean Originate;
 	MK_Boolean Capitalize;
 	float TimeOffset;
-	jeStrBlock* pMotionRoots;
+	grStrBlock* pMotionRoots;
 	char* pMotionName;
 	char EventBoneSeparator;
-	jeVec3d RootEulerAngles;
-	jeVec3d RootTranslation;
-	jeVec3d EulerAngles;		// rotation at read time
+	grVec3d RootEulerAngles;
+	grVec3d RootTranslation;
+	grVec3d EulerAngles;		// rotation at read time
 } MkMotion_Options;
 
 const MkMotion_Options DefaultOptions =
@@ -73,10 +73,10 @@ const MkMotion_Options DefaultOptions =
 
 typedef struct
 {
-	jeStrBlock* pEvents;
+	grStrBlock* pEvents;
 	char name[LINE_LENGTH];
-	jeXForm3d* pMatrixKeys;	// keys with respect to parent
-	jeXForm3d* pWSKeys;		// keys in world space
+	grXForm3d* pMatrixKeys;	// keys with respect to parent
+	grXForm3d* pWSKeys;		// keys in world space
 } BoneKeyInfo;
 
 void DestroyBoneKeyArray(BoneKeyInfo** ppInfo, int nNumBones)
@@ -92,14 +92,14 @@ void DestroyBoneKeyArray(BoneKeyInfo** ppInfo, int nNumBones)
 	for(i=0;i<nNumBones;i++)
 	{
 		if(pInfo[i].pEvents != NULL)
-			jeStrBlock_Destroy(&pInfo[i].pEvents);
+			grStrBlock_Destroy(&pInfo[i].pEvents);
 		if(pInfo[i].pMatrixKeys != NULL)
-			jeRam_Free(pInfo[i].pMatrixKeys);
+			grRam_Free(pInfo[i].pMatrixKeys);
 		if(pInfo[i].pWSKeys != NULL)
-			jeRam_Free(pInfo[i].pWSKeys);
+			grRam_Free(pInfo[i].pWSKeys);
 	}
 
-	jeRam_Free(*ppInfo);
+	grRam_Free(*ppInfo);
 }
 
 BoneKeyInfo* CreateBoneKeyArray(int nNumBones, int nNumKeys)
@@ -110,7 +110,7 @@ BoneKeyInfo* CreateBoneKeyArray(int nNumBones, int nNumKeys)
 	assert(nNumBones > 0);
 	assert(nNumKeys > 0);
 
-	pInfo = JE_RAM_ALLOCATE_ARRAY(BoneKeyInfo, nNumBones);
+	pInfo = GR_RAM_ALLOCATE_ARRAY(BoneKeyInfo, nNumBones);
 	if(pInfo == NULL)
 		return(NULL);
 
@@ -124,15 +124,15 @@ BoneKeyInfo* CreateBoneKeyArray(int nNumBones, int nNumKeys)
 
 	for(i=0;i<nNumBones;i++)
 	{
-		pInfo[i].pEvents = jeStrBlock_Create();
+		pInfo[i].pEvents = grStrBlock_Create();
 		if(pInfo[i].pEvents == NULL)
 			goto CreateBoneKeyArray_Failure;
 
-		pInfo[i].pMatrixKeys = JE_RAM_ALLOCATE_ARRAY(jeXForm3d, nNumKeys);
+		pInfo[i].pMatrixKeys = GR_RAM_ALLOCATE_ARRAY(grXForm3d, nNumKeys);
 		if(pInfo[i].pMatrixKeys == NULL)
 			goto CreateBoneKeyArray_Failure;
 
-		pInfo[i].pWSKeys = JE_RAM_ALLOCATE_ARRAY(jeXForm3d, nNumKeys);
+		pInfo[i].pWSKeys = GR_RAM_ALLOCATE_ARRAY(grXForm3d, nNumKeys);
 		if(pInfo[i].pWSKeys == NULL)
 			goto CreateBoneKeyArray_Failure;
 	}
@@ -158,73 +158,73 @@ void StripNewLine(char* pString)
 }
 
 // Are two xforms the same?
-jeBoolean jeXForm3d_Compare(const jeXForm3d* pM1, const jeXForm3d* pM2)
+grBoolean grXForm3d_Compare(const grXForm3d* pM1, const grXForm3d* pM2)
 {
-	jeVec3d v1, v2;
+	grVec3d v1, v2;
 
 #define XFORM_COMPARE_TOLERANCE 0.001f
 
-	jeXForm3d_GetLeft(pM1, &v1);
-	jeXForm3d_GetLeft(pM2, &v2);
+	grXForm3d_GetLeft(pM1, &v1);
+	grXForm3d_GetLeft(pM2, &v2);
 
-	if(jeVec3d_Compare(&v1, &v2, XFORM_COMPARE_TOLERANCE) == JE_FALSE)
-		return(JE_FALSE);
+	if(grVec3d_Compare(&v1, &v2, XFORM_COMPARE_TOLERANCE) == GR_FALSE)
+		return(GR_FALSE);
 
-	jeXForm3d_GetUp(pM1, &v1);
-	jeXForm3d_GetUp(pM2, &v2);
+	grXForm3d_GetUp(pM1, &v1);
+	grXForm3d_GetUp(pM2, &v2);
 
-	if(jeVec3d_Compare(&v1, &v2, XFORM_COMPARE_TOLERANCE) == JE_FALSE)
-		return(JE_FALSE);
+	if(grVec3d_Compare(&v1, &v2, XFORM_COMPARE_TOLERANCE) == GR_FALSE)
+		return(GR_FALSE);
 
-	jeXForm3d_GetIn(pM1, &v1);
-	jeXForm3d_GetIn(pM2, &v2);
+	grXForm3d_GetIn(pM1, &v1);
+	grXForm3d_GetIn(pM2, &v2);
 
-	if(jeVec3d_Compare(&v1, &v2, XFORM_COMPARE_TOLERANCE) == JE_FALSE)
-		return(JE_FALSE);
+	if(grVec3d_Compare(&v1, &v2, XFORM_COMPARE_TOLERANCE) == GR_FALSE)
+		return(GR_FALSE);
 
-	if(jeVec3d_Compare(&pM1->Translation, &pM2->Translation, XFORM_COMPARE_TOLERANCE) == JE_FALSE)
-		return(JE_FALSE);
+	if(grVec3d_Compare(&pM1->Translation, &pM2->Translation, XFORM_COMPARE_TOLERANCE) == GR_FALSE)
+		return(GR_FALSE);
 
-	return(JE_TRUE);
+	return(GR_TRUE);
 }
 
 // TKArray cannot handle two keys with the same time, so keep incrementing the
 // time by a little bit until an empty hole is found or reach the LimitDistance
-jeBoolean KEYMotion_InsertEventNoDuplicateTime(jeMotion* pMotion, jeFloat tKey, const char* String, jeFloat LimitDistance)
+grBoolean KEYMotion_InsertEventNoDuplicateTime(grMotion* pMotion, grFloat tKey, const char* String, grFloat LimitDistance)
 {
-	jeFloat TimeOffset;
-	jeFloat KeyTime;
-	jeFloat InsertKeyTime;
+	grFloat TimeOffset;
+	grFloat KeyTime;
+	grFloat InsertKeyTime;
 	const char* pEventString;
 
-#define JE_TKA_TIME_TOLERANCE (0.00001f)
-#define TIME_STEP_DISTANCE (JE_TKA_TIME_TOLERANCE * 10.0f)
+#define GR_TKA_TIME_TOLERANCE (0.00001f)
+#define TIME_STEP_DISTANCE (GR_TKA_TIME_TOLERANCE * 10.0f)
 
 	TimeOffset = 0.0f;
 	while(TimeOffset < LimitDistance)
 	{
 		InsertKeyTime = tKey + TimeOffset;
-		jeMotion_SetupEventIterator(pMotion, InsertKeyTime, InsertKeyTime + TIME_STEP_DISTANCE);
-		if(jeMotion_GetNextEvent(pMotion, &KeyTime, &pEventString) == JE_FALSE)
+		grMotion_SetupEventIterator(pMotion, InsertKeyTime, InsertKeyTime + TIME_STEP_DISTANCE);
+		if(grMotion_GetNextEvent(pMotion, &KeyTime, &pEventString) == GR_FALSE)
 		{
-#pragma message("jeMotion_InsertEvent should take a const const*")
-			return(jeMotion_InsertEvent(pMotion, InsertKeyTime, (char*)String));
+#pragma message("grMotion_InsertEvent should take a const const*")
+			return(grMotion_InsertEvent(pMotion, InsertKeyTime, (char*)String));
 		}
 
 		TimeOffset += TIME_STEP_DISTANCE;
 	}
 
-	return(JE_FALSE);
+	return(GR_FALSE);
 }
 
 ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 {
 	int i;
 	char* pdot;
-	jeBody* pBody;
-	jeMotion* pMotion;
-	jePath* pPath;
-	jeVFile *VF=NULL;
+	grBody* pBody;
+	grMotion* pMotion;
+	grPath* pPath;
+	grVFile *VF=NULL;
 	FILE* fp=NULL;
 	ReturnCode retValue = RETURN_SUCCESS;
 	int nVersion = 0;
@@ -233,13 +233,13 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 	float SecondsPerFrame;
 	char line[LINE_LENGTH];
 	char name[LINE_LENGTH];
-	jeXForm3d InvAttach, KeyMatrix, TmpMatrix;
-	jeQuaternion Q;
+	grXForm3d InvAttach, KeyMatrix, TmpMatrix;
+	grQuaternion Q;
 	TopDownBody* pTDBody = NULL;
-	int MotionRootIndex = JE_BODY_NO_PARENT_BONE;
+	int MotionRootIndex = GR_BODY_NO_PARENT_BONE;
 	TDBodyHeritage BoneIsDescendent = TDBODY_IS_DESCENDENT; // default to all in the family
-	jeXForm3d RootRotation;
-	jeXForm3d euler;
+	grXForm3d RootRotation;
+	grXForm3d euler;
 	BoneKeyInfo* pKeyInfo = NULL;
 	const BoneKeyInfo* pParentInfo;
 
@@ -261,14 +261,14 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 	}
 
 	// who knows how many times this will get used in here
-	jeXForm3d_SetEulerAngles(&euler, &options->EulerAngles);
+	grXForm3d_SetEulerAngles(&euler, &options->EulerAngles);
 
 	// Here is the official fclose to use
 #define FCLOSE(f) { fclose(f); f = NULL; }
 
 	// Read the body file
 	
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->BodyFile,NULL,JE_VFILE_OPEN_READONLY);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->BodyFile,NULL,GR_VFILE_OPEN_READONLY);
 		
 	if(VF == NULL)
 	{
@@ -278,37 +278,37 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 	}
 	else
 	{
-		pBody = jeBody_CreateFromFile(VF);
+		pBody = grBody_CreateFromFile(VF);
 		if(pBody == NULL)
 		{
 			Printf("ERROR: Could not create body from file '%s'\n", options->BodyFile);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-			jeVFile_Close(VF);
+			grVFile_Close(VF);
 			VF = NULL;
 			return retValue;
 		}
-		jeVFile_Close(VF);
+		grVFile_Close(VF);
 		VF = NULL;
 	}
 
 	// Create the Top Down Hierarchy if needed
-	if(jeStrBlock_GetCount(options->pMotionRoots) > 0)
+	if(grStrBlock_GetCount(options->pMotionRoots) > 0)
 	{
 		pTDBody = TopDownBody_CreateFromBody(pBody);
 		if(pTDBody == NULL)
 		{
 			Printf("ERROR: Could not create top down hierarchy from body.\n");
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-			jeBody_Destroy(&pBody);
+			grBody_Destroy(&pBody);
 			return retValue;
 		}
 	}
 
 	// Options permit a rotation applied to the root.  Convert the Euler angles
 	// to a transform for easier use later.
-	jeXForm3d_SetEulerAngles(&RootRotation, &options->RootEulerAngles);
+	grXForm3d_SetEulerAngles(&RootRotation, &options->RootEulerAngles);
 
-	pMotion = jeMotion_Create(JE_TRUE);
+	pMotion = grMotion_Create(GR_TRUE);
 	if(pMotion == NULL)
 	{
 		Printf("ERROR: Could not create motion\n");
@@ -317,7 +317,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 	}
 
 	if(options->pMotionName != NULL)
-		jeMotion_SetName(pMotion, options->pMotionName);
+		grMotion_SetName(pMotion, options->pMotionName);
 
 	// Read key data
 	fp = fopen(options->KeyFile, "rt");
@@ -325,7 +325,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 	{
 		Printf("ERROR: Could not open '%s' key file\n", options->KeyFile);
 		MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-		jeMotion_Destroy(&pMotion);
+		grMotion_Destroy(&pMotion);
 		goto DoMake_Cleanup;
 	}
 
@@ -436,7 +436,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 				// Strip the \n from the line
 				StripNewLine(line);
 
-				if(jeStrBlock_Append(&pKeyInfo[k].pEvents, line) == JE_FALSE)
+				if(grStrBlock_Append(&pKeyInfo[k].pEvents, line) == GR_FALSE)
 				{
 					Printf("ERROR: Could not create key data\n");
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -467,7 +467,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 	// list and its WS keys are already assigned.
 	for(k=0;k<NumBones;k++)
 	{
-		if(jeBody_GetBoneByName(pBody, pKeyInfo[k].name, &Index, &InvAttach, &ParentIndex) == JE_FALSE)
+		if(grBody_GetBoneByName(pBody, pKeyInfo[k].name, &Index, &InvAttach, &ParentIndex) == GR_FALSE)
 		{
 			int m;
 			Printf("ERROR: Could not find bone '%s' in body '%s' for key file '%s'\n", pKeyInfo[k].name, options->BodyFile, options->KeyFile);
@@ -475,16 +475,16 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 			for (m=0; m<NumBones; m++)
 				{
 					const char *Name;
-					jeBody_GetBone(pBody,m,&Name,&InvAttach,&ParentIndex);
+					grBody_GetBone(pBody,m,&Name,&InvAttach,&ParentIndex);
 					Printf("\t#%d\t\t'%s'\n",name);
 				}
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 			goto DoMake_Cleanup;
 		}
 
-		if(ParentIndex != JE_BODY_NO_PARENT_BONE)
+		if(ParentIndex != GR_BODY_NO_PARENT_BONE)
 		{
-			jeBody_GetBone(pBody, ParentIndex, &pdot, &InvAttach, &Index);
+			grBody_GetBone(pBody, ParentIndex, &pdot, &InvAttach, &Index);
 			pParentInfo = NULL;
 			for(j=0;j<k;j++)
 			{
@@ -509,7 +509,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 				pKeyInfo[k].pWSKeys[j] = pKeyInfo[k].pMatrixKeys[j];
 #else
 				// Why do I have to swap the matrix order here?
-//				jeXForm3d_Multiply(	pParentInfo->pWSKeys + j, 
+//				grXForm3d_Multiply(	pParentInfo->pWSKeys + j, 
 //									pKeyInfo[k].pMatrixKeys + j, 
 //									pKeyInfo[k].pWSKeys + j );
 				MaxMath_Multiply(	pKeyInfo[k].pMatrixKeys + j, 
@@ -538,7 +538,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 				goto DoMake_Cleanup;
 			}
 		
-		if(jeBody_GetBoneByName(pBody, pKeyInfo[k].name, &Index, &InvAttach, &ParentIndex) == JE_FALSE)
+		if(grBody_GetBoneByName(pBody, pKeyInfo[k].name, &Index, &InvAttach, &ParentIndex) == GR_FALSE)
 		{
 			Printf("ERROR: Could not find bone '%s' in body '%s' for key file '%s'\n", name, options->BodyFile, options->KeyFile);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -549,12 +549,12 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 		for(j=0;j<NumFrames;j++)
 		{
 			// this first one should be the correct one
-			jeXForm3d_Multiply(&euler, pKeyInfo[k].pWSKeys + j, pKeyInfo[k].pWSKeys + j);
+			grXForm3d_Multiply(&euler, pKeyInfo[k].pWSKeys + j, pKeyInfo[k].pWSKeys + j);
 		}
 
-		if(ParentIndex != JE_BODY_NO_PARENT_BONE)
+		if(ParentIndex != GR_BODY_NO_PARENT_BONE)
 		{
-			jeBody_GetBone(pBody, ParentIndex, &pdot, &InvAttach, &Index);
+			grBody_GetBone(pBody, ParentIndex, &pdot, &InvAttach, &Index);
 			pParentInfo = NULL;
 			for(j=0;j<k;j++)
 			{
@@ -594,7 +594,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 	// Finally, let's generate the paths and add them to the motion
 	for(k=0;k<NumBones;k++)
 	{
-		jeVec3d FirstFrameOffset;
+		grVec3d FirstFrameOffset;
 		if (MkUtil_Interrupt())
 			{
 				Printf("Interrupted\n");
@@ -605,7 +605,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 		// Read bone name and get the inverse of its attachment
 		strcpy(name, pKeyInfo[k].name);
 
-		if(jeBody_GetBoneByName(pBody, name, &Index, &InvAttach, &ParentIndex) == JE_FALSE)
+		if(grBody_GetBoneByName(pBody, name, &Index, &InvAttach, &ParentIndex) == GR_FALSE)
 		{
 			Printf("ERROR: Could not find bone '%s' in body '%s' for key file '%s'\n", name, options->BodyFile, options->KeyFile);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -614,7 +614,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 
 		// If we have specified a root for the motion, make sure this bone
 		// is a descendent.
-		j = jeStrBlock_GetCount(options->pMotionRoots);
+		j = grStrBlock_GetCount(options->pMotionRoots);
 		if(j > 0)
 		{
 			assert(pTDBody != NULL);
@@ -623,9 +623,9 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 			{
 				j--;
 
-				if(jeBody_GetBoneByName(pBody, jeStrBlock_GetString(options->pMotionRoots, j), &MotionRootIndex, &TmpMatrix, &ParentIndex) == JE_FALSE)
+				if(grBody_GetBoneByName(pBody, grStrBlock_GetString(options->pMotionRoots, j), &MotionRootIndex, &TmpMatrix, &ParentIndex) == GR_FALSE)
 				{
-					Printf("ERROR: Could not find bone '%s' in body '%s' for motion root\n", jeStrBlock_GetString(options->pMotionRoots, j), options->BodyFile);
+					Printf("ERROR: Could not find bone '%s' in body '%s' for motion root\n", grStrBlock_GetString(options->pMotionRoots, j), options->BodyFile);
 					
 					{
 						int m;
@@ -633,7 +633,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 						for (m=0; m<NumBones; m++)
 							{
 								const char *Name;
-								jeBody_GetBone(pBody,m,&Name,&InvAttach,&ParentIndex);
+								grBody_GetBone(pBody,m,&Name,&InvAttach,&ParentIndex);
 								Printf("\t#%d\t\t'%s'\n",m,Name);
 							}
 					}
@@ -655,15 +655,15 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 		{
 			int NumNotes, note, noteframe;
 			unsigned int linelen;
-			jeFloat notetime;
+			grFloat notetime;
 			const char* notestring;
 
-			NumNotes = jeStrBlock_GetCount(pKeyInfo[k].pEvents);
+			NumNotes = grStrBlock_GetCount(pKeyInfo[k].pEvents);
 
 			for(note=0;note<NumNotes;note++)
 			{
 				// note is valid, so string should be
-				strcpy(line, jeStrBlock_GetString(pKeyInfo[k].pEvents, note));
+				strcpy(line, grStrBlock_GetString(pKeyInfo[k].pEvents, note));
 				noteframe = atoi(line);
 				notestring = strchr(line, ':');
 				// the color must be there with a space following it
@@ -695,7 +695,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 
 				notetime = (float)noteframe * SecondsPerFrame + options->TimeOffset;
 				// insert the note, but not past this frame
-				if(KEYMotion_InsertEventNoDuplicateTime(pMotion, notetime, notestring, SecondsPerFrame) == JE_FALSE)
+				if(KEYMotion_InsertEventNoDuplicateTime(pMotion, notetime, notestring, SecondsPerFrame) == GR_FALSE)
 				{
 					Printf("ERROR: Could not add note \"%s\" for bone '%s' for key file '%s'\n", notestring, name, options->KeyFile);
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -704,7 +704,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 			}
 		}
 
-		pPath = jePath_Create(JE_PATH_INTERPOLATE_HERMITE, JE_PATH_INTERPOLATE_SLERP, JE_FALSE);
+		pPath = grPath_Create(GR_PATH_INTERPOLATE_HERMITE, GR_PATH_INTERPOLATE_SLERP, GR_FALSE);
 		if (pPath == NULL)
 			{
 				Printf("ERROR: Unable to create a path for bone '%s' for key file '%s'\n",name, options->KeyFile);
@@ -714,9 +714,9 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 		if(BoneIsDescendent != TDBODY_IS_NOT_DESCENDENT)
 		{
 			
-			if(jeMotion_AddPath(pMotion, pPath, name,  &Index) == JE_FALSE)
+			if(grMotion_AddPath(pMotion, pPath, name,  &Index) == GR_FALSE)
 			{
-				if (jeMotion_GetPathNamed(pMotion,name) != NULL)
+				if (grMotion_GetPathNamed(pMotion,name) != NULL)
 					{
 						Printf("ERROR: More than one bone named '%s' in key file '%s'\n", name, options->KeyFile);
 					}
@@ -727,7 +727,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 				MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 				goto DoMake_Cleanup;
 			}
-			//pPath = jeMotion_GetPath(pMotion, Index);
+			//pPath = grMotion_GetPath(pMotion, Index);
 		}
 
 		// Read the key data, divide out the attachment (multiply by inverse),
@@ -743,30 +743,30 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 				}
 		
 			// rotation for root only from options
-			if(ParentIndex == JE_BODY_NO_PARENT_BONE)
+			if(ParentIndex == GR_BODY_NO_PARENT_BONE)
 			{
-				jeXForm3d_Multiply(&RootRotation, &KeyMatrix, &KeyMatrix);
+				grXForm3d_Multiply(&RootRotation, &KeyMatrix, &KeyMatrix);
 			}
 			
 			// permit global move of motion
-			if(ParentIndex == JE_BODY_NO_PARENT_BONE)
-				jeXForm3d_Translate(&KeyMatrix, options->RootTranslation.X, options->RootTranslation.Y, options->RootTranslation.Z);
+			if(ParentIndex == GR_BODY_NO_PARENT_BONE)
+				grXForm3d_Translate(&KeyMatrix, options->RootTranslation.X, options->RootTranslation.Y, options->RootTranslation.Z);
 
 			// flip the rotation direction
 			TmpMatrix.Translation = KeyMatrix.Translation;
-			jeQuaternion_FromMatrix(&KeyMatrix, &Q);
+			grQuaternion_FromMatrix(&KeyMatrix, &Q);
 			Q.W = -Q.W;
-			jeQuaternion_ToMatrix(&Q, &KeyMatrix);
+			grQuaternion_ToMatrix(&Q, &KeyMatrix);
 			KeyMatrix.Translation = TmpMatrix.Translation;
 
-			jeXForm3d_GetTranspose(&InvAttach, &TmpMatrix);
-			jeXForm3d_Multiply(&TmpMatrix, &KeyMatrix, &TmpMatrix);
+			grXForm3d_GetTranspose(&InvAttach, &TmpMatrix);
+			grXForm3d_Multiply(&TmpMatrix, &KeyMatrix, &TmpMatrix);
 			Q;
 			FirstFrameOffset;
 
-			jeXForm3d_Orthonormalize(&TmpMatrix);
-			jePath_InsertKeyframe(	pPath,
-									JE_PATH_ROTATION_CHANNEL | JE_PATH_TRANSLATION_CHANNEL,
+			grXForm3d_Orthonormalize(&TmpMatrix);
+			grPath_InsertKeyframe(	pPath,
+									GR_PATH_ROTATION_CHANNEL | GR_PATH_TRANSLATION_CHANNEL,
 									(float)j / (float)FramesPerSecond + options->TimeOffset,
 									&TmpMatrix);
 		}
@@ -774,7 +774,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 		// First, destroy path
 		//if(BoneIsDescendent == MK_FALSE)
 		{
-			jePath_Destroy(&pPath);
+			grPath_Destroy(&pPath);
 		}
 
 		// Then, check for errors
@@ -815,7 +815,7 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 #endif
 
 	// Write the motion
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->MotionFile,NULL,JE_VFILE_OPEN_CREATE);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->MotionFile,NULL,GR_VFILE_OPEN_CREATE);
 	//fp = fopen(options->MotionFile, "wt");
 	if(VF == NULL)
 	{
@@ -826,16 +826,16 @@ ReturnCode MkMotion_DoMake(MkMotion_Options* options,MkUtil_Printf Printf)
 	}
 	else
 	{
-		if(jeMotion_WriteToFile(pMotion, VF) == JE_FALSE)
+		if(grMotion_WriteToFile(pMotion, VF) == GR_FALSE)
 		{
-			jeVFile_Close(VF);  VF = NULL;
+			grVFile_Close(VF);  VF = NULL;
 			Printf("ERROR: Motion file '%s' was not written correctly\n", options->MotionFile);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 			unlink(options->MotionFile);
 		}
 		else
 		{
-			if (jeVFile_Close(VF)==JE_FALSE) 
+			if (grVFile_Close(VF)==GR_FALSE) 
 				{
 					Printf("ERROR: Motion file '%s' was not written correctly\n", options->MotionFile);
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -864,16 +864,16 @@ DoMake_Cleanup:
 		FCLOSE(fp);
 
 	if(VF != NULL)
-		jeVFile_Close(VF);
+		grVFile_Close(VF);
 
 	if(pTDBody != NULL)
 		TopDownBody_Destroy(&pTDBody);
 
 	if(pMotion != NULL)
-		jeMotion_Destroy(&pMotion);
+		grMotion_Destroy(&pMotion);
 
 	if(pBody != NULL)
-		jeBody_Destroy(&pBody);
+		grBody_Destroy(&pBody);
 
 	return retValue;
 }
@@ -914,15 +914,15 @@ MkMotion_Options* MkMotion_OptionsCreate()
 {
 	MkMotion_Options* pOptions;
 
-	pOptions = JE_RAM_ALLOCATE_STRUCT(MkMotion_Options);
+	pOptions = GR_RAM_ALLOCATE_STRUCT(MkMotion_Options);
 	if(pOptions != NULL)
 	{
 		*pOptions = DefaultOptions;
 
-		pOptions->pMotionRoots = jeStrBlock_Create();
+		pOptions->pMotionRoots = grStrBlock_Create();
 		if(pOptions->pMotionRoots == NULL)
 		{
-			jeRam_Free(pOptions);
+			grRam_Free(pOptions);
 		}
 	}
 
@@ -938,12 +938,12 @@ void MkMotion_OptionsDestroy(MkMotion_Options** ppOptions)
 
 	p = *ppOptions;
 
-	jeStrBlock_Destroy(&p->pMotionRoots);
+	grStrBlock_Destroy(&p->pMotionRoots);
 
 	if(p->pMotionName != NULL)
-		jeRam_Free(p->pMotionName);
+		grRam_Free(p->pMotionName);
 
-	jeRam_Free(*ppOptions);
+	grRam_Free(*ppOptions);
 
 	*ppOptions = NULL;
 }
@@ -1107,7 +1107,7 @@ RootEulerAngleError:
 		case 'N':
 			if(strlen(string + 2) > 0)
 			{
-				options->pMotionName = (char*)jeRam_Allocate(strlen(string + 2) + 1);
+				options->pMotionName = (char*)grRam_Allocate(strlen(string + 2) + 1);
 				if(options->pMotionName == NULL)
 				{
 					Printf("ERROR: Could not allocate motion name\n");
@@ -1162,9 +1162,9 @@ PositionError:
 			}
 			else
 			{
-				if(jeStrBlock_FindString(options->pMotionRoots, string + 2, &Index) == MK_FALSE)
+				if(grStrBlock_FindString(options->pMotionRoots, string + 2, &Index) == MK_FALSE)
 				{
-					if(jeStrBlock_Append(&options->pMotionRoots, string + 2) == MK_FALSE)
+					if(grStrBlock_Append(&options->pMotionRoots, string + 2) == MK_FALSE)
 					{
 						Printf("ERROR: Could not add \"%s\" root to string block\n", string + 2);
 						retValue = RETURN_ERROR;

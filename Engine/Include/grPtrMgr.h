@@ -34,10 +34,9 @@ extern "C" {
 /*! @typedef grPtrMgr
 	@brief A instance of a resource pointer helper
 */
-typedef struct jePtrMgr grPtrMgr;
-typedef struct jePtrMgr jePtrMgr;
+typedef struct grPtrMgr grPtrMgr;
 
-typedef struct jeResourceMgr grResourceMgr;
+typedef struct grResourceMgr grResourceMgr;
 
 //=======================================================================================
 //	Function prototypes
@@ -230,21 +229,6 @@ grBoolean grActor_WriteToFile(const grActor *Actor, grVFile *VFile, grPtrMgr *Pt
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jePtrMgr_Create                          grPtrMgr_Create
-#define jePtrMgr_CreateRef                       grPtrMgr_CreateRef
-#define jePtrMgr_Destroy                         grPtrMgr_Destroy
-#define jePtrMgr_GetPtrCount                     grPtrMgr_GetPtrCount
-#define jePtrMgr_GetPtrRefs                      grPtrMgr_GetPtrRefs
-#define jePtrMgr_GetResourceMgr                  grPtrMgr_GetResourceMgr
-#define jePtrMgr_IsValid                         grPtrMgr_IsValid
-#define jePtrMgr_PopPtr                          grPtrMgr_PopPtr
-#define jePtrMgr_PushPtr                         grPtrMgr_PushPtr
-#define jePtrMgr_ReadPtr                         grPtrMgr_ReadPtr
-#define jePtrMgr_WritePtr                        grPtrMgr_WritePtr
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif
 

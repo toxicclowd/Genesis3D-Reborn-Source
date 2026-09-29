@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_BODYINST_H
-#define JE_BODYINST_H 
+#ifndef GR_BODYINST_H
+#define GR_BODYINST_H 
 
 /* This object is for accessing and retrieving an 'instance' of the geometry
    for a body.  
@@ -43,53 +43,53 @@ extern "C" {
 #endif
 
 
-typedef struct jeBodyInst jeBodyInst;
+typedef struct grBodyInst grBodyInst;
 
-typedef int16 jeBodyInst_Index;
+typedef int16 grBodyInst_Index;
 
 typedef enum 
 {
-	JE_BODYINST_FACE_TRIANGLE,
-	JE_BODYINST_FACE_TRISTRIP,
-	JE_BODYINST_FACE_TRIFAN
-} jeBodyInst_FaceType;
+	GR_BODYINST_FACE_TRIANGLE,
+	GR_BODYINST_FACE_TRISTRIP,
+	GR_BODYINST_FACE_TRIFAN
+} grBodyInst_FaceType;
 
 
-typedef struct jeBodyInst_SkinVertex
+typedef struct grBodyInst_SkinVertex
 {
-	jeVec3d SVPoint;
+	grVec3d SVPoint;
 	// added unxformed body skin vert member to structure for uv mapping
-	jeVec3d SVW; // world-space (unxformed, unprojected) point
-	jeFloat SVU,SVV;
+	grVec3d SVW; // world-space (unxformed, unprojected) point
+	grFloat SVU,SVV;
 	int	ReferenceBoneIndex;
-} jeBodyInst_SkinVertex;
+} grBodyInst_SkinVertex;
 
-typedef struct jeBodyInst_Geometry 
+typedef struct grBodyInst_Geometry 
 {
-	jeBodyInst_Index		 SkinVertexCount;
-	jeBodyInst_SkinVertex	*SkinVertexArray;
+	grBodyInst_Index		 SkinVertexCount;
+	grBodyInst_SkinVertex	*SkinVertexArray;
 
-	jeBodyInst_Index		 NormalCount;
-	jeVec3d					*NormalArray;
+	grBodyInst_Index		 NormalCount;
+	grVec3d					*NormalArray;
 
-	jeBodyInst_Index		 FaceCount;
+	grBodyInst_Index		 FaceCount;
 	int32					 FaceListSize;
-	jeBodyInst_Index		*FaceList;
+	grBodyInst_Index		*FaceList;
 
-	jeVec3d					 Maxs, Mins;
-}	jeBodyInst_Geometry;
+	grVec3d					 Maxs, Mins;
+}	grBodyInst_Geometry;
 
-/* format for jeBodyInst_Geometry.FaceList:
-	primitive type (JE_BODY_FACE_TRIANGLE,	  JE_BODY_FACE_TRISTRIP,  JE_BODY_FACE_TRIFAN )
+/* format for grBodyInst_Geometry.FaceList:
+	primitive type (GR_BODY_FACE_TRIANGLE,	  GR_BODY_FACE_TRISTRIP,  GR_BODY_FACE_TRIFAN )
 	followed by material index
 	followed by...
 	case primitive 
-		JE_BODY_FACE_TRIANGLE:
+		GR_BODY_FACE_TRIANGLE:
 		  vertex index 1, normal index 1
 		  vertex index 2, normal index 2
 		  vertex index 3, normal index 3
 		  (next primitive)
-		JE_BODY_FACE_TRISTRIP:
+		GR_BODY_FACE_TRISTRIP:
 		  triangle count
 		  vertex index 1, normal index 1
 		  vertex index 2, normal index 2
@@ -97,7 +97,7 @@ typedef struct jeBodyInst_Geometry
 		  vertex index 4, normal index 4
 		  ...  # vertices is triangle count+2
 		  (next primitive)
-		JE_BODY_FACE_TRIFAN:
+		GR_BODY_FACE_TRIFAN:
 		  triangle count
 		  vertex index 1, normal index 1
 		  vertex index 2, normal index 2
@@ -110,15 +110,15 @@ typedef struct jeBodyInst_Geometry
 
 
 
-jeBodyInst *JETCF jeBodyInst_Create( const jeBody *B );
-void JETCF jeBodyInst_Destroy(jeBodyInst **BI);
+grBodyInst *GRCF grBodyInst_Create( const grBody *B );
+void GRCF grBodyInst_Destroy(grBodyInst **BI);
 
-const jeBodyInst_Geometry * JETCF jeBodyInst_GetGeometry( 
-								const jeBodyInst *BI,
-								const jeVec3d *Scale,
-								const jeXFArray *BoneXformArray,
+const grBodyInst_Geometry * GRCF grBodyInst_GetGeometry( 
+								const grBodyInst *BI,
+								const grVec3d *Scale,
+								const grXFArray *BoneXformArray,
 								int LevelOfDetail,
-								const jeCamera *Camera);
+								const grCamera *Camera);
 
 
 #ifdef __cplusplus

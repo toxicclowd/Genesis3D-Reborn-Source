@@ -37,20 +37,20 @@
 #define STRBLOCK_MAX_STRINGLEN 255
 
 
-typedef struct jeStrBlock
+typedef struct grStrBlock
 {
 	int Count;
-	jeStrBlock *SanityCheck;
+	grStrBlock *SanityCheck;
 	union 
 		{
 			int IntArray[1];		// char offset into CharArray for string[n]
 			char CharArray[1];
 		} Data;
 		
-} jeStrBlock;
+} grStrBlock;
 
 
-JETAPI int JETCC jeStrBlock_GetChecksum(const jeStrBlock *SB)
+GRAPI int GRCC grStrBlock_GetChecksum(const grStrBlock *SB)
 {
 	int Count;
 	int Len;
@@ -59,10 +59,10 @@ JETAPI int JETCC jeStrBlock_GetChecksum(const jeStrBlock *SB)
 	int Checksum=0;
 	assert( SB != NULL );
 
-	Count = jeStrBlock_GetCount(SB);
+	Count = grStrBlock_GetCount(SB);
 	for (i=0; i<Count; i++)
 		{
-			Str = jeStrBlock_GetString(SB,i);
+			Str = grStrBlock_GetString(SB,i);
 			assert(Str!=NULL);
 			Len = strlen(Str);
 			for (j=0; j<Len; j++)
@@ -74,15 +74,15 @@ JETAPI int JETCC jeStrBlock_GetChecksum(const jeStrBlock *SB)
 	return Checksum;
 }
 
-JETAPI jeStrBlock *JETCC jeStrBlock_Create(void)
+GRAPI grStrBlock *GRCC grStrBlock_Create(void)
 {
-	jeStrBlock *SB;
+	grStrBlock *SB;
 	
-	SB = JE_RAM_ALLOCATE_STRUCT_CLEAR(jeStrBlock);
+	SB = GR_RAM_ALLOCATE_STRUCT_CLEAR(grStrBlock);
 
 	if ( SB == NULL )
 		{
-			jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeStrBlock_Create.");
+			grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grStrBlock_Create.");
 			return NULL;
 		}
 	SB->Count=0;
@@ -91,17 +91,17 @@ JETAPI jeStrBlock *JETCC jeStrBlock_Create(void)
 }
 
 
-JETAPI void JETCC jeStrBlock_Destroy(jeStrBlock **SB)
+GRAPI void GRCC grStrBlock_Destroy(grStrBlock **SB)
 {
 	assert( (*SB)->SanityCheck == (*SB) );
 	assert(  SB != NULL );
 	assert( *SB != NULL );	
-	jeRam_Free( *SB );
+	grRam_Free( *SB );
 	*SB = NULL;
 }
 
 
-static int JETCC jeStrBlock_BlockSize(const jeStrBlock *B)
+static int GRCC grStrBlock_BlockSize(const grStrBlock *B)
 {
 	int Offset;
 	const char *LastStr;
@@ -117,7 +117,7 @@ static int JETCC jeStrBlock_BlockSize(const jeStrBlock *B)
 }
 
 
-JETAPI void JETCC jeStrBlock_Delete(jeStrBlock **ppSB,int Nth)
+GRAPI void GRCC grStrBlock_Delete(grStrBlock **ppSB,int Nth)
 {
 	int BlockSize;
 	int StringLen;
@@ -129,14 +129,14 @@ JETAPI void JETCC jeStrBlock_Delete(jeStrBlock **ppSB,int Nth)
 	assert( Nth < (*ppSB)->Count );
 	assert( (*ppSB)->SanityCheck == (*ppSB) );
 
-	String = jeStrBlock_GetString(*ppSB,Nth);
+	String = grStrBlock_GetString(*ppSB,Nth);
 	assert( String != NULL );
 	StringLen = strlen(String) + 1;
 		
-	BlockSize = jeStrBlock_BlockSize(*ppSB);
+	BlockSize = grStrBlock_BlockSize(*ppSB);
 
 	{
-		jeStrBlock *B = *ppSB;
+		grStrBlock *B = *ppSB;
 		char *ToBeReplaced;
 		char *Replacement=NULL;
 		int i;
@@ -163,17 +163,17 @@ JETAPI void JETCC jeStrBlock_Delete(jeStrBlock **ppSB,int Nth)
 	}
 	
 	{
-		jeStrBlock * NewjeStrBlock;
+		grStrBlock * NewgrStrBlock;
 
-		NewjeStrBlock = (jeStrBlock *)jeRam_Realloc( *ppSB, 
+		NewgrStrBlock = (grStrBlock *)grRam_Realloc( *ppSB, 
 			BlockSize				// size of data block
-			+ sizeof(jeStrBlock)		// size of strblock structure
+			+ sizeof(grStrBlock)		// size of strblock structure
 			- StringLen				// size of dying string
 			- sizeof(int) );		// size of new index to string
-		if ( NewjeStrBlock != NULL )
+		if ( NewgrStrBlock != NULL )
 			{
-				*ppSB = NewjeStrBlock;
-				(*ppSB)->SanityCheck = NewjeStrBlock;
+				*ppSB = NewgrStrBlock;
+				(*ppSB)->SanityCheck = NewgrStrBlock;
 			}
 	}
 
@@ -182,7 +182,7 @@ JETAPI void JETCC jeStrBlock_Delete(jeStrBlock **ppSB,int Nth)
 
 
 
-JETAPI jeBoolean JETCC jeStrBlock_FindString(const jeStrBlock* pSB, const char* String, int* pIndex)
+GRAPI grBoolean GRCC grStrBlock_FindString(const grStrBlock* pSB, const char* String, int* pIndex)
 {
 	int i;
 	int Count;
@@ -193,21 +193,21 @@ JETAPI jeBoolean JETCC jeStrBlock_FindString(const jeStrBlock* pSB, const char* 
 	assert(pIndex != NULL);
 	assert( pSB->SanityCheck == pSB );
 
-	Count = jeStrBlock_GetCount(pSB);
+	Count = grStrBlock_GetCount(pSB);
 	for (i=0; i<Count; i++)
 	{
-		Str = jeStrBlock_GetString(pSB,i);
+		Str = grStrBlock_GetString(pSB,i);
 		if(strcmp(String, Str) == 0)
 		{
 			*pIndex = i;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 
-JETAPI jeBoolean JETCC jeStrBlock_Append(jeStrBlock **ppSB,const char *String)
+GRAPI grBoolean GRCC grStrBlock_Append(grStrBlock **ppSB,const char *String)
 {
 	int BlockSize;
 	assert(  ppSB  != NULL );
@@ -217,31 +217,31 @@ JETAPI jeBoolean JETCC jeStrBlock_Append(jeStrBlock **ppSB,const char *String)
 
 	if (strlen(String)>=STRBLOCK_MAX_STRINGLEN)
 		{
-			jeErrorLog_Add(JE_ERR_BAD_PARAMETER, "jeStrBlock_Append: string too long.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_BAD_PARAMETER, "grStrBlock_Append: string too long.");
+			return GR_FALSE;
 		}
 
-	BlockSize = jeStrBlock_BlockSize(*ppSB);
+	BlockSize = grStrBlock_BlockSize(*ppSB);
 
 	{
-		jeStrBlock * NewjeStrBlock;
+		grStrBlock * NewgrStrBlock;
 
-		NewjeStrBlock = (jeStrBlock*)jeRam_Realloc( *ppSB, 
+		NewgrStrBlock = (grStrBlock*)grRam_Realloc( *ppSB, 
 			BlockSize				// size of data block
-			+ sizeof(jeStrBlock)		// size of strblock structure
+			+ sizeof(grStrBlock)		// size of strblock structure
 			+ strlen(String) + 1		// size of new string
 			+ sizeof(int) );		// size of new index to string
-		if ( NewjeStrBlock == NULL )
+		if ( NewgrStrBlock == NULL )
 			{
-				jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeStrBlock_Append: failed to allocate space for new string.");
-				return JE_FALSE;
+				grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grStrBlock_Append: failed to allocate space for new string.");
+				return GR_FALSE;
 			}
-		*ppSB = NewjeStrBlock;
-		(*ppSB)->SanityCheck = NewjeStrBlock;
+		*ppSB = NewgrStrBlock;
+		(*ppSB)->SanityCheck = NewgrStrBlock;
 	}
 
 	{
-		jeStrBlock *B = *ppSB;
+		grStrBlock *B = *ppSB;
 		int i;
 		for (i=0; i<B->Count; i++)
 			{
@@ -257,10 +257,10 @@ JETAPI jeBoolean JETCC jeStrBlock_Append(jeStrBlock **ppSB,const char *String)
 		strcpy(&(B->Data.CharArray[B->Data.IntArray[B->Count]]),String);
 	}
 	(*ppSB)->Count++;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI const char *JETCC jeStrBlock_GetString(const jeStrBlock *SB, int Index)
+GRAPI const char *GRCC grStrBlock_GetString(const grStrBlock *SB, int Index)
 {
 	assert( SB != NULL );
 	assert( Index >= 0 );
@@ -269,7 +269,7 @@ JETAPI const char *JETCC jeStrBlock_GetString(const jeStrBlock *SB, int Index)
 	return &(SB->Data.CharArray[SB->Data.IntArray[Index]]);
 }
 
-JETAPI int JETCC jeStrBlock_GetCount(const jeStrBlock *SB)
+GRAPI int GRCC grStrBlock_GetCount(const grStrBlock *SB)
 {
 	assert( SB != NULL);
 	assert( SB->SanityCheck == SB );
@@ -284,56 +284,56 @@ typedef struct
 {
 	int Count;
 	uint32 Size;
-} jeStrBlock_FileHeader;
+} grStrBlock_FileHeader;
 
-JETAPI jeStrBlock* JETCC jeStrBlock_CreateFromFile(jeVFile* pFile)
+GRAPI grStrBlock* GRCC grStrBlock_CreateFromFile(grVFile* pFile)
 {
 	int32 u;
-	jeStrBlock *SB;
-	jeStrBlock_FileHeader Header;
+	grStrBlock *SB;
+	grStrBlock_FileHeader Header;
 
 	assert( pFile != NULL );
 
-	if(jeVFile_Read(pFile, &u, sizeof(u)) == JE_FALSE)
+	if(grVFile_Read(pFile, &u, sizeof(u)) == GR_FALSE)
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ , "jeStrBlock_CreateFromFile: Failed to read header.");
+		grErrorLog_Add( GR_ERR_FILEIO_READ , "grStrBlock_CreateFromFile: Failed to read header.");
 		return NULL;
 	}
 
 	if (u!=STRBLOCK_BIN_FILE_TYPE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_FORMAT , "jeStrBlock_CreateFromFile: Bad or wrong header.");
+			grErrorLog_Add( GR_ERR_FILEIO_FORMAT , "grStrBlock_CreateFromFile: Bad or wrong header.");
 			return NULL;
 		}
 
-	if (jeVFile_Read(pFile, &Header,sizeof(jeStrBlock_FileHeader)) == JE_FALSE)
+	if (grVFile_Read(pFile, &Header,sizeof(grStrBlock_FileHeader)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_READ , "jeStrBlock_CreateFromFile: Failed to read header block.");
+			grErrorLog_Add( GR_ERR_FILEIO_READ , "grStrBlock_CreateFromFile: Failed to read header block.");
 			return NULL;
 		}
 	
-	SB = (jeStrBlock *)jeRam_AllocateClear( sizeof(jeStrBlock) + Header.Size );
+	SB = (grStrBlock *)grRam_AllocateClear( sizeof(grStrBlock) + Header.Size );
 	if( SB == NULL )
 		{
-			jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeStrBlock_CreateFromFile.");
+			grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grStrBlock_CreateFromFile.");
 			return NULL;	
 		}
 	SB->SanityCheck = SB;
 	SB->Count = Header.Count; 
 
-	if (jeVFile_Read(pFile, &(SB->Data),Header.Size) == JE_FALSE)
+	if (grVFile_Read(pFile, &(SB->Data),Header.Size) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_READ , "jeStrBlock_CreateFromFile.");
+			grErrorLog_Add( GR_ERR_FILEIO_READ , "grStrBlock_CreateFromFile.");
 			return NULL;
 		}
 	return SB;
 }
 			
 
-JETAPI jeBoolean JETCC jeStrBlock_WriteToFile(const jeStrBlock *SB,jeVFile *pFile)
+GRAPI grBoolean GRCC grStrBlock_WriteToFile(const grStrBlock *SB,grVFile *pFile)
 {
 	uint32 u;
-	jeStrBlock_FileHeader Header;
+	grStrBlock_FileHeader Header;
 
 	assert( SB != NULL );
 	assert( pFile != NULL );
@@ -341,26 +341,26 @@ JETAPI jeBoolean JETCC jeStrBlock_WriteToFile(const jeStrBlock *SB,jeVFile *pFil
 
 	// Write the format flag
 	u = STRBLOCK_BIN_FILE_TYPE;
-	if(jeVFile_Write(pFile, &u, sizeof(u)) == JE_FALSE)
+	if(grVFile_Write(pFile, &u, sizeof(u)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_WRITE , "jeStrBlock_WriteToFile: Failed to write header.");
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_FILEIO_WRITE , "grStrBlock_WriteToFile: Failed to write header.");
+			return GR_FALSE;
 		}
 
-	Header.Size = jeStrBlock_BlockSize(SB);
+	Header.Size = grStrBlock_BlockSize(SB);
 	Header.Count = SB->Count;
 
-	if(jeVFile_Write(pFile, &Header, sizeof(jeStrBlock_FileHeader)) == JE_FALSE)
+	if(grVFile_Write(pFile, &Header, sizeof(grStrBlock_FileHeader)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_WRITE , "jeStrBlock_WriteToFile: Failed to write header block.");
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_FILEIO_WRITE , "grStrBlock_WriteToFile: Failed to write header block.");
+			return GR_FALSE;
 		}
 	
-	if (jeVFile_Write(pFile, &(SB->Data),Header.Size) == JE_FALSE)
+	if (grVFile_Write(pFile, &(SB->Data),Header.Size) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_WRITE , "jeStrBlock_WriteToFile: Failed to write string data.");
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_FILEIO_WRITE , "grStrBlock_WriteToFile: Failed to write string data.");
+			return GR_FALSE;
 		}
 		
-	return JE_TRUE;
+	return GR_TRUE;
 }

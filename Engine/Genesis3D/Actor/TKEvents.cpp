@@ -18,10 +18,10 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-/* jeTKEvents
+/* grTKEvents
 	(Time-Keyed-Events)
 
-	jeTKEvents is a sorted array of times with an identifying descriptor.
+	grTKEvents is a sorted array of times with an identifying descriptor.
 	The descriptors are stored as strings in a separate, packed buffer.
 
 */
@@ -36,24 +36,24 @@
 
 typedef struct
 {
-	jeTKEvents_TimeType EventTime;
+	grTKEvents_TimeType EventTime;
 	uint32 DataOffset;
 }	EventType;
 
-typedef struct jeTKEventsIterator 
+typedef struct grTKEventsIterator 
 {
-	jeTKEvents_TimeType EndTime;
+	grTKEvents_TimeType EndTime;
 	int CurrentIndex;
-}	jeTKEventsIterator;
+}	grTKEventsIterator;
 
-typedef struct jeTKEvents
+typedef struct grTKEvents
 {
-	jeTKArray* pTimeKeys;
+	grTKArray* pTimeKeys;
 	uint32 DataSize;
 	char* pEventData;
 
-	jeTKEventsIterator Iterator;
-}	jeTKEvents;
+	grTKEventsIterator Iterator;
+}	grTKEvents;
 
 
 
@@ -61,14 +61,14 @@ typedef struct jeTKEvents
 // Use TKE_ASSERT_VALID to test array for reasonable data.
 #ifdef _DEBUG
 
-#define TKE_ASSERT_VALID(E) jeTKEvents_Asserts(E)
+#define TKE_ASSERT_VALID(E) grTKEvents_Asserts(E)
 
 // Do not call this function directly.  Use TKE_ASSERT_VALID
-static void JETCC jeTKEvents_Asserts(const jeTKEvents* E)
+static void GRCC grTKEvents_Asserts(const grTKEvents* E)
 {
 	assert( (E) != NULL );
 	assert( (E)->pTimeKeys != NULL );
-	if(jeTKArray_NumElements((E)->pTimeKeys) == 0)
+	if(grTKArray_NumElements((E)->pTimeKeys) == 0)
 	{
 		assert( (E)->pEventData == NULL );
 	}
@@ -84,23 +84,23 @@ static void JETCC jeTKEvents_Asserts(const jeTKEvents* E)
 
 #endif // _DEBUG
 
-jeTKEvents* JETCC jeTKEvents_Create(void)
+grTKEvents* GRCC grTKEvents_Create(void)
 	// Creates a new event array.
 {
-	jeTKEvents* pEvents;
+	grTKEvents* pEvents;
 
-	pEvents = JE_RAM_ALLOCATE_STRUCT_CLEAR(jeTKEvents);
+	pEvents = GR_RAM_ALLOCATE_STRUCT_CLEAR(grTKEvents);
 	if(!pEvents)
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeTKEvents_Create.");
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grTKEvents_Create.");
 		return NULL;
 	}
 
-	pEvents->pTimeKeys = jeTKArray_Create(sizeof(EventType));
+	pEvents->pTimeKeys = grTKArray_Create(sizeof(EventType));
 	if(!pEvents->pTimeKeys)
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeTKEvents_Create.");
-		jeRam_Free(pEvents);
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grTKEvents_Create.");
+		grRam_Free(pEvents);
 		return NULL;
 	}
 
@@ -114,10 +114,10 @@ jeTKEvents* JETCC jeTKEvents_Create(void)
 }
 
 
-void JETCC jeTKEvents_Destroy(jeTKEvents** ppEvents)
+void GRCC grTKEvents_Destroy(grTKEvents** ppEvents)
 	// Destroys array.
 {
-	jeTKEvents* pE;
+	grTKEvents* pE;
 
 	assert(ppEvents);
 	pE = *ppEvents;
@@ -125,19 +125,19 @@ void JETCC jeTKEvents_Destroy(jeTKEvents** ppEvents)
 
 	if( pE->pEventData != NULL )
 		{
-			jeRam_Free(pE->pEventData);
+			grRam_Free(pE->pEventData);
 		}
 	
 	if (pE->pTimeKeys != NULL)
 		{
-			jeTKArray_Destroy(&pE->pTimeKeys);
+			grTKArray_Destroy(&pE->pTimeKeys);
 		}
-	jeRam_Free(*ppEvents);
+	grRam_Free(*ppEvents);
 	*ppEvents = NULL;
 }
 
 
-jeBoolean JETCC jeTKEvents_Insert(jeTKEvents* pEvents, jeTKEvents_TimeType tKey, const char* pEventData)
+grBoolean GRCC grTKEvents_Insert(grTKEvents* pEvents, grTKEvents_TimeType tKey, const char* pEventData)
 {
 	int nIndex;
 	uint32 DataLength;
@@ -148,34 +148,34 @@ jeBoolean JETCC jeTKEvents_Insert(jeTKEvents* pEvents, jeTKEvents_TimeType tKey,
 
 	TKE_ASSERT_VALID(pEvents);
 
-	if( jeTKArray_Insert(&pEvents->pTimeKeys, tKey, &nIndex) != JE_TRUE )
+	if( grTKArray_Insert(&pEvents->pTimeKeys, tKey, &nIndex) != GR_TRUE )
 	{
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeTKEvents_Insert: failed to insert.");
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grTKEvents_Insert: failed to insert.");
+		return GR_FALSE;
 	}
-	pKeyInfo = (EventType *)jeTKArray_Element(pEvents->pTimeKeys, nIndex);
+	pKeyInfo = (EventType *)grTKArray_Element(pEvents->pTimeKeys, nIndex);
 	assert( pKeyInfo != NULL ); // I just successfully added it; it better be there.
 
 	DataLength = strlen(pEventData) + 1;
 
 	// Resize data to add new stuff
-	pNewData = (char *)jeRam_Realloc(pEvents->pEventData, pEvents->DataSize + DataLength);
+	pNewData = (char *)grRam_Realloc(pEvents->pEventData, pEvents->DataSize + DataLength);
 	if(!pNewData)
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeTKEvents_Insert.");
-		if( jeTKArray_DeleteElement(&pEvents->pTimeKeys, nIndex) == JE_FALSE)
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grTKEvents_Insert.");
+		if( grTKArray_DeleteElement(&pEvents->pTimeKeys, nIndex) == GR_FALSE)
 		{
 			// This object is now in an unstable state.
 			assert(0);
 		}
 		// invalidate the iterator
 		pEvents->Iterator.EndTime = -99e33f;	// you could sample here I suppose...
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	pEvents->pEventData = pNewData;
 
 	// Find where new data will go
-	nNumElements = jeTKArray_NumElements(pEvents->pTimeKeys);
+	nNumElements = grTKArray_NumElements(pEvents->pTimeKeys);
 	assert(nIndex < nNumElements); // sanity check
 	if(nIndex == nNumElements - 1)
 	{
@@ -184,7 +184,7 @@ jeBoolean JETCC jeTKEvents_Insert(jeTKEvents* pEvents, jeTKEvents_TimeType tKey,
 	}
 	else
 	{
-		EventType* pNextKeyInfo = (EventType *)jeTKArray_Element(pEvents->pTimeKeys, nIndex + 1);
+		EventType* pNextKeyInfo = (EventType *)grTKArray_Element(pEvents->pTimeKeys, nIndex + 1);
 		assert( pNextKeyInfo != NULL );
 
 		InitialOffset = pNextKeyInfo->DataOffset;
@@ -208,7 +208,7 @@ jeBoolean JETCC jeTKEvents_Insert(jeTKEvents* pEvents, jeTKEvents_TimeType tKey,
 	nIndex++;
 	while(nIndex < nNumElements)
 	{
-		pKeyInfo = (EventType *)jeTKArray_Element(pEvents->pTimeKeys, nIndex);
+		pKeyInfo = (EventType *)grTKArray_Element(pEvents->pTimeKeys, nIndex);
 		assert( pKeyInfo != NULL );
 		pKeyInfo->DataOffset += DataLength;
 
@@ -218,42 +218,42 @@ jeBoolean JETCC jeTKEvents_Insert(jeTKEvents* pEvents, jeTKEvents_TimeType tKey,
 	// invalidate the iterator
 	pEvents->Iterator.EndTime = -99e33f;	// you could sample here I suppose...
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean JETCC jeTKEvents_Delete(jeTKEvents* pEvents, jeTKEvents_TimeType tKey)
+grBoolean GRCC grTKEvents_Delete(grTKEvents* pEvents, grTKEvents_TimeType tKey)
 {
 	int nIndex, Count;
-	jeTKEvents_TimeType tFound;
+	grTKEvents_TimeType tFound;
 	EventType* pKeyInfo;
 	int DataOffset, DataSize;
 	char *pNewData;
 
 	TKE_ASSERT_VALID(pEvents);
 
-	nIndex = jeTKArray_BSearch(pEvents->pTimeKeys, tKey);
+	nIndex = grTKArray_BSearch(pEvents->pTimeKeys, tKey);
 
 	if( nIndex < 0 )
 	{	// key wasn't found
-		jeErrorLog_Add(JE_ERR_SEARCH_FAILURE, "jeTKEvents_Delete: key not found for delete.");
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_SEARCH_FAILURE, "grTKEvents_Delete: key not found for delete.");
+		return GR_FALSE;
 	}
 
-	tFound = jeTKArray_ElementTime(pEvents->pTimeKeys, nIndex);
-	if(tFound < tKey - JE_TKA_TIME_TOLERANCE)
+	tFound = grTKArray_ElementTime(pEvents->pTimeKeys, nIndex);
+	if(tFound < tKey - GR_TKA_TIME_TOLERANCE)
 	{
 		// key not found
-		jeErrorLog_Add(JE_ERR_SEARCH_FAILURE, "jeTKEvents_Delete: key not found for delete.");
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_SEARCH_FAILURE, "grTKEvents_Delete: key not found for delete.");
+		return GR_FALSE;
 	}
 
-	pKeyInfo = (EventType *)jeTKArray_Element(pEvents->pTimeKeys, nIndex);
+	pKeyInfo = (EventType *)grTKArray_Element(pEvents->pTimeKeys, nIndex);
 	DataOffset = pKeyInfo->DataOffset;
-	if(nIndex < jeTKArray_NumElements(pEvents->pTimeKeys) - 1)
+	if(nIndex < grTKArray_NumElements(pEvents->pTimeKeys) - 1)
 	{
 		// not the last element
-		pKeyInfo = (EventType *)jeTKArray_Element(pEvents->pTimeKeys, nIndex + 1);
+		pKeyInfo = (EventType *)grTKArray_Element(pEvents->pTimeKeys, nIndex + 1);
 		DataSize = pKeyInfo->DataOffset - DataOffset;
 
 		memmove(pEvents->pEventData + DataOffset,				// dest
@@ -270,12 +270,12 @@ jeBoolean JETCC jeTKEvents_Delete(jeTKEvents* pEvents, jeTKEvents_TimeType tKey)
 	pEvents->DataSize -= DataSize;
 	if (pEvents->DataSize == 0)
 	{
-		jeRam_Free (pEvents->pEventData);
+		grRam_Free (pEvents->pEventData);
 		pEvents->pEventData = NULL;
 	}
 	else
 	{
-		pNewData = (char *)jeRam_Realloc(pEvents->pEventData, pEvents->DataSize);
+		pNewData = (char *)grRam_Realloc(pEvents->pEventData, pEvents->DataSize);
 		// If the reallocation failed, it doesn't really hurt.  However, it is a 
 		// sign of problems ahead.
 		if(pNewData)
@@ -285,13 +285,13 @@ jeBoolean JETCC jeTKEvents_Delete(jeTKEvents* pEvents, jeTKEvents_TimeType tKey)
 	}
 
 	// Finally, remove this element
-	jeTKArray_DeleteElement(&pEvents->pTimeKeys, nIndex);
+	grTKArray_DeleteElement(&pEvents->pTimeKeys, nIndex);
 
 	// Adjust the offsets
-	Count = jeTKArray_NumElements(pEvents->pTimeKeys);
+	Count = grTKArray_NumElements(pEvents->pTimeKeys);
 	while(nIndex < Count)
 	{
-		pKeyInfo = (EventType *)jeTKArray_Element(pEvents->pTimeKeys, nIndex);
+		pKeyInfo = (EventType *)grTKArray_Element(pEvents->pTimeKeys, nIndex);
 		assert( pKeyInfo != NULL );
 		pKeyInfo->DataOffset -= DataSize;
 		nIndex++;
@@ -300,7 +300,7 @@ jeBoolean JETCC jeTKEvents_Delete(jeTKEvents* pEvents, jeTKEvents_TimeType tKey)
 	// invalidate the iterator
 	pEvents->Iterator.EndTime = -99e33f;	// you could sample here I suppose...
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -308,26 +308,26 @@ jeBoolean JETCC jeTKEvents_Delete(jeTKEvents* pEvents, jeTKEvents_TimeType tKey)
 #define TKEVENTS_BIN_FILE_TYPE   0x42454B54 // 'TKEB'
 
 
-jeTKEvents* JETCC jeTKEvents_CreateFromFile(
-	jeVFile* pFile)					// stream positioned at array data
+grTKEvents* GRCC grTKEvents_CreateFromFile(
+	grVFile* pFile)					// stream positioned at array data
 	// Creates a new array from the given stream.
 {
 	uint32 u;
-	jeTKEvents* pEvents;
+	grTKEvents* pEvents;
 
 	assert( pFile != NULL );
 
 	// Read the format/version flag
-	if(jeVFile_Read(pFile, &u, sizeof(u)) == JE_FALSE)
+	if(grVFile_Read(pFile, &u, sizeof(u)) == GR_FALSE)
 	{
-		jeErrorLog_Add(JE_ERR_FILEIO_READ, "jeTKEvents_CreateFromFile.");
+		grErrorLog_Add(GR_ERR_FILEIO_READ, "grTKEvents_CreateFromFile.");
 		return NULL;
 	}
 
-	pEvents = JE_RAM_ALLOCATE_STRUCT_CLEAR(jeTKEvents);
+	pEvents = GR_RAM_ALLOCATE_STRUCT_CLEAR(grTKEvents);
 	if(!pEvents)
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeTKEvents_CreateFromFile.");
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grTKEvents_CreateFromFile.");
 		return NULL;
 	}
 	pEvents->pEventData = NULL;
@@ -335,45 +335,45 @@ jeTKEvents* JETCC jeTKEvents_CreateFromFile(
 
 		if(u == TKEVENTS_BIN_FILE_TYPE)
 			{
-				if(jeVFile_Read(pFile, &u, sizeof(u)) == JE_FALSE)
+				if(grVFile_Read(pFile, &u, sizeof(u)) == GR_FALSE)
 					{
-						jeErrorLog_Add(JE_ERR_FILEIO_READ, "jeTKEvents_CreateFromFile.");
-						jeTKEvents_Destroy(&pEvents);
+						grErrorLog_Add(GR_ERR_FILEIO_READ, "grTKEvents_CreateFromFile.");
+						grTKEvents_Destroy(&pEvents);
 						return NULL;
 					}
 				if (u != TKEVENTS_FILE_VERSION)
 					{
-						jeErrorLog_AddString(JE_ERR_FILEIO_VERSION,"jeTKEvents_CreateFromFile: Failure to recognize file version", NULL);
-						jeTKEvents_Destroy(&pEvents);
+						grErrorLog_AddString(GR_ERR_FILEIO_VERSION,"grTKEvents_CreateFromFile: Failure to recognize file version", NULL);
+						grTKEvents_Destroy(&pEvents);
 						return NULL;
 					}
 
-				if(jeVFile_Read(pFile, &(pEvents->DataSize), sizeof(pEvents->DataSize)) == JE_FALSE)
+				if(grVFile_Read(pFile, &(pEvents->DataSize), sizeof(pEvents->DataSize)) == GR_FALSE)
 					{
-						jeErrorLog_Add(JE_ERR_FILEIO_READ, "jeTKEvents_CreateFromFile.");
-						jeTKEvents_Destroy(&pEvents);
+						grErrorLog_Add(GR_ERR_FILEIO_READ, "grTKEvents_CreateFromFile.");
+						grTKEvents_Destroy(&pEvents);
 						return NULL;
 					}
 
-				pEvents->pEventData = (char *)jeRam_AllocateClear(pEvents->DataSize);
+				pEvents->pEventData = (char *)grRam_AllocateClear(pEvents->DataSize);
 				if(!pEvents->pEventData)
 					{
-						jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeTKEvents_CreateFromFile.");
-						jeTKEvents_Destroy(&pEvents);
+						grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grTKEvents_CreateFromFile.");
+						grTKEvents_Destroy(&pEvents);
 						return NULL;
 					}
 
-				if(jeVFile_Read(pFile, pEvents->pEventData, pEvents->DataSize) == JE_FALSE)
+				if(grVFile_Read(pFile, pEvents->pEventData, pEvents->DataSize) == GR_FALSE)
 					{
-						jeErrorLog_Add(JE_ERR_FILEIO_READ, "jeTKEvents_CreateFromFile.");
-						jeTKEvents_Destroy(&pEvents);
+						grErrorLog_Add(GR_ERR_FILEIO_READ, "grTKEvents_CreateFromFile.");
+						grTKEvents_Destroy(&pEvents);
 						return NULL;
 					}
-				pEvents->pTimeKeys = jeTKArray_CreateFromFile(pFile);
+				pEvents->pTimeKeys = grTKArray_CreateFromFile(pFile);
 				if(!pEvents->pTimeKeys)
 					{
-						jeErrorLog_Add(JE_ERR_FILEIO_READ, "jeTKEvents_CreateFromFile.");
-						jeTKEvents_Destroy(&pEvents);
+						grErrorLog_Add(GR_ERR_FILEIO_READ, "grTKEvents_CreateFromFile.");
+						grTKEvents_Destroy(&pEvents);
 						return NULL;
 					}
 			}
@@ -381,9 +381,9 @@ jeTKEvents* JETCC jeTKEvents_CreateFromFile(
 	return pEvents;
 }
 
-jeBoolean JETCC jeTKEvents_WriteToFile(
-	const jeTKEvents* pEvents,		// sorted array to write
-	jeVFile* pFile)					// stream positioned for writing
+grBoolean GRCC grTKEvents_WriteToFile(
+	const grTKEvents* pEvents,		// sorted array to write
+	grVFile* pFile)					// stream positioned for writing
 	// Writes the array to the given stream.
 {
 	uint32 u;
@@ -391,66 +391,66 @@ jeBoolean JETCC jeTKEvents_WriteToFile(
 	assert( pFile != NULL );
 
 	u = TKEVENTS_BIN_FILE_TYPE;
-	if(jeVFile_Write(pFile, &u, sizeof(u)) == JE_FALSE)
+	if(grVFile_Write(pFile, &u, sizeof(u)) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "jeTKEvents_WriteToFile.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_FILEIO_WRITE, "grTKEvents_WriteToFile.");
+			return GR_FALSE;
 		}
 	u = TKEVENTS_FILE_VERSION;
 	// Write the version
-	if(jeVFile_Write(pFile, &u, sizeof(u)) == JE_FALSE)
+	if(grVFile_Write(pFile, &u, sizeof(u)) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "jeTKEvents_WriteToFile.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_FILEIO_WRITE, "grTKEvents_WriteToFile.");
+			return GR_FALSE;
 		}
 
-	if(jeVFile_Write(pFile, &pEvents->DataSize, sizeof(pEvents->DataSize)) == JE_FALSE)
+	if(grVFile_Write(pFile, &pEvents->DataSize, sizeof(pEvents->DataSize)) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "jeTKEvents_WriteToFile.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_FILEIO_WRITE, "grTKEvents_WriteToFile.");
+			return GR_FALSE;
 		}
 
-	if(jeVFile_Write(pFile, pEvents->pEventData, pEvents->DataSize) == JE_FALSE)
+	if(grVFile_Write(pFile, pEvents->pEventData, pEvents->DataSize) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "jeTKEvents_WriteToFile.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_FILEIO_WRITE, "grTKEvents_WriteToFile.");
+			return GR_FALSE;
 		}
 
-	if (jeTKArray_WriteToFile(pEvents->pTimeKeys, pFile)==JE_FALSE)
+	if (grTKArray_WriteToFile(pEvents->pTimeKeys, pFile)==GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "jeTKEvents_WriteToFile.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_FILEIO_WRITE, "grTKEvents_WriteToFile.");
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeTKEvents_GetExtents(jeTKEvents *Events,
-		jeTKEvents_TimeType *FirstEventTime,
-		jeTKEvents_TimeType *LastEventTime)
+GRAPI grBoolean GRCC grTKEvents_GetExtents(grTKEvents *Events,
+		grTKEvents_TimeType *FirstEventTime,
+		grTKEvents_TimeType *LastEventTime)
 {
 	int Count;
 	assert( Events != NULL );
 	
-	Count = jeTKArray_NumElements(Events->pTimeKeys);
+	Count = grTKArray_NumElements(Events->pTimeKeys);
 	if (Count<0)
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
-	*FirstEventTime = jeTKArray_ElementTime(Events->pTimeKeys, 0);
-	*LastEventTime  = jeTKArray_ElementTime(Events->pTimeKeys, Count-1);
-	return JE_TRUE;
+	*FirstEventTime = grTKArray_ElementTime(Events->pTimeKeys, 0);
+	*LastEventTime  = grTKArray_ElementTime(Events->pTimeKeys, Count-1);
+	return GR_TRUE;
 }
 
-void JETCC jeTKEvents_SetupIterator(
-	jeTKEvents* pEvents,				// Event list to iterate
-	jeTKEvents_TimeType StartTime,				// Inclusive search start
-	jeTKEvents_TimeType EndTime)				// Non-inclusive search stop
+void GRCC grTKEvents_SetupIterator(
+	grTKEvents* pEvents,				// Event list to iterate
+	grTKEvents_TimeType StartTime,				// Inclusive search start
+	grTKEvents_TimeType EndTime)				// Non-inclusive search stop
 	// For searching or querying the array for events between two times
 	// times are compaired [StartTime,EndTime), '[' is inclusive, ')' is 
 	// non-inclusive.  This prepares the PathGetNextEvent() function.  
 {
-	jeTKEventsIterator* pTKEI;
+	grTKEventsIterator* pTKEI;
 
 	assert( pEvents != NULL );
 
@@ -459,28 +459,28 @@ void JETCC jeTKEvents_SetupIterator(
 	pTKEI->EndTime = EndTime;
 
 	// Initialize search with first index before StartTime
-	pTKEI->CurrentIndex = jeTKArray_BSearch(pEvents->pTimeKeys, StartTime - JE_TKA_TIME_TOLERANCE);
+	pTKEI->CurrentIndex = grTKArray_BSearch(pEvents->pTimeKeys, StartTime - GR_TKA_TIME_TOLERANCE);
 	while( (pTKEI->CurrentIndex > -1) && 
-		(jeTKArray_ElementTime(pEvents->pTimeKeys, pTKEI->CurrentIndex) >= StartTime - JE_TKA_TIME_TOLERANCE) )
+		(grTKArray_ElementTime(pEvents->pTimeKeys, pTKEI->CurrentIndex) >= StartTime - GR_TKA_TIME_TOLERANCE) )
 	{
 		pTKEI->CurrentIndex--;
 	}
 }
 
 
-jeBoolean JETCC jeTKEvents_GetNextEvent(
-	jeTKEvents* pEvents,				// Event list to iterate
-	jeTKEvents_TimeType *pTime,				// Return time, if found
+grBoolean GRCC grTKEvents_GetNextEvent(
+	grTKEvents* pEvents,				// Event list to iterate
+	grTKEvents_TimeType *pTime,				// Return time, if found
 	const char **ppEventString)		// Return data, if found
-	// Iterates from StartTime to EndTime as setup in jeTKEvents_CreateIterator()
+	// Iterates from StartTime to EndTime as setup in grTKEvents_CreateIterator()
 	// and for each event between these times [StartTime,EndTime)
 	// this function will return Time and EventString returned for that event
 	// and the iterator will be positioned for the next search.  When there 
 	// are no more events in the range, this function will return NULL (Time
 	// will be 0 and ppEventString will be empty).
 {
-	jeTKEventsIterator* pTKEI;
-	jeTKArray* pTimeKeys;
+	grTKEventsIterator* pTKEI;
+	grTKArray* pTimeKeys;
 	EventType* pKeyInfo;
 	int Index;
 
@@ -494,20 +494,20 @@ jeBoolean JETCC jeTKEvents_GetNextEvent(
 
 	pTKEI->CurrentIndex++;
 	Index = pTKEI->CurrentIndex;
-	if(Index < jeTKArray_NumElements(pTimeKeys))
+	if(Index < grTKArray_NumElements(pTimeKeys))
 	{
-		*pTime = jeTKArray_ElementTime(pTimeKeys, Index);
-		if(*pTime + JE_TKA_TIME_TOLERANCE < pTKEI->EndTime)
+		*pTime = grTKArray_ElementTime(pTimeKeys, Index);
+		if(*pTime + GR_TKA_TIME_TOLERANCE < pTKEI->EndTime)
 		{
 			// Looks good.  Get the string and return.
-			pKeyInfo = (EventType *)jeTKArray_Element(pTimeKeys, Index);
+			pKeyInfo = (EventType *)grTKArray_Element(pTimeKeys, Index);
 			*ppEventString = pEvents->pEventData + pKeyInfo->DataOffset;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	}
 
 	// None found, clean up
 	*pTime = 0.0f;
 	*ppEventString = NULL;
-	return JE_FALSE;
+	return GR_FALSE;
 }

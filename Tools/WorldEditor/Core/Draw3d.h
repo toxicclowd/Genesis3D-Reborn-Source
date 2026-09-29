@@ -25,13 +25,13 @@
 
 #include "Brush.h"
 #include "Level.h"
-#include "Jet.h"
+#include "Genesis3D.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void	Draw3d_ManipulatedBrushes( Level * pLevel, jeWorld* pWorld, jeCamera* pCamera, jeEngine* pEngine ) ;
+void	Draw3d_ManipulatedBrushes( Level * pLevel, grWorld* pWorld, grCamera* pCamera, grEngine* pEngine ) ;
 
 
 #ifdef __cplusplus

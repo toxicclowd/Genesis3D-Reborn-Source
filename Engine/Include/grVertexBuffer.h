@@ -11,42 +11,41 @@
 
 #ifdef __cplusplus
 
-class jeVertexBuffer : virtual public jeUnknown
+class grVertexBuffer : virtual public grUnknown
 {
 protected:
-	virtual ~jeVertexBuffer()						{}
+	virtual ~grVertexBuffer()						{}
 
 public:
 	/*!
-		@fn int16 jeVertexBuffer::AddVertices(jeTLVertex *Pnts, int32 NumPoints)
+		@fn int16 grVertexBuffer::AddVertices(grTLVertex *Pnts, int32 NumPoints)
 		@brief Adds vertices to the vertex buffer
 		@param[in] Pnts Vertices to add
 		@param[in] NumPoints The number of vertices to add
 		@return The start index in the array
 	*/
-	virtual int16					AddVertices(jeTLVertex *Pnts, int32 NumPoints) = 0;
+	virtual int16					AddVertices(grTLVertex *Pnts, int32 NumPoints) = 0;
 
 	/*!
-		@fn jeBoolean jeVertexBuffer::SetMaterial(jeMaterial *Material)
+		@fn grBoolean grVertexBuffer::SetMaterial(grMaterial *Material)
 		@brief Sets the material
 		@param[in] Material The material to use
-		@return JE_TRUE on success, JE_FALSE on failure
+		@return GR_TRUE on success, GR_FALSE on failure
 	*/
-	virtual jeBoolean				SetMaterial(jeMaterial *Material) = 0;
+	virtual grBoolean				SetMaterial(grMaterial *Material) = 0;
 
 	/*!
-		@fn void jeVertexBuffer::ClearBuffer()
+		@fn void grVertexBuffer::ClearBuffer()
 		@brief Empties the vertex buffer
 	*/
 	virtual void					ClearBuffer() = 0;
 };
 
-typedef jeVertexBuffer grVertexBuffer;
+typedef grVertexBuffer grVertexBuffer;
 
 #else
 
-typedef struct jeVertexBuffer jeVertexBuffer;
-typedef struct jeVertexBuffer grVertexBuffer;
+typedef struct grVertexBuffer grVertexBuffer;
 
 #endif // __cplusplus
 

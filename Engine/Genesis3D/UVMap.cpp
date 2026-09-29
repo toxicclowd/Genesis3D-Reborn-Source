@@ -22,7 +22,7 @@
 #include <math.h>
 #include <assert.h>
 
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "Vec3d.h"
 #include "Xform3d.h"
 #include "UVMap.h"
@@ -34,18 +34,18 @@
 
 static void DoNadaTestFunc(void)
 {
-	static jeUVMapper MyMapper;
+	static grUVMapper MyMapper;
 
-	MyMapper = jeUVMap_Reflection;
+	MyMapper = grUVMap_Reflection;
 }
 
-JETAPI jeBoolean JETCC jeUVMap_Reflection(const jeXForm3d* pXForm, JE_LVertex* pVerts, const jeVec3d* pNormals, int nverts)
+GRAPI grBoolean GRCC grUVMap_Reflection(const grXForm3d* pXForm, GR_LVertex* pVerts, const grVec3d* pNormals, int nverts)
 {
 	int i;
-	jeVec3d vv, vr;
-	jeVec3d surfNormal;
+	grVec3d vv, vr;
+	grVec3d surfNormal;
 	float dot, m;
-	jeVec3d worldPt;
+	grVec3d worldPt;
 
 	assert(pXForm);
 	assert(pVerts);
@@ -55,13 +55,13 @@ JETAPI jeBoolean JETCC jeUVMap_Reflection(const jeXForm3d* pXForm, JE_LVertex* p
 	// xform world coords to camera coordinates	
 	for (i = 0; i < nverts; i ++)
 	{
-		worldPt = *((jeVec3d*)&pVerts[i]);
+		worldPt = *((grVec3d*)&pVerts[i]);
 
-		jeXForm3d_Transform(pXForm, &worldPt, &vv);
-		jeXForm3d_Rotate(pXForm, &pNormals[i], &surfNormal);
+		grXForm3d_Transform(pXForm, &worldPt, &vv);
+		grXForm3d_Rotate(pXForm, &pNormals[i], &surfNormal);
 		
-		jeVec3d_Normalize(&vv);
-		dot = 2.f * jeVec3d_DotProduct(&vv, &surfNormal);
+		grVec3d_Normalize(&vv);
+		dot = 2.f * grVec3d_DotProduct(&vv, &surfNormal);
 
 		vr.X = dot * surfNormal.X - vv.X;
 		vr.Y = dot * surfNormal.Y - vv.Y;
@@ -73,16 +73,16 @@ JETAPI jeBoolean JETCC jeUVMap_Reflection(const jeXForm3d* pXForm, JE_LVertex* p
 		pVerts[i].v = vr.Y / m + 0.5f;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeUVMap_Refraction(const jeXForm3d* pXForm, JE_LVertex* pVerts, const jeVec3d* pNormals, int nverts)
+GRAPI grBoolean GRCC grUVMap_Refraction(const grXForm3d* pXForm, GR_LVertex* pVerts, const grVec3d* pNormals, int nverts)
 {
 	int i;
-	jeVec3d vv, vr;
-	jeVec3d surfNormal;
+	grVec3d vv, vr;
+	grVec3d surfNormal;
 	float dot, m;
-	jeVec3d worldPt;
+	grVec3d worldPt;
 
 	assert(pXForm);
 	assert(pVerts);
@@ -92,13 +92,13 @@ JETAPI jeBoolean JETCC jeUVMap_Refraction(const jeXForm3d* pXForm, JE_LVertex* p
 	// xform world coords to camera coordinates	
 	for (i = 0; i < nverts; i ++)
 	{
-		worldPt = *((jeVec3d*)&pVerts[i]);
+		worldPt = *((grVec3d*)&pVerts[i]);
 
-		jeXForm3d_Transform(pXForm, &worldPt, &vv);
-		jeXForm3d_Rotate(pXForm, &pNormals[i], &surfNormal);
+		grXForm3d_Transform(pXForm, &worldPt, &vv);
+		grXForm3d_Rotate(pXForm, &pNormals[i], &surfNormal);
 		
-		jeVec3d_Normalize(&vv);
-		dot = 2.f * jeVec3d_DotProduct(&vv, &surfNormal);
+		grVec3d_Normalize(&vv);
+		dot = 2.f * grVec3d_DotProduct(&vv, &surfNormal);
 		vr.X = vv.X + dot * surfNormal.X;
 		vr.Y = vv.Y + dot * surfNormal.Y;
 		vr.Z = vv.Z + dot * surfNormal.Z;
@@ -109,14 +109,14 @@ JETAPI jeBoolean JETCC jeUVMap_Refraction(const jeXForm3d* pXForm, JE_LVertex* p
 		pVerts[i].v = vr.Y / m + 0.5f;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeUVMap_Projection(const jeXForm3d* pXForm, JE_LVertex* pVerts, const jeVec3d* pNormals, int nverts)
+GRAPI grBoolean GRCC grUVMap_Projection(const grXForm3d* pXForm, GR_LVertex* pVerts, const grVec3d* pNormals, int nverts)
 {
 	int i;
-	jeVec3d vv;
-	jeVec3d worldPt;
+	grVec3d vv;
+	grVec3d worldPt;
 
 	assert(pXForm);
 	assert(pVerts);
@@ -124,13 +124,13 @@ JETAPI jeBoolean JETCC jeUVMap_Projection(const jeXForm3d* pXForm, JE_LVertex* p
 
 	for (i = 0; i < nverts; i ++)
 	{
-		worldPt = *((jeVec3d*)&pVerts[i]);
+		worldPt = *((grVec3d*)&pVerts[i]);
 
-		jeXForm3d_Transform(pXForm, &worldPt, &vv);
+		grXForm3d_Transform(pXForm, &worldPt, &vv);
 
 		pVerts[i].u = vv.X;
 		pVerts[i].v = vv.Y;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }

@@ -31,7 +31,7 @@ extern "C" {
 #define OBJECT_EVENT_MSG							0
 typedef struct
 {
-	jeObject *FromObj;
+	grObject *FromObj;
 	int EventType;
 	char *Args;
 }Object_EventData;
@@ -41,7 +41,7 @@ typedef struct
 {
 	int TimeLineNdx;
 	int ChannelNdx;
-	jeXForm3d ReturnXF;
+	grXForm3d ReturnXF;
 }Object_TimeKeyData;
 ///////////////////////////////////////////////////////
 #define OBJECT_TIMELINE_SET_PLAY_MODE_MSG			11
@@ -49,14 +49,14 @@ typedef struct
 typedef struct
 {
 	int TimeLineNdx;
-	jeBoolean PlayMode;
+	grBoolean PlayMode;
 }Object_TimePlayMode;
 ///////////////////////////////////////////////////////
 #define OBJECT_TIMELINE_GET_JEOBJECT_MSG			13
 typedef struct
 {
 	int TimeLineNdx;
-	jeObject *ReturnObj;
+	grObject *ReturnObj;
 }Object_TimeGetObject;
 ///////////////////////////////////////////////////////
 #define OBJECT_TIMELINE_GET_CURRENT_TIMELINE_MSG	14

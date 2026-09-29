@@ -37,12 +37,12 @@ typedef struct context {
 
 context * contextCreate(arithInfo * arithinfo,int length); /** pass alphabet size **/
 void contextAdd(context *pContext, int symbol);
-jeBoolean contextEncode(context *pContext, int symbol);
+grBoolean contextEncode(context *pContext, int symbol);
 int contextDecode(context *pContext);
 void contextHalve(context *pContext);
 void contextFree(context *pContext);
 
-jeBoolean contextEncodeCapped(context *pContext, int symbol,int cap);
+grBoolean contextEncodeCapped(context *pContext, int symbol,int cap);
 int contextDecodeCapped(context *pContext,int cap);
 
 void contextGetInterval(context *pContext, int *pLow, int *pHigh, int symbol);
@@ -67,7 +67,7 @@ while (size < length)	size += size;
 
     /* malloc context structure and array for frequencies */
 if ((pContext = (context *) new(context)) == NULL) return(NULL);
-if ((pContext->tree = (uint16 *) jeRam_Allocate((size+1)*sizeof(uint16))) == NULL)
+if ((pContext->tree = (uint16 *) grRam_Allocate((size+1)*sizeof(uint16))) == NULL)
 	{ destroy(pContext); return(NULL); }
 
 pContext->arith = arithinfo;
@@ -125,7 +125,7 @@ while (pContext->total+pContext->escapeP > pContext->totalMax )
 
 }
 
-jeBoolean contextEncode(context *pContext, int symbol) /** returns flag "coded by me or not" **/
+grBoolean contextEncode(context *pContext, int symbol) /** returns flag "coded by me or not" **/
 {
 int low, high;
 
@@ -143,7 +143,7 @@ if (low == high)
 
 	contextAdd(pContext,symbol);
 
-	return JE_FALSE;
+	return GR_FALSE;
   }
 
 arithEncode(pContext->arith,low, high, pContext->total+pContext->escapeP);
@@ -161,11 +161,11 @@ pContext->total ++;
 while (pContext->total+pContext->escapeP > pContext->totalMax )
 	contextHalve(pContext);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 
-jeBoolean contextEncodeCapped(context *pContext, int symbol,int cap)
+grBoolean contextEncodeCapped(context *pContext, int symbol,int cap)
 {
 int low,high,total;
 
@@ -185,7 +185,7 @@ if (low == high)
 
 	contextAdd(pContext,symbol);
 
-	return JE_FALSE;
+	return GR_FALSE;
   }
 
 arithEncode(pContext->arith,low, high,total+pContext->escapeP);
@@ -203,7 +203,7 @@ pContext->total ++;
 while (pContext->total+pContext->escapeP > pContext->totalMax )
 	contextHalve(pContext);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 
@@ -383,7 +383,7 @@ contextGetInterval(pContext,&low,&high,symbol);
 return high-low;
 } 
 
-jeBoolean contextHas(context *pContext,int symbol)
+grBoolean contextHas(context *pContext,int symbol)
 {
 int low,high;
 contextGetInterval(pContext,&low,&high,symbol);
@@ -458,7 +458,7 @@ if ( pContext->total+pContext->escapeP > pContext->totalMax ) {
 void contextFree(context *pContext)
 {
 if ( ! pContext ) return;
-jeRam_Free(pContext->tree);
+grRam_Free(pContext->tree);
 destroy(pContext);
 }
 

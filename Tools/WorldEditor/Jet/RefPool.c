@@ -46,11 +46,11 @@ typedef	struct	RefPool
 	int				Count;
 }	RefPool;
 
-RefPool *	JETCC RefPool_Create(int RefPoolIncrement)
+RefPool *	GRCC RefPool_Create(int RefPoolIncrement)
 {
 	RefPool *	Pool;
 
-	Pool = jeRam_Allocate(sizeof(*Pool));
+	Pool = grRam_Allocate(sizeof(*Pool));
 	if	(Pool)
 	{
 		memset(Pool, 0, sizeof(*Pool));
@@ -60,7 +60,7 @@ RefPool *	JETCC RefPool_Create(int RefPoolIncrement)
 	return Pool;
 }
 
-void	JETCC RefPool_Destroy(RefPool **pPool)
+void	GRCC RefPool_Destroy(RefPool **pPool)
 {
 	RefPool *	Pool;
 	RPBlock *	Blocks;
@@ -75,18 +75,18 @@ void	JETCC RefPool_Destroy(RefPool **pPool)
 	{
 		RPBlock *	Temp;
 		assert(Blocks->Data);
-		jeRam_Free(Blocks->Data);
+		grRam_Free(Blocks->Data);
 		Temp = Blocks;
 		Blocks = Blocks->Next;
-		jeRam_Free(Temp);
+		grRam_Free(Temp);
 	}
 
-	jeRam_Free(Pool);
+	grRam_Free(Pool);
 
 	*pPool = NULL;
 }
 
-static	jeBoolean	JETCC ExpandPool(RefPool *Pool)
+static	grBoolean	GRCC ExpandPool(RefPool *Pool)
 {
 	RPBlock *		NewBlock;
 	char *			p;
@@ -94,17 +94,17 @@ static	jeBoolean	JETCC ExpandPool(RefPool *Pool)
 	RPFreeList *	FreeHead;
 	RPFreeList *	Free;
 
-	NewBlock = jeRam_Allocate(sizeof(*NewBlock));
+	NewBlock = grRam_Allocate(sizeof(*NewBlock));
 	if	(!NewBlock)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	assert(sizeof(RPFreeList) == sizeof(void *));
 
-	NewBlock->Data = jeRam_Allocate(Pool->Increment * sizeof(void*));
+	NewBlock->Data = grRam_Allocate(Pool->Increment * sizeof(void*));
 	if	(!NewBlock->Data)
 	{
-		jeRam_Free(NewBlock);
-		return JE_FALSE;
+		grRam_Free(NewBlock);
+		return GR_FALSE;
 	}
 
 	p = NewBlock->Data;
@@ -123,17 +123,17 @@ static	jeBoolean	JETCC ExpandPool(RefPool *Pool)
 	NewBlock->Next = Pool->Blocks;
 	Pool->Blocks = NewBlock;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-void ** JETCC RefPool_RefCreate(RefPool *Pool)
+void ** GRCC RefPool_RefCreate(RefPool *Pool)
 {
 	void **	Result;
 
 	assert(Pool);
 
 	if	(!Pool->FreeList)
-		if	(ExpandPool(Pool) == JE_FALSE)
+		if	(ExpandPool(Pool) == GR_FALSE)
 			return NULL;
 
 	assert(Pool->FreeList);
@@ -143,7 +143,7 @@ void ** JETCC RefPool_RefCreate(RefPool *Pool)
 	return Result;
 }
 
-void JETCC RefPool_RefDestroy(RefPool *Pool, void ***pRef)
+void GRCC RefPool_RefDestroy(RefPool *Pool, void ***pRef)
 {
 	RPFreeList *	Free;
 
@@ -160,12 +160,12 @@ void JETCC RefPool_RefDestroy(RefPool *Pool, void ***pRef)
 	*pRef = NULL;
 }
 
-int JETCC RefPool_GetRefCount(const RefPool *Pool)
+int GRCC RefPool_GetRefCount(const RefPool *Pool)
 {
 	return Pool->Count;
 }
 
-static	jeBoolean	JETCC RefPool_ContainsPtr(const RefPool *Pool, const void *Ptr)
+static	grBoolean	GRCC RefPool_ContainsPtr(const RefPool *Pool, const void *Ptr)
 {
 	RPBlock *	Blocks;
 
@@ -173,13 +173,13 @@ static	jeBoolean	JETCC RefPool_ContainsPtr(const RefPool *Pool, const void *Ptr)
 	while	(Blocks)
 	{
 		if	(((char *)Ptr) >= (char *)Blocks->Data && ((char *)Ptr) < (char *)Blocks->DataEnd)
-			return JE_TRUE;
+			return GR_TRUE;
 		Blocks = Blocks->Next;
 	}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	RPBlock *	JETCC RefPool_FindBlock(const RefPool *Pool, const void **Ref)
+static	RPBlock *	GRCC RefPool_FindBlock(const RefPool *Pool, const void **Ref)
 {
 	RPBlock *	Blocks;
 
@@ -193,7 +193,7 @@ static	RPBlock *	JETCC RefPool_FindBlock(const RefPool *Pool, const void **Ref)
 	return NULL;
 }
 
-void ** JETCC RefPool_GetNextRef(const RefPool *Pool, const void **Ref)
+void ** GRCC RefPool_GetNextRef(const RefPool *Pool, const void **Ref)
 {
 	RPBlock *	Blocks;
 
@@ -206,7 +206,7 @@ void ** JETCC RefPool_GetNextRef(const RefPool *Pool, const void **Ref)
 	else
 	{
 		assert(*Ref);
-		assert(RefPool_ContainsPtr(Pool, *Ref) == JE_FALSE);
+		assert(RefPool_ContainsPtr(Pool, *Ref) == GR_FALSE);
 
 		Blocks = RefPool_FindBlock(Pool, Ref);
 		assert(Blocks);

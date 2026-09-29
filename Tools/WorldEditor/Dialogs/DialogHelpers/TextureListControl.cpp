@@ -331,76 +331,76 @@ void CTextureListControl::OnNMRclick(NMHDR *pNMHDR, LRESULT *pResult)
 				m_wndProperties.DeleteAllItems();
 
 #ifdef _USE_BITMAPS
-				jeBitmap			*pBitmap = NULL;
+				grBitmap			*pBitmap = NULL;
 				//	get the texture's bitmap
-				pBitmap = (jeBitmap*) Materials_GetBitmap(m_pSelectedMaterial);
+				pBitmap = (grBitmap*) Materials_GetBitmap(m_pSelectedMaterial);
 				if (pBitmap)
 				{
-					jeBitmap_Info	bmpInfo, bmpSecInfo;
+					grBitmap_Info	bmpInfo, bmpSecInfo;
 					CString	strHeight, strWidth, strFormat;
-					jeBitmap_GetInfo(pBitmap, &bmpInfo, &bmpSecInfo);
+					grBitmap_GetInfo(pBitmap, &bmpInfo, &bmpSecInfo);
 
 					switch (bmpInfo.Format)
 					{
-					case JE_PIXELFORMAT_8BIT:
-						strFormat = "JE_PIXELFORMAT_8BIT";
+					case GR_PIXELFORMAT_8BIT:
+						strFormat = "GR_PIXELFORMAT_8BIT";
 						break;
-					case JE_PIXELFORMAT_8BIT_GRAY:
-						strFormat = "JE_PIXELFORMAT_8BIT_GRAY";
+					case GR_PIXELFORMAT_8BIT_GRAY:
+						strFormat = "GR_PIXELFORMAT_8BIT_GRAY";
 						break;
-					case JE_PIXELFORMAT_16BIT_555_RGB:
-						strFormat = "JE_PIXELFORMAT_16BIT_555_RGB";
+					case GR_PIXELFORMAT_16BIT_555_RGB:
+						strFormat = "GR_PIXELFORMAT_16BIT_555_RGB";
 						break;
-					case JE_PIXELFORMAT_16BIT_555_BGR:
-						strFormat = "JE_PIXELFORMAT_16BIT_555_BGR";
+					case GR_PIXELFORMAT_16BIT_555_BGR:
+						strFormat = "GR_PIXELFORMAT_16BIT_555_BGR";
 						break;
-					case JE_PIXELFORMAT_16BIT_565_RGB:
-						strFormat = "JE_PIXELFORMAT_16BIT_565_RGB";
+					case GR_PIXELFORMAT_16BIT_565_RGB:
+						strFormat = "GR_PIXELFORMAT_16BIT_565_RGB";
 						break;
-					case JE_PIXELFORMAT_16BIT_565_BGR:
-						strFormat = "JE_PIXELFORMAT_16BIT_565_BGR";
+					case GR_PIXELFORMAT_16BIT_565_BGR:
+						strFormat = "GR_PIXELFORMAT_16BIT_565_BGR";
 						break;
-					case JE_PIXELFORMAT_16BIT_4444_ARGB:
-						strFormat = "JE_PIXELFORMAT_16BIT_4444_ARGB";
+					case GR_PIXELFORMAT_16BIT_4444_ARGB:
+						strFormat = "GR_PIXELFORMAT_16BIT_4444_ARGB";
 						break;
-					case JE_PIXELFORMAT_16BIT_1555_ARGB:
-						strFormat = "JE_PIXELFORMAT_16BIT_1555_ARGB";
+					case GR_PIXELFORMAT_16BIT_1555_ARGB:
+						strFormat = "GR_PIXELFORMAT_16BIT_1555_ARGB";
 						break;
-					case JE_PIXELFORMAT_24BIT_RGB:
-						strFormat = "JE_PIXELFORMAT_24BIT_RGB";
+					case GR_PIXELFORMAT_24BIT_RGB:
+						strFormat = "GR_PIXELFORMAT_24BIT_RGB";
 						break;
-					case JE_PIXELFORMAT_24BIT_BGR:
-						strFormat = "JE_PIXELFORMAT_24BIT_BGR";
+					case GR_PIXELFORMAT_24BIT_BGR:
+						strFormat = "GR_PIXELFORMAT_24BIT_BGR";
 						break;
-					case JE_PIXELFORMAT_24BIT_YUV:
-						strFormat = "JE_PIXELFORMAT_24BIT_YUV";
+					case GR_PIXELFORMAT_24BIT_YUV:
+						strFormat = "GR_PIXELFORMAT_24BIT_YUV";
 						break;
-					case JE_PIXELFORMAT_32BIT_RGBX:
-						strFormat = "JE_PIXELFORMAT_32BIT_RGBX";
+					case GR_PIXELFORMAT_32BIT_RGBX:
+						strFormat = "GR_PIXELFORMAT_32BIT_RGBX";
 						break;
-					case JE_PIXELFORMAT_32BIT_XRGB:
-						strFormat = "JE_PIXELFORMAT_32BIT_XRGB";
+					case GR_PIXELFORMAT_32BIT_XRGB:
+						strFormat = "GR_PIXELFORMAT_32BIT_XRGB";
 						break;
-					case JE_PIXELFORMAT_32BIT_BGRX:
-						strFormat = "JE_PIXELFORMAT_32BIT_BGRX";
+					case GR_PIXELFORMAT_32BIT_BGRX:
+						strFormat = "GR_PIXELFORMAT_32BIT_BGRX";
 						break;
-					case JE_PIXELFORMAT_32BIT_XBGR:
-						strFormat = "JE_PIXELFORMAT_32BIT_XBGR";
+					case GR_PIXELFORMAT_32BIT_XBGR:
+						strFormat = "GR_PIXELFORMAT_32BIT_XBGR";
 						break;
-					case JE_PIXELFORMAT_32BIT_RGBA:
-						strFormat = "JE_PIXELFORMAT_32BIT_RGBA";
+					case GR_PIXELFORMAT_32BIT_RGBA:
+						strFormat = "GR_PIXELFORMAT_32BIT_RGBA";
 						break;
-					case JE_PIXELFORMAT_32BIT_ARGB:
-						strFormat = "JE_PIXELFORMAT_32BIT_ARGB";
+					case GR_PIXELFORMAT_32BIT_ARGB:
+						strFormat = "GR_PIXELFORMAT_32BIT_ARGB";
 						break;
-					case JE_PIXELFORMAT_32BIT_BGRA:
-						strFormat = "JE_PIXELFORMAT_32BIT_BGRA";
+					case GR_PIXELFORMAT_32BIT_BGRA:
+						strFormat = "GR_PIXELFORMAT_32BIT_BGRA";
 						break;
-					case JE_PIXELFORMAT_32BIT_ABGR:
-						strFormat = "JE_PIXELFORMAT_32BIT_ABGR";
+					case GR_PIXELFORMAT_32BIT_ABGR:
+						strFormat = "GR_PIXELFORMAT_32BIT_ABGR";
 						break;
-					case JE_PIXELFORMAT_WAVELET:
-						strFormat = "JE_PIXELFORMAT_WAVELET";
+					case GR_PIXELFORMAT_WAVELET:
+						strFormat = "GR_PIXELFORMAT_WAVELET";
 						break;
 					default:
 						strFormat = "Info not available";
@@ -411,11 +411,11 @@ void CTextureListControl::OnNMRclick(NMHDR *pNMHDR, LRESULT *pResult)
 					strWidth.Format("%d", bmpInfo.Width);
 #else
 				CString	strHeight, strWidth, strFormat;
-				const jeMaterialSpec* pMatSpec = Materials_GetMaterialSpec(m_pSelectedMaterial);
+				const grMaterialSpec* pMatSpec = Materials_GetMaterialSpec(m_pSelectedMaterial);
 				if (pMatSpec) {
-					strFormat = "JE_PIXELFORMAT_24BIT_RGB";
+					strFormat = "GR_PIXELFORMAT_24BIT_RGB";
 
-					jeMaterialSpec_Thumbnail* pMatThumb = jeMaterialSpec_GetThumbnail(pMatSpec);
+					grMaterialSpec_Thumbnail* pMatThumb = grMaterialSpec_GetThumbnail(pMatSpec);
 
 					strHeight.Format("%d", pMatThumb->height);
 					strWidth.Format("%d", pMatThumb->width);

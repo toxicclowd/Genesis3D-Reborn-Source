@@ -23,17 +23,17 @@
 #include <string.h>
 #include <float.h>
 #include "AmbObject.h"
-#include "jeTypes.h"
-#include "jeProperty.h"
-#include "jeUserPoly.h"
+#include "grTypes.h"
+#include "grProperty.h"
+#include "grUserPoly.h"
 #include "errorlog.h"
-#include "jet.h"
+#include "Genesis3D.h"
 #include "ram.h"
 #include "memory.h"
 #include "assert.h"
 #include "dsound.h"
 #include "resource.h"
-#include "jeResource.h"
+#include "grResource.h"
 
 #include "snd.h"
 
@@ -92,27 +92,27 @@ enum {
 
 #define DEFAULT_RADIUS 1000.0f
 
-static 	jeBitmap	*pBitmap = NULL;
-static jeMaterialSpec *MatSpec;
+static 	grBitmap	*pBitmap = NULL;
+static grMaterialSpec *MatSpec;
 typedef struct AmbObj {
 	EffectResource  Resource;		// Resources: Camera, Engine, World, SoundSystem
 	Snd				SndData;		// All info for playing the sound
 	char			Name[256];
 	int				RefCnt;
-	jeUserPoly		*Poly;
-	jeLVertex		Vertex;
+	grUserPoly		*Poly;
+	grLVertex		Vertex;
 	//Royce-2
 	int				DisplayToggle;
 	//---
 	//	Tom
-	jeBoolean		bMute;
+	grBoolean		bMute;
 	// BEGIN - Add loop checkbox to editor - paradoxnj
-	jeBoolean		bLoop;
+	grBoolean		bLoop;
 	// END - Add loop checkbox to editor - paradoxnj
 } AmbObj;
 
-jeProperty AmbProperties[AMB_LAST_INDEX];
-jeProperty_List AmbPropertyList = { AMB_LAST_INDEX, &AmbProperties[0] };
+grProperty AmbProperties[AMB_LAST_INDEX];
+grProperty_List AmbPropertyList = { AMB_LAST_INDEX, &AmbProperties[0] };
 
 #define MAX_NAMES 1024
 char *NameList[MAX_NAMES];
@@ -128,7 +128,7 @@ static char	*NoSelection = "< none >";
 //
 //////////////////////////////////////////////////////////////////////////////
 
-static jeBoolean Util_StrDupManagePtr(char **dest, char *src, int min_size)
+static grBoolean Util_StrDupManagePtr(char **dest, char *src, int min_size)
 	{
 	int len;
 
@@ -142,22 +142,22 @@ static jeBoolean Util_StrDupManagePtr(char **dest, char *src, int min_size)
 		if ( len < min_size )
 			{
 			strcpy(*dest, src);
-			return JE_TRUE;
+			return GR_TRUE;
 			}
 
-		jeRam_Free(*dest);
+		grRam_Free(*dest);
 		*dest = NULL;
 		}
 
-	*dest = jeRam_Allocate(__max(min_size, len));
+	*dest = grRam_Allocate(__max(min_size, len));
 	if (*dest == NULL)
 		{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
+		return GR_FALSE;
 		}
 
 	strcpy(*dest, src);
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 
 static int Util_GetAppPath(
@@ -197,14 +197,14 @@ static int Util_GetAppPath(
 //
 //////////////////////////////////////////////////////////////////////////////
 
-static jeBoolean AmbObject_LoadBmp()
+static grBoolean AmbObject_LoadBmp()
 {
 	// Jeff:  Ambient bitmap from resources - 8/18/2005
 	
-	jeVFile	* BmpFile;
+	grVFile	* BmpFile;
 	HRSRC hFRes; 
     HGLOBAL hRes; 
-    jeVFile_MemoryContext Context; 
+    grVFile_MemoryContext Context; 
     HINSTANCE hInst;
     
 	#ifdef _DEBUG 
@@ -212,28 +212,28 @@ static jeBoolean AmbObject_LoadBmp()
 	#else
         hInst = LoadLibrary("AmbientObj.dll");
     #endif
-    hFRes = FindResource(hInst, MAKEINTRESOURCE(IDR_AMBIENT) ,"jeBitmap"); 
+    hFRes = FindResource(hInst, MAKEINTRESOURCE(IDR_AMBIENT) ,"grBitmap"); 
     hRes = LoadResource(hInst, hFRes) ;  
     
     Context.Data  = LockResource(hRes); 
     Context.DataLength = SizeofResource(hInst,hFRes); 
 
-	BmpFile = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_MEMORY,	NULL,
-		                            &Context,JE_VFILE_OPEN_READONLY  );
+	BmpFile = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_MEMORY,	NULL,
+		                            &Context,GR_VFILE_OPEN_READONLY  );
 	if( BmpFile == NULL )
-		return( JE_FALSE );
-	pBitmap = jeBitmap_CreateFromFile( BmpFile );
-	jeVFile_Close( BmpFile );
+		return( GR_FALSE );
+	pBitmap = grBitmap_CreateFromFile( BmpFile );
+	grVFile_Close( BmpFile );
 	if( pBitmap == NULL )
-		return( JE_FALSE );
-	jeBitmap_SetColorKey( pBitmap, JE_TRUE, 255, JE_TRUE );
+		return( GR_FALSE );
+	grBitmap_SetColorKey( pBitmap, GR_TRUE, 255, GR_TRUE );
 
 	
-	return( JE_TRUE );
+	return( GR_TRUE );
 	
 }
 
-static jeBoolean AmbObject_InitIcon( AmbObj * pAmbObj )
+static grBoolean AmbObject_InitIcon( AmbObj * pAmbObj )
 {
 	assert(pAmbObj != NULL);
 
@@ -242,7 +242,7 @@ static jeBoolean AmbObject_InitIcon( AmbObj * pAmbObj )
 	
 	if( pBitmap == NULL )
 		if( !AmbObject_LoadBmp() )
-			return( JE_FALSE );
+			return( GR_FALSE );
 			
 	//---
 
@@ -262,20 +262,20 @@ static jeBoolean AmbObject_InitIcon( AmbObj * pAmbObj )
 
 	if (!MatSpec)
 	{
-	    MatSpec = jeMaterialSpec_Create(jeResourceMgr_GetEngine(jeResourceMgr_GetSingleton()), jeResourceMgr_GetSingleton());
+	    MatSpec = grMaterialSpec_Create(grResourceMgr_GetEngine(grResourceMgr_GetSingleton()), grResourceMgr_GetSingleton());
 #pragma message ("Krouer: change NULL to something better next time")
-	    jeMaterialSpec_AddLayerFromBitmap(MatSpec, 0, pBitmap, NULL);
+	    grMaterialSpec_AddLayerFromBitmap(MatSpec, 0, pBitmap, NULL);
 	}
     
-	pAmbObj->Poly = jeUserPoly_CreateSprite(	&pAmbObj->Vertex,
+	pAmbObj->Poly = grUserPoly_CreateSprite(	&pAmbObj->Vertex,
 									MatSpec,
 									1.0f,
-									JE_RENDER_FLAG_ALPHA | JE_RENDER_FLAG_NO_ZWRITE );
+									GR_RENDER_FLAG_ALPHA | GR_RENDER_FLAG_NO_ZWRITE );
 
-	return JE_TRUE;
+	return GR_TRUE;
 }				
 
-static jeBoolean AmbObject_UpdateIcon( AmbObj * pAmbObj )
+static grBoolean AmbObject_UpdateIcon( AmbObj * pAmbObj )
 {
 	assert(pAmbObj != NULL);
 
@@ -288,15 +288,15 @@ static jeBoolean AmbObject_UpdateIcon( AmbObj * pAmbObj )
 	{
 		if (!MatSpec)
 	    {
-	        MatSpec = jeMaterialSpec_Create(jeResourceMgr_GetEngine(jeResourceMgr_GetSingleton()), jeResourceMgr_GetSingleton());
+	        MatSpec = grMaterialSpec_Create(grResourceMgr_GetEngine(grResourceMgr_GetSingleton()), grResourceMgr_GetSingleton());
 #pragma message ("Krouer: change NULL to something better next time")
-	        jeMaterialSpec_AddLayerFromBitmap(MatSpec, 0, pBitmap, NULL);
+	        grMaterialSpec_AddLayerFromBitmap(MatSpec, 0, pBitmap, NULL);
 	    }
-		jeUserPoly_UpdateSprite(pAmbObj->Poly, &pAmbObj->Vertex, MatSpec, 1.0f);
+		grUserPoly_UpdateSprite(pAmbObj->Poly, &pAmbObj->Vertex, MatSpec, 1.0f);
 	}
 	//---
 
-	return JE_TRUE;
+	return GR_TRUE;
 }				
 
 //////////////////////////////////////////////////////////////////////////////
@@ -305,119 +305,119 @@ static jeBoolean AmbObject_UpdateIcon( AmbObj * pAmbObj )
 //
 //////////////////////////////////////////////////////////////////////////////
 
-static jeBoolean AmbObject_LoadSound(AmbObj * pAmbObj, char *Name)
+static grBoolean AmbObject_LoadSound(AmbObj * pAmbObj, char *Name)
 {
-	jeResourceMgr *ResourceMgr;
-	jeVFile *SoundDir,*SndFile = NULL;
-	jeSound_Def *NewSoundDef;
+	grResourceMgr *ResourceMgr;
+	grVFile *SoundDir,*SndFile = NULL;
+	grSound_Def *NewSoundDef;
 
 	if (!pAmbObj->Resource.Sound || !pAmbObj->Resource.World)
-		return JE_TRUE;
+		return GR_TRUE;
 
 	//Royce-2
 	if (!Name || !Name[0] || !strcmp(NoSelection, Name))
 	//---
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	// clear any old sound
 	if (pAmbObj->SndData.SoundDef != NULL)
 	{
 		Snd_Remove(&pAmbObj->Resource, &pAmbObj->SndData);
-		jeSound_FreeSoundDef(pAmbObj->Resource.Sound, pAmbObj->SndData.SoundDef);
+		grSound_FreeSoundDef(pAmbObj->Resource.Sound, pAmbObj->SndData.SoundDef);
 		pAmbObj->SndData.SoundDef = NULL;
 	}
 
 	assert(pAmbObj->Resource.World);
-	ResourceMgr = jeWorld_GetResourceMgr(pAmbObj->Resource.World);
+	ResourceMgr = grWorld_GetResourceMgr(pAmbObj->Resource.World);
 
 	if (ResourceMgr == NULL)
 		{
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE,"AmbObject_LoadSound: jeWorld_GetResourceMgr() failed", Name);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE,"AmbObject_LoadSound: grWorld_GetResourceMgr() failed", Name);
+		return GR_FALSE;
 		}
 
-	SoundDir = jeResource_GetVFile(ResourceMgr, "Sounds");
+	SoundDir = grResource_GetVFile(ResourceMgr, "Sounds");
 
-	//SndFile = jeVFile_OpenNewSystem( SoundDir, JE_VFILE_TYPE_DOS, Name, NULL, JE_VFILE_OPEN_READONLY );
-	SndFile = jeVFile_Open( SoundDir, Name, JE_VFILE_OPEN_READONLY);
+	//SndFile = grVFile_OpenNewSystem( SoundDir, GR_VFILE_TYPE_DOS, Name, NULL, GR_VFILE_OPEN_READONLY );
+	SndFile = grVFile_Open( SoundDir, Name, GR_VFILE_OPEN_READONLY);
 
 	if (SndFile == NULL)
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_OPEN,"AmbObject_LoadSound: jeVFile_Open() failed", Name);
+		grErrorLog_AddString(GR_ERR_FILEIO_OPEN,"AmbObject_LoadSound: grVFile_Open() failed", Name);
 		goto LOAD_CLEAN;
 	}
 
 	// create the new sound def
-	NewSoundDef = jeSound_LoadSoundDef( pAmbObj->Resource.Sound, SndFile );
+	NewSoundDef = grSound_LoadSoundDef( pAmbObj->Resource.Sound, SndFile );
 	if (NewSoundDef == NULL)
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ,"AmbObject_LoadSound: jeSound_LoadSoundDef() failed", Name);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ,"AmbObject_LoadSound: grSound_LoadSoundDef() failed", Name);
 		goto LOAD_CLEAN;
 	}
 
 	pAmbObj->SndData.SoundDef = NewSoundDef;
 	
-	jeVFile_Close( SndFile );
+	grVFile_Close( SndFile );
 
 	// [MLB-ICE]
-	jeResource_MgrDestroy(&ResourceMgr);	// Icestorm: We should clear this Instance up, it was referenced!
+	grResource_MgrDestroy(&ResourceMgr);	// Icestorm: We should clear this Instance up, it was referenced!
 	// [MLB-ICE] EOB
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 LOAD_CLEAN:
 
 	if (SndFile != NULL)
-		jeVFile_Close( SndFile );
+		grVFile_Close( SndFile );
 
 	strcpy(pAmbObj->Name, NoSelection);
 
 	// [MLB-ICE]
-	jeResource_MgrDestroy(&ResourceMgr);	// Icestorm: We should clear this Instance up, it was referenced!
+	grResource_MgrDestroy(&ResourceMgr);	// Icestorm: We should clear this Instance up, it was referenced!
 	// [MLB-ICE] EOB
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean AmbObj_ReadSoundNames(jeVFile *FileBase, int *FileCount)
+static grBoolean AmbObj_ReadSoundNames(grVFile *FileBase, int *FileCount)
 	{
-	jeVFile_Finder * Finder;
+	grVFile_Finder * Finder;
 
 	assert(FileBase);
 
-	Finder = jeVFile_CreateFinder(FileBase,"*.wav");
+	Finder = grVFile_CreateFinder(FileBase,"*.wav");
 	if ( ! Finder )
 		{
-		jeVFile_Close(FileBase);
-		return JE_FALSE;
+		grVFile_Close(FileBase);
+		return GR_FALSE;
 		}
 
-	while( jeVFile_FinderGetNextFile(Finder) )
+	while( grVFile_FinderGetNextFile(Finder) )
 		{
-		jeVFile_Properties Properties;
-		jeVFile_FinderGetProperties(Finder,&Properties);
+		grVFile_Properties Properties;
+		grVFile_FinderGetProperties(Finder,&Properties);
 
 		strlwr(Properties.Name);
 
-		if (Util_StrDupManagePtr(&NameList[(*FileCount)++], Properties.Name, 32) == JE_FALSE)
+		if (Util_StrDupManagePtr(&NameList[(*FileCount)++], Properties.Name, 32) == GR_FALSE)
 			{
-			jeVFile_DestroyFinder(Finder);
-			return JE_FALSE;
+			grVFile_DestroyFinder(Finder);
+			return GR_FALSE;
 			}
 		}
 
-	jeVFile_DestroyFinder(Finder);
+	grVFile_DestroyFinder(Finder);
 
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 
-static jeBoolean JETCC AmbObj_GetSoundNames( void * Instance, jeWorld * pWorld )
+static grBoolean GRCC AmbObj_GetSoundNames( void * Instance, grWorld * pWorld )
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
-	jeResourceMgr *ResourceMgr;
-	jeVFile *SoundDir;
+	grResourceMgr *ResourceMgr;
+	grVFile *SoundDir;
 
 	assert( Instance );
 	assert( pWorld );
@@ -425,24 +425,24 @@ static jeBoolean JETCC AmbObj_GetSoundNames( void * Instance, jeWorld * pWorld )
 	Util_StrDupManagePtr(&NameList[0], NoSelection, 32);
 	NameListCount = 1;
 
-	ResourceMgr = jeWorld_GetResourceMgr(pWorld);
+	ResourceMgr = grWorld_GetResourceMgr(pWorld);
 
 	if (ResourceMgr == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	SoundDir = jeResource_GetVFile(ResourceMgr, "Sounds");
+	SoundDir = grResource_GetVFile(ResourceMgr, "Sounds");
 
 	if (!SoundDir)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if (!AmbObj_ReadSoundNames(SoundDir, &NameListCount))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	// [MLB-ICE]
-	jeResource_MgrDestroy(&ResourceMgr);	// Icestorm: We should clear this Instance up, it was referenced!
+	grResource_MgrDestroy(&ResourceMgr);	// Icestorm: We should clear this Instance up, it was referenced!
 	// [MLB-ICE] EOB
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -469,14 +469,14 @@ void Destroy_Class( void )
 		{
 		if (NameList[i])
 			{
-			jeRam_Free(NameList[i]);
+			grRam_Free(NameList[i]);
 			NameList[i] = NULL;
 			}
 		}
 
 	NameListCount = 0;
 	//Royce-2
-	jeBitmap_Destroy(&pBitmap);
+	grBitmap_Destroy(&pBitmap);
 	//---
 }
 
@@ -486,23 +486,23 @@ void Destroy_Class( void )
 //
 //////////////////////////////////////////////////////////////////////////////
 
-void * JETCC CreateInstance( void )
+void * GRCC CreateInstance( void )
 {
 	AmbObj *pAmbObj;
 
-	pAmbObj = JE_RAM_ALLOCATE_STRUCT( AmbObj );
+	pAmbObj = GR_RAM_ALLOCATE_STRUCT( AmbObj );
 	if( pAmbObj == NULL )
 		return( NULL );
 	memset(pAmbObj, 0, sizeof(*pAmbObj));
 	pAmbObj->SndData.Min = DEFAULT_RADIUS;
 	//	tom morris feb 2005 -- changed default loop to TRUE
 	//	set default mute to FALSE;
-	pAmbObj->bLoop= /*JE_FALSE*/JE_TRUE; // 
-	pAmbObj->SndData.Loop = JE_TRUE;
-	pAmbObj->bMute = JE_FALSE;
+	pAmbObj->bLoop= /*GR_FALSE*/GR_TRUE; // 
+	pAmbObj->SndData.Loop = GR_TRUE;
+	pAmbObj->bMute = GR_FALSE;
 	//	end tom morris feb 2005
 	//Royce-2
-	pAmbObj->DisplayToggle = pBitmap ? JE_TRUE : JE_FALSE;
+	pAmbObj->DisplayToggle = pBitmap ? GR_TRUE : GR_FALSE;
 	//---
 	strcpy(pAmbObj->Name, NoSelection);
 	pAmbObj->RefCnt = 1;
@@ -516,14 +516,14 @@ void * JETCC CreateInstance( void )
 	
 
 CI_ERROR:
-	jeRam_Free( pAmbObj );
+	grRam_Free( pAmbObj );
 	return( NULL );
 	*/
 	//---
 }
 
 
-void JETCC CreateRef(void * Instance)
+void GRCC CreateRef(void * Instance)
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -532,7 +532,7 @@ void JETCC CreateRef(void * Instance)
 	pAmbObj->RefCnt++;
 }
 
-jeBoolean JETCC Destroy(void **pInstance)
+grBoolean GRCC Destroy(void **pInstance)
 {
 	AmbObj **hAmbObj = (AmbObj**)pInstance;
 	AmbObj *pAmbObj = *hAmbObj;
@@ -549,34 +549,34 @@ jeBoolean JETCC Destroy(void **pInstance)
 			{
 			//	tom morris June 2005
 			int iResult = 0;
-			iResult = jeSound_GetStatus(pAmbObj->Resource.Sound, pAmbObj->SndData.Sound);
+			iResult = grSound_GetStatus(pAmbObj->Resource.Sound, pAmbObj->SndData.Sound);
 			if (iResult & DSBSTATUS_PLAYING)
 			//	commented out by tom 
-			//	if (jeSound_SoundIsPlaying(pAmbObj->Resource.Sound, pAmbObj->SndData.Sound))
+			//	if (grSound_SoundIsPlaying(pAmbObj->Resource.Sound, pAmbObj->SndData.Sound))
 			//
-			jeSound_StopSound(pAmbObj->Resource.Sound, pAmbObj->SndData.Sound);
+			grSound_StopSound(pAmbObj->Resource.Sound, pAmbObj->SndData.Sound);
 
 				pAmbObj->SndData.Sound = NULL;
 			}
 
 			Snd_Remove(&pAmbObj->Resource, &pAmbObj->SndData);
-			jeSound_FreeSoundDef(pAmbObj->Resource.Sound, pAmbObj->SndData.SoundDef);
+			grSound_FreeSoundDef(pAmbObj->Resource.Sound, pAmbObj->SndData.SoundDef);
 			pAmbObj->SndData.SoundDef = NULL;
 		}
 
 		if (pAmbObj->Poly)
 			{
-			jeUserPoly_Destroy(&pAmbObj->Poly);
+			grUserPoly_Destroy(&pAmbObj->Poly);
 			}
 
-		jeRam_Free( pAmbObj );
+		grRam_Free( pAmbObj );
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean JETCC Render(const void * Instance, const jeWorld * pWorld, const jeEngine *Engine, const jeCamera *Camera, const jeFrustum *CameraSpaceFrustum, jeObject_RenderFlags RenderFlags)
+grBoolean GRCC Render(const void * Instance, const grWorld * pWorld, const grEngine *Engine, const grCamera *Camera, const grFrustum *CameraSpaceFrustum, grObject_RenderFlags RenderFlags)
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -585,21 +585,21 @@ jeBoolean JETCC Render(const void * Instance, const jeWorld * pWorld, const jeEn
 	assert( Engine );
 	assert( Camera );
 
-	if( jeWorld_GetRenderRecursion( pWorld ) > 1 )
-		return JE_TRUE;
+	if( grWorld_GetRenderRecursion( pWorld ) > 1 )
+		return GR_TRUE;
 
 	if (pAmbObj->Resource.Sound != NULL && pAmbObj->SndData.SoundDef != NULL)
 	{
 		pAmbObj->SndData.Loop = pAmbObj->bLoop;
 
-		pAmbObj->Resource.Camera = (jeCamera *)Camera;
+		pAmbObj->Resource.Camera = (grCamera *)Camera;
 		Snd_Process( &pAmbObj->Resource, 0.0f, pAmbObj->bMute, &pAmbObj->SndData );
 	}
 	
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC AttachWorld( void * Instance, jeWorld * pWorld )
+grBoolean GRCC AttachWorld( void * Instance, grWorld * pWorld )
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -609,9 +609,9 @@ jeBoolean JETCC AttachWorld( void * Instance, jeWorld * pWorld )
 	pAmbObj->Resource.World = pWorld;
 
 	if (!AmbObj_GetSoundNames(Instance, pAmbObj->Resource.World))
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeProperty_FillCombo( &AmbPropertyList.pjeProperty[AMB_NAMELIST_INDEX], 
+	grProperty_FillCombo( &AmbPropertyList.pgrProperty[AMB_NAMELIST_INDEX], 
 		PROP1_NAME, pAmbObj->Name, AMBOBJ_NAMELIST, NameListCount, NameList );
 
 	if (pAmbObj->Name[0] && !pAmbObj->SndData.SoundDef)
@@ -624,23 +624,23 @@ jeBoolean JETCC AttachWorld( void * Instance, jeWorld * pWorld )
 	// add the pAmbObj->Poly to the world
 	if (pAmbObj->DisplayToggle && !pAmbObj->Poly ) {
 		if (AmbObject_InitIcon(pAmbObj)) {
-			if ( jeWorld_AddUserPoly( pWorld, pAmbObj->Poly, JE_FALSE ) == JE_FALSE )
+			if ( grWorld_AddUserPoly( pWorld, pAmbObj->Poly, GR_FALSE ) == GR_FALSE )
 			{
-				jeUserPoly_Destroy( &( pAmbObj->Poly ) );
-				return JE_FALSE;
+				grUserPoly_Destroy( &( pAmbObj->Poly ) );
+				return GR_FALSE;
 			}
 		}
-		else return JE_FALSE;
+		else return GR_FALSE;
 		AmbObject_UpdateIcon(pAmbObj);
 	}
 	//---
 	
 
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	JETCC DettachWorld( void * Instance, jeWorld * pWorld )
+grBoolean	GRCC DettachWorld( void * Instance, grWorld * pWorld )
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -649,11 +649,11 @@ jeBoolean	JETCC DettachWorld( void * Instance, jeWorld * pWorld )
 	//Royce-2
 	if (pAmbObj->Poly) {
 		if (pAmbObj->DisplayToggle) 
-			if ( jeWorld_RemoveUserPoly( pWorld, pAmbObj->Poly) == JE_FALSE ) 
-				return JE_FALSE;
+			if ( grWorld_RemoveUserPoly( pWorld, pAmbObj->Poly) == GR_FALSE ) 
+				return GR_FALSE;
 		
 		
-		jeUserPoly_Destroy(&(pAmbObj->Poly));
+		grUserPoly_Destroy(&(pAmbObj->Poly));
 		//---
 	}
 
@@ -665,10 +665,10 @@ jeBoolean	JETCC DettachWorld( void * Instance, jeWorld * pWorld )
 
 	pAmbObj->Resource.World = NULL;
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 				
-jeBoolean	JETCC AttachEngine ( void * Instance, jeEngine *Engine )
+grBoolean	GRCC AttachEngine ( void * Instance, grEngine *Engine )
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -678,26 +678,26 @@ jeBoolean	JETCC AttachEngine ( void * Instance, jeEngine *Engine )
 
 	//Royce-2
 	if( pBitmap )
-		return( jeEngine_AddBitmap( (jeEngine*)Engine, pBitmap, JE_ENGINE_BITMAP_TYPE_3D ) );	
+		return( grEngine_AddBitmap( (grEngine*)Engine, pBitmap, GR_ENGINE_BITMAP_TYPE_3D ) );	
 	//---
-	return JE_TRUE;
+	return GR_TRUE;
 	Instance;
 }
 
-jeBoolean	JETCC DettachEngine( void * Instance, jeEngine *Engine )
+grBoolean	GRCC DettachEngine( void * Instance, grEngine *Engine )
 {
 	assert( Instance );
 
 	//Royce-2
 	
 	if( pBitmap )
-		jeEngine_RemoveBitmap(	Engine, pBitmap );
+		grEngine_RemoveBitmap(	Engine, pBitmap );
 	//---
-	return( JE_TRUE );
+	return( GR_TRUE );
 	Instance;
 }
 
-jeBoolean	JETCC AttachSoundSystem( void * Instance, jeSound_System *SoundSystem )
+grBoolean	GRCC AttachSoundSystem( void * Instance, grSound_System *SoundSystem )
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -711,10 +711,10 @@ jeBoolean	JETCC AttachSoundSystem( void * Instance, jeSound_System *SoundSystem 
 		AmbObject_LoadSound(pAmbObj, pAmbObj->Name);
 		}
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	JETCC DettachSoundSystem( void * Instance, jeSound_System *SoundSystem )
+grBoolean	GRCC DettachSoundSystem( void * Instance, grSound_System *SoundSystem )
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -722,66 +722,66 @@ jeBoolean	JETCC DettachSoundSystem( void * Instance, jeSound_System *SoundSystem
 
 	pAmbObj->Resource.Sound = NULL;
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 	SoundSystem;
 }
 
-jeBoolean	JETCC Collision(const jeObject *Object, const jeExtBox *Box, const jeVec3d *Front, const jeVec3d *Back, jeVec3d *Impact, jePlane *Plane)
+grBoolean	GRCC Collision(const grObject *Object, const grExtBox *Box, const grVec3d *Front, const grVec3d *Back, grVec3d *Impact, grPlane *Plane)
 {
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
-jeBoolean JETCC SetMaterial(void * Instance,const jeBitmap *Bmp,const jeRGBA * Color)
+grBoolean GRCC SetMaterial(void * Instance,const grBitmap *Bmp,const grRGBA * Color)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC GetMaterial(const void * Instance,jeBitmap **pBmp,jeRGBA * Color)
+grBoolean GRCC GetMaterial(const void * Instance,grBitmap **pBmp,grRGBA * Color)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC GetExtBox(const void * Instance,jeExtBox *BBox)
+grBoolean GRCC GetExtBox(const void * Instance,grExtBox *BBox)
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
-	jeVec3d Point;
+	grVec3d Point;
 
 	assert( Instance );
 	assert( BBox );
 
 	Point = pAmbObj->SndData.Pos;
 
-	jeExtBox_Set (  BBox, 
+	grExtBox_Set (  BBox, 
 					Point.X-5.0f, Point.Y-5.0f, Point.Z-5.0f,
 					Point.X+5.0f, Point.Y+5.0f, Point.Z+5.0f);
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
+void *	GRCC CreateFromFile(grVFile * File, grPtrMgr *PtrMgr)
 {
 	AmbObj * pAmbObj;
 	BYTE Version;
 	uint32 Tag;
 
-	pAmbObj = JE_RAM_ALLOCATE_STRUCT( AmbObj );
+	pAmbObj = GR_RAM_ALLOCATE_STRUCT( AmbObj );
 	memset(pAmbObj, 0, sizeof(*pAmbObj));
 	
 	if( pAmbObj == NULL )
 		return( NULL );
 
- 	if(!jeVFile_Read(File, &Tag, sizeof(Tag)))
+ 	if(!grVFile_Read(File, &Tag, sizeof(Tag)))
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "AmbObject_CreateFromFile:Tag" );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "AmbObject_CreateFromFile:Tag" );
 		goto CFF_ERROR;
 	}
 
 	if (Tag == FILE_UNIQUE_ID)
 	{
-		if (!jeVFile_Read(File, &Version, sizeof(Version)))
+		if (!grVFile_Read(File, &Version, sizeof(Version)))
 		{
-    		jeErrorLog_Add( JE_ERR_FILEIO_READ, "AmbObject_CreateFromFile:Version" );
+    		grErrorLog_Add( GR_ERR_FILEIO_READ, "AmbObject_CreateFromFile:Version" );
 	       	goto CFF_ERROR;
 		}
 	}
@@ -789,33 +789,33 @@ void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
 	{
 		//for backwards compatibility with old object format
 		Version = 1;
-		jeVFile_Seek(File,-((int)sizeof(Tag)),JE_VFILE_SEEKCUR);
+		grVFile_Seek(File,-((int)sizeof(Tag)),GR_VFILE_SEEKCUR);
 	}
 	
 	if (Version >= 1)
 	{
 	
-	    if( !jeVFile_Read(	File, pAmbObj->Name, sizeof( pAmbObj->Name) ) )
+	    if( !grVFile_Read(	File, pAmbObj->Name, sizeof( pAmbObj->Name) ) )
 		{
-    	    jeErrorLog_Add(JE_ERR_FILEIO_READ, "AmbObject_CreateFromFile:Name");
+    	    grErrorLog_Add(GR_ERR_FILEIO_READ, "AmbObject_CreateFromFile:Name");
 		    goto CFF_ERROR;
 		}
 
-	    if( !jeVFile_Read(	File, &pAmbObj->SndData.Pos, sizeof( pAmbObj->SndData.Pos) ) )
+	    if( !grVFile_Read(	File, &pAmbObj->SndData.Pos, sizeof( pAmbObj->SndData.Pos) ) )
 		{
-    	    jeErrorLog_Add(JE_ERR_FILEIO_READ, "AmbObject_CreateFromFile:SndData.Pos");
+    	    grErrorLog_Add(GR_ERR_FILEIO_READ, "AmbObject_CreateFromFile:SndData.Pos");
 		    goto CFF_ERROR;
 		}
 	
-	    if( !jeVFile_Read(	File, &pAmbObj->SndData.Min, sizeof( pAmbObj->SndData.Min) ) )
+	    if( !grVFile_Read(	File, &pAmbObj->SndData.Min, sizeof( pAmbObj->SndData.Min) ) )
 		{
-    	    jeErrorLog_Add(JE_ERR_FILEIO_READ, "AmbObject_CreateFromFile:SndData.Min");
+    	    grErrorLog_Add(GR_ERR_FILEIO_READ, "AmbObject_CreateFromFile:SndData.Min");
 		    goto CFF_ERROR;
 		}
 
-	    if( !jeVFile_Read(	File, &pAmbObj->SndData.Loop, sizeof( pAmbObj->SndData.Loop) ) )
+	    if( !grVFile_Read(	File, &pAmbObj->SndData.Loop, sizeof( pAmbObj->SndData.Loop) ) )
 		{
-    	    jeErrorLog_Add(JE_ERR_FILEIO_READ, "AmbObject_CreateFromFile:SndData.Loop");
+    	    grErrorLog_Add(GR_ERR_FILEIO_READ, "AmbObject_CreateFromFile:SndData.Loop");
 		    goto CFF_ERROR;
 		}
 	}
@@ -823,7 +823,7 @@ void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
 
 	//Royce-2
 	//this property is detected based on the existance of ambient.bmp
-	pAmbObj->DisplayToggle = pBitmap ? JE_TRUE : JE_FALSE; //not a fatal error
+	pAmbObj->DisplayToggle = pBitmap ? GR_TRUE : GR_FALSE; //not a fatal error
 	//---
 	pAmbObj->RefCnt = 1;
 
@@ -837,14 +837,14 @@ void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
 
 CFF_ERROR:
 
-	jeRam_Free( pAmbObj );
+	grRam_Free( pAmbObj );
 	return( NULL );
 	PtrMgr;
 }
 
 
 
-jeBoolean	JETCC WriteToFile(const void * Instance,jeVFile * File, jePtrMgr *PtrMgr)
+grBoolean	GRCC WriteToFile(const void * Instance,grVFile * File, grPtrMgr *PtrMgr)
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 	BYTE Version = AMBOBJ_VERSION;
@@ -853,48 +853,48 @@ jeBoolean	JETCC WriteToFile(const void * Instance,jeVFile * File, jePtrMgr *PtrM
 	assert( Instance );
 
 
-	if( !jeVFile_Write(	File, &Tag, sizeof(Tag)))
+	if( !grVFile_Write(	File, &Tag, sizeof(Tag)))
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:Tag");
-	    return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:Tag");
+	    return( GR_FALSE );
 	}
 	
-	if( !jeVFile_Write(	File, &Version, sizeof(Version) ) )
+	if( !grVFile_Write(	File, &Version, sizeof(Version) ) )
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:Version");
-	    return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:Version");
+	    return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write(	File, pAmbObj->Name, sizeof( pAmbObj->Name) ) )
+	if( !grVFile_Write(	File, pAmbObj->Name, sizeof( pAmbObj->Name) ) )
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:Name");
-	    return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:Name");
+	    return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write(	File, &pAmbObj->SndData.Pos, sizeof( pAmbObj->SndData.Pos) ) )
+	if( !grVFile_Write(	File, &pAmbObj->SndData.Pos, sizeof( pAmbObj->SndData.Pos) ) )
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:SndData.Pos");
-		return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:SndData.Pos");
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write(	File, &pAmbObj->SndData.Min, sizeof( pAmbObj->SndData.Min) ) )
+	if( !grVFile_Write(	File, &pAmbObj->SndData.Min, sizeof( pAmbObj->SndData.Min) ) )
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:SndData.Min");
-		return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:SndData.Min");
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write(	File, &pAmbObj->SndData.Loop, sizeof( pAmbObj->SndData.Loop) ) )
+	if( !grVFile_Write(	File, &pAmbObj->SndData.Loop, sizeof( pAmbObj->SndData.Loop) ) )
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:SndData.Loop");
-		return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "AmbObject_WriteToFile:SndData.Loop");
+		return( GR_FALSE );
 	}
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 	PtrMgr;
 }
 
 
-jeBoolean	JETCC GetPropertyList(void * Instance, jeProperty_List **List)
+grBoolean	GRCC GetPropertyList(void * Instance, grProperty_List **List)
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -904,45 +904,45 @@ jeBoolean	JETCC GetPropertyList(void * Instance, jeProperty_List **List)
 	if (pAmbObj->Resource.World)
 		{
 		if (!AmbObj_GetSoundNames(Instance, pAmbObj->Resource.World))
-			return JE_FALSE;
+			return GR_FALSE;
 
-		jeProperty_FillCombo( &AmbPropertyList.pjeProperty[AMB_NAMELIST_INDEX], 
+		grProperty_FillCombo( &AmbPropertyList.pgrProperty[AMB_NAMELIST_INDEX], 
 			PROP1_NAME, pAmbObj->Name, AMBOBJ_NAMELIST, NameListCount, NameList );
 		}
 	else
 		{
-		jeProperty_FillCombo( &AmbPropertyList.pjeProperty[AMB_NAMELIST_INDEX], 
+		grProperty_FillCombo( &AmbPropertyList.pgrProperty[AMB_NAMELIST_INDEX], 
 			PROP1_NAME, NoSelection, AMBOBJ_NAMELIST, 1, &NoSelection );
 		}
 
 
-	jeProperty_FillFloat( &AmbPropertyList.pjeProperty[AMB_SIZE_INDEX], 
+	grProperty_FillFloat( &AmbPropertyList.pgrProperty[AMB_SIZE_INDEX], 
 		PROP2_NAME, pAmbObj->SndData.Min, AMBOBJ_SIZE, 0, FLT_MAX, 10.0f );
 
 	//Royce-2
-	jeProperty_FillCheck( &AmbPropertyList.pjeProperty[AMB_DISPLAYTOGGLE_INDEX],
+	grProperty_FillCheck( &AmbPropertyList.pgrProperty[AMB_DISPLAYTOGGLE_INDEX],
 		PROP3_NAME, pAmbObj->DisplayToggle, AMBOBJ_DISPLAYTOGGLE);
 	//---
 
 	//	Tom
-	jeProperty_FillCheck( &AmbPropertyList.pjeProperty[AMB_INDEX_MUTE_BOX],
+	grProperty_FillCheck( &AmbPropertyList.pgrProperty[AMB_INDEX_MUTE_BOX],
 		PROP4_NAME, pAmbObj->bMute, AMBOBJ_PROPERTY_MUTE_BOX);
 
 	// BEGIN - Add loop checkbox to editor - paradoxnj
-	jeProperty_FillCheck( &AmbPropertyList.pjeProperty[AMB_INDEX_LOOP_BOX],
+	grProperty_FillCheck( &AmbPropertyList.pgrProperty[AMB_INDEX_LOOP_BOX],
 		PROP5_NAME, pAmbObj->bLoop, AMBOBJ_PROPERTY_LOOP_BOX);
 
-	*List = jeProperty_ListCopy( &AmbPropertyList);
-	AmbPropertyList.bDirty = JE_FALSE;
+	*List = grProperty_ListCopy( &AmbPropertyList);
+	AmbPropertyList.bDirty = GR_FALSE;
 
 	if( *List == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData )
+grBoolean	GRCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData )
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -963,23 +963,23 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 	case AMBOBJ_NAMELIST:
 		
 		if (strcmp(pData->String, NoSelection) == 0)
-			return JE_TRUE;
+			return GR_TRUE;
 
 		strcpy(pAmbObj->Name, pData->String);
 		AmbObject_LoadSound(pAmbObj, pData->String);
-		AmbPropertyList.bDirty = JE_TRUE;
+		AmbPropertyList.bDirty = GR_TRUE;
 		break;
 
 	//	Tom
 	case AMBOBJ_PROPERTY_MUTE_BOX:
 	{
-		pAmbObj->bMute = (jeBoolean)pData->Bool;
+		pAmbObj->bMute = (grBoolean)pData->Bool;
 		break;
 	}
 
 	case AMBOBJ_PROPERTY_LOOP_BOX:
 		{
-			pAmbObj->bLoop = (jeBoolean)pData->Bool;
+			pAmbObj->bLoop = (grBoolean)pData->Bool;
 			break;
 		}
 	case AMBOBJ_DISPLAYTOGGLE:
@@ -993,11 +993,11 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 						AmbObject_InitIcon(pAmbObj);
 
 					//turn on the sprite
-					if ( jeWorld_AddUserPoly( pAmbObj->Resource.World, pAmbObj->Poly, JE_FALSE ) == JE_FALSE ) {
+					if ( grWorld_AddUserPoly( pAmbObj->Resource.World, pAmbObj->Poly, GR_FALSE ) == GR_FALSE ) {
 						//if this busts we should probably hear about it
 						//but it is not fatal
-						jeUserPoly_Destroy( &( pAmbObj->Poly ) );
-						jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to add the Ambient UserPoly to the World.", NULL);
+						grUserPoly_Destroy( &( pAmbObj->Poly ) );
+						grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to add the Ambient UserPoly to the World.", NULL);
 						//note that the bitmap may still be outstanding
 					}
 					AmbObject_UpdateIcon(pAmbObj);
@@ -1008,10 +1008,10 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 		else {
 			//turn off the sprite
 			if (pAmbObj->Poly) {
-				if ( jeWorld_RemoveUserPoly( pAmbObj->Resource.World, pAmbObj->Poly) == JE_FALSE ) {
+				if ( grWorld_RemoveUserPoly( pAmbObj->Resource.World, pAmbObj->Poly) == GR_FALSE ) {
 					//something bad has probably gone wrong here
 					//but I still don't think it should be fatal
-					jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to remove the Ambient UserPoly from the World.", NULL);
+					grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to remove the Ambient UserPoly from the World.", NULL);
 					break; //don't orphan the poly 
 				}
 			}
@@ -1025,10 +1025,10 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 	
 
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	JETCC SetXForm(void * Instance,const jeXForm3d *XF)
+grBoolean	GRCC SetXForm(void * Instance,const grXForm3d *XF)
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -1038,49 +1038,49 @@ jeBoolean	JETCC SetXForm(void * Instance,const jeXForm3d *XF)
 	pAmbObj->SndData.Pos = XF->Translation;
 	AmbObject_UpdateIcon(pAmbObj);
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC GetXForm(const void * Instance,jeXForm3d *XF)
+grBoolean GRCC GetXForm(const void * Instance,grXForm3d *XF)
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
 	assert( Instance );
 	assert( XF );
 
-	jeXForm3d_SetIdentity(XF);
+	grXForm3d_SetIdentity(XF);
 	XF->Translation = pAmbObj->SndData.Pos;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-int	JETCC GetXFormModFlags( const void * Instance )
+int	GRCC GetXFormModFlags( const void * Instance )
 {
 	Instance;
-	return( JE_OBJECT_XFORM_TRANSLATE);
+	return( GR_OBJECT_XFORM_TRANSLATE);
 }
 
-jeBoolean JETCC GetChildren(const void * Instance,jeObject * Children,int MaxNumChildren)
+grBoolean GRCC GetChildren(const void * Instance,grObject * Children,int MaxNumChildren)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC AddChild(void * Instance,const jeObject * Child)
+grBoolean GRCC AddChild(void * Instance,const grObject * Child)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC RemoveChild(void * Instance,const jeObject * Child)
+grBoolean GRCC RemoveChild(void * Instance,const grObject * Child)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC EditDialog (void * Instance,HWND Parent)
+grBoolean GRCC EditDialog (void * Instance,HWND Parent)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
+grBoolean GRCC MessageFunction (void * Instance, int32 Msg, void * Data)
 {
 	AmbObj *pAmbObj = (AmbObj*)Instance;
 
@@ -1089,15 +1089,15 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 	switch (Msg)
 		{
 		default:
-			return JE_FALSE;
+			return GR_FALSE;
 			break;
 		}// switch
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-jeBoolean	JETCC UpdateTimeDelta(void * Instance, float TimeDelta )
+grBoolean	GRCC UpdateTimeDelta(void * Instance, float TimeDelta )
 {
 	// locals
 	//AmbObj	*pAmbObj;
@@ -1107,10 +1107,10 @@ jeBoolean	JETCC UpdateTimeDelta(void * Instance, float TimeDelta )
 
 	if ( TimeDelta == 0.0f )
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -1120,91 +1120,91 @@ jeBoolean	JETCC UpdateTimeDelta(void * Instance, float TimeDelta )
 //	DuplicateInstance()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-void * JETCC DuplicateInstance(void * Instance)
+void * GRCC DuplicateInstance(void * Instance)
 {
-	jeVFile *ramdisk, *ramfile;
-	jeVFile_MemoryContext vfsmemctx;
-	jeObject* newAmbObj = NULL;
-	jePtrMgr *ptrMgr = NULL;
+	grVFile *ramdisk, *ramfile;
+	grVFile_MemoryContext vfsmemctx;
+	grObject* newAmbObj = NULL;
+	grPtrMgr *ptrMgr = NULL;
 
 
-	vfsmemctx.Data = jeRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
+	vfsmemctx.Data = grRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
 	vfsmemctx.DataLength = OBJ_PERSIST_SIZE;
 
 	if (!vfsmemctx.Data) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
 		return NULL;
 	}
 
-	ramdisk = jeVFile_OpenNewSystem
+	ramdisk = grVFile_OpenNewSystem
 	(
 		NULL, 
-		JE_VFILE_TYPE_MEMORY|JE_VFILE_TYPE_VIRTUAL,
+		GR_VFILE_TYPE_MEMORY|GR_VFILE_TYPE_VIRTUAL,
 		"Memory",
 		NULL,
-		JE_VFILE_OPEN_CREATE|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_CREATE|GR_VFILE_OPEN_DIRECTORY
 	);
 
 	if (!ramdisk) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	ramfile = jeVFile_Open(ramdisk, "tempObject", JE_VFILE_OPEN_CREATE);
+	ramfile = grVFile_Open(ramdisk, "tempObject", GR_VFILE_OPEN_CREATE);
 
 	if (!ramfile) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
-	ptrMgr = jePtrMgr_Create();
+	ptrMgr = grPtrMgr_Create();
 
 	if (!ptrMgr) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!WriteToFile(Instance, ramfile, jePtrMgr_Create())) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!WriteToFile(Instance, ramfile, grPtrMgr_Create())) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!jeVFile_Rewind(ramfile)) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!grVFile_Rewind(ramfile)) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
 	newAmbObj = CreateFromFile(ramfile, ptrMgr);
 	if (!newAmbObj) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	jeVFile_Close(ramfile);
-	jeVFile_Close(ramdisk);
+	grVFile_Close(ramfile);
+	grVFile_Close(ramdisk);
 
-	jeRam_Free(vfsmemctx.Data);
+	grRam_Free(vfsmemctx.Data);
 
 	return( newAmbObj );
 }
 //---
 
 // Icestorm
-jeBoolean	JETCC ChangeBoxCollision(const void *Instance,const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane)
+grBoolean	GRCC ChangeBoxCollision(const void *Instance,const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane)
 {
-	return( JE_FALSE );
+	return( GR_FALSE );
 }

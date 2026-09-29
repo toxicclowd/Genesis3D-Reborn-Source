@@ -23,10 +23,10 @@
 #ifndef BRUSHTEMPLATE_H
 #define BRUSHTEMPLATE_H
 
-#include "jeBrush.h"
+#include "grBrush.h"
 #include "BaseType.h"
 #include "Defs.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,25 +52,25 @@ BrushTemplate		*   BrushTemplate_Create( BRUSH_KIND Kind );
 BrushTemplate		*   BrushTemplate_Copy( BrushTemplate * pTemplate );
 ArchTemplate		*	BrushTemplate_CreateArch();
 
-jeBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  jeFaceInfo * pFaceInfo );
-jeBrush *BrushTemplate_CreateSheetBrush (const SheetTemplate *pTemplate,  jeFaceInfo * pFaceInfo );
-jeBrush	*BrushTemplate_CreateSphereBrush (const SphereTemplate *pTemplate,   jeFaceInfo * pFaceInfo );
-jeBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,   jeFaceInfo * pFaceInfo);
-jeBrush *BrushTemplate_CreateBrush( const BrushTemplate * pBrushTemplate,  jeFaceInfo * pFaceInfo );
-jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize );
-jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo *pFaceInfo);
+grBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  grFaceInfo * pFaceInfo );
+grBrush *BrushTemplate_CreateSheetBrush (const SheetTemplate *pTemplate,  grFaceInfo * pFaceInfo );
+grBrush	*BrushTemplate_CreateSphereBrush (const SphereTemplate *pTemplate,   grFaceInfo * pFaceInfo );
+grBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,   grFaceInfo * pFaceInfo);
+grBrush *BrushTemplate_CreateBrush( const BrushTemplate * pBrushTemplate,  grFaceInfo * pFaceInfo );
+grBrush *BrushTemplate_CreateCameraBrush (int BoxSize );
+grBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, grFaceInfo *pFaceInfo);
 
 //DESTUCTOR
 void					BrushTemplate_Destroy( BrushTemplate ** BrushTemplate );
 
 //ACCESSORS
 int BrushTemplate_GetDescriptorN( BrushTemplate * pTemplate );
-jeBoolean BrushTemplate_FillTemplateDescriptor( BrushTemplate * pTemplate, jeProperty_List *pPropertyList );
-void BrushTemplate_SetProperty( BrushTemplate * pTemplate,  int DataId, int DataType, jeProperty_Data * pData );
+grBoolean BrushTemplate_FillTemplateDescriptor( BrushTemplate * pTemplate, grProperty_List *pPropertyList );
+void BrushTemplate_SetProperty( BrushTemplate * pTemplate,  int DataId, int DataType, grProperty_Data * pData );
 
 //FILE
-BrushTemplate		* BrushTemplate_CreateFromFile( jeVFile * pF ) ;
-jeBoolean			BrushTemplate_WriteToFile( BrushTemplate * pTemplate, jeVFile * pF) ;
+BrushTemplate		* BrushTemplate_CreateFromFile( grVFile * pF ) ;
+grBoolean			BrushTemplate_WriteToFile( BrushTemplate * pTemplate, grVFile * pF) ;
 
 
 #ifdef __cplusplus

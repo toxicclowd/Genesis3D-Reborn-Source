@@ -65,7 +65,7 @@ REPORT_VARS(RunLen);
 
 #define SIGN_CONTEXTS	9
 
-jeBoolean coderBPBFRLInit(coder *c);
+grBoolean coderBPBFRLInit(coder *c);
 void coderBPBFRLFree(coder *c);
 void coderBPBFRLEncodeBandBP(coderParams *P);
 void coderBPBFRLDecodeBandBP(coderParams *P);
@@ -86,13 +86,13 @@ typedef struct
 	rung_t runstats[4];
 } BPBFRLInfo;
 
-jeBoolean coderBPBFRLInit(coder *c)
+grBoolean coderBPBFRLInit(coder *c)
 {
 BPBFRLInfo *d;
 int i;
 
 	if ( (d = (BPBFRLInfo *)new(BPBFRLInfo)) == NULL )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	c->data = d;
 
@@ -113,7 +113,7 @@ int i;
 
 	REPORT_RESET(RunLen);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 void coderBPBFRLFree(coder *c)

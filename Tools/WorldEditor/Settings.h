@@ -132,17 +132,17 @@ uint32			Settings_GetSubtractBrushColor( void ) ;
 uint32			Settings_GetAddBrushColor( void ) ;
 uint32			Settings_GetAddSubtractEmptyColor( void ) ;
 
-jeBoolean		Settings_IsSelByEncompass( void ) ;
+grBoolean		Settings_IsSelByEncompass( void ) ;
 
 //---------------------------------------------------
 // Added DJT
 //---------------------------------------------------
 MouseSettings *    MouseSettings_Create(void);  
 void			   MouseSettings_Destroy(MouseSettings ** ppSettings);
-jeBoolean          MouseSettings_Save(void);
-jeBoolean          MouseSettings_Restore(void);
-jeBoolean          MouseSettings_GetHotSelect(void);
-void               MouseSettings_SetHotSelect(jeBoolean bHotSelect);
+grBoolean          MouseSettings_Save(void);
+grBoolean          MouseSettings_Restore(void);
+grBoolean          MouseSettings_GetHotSelect(void);
+void               MouseSettings_SetHotSelect(grBoolean bHotSelect);
 eMouseMiddleButton MouseSettings_GetMiddleButtonState(void);
 void               MouseSettings_SetMiddleButtonState(eMouseMiddleButton eState);
 eMouseWheel        MouseSettings_GetWheelState(void);

@@ -37,17 +37,17 @@
 #include <string.h>
 #include <float.h>
 #include "VFile.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 #include "Ram.h"
-#include "jeResource.h"
-#include "jeWorld.h"
+#include "grResource.h"
+#include "grWorld.h"
 #include "Spout.h"
 #include "Resource.h"
-#include "jeParticle.h"
-#include "jeVersion.h"
+#include "grParticle.h"
+#include "grVersion.h"
 #include "Errorlog.h"
-#include "jeMaterial.h"
-#include "jeResource.h"
+#include "grMaterial.h"
+#include "grResource.h"
 
 
 #define SPOUTOBJECT_VERSION 1
@@ -163,8 +163,8 @@ static image_id			hClassInstance = NULL;
 
 static BitmapList		*Bitmaps, CurBitmaps;
 static int				*BitmapWidth, *BitmapHeight;
-static jeProperty		SpoutProperties[SPOUT_LAST_INDEX];
-static jeProperty_List	SpoutPropertyList = { SPOUT_LAST_INDEX, &( SpoutProperties[0] ) };
+static grProperty		SpoutProperties[SPOUT_LAST_INDEX];
+static grProperty_List	SpoutPropertyList = { SPOUT_LAST_INDEX, &( SpoutProperties[0] ) };
 static char				*NoSelection = "< none >";
 
 
@@ -182,7 +182,7 @@ static char				*NoSelection = "< none >";
 #define SPOUT_DEFAULT_COLORRED				255.0f
 #define SPOUT_DEFAULT_COLORGREEN			255.0f
 #define SPOUT_DEFAULT_COLORBLUE				255.0f
-#define SPOUT_DEFAULT_DRAWEXTBOXDISPLAY		JE_FALSE
+#define SPOUT_DEFAULT_DRAWEXTBOXDISPLAY		GR_FALSE
 #define SPOUT_DEFAULT_DRAWEXTBOXMINX		-16.0f
 #define SPOUT_DEFAULT_DRAWEXTBOXMINY		-16.0f
 #define SPOUT_DEFAULT_DRAWEXTBOXMINZ		-16.0f
@@ -196,29 +196,29 @@ static char				*NoSelection = "< none >";
 ////////////////////////////////////////////////////////////////////////////////////////
 typedef struct Spout
 {
-	jeParticle_System	*Ps;
-	jeWorld				*World;
-	jeResourceMgr		*ResourceMgr;
-	jeEngine			*Engine;
-	jeXForm3d			Xf;
+	grParticle_System	*Ps;
+	grWorld				*World;
+	grResourceMgr		*ResourceMgr;
+	grEngine			*Engine;
+	grXForm3d			Xf;
 	int					RefCount;
 	int					CurWidth;
-    jeMaterialSpec      *Art;
-	//jeBitmap			*Art;
+    grMaterialSpec      *Art;
+	//grBitmap			*Art;
 	char				*ArtName;
 	char				*BitmapName;
 	char				*AlphaName;
 	float				TimeElapsed;
 	float				Rate;
-	JE_RGBA				MinColor, MaxColor;
+	GR_RGBA				MinColor, MaxColor;
 	float				MinSpeed, MaxSpeed;
 	float				MinScale, MaxScale;
 	float				MinUnitLife, MaxUnitLife;
 	float				Angle;
-	jeVec3d				Gravity;
-	jeBoolean			DrawExtBoxDisplay;
-	jeExtBox			DrawExtBox;
-	jeBoolean			LoadedFromDisk;
+	grVec3d				Gravity;
+	grBoolean			DrawExtBoxDisplay;
+	grExtBox			DrawExtBox;
+	grBoolean			LoadedFromDisk;
 
 } Spout;
 
@@ -234,14 +234,14 @@ static char * Util_StrDup(
 {
 
 	// copy string
-	char * p = (char *)jeRam_Allocate( strlen( psz ) + 1 );
+	char * p = (char *)grRam_Allocate( strlen( psz ) + 1 );
 	if ( p ) 
 	{
 		strcpy( p, psz );
 	}
 	else
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 	}
 
 	// return string
@@ -271,7 +271,7 @@ static void Util_RecreateCurBitmapsList(
 	{
 		if( CurBitmaps.Name[i] != NULL )
 		{
-			jeRam_Free( CurBitmaps.Name[i] );
+			grRam_Free( CurBitmaps.Name[i] );
 			CurBitmaps.Name[i] = NULL;
 		}
 	}
@@ -297,15 +297,15 @@ static void Util_RecreateCurBitmapsList(
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 static void Util_DrawPoly(
-	jeWorld		*World,	// world in which to draw poly
-	jeLVertex	*V1,	// top left
-	jeLVertex	*V2,	// top right
-	jeLVertex	*V3,	// bottom right
-	jeLVertex	*V4 )	// bottom left
+	grWorld		*World,	// world in which to draw poly
+	grLVertex	*V1,	// top left
+	grLVertex	*V2,	// top right
+	grLVertex	*V3,	// bottom right
+	grLVertex	*V4 )	// bottom left
 {
 
 	// locals
-	jeUserPoly	*Poly;
+	grUserPoly	*Poly;
 
 	// ensure valid data
 	assert( World != NULL );
@@ -315,9 +315,9 @@ static void Util_DrawPoly(
 	assert( V4 != NULL );
 
 	// draw poly
-	Poly = jeUserPoly_CreateQuad( V1, V2, V3, V4, NULL, JE_RENDER_FLAG_ALPHA );
-	jeWorld_AddUserPoly( World, Poly, JE_TRUE );
-	jeUserPoly_Destroy( &Poly );
+	Poly = grUserPoly_CreateQuad( V1, V2, V3, V4, NULL, GR_RENDER_FLAG_ALPHA );
+	grWorld_AddUserPoly( World, Poly, GR_TRUE );
+	grUserPoly_Destroy( &Poly );
 
 } // Util_DrawPoly()
 
@@ -329,13 +329,13 @@ static void Util_DrawPoly(
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 static void Util_DrawExtBox(
-	jeWorld		*World,		// world to draw it in
-	JE_RGBA		*Color,		// color to draw it in
-	jeExtBox	*ExtBox )	// extent box to draw
+	grWorld		*World,		// world to draw it in
+	GR_RGBA		*Color,		// color to draw it in
+	grExtBox	*ExtBox )	// extent box to draw
 {
 
 	// locals
-	jeLVertex	Vertex[4];
+	grLVertex	Vertex[4];
 	int			i;
 
 	// ensure valid data
@@ -468,15 +468,15 @@ static void Spout_DestroyArt(
 	// destroy art
 	if ( Object->Art != NULL )
 	{
-        jeBitmap* bmpArt;
+        grBitmap* bmpArt;
 		assert( Object->Engine != NULL );
 		assert( Object->ResourceMgr != NULL );
 
-        bmpArt = jeMaterialSpec_GetLayerBitmap(Object->Art, 0);
+        bmpArt = grMaterialSpec_GetLayerBitmap(Object->Art, 0);
         if (bmpArt)
-            jeEngine_RemoveBitmap( Object->Engine, bmpArt );
+            grEngine_RemoveBitmap( Object->Engine, bmpArt );
 
-        jeMaterialSpec_Destroy(&Object->Art);
+        grMaterialSpec_Destroy(&Object->Art);
 	}
 
 } // Spout_DestroyArt()
@@ -488,14 +488,14 @@ static void Spout_DestroyArt(
 //	Util_WriteString()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean Util_WriteString(
-	jeVFile	*File,		// file to write to
+static grBoolean Util_WriteString(
+	grVFile	*File,		// file to write to
 	char	*String )	// string to write out
 {
 
 	// locals
 	int			Size;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 
 	// ensure valid data
 	assert( File != NULL );
@@ -504,8 +504,8 @@ static jeBoolean Util_WriteString(
 	// write out complete
 	Size = strlen( String ) + 1;
 	assert( Size > 0 );
-	Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
-	Result &= jeVFile_Write( File, String, Size );
+	Result &= grVFile_Write( File, &Size, sizeof( Size ) );
+	Result &= grVFile_Write( File, String, Size );
 
 	// all done
 	return Result;
@@ -521,16 +521,16 @@ static jeBoolean Util_WriteString(
 //	Create a bitmap from a file.
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBitmap * Util_CreateBitmapFromFileName(
-	jeVFile		*File,			// file system to use
+static grBitmap * Util_CreateBitmapFromFileName(
+	grVFile		*File,			// file system to use
 	const char	*Name,			// name of the file
 	const char	*AlphaName )	// name of the alpha file
 {
 
 	// locals
-	jeVFile		*BmpFile;
-	jeBitmap	*Bmp;
-	jeBoolean	Result;
+	grVFile		*BmpFile;
+	grBitmap	*Bmp;
+	grBoolean	Result;
 
 	// ensure valid data
 	assert( Name != NULL );
@@ -538,24 +538,24 @@ static jeBitmap * Util_CreateBitmapFromFileName(
 	// open the bitmap
 	if ( File == NULL )
 	{
-		BmpFile = jeVFile_OpenNewSystem( NULL, JE_VFILE_TYPE_DOS, Name, NULL, JE_VFILE_OPEN_READONLY );
+		BmpFile = grVFile_OpenNewSystem( NULL, GR_VFILE_TYPE_DOS, Name, NULL, GR_VFILE_OPEN_READONLY );
 	}
 	else
 	{
-		BmpFile = jeVFile_Open( File, Name, JE_VFILE_OPEN_READONLY );
+		BmpFile = grVFile_Open( File, Name, GR_VFILE_OPEN_READONLY );
 	}
 	if ( BmpFile == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_OPEN, NULL );
+		grErrorLog_Add( GR_ERR_FILEIO_OPEN, NULL );
 		return NULL;
 	}
 
 	// create the bitmap
-	Bmp = jeBitmap_CreateFromFile( BmpFile );
-	jeVFile_Close( BmpFile );
+	Bmp = grBitmap_CreateFromFile( BmpFile );
+	grVFile_Close( BmpFile );
 	if ( Bmp == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 		return NULL;
 	}
 
@@ -564,62 +564,62 @@ static jeBitmap * Util_CreateBitmapFromFileName(
 	{
 
 		// locals
-		jeBitmap	*AlphaBmp;
-		jeVFile		*AlphaFile;
+		grBitmap	*AlphaBmp;
+		grVFile		*AlphaFile;
 
 		// open alpha file
 		if ( File == NULL )
 		{
-			AlphaFile = jeVFile_OpenNewSystem( NULL, JE_VFILE_TYPE_DOS, AlphaName, NULL, JE_VFILE_OPEN_READONLY );
+			AlphaFile = grVFile_OpenNewSystem( NULL, GR_VFILE_TYPE_DOS, AlphaName, NULL, GR_VFILE_OPEN_READONLY );
 		}
 		else
 		{
-			AlphaFile = jeVFile_Open( File, AlphaName, JE_VFILE_OPEN_READONLY );
+			AlphaFile = grVFile_Open( File, AlphaName, GR_VFILE_OPEN_READONLY );
 		}
 		if( AlphaFile == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_OPEN, NULL );
-			jeBitmap_Destroy( &Bmp );
+			grErrorLog_Add( GR_ERR_FILEIO_OPEN, NULL );
+			grBitmap_Destroy( &Bmp );
 			return NULL;
 		}
 
 		// create alpha bitmap
-		AlphaBmp = jeBitmap_CreateFromFile( AlphaFile );
-		jeVFile_Close( AlphaFile );
+		AlphaBmp = grBitmap_CreateFromFile( AlphaFile );
+		grVFile_Close( AlphaFile );
 		if ( AlphaBmp == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-			jeBitmap_Destroy( &Bmp );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+			grBitmap_Destroy( &Bmp );
 			return NULL;
 		}
 
 		// fail if alpha isn't same size as main bitmap
-		if (	( jeBitmap_Width( Bmp ) != jeBitmap_Width( AlphaBmp ) ) ||
-				( jeBitmap_Height( Bmp ) != jeBitmap_Height( AlphaBmp ) ) )
+		if (	( grBitmap_Width( Bmp ) != grBitmap_Width( AlphaBmp ) ) ||
+				( grBitmap_Height( Bmp ) != grBitmap_Height( AlphaBmp ) ) )
 		{
-			jeErrorLog_Add( JE_ERR_BAD_PARAMETER, NULL );
-			jeBitmap_Destroy( &AlphaBmp );
-			jeBitmap_Destroy( &Bmp );
+			grErrorLog_Add( GR_ERR_BAD_PARAMETER, NULL );
+			grBitmap_Destroy( &AlphaBmp );
+			grBitmap_Destroy( &Bmp );
 			return NULL;
 		}
 
 		// set its alpha
-		Result = jeBitmap_SetAlpha( Bmp, AlphaBmp );
-		if ( Result == JE_FALSE )
+		Result = grBitmap_SetAlpha( Bmp, AlphaBmp );
+		if ( Result == GR_FALSE )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-			jeBitmap_Destroy( &AlphaBmp );
-			jeBitmap_Destroy( &Bmp );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+			grBitmap_Destroy( &AlphaBmp );
+			grBitmap_Destroy( &Bmp );
 			return NULL;
 		}
 
 		// don't need the alpha anymore
-		jeBitmap_Destroy( &AlphaBmp );
+		grBitmap_Destroy( &AlphaBmp );
 	}
 	// ...or just set the color key
 	else
 	{
-		Result = jeBitmap_SetColorKey( Bmp, JE_TRUE, 255, JE_FALSE );
+		Result = grBitmap_SetColorKey( Bmp, GR_TRUE, 255, GR_FALSE );
 		assert( Result );
 	}
 
@@ -658,26 +658,26 @@ static void Util_DestroyBitmapList(
 		{
 			if ( List->Name[i] != NULL )
 			{
-				jeRam_Free( List->Name[i] );
+				grRam_Free( List->Name[i] );
 			}
 		}
-		jeRam_Free( List->Name );
+		grRam_Free( List->Name );
 	}
 
 	// destroy width and height lists
 	if ( List->Width != NULL )
 	{
-		jeRam_Free( List->Width );
+		grRam_Free( List->Width );
 	}
 	if ( List->Height != NULL )
 	{
-		jeRam_Free( List->Height );
+		grRam_Free( List->Height );
 	}
 
 	// destroy numeric sizes list
 	if ( List->NumericSizes != NULL )
 	{
-		jeRam_Free( List->NumericSizes );
+		grRam_Free( List->NumericSizes );
 	}
 
 	// destroy string sizes list
@@ -686,12 +686,12 @@ static void Util_DestroyBitmapList(
 		for ( i = 0; i < List->SizesListSize; i++ )
 		{
 			assert( List->StringSizes[i] != NULL );
-			jeRam_Free( List->StringSizes[i] );
+			grRam_Free( List->StringSizes[i] );
 		}
 	}
 
 	// free bitmaplist struct
-	jeRam_Free( List );
+	grRam_Free( List );
 
 	// zap pointer
 	*DeadList = NULL;
@@ -706,15 +706,15 @@ static void Util_DestroyBitmapList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 static BitmapList * Util_CreateBitmapList(
-	jeResourceMgr	*ResourceMgr,	// resource manager to use
+	grResourceMgr	*ResourceMgr,	// resource manager to use
 	char			*ResourceName,	// name of resource
 	char			*FileFilter )	// file filter
 {
 
 	// locals
 	BitmapList		*Bmps = NULL;
-	jeVFile			*FileDir = NULL;
-	jeVFile_Finder	*Finder = NULL;
+	grVFile			*FileDir = NULL;
+	grVFile_Finder	*Finder = NULL;
 	int				CurFile;
 
 	// ensure valid data
@@ -723,85 +723,85 @@ static BitmapList * Util_CreateBitmapList(
 	assert( FileFilter != NULL );
 
 	// allocate bitmaplist struct
-	Bmps = (BitmapList *)jeRam_AllocateClear( sizeof( *Bmps ) );
+	Bmps = (BitmapList *)grRam_AllocateClear( sizeof( *Bmps ) );
 	if ( Bmps == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// get vfile dir
-	FileDir = jeResource_GetVFile( ResourceMgr, ResourceName );
+	FileDir = grResource_GetVFile( ResourceMgr, ResourceName );
 	if ( FileDir == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 		goto ERROR_Util_BuildBitmapList;
 	}
 
 	// create directory finder
-	Finder = jeVFile_CreateFinder( FileDir, FileFilter );
+	Finder = grVFile_CreateFinder( FileDir, FileFilter );
 	if ( Finder == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 		goto ERROR_Util_BuildBitmapList;
 	}
 
 	// determine how many files there are
 	Bmps->Total = 1;
-	while ( jeVFile_FinderGetNextFile( Finder ) == JE_TRUE )
+	while ( grVFile_FinderGetNextFile( Finder ) == GR_TRUE )
 	{
 		Bmps->Total++;
 	}
 
 	// destroy finder
-	jeVFile_DestroyFinder( Finder );
+	grVFile_DestroyFinder( Finder );
 	Finder = NULL;
 
 	// allocate name list
-	Bmps->Name = (char **)jeRam_AllocateClear( sizeof( char * ) * Bmps->Total );
+	Bmps->Name = (char **)grRam_AllocateClear( sizeof( char * ) * Bmps->Total );
 	if ( Bmps->Name == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_Util_BuildBitmapList;
 	}
 
 	// allocate width list
-	Bmps->Width = (int *)jeRam_AllocateClear( sizeof( int * ) * Bmps->Total );
+	Bmps->Width = (int *)grRam_AllocateClear( sizeof( int * ) * Bmps->Total );
 	if ( Bmps->Width == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_Util_BuildBitmapList;
 	}
 
 	// allocate height list
-	Bmps->Height = (int *)jeRam_AllocateClear( sizeof( int * ) * Bmps->Total );
+	Bmps->Height = (int *)grRam_AllocateClear( sizeof( int * ) * Bmps->Total );
 	if ( Bmps->Height == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_Util_BuildBitmapList;
 	}
 
 	// allocate numeric sizes list
-	Bmps->NumericSizes = (int *)jeRam_AllocateClear( sizeof( int * ) * Bmps->Total );
+	Bmps->NumericSizes = (int *)grRam_AllocateClear( sizeof( int * ) * Bmps->Total );
 	if ( Bmps->NumericSizes == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_Util_BuildBitmapList;
 	}
 
 	// allocate string sizes list
-	Bmps->StringSizes = (char **)jeRam_AllocateClear( sizeof( char * ) * Bmps->Total );
+	Bmps->StringSizes = (char **)grRam_AllocateClear( sizeof( char * ) * Bmps->Total );
 	if ( Bmps->StringSizes == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_Util_BuildBitmapList;
 	}
 
 	// create directory finder
-	Finder = jeVFile_CreateFinder( FileDir, FileFilter );
+	Finder = grVFile_CreateFinder( FileDir, FileFilter );
 	if ( Finder == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 		goto ERROR_Util_BuildBitmapList;
 	}
 
@@ -810,17 +810,17 @@ static BitmapList * Util_CreateBitmapList(
 	Bmps->Name[CurFile++] = Util_StrDup( NoSelection );
 
 	// build file list
-	while ( jeVFile_FinderGetNextFile( Finder ) == JE_TRUE )
+	while ( grVFile_FinderGetNextFile( Finder ) == GR_TRUE )
 	{
 
 		// locals
-		jeVFile_Properties	Properties;
-		jeBitmap			*Bitmap;
+		grVFile_Properties	Properties;
+		grBitmap			*Bitmap;
 
 		// get properties of current file
-		if( jeVFile_FinderGetProperties( Finder, &Properties ) == JE_FALSE )
+		if( grVFile_FinderGetProperties( Finder, &Properties ) == GR_FALSE )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 			goto ERROR_Util_BuildBitmapList;
 		}
 
@@ -829,7 +829,7 @@ static BitmapList * Util_CreateBitmapList(
 		Bmps->Name[CurFile] = Util_StrDup( Properties.Name );
 		if ( Bmps->Name[CurFile] == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 			goto ERROR_Util_BuildBitmapList;
 		}
 
@@ -837,33 +837,33 @@ static BitmapList * Util_CreateBitmapList(
 		Bitmap = Util_CreateBitmapFromFileName( FileDir, Bmps->Name[CurFile], NULL );
 		if ( Bitmap == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 			goto ERROR_Util_BuildBitmapList;
 		}
-		Bmps->Width[CurFile] = jeBitmap_Width( Bitmap );
-		Bmps->Height[CurFile] = jeBitmap_Height( Bitmap );
-		jeBitmap_Destroy( &Bitmap );
+		Bmps->Width[CurFile] = grBitmap_Width( Bitmap );
+		Bmps->Height[CurFile] = grBitmap_Height( Bitmap );
+		grBitmap_Destroy( &Bitmap );
 
 		// add sise to numeric sizes list
 		{
 
 			// locals
-			jeBoolean	AddIt;
+			grBoolean	AddIt;
 			int			i;
 
 			// check if it needs to be added to numeric sizes list
-			AddIt = JE_TRUE;
+			AddIt = GR_TRUE;
 			for ( i = 0; i < Bmps->Total; i++ )
 			{
 				if ( Bmps->Width[CurFile] == Bmps->NumericSizes[i] )
 				{
-					AddIt = JE_FALSE;
+					AddIt = GR_FALSE;
 					break;
 				}
 			}
 
 			// add it if required
-			if ( AddIt == JE_TRUE )
+			if ( AddIt == GR_TRUE )
 			{
 				for ( i = 0; i < Bmps->Total; i++ )
 				{
@@ -878,12 +878,12 @@ static BitmapList * Util_CreateBitmapList(
 							Bmps->NumericSizes[i] = Hold1;
 							Hold1 = Hold2;
 						}
-						AddIt = JE_FALSE;
+						AddIt = GR_FALSE;
 						break;
 					}
 				}
 			}
-			assert( AddIt == JE_FALSE );
+			assert( AddIt == GR_FALSE );
 		}
 
 		// adjust file counter
@@ -891,12 +891,12 @@ static BitmapList * Util_CreateBitmapList(
 	}
 
 	// destroy finder
-	jeVFile_DestroyFinder( Finder );
+	grVFile_DestroyFinder( Finder );
 
 	// close vfile dir
-	if ( jeResource_DeleteVFile( ResourceMgr, ResourceName ) == 0 )
+	if ( grResource_DeleteVFile( ResourceMgr, ResourceName ) == 0 )
 	{
-		jeVFile_Close( FileDir );
+		grVFile_Close( FileDir );
 	}
 
 	// create string sizes list
@@ -933,15 +933,15 @@ static BitmapList * Util_CreateBitmapList(
 	// destroy finder
 	if ( Finder != NULL )
 	{
-		jeVFile_DestroyFinder( Finder );
+		grVFile_DestroyFinder( Finder );
 	}
 
 	// close vfile dir
 	if ( FileDir != NULL )
 	{
-		if ( jeResource_DeleteVFile( ResourceMgr, ResourceName ) == 0 )
+		if ( grResource_DeleteVFile( ResourceMgr, ResourceName ) == 0 )
 		{
-			jeVFile_Close( FileDir );
+			grVFile_Close( FileDir );
 		}
 	}
 
@@ -978,15 +978,15 @@ static char * Util_LoadLibraryString(
 	Size = LoadString( hInstance, ID, StringBuf, MAX_STRING_SIZE );
 	if ( Size <= 0 )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// copy resource string
-	NewString = jeRam_Allocate( Size + 1 );
+	NewString = grRam_Allocate( Size + 1 );
 	if ( NewString == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 	strcpy( NewString, StringBuf );
@@ -1037,7 +1037,7 @@ static char *Util_LoadLibraryString(image_id libhinst, int32 resid)
 	//
  
 	// Allocate memory for the string
-	rcbuffer = (char*)jeRam_Allocate(strlen(loadedString) + 1);
+	rcbuffer = (char*)grRam_Allocate(strlen(loadedString) + 1);
 	strcpy(rcbuffer, loadedString);
  
 #ifndef NDEBUG
@@ -1173,56 +1173,56 @@ void Init_Class(
 	hClassInstance = hInstance;
 
 	// setup rate property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_RATE_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_RATE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_RATE ),
 							SPOUT_DEFAULT_RATE,
 							SPOUT_RATE_ID,
 							0.01f, 1.0f, 0.01f );
 
 	// setup angle property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_ANGLE_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_ANGLE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_ANGLE ),
 							SPOUT_DEFAULT_ANGLE,
 							SPOUT_ANGLE_ID,
 							0.0f, 3.14f, 0.1f );
 
 	// setup min speed property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_MINSPEED_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_MINSPEED_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_MINSPEED ),
 							SPOUT_DEFAULT_MINSPEED,
 							SPOUT_MINSPEED_ID,
 							0.0f, FLT_MAX, 2.0f );
 
 	// setup max speed property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_MAXSPEED_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_MAXSPEED_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_MAXSPEED ),
 							SPOUT_DEFAULT_MAXSPEED,
 							SPOUT_MAXSPEED_ID,
 							0.0f, FLT_MAX, 2.0f );
 
 	// setup min scale property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_MINSCALE_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_MINSCALE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_MINSCALE ),
 							SPOUT_DEFAULT_MINSCALE,
 							SPOUT_MINSCALE_ID,
 							0.01f, FLT_MAX, 0.1f );
 
 	// setup max scale property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_MAXSCALE_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_MAXSCALE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_MAXSCALE ),
 							SPOUT_DEFAULT_MAXSCALE,
 							SPOUT_MAXSCALE_ID,
 							0.01f, FLT_MAX, 0.1f );
 
 	// setup min unit life property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_MINUNITLIFE_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_MINUNITLIFE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_MINUNITLIFE ),
 							SPOUT_DEFAULT_MINUNITLIFE,
 							SPOUT_MINUNITLIFE_ID,
 							0.1f, FLT_MAX, 0.1f );
 
 	// setup max unit life property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_MAXUNITLIFE_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_MAXUNITLIFE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_MAXUNITLIFE ),
 							SPOUT_DEFAULT_MAXUNITLIFE,
 							SPOUT_MAXUNITLIFE_ID,
@@ -1235,8 +1235,8 @@ void Init_Class(
 
 	// start min color group
 	{
-		jeVec3d	Color = { SPOUT_DEFAULT_COLORRED, SPOUT_DEFAULT_COLORGREEN, SPOUT_DEFAULT_COLORBLUE };
-		jeProperty_FillColorGroup(	&( SpoutProperties[SPOUT_COLORMINGROUP_INDEX] ),
+		grVec3d	Color = { SPOUT_DEFAULT_COLORRED, SPOUT_DEFAULT_COLORGREEN, SPOUT_DEFAULT_COLORBLUE };
+		grProperty_FillColorGroup(	&( SpoutProperties[SPOUT_COLORMINGROUP_INDEX] ),
 									Util_LoadLibraryString( hClassInstance, IDS_COLORMINGROUP ),
 									&Color,
 									SPOUT_COLORMINGROUP_INDEX );
@@ -1244,36 +1244,36 @@ void Init_Class(
 
 	// setup min color picker property
 	{
-		jeVec3d	Color = { SPOUT_DEFAULT_COLORRED, SPOUT_DEFAULT_COLORGREEN, SPOUT_DEFAULT_COLORBLUE };
-		jeProperty_FillColorPicker(	&( SpoutProperties[SPOUT_COLORMIN_INDEX] ),
+		grVec3d	Color = { SPOUT_DEFAULT_COLORRED, SPOUT_DEFAULT_COLORGREEN, SPOUT_DEFAULT_COLORBLUE };
+		grProperty_FillColorPicker(	&( SpoutProperties[SPOUT_COLORMIN_INDEX] ),
 									Util_LoadLibraryString( hClassInstance, IDS_COLORMIN ),
 									&Color,
 									SPOUT_COLORMIN_ID );
 	}
 
 	// setup min color red property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMINRED_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMINRED_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORMINRED ),
 							SPOUT_DEFAULT_COLORRED,
 							SPOUT_COLORMINRED_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup min color green property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMINGREEN_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMINGREEN_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORMINGREEN ),
 							SPOUT_DEFAULT_COLORGREEN,
 							SPOUT_COLORMINGREEN_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup min color blue property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMINBLUE_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMINBLUE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORMINBLUE ),
 							SPOUT_DEFAULT_COLORBLUE,
 							SPOUT_COLORMINBLUE_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// end min color group
-	jeProperty_FillGroupEnd( &( SpoutProperties[SPOUT_COLORMINGROUPEND_INDEX] ), SPOUT_COLORMINGROUPEND_INDEX );
+	grProperty_FillGroupEnd( &( SpoutProperties[SPOUT_COLORMINGROUPEND_INDEX] ), SPOUT_COLORMINGROUPEND_INDEX );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -1282,8 +1282,8 @@ void Init_Class(
 
 	// start max color group
 	{
-		jeVec3d	Color = { SPOUT_DEFAULT_COLORRED, SPOUT_DEFAULT_COLORGREEN, SPOUT_DEFAULT_COLORBLUE };
-		jeProperty_FillColorGroup(	&( SpoutProperties[SPOUT_COLORMAXGROUP_INDEX] ),
+		grVec3d	Color = { SPOUT_DEFAULT_COLORRED, SPOUT_DEFAULT_COLORGREEN, SPOUT_DEFAULT_COLORBLUE };
+		grProperty_FillColorGroup(	&( SpoutProperties[SPOUT_COLORMAXGROUP_INDEX] ),
 									Util_LoadLibraryString( hClassInstance, IDS_COLORMAXGROUP ),
 									&Color,
 									SPOUT_COLORMAXGROUP_INDEX );
@@ -1291,36 +1291,36 @@ void Init_Class(
 
 	// setup max color picker property
 	{
-		jeVec3d	Color = { SPOUT_DEFAULT_COLORRED, SPOUT_DEFAULT_COLORGREEN, SPOUT_DEFAULT_COLORBLUE };
-		jeProperty_FillColorPicker(	&( SpoutProperties[SPOUT_COLORMAX_INDEX] ),
+		grVec3d	Color = { SPOUT_DEFAULT_COLORRED, SPOUT_DEFAULT_COLORGREEN, SPOUT_DEFAULT_COLORBLUE };
+		grProperty_FillColorPicker(	&( SpoutProperties[SPOUT_COLORMAX_INDEX] ),
 									Util_LoadLibraryString( hClassInstance, IDS_COLORMAX ),
 									&Color,
 									SPOUT_COLORMAX_ID );
 	}
 
 	// setup max color red property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMAXRED_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMAXRED_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORMAXRED ),
 							SPOUT_DEFAULT_COLORRED,
 							SPOUT_COLORMAXRED_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup max color green property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMAXGREEN_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMAXGREEN_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORMAXGREEN ),
 							SPOUT_DEFAULT_COLORGREEN,
 							SPOUT_COLORMAXGREEN_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup max color blue property
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMAXBLUE_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_COLORMAXBLUE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORMAXBLUE ),
 							SPOUT_DEFAULT_COLORBLUE,
 							SPOUT_COLORMAXBLUE_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// end max color group
-	jeProperty_FillGroupEnd( &( SpoutProperties[SPOUT_COLORMAXGROUPEND_INDEX] ), SPOUT_COLORMAXGROUPEND_INDEX );
+	grProperty_FillGroupEnd( &( SpoutProperties[SPOUT_COLORMAXGROUPEND_INDEX] ), SPOUT_COLORMAXGROUPEND_INDEX );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -1328,50 +1328,50 @@ void Init_Class(
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// start draw box group
-	jeProperty_FillGroup(	&( SpoutProperties[SPOUT_DRAWEXTBOXGROUP_INDEX] ),
+	grProperty_FillGroup(	&( SpoutProperties[SPOUT_DRAWEXTBOXGROUP_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_DRAWEXTBOXGROUP ),
 							SPOUT_DRAWEXTBOXGROUP_ID );
 
 	// setup draw box display property
-	jeProperty_FillCheck(	&( SpoutProperties[SPOUT_DRAWEXTBOXDISPLAY_INDEX] ),
+	grProperty_FillCheck(	&( SpoutProperties[SPOUT_DRAWEXTBOXDISPLAY_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_DRAWEXTBOXDISPLAY ),
 							SPOUT_DEFAULT_DRAWEXTBOXDISPLAY,
 							SPOUT_DRAWEXTBOXDISPLAY_ID );
 
 	// setup draw box adjustment properties
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMINX_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMINX_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_DRAWEXTBOXMINX ),
 							SPOUT_DEFAULT_DRAWEXTBOXMINX,
 							SPOUT_DRAWEXTBOXMINX_ID,
 							-FLT_MAX, FLT_MAX, 8.0f );
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMINY_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMINY_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_DRAWEXTBOXMINY ),
 							SPOUT_DEFAULT_DRAWEXTBOXMINY,
 							SPOUT_DRAWEXTBOXMINY_ID,
 							-FLT_MAX, FLT_MAX, 8.0f );
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMINZ_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMINZ_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_DRAWEXTBOXMINZ ),
 							SPOUT_DEFAULT_DRAWEXTBOXMINZ,
 							SPOUT_DRAWEXTBOXMINZ_ID,
 							-FLT_MAX, FLT_MAX, 8.0f );
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMAXX_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMAXX_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_DRAWEXTBOXMAXX ),
 							SPOUT_DEFAULT_DRAWEXTBOXMAXX,
 							SPOUT_DRAWEXTBOXMAXX_ID,
 							-FLT_MAX, FLT_MAX, 8.0f );
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMAXY_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMAXY_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_DRAWEXTBOXMAXY ),
 							SPOUT_DEFAULT_DRAWEXTBOXMAXY,
 							SPOUT_DRAWEXTBOXMAXY_ID,
 							-FLT_MAX, FLT_MAX, 8.0f );
-	jeProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMAXZ_INDEX] ),
+	grProperty_FillFloat(	&( SpoutProperties[SPOUT_DRAWEXTBOXMAXZ_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_DRAWEXTBOXMAXZ ),
 							SPOUT_DEFAULT_DRAWEXTBOXMAXZ,
 							SPOUT_DRAWEXTBOXMAXZ_ID,
 							-FLT_MAX, FLT_MAX, 8.0f );
 
 	// end draw box group
-	jeProperty_FillGroupEnd( &( SpoutProperties[SPOUT_DRAWEXTBOXGROUPEND_INDEX] ), SPOUT_DRAWEXTBOXGROUPEND_ID );
+	grProperty_FillGroupEnd( &( SpoutProperties[SPOUT_DRAWEXTBOXGROUPEND_INDEX] ), SPOUT_DRAWEXTBOXGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -1379,12 +1379,12 @@ void Init_Class(
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// start draw box group
-	jeProperty_FillGroup(	&( SpoutProperties[SPOUT_ARTGROUP_INDEX] ),
+	grProperty_FillGroup(	&( SpoutProperties[SPOUT_ARTGROUP_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_ARTGROUP ),
 							SPOUT_ARTGROUP_ID );
 
 	// end draw box group
-	jeProperty_FillGroupEnd( &( SpoutProperties[SPOUT_ARTGROUPEND_INDEX] ), SPOUT_ARTGROUPEND_ID );
+	grProperty_FillGroupEnd( &( SpoutProperties[SPOUT_ARTGROUPEND_INDEX] ), SPOUT_ARTGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -1392,7 +1392,7 @@ void Init_Class(
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// final init
-	SpoutPropertyList.jePropertyN = SPOUT_LAST_INDEX;
+	SpoutPropertyList.grPropertyN = SPOUT_LAST_INDEX;
 
 } // Init_Class()
 
@@ -1425,10 +1425,10 @@ void DeInit_Class(
 		{
 			if ( CurBitmaps.Name[i] != NULL )
 			{
-				jeRam_Free( CurBitmaps.Name[i] );
+				grRam_Free( CurBitmaps.Name[i] );
 			}
 		}
-		jeRam_Free( CurBitmaps.Name );
+		grRam_Free( CurBitmaps.Name );
 	}
 
 	// zap instance pointer
@@ -1443,7 +1443,7 @@ void DeInit_Class(
 //	CreateInstance()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void * JETCC CreateInstance(
+void * GRCC CreateInstance(
 	void )	// no parameters
 {
 
@@ -1451,24 +1451,24 @@ void * JETCC CreateInstance(
 	Spout	*Object;
 
 	// allocate struct
-	Object = (Spout *)jeRam_AllocateClear( sizeof( *Object ) );
+	Object = (Spout *)grRam_AllocateClear( sizeof( *Object ) );
 	if ( Object == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// create particle system
-	Object->Ps = jeParticle_SystemCreate( JET_MAJOR_VERSION, JET_MINOR_VERSION );
+	Object->Ps = grParticle_SystemCreate( GRT_MAJOR_VERSION, GRT_MINOR_VERSION );
 	if ( Object->Ps == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-		jeRam_Free( Object );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+		grRam_Free( Object );
 		return NULL;
 	}
 
 	// init remaining fields
-	jeXForm3d_SetIdentity( &Object->Xf );
+	grXForm3d_SetIdentity( &Object->Xf );
 	Object->RefCount = 1;
 	Object->Rate = SPOUT_DEFAULT_RATE;
 	Object->Angle = SPOUT_DEFAULT_ANGLE;
@@ -1491,7 +1491,7 @@ void * JETCC CreateInstance(
 	Object->DrawExtBox.Max.Z = SPOUT_DEFAULT_DRAWEXTBOXMAXZ;
 
 	// setup art size property
-	jeProperty_FillCombo(	&( SpoutPropertyList.pjeProperty[SPOUT_ARTSIZE_INDEX] ),
+	grProperty_FillCombo(	&( SpoutPropertyList.pgrProperty[SPOUT_ARTSIZE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_ARTSIZE ),
 							0,
 							SPOUT_ARTSIZE_ID,
@@ -1500,7 +1500,7 @@ void * JETCC CreateInstance(
 
 	// setup bitmap list property
 	Object->BitmapName = Util_StrDup( NoSelection );
-	jeProperty_FillCombo(	&( SpoutPropertyList.pjeProperty[SPOUT_BITMAPLIST_INDEX] ),
+	grProperty_FillCombo(	&( SpoutPropertyList.pgrProperty[SPOUT_BITMAPLIST_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_BITMAPLIST ),
 							NoSelection,
 							SPOUT_BITMAPLIST_ID,
@@ -1509,7 +1509,7 @@ void * JETCC CreateInstance(
 
 	// setup alpha list property
 	Object->AlphaName = Util_StrDup( NoSelection );
-	jeProperty_FillCombo(	&( SpoutPropertyList.pjeProperty[SPOUT_ALPHALIST_INDEX] ),
+	grProperty_FillCombo(	&( SpoutPropertyList.pgrProperty[SPOUT_ALPHALIST_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_ALPHALIST ),
 							NoSelection,
 							SPOUT_ALPHALIST_ID,
@@ -1528,7 +1528,7 @@ void * JETCC CreateInstance(
 //	CreateRef()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void JETCC CreateRef(
+void GRCC CreateRef(
 	void	*Instance )	// instance data
 {
 
@@ -1551,7 +1551,7 @@ void JETCC CreateRef(
 //	Destroy()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Destroy(
+grBoolean GRCC Destroy(
 	void	**Instance )	// pointer to instance data
 {
 
@@ -1569,7 +1569,7 @@ jeBoolean JETCC Destroy(
 	Object->RefCount--;
 	if ( Object->RefCount > 0 )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// make sure everything has been properly destroyed
@@ -1584,13 +1584,13 @@ jeBoolean JETCC Destroy(
 	assert( Object->AlphaName == NULL );
 
 	// free struct
-	jeRam_Free( Object );
+	grRam_Free( Object );
 
 	// zap pointer
 	*Instance = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Destroy()
 
@@ -1601,13 +1601,13 @@ jeBoolean JETCC Destroy(
 //	Render()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Render(
+grBoolean GRCC Render(
 	const void				*Instance,				// object instance data
-	const jeWorld			*World,					// world
-	const jeEngine			*Engine,				// engine
-	const jeCamera			*Camera,				// camera
-	const jeFrustum			*CameraSpaceFrustum,	// frustum
-	jeObject_RenderFlags	RenderFlags)	
+	const grWorld			*World,					// world
+	const grEngine			*Engine,				// engine
+	const grCamera			*Camera,				// camera
+	const grFrustum			*CameraSpaceFrustum,	// frustum
+	grObject_RenderFlags	RenderFlags)	
 {
 
 	// locals
@@ -1620,23 +1620,23 @@ jeBoolean JETCC Render(
 	Object = (Spout *)Instance;
 
 	// display draw ext box
-	if ( Object->DrawExtBoxDisplay == JE_TRUE )
+	if ( Object->DrawExtBoxDisplay == GR_TRUE )
 	{
 
 		// locals
-		JE_RGBA		Color = { 255.0f, 0.0f, 0.0f, 64.0f };
-		jeExtBox	ExtBox;
+		GR_RGBA		Color = { 255.0f, 0.0f, 0.0f, 64.0f };
+		grExtBox	ExtBox;
 
 		// copy ext box and translate it
 		ExtBox = Object->DrawExtBox;
-		jeExtBox_Translate( &ExtBox, Object->Xf.Translation.X, Object->Xf.Translation.Y, Object->Xf.Translation.Z );
+		grExtBox_Translate( &ExtBox, Object->Xf.Translation.X, Object->Xf.Translation.Y, Object->Xf.Translation.Z );
 
 		// draw it
-		Util_DrawExtBox( (jeWorld *)World, &Color, &ExtBox );
+		Util_DrawExtBox( (grWorld *)World, &Color, &ExtBox );
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Engine;
@@ -1652,9 +1652,9 @@ jeBoolean JETCC Render(
 //	AttachWorld()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachWorld(
+grBoolean GRCC AttachWorld(
 	void	*Instance,	// object instance data
-	jeWorld	*World )	// world
+	grWorld	*World )	// world
 {
 
 	// locals
@@ -1671,7 +1671,7 @@ jeBoolean JETCC AttachWorld(
 	Object->World = World;
 
 	// save an instance of the resource manager
-	Object->ResourceMgr = jeWorld_GetResourceMgr( World );
+	Object->ResourceMgr = grWorld_GetResourceMgr( World );
 	assert( Object->ResourceMgr != NULL );
 
 	// build bitmap list if required
@@ -1682,17 +1682,17 @@ jeBoolean JETCC AttachWorld(
 		Bitmaps = Util_CreateBitmapList( Object->ResourceMgr, "GlobalMaterials", "*.bmp" );
 		if ( Bitmaps == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+			return GR_FALSE;
 		}
 
 		// init current list
-		CurBitmaps.Name = (char **)jeRam_AllocateClear( sizeof( char * ) * Bitmaps->Total );
+		CurBitmaps.Name = (char **)grRam_AllocateClear( sizeof( char * ) * Bitmaps->Total );
 		CurBitmaps.Total = 0;
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // AttachWorld()
 
@@ -1703,9 +1703,9 @@ jeBoolean JETCC AttachWorld(
 //	DettachWorld()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachWorld(
+grBoolean GRCC DettachWorld(
 	void	*Instance,	// object instance data
-	jeWorld	*World )	// world
+	grWorld	*World )	// world
 {
 
 	// locals
@@ -1722,18 +1722,18 @@ jeBoolean JETCC DettachWorld(
 	// destroy its particle system
 	if ( Object->Ps != NULL )
 	{
-		jeParticle_SystemDestroy( Object->Ps );
+		grParticle_SystemDestroy( Object->Ps );
 		Object->Ps = NULL;
 	}
 
 	// destroy our instance of the resource manager
-	jeResource_MgrDestroy( &( Object->ResourceMgr ) );
+	grResource_MgrDestroy( &( Object->ResourceMgr ) );
 
 	// zap world pointer
 	Object->World = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // DettachWorld()
 
@@ -1744,9 +1744,9 @@ jeBoolean JETCC DettachWorld(
 //	AttachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachEngine(
+grBoolean GRCC AttachEngine(
 	void		*Instance,	// object instance data
-	jeEngine	*Engine )	// engine
+	grEngine	*Engine )	// engine
 {
 
 	// locals
@@ -1766,24 +1766,24 @@ jeBoolean JETCC AttachEngine(
 	Util_SetArtSize( Object );
 
 	// set properties if object was loaded from disk
-	if ( Object->LoadedFromDisk == JE_TRUE )
+	if ( Object->LoadedFromDisk == GR_TRUE )
 	{
 
 		// reset loaded from disk flag
-		Object->LoadedFromDisk = JE_FALSE;
+		Object->LoadedFromDisk = GR_FALSE;
 
 		// set bitmap name property
 		if ( Object->BitmapName != NULL )
 		{
 
 			// locals
-			jeProperty_Data	Data;
-			jeBoolean		Result;
+			grProperty_Data	Data;
+			grBoolean		Result;
 
 			// set property
 			Data.String = Util_StrDup( Object->BitmapName );
 			Result = SetProperty( Object, SPOUT_BITMAPLIST_ID, PROPERTY_COMBO_TYPE, &Data );
-			jeRam_Free( Data.String );
+			grRam_Free( Data.String );
 		}
 
 		// set alpha name property
@@ -1791,21 +1791,21 @@ jeBoolean JETCC AttachEngine(
 		{
 
 			// locals
-			jeProperty_Data	Data;
-			jeBoolean		Result;
+			grProperty_Data	Data;
+			grBoolean		Result;
 
 			// set property
 			Data.String = Util_StrDup( Object->AlphaName );
 			Result = SetProperty( Object, SPOUT_ALPHALIST_ID, PROPERTY_COMBO_TYPE, &Data );
-			jeRam_Free( Data.String );
+			grRam_Free( Data.String );
 		}
 	}
 
 	// flag property list as dirty
-	SpoutPropertyList.bDirty = JE_TRUE;
+	SpoutPropertyList.bDirty = GR_TRUE;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // AttachEngine()
 
@@ -1816,9 +1816,9 @@ jeBoolean JETCC AttachEngine(
 //	DettachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachEngine(
+grBoolean GRCC DettachEngine(
 	void		*Instance,	// object instance data
-	jeEngine	*Engine )	// engine
+	grEngine	*Engine )	// engine
 {
 
 	// locals
@@ -1838,17 +1838,17 @@ jeBoolean JETCC DettachEngine(
 	// destroy bitmap names
 	if ( Object->AlphaName != NULL )
 	{
-		jeRam_Free( Object->AlphaName );
+		grRam_Free( Object->AlphaName );
 		Object->AlphaName = NULL;
 	}
 	if ( Object->BitmapName != NULL )
 	{
-		jeRam_Free( Object->BitmapName );
+		grRam_Free( Object->BitmapName );
 		Object->BitmapName = NULL;
 	}
 	if ( Object->ArtName != NULL )
 	{
-		jeRam_Free( Object->ArtName );
+		grRam_Free( Object->ArtName );
 		Object->ArtName = NULL;
 	}
 
@@ -1856,7 +1856,7 @@ jeBoolean JETCC DettachEngine(
 	Object->Engine = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // DettachEngine()
 
@@ -1867,9 +1867,9 @@ jeBoolean JETCC DettachEngine(
 //	AttachSoundSystem()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachSoundSystem(
+grBoolean GRCC AttachSoundSystem(
 	void			*Instance,		// object instance data
-	jeSound_System	*SoundSystem )	// sound system
+	grSound_System	*SoundSystem )	// sound system
 {
 
 	// ensure valid data
@@ -1877,7 +1877,7 @@ jeBoolean JETCC AttachSoundSystem(
 	assert( SoundSystem != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// elminate warnings
 	Instance;
@@ -1892,9 +1892,9 @@ jeBoolean JETCC AttachSoundSystem(
 //	DettachSoundSystem()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachSoundSystem(
+grBoolean GRCC DettachSoundSystem(
 	void			*Instance,		// object instance data
-	jeSound_System	*SoundSystem )	// sound system
+	grSound_System	*SoundSystem )	// sound system
 {
 
 	// ensure valid data
@@ -1902,7 +1902,7 @@ jeBoolean JETCC DettachSoundSystem(
 	assert( SoundSystem != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// elminate warnings
 	Instance;
@@ -1917,13 +1917,13 @@ jeBoolean JETCC DettachSoundSystem(
 //	Collision()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Collision(
-	const jeObject	*Object,
-	const jeExtBox	*Box,
-	const jeVec3d	*Front,
-	const jeVec3d	*Back,
-	jeVec3d			*Impact,
-	jePlane			*Plane )
+grBoolean GRCC Collision(
+	const grObject	*Object,
+	const grExtBox	*Box,
+	const grVec3d	*Front,
+	const grVec3d	*Back,
+	grVec3d			*Impact,
+	grPlane			*Plane )
 {
 
 	// ensure valid data
@@ -1935,7 +1935,7 @@ jeBoolean JETCC Collision(
 	//assert( Plane != NULL );
 
 	// all done
-	return JE_FALSE;
+	return GR_FALSE;
 
 	// eliminate warnings
 	Object;
@@ -1954,9 +1954,9 @@ jeBoolean JETCC Collision(
 //	GetExtBox()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetExtBox(
+grBoolean GRCC GetExtBox(
 	const void	*Instance,	// object instance data
-	jeExtBox	*BBox )		// where to store extent box
+	grExtBox	*BBox )		// where to store extent box
 {
 
 	// locals
@@ -1971,10 +1971,10 @@ jeBoolean JETCC GetExtBox(
 
 	// save extent box
 	*BBox = Object->DrawExtBox;
-	jeExtBox_Translate( BBox, Object->Xf.Translation.X, Object->Xf.Translation.Y, Object->Xf.Translation.Z );
+	grExtBox_Translate( BBox, Object->Xf.Translation.X, Object->Xf.Translation.Y, Object->Xf.Translation.Z );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetExtBox()
 
@@ -1986,15 +1986,15 @@ jeBoolean JETCC GetExtBox(
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 #if NEWLOAD_SPT
-void * JETCC CreateFromFile(
-	jeVFile		*File,		// vfile to use
-	jeNameMgr *NM )	// pointer manager
+void * GRCC CreateFromFile(
+	grVFile		*File,		// vfile to use
+	grNameMgr *NM )	// pointer manager
 {
 
 	// locals
 	Spout		*Object;
 	int			Size;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 
 	// ensure valid data
 	assert( File != NULL );
@@ -2007,92 +2007,92 @@ void * JETCC CreateFromFile(
 	}
 
 	// read art name
-	Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 	{
-		Object->ArtName = jeRam_Allocate( Size );
+		Object->ArtName = grRam_Allocate( Size );
 		if ( Object->ArtName == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			goto ERROR_CreateFromFile;
 		}
-		Result &= jeVFile_Read( File, Object->ArtName, Size );
+		Result &= grVFile_Read( File, Object->ArtName, Size );
 	}
 
 	// read bitmap name
-	Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 	{
-		Object->BitmapName = jeRam_Allocate( Size );
+		Object->BitmapName = grRam_Allocate( Size );
 		if ( Object->BitmapName == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			goto ERROR_CreateFromFile;
 		}
-		Result &= jeVFile_Read( File, Object->BitmapName, Size );
+		Result &= grVFile_Read( File, Object->BitmapName, Size );
 	}
 
 	// read alpha name
-	Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 	{
-		Object->AlphaName = jeRam_Allocate( Size );
+		Object->AlphaName = grRam_Allocate( Size );
 		if ( Object->AlphaName == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			goto ERROR_CreateFromFile;
 		}
-		Result &= jeVFile_Read( File, Object->AlphaName, Size );
+		Result &= grVFile_Read( File, Object->AlphaName, Size );
 	}
 
 	// read xform
-	Result &= jeVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	Result &= grVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
 
 	// read gravity
-	Result &= jeVFile_Read( File, &( Object->Gravity ), sizeof( Object->Gravity ) );
+	Result &= grVFile_Read( File, &( Object->Gravity ), sizeof( Object->Gravity ) );
 
 	// read angle
-	Result &= jeVFile_Read( File, &( Object->Angle ), sizeof( Object->Angle ) );
+	Result &= grVFile_Read( File, &( Object->Angle ), sizeof( Object->Angle ) );
 
 	// read rate
-	Result &= jeVFile_Read( File, &( Object->Rate ), sizeof( Object->Rate ) );
+	Result &= grVFile_Read( File, &( Object->Rate ), sizeof( Object->Rate ) );
 
 	// read min color
-	Result &= jeVFile_Read( File, &( Object->MinColor ), sizeof( Object->MinColor ) );
+	Result &= grVFile_Read( File, &( Object->MinColor ), sizeof( Object->MinColor ) );
 
 	// read max color
-	Result &= jeVFile_Read( File, &( Object->MaxColor ), sizeof( Object->MaxColor ) );
+	Result &= grVFile_Read( File, &( Object->MaxColor ), sizeof( Object->MaxColor ) );
 
 	// read min speed
-	Result &= jeVFile_Read( File, &( Object->MinSpeed ), sizeof( Object->MinSpeed ) );
+	Result &= grVFile_Read( File, &( Object->MinSpeed ), sizeof( Object->MinSpeed ) );
 
 	// read max speed
-	Result &= jeVFile_Read( File, &( Object->MaxSpeed ), sizeof( Object->MaxSpeed ) );
+	Result &= grVFile_Read( File, &( Object->MaxSpeed ), sizeof( Object->MaxSpeed ) );
 
 	// read min scale
-	Result &= jeVFile_Read( File, &( Object->MinScale ), sizeof( Object->MinScale ) );
+	Result &= grVFile_Read( File, &( Object->MinScale ), sizeof( Object->MinScale ) );
 
 	// read max scale
-	Result &= jeVFile_Read( File, &( Object->MaxScale ), sizeof( Object->MaxScale ) );
+	Result &= grVFile_Read( File, &( Object->MaxScale ), sizeof( Object->MaxScale ) );
 
 	// read min unit life
-	Result &= jeVFile_Read( File, &( Object->MinUnitLife ), sizeof( Object->MinUnitLife ) );
+	Result &= grVFile_Read( File, &( Object->MinUnitLife ), sizeof( Object->MinUnitLife ) );
 
 	// read max unit life
-	Result &= jeVFile_Read( File, &( Object->MaxUnitLife ), sizeof( Object->MaxUnitLife ) );
+	Result &= grVFile_Read( File, &( Object->MaxUnitLife ), sizeof( Object->MaxUnitLife ) );
 
 	// read out draw box
-	Result &= jeVFile_Read( File, &( Object->DrawExtBox ), sizeof( Object->DrawExtBox ) );
+	Result &= grVFile_Read( File, &( Object->DrawExtBox ), sizeof( Object->DrawExtBox ) );
 
 	// fail if there was an error
-	if ( Result == JE_FALSE )
+	if ( Result == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, NULL );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, NULL );
 		goto ERROR_CreateFromFile;
 	}
 
 	// all done
-	Object->LoadedFromDisk = JE_TRUE;
+	Object->LoadedFromDisk = GR_TRUE;
 	return Object;
 
 	// handle errors
@@ -2101,19 +2101,19 @@ void * JETCC CreateFromFile(
 	// free all strings
 	if ( Object->ArtName != NULL )
 	{
-		jeRam_Free( Object->ArtName );
+		grRam_Free( Object->ArtName );
 	}
 	if ( Object->BitmapName != NULL )
 	{
-		jeRam_Free( Object->BitmapName );
+		grRam_Free( Object->BitmapName );
 	}
 	if ( Object->AlphaName != NULL )
 	{
-		jeRam_Free( Object->AlphaName );
+		grRam_Free( Object->AlphaName );
 	}
 
 	// free object
-	jeRam_Free( Object );
+	grRam_Free( Object );
 
 	// return error
 	return NULL;
@@ -2121,15 +2121,15 @@ void * JETCC CreateFromFile(
 
 } // CreateFromFile()
 #else
-void * JETCC CreateFromFile(
-	jeVFile		*File,		// vfile to use
-	jePtrMgr *PtrMgr )	// pointer manager
+void * GRCC CreateFromFile(
+	grVFile		*File,		// vfile to use
+	grPtrMgr *PtrMgr )	// pointer manager
 {
 
 	// locals
 	Spout		*Object;
 	int			Size;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 	BYTE Version;
 	uint32 Tag;
  
@@ -2146,17 +2146,17 @@ void * JETCC CreateFromFile(
 	}
 
 	//Read Version
-	if(!jeVFile_Read(File, &Tag, sizeof(Tag)))
+	if(!grVFile_Read(File, &Tag, sizeof(Tag)))
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "SpoutObject_CreateFromFile:Tag" );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "SpoutObject_CreateFromFile:Tag" );
 		goto ERROR_CreateFromFile;
 	}
 
 	if (Tag == FILE_UNIQUE_ID)
 	{
-		if (!jeVFile_Read(File, &Version, sizeof(Version)))
+		if (!grVFile_Read(File, &Version, sizeof(Version)))
 		{
-    		jeErrorLog_Add( JE_ERR_FILEIO_READ, "SpoutObject_CreateFromFile:Version" );
+    		grErrorLog_Add( GR_ERR_FILEIO_READ, "SpoutObject_CreateFromFile:Version" );
 	       	goto ERROR_CreateFromFile;
 		}
 	}
@@ -2164,101 +2164,101 @@ void * JETCC CreateFromFile(
 	{
 		//for backwards compatibility with old object format
 		Version = 1;
-		jeVFile_Seek(File,-((int)sizeof(Tag)),JE_VFILE_SEEKCUR);
+		grVFile_Seek(File,-((int)sizeof(Tag)),GR_VFILE_SEEKCUR);
 	}
 	
 
 	if (Version >= 1)
 	{
 	    // read art name
-	    Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	    if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	    Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	    if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 		{
-		    Object->ArtName = (char *)jeRam_Allocate( Size );
+		    Object->ArtName = (char *)grRam_Allocate( Size );
 		    if ( Object->ArtName == NULL )
 			{
-			    jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			    grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			    goto ERROR_CreateFromFile;
 			}
-		    Result &= jeVFile_Read( File, Object->ArtName, Size );
+		    Result &= grVFile_Read( File, Object->ArtName, Size );
 		}
 
 	    // read bitmap name
-	    Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	    if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	    Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	    if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 		{
-		    Object->BitmapName = (char *)jeRam_Allocate( Size );
+		    Object->BitmapName = (char *)grRam_Allocate( Size );
 		    if ( Object->BitmapName == NULL )
 			{
-			    jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			    grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			    goto ERROR_CreateFromFile;
 			}
-		    Result &= jeVFile_Read( File, Object->BitmapName, Size );
+		    Result &= grVFile_Read( File, Object->BitmapName, Size );
 		}
 
 	    // read alpha name
-	    Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	    if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	    Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	    if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 		{
-		    Object->AlphaName = (char *)jeRam_Allocate( Size );
+		    Object->AlphaName = (char *)grRam_Allocate( Size );
 		    if ( Object->AlphaName == NULL )
 			{
-			    jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			    grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			    goto ERROR_CreateFromFile;
 			}
-		    Result &= jeVFile_Read( File, Object->AlphaName, Size );
+		    Result &= grVFile_Read( File, Object->AlphaName, Size );
 		}
 
 	    // read xform
-	    Result &= jeVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	    Result &= grVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
 
 	    // read gravity
-	    Result &= jeVFile_Read( File, &( Object->Gravity ), sizeof( Object->Gravity ) );
+	    Result &= grVFile_Read( File, &( Object->Gravity ), sizeof( Object->Gravity ) );
 
 	    // read angle
-	    Result &= jeVFile_Read( File, &( Object->Angle ), sizeof( Object->Angle ) );
+	    Result &= grVFile_Read( File, &( Object->Angle ), sizeof( Object->Angle ) );
 
 	    // read rate
-	    Result &= jeVFile_Read( File, &( Object->Rate ), sizeof( Object->Rate ) );
+	    Result &= grVFile_Read( File, &( Object->Rate ), sizeof( Object->Rate ) );
 
 	    // read min color
-	    Result &= jeVFile_Read( File, &( Object->MinColor ), sizeof( Object->MinColor ) );
+	    Result &= grVFile_Read( File, &( Object->MinColor ), sizeof( Object->MinColor ) );
 
 	    // read max color
-	    Result &= jeVFile_Read( File, &( Object->MaxColor ), sizeof( Object->MaxColor ) );
+	    Result &= grVFile_Read( File, &( Object->MaxColor ), sizeof( Object->MaxColor ) );
 
 	    // read min speed
-	    Result &= jeVFile_Read( File, &( Object->MinSpeed ), sizeof( Object->MinSpeed ) );
+	    Result &= grVFile_Read( File, &( Object->MinSpeed ), sizeof( Object->MinSpeed ) );
 
     	// read max speed
-   	    Result &= jeVFile_Read( File, &( Object->MaxSpeed ), sizeof( Object->MaxSpeed ) );
+   	    Result &= grVFile_Read( File, &( Object->MaxSpeed ), sizeof( Object->MaxSpeed ) );
  
 	    // read min scale
-	    Result &= jeVFile_Read( File, &( Object->MinScale ), sizeof( Object->MinScale ) );
+	    Result &= grVFile_Read( File, &( Object->MinScale ), sizeof( Object->MinScale ) );
 
 	    // read max scale
-	    Result &= jeVFile_Read( File, &( Object->MaxScale ), sizeof( Object->MaxScale ) );
+	    Result &= grVFile_Read( File, &( Object->MaxScale ), sizeof( Object->MaxScale ) );
 
 	    // read min unit life
-	    Result &= jeVFile_Read( File, &( Object->MinUnitLife ), sizeof( Object->MinUnitLife ) );
+	    Result &= grVFile_Read( File, &( Object->MinUnitLife ), sizeof( Object->MinUnitLife ) );
 
 	    // read max unit life
-	    Result &= jeVFile_Read( File, &( Object->MaxUnitLife ), sizeof( Object->MaxUnitLife ) );
+	    Result &= grVFile_Read( File, &( Object->MaxUnitLife ), sizeof( Object->MaxUnitLife ) );
 
 	    // read out draw box
-	    Result &= jeVFile_Read( File, &( Object->DrawExtBox ), sizeof( Object->DrawExtBox ) );
+	    Result &= grVFile_Read( File, &( Object->DrawExtBox ), sizeof( Object->DrawExtBox ) );
 	}
 
 
 	// fail if there was an error
-	if ( Result == JE_FALSE )
+	if ( Result == GR_FALSE )
 	{
-	    jeErrorLog_Add( JE_ERR_FILEIO_READ, NULL );
+	    grErrorLog_Add( GR_ERR_FILEIO_READ, NULL );
 	    goto ERROR_CreateFromFile;
 	}
 
 	// all done
-	Object->LoadedFromDisk = JE_TRUE;
+	Object->LoadedFromDisk = GR_TRUE;
 	return Object;
 
 	// handle errors
@@ -2267,19 +2267,19 @@ void * JETCC CreateFromFile(
 	// free all strings
 	if ( Object->ArtName != NULL )
 	{
-		jeRam_Free( Object->ArtName );
+		grRam_Free( Object->ArtName );
 	}
 	if ( Object->BitmapName != NULL )
 	{
-		jeRam_Free( Object->BitmapName );
+		grRam_Free( Object->BitmapName );
 	}
 	if ( Object->AlphaName != NULL )
 	{
-		jeRam_Free( Object->AlphaName );
+		grRam_Free( Object->AlphaName );
 	}
 
 	// free object
-	jeRam_Free( Object );
+	grRam_Free( Object );
 
 	// return error
 	return NULL;
@@ -2294,15 +2294,15 @@ void * JETCC CreateFromFile(
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 #if NEWSAVE_SPT
-jeBoolean JETCC WriteToFile(
+grBoolean GRCC WriteToFile(
 	const void	*Instance,
-	jeVFile		*File,
-	jeNameMgr *NM )
+	grVFile		*File,
+	grNameMgr *NM )
 {
 
 	// locals
 	Spout		*Object;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 	int			Size;
 	BYTE Version = SPOUTOBJECT_VERSION;
 	uint32 Tag = FILE_UNIQUE_ID;
@@ -2315,16 +2315,16 @@ jeBoolean JETCC WriteToFile(
 	Object = (Spout *)Instance;
 
 	//write version
-	if( !jeVFile_Write(	File, &Tag, sizeof(Tag)))
+	if( !grVFile_Write(	File, &Tag, sizeof(Tag)))
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "SpoutObject_WriteToFile:Tag");
-	    return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "SpoutObject_WriteToFile:Tag");
+	    return( GR_FALSE );
 	}
 	
-	if( !jeVFile_Write(	File, &Version, sizeof(Version) ) )
+	if( !grVFile_Write(	File, &Version, sizeof(Version) ) )
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "SpoutObject_WriteToFile:Version");
-	    return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "SpoutObject_WriteToFile:Version");
+	    return( GR_FALSE );
 	}
 
 	// write art name
@@ -2335,7 +2335,7 @@ jeBoolean JETCC WriteToFile(
 	else
 	{
 		Size = 0;
-		Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
+		Result &= grVFile_Write( File, &Size, sizeof( Size ) );
 	}
 
 	// write bitmap name
@@ -2346,7 +2346,7 @@ jeBoolean JETCC WriteToFile(
 	else
 	{
 		Size = 0;
-		Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
+		Result &= grVFile_Write( File, &Size, sizeof( Size ) );
 	}
 
 	// write alpha name
@@ -2357,52 +2357,52 @@ jeBoolean JETCC WriteToFile(
 	else
 	{
 		Size = 0;
-		Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
+		Result &= grVFile_Write( File, &Size, sizeof( Size ) );
 	}
 
 	// write xform
-	Result &= jeVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	Result &= grVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
 
 	// write gravity
-	Result &= jeVFile_Write( File, &( Object->Gravity ), sizeof( Object->Gravity ) );
+	Result &= grVFile_Write( File, &( Object->Gravity ), sizeof( Object->Gravity ) );
 
 	// write angle
-	Result &= jeVFile_Write( File, &( Object->Angle ), sizeof( Object->Angle ) );
+	Result &= grVFile_Write( File, &( Object->Angle ), sizeof( Object->Angle ) );
 
 	// write rate
-	Result &= jeVFile_Write( File, &( Object->Rate ), sizeof( Object->Rate ) );
+	Result &= grVFile_Write( File, &( Object->Rate ), sizeof( Object->Rate ) );
 
 	// write min color
-	Result &= jeVFile_Write( File, &( Object->MinColor ), sizeof( Object->MinColor ) );
+	Result &= grVFile_Write( File, &( Object->MinColor ), sizeof( Object->MinColor ) );
 
 	// write max color
-	Result &= jeVFile_Write( File, &( Object->MaxColor ), sizeof( Object->MaxColor ) );
+	Result &= grVFile_Write( File, &( Object->MaxColor ), sizeof( Object->MaxColor ) );
 
 	// write min speed
-	Result &= jeVFile_Write( File, &( Object->MinSpeed ), sizeof( Object->MinSpeed ) );
+	Result &= grVFile_Write( File, &( Object->MinSpeed ), sizeof( Object->MinSpeed ) );
 
 	// write max speed
-	Result &= jeVFile_Write( File, &( Object->MaxSpeed ), sizeof( Object->MaxSpeed ) );
+	Result &= grVFile_Write( File, &( Object->MaxSpeed ), sizeof( Object->MaxSpeed ) );
 
 	// write min scale
-	Result &= jeVFile_Write( File, &( Object->MinScale ), sizeof( Object->MinScale ) );
+	Result &= grVFile_Write( File, &( Object->MinScale ), sizeof( Object->MinScale ) );
 
 	// write max scale
-	Result &= jeVFile_Write( File, &( Object->MaxScale ), sizeof( Object->MaxScale ) );
+	Result &= grVFile_Write( File, &( Object->MaxScale ), sizeof( Object->MaxScale ) );
 
 	// write min unit life
-	Result &= jeVFile_Write( File, &( Object->MinUnitLife ), sizeof( Object->MinUnitLife ) );
+	Result &= grVFile_Write( File, &( Object->MinUnitLife ), sizeof( Object->MinUnitLife ) );
 
 	// write max unit life
-	Result &= jeVFile_Write( File, &( Object->MaxUnitLife ), sizeof( Object->MaxUnitLife ) );
+	Result &= grVFile_Write( File, &( Object->MaxUnitLife ), sizeof( Object->MaxUnitLife ) );
 
 	// write out draw box
-	Result &= jeVFile_Write( File, &( Object->DrawExtBox ), sizeof( Object->DrawExtBox ) );
+	Result &= grVFile_Write( File, &( Object->DrawExtBox ), sizeof( Object->DrawExtBox ) );
 
 	// log errors
-	if ( Result != JE_TRUE )
+	if ( Result != GR_TRUE )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, NULL );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, NULL );
 	}
 
 	// all done
@@ -2411,15 +2411,15 @@ jeBoolean JETCC WriteToFile(
 
 } // WriteToFile()
 #else
-	jeBoolean JETCC WriteToFile(
+	grBoolean GRCC WriteToFile(
 	const void	*Instance,
-	jeVFile		*File,
-	jePtrMgr *PtrMgr )
+	grVFile		*File,
+	grPtrMgr *PtrMgr )
 {
 
 	// locals
 	Spout		*Object;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 	int			Size;
 
 	// ensure valid data
@@ -2437,7 +2437,7 @@ jeBoolean JETCC WriteToFile(
 	else
 	{
 		Size = 0;
-		Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
+		Result &= grVFile_Write( File, &Size, sizeof( Size ) );
 	}
 
 	// write bitmap name
@@ -2448,7 +2448,7 @@ jeBoolean JETCC WriteToFile(
 	else
 	{
 		Size = 0;
-		Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
+		Result &= grVFile_Write( File, &Size, sizeof( Size ) );
 	}
 
 	// write alpha name
@@ -2459,52 +2459,52 @@ jeBoolean JETCC WriteToFile(
 	else
 	{
 		Size = 0;
-		Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
+		Result &= grVFile_Write( File, &Size, sizeof( Size ) );
 	}
 
 	// write xform
-	Result &= jeVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	Result &= grVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
 
 	// write gravity
-	Result &= jeVFile_Write( File, &( Object->Gravity ), sizeof( Object->Gravity ) );
+	Result &= grVFile_Write( File, &( Object->Gravity ), sizeof( Object->Gravity ) );
 
 	// write angle
-	Result &= jeVFile_Write( File, &( Object->Angle ), sizeof( Object->Angle ) );
+	Result &= grVFile_Write( File, &( Object->Angle ), sizeof( Object->Angle ) );
 
 	// write rate
-	Result &= jeVFile_Write( File, &( Object->Rate ), sizeof( Object->Rate ) );
+	Result &= grVFile_Write( File, &( Object->Rate ), sizeof( Object->Rate ) );
 
 	// write min color
-	Result &= jeVFile_Write( File, &( Object->MinColor ), sizeof( Object->MinColor ) );
+	Result &= grVFile_Write( File, &( Object->MinColor ), sizeof( Object->MinColor ) );
 
 	// write max color
-	Result &= jeVFile_Write( File, &( Object->MaxColor ), sizeof( Object->MaxColor ) );
+	Result &= grVFile_Write( File, &( Object->MaxColor ), sizeof( Object->MaxColor ) );
 
 	// write min speed
-	Result &= jeVFile_Write( File, &( Object->MinSpeed ), sizeof( Object->MinSpeed ) );
+	Result &= grVFile_Write( File, &( Object->MinSpeed ), sizeof( Object->MinSpeed ) );
 
 	// write max speed
-	Result &= jeVFile_Write( File, &( Object->MaxSpeed ), sizeof( Object->MaxSpeed ) );
+	Result &= grVFile_Write( File, &( Object->MaxSpeed ), sizeof( Object->MaxSpeed ) );
 
 	// write min scale
-	Result &= jeVFile_Write( File, &( Object->MinScale ), sizeof( Object->MinScale ) );
+	Result &= grVFile_Write( File, &( Object->MinScale ), sizeof( Object->MinScale ) );
 
 	// write max scale
-	Result &= jeVFile_Write( File, &( Object->MaxScale ), sizeof( Object->MaxScale ) );
+	Result &= grVFile_Write( File, &( Object->MaxScale ), sizeof( Object->MaxScale ) );
 
 	// write min unit life
-	Result &= jeVFile_Write( File, &( Object->MinUnitLife ), sizeof( Object->MinUnitLife ) );
+	Result &= grVFile_Write( File, &( Object->MinUnitLife ), sizeof( Object->MinUnitLife ) );
 
 	// write max unit life
-	Result &= jeVFile_Write( File, &( Object->MaxUnitLife ), sizeof( Object->MaxUnitLife ) );
+	Result &= grVFile_Write( File, &( Object->MaxUnitLife ), sizeof( Object->MaxUnitLife ) );
 
 	// write out draw box
-	Result &= jeVFile_Write( File, &( Object->DrawExtBox ), sizeof( Object->DrawExtBox ) );
+	Result &= grVFile_Write( File, &( Object->DrawExtBox ), sizeof( Object->DrawExtBox ) );
 
 	// log errors
-	if ( Result != JE_TRUE )
+	if ( Result != GR_TRUE )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, NULL );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, NULL );
 	}
 
 	// all done
@@ -2520,9 +2520,9 @@ jeBoolean JETCC WriteToFile(
 //	GetPropertyList()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetPropertyList(
+grBoolean GRCC GetPropertyList(
 	void			*Instance,	// object instance data
-	jeProperty_List	**List)		// where to save property list pointer
+	grProperty_List	**List)		// where to save property list pointer
 {
 
 	// locals
@@ -2571,7 +2571,7 @@ jeBoolean JETCC GetPropertyList(
 	SpoutProperties[SPOUT_DRAWEXTBOXMAXZ_INDEX].Data.Float = Object->DrawExtBox.Max.Z;
 
 	// set art size property
-	jeProperty_FillCombo(	&( SpoutPropertyList.pjeProperty[SPOUT_ARTSIZE_INDEX] ),
+	grProperty_FillCombo(	&( SpoutPropertyList.pgrProperty[SPOUT_ARTSIZE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_ARTSIZE ),
 							Bitmaps->StringSizes[Object->CurWidth],
 							SPOUT_ARTSIZE_ID,
@@ -2579,13 +2579,13 @@ jeBoolean JETCC GetPropertyList(
 							Bitmaps->StringSizes );
 
 	// set bitmap and alpha lists
-	jeProperty_FillCombo(	&( SpoutPropertyList.pjeProperty[SPOUT_BITMAPLIST_INDEX] ),
+	grProperty_FillCombo(	&( SpoutPropertyList.pgrProperty[SPOUT_BITMAPLIST_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_BITMAPLIST ),
 							Object->BitmapName,
 							SPOUT_BITMAPLIST_ID,
 							CurBitmaps.Total,
 							CurBitmaps.Name );
-	jeProperty_FillCombo(	&( SpoutPropertyList.pjeProperty[SPOUT_ALPHALIST_INDEX] ),
+	grProperty_FillCombo(	&( SpoutPropertyList.pgrProperty[SPOUT_ALPHALIST_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_ALPHALIST ),
 							Object->AlphaName,
 							SPOUT_ALPHALIST_ID,
@@ -2593,18 +2593,18 @@ jeBoolean JETCC GetPropertyList(
 							CurBitmaps.Name );
 
 	// get property list
-	*List = jeProperty_ListCopy( &SpoutPropertyList );
+	*List = grProperty_ListCopy( &SpoutPropertyList );
 	if ( *List == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+		return GR_FALSE;
 	}
 
 	// reset dirty flag
-	SpoutPropertyList.bDirty = JE_FALSE;
+	SpoutPropertyList.bDirty = GR_FALSE;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetPropertyList()
 
@@ -2615,16 +2615,16 @@ jeBoolean JETCC GetPropertyList(
 //	SetProperty()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SetProperty(
+grBoolean GRCC SetProperty(
 	void				*Instance,	// object instance data
 	int32				FieldID,	// id of field to be changed
 	PROPERTY_FIELD_TYPE	DataType,	// type of data
-	jeProperty_Data		*pData )	// new data
+	grProperty_Data		*pData )	// new data
 {
 
 	// locals
 	Spout		*Object = NULL;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 
 	// ensure valid data
 	assert( Instance != NULL );
@@ -2810,7 +2810,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->DrawExtBox.Min.X;
 			Object->DrawExtBox.Min.X = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->DrawExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->DrawExtBox ) ) == GR_FALSE )
 			{
 				Object->DrawExtBox.Min.X = OldVal;
 			}
@@ -2822,7 +2822,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->DrawExtBox.Min.Y;
 			Object->DrawExtBox.Min.Y = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->DrawExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->DrawExtBox ) ) == GR_FALSE )
 			{
 				Object->DrawExtBox.Min.Y = OldVal;
 			}
@@ -2834,7 +2834,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->DrawExtBox.Min.Z;
 			Object->DrawExtBox.Min.Z = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->DrawExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->DrawExtBox ) ) == GR_FALSE )
 			{
 				Object->DrawExtBox.Min.Z = OldVal;
 			}
@@ -2846,7 +2846,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->DrawExtBox.Max.X;
 			Object->DrawExtBox.Max.X = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->DrawExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->DrawExtBox ) ) == GR_FALSE )
 			{
 				Object->DrawExtBox.Max.X = OldVal;
 			}
@@ -2858,7 +2858,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->DrawExtBox.Max.Y;
 			Object->DrawExtBox.Max.Y = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->DrawExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->DrawExtBox ) ) == GR_FALSE )
 			{
 				Object->DrawExtBox.Max.Y = OldVal;
 			}
@@ -2870,7 +2870,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->DrawExtBox.Max.Z;
 			Object->DrawExtBox.Max.Z = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->DrawExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->DrawExtBox ) ) == GR_FALSE )
 			{
 				Object->DrawExtBox.Max.Z = OldVal;
 			}
@@ -2906,7 +2906,7 @@ jeBoolean JETCC SetProperty(
 			{
 			
 				// remove all particles
-				jeParticle_SystemRemoveAll( Object->Ps );
+				grParticle_SystemRemoveAll( Object->Ps );
 
 				// destroy objects current bitmap
 				Spout_DestroyArt( Object );
@@ -2914,23 +2914,23 @@ jeBoolean JETCC SetProperty(
 				// zap all art names
 				if ( Object->BitmapName != NULL )
 				{
-					jeRam_Free( Object->BitmapName );
+					grRam_Free( Object->BitmapName );
 				}
 				Object->BitmapName = Util_StrDup( NoSelection );
 				if ( Object->AlphaName != NULL )
 				{
-					jeRam_Free( Object->AlphaName );
+					grRam_Free( Object->AlphaName );
 				}
 				Object->AlphaName = Util_StrDup( NoSelection );
 				if ( Object->ArtName != NULL )
 				{
-					jeRam_Free( Object->ArtName );
+					grRam_Free( Object->ArtName );
 					Object->ArtName = NULL;
 				}
 			}
 
 			// force rebuild of properties bar
-			SpoutPropertyList.bDirty = JE_TRUE;
+			SpoutPropertyList.bDirty = GR_TRUE;
 			break;
 		}
 
@@ -2946,7 +2946,7 @@ jeBoolean JETCC SetProperty(
 			assert( pData->String != NULL );
 
 			// remove all particles
-			jeParticle_SystemRemoveAll( Object->Ps );
+			grParticle_SystemRemoveAll( Object->Ps );
 
 			// destroy objects current bitmap
 			Spout_DestroyArt( Object );
@@ -2956,7 +2956,7 @@ jeBoolean JETCC SetProperty(
 			{
 				if ( Object->BitmapName != NULL )
 				{
-					jeRam_Free( Object->BitmapName );
+					grRam_Free( Object->BitmapName );
 				}
 				Object->BitmapName = Util_StrDup( pData->String );
 			}
@@ -2965,7 +2965,7 @@ jeBoolean JETCC SetProperty(
 			{
 				if ( Object->AlphaName != NULL )
 				{
-					jeRam_Free( Object->AlphaName );
+					grRam_Free( Object->AlphaName );
 				}
 				Object->AlphaName = Util_StrDup( pData->String );
 			}
@@ -2973,7 +2973,7 @@ jeBoolean JETCC SetProperty(
 			// zap art name
 			if ( Object->ArtName != NULL )
 			{
-				jeRam_Free( Object->ArtName );
+				grRam_Free( Object->ArtName );
 			}
 
 			// do nothing further if no main bitmap is provided
@@ -2988,10 +2988,10 @@ jeBoolean JETCC SetProperty(
 			{
 				Size += strlen( Object->AlphaName );
 			}
-			Object->ArtName = (char *)jeRam_Allocate( Size );
+			Object->ArtName = (char *)grRam_Allocate( Size );
 			if ( Object->ArtName == NULL )
 			{
-				jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+				grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 				break;
 			}
 			strcpy( Object->ArtName, Object->BitmapName );
@@ -3004,18 +3004,18 @@ jeBoolean JETCC SetProperty(
 			if ( Object->Art == NULL )
 			{
     			// locals
-                jeBitmap* artbmp;
-				jeVFile	*FileDir;
+                grBitmap* artbmp;
+				grVFile	*FileDir;
 
     			// create new art
-                Object->Art = jeMaterialSpec_Create(Object->Engine, Object->ResourceMgr);
+                Object->Art = grMaterialSpec_Create(Object->Engine, Object->ResourceMgr);
 	
                 // get vfile dir
-				FileDir = jeResource_GetVFile( Object->ResourceMgr, "GlobalMaterials" );
+				FileDir = grResource_GetVFile( Object->ResourceMgr, "GlobalMaterials" );
 				if ( FileDir == NULL )
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-					return JE_FALSE;
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+					return GR_FALSE;
 				}
 
 				// create new art
@@ -3029,26 +3029,26 @@ jeBoolean JETCC SetProperty(
 				}
 
 				// close vfile dir
-				if ( jeResource_DeleteVFile( Object->ResourceMgr, "GlobalMaterials" ) == 0 )
+				if ( grResource_DeleteVFile( Object->ResourceMgr, "GlobalMaterials" ) == 0 )
 				{
-					jeVFile_Close( FileDir );
+					grVFile_Close( FileDir );
 				}
 
 				// fail if art wasnt created
 				if ( artbmp == NULL )
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-					return JE_FALSE;
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+					return GR_FALSE;
 				}
 
 				// add it to the resource manager
 #pragma message ("Krouer: change NULL to something better next time")
-                jeMaterialSpec_AddLayerFromBitmap(Object->Art, 0, artbmp, NULL);
-    			jeEngine_AddBitmap( Object->Engine, artbmp, JE_ENGINE_BITMAP_TYPE_3D );
+                grMaterialSpec_AddLayerFromBitmap(Object->Art, 0, artbmp, NULL);
+    			grEngine_AddBitmap( Object->Engine, artbmp, GR_ENGINE_BITMAP_TYPE_3D );
 			}
 /*
             // add it to the engine
-			jeEngine_AddBitmap( Object->Engine, Object->Art, JE_ENGINE_BITMAP_TYPE_3D );
+			grEngine_AddBitmap( Object->Engine, Object->Art, GR_ENGINE_BITMAP_TYPE_3D );
 */
 			break;
 		}
@@ -3057,7 +3057,7 @@ jeBoolean JETCC SetProperty(
 		default:
 		{
 			assert( 0 );
-			Result = JE_FALSE;
+			Result = GR_FALSE;
 			break;
 		}
 	}
@@ -3077,9 +3077,9 @@ jeBoolean JETCC SetProperty(
 //	SetXForm()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SetXForm(
+grBoolean GRCC SetXForm(
 	void			*Instance,	// object instance data
-	const jeXForm3d	*Xf )		// new xform
+	const grXForm3d	*Xf )		// new xform
 {
 
 	// locals
@@ -3096,7 +3096,7 @@ jeBoolean JETCC SetXForm(
 	Object->Xf = *Xf;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // SetXForm()
 
@@ -3107,9 +3107,9 @@ jeBoolean JETCC SetXForm(
 //	GetXForm()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetXForm(
+grBoolean GRCC GetXForm(
 	const void	*Instance,	// object instance data
-	jeXForm3d	*Xf )		// where to store xform
+	grXForm3d	*Xf )		// where to store xform
 {
 
 	// locals
@@ -3126,7 +3126,7 @@ jeBoolean JETCC GetXForm(
 	*Xf = Object->Xf;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetXForm()
 
@@ -3137,12 +3137,12 @@ jeBoolean JETCC GetXForm(
 //	GetXFormModFlags()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-int	JETCC GetXFormModFlags(
+int	GRCC GetXFormModFlags(
 	const void	*Instance )	// object instance data
 {
 
 	// return xform mod flags
-	return ( JE_OBJECT_XFORM_TRANSLATE | JE_OBJECT_XFORM_ROTATE );
+	return ( GR_OBJECT_XFORM_TRANSLATE | GR_OBJECT_XFORM_ROTATE );
 
 	// eliminate warnings
 	Instance;
@@ -3156,14 +3156,14 @@ int	JETCC GetXFormModFlags(
 //	GetChildren()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetChildren(
+grBoolean GRCC GetChildren(
 	const void	*Instance,
-	jeObject	*Children,
+	grObject	*Children,
 	int			MaxNumChildren )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -3179,13 +3179,13 @@ jeBoolean JETCC GetChildren(
 //	AddChild()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AddChild(
+grBoolean GRCC AddChild(
 	void			*Instance,
-	const jeObject	*Child )
+	const grObject	*Child )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -3200,13 +3200,13 @@ jeBoolean JETCC AddChild(
 //	RemoveChild()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC RemoveChild(
+grBoolean GRCC RemoveChild(
 	void			*Instance,
-	const jeObject	*Child )
+	const grObject	*Child )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -3221,7 +3221,7 @@ jeBoolean JETCC RemoveChild(
 //	EditDialog()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC EditDialog(
+grBoolean GRCC EditDialog(
 	void	*Instance,
 #ifdef WIN32
 	HWND	Parent )
@@ -3232,7 +3232,7 @@ jeBoolean JETCC EditDialog(
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -3247,7 +3247,7 @@ jeBoolean JETCC EditDialog(
 //	Frame()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Frame(
+grBoolean GRCC Frame(
 	void	*Instance,
 	float	TimeDelta )
 {
@@ -3261,7 +3261,7 @@ jeBoolean JETCC Frame(
 	// do nothing if no time has elapsed
 	if ( TimeDelta == 0.0f )
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	// get object
@@ -3270,7 +3270,7 @@ jeBoolean JETCC Frame(
 	// do nothing if no bitmap has been selected
 	if ( Object->Art == NULL )
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	// add to elapsed time
@@ -3281,8 +3281,8 @@ jeBoolean JETCC Frame(
 	{
 
 		// locals
-		JE_LVertex	Vertex;
-		jeVec3d		Velocity;
+		GR_LVertex	Vertex;
+		grVec3d		Velocity;
 
 		// adjust elapsed time
 		Object->TimeElapsed -= Object->Rate;
@@ -3297,21 +3297,21 @@ jeBoolean JETCC Frame(
 		{
 
 			// locals
-			jeXForm3d	Xf;
+			grXForm3d	Xf;
 
 			// randomly rotate the xform
-			jeXForm3d_Copy( &( Object->Xf ), &Xf );
-			jeXForm3d_RotateX( &Xf, Util_Frand( -Object->Angle, Object->Angle ) );
-			jeXForm3d_RotateZ( &Xf, Util_Frand( -Object->Angle, Object->Angle ) );
+			grXForm3d_Copy( &( Object->Xf ), &Xf );
+			grXForm3d_RotateX( &Xf, Util_Frand( -Object->Angle, Object->Angle ) );
+			grXForm3d_RotateZ( &Xf, Util_Frand( -Object->Angle, Object->Angle ) );
 
 			// setup velocity vector
-			jeXForm3d_GetUp( &Xf, &Velocity );
-			jeVec3d_Normalize( &Velocity );
-			jeVec3d_Scale( &Velocity, Util_Frand( Object->MinSpeed, Object->MaxSpeed ), &Velocity );
+			grXForm3d_GetUp( &Xf, &Velocity );
+			grVec3d_Normalize( &Velocity );
+			grVec3d_Scale( &Velocity, Util_Frand( Object->MinSpeed, Object->MaxSpeed ), &Velocity );
 		}
 		else
 		{
-			jeVec3d_Set( &Velocity, 0.0f, 0.0f, 0.0f );
+			grVec3d_Set( &Velocity, 0.0f, 0.0f, 0.0f );
 		}
 
 		// setup color
@@ -3327,7 +3327,7 @@ jeBoolean JETCC Frame(
 		// add the new particle
 		assert( Object->World != NULL );
 
-		jeParticle_SystemAddParticle(	Object->Ps,
+		grParticle_SystemAddParticle(	Object->Ps,
 										Object->World,
                                         Object->Art,
 										&Vertex,
@@ -3340,10 +3340,10 @@ jeBoolean JETCC Frame(
 
 	// update the particle system
 	assert( Object->Ps != NULL );
-	jeParticle_SystemFrame( Object->Ps, TimeDelta );
+	grParticle_SystemFrame( Object->Ps, TimeDelta );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Frame()
 
@@ -3354,14 +3354,14 @@ jeBoolean JETCC Frame(
 //	SendAMessage()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SendAMessage(
+grBoolean GRCC SendAMessage(
 	void	*Instance,	// object instance data
 	int32	Msg,		// message id
 	void	*Data )		// message data
 {
 
 	// all done
-	return JE_FALSE;
+	return GR_FALSE;
 
 	// eliminate warnings
 	Instance;
@@ -3371,7 +3371,7 @@ jeBoolean JETCC SendAMessage(
 } // SendAMessage()
 
 // Icestorm
-jeBoolean	JETCC ChangeBoxCollision(const void *Instance,const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane)
+grBoolean	GRCC ChangeBoxCollision(const void *Instance,const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane)
 {
-	return( JE_FALSE );Plane;ImpactBox;BackBox;FrontBox;Pos;Instance;
+	return( GR_FALSE );Plane;ImpactBox;BackBox;FrontBox;Pos;Instance;
 }

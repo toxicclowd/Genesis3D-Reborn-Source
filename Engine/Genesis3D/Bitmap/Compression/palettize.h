@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_BRANDO_PALETTIZE_H
-#define JE_BRANDO_PALETTIZE_H
+#ifndef GR_BRANDO_PALETTIZE_H
+#define GR_BRANDO_PALETTIZE_H
 
 #include "BaseType.h"
 #include "Bitmap.h"
@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-jeBoolean palettizePlane(const	jeBitmap_Info * SrcInfo,const	void * SrcBits,
-								jeBitmap_Info * DstInfo,		void * DstBits,
+grBoolean palettizePlane(const	grBitmap_Info * SrcInfo,const	void * SrcBits,
+								grBitmap_Info * DstInfo,		void * DstBits,
 								int SizeX,int SizeY);
 
 // you can create a palette with routines in "palcreate.h"

@@ -16,7 +16,7 @@
 #define MAX_THANDLES 4096
 #define MAX_TEXTURE_MIP_LEVELS 16
 
-static jeTexture g_TextureList[MAX_THANDLES];
+static grTexture g_TextureList[MAX_THANDLES];
 static ComPtr<ID3D12DescriptorHeap> g_pSRVHeap;
 static UINT g_nSRVDescriptorSize = 0;
 
@@ -36,56 +36,56 @@ static int32 GetLog(int32 Width, int32 Height)
 	return Log;
 }
 
-static int32 BytesPerPixel(jePixelFormat Format)
+static int32 BytesPerPixel(grPixelFormat Format)
 {
 	switch (Format)
 	{
-	case JE_PIXELFORMAT_8BIT:
+	case GR_PIXELFORMAT_8BIT:
 		return 1;
-	case JE_PIXELFORMAT_16BIT_555_RGB:
-	case JE_PIXELFORMAT_16BIT_565_RGB:
-	case JE_PIXELFORMAT_16BIT_1555_ARGB:
-	case JE_PIXELFORMAT_16BIT_4444_ARGB:
+	case GR_PIXELFORMAT_16BIT_555_RGB:
+	case GR_PIXELFORMAT_16BIT_565_RGB:
+	case GR_PIXELFORMAT_16BIT_1555_ARGB:
+	case GR_PIXELFORMAT_16BIT_4444_ARGB:
 		return 2;
-	case JE_PIXELFORMAT_24BIT_RGB:
+	case GR_PIXELFORMAT_24BIT_RGB:
 		return 3;
-	case JE_PIXELFORMAT_32BIT_XRGB:
-	case JE_PIXELFORMAT_32BIT_ARGB:
+	case GR_PIXELFORMAT_32BIT_XRGB:
+	case GR_PIXELFORMAT_32BIT_ARGB:
 		return 4;
 	default:
 		return 0;
 	}
 }
 
-static DXGI_FORMAT ConvertPixelFormatToDXGI(const jeRDriver_PixelFormat* PixelFormat)
+static DXGI_FORMAT ConvertPixelFormatToDXGI(const grRDriver_PixelFormat* PixelFormat)
 {
 	if (!PixelFormat)
 		return DXGI_FORMAT_B8G8R8A8_UNORM;
 
 	switch (PixelFormat->PixelFormat)
 	{
-	case JE_PIXELFORMAT_8BIT:
+	case GR_PIXELFORMAT_8BIT:
 		return DXGI_FORMAT_R8_UNORM;
-	case JE_PIXELFORMAT_16BIT_555_RGB:
-	case JE_PIXELFORMAT_16BIT_1555_ARGB:
+	case GR_PIXELFORMAT_16BIT_555_RGB:
+	case GR_PIXELFORMAT_16BIT_1555_ARGB:
 		return DXGI_FORMAT_B5G5R5A1_UNORM;
-	case JE_PIXELFORMAT_16BIT_565_RGB:
+	case GR_PIXELFORMAT_16BIT_565_RGB:
 		return DXGI_FORMAT_B5G6R5_UNORM;
-	case JE_PIXELFORMAT_16BIT_4444_ARGB:
+	case GR_PIXELFORMAT_16BIT_4444_ARGB:
 		return DXGI_FORMAT_B4G4R4A4_UNORM;
-	case JE_PIXELFORMAT_24BIT_RGB:
+	case GR_PIXELFORMAT_24BIT_RGB:
 		// DXGI has no three-byte RGB texture format. Unlock expands it to RGBA.
 		return DXGI_FORMAT_R8G8B8A8_UNORM;
-	case JE_PIXELFORMAT_32BIT_XRGB:
+	case GR_PIXELFORMAT_32BIT_XRGB:
 		return DXGI_FORMAT_B8G8R8X8_UNORM;
-	case JE_PIXELFORMAT_32BIT_ARGB:
+	case GR_PIXELFORMAT_32BIT_ARGB:
 	default:
 		// Jet3D ARGB DWORDs are B,G,R,A bytes on little-endian Windows.
 		return DXGI_FORMAT_B8G8R8A8_UNORM;
 	}
 }
 
-static void ResetTexture(jeTexture& Handle, int32 Id)
+static void ResetTexture(grTexture& Handle, int32 Id)
 {
 	for (int32 MipLevel = 0; MipLevel < MAX_TEXTURE_MIP_LEVELS; ++MipLevel)
 	{
@@ -95,7 +95,7 @@ static void ResetTexture(jeTexture& Handle, int32 Id)
 	}
 	Handle.pTexture.Reset();
 	Handle.id = Id;
-	Handle.Active = JE_FALSE;
+	Handle.Active = GR_FALSE;
 	Handle.Width = 0;
 	Handle.Height = 0;
 	Handle.NumMipLevels = 0;
@@ -103,22 +103,22 @@ static void ResetTexture(jeTexture& Handle, int32 Id)
 	Handle.Log = 0;
 	Handle.Format = DXGI_FORMAT_UNKNOWN;
 	std::memset(&Handle.DriverFormat, 0, sizeof(Handle.DriverFormat));
-	Handle.Lightmap = JE_FALSE;
+	Handle.Lightmap = GR_FALSE;
 	Handle.LockedMipMask = 0;
-	Handle.DriverOwned = JE_FALSE;
+	Handle.DriverOwned = GR_FALSE;
 	Handle.ResourceState = D3D12_RESOURCE_STATE_COMMON;
 	Handle.SRVHandle.ptr = 0;
 	Handle.SRVDescriptorIndex = 0;
 }
 
-static jeTexture* GetNextTHandle()
+static grTexture* GetNextTHandle()
 {
 	for (int32 i = 0; i < MAX_THANDLES; ++i)
 	{
-		if (g_TextureList[i].Active == JE_FALSE)
+		if (g_TextureList[i].Active == GR_FALSE)
 		{
 			ResetTexture(g_TextureList[i], i);
-			g_TextureList[i].Active = JE_TRUE;
+			g_TextureList[i].Active = GR_TRUE;
 			return &g_TextureList[i];
 		}
 	}
@@ -139,8 +139,8 @@ static D3D12_RESOURCE_DESC BufferDescription(UINT64 Size)
 	return Desc;
 }
 
-static jeBoolean FillUploadBuffer(
-	jeTexture* Handle,
+static grBoolean FillUploadBuffer(
+	grTexture* Handle,
 	int32 MipLevel,
 	ID3D12Resource* Upload,
 	const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& Footprint,
@@ -153,7 +153,7 @@ static jeBoolean FillUploadBuffer(
 	if (FAILED(Hr))
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: Texture upload map failed - HR: 0x%08X", Hr);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	uint8* Destination = static_cast<uint8*>(Mapped) + Footprint.Offset;
@@ -163,7 +163,7 @@ static jeBoolean FillUploadBuffer(
 	const int32 SourceBpp = BytesPerPixel(Handle->DriverFormat.PixelFormat);
 	const size_t SourcePitch = static_cast<size_t>(Width) * SourceBpp;
 
-	if (Handle->DriverFormat.PixelFormat == JE_PIXELFORMAT_24BIT_RGB)
+	if (Handle->DriverFormat.PixelFormat == GR_PIXELFORMAT_24BIT_RGB)
 	{
 		for (UINT Row = 0; Row < NumRows; ++Row)
 		{
@@ -195,12 +195,12 @@ static jeBoolean FillUploadBuffer(
 		static_cast<SIZE_T>(Footprint.Offset + static_cast<UINT64>(Footprint.Footprint.RowPitch) * NumRows)
 	};
 	Upload->Unmap(0, &WrittenRange);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 static void RecordTextureCopy(
 	ID3D12GraphicsCommandList* CommandList,
-	jeTexture* Handle,
+	grTexture* Handle,
 	int32 MipLevel,
 	ID3D12Resource* Upload,
 	const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& Footprint)
@@ -237,7 +237,7 @@ static void RecordTextureCopy(
 	Handle->ResourceState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 }
 
-static jeBoolean UploadLockedTexture(jeTexture* Handle, int32 MipLevel)
+static grBoolean UploadLockedTexture(grTexture* Handle, int32 MipLevel)
 {
 	D3D12_RESOURCE_DESC TextureDesc = Handle->pTexture->GetDesc();
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT Footprint = {};
@@ -268,24 +268,24 @@ static jeBoolean UploadLockedTexture(jeTexture* Handle, int32 MipLevel)
 	if (FAILED(Hr))
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: Texture upload buffer creation failed - HR: 0x%08X", Hr);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	if (!FillUploadBuffer(Handle, MipLevel, Upload.Get(), Footprint, NumRows, RowSize))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if (g_bInScene && g_pCommandList)
 	{
 		RecordTextureCopy(g_pCommandList.Get(), Handle, MipLevel, Upload.Get(), Footprint);
 		g_FrameUploadResources[g_nCurrentFrameIndex].push_back(Upload);
 		g_FrameUploadResources[g_nCurrentFrameIndex].push_back(Handle->pTexture);
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	ComPtr<ID3D12CommandAllocator> Allocator;
 	Hr = g_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Allocator));
 	if (FAILED(Hr))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
 	Hr = g_pDevice->CreateCommandList(
@@ -295,20 +295,20 @@ static jeBoolean UploadLockedTexture(jeTexture* Handle, int32 MipLevel)
 		nullptr,
 		IID_PPV_ARGS(&CommandList));
 	if (FAILED(Hr))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	RecordTextureCopy(CommandList.Get(), Handle, MipLevel, Upload.Get(), Footprint);
 	Hr = CommandList->Close();
 	if (FAILED(Hr))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	ID3D12CommandList* Lists[] = { CommandList.Get() };
 	g_pCommandQueue->ExecuteCommandLists(1, Lists);
 	D3D12WaitForGPU();
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean D3D12_THandle_Startup()
+grBoolean D3D12_THandle_Startup()
 {
 	D3D12Log::GetPtr()->Printf("D3D12_THandle_Startup called");
 	for (int32 i = 0; i < MAX_THANDLES; ++i)
@@ -324,13 +324,13 @@ jeBoolean D3D12_THandle_Startup()
 	if (FAILED(Hr))
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: Failed to create SRV descriptor heap - HR: 0x%08X", Hr);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	g_nSRVDescriptorSize = g_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean D3D12_THandle_Shutdown()
+grBoolean D3D12_THandle_Shutdown()
 {
 	for (int32 i = 0; i < MAX_THANDLES; ++i)
 		ResetTexture(g_TextureList[i], i);
@@ -338,7 +338,7 @@ jeBoolean D3D12_THandle_Shutdown()
 		g_FrameUploadResources[i].clear();
 	g_pSRVHeap.Reset();
 	g_nSRVDescriptorSize = 0;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void D3D12_THandle_BeginFrame(UINT FrameIndex)
@@ -347,11 +347,11 @@ void D3D12_THandle_BeginFrame(UINT FrameIndex)
 		g_FrameUploadResources[FrameIndex].clear();
 }
 
-jeTexture* DRIVERCC D3D12_THandle_Create(
+grTexture* DRIVERCC D3D12_THandle_Create(
 	int32 Width,
 	int32 Height,
 	int32 NumMipLevels,
-	const jeRDriver_PixelFormat* PixelFormat)
+	const grRDriver_PixelFormat* PixelFormat)
 {
 	if (!g_pDevice || !g_pSRVHeap || Width <= 0 || Height <= 0)
 		return nullptr;
@@ -367,7 +367,7 @@ jeTexture* DRIVERCC D3D12_THandle_Create(
 	for (int32 Dimension = (Width > Height) ? Width : Height; Dimension > 1; Dimension >>= 1)
 		++MaxMipLevels;
 
-	jeTexture* Handle = GetNextTHandle();
+	grTexture* Handle = GetNextTHandle();
 	if (!Handle)
 		return nullptr;
 
@@ -375,7 +375,7 @@ jeTexture* DRIVERCC D3D12_THandle_Create(
 		Handle->DriverFormat = *PixelFormat;
 	else
 	{
-		Handle->DriverFormat.PixelFormat = JE_PIXELFORMAT_32BIT_ARGB;
+		Handle->DriverFormat.PixelFormat = GR_PIXELFORMAT_32BIT_ARGB;
 		Handle->DriverFormat.Flags = RDRIVER_PF_3D;
 	}
 
@@ -389,7 +389,7 @@ jeTexture* DRIVERCC D3D12_THandle_Create(
 	Handle->Log = static_cast<uint8>(GetLog(Width, Height));
 	Handle->stride = Width;
 	Handle->Format = ConvertPixelFormatToDXGI(&Handle->DriverFormat);
-	Handle->Lightmap = JE_FALSE;
+	Handle->Lightmap = GR_FALSE;
 	Handle->ResourceState = D3D12_RESOURCE_STATE_COPY_DEST;
 
 	D3D12_RESOURCE_DESC TextureDesc = {};
@@ -440,27 +440,27 @@ jeTexture* DRIVERCC D3D12_THandle_Create(
 	return Handle;
 }
 
-jeTexture* DRIVERCC D3D12_THandle_CreateFromFile(jeVFile*)
+grTexture* DRIVERCC D3D12_THandle_CreateFromFile(grVFile*)
 {
 	return nullptr;
 }
 
-jeBoolean DRIVERCC D3D12_THandle_Destroy(jeTexture* Handle)
+grBoolean DRIVERCC D3D12_THandle_Destroy(grTexture* Handle)
 {
 	if (!Handle || !Handle->Active)
-		return JE_FALSE;
+		return GR_FALSE;
 	const int32 Id = Handle->id;
 	ResetTexture(*Handle, Id);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12_THandle_Lock(jeTexture* Handle, int32 MipLevel, void** Bits)
+grBoolean DRIVERCC D3D12_THandle_Lock(grTexture* Handle, int32 MipLevel, void** Bits)
 {
 	if (!Handle || !Handle->Active || !Bits || Handle->DriverOwned ||
 		MipLevel < 0 || MipLevel >= Handle->NumMipLevels ||
 		MipLevel >= MAX_TEXTURE_MIP_LEVELS ||
 		(Handle->LockedMipMask & (1u << MipLevel)) != 0)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	const int32 ShiftedWidth = Handle->Width >> MipLevel;
 	const int32 ShiftedHeight = Handle->Height >> MipLevel;
@@ -475,7 +475,7 @@ jeBoolean DRIVERCC D3D12_THandle_Lock(jeTexture* Handle, int32 MipLevel, void** 
 		if (!Handle->MipData[MipLevel])
 		{
 			Handle->MipDataCapacity[MipLevel] = 0;
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		Handle->MipDataCapacity[MipLevel] = Required;
 	}
@@ -483,25 +483,25 @@ jeBoolean DRIVERCC D3D12_THandle_Lock(jeTexture* Handle, int32 MipLevel, void** 
 	Handle->stride = Width;
 	Handle->LockedMipMask |= (1u << MipLevel);
 	*Bits = Handle->MipData[MipLevel];
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12_THandle_Unlock(jeTexture* Handle, int32 MipLevel)
+grBoolean DRIVERCC D3D12_THandle_Unlock(grTexture* Handle, int32 MipLevel)
 {
 	if (!Handle || !Handle->Active || MipLevel < 0 ||
 		MipLevel >= Handle->NumMipLevels || MipLevel >= MAX_TEXTURE_MIP_LEVELS ||
 		(Handle->LockedMipMask & (1u << MipLevel)) == 0)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	const jeBoolean Result = UploadLockedTexture(Handle, MipLevel);
+	const grBoolean Result = UploadLockedTexture(Handle, MipLevel);
 	Handle->LockedMipMask &= ~(1u << MipLevel);
 	return Result;
 }
 
-jeBoolean DRIVERCC D3D12_THandle_GetInfo(jeTexture* Handle, int32 MipLevel, jeTexture_Info* Info)
+grBoolean DRIVERCC D3D12_THandle_GetInfo(grTexture* Handle, int32 MipLevel, grTexture_Info* Info)
 {
 	if (!Handle || !Handle->Active || !Info || MipLevel < 0 || MipLevel >= Handle->NumMipLevels)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Info->Width = Handle->Width >> MipLevel;
 	Info->Height = Handle->Height >> MipLevel;
@@ -516,20 +516,20 @@ jeBoolean DRIVERCC D3D12_THandle_GetInfo(jeTexture* Handle, int32 MipLevel, jeTe
 		: 0;
 	Info->ColorKey = Info->Flags ? 1 : 0;
 	Info->Direct = Handle->pTexture.Get();
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-ID3D12Resource* D3D12_THandle_GetResource(jeTexture* Handle)
+ID3D12Resource* D3D12_THandle_GetResource(grTexture* Handle)
 {
 	return (Handle && Handle->Active) ? Handle->pTexture.Get() : nullptr;
 }
 
-int32 D3D12_THandle_GetID(jeTexture* Handle)
+int32 D3D12_THandle_GetID(grTexture* Handle)
 {
 	return (Handle && Handle->Active) ? Handle->id : -1;
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE D3D12_THandle_GetSRV(jeTexture* Handle)
+D3D12_CPU_DESCRIPTOR_HANDLE D3D12_THandle_GetSRV(grTexture* Handle)
 {
 	D3D12_CPU_DESCRIPTOR_HANDLE Result = {};
 	if (Handle && Handle->Active)
@@ -537,7 +537,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12_THandle_GetSRV(jeTexture* Handle)
 	return Result;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE D3D12_THandle_GetGPUSRV(jeTexture* Handle)
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12_THandle_GetGPUSRV(grTexture* Handle)
 {
 	D3D12_GPU_DESCRIPTOR_HANDLE Result = {};
 	if (!Handle || !Handle->Active || !g_pSRVHeap)
@@ -552,14 +552,14 @@ ID3D12DescriptorHeap* D3D12_THandle_GetDescriptorHeap()
 	return g_pSRVHeap.Get();
 }
 
-jeBoolean D3D12_THandle_UpdateLightmap(jeTexture* Handle, const uint8* RGBData)
+grBoolean D3D12_THandle_UpdateLightmap(grTexture* Handle, const uint8* RGBData)
 {
 	if (!Handle || !RGBData)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	void* Bits = nullptr;
 	if (!D3D12_THandle_Lock(Handle, 0, &Bits))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	uint8* Destination = static_cast<uint8*>(Bits);
 	const size_t PixelCount = static_cast<size_t>(Handle->Width) * Handle->Height;
@@ -570,29 +570,29 @@ jeBoolean D3D12_THandle_UpdateLightmap(jeTexture* Handle, const uint8* RGBData)
 		const uint8 B = RGBData[i * 3 + 2];
 		switch (Handle->DriverFormat.PixelFormat)
 		{
-		case JE_PIXELFORMAT_8BIT:
+		case GR_PIXELFORMAT_8BIT:
 			Destination[i] = static_cast<uint8>((static_cast<uint32>(R) + G + B) / 3);
 			break;
-		case JE_PIXELFORMAT_16BIT_555_RGB:
-		case JE_PIXELFORMAT_16BIT_1555_ARGB:
+		case GR_PIXELFORMAT_16BIT_555_RGB:
+		case GR_PIXELFORMAT_16BIT_1555_ARGB:
 			reinterpret_cast<uint16*>(Destination)[i] = static_cast<uint16>(
 				0x8000u | ((R >> 3) << 10) | ((G >> 3) << 5) | (B >> 3));
 			break;
-		case JE_PIXELFORMAT_16BIT_565_RGB:
+		case GR_PIXELFORMAT_16BIT_565_RGB:
 			reinterpret_cast<uint16*>(Destination)[i] = static_cast<uint16>(
 				((R >> 3) << 11) | ((G >> 2) << 5) | (B >> 3));
 			break;
-		case JE_PIXELFORMAT_16BIT_4444_ARGB:
+		case GR_PIXELFORMAT_16BIT_4444_ARGB:
 			reinterpret_cast<uint16*>(Destination)[i] = static_cast<uint16>(
 				0xF000u | ((R >> 4) << 8) | ((G >> 4) << 4) | (B >> 4));
 			break;
-		case JE_PIXELFORMAT_24BIT_RGB:
+		case GR_PIXELFORMAT_24BIT_RGB:
 			Destination[i * 3 + 0] = R;
 			Destination[i * 3 + 1] = G;
 			Destination[i * 3 + 2] = B;
 			break;
-		case JE_PIXELFORMAT_32BIT_XRGB:
-		case JE_PIXELFORMAT_32BIT_ARGB:
+		case GR_PIXELFORMAT_32BIT_XRGB:
+		case GR_PIXELFORMAT_32BIT_ARGB:
 		default:
 			Destination[i * 4 + 0] = B;
 			Destination[i * 4 + 1] = G;
@@ -603,7 +603,7 @@ jeBoolean D3D12_THandle_UpdateLightmap(jeTexture* Handle, const uint8* RGBData)
 	}
 
 	if (!D3D12_THandle_Unlock(Handle, 0))
-		return JE_FALSE;
-	Handle->Lightmap = JE_TRUE;
-	return JE_TRUE;
+		return GR_FALSE;
+	Handle->Lightmap = GR_TRUE;
+	return GR_TRUE;
 }

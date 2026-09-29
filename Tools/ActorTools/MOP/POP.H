@@ -30,7 +30,7 @@ extern "C" {
 #endif
 
 
-jePath *Pop_PathOptimize(jePath *P, jeFloat Tolerance);
+grPath *Pop_PathOptimize(grPath *P, grFloat Tolerance);
 
 
 

@@ -31,48 +31,48 @@
 #include	"GCHeap.h"
 #include	"Symbol.h"
 
-//jeSymbol_Table *	TempST;
+//grSymbol_Table *	TempST;
 
 // Note:  You must not have more than 64k of hash buckets, as our hash value is 16bits
 #define	NUMHASHBUCKETS	223
 //#define	NUMHASHBUCKETS	5
 
-typedef	struct	jeSymbol_Rec		jeSymbol_Rec;
-typedef	struct	jeSymbol_ListRec	jeSymbol_ListRec;
+typedef	struct	grSymbol_Rec		grSymbol_Rec;
+typedef	struct	grSymbol_ListRec	grSymbol_ListRec;
 
 typedef	struct	PropList
 {
-	jeSymbol_Rec *	Symbol;
+	grSymbol_Rec *	Symbol;
 	union
 	{
 		int					Integer;
 		char *				String;
 		float				Float;
-		jeVec3d				Vec3d;
-		JE_RGBA				Color;
-		jeBoolean			Boolean;
+		grVec3d				Vec3d;
+		GR_RGBA				Color;
+		grBoolean			Boolean;
 		void *				Void;
-		jeSymbol_ListRec *	List;
-		jeSymbol_Rec *		Sym;		// Sym, not Symbol to reduce typo risks with Symbol, above
+		grSymbol_ListRec *	List;
+		grSymbol_Rec *		Sym;		// Sym, not Symbol to reduce typo risks with Symbol, above
 /*
-		jeModel *		Model;
-		jePortal *		Portal;
+		grModel *		Model;
+		grPortal *		Portal;
 */
 	}	Value;
 	struct PropList *	Next;
 }	PropList;
 
-typedef	struct	jeSymbol_Table
+typedef	struct	grSymbol_Table
 {
-	jeSymbol_List **	Symbols;
-	jeSymbol *			QualifierListProperty;
+	grSymbol_List **	Symbols;
+	grSymbol *			QualifierListProperty;
 	int					RefCount;
 	RefPool *			SymbolReferences;
 	RefPool *			ListReferences;
 	GCHeap *			SymbolHeap;
 	GCHeap *			ListHeap;
 	int					GCAbleOperationCount;
-}	jeSymbol_Table;
+}	grSymbol_Table;
 
 #define	SYMREF_INCREMENT	100
 #define	LISTREF_INCREMENT	20
@@ -85,51 +85,51 @@ typedef	struct	jeSymbol_Table
 #define	SYMBOL_BEINGDESTROYED	0x08
 #define	SYMBOL_MARKED			0x10
 
-typedef	struct			jeSymbol_Rec
+typedef	struct			grSymbol_Rec
 {
 	char *				Name;
 	int					NameLength;
 	unsigned short		HashValue;
-	jeSymbol_Type		Type;
+	grSymbol_Type		Type;
 	int					EnumValue;
 	PropList *			Properties;
-	jeSymbol_Rec *		Qualifier;
+	grSymbol_Rec *		Qualifier;
 //	int					RefCount;			// RefCount and SymbolId could be unioned
 	unsigned int		SymbolId;			// to save space
-	jeSymbol_Table *	SymbolTable;
+	grSymbol_Table *	SymbolTable;
 	unsigned char		Flags;
-}	jeSymbol_Rec;
+}	grSymbol_Rec;
 
-typedef	struct	jeSymbol
+typedef	struct	grSymbol
 {
-	jeSymbol_Rec *		Symbol;
-}	jeSymbol;
+	grSymbol_Rec *		Symbol;
+}	grSymbol;
 
 typedef	struct	SymListElt
 {
-	jeSymbol_Rec *		Symbol;
+	grSymbol_Rec *		Symbol;
 	struct SymListElt *	Next;
 }	SymListElt;
 
-typedef struct	jeSymbol_ListRec
+typedef struct	grSymbol_ListRec
 {
 	SymListElt *		Elts;
 	int					CurrentIndex;
 	SymListElt *		Current;
-	jeSymbol_Table *	SymbolTable;
+	grSymbol_Table *	SymbolTable;
 //	int				RefCount;
-}	jeSymbol_ListRec;
+}	grSymbol_ListRec;
 
-typedef	struct	jeSymbol_List
+typedef	struct	grSymbol_List
 {
-	jeSymbol_ListRec *		List;
-}	jeSymbol_List;
+	grSymbol_ListRec *		List;
+}	grSymbol_List;
 
 typedef	struct	Symbol_Array
 {
 	int				ElementCount;
 	int				CurrentIndex;
-	jeSymbol_Rec **	Symbols;
+	grSymbol_Rec **	Symbols;
 }	Symbol_Array;
 
 #define	QUALLIST_PROPERTY	"*QualifierListProperty*"
@@ -137,7 +137,7 @@ typedef	struct	Symbol_Array
 static	void FinalizeSymbol(void *P);
 static	void FinalizeList(void *P);
 
-static	void jeSymbol_ListDestroyNoRef(jeSymbol_List **pSymList);
+static	void grSymbol_ListDestroyNoRef(grSymbol_List **pSymList);
 
 static	unsigned short	HashValues[256];
 static	int				HashInitialized = 0;
@@ -172,28 +172,28 @@ static	unsigned short	Hash(const char *s, int Count)
 	return Value;
 }
 
-static	jeSymbol *	ReferenceSymbol(jeSymbol_Table *ST, jeSymbol_Rec *Symbol)
+static	grSymbol *	ReferenceSymbol(grSymbol_Table *ST, grSymbol_Rec *Symbol)
 {
-	jeSymbol *	HSymbol;
+	grSymbol *	HSymbol;
 	
 	assert(ST);
 	assert(Symbol);
 
-	HSymbol = (jeSymbol *)RefPool_RefCreate(ST->SymbolReferences);
+	HSymbol = (grSymbol *)RefPool_RefCreate(ST->SymbolReferences);
 	if	(HSymbol)
 		HSymbol->Symbol = Symbol;
 
 	return HSymbol;
 }
 
-static	jeSymbol_List *	ReferenceList(jeSymbol_Table *ST, jeSymbol_ListRec *List)
+static	grSymbol_List *	ReferenceList(grSymbol_Table *ST, grSymbol_ListRec *List)
 {
-	jeSymbol_List *	HList;
+	grSymbol_List *	HList;
 	
 	assert(ST);
 	assert(List);
 
-	HList = (jeSymbol_List *)RefPool_RefCreate(ST->ListReferences);
+	HList = (grSymbol_List *)RefPool_RefCreate(ST->ListReferences);
 	if	(HList)
 		HList->List = List;
 
@@ -204,14 +204,14 @@ static	Symbol_Array *Symbol_ArrayCreate(int ElementCount)
 {
 	Symbol_Array *	SymArray;
 
-	SymArray = jeRam_Allocate(sizeof(*SymArray));
+	SymArray = grRam_Allocate(sizeof(*SymArray));
 	if	(!SymArray)
 		return SymArray;
 
-	SymArray->Symbols = jeRam_Allocate(sizeof(*SymArray->Symbols) * ElementCount);
+	SymArray->Symbols = grRam_Allocate(sizeof(*SymArray->Symbols) * ElementCount);
 	if	(!SymArray->Symbols)
 	{
-		jeRam_Free(SymArray);
+		grRam_Free(SymArray);
 		return NULL;
 	}
 	memset(SymArray->Symbols, 0, sizeof(*SymArray->Symbols) * ElementCount);
@@ -230,12 +230,12 @@ static	void	Symbol_ArrayDestroy(Symbol_Array **pSymArray)
 	assert(pSymArray);
 	assert(SymArray);
 
-	jeRam_Free(SymArray->Symbols);
-	jeRam_Free(SymArray);
+	grRam_Free(SymArray->Symbols);
+	grRam_Free(SymArray);
 	*pSymArray = NULL;
 }
 
-static	void	Symbol_ArrayAddSymbol(Symbol_Array *SymArray, jeSymbol_Rec *Symbol)
+static	void	Symbol_ArrayAddSymbol(Symbol_Array *SymArray, grSymbol_Rec *Symbol)
 {
 	assert(SymArray);
 	assert(Symbol);
@@ -244,9 +244,9 @@ static	void	Symbol_ArrayAddSymbol(Symbol_Array *SymArray, jeSymbol_Rec *Symbol)
 	SymArray->Symbols[SymArray->CurrentIndex++] = Symbol;
 }
 
-static	jeSymbol_Rec *	Symbol_ArrayGetSymbol(Symbol_Array *SymArray, int Index)
+static	grSymbol_Rec *	Symbol_ArrayGetSymbol(Symbol_Array *SymArray, int Index)
 {
-	jeSymbol_Rec *	Symbol;
+	grSymbol_Rec *	Symbol;
 
 	assert(SymArray);
 	assert(Index < SymArray->CurrentIndex);
@@ -256,26 +256,26 @@ static	jeSymbol_Rec *	Symbol_ArrayGetSymbol(Symbol_Array *SymArray, int Index)
 	return Symbol;
 }
 
-static	jeBoolean	jeSymbol_IsValid(const jeSymbol_Rec *Sym)
+static	grBoolean	grSymbol_IsValid(const grSymbol_Rec *Sym)
 {
 	if	(!Sym)
-		return JE_FALSE;
+		return GR_FALSE;
 
 //	if	(Sym->RefCount == 0)
-//		return JE_FALSE;
+//		return GR_FALSE;
 
 	if	(!Sym->Name)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean	jeSymbol_TableIsValid(const jeSymbol_Table *ST)
+grBoolean	grSymbol_TableIsValid(const grSymbol_Table *ST)
 {
 	int	i;
 
 	if	(!ST)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	for	(i = 0; i < NUMHASHBUCKETS; i++)
 	{
@@ -284,28 +284,28 @@ jeBoolean	jeSymbol_TableIsValid(const jeSymbol_Table *ST)
 		Elts = ST->Symbols[i]->List->Elts;
 		while	(Elts)
 		{
-			if	(!jeSymbol_IsValid(Elts->Symbol))
-				return JE_FALSE;
+			if	(!grSymbol_IsValid(Elts->Symbol))
+				return GR_FALSE;
 			Elts = Elts->Next;
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	jeSymbol_Table * JETCC jeSymbol_TableCreate(void)
+GRAPI	grSymbol_Table * GRCC grSymbol_TableCreate(void)
 {
-	jeSymbol_Table *	ST;
+	grSymbol_Table *	ST;
 	int					i;
 
-	ST = jeRam_Allocate(sizeof(*ST));
+	ST = grRam_Allocate(sizeof(*ST));
 	if	(!ST)
 		return ST;
 
-	ST->Symbols = jeRam_Allocate(sizeof(*ST->Symbols) * NUMHASHBUCKETS);
+	ST->Symbols = grRam_Allocate(sizeof(*ST->Symbols) * NUMHASHBUCKETS);
 	if	(!ST->Symbols)
 	{
-		jeRam_Free(ST);
+		grRam_Free(ST);
 		return NULL;
 	}
 
@@ -316,49 +316,49 @@ JETAPI	jeSymbol_Table * JETCC jeSymbol_TableCreate(void)
 	ST->ListReferences = RefPool_Create(LISTREF_INCREMENT);
 	if	(!ST->SymbolReferences || !ST->ListReferences)
 	{
-		jeSymbol_TableDestroy(&ST);
+		grSymbol_TableDestroy(&ST);
 		return NULL;
 	}
 
-	ST->SymbolHeap = GCHeap_Create(sizeof(jeSymbol_Rec), 100, FinalizeSymbol);
-	ST->ListHeap = GCHeap_Create(sizeof(jeSymbol_ListRec), 100, FinalizeList);
+	ST->SymbolHeap = GCHeap_Create(sizeof(grSymbol_Rec), 100, FinalizeSymbol);
+	ST->ListHeap = GCHeap_Create(sizeof(grSymbol_ListRec), 100, FinalizeList);
 	if	(!ST->SymbolHeap || !ST->ListHeap)
 	{
-		jeSymbol_TableDestroy(&ST);
+		grSymbol_TableDestroy(&ST);
 		return NULL;
 	}
 
 	for	(i = 0; i < NUMHASHBUCKETS; i++)
 	{
-		ST->Symbols[i] = jeSymbol_ListCreate(ST);
+		ST->Symbols[i] = grSymbol_ListCreate(ST);
 		if	(!ST->Symbols[i])
 		{
-			jeSymbol_TableDestroy(&ST);
+			grSymbol_TableDestroy(&ST);
 			return NULL;
 		}
 	}
 
-	ST->QualifierListProperty = jeSymbol_Create(ST, NULL, QUALLIST_PROPERTY, JE_SYMBOL_TYPE_LIST);
+	ST->QualifierListProperty = grSymbol_Create(ST, NULL, QUALLIST_PROPERTY, GR_SYMBOL_TYPE_LIST);
 	if	(!ST->QualifierListProperty)
 	{
-		jeSymbol_TableDestroy(&ST);
+		grSymbol_TableDestroy(&ST);
 		return NULL;
 	}
 
 	return ST;
 }
 
-//JETAPI	const jeSymbol_List *JETCC jeSymbol_TableGetQualifiedSymbolList(
-JETAPI	 jeSymbol_List *JETCC jeSymbol_TableGetQualifiedSymbolList(
-	const jeSymbol_Table *	ST,
-	const jeSymbol *		HQualifier)
+//GRAPI	const grSymbol_List *GRCC grSymbol_TableGetQualifiedSymbolList(
+GRAPI	 grSymbol_List *GRCC grSymbol_TableGetQualifiedSymbolList(
+	const grSymbol_Table *	ST,
+	const grSymbol *		HQualifier)
 {
-	jeSymbol_List *	List;
+	grSymbol_List *	List;
 	int				i;
 	SymListElt *	Elts;
 
 	assert(ST);
-	List = jeSymbol_ListCreate((jeSymbol_Table *)ST);
+	List = grSymbol_ListCreate((grSymbol_Table *)ST);
 	if	(!List)
 		return List;
 	
@@ -369,21 +369,21 @@ JETAPI	 jeSymbol_List *JETCC jeSymbol_TableGetQualifiedSymbolList(
 		{
 			if	((!HQualifier && !Elts->Symbol->Qualifier) || (Elts->Symbol->Qualifier == HQualifier->Symbol))
 			{
-				jeSymbol *	HSymbol;
-				HSymbol = ReferenceSymbol((jeSymbol_Table *)ST, Elts->Symbol);
+				grSymbol *	HSymbol;
+				HSymbol = ReferenceSymbol((grSymbol_Table *)ST, Elts->Symbol);
 				if	(!HSymbol)
 				{
-					jeSymbol_ListDestroy(&List);
+					grSymbol_ListDestroy(&List);
 					return NULL;
 				}
 				
-				if	(jeSymbol_ListAddSymbol(List, HSymbol) == JE_FALSE)
+				if	(grSymbol_ListAddSymbol(List, HSymbol) == GR_FALSE)
 				{
-					jeSymbol_Destroy(&HSymbol);
-					jeSymbol_ListDestroy(&List);
+					grSymbol_Destroy(&HSymbol);
+					grSymbol_ListDestroy(&List);
 					return NULL;
 				}
-				jeSymbol_Destroy(&HSymbol);
+				grSymbol_Destroy(&HSymbol);
 			}
 			Elts = Elts->Next;
 		}
@@ -392,7 +392,7 @@ JETAPI	 jeSymbol_List *JETCC jeSymbol_TableGetQualifiedSymbolList(
 }
 
 #if 0
-JETAPI	void JETCC jeSymbol_TableCreateRef(jeSymbol_Table *ST)
+GRAPI	void GRCC grSymbol_TableCreateRef(grSymbol_Table *ST)
 {
 	assert(ST);
 	assert(ST->RefCount > 0);
@@ -403,7 +403,7 @@ JETAPI	void JETCC jeSymbol_TableCreateRef(jeSymbol_Table *ST)
 #define	ST_SIGNATURE		0x30305453	/* ST00 */
 #define	ST_SIGNATURE_END	0x31305453	/* ST01 */
 
-static	jeBoolean WriteUInt(jeVFile *File, unsigned int Value)
+static	grBoolean WriteUInt(grVFile *File, unsigned int Value)
 {
 	unsigned char	Buff[5];
 	char *			pBuff;
@@ -418,10 +418,10 @@ static	jeBoolean WriteUInt(jeVFile *File, unsigned int Value)
 	}
 	assert(pBuff - Buff < 5);
 	*pBuff++ = Value;
-	return jeVFile_Write(File, Buff, pBuff - Buff);
+	return grVFile_Write(File, Buff, pBuff - Buff);
 }
 
-static	jeBoolean ReadUInt(jeVFile *File, unsigned int *Value)
+static	grBoolean ReadUInt(grVFile *File, unsigned int *Value)
 {
 	unsigned char	C;
 	int				Shift;
@@ -432,15 +432,15 @@ static	jeBoolean ReadUInt(jeVFile *File, unsigned int *Value)
 	Shift = 0;
 	do
 	{
-		if	(jeVFile_Read(File, &C, 1) == JE_FALSE)
-			return JE_FALSE;
+		if	(grVFile_Read(File, &C, 1) == GR_FALSE)
+			return GR_FALSE;
 		*Value = *Value | (((unsigned int)(C & ~0x80)) << Shift);
 		Shift += 7;
 	}	while	(C & 0x80);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean WriteString(jeVFile *File, const char *String)
+static	grBoolean WriteString(grVFile *File, const char *String)
 {
 	int	Length;
 
@@ -449,43 +449,43 @@ static	jeBoolean WriteString(jeVFile *File, const char *String)
 
 	Length = strlen(String);
 	assert(Length < 0x8000000);
-	if	(WriteUInt(File, Length) == JE_FALSE)
-		return JE_FALSE;
-	return jeVFile_Write(File, String, Length);
+	if	(WriteUInt(File, Length) == GR_FALSE)
+		return GR_FALSE;
+	return grVFile_Write(File, String, Length);
 }
 
-static	jeBoolean WriteFloat(jeVFile *File, jeFloat Float)
+static	grBoolean WriteFloat(grVFile *File, grFloat Float)
 {
-	return jeVFile_Write(File, &Float, sizeof(Float));
+	return grVFile_Write(File, &Float, sizeof(Float));
 }
 
-static	jeBoolean ReadFloat(jeVFile *File, jeFloat *Float)
+static	grBoolean ReadFloat(grVFile *File, grFloat *Float)
 {
-	return jeVFile_Read(File, Float, sizeof(*Float));
+	return grVFile_Read(File, Float, sizeof(*Float));
 }
 
-static	char *	ReadString(jeVFile *File)
+static	char *	ReadString(grVFile *File)
 {
 	int		Length;
 	char *	String;
 
 	assert(File);
 
-	if	(ReadUInt(File, &Length) == JE_FALSE)
+	if	(ReadUInt(File, &Length) == GR_FALSE)
 		return NULL;
-	String = jeRam_Allocate(Length + 1);
+	String = grRam_Allocate(Length + 1);
 	if	(!String)
 		return NULL;
-	if	(jeVFile_Read(File, String, Length) == JE_FALSE)
+	if	(grVFile_Read(File, String, Length) == GR_FALSE)
 	{
-		jeRam_Free(String);
+		grRam_Free(String);
 		return NULL;
 	}
 	String[Length] = '\0';
 	return String;
 }
 
-static	jeBoolean WriteSymbol(jeSymbol_Rec *Symbol, jeVFile *File, unsigned int *SymbolId)
+static	grBoolean WriteSymbol(grSymbol_Rec *Symbol, grVFile *File, unsigned int *SymbolId)
 {
 	unsigned char	ReferenceWritten;
 
@@ -498,12 +498,12 @@ static	jeBoolean WriteSymbol(jeSymbol_Rec *Symbol, jeVFile *File, unsigned int *
 	{
 	
 		ReferenceWritten = 0xff;
-		if	(jeVFile_Write(File, &ReferenceWritten, sizeof(ReferenceWritten)) == JE_FALSE)
-			return JE_FALSE;
-		if	(WriteUInt(File, Symbol->SymbolId) == JE_FALSE)
-			return JE_FALSE;
+		if	(grVFile_Write(File, &ReferenceWritten, sizeof(ReferenceWritten)) == GR_FALSE)
+			return GR_FALSE;
+		if	(WriteUInt(File, Symbol->SymbolId) == GR_FALSE)
+			return GR_FALSE;
 	
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	else
 	{
@@ -514,32 +514,32 @@ static	jeBoolean WriteSymbol(jeSymbol_Rec *Symbol, jeVFile *File, unsigned int *
 		Symbol->Flags |= SYMBOL_WRITING;
 
 		ReferenceWritten = 0;
-		if	(jeVFile_Write(File, &ReferenceWritten, sizeof(ReferenceWritten)) == JE_FALSE)
-			return JE_FALSE;
+		if	(grVFile_Write(File, &ReferenceWritten, sizeof(ReferenceWritten)) == GR_FALSE)
+			return GR_FALSE;
 
 		if	(Symbol->Qualifier)
 		{
 			QualifierPresent = 0xff;
-			if	(jeVFile_Write(File, &QualifierPresent, sizeof(QualifierPresent)) == JE_FALSE)
-				return JE_FALSE;
-			if	(WriteSymbol(Symbol->Qualifier, File, SymbolId) == JE_FALSE)
-				return JE_FALSE;
+			if	(grVFile_Write(File, &QualifierPresent, sizeof(QualifierPresent)) == GR_FALSE)
+				return GR_FALSE;
+			if	(WriteSymbol(Symbol->Qualifier, File, SymbolId) == GR_FALSE)
+				return GR_FALSE;
 		}
 		else
 		{
 			QualifierPresent = 0;
-			if	(jeVFile_Write(File, &QualifierPresent, sizeof(QualifierPresent)) == JE_FALSE)
-				return JE_FALSE;
+			if	(grVFile_Write(File, &QualifierPresent, sizeof(QualifierPresent)) == GR_FALSE)
+				return GR_FALSE;
 		}
 
-		if	(WriteString(File, Symbol->Name) == JE_FALSE)
-			return JE_FALSE;
+		if	(WriteString(File, Symbol->Name) == GR_FALSE)
+			return GR_FALSE;
 
-		if	(WriteUInt(File, Symbol->Type) == JE_FALSE)
-			return JE_FALSE;
+		if	(WriteUInt(File, Symbol->Type) == GR_FALSE)
+			return GR_FALSE;
 
-		if	(WriteUInt(File, Symbol->EnumValue) == JE_FALSE)
-			return JE_FALSE;
+		if	(WriteUInt(File, Symbol->EnumValue) == GR_FALSE)
+			return GR_FALSE;
 
 		Symbol->SymbolId = *SymbolId;
 		*SymbolId = *SymbolId + 1;
@@ -547,14 +547,14 @@ static	jeBoolean WriteSymbol(jeSymbol_Rec *Symbol, jeVFile *File, unsigned int *
 		Symbol->Flags &= ~SYMBOL_WRITING;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeSymbol_Rec *ReadSymbol(jeSymbol_Table *ST, jeVFile *File, Symbol_Array *SymArray)
+static	grSymbol_Rec *ReadSymbol(grSymbol_Table *ST, grVFile *File, Symbol_Array *SymArray)
 {
 	unsigned char	ReferenceWritten;
-	jeSymbol_Rec *	Qualifier;
-	jeSymbol_Type	Type;
+	grSymbol_Rec *	Qualifier;
+	grSymbol_Type	Type;
 	int				EnumValue;
 	char *			Name;
 
@@ -562,15 +562,15 @@ static	jeSymbol_Rec *ReadSymbol(jeSymbol_Table *ST, jeVFile *File, Symbol_Array 
 	assert(File);
 	assert(SymArray);
 
-	if	(jeVFile_Read(File, &ReferenceWritten, sizeof(ReferenceWritten)) == JE_FALSE)
+	if	(grVFile_Read(File, &ReferenceWritten, sizeof(ReferenceWritten)) == GR_FALSE)
 		return NULL;
 
 	if	(ReferenceWritten == 0xff)
 	{
 		unsigned int	Index;
-		jeSymbol_Rec *		Symbol;
+		grSymbol_Rec *		Symbol;
 
-		if	(ReadUInt(File, &Index) == JE_FALSE)
+		if	(ReadUInt(File, &Index) == GR_FALSE)
 			return NULL;
 		Symbol = Symbol_ArrayGetSymbol(SymArray, Index);
 		return Symbol;
@@ -578,14 +578,14 @@ static	jeSymbol_Rec *ReadSymbol(jeSymbol_Table *ST, jeVFile *File, Symbol_Array 
 	else
 	{
 		unsigned char	QualifierPresent;
-		jeSymbol *		HSymbol;
-//		jeSymbol *		HQualifier;
-		jeSymbol		LocalQualifier;
-		jeSymbol_Rec *	Symbol;
+		grSymbol *		HSymbol;
+//		grSymbol *		HQualifier;
+		grSymbol		LocalQualifier;
+		grSymbol_Rec *	Symbol;
 
 		assert(ReferenceWritten == 0);
 
-		if	(jeVFile_Read(File, &QualifierPresent, sizeof(QualifierPresent)) == JE_FALSE)
+		if	(grVFile_Read(File, &QualifierPresent, sizeof(QualifierPresent)) == GR_FALSE)
 			return NULL;
 		if	(QualifierPresent == 0xff)
 		{
@@ -602,35 +602,35 @@ static	jeSymbol_Rec *ReadSymbol(jeSymbol_Table *ST, jeVFile *File, Symbol_Array 
 		if	(!Name)
 			return NULL;
 
-		if	(ReadUInt(File, &Type) == JE_FALSE)
+		if	(ReadUInt(File, &Type) == GR_FALSE)
 		{
-			jeRam_Free(Name);
+			grRam_Free(Name);
 			return NULL;
 		}
-		if	(ReadUInt(File, &EnumValue) == JE_FALSE)
+		if	(ReadUInt(File, &EnumValue) == GR_FALSE)
 		{
-			jeRam_Free(Name);
+			grRam_Free(Name);
 			return NULL;
 		}
 
 		LocalQualifier.Symbol = Qualifier;
 		Symbol = NULL;
-		HSymbol = jeSymbol_Create(ST, Qualifier ? &LocalQualifier : NULL, Name, Type);
+		HSymbol = grSymbol_Create(ST, Qualifier ? &LocalQualifier : NULL, Name, Type);
 		if	(HSymbol)
 		{
 			Symbol = HSymbol->Symbol;
 			Symbol_ArrayAddSymbol(SymArray, Symbol);
-			jeSymbol_Destroy(&HSymbol);
+			grSymbol_Destroy(&HSymbol);
 		}
 
-		jeRam_Free(Name);
+		grRam_Free(Name);
 
 		return Symbol;
 	}
 	assert(!"Shouldn't get here");
 }
 
-static	jeBoolean WriteSymbolList(jeVFile *File, const jeSymbol_ListRec *List)
+static	grBoolean WriteSymbolList(grVFile *File, const grSymbol_ListRec *List)
 {
 	SymListElt *	Elts;
 	int				Count;
@@ -643,76 +643,76 @@ static	jeBoolean WriteSymbolList(jeVFile *File, const jeSymbol_ListRec *List)
 		assert(Elts->Symbol->Flags & SYMBOL_WRITTEN);
 		Elts = Elts->Next;
 	}
-	if	(WriteUInt(File, Count) == JE_FALSE)
-		return JE_FALSE;
+	if	(WriteUInt(File, Count) == GR_FALSE)
+		return GR_FALSE;
 
 	Elts = List->Elts;
 	while	(Elts)
 	{
-		if	(WriteUInt(File, Elts->Symbol->SymbolId) == JE_FALSE)
-			return JE_FALSE;
+		if	(WriteUInt(File, Elts->Symbol->SymbolId) == GR_FALSE)
+			return GR_FALSE;
 		Elts = Elts->Next;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean ReadSymbolList(jeSymbol_Table *ST, jeVFile *File, jeSymbol_ListRec **List, Symbol_Array *SymArray)
+static	grBoolean ReadSymbolList(grSymbol_Table *ST, grVFile *File, grSymbol_ListRec **List, Symbol_Array *SymArray)
 {
 	int				Count;
-	jeSymbol_List *	HList;
+	grSymbol_List *	HList;
 
-	HList = jeSymbol_ListCreate(ST);
+	HList = grSymbol_ListCreate(ST);
 	if	(!HList)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	*List = HList->List;
 
-	if	(ReadUInt(File, &Count) == JE_FALSE)
+	if	(ReadUInt(File, &Count) == GR_FALSE)
 	{
-		jeSymbol_ListDestroy(&HList);
-		return JE_FALSE;
+		grSymbol_ListDestroy(&HList);
+		return GR_FALSE;
 	}
 
 	while	(Count--)
 	{
 		int				Index;
-		jeSymbol_Rec *	Symbol;
-		jeSymbol *		HSymbol;
+		grSymbol_Rec *	Symbol;
+		grSymbol *		HSymbol;
 
-		if	(ReadUInt(File, &Index) == JE_FALSE)
+		if	(ReadUInt(File, &Index) == GR_FALSE)
 		{
-			jeSymbol_ListDestroy(&HList);
-			return JE_FALSE;
+			grSymbol_ListDestroy(&HList);
+			return GR_FALSE;
 		}
 
 		Symbol = Symbol_ArrayGetSymbol(SymArray, Index);
 		HSymbol = ReferenceSymbol(ST, Symbol);
 		if	(!HSymbol)
 		{
-			jeSymbol_ListDestroy(&HList);
-			return JE_FALSE;
+			grSymbol_ListDestroy(&HList);
+			return GR_FALSE;
 		}
-		if	(jeSymbol_ListAddSymbol(HList, HSymbol) == JE_FALSE)
+		if	(grSymbol_ListAddSymbol(HList, HSymbol) == GR_FALSE)
 		{
-			jeSymbol_Destroy(&HSymbol);
-			jeSymbol_ListDestroy(&HList);
-			return JE_FALSE;
+			grSymbol_Destroy(&HSymbol);
+			grSymbol_ListDestroy(&HList);
+			return GR_FALSE;
 		}
-		jeSymbol_Destroy(&HSymbol);
+		grSymbol_Destroy(&HSymbol);
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean WriteSymbolProperties(jeSymbol_Rec *Symbol, jeVFile *File)
+static	grBoolean WriteSymbolProperties(grSymbol_Rec *Symbol, grVFile *File)
 {
 	PropList *	PList;
 	int			PropertyCount;
 
 	assert(Symbol->Flags & SYMBOL_WRITTEN);
 
-	if	(WriteUInt(File, Symbol->SymbolId) == JE_FALSE)
-		return JE_FALSE;
+	if	(WriteUInt(File, Symbol->SymbolId) == GR_FALSE)
+		return GR_FALSE;
 
 	PList = Symbol->Properties;
 	PropertyCount = 0;
@@ -722,8 +722,8 @@ static	jeBoolean WriteSymbolProperties(jeSymbol_Rec *Symbol, jeVFile *File)
 		PList = PList->Next;
 	}
 
-	if	(WriteUInt(File, PropertyCount) == JE_FALSE)
-		return JE_FALSE;
+	if	(WriteUInt(File, PropertyCount) == GR_FALSE)
+		return GR_FALSE;
 
 	PList = Symbol->Properties;
 	while	(PList)
@@ -731,222 +731,222 @@ static	jeBoolean WriteSymbolProperties(jeSymbol_Rec *Symbol, jeVFile *File)
 		unsigned char	UC;
 
 		assert(PList->Symbol->Flags & SYMBOL_WRITTEN);
-		if	(WriteUInt(File, PList->Symbol->SymbolId) == JE_FALSE)
-			return JE_FALSE;
-//		if	(WriteUInt(File, PList->Symbol->Type) == JE_FALSE)
-//			return JE_FALSE;
+		if	(WriteUInt(File, PList->Symbol->SymbolId) == GR_FALSE)
+			return GR_FALSE;
+//		if	(WriteUInt(File, PList->Symbol->Type) == GR_FALSE)
+//			return GR_FALSE;
 		switch	(PList->Symbol->Type)
 		{
-		case	JE_SYMBOL_TYPE_INT:
-			if	(WriteUInt(File, PList->Value.Integer) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_INT:
+			if	(WriteUInt(File, PList->Value.Integer) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_STRING:
-			if	(WriteString(File, PList->Value.String) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_STRING:
+			if	(WriteString(File, PList->Value.String) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_FLOAT:
-			if	(WriteFloat(File, PList->Value.Float) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_FLOAT:
+			if	(WriteFloat(File, PList->Value.Float) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_VEC3D:
-			if	(WriteFloat(File, PList->Value.Vec3d.X) == JE_FALSE)
-				return JE_FALSE;
-			if	(WriteFloat(File, PList->Value.Vec3d.Y) == JE_FALSE)
-				return JE_FALSE;
-			if	(WriteFloat(File, PList->Value.Vec3d.Z) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_VEC3D:
+			if	(WriteFloat(File, PList->Value.Vec3d.X) == GR_FALSE)
+				return GR_FALSE;
+			if	(WriteFloat(File, PList->Value.Vec3d.Y) == GR_FALSE)
+				return GR_FALSE;
+			if	(WriteFloat(File, PList->Value.Vec3d.Z) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_COLOR:
-			if	(WriteFloat(File, PList->Value.Color.r) == JE_FALSE)
-				return JE_FALSE;
-			if	(WriteFloat(File, PList->Value.Color.g) == JE_FALSE)
-				return JE_FALSE;
-			if	(WriteFloat(File, PList->Value.Color.b) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_COLOR:
+			if	(WriteFloat(File, PList->Value.Color.r) == GR_FALSE)
+				return GR_FALSE;
+			if	(WriteFloat(File, PList->Value.Color.g) == GR_FALSE)
+				return GR_FALSE;
+			if	(WriteFloat(File, PList->Value.Color.b) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_BOOLEAN:
-			if	(PList->Value.Boolean == JE_TRUE)
+		case	GR_SYMBOL_TYPE_BOOLEAN:
+			if	(PList->Value.Boolean == GR_TRUE)
 				UC = 1;
 			else
 				UC = 0;
-			if	(jeVFile_Write(File, &UC, 1) == JE_FALSE)
-				return JE_FALSE;
+			if	(grVFile_Write(File, &UC, 1) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_ENUM:
-			if	(WriteUInt(File, PList->Value.Sym->SymbolId) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_ENUM:
+			if	(WriteUInt(File, PList->Value.Sym->SymbolId) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_PVOID:
+		case	GR_SYMBOL_TYPE_PVOID:
 #pragma message ("Need to implement property writers for PVOID?")
 			assert(!"Not implemented");
 			break;
 
-		case	JE_SYMBOL_TYPE_LIST:
-			if	(WriteSymbolList(File, PList->Value.List) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_LIST:
+			if	(WriteSymbolList(File, PList->Value.List) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_SYMBOL:
-			if	(WriteUInt(File, PList->Value.Sym->SymbolId) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_SYMBOL:
+			if	(WriteUInt(File, PList->Value.Sym->SymbolId) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_MODEL:
-		case	JE_SYMBOL_TYPE_PORTAL:
+		case	GR_SYMBOL_TYPE_MODEL:
+		case	GR_SYMBOL_TYPE_PORTAL:
 			assert(!"Not implemented");
 
-		case	JE_SYMBOL_TYPE_VOID:
+		case	GR_SYMBOL_TYPE_VOID:
 			assert(!"Not a legal property type");
 			break;
 		}
 		PList = PList->Next;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 static	int	TypeSizes[] =
 {
-	sizeof(int),		//JE_SYMBOL_TYPE_INT
-	sizeof(char *),		//JE_SYMBOL_TYPE_STRING
-	sizeof(jeFloat),	//JE_SYMBOL_TYPE_FLOAT
-	sizeof(jeVec3d),	//JE_SYMBOL_TYPE_VEC3D
-	sizeof(jeRGBA),		//JE_SYMBOL_TYPE_COLOR
-	sizeof(jeBoolean),	//JE_SYMBOL_TYPE_BOOLEAN
-	sizeof(jeSymbol *),	//JE_SYMBOL_TYPE_ENUM
-	sizeof(void *),		//JE_SYMBOL_TYPE_PVOID
-	sizeof(jeSymbol_List *), //JE_SYMBOL_TYPE_LIST
-	sizeof(jeSymbol *),	//JE_SYMBOL_TYPE_SYMBOL
+	sizeof(int),		//GR_SYMBOL_TYPE_INT
+	sizeof(char *),		//GR_SYMBOL_TYPE_STRING
+	sizeof(grFloat),	//GR_SYMBOL_TYPE_FLOAT
+	sizeof(grVec3d),	//GR_SYMBOL_TYPE_VEC3D
+	sizeof(grRGBA),		//GR_SYMBOL_TYPE_COLOR
+	sizeof(grBoolean),	//GR_SYMBOL_TYPE_BOOLEAN
+	sizeof(grSymbol *),	//GR_SYMBOL_TYPE_ENUM
+	sizeof(void *),		//GR_SYMBOL_TYPE_PVOID
+	sizeof(grSymbol_List *), //GR_SYMBOL_TYPE_LIST
+	sizeof(grSymbol *),	//GR_SYMBOL_TYPE_SYMBOL
 
-	0, 					//	JE_SYMBOL_TYPE_MODEL,
-	0,					//	JE_SYMBOL_TYPE_PORTAL,
+	0, 					//	GR_SYMBOL_TYPE_MODEL,
+	0,					//	GR_SYMBOL_TYPE_PORTAL,
 };
 
-static	jeBoolean SetProp(jeSymbol_Rec *Symbol, jeSymbol_Rec *Property, void *Data)
+static	grBoolean SetProp(grSymbol_Rec *Symbol, grSymbol_Rec *Property, void *Data)
 {
-	jeSymbol *	HSymbol;
-	jeSymbol *	HProperty;
-	jeBoolean	Result;
+	grSymbol *	HSymbol;
+	grSymbol *	HProperty;
+	grBoolean	Result;
 
 #pragma message ("Really horrible way of setting a property internally.  Fix this.")
 	HSymbol = ReferenceSymbol(Symbol->SymbolTable, Symbol);
 	HProperty = ReferenceSymbol(Property->SymbolTable, Property);
-	Result = jeSymbol_SetProperty(HSymbol, HProperty, Data, TypeSizes[Property->Type], Property->Type);
-	jeSymbol_Destroy(&HSymbol);
-	jeSymbol_Destroy(&HProperty);
+	Result = grSymbol_SetProperty(HSymbol, HProperty, Data, TypeSizes[Property->Type], Property->Type);
+	grSymbol_Destroy(&HSymbol);
+	grSymbol_Destroy(&HProperty);
 
 	return Result;
 }
 
-static	jeBoolean ReadSymbolProperties(jeVFile *File, jeSymbol_Table *ST, Symbol_Array *SymArray)
+static	grBoolean ReadSymbolProperties(grVFile *File, grSymbol_Table *ST, Symbol_Array *SymArray)
 {
 	int				Index;
-	jeSymbol_Rec *	Symbol;
-	jeSymbol_Rec *	Property;
+	grSymbol_Rec *	Symbol;
+	grSymbol_Rec *	Property;
 	int				Count;
 
-	if	(ReadUInt(File, &Index) == JE_FALSE)
-		return JE_FALSE;
+	if	(ReadUInt(File, &Index) == GR_FALSE)
+		return GR_FALSE;
 
 	Symbol = Symbol_ArrayGetSymbol(SymArray, Index);
-	if	(ReadUInt(File, &Count) == JE_FALSE)
-		return JE_FALSE;
+	if	(ReadUInt(File, &Count) == GR_FALSE)
+		return GR_FALSE;
 
 	while	(Count--)
 	{
-//		jeSymbol_Type	Type;
+//		grSymbol_Type	Type;
 		PropList		PEntry;
-		jeSymbol		LocalSymbol;
-		jeSymbol_List	LocalList;
+		grSymbol		LocalSymbol;
+		grSymbol_List	LocalList;
 
-		if	(ReadUInt(File, &Index) == JE_FALSE)
-			return JE_FALSE;
+		if	(ReadUInt(File, &Index) == GR_FALSE)
+			return GR_FALSE;
 		Property = Symbol_ArrayGetSymbol(SymArray, Index);
 		switch	(Property->Type)
 		{
 			unsigned char	UC;
 			int				Index;
 
-		case	JE_SYMBOL_TYPE_INT:
-			if	(ReadUInt(File, &PEntry.Value.Integer) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_INT:
+			if	(ReadUInt(File, &PEntry.Value.Integer) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_FLOAT:
-			if	(ReadFloat(File, &PEntry.Value.Float) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_FLOAT:
+			if	(ReadFloat(File, &PEntry.Value.Float) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_STRING:
+		case	GR_SYMBOL_TYPE_STRING:
 			PEntry.Value.String = ReadString(File);
 			if	(!PEntry.Value.String)
-				return JE_FALSE;
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_VEC3D:
-			if	(ReadFloat(File, &PEntry.Value.Vec3d.X) == JE_FALSE)
-				return JE_FALSE;
-			if	(ReadFloat(File, &PEntry.Value.Vec3d.Y) == JE_FALSE)
-				return JE_FALSE;
-			if	(ReadFloat(File, &PEntry.Value.Vec3d.Z) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_VEC3D:
+			if	(ReadFloat(File, &PEntry.Value.Vec3d.X) == GR_FALSE)
+				return GR_FALSE;
+			if	(ReadFloat(File, &PEntry.Value.Vec3d.Y) == GR_FALSE)
+				return GR_FALSE;
+			if	(ReadFloat(File, &PEntry.Value.Vec3d.Z) == GR_FALSE)
+				return GR_FALSE;
 			break;
 
-		case	JE_SYMBOL_TYPE_COLOR:
-			if	(ReadFloat(File, &PEntry.Value.Color.r) == JE_FALSE)
-				return JE_FALSE;
-			if	(ReadFloat(File, &PEntry.Value.Color.g) == JE_FALSE)
-				return JE_FALSE;
-			if	(ReadFloat(File, &PEntry.Value.Color.b) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_COLOR:
+			if	(ReadFloat(File, &PEntry.Value.Color.r) == GR_FALSE)
+				return GR_FALSE;
+			if	(ReadFloat(File, &PEntry.Value.Color.g) == GR_FALSE)
+				return GR_FALSE;
+			if	(ReadFloat(File, &PEntry.Value.Color.b) == GR_FALSE)
+				return GR_FALSE;
 			PEntry.Value.Color.a = 0.0f;
 			break;
 
-		case	JE_SYMBOL_TYPE_BOOLEAN:
-			if	(jeVFile_Read(File, &UC, 1) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_BOOLEAN:
+			if	(grVFile_Read(File, &UC, 1) == GR_FALSE)
+				return GR_FALSE;
 			if	(UC == 1)
-				PEntry.Value.Boolean = JE_TRUE;
+				PEntry.Value.Boolean = GR_TRUE;
 			else
 			{
 				assert(UC == 0);
-				PEntry.Value.Boolean = JE_FALSE;
+				PEntry.Value.Boolean = GR_FALSE;
 			}
 			break;
 
-		case	JE_SYMBOL_TYPE_ENUM:
-		case	JE_SYMBOL_TYPE_SYMBOL:
-			if	(ReadUInt(File, &Index) == JE_FALSE)
-				return JE_FALSE;
+		case	GR_SYMBOL_TYPE_ENUM:
+		case	GR_SYMBOL_TYPE_SYMBOL:
+			if	(ReadUInt(File, &Index) == GR_FALSE)
+				return GR_FALSE;
 			// Hacking a little bit here.
 			LocalSymbol.Symbol = Symbol_ArrayGetSymbol(SymArray, Index);
-			PEntry.Value.Sym = (jeSymbol_Rec *)&LocalSymbol;
+			PEntry.Value.Sym = (grSymbol_Rec *)&LocalSymbol;
 			break;
 
-		case	JE_SYMBOL_TYPE_PVOID:
+		case	GR_SYMBOL_TYPE_PVOID:
 			assert(!"Can't read this from a file");
 			break;
 
-		case	JE_SYMBOL_TYPE_LIST:
-			if	(ReadSymbolList(ST, File, &LocalList.List, SymArray) == JE_FALSE)
-				return JE_FALSE;
-			PEntry.Value.List = (jeSymbol_ListRec *)&LocalList;
+		case	GR_SYMBOL_TYPE_LIST:
+			if	(ReadSymbolList(ST, File, &LocalList.List, SymArray) == GR_FALSE)
+				return GR_FALSE;
+			PEntry.Value.List = (grSymbol_ListRec *)&LocalList;
 			break;
 
-		case	JE_SYMBOL_TYPE_MODEL:
-		case	JE_SYMBOL_TYPE_PORTAL:
+		case	GR_SYMBOL_TYPE_MODEL:
+		case	GR_SYMBOL_TYPE_PORTAL:
 			assert(!"Need to think about models and portals");
 			break;
 
-		case	JE_SYMBOL_TYPE_VOID:
+		case	GR_SYMBOL_TYPE_VOID:
 			assert(!"Illegal property in a file");
 			break;
 
@@ -954,22 +954,22 @@ static	jeBoolean ReadSymbolProperties(jeVFile *File, jeSymbol_Table *ST, Symbol_
 			assert(!"Unknown property type");
 		}
 
-		if	(SetProp(Symbol, Property, &PEntry.Value) == JE_FALSE)
+		if	(SetProp(Symbol, Property, &PEntry.Value) == GR_FALSE)
 		{
 			switch	(Property->Type)
 			{
-			case	JE_SYMBOL_TYPE_STRING:
-				jeRam_Free(PEntry.Value.String);
+			case	GR_SYMBOL_TYPE_STRING:
+				grRam_Free(PEntry.Value.String);
 				break;
 			}
 
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	jeBoolean JETCC jeSymbol_TableWriteToFile(const jeSymbol_Table *ST, jeVFile *File)
+GRAPI	grBoolean GRCC grSymbol_TableWriteToFile(const grSymbol_Table *ST, grVFile *File)
 {
 	int				i;
 	unsigned int	SymbolCount;
@@ -999,10 +999,10 @@ JETAPI	jeBoolean JETCC jeSymbol_TableWriteToFile(const jeSymbol_Table *ST, jeVFi
 	}
 
 	Signature = ST_SIGNATURE;
-	if	(jeVFile_Write(File, &Signature, sizeof(Signature)) == JE_FALSE)
-		return JE_FALSE;
-	if	(jeVFile_Write(File, &SymbolCount, sizeof(SymbolCount)) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(File, &Signature, sizeof(Signature)) == GR_FALSE)
+		return GR_FALSE;
+	if	(grVFile_Write(File, &SymbolCount, sizeof(SymbolCount)) == GR_FALSE)
+		return GR_FALSE;
 
 	SymbolId = 0;
 
@@ -1011,16 +1011,16 @@ JETAPI	jeBoolean JETCC jeSymbol_TableWriteToFile(const jeSymbol_Table *ST, jeVFi
 		Elts = ST->Symbols[i]->List->Elts;
 		while	(Elts)
 		{
-			if	(WriteSymbol(Elts->Symbol, File, &SymbolId) == JE_FALSE)
-				return JE_FALSE;
+			if	(WriteSymbol(Elts->Symbol, File, &SymbolId) == GR_FALSE)
+				return GR_FALSE;
 			Elts = Elts->Next;
 		}
 	}
 
 	assert(SymbolId == SymbolCount);
 
-	if	(jeVFile_Write(File, "STPROP", 6) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(File, "STPROP", 6) == GR_FALSE)
+		return GR_FALSE;
 
 	// Now do all the properties.
 	for	(i = 0; i < NUMHASHBUCKETS; i++)
@@ -1028,53 +1028,53 @@ JETAPI	jeBoolean JETCC jeSymbol_TableWriteToFile(const jeSymbol_Table *ST, jeVFi
 		Elts = ST->Symbols[i]->List->Elts;
 		while	(Elts)
 		{
-			if	(WriteSymbolProperties(Elts->Symbol, File) == JE_FALSE)
-				return JE_FALSE;
+			if	(WriteSymbolProperties(Elts->Symbol, File) == GR_FALSE)
+				return GR_FALSE;
 			Elts = Elts->Next;
 		}
 	}
 
 	Signature = ST_SIGNATURE_END;
-	if	(jeVFile_Write(File, &Signature, sizeof(Signature)) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(File, &Signature, sizeof(Signature)) == GR_FALSE)
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	jeSymbol_Table *JETCC jeSymbol_TableCreateFromFile(jeVFile *File)
+GRAPI	grSymbol_Table *GRCC grSymbol_TableCreateFromFile(grVFile *File)
 {
-	jeSymbol_Table *	ST;
+	grSymbol_Table *	ST;
 	int					SymbolCount;
 	unsigned int		Signature;
-//	jeSymbol **			SymArray;
+//	grSymbol **			SymArray;
 	Symbol_Array *		SymArray;
 //	int					SymbolId;
-//	jeSymbol_Rec *		Symbol;
+//	grSymbol_Rec *		Symbol;
 	char				PropSignature[6];
 	int					i;
 
 	assert(File);
 
-	if	(jeVFile_Read(File, &Signature, sizeof(Signature)) == JE_FALSE)
+	if	(grVFile_Read(File, &Signature, sizeof(Signature)) == GR_FALSE)
 		return NULL;
-	if	(jeVFile_Read(File, &SymbolCount, sizeof(SymbolCount)) == JE_FALSE)
+	if	(grVFile_Read(File, &SymbolCount, sizeof(SymbolCount)) == GR_FALSE)
 		return NULL;
 
 	if	(Signature != ST_SIGNATURE)
 		return NULL;
 
-	ST = jeSymbol_TableCreate();
+	ST = grSymbol_TableCreate();
 	if	(!ST)
 		return ST;
 
 	if	(SymbolCount > 0)
 	{
 //		SymbolId = 0;
-//			SymArray = jeRam_Allocate(sizeof(*SymArray) * SymbolCount);
+//			SymArray = grRam_Allocate(sizeof(*SymArray) * SymbolCount);
 		SymArray = Symbol_ArrayCreate(SymbolCount);
 		if	(!SymArray)
 		{
-			jeSymbol_TableDestroy(&ST);
+			grSymbol_TableDestroy(&ST);
 			return NULL;
 		}
 
@@ -1082,45 +1082,45 @@ JETAPI	jeSymbol_Table *JETCC jeSymbol_TableCreateFromFile(jeVFile *File)
 		{
 			if	(ReadSymbol(ST, File, SymArray) == NULL)
 			{
-				jeRam_Free(SymArray);
-				jeSymbol_TableDestroy(&ST);
+				grRam_Free(SymArray);
+				grSymbol_TableDestroy(&ST);
 				return NULL;
 			}
 		}
 //		Symbol_ArrayDestroy(&SymArray);
 	}
 
-	if	(jeVFile_Read(File, PropSignature, 6) == JE_FALSE)
+	if	(grVFile_Read(File, PropSignature, 6) == GR_FALSE)
 	{
 		if	(SymArray)
 			Symbol_ArrayDestroy(&SymArray);
-		jeSymbol_TableDestroy(&ST);
+		grSymbol_TableDestroy(&ST);
 		return NULL;
 	}
 	if	(strncmp(PropSignature, "STPROP", 6))
 	{
 		if	(SymArray)
 			Symbol_ArrayDestroy(&SymArray);
-		jeSymbol_TableDestroy(&ST);
+		grSymbol_TableDestroy(&ST);
 		return NULL;
 	}
 
 	for	(i = 0; i < SymbolCount; i++)
 	{
-		if	(ReadSymbolProperties(File, ST, SymArray) == JE_FALSE)
+		if	(ReadSymbolProperties(File, ST, SymArray) == GR_FALSE)
 		{
 			if	(SymArray)
 				Symbol_ArrayDestroy(&SymArray);
-			jeSymbol_TableDestroy(&ST);
+			grSymbol_TableDestroy(&ST);
 			return NULL;
 		}
 	}
 
-	if	(jeVFile_Read(File, &Signature, sizeof(Signature)) == JE_FALSE)
+	if	(grVFile_Read(File, &Signature, sizeof(Signature)) == GR_FALSE)
 	{
 		if	(SymArray)
 			Symbol_ArrayDestroy(&SymArray);
-		jeSymbol_TableDestroy(&ST);
+		grSymbol_TableDestroy(&ST);
 		return NULL;
 	}
 
@@ -1128,7 +1128,7 @@ JETAPI	jeSymbol_Table *JETCC jeSymbol_TableCreateFromFile(jeVFile *File)
 	{
 		if	(SymArray)
 			Symbol_ArrayDestroy(&SymArray);
-		jeSymbol_TableDestroy(&ST);
+		grSymbol_TableDestroy(&ST);
 		return NULL;
 	}
 
@@ -1138,9 +1138,9 @@ JETAPI	jeSymbol_Table *JETCC jeSymbol_TableCreateFromFile(jeVFile *File)
 	return ST;
 }
 
-JETAPI	void JETCC jeSymbol_TableDestroy(jeSymbol_Table **pST)
+GRAPI	void GRCC grSymbol_TableDestroy(grSymbol_Table **pST)
 {
-	jeSymbol_Table *	ST;
+	grSymbol_Table *	ST;
 	int					i;
 
 	assert(pST);
@@ -1156,12 +1156,12 @@ JETAPI	void JETCC jeSymbol_TableDestroy(jeSymbol_Table **pST)
 	assert(ST->Symbols);
 
 	if	(ST->QualifierListProperty)
-		jeSymbol_Destroy(&ST->QualifierListProperty);
+		grSymbol_Destroy(&ST->QualifierListProperty);
 
 	for	(i = 0; i < NUMHASHBUCKETS; i++)
 	{
 		assert(ST->Symbols[i]);
-		jeSymbol_ListDestroy(&ST->Symbols[i]);
+		grSymbol_ListDestroy(&ST->Symbols[i]);
 	}
 
 	if	(ST->SymbolReferences)
@@ -1182,27 +1182,27 @@ JETAPI	void JETCC jeSymbol_TableDestroy(jeSymbol_Table **pST)
 		GCHeap_Destroy(&ST->ListHeap);
 	}
 
-	jeRam_Free(ST->Symbols);
-	jeRam_Free(ST);
+	grRam_Free(ST->Symbols);
+	grRam_Free(ST);
 //TempST = NULL;
 	*pST = NULL;
 }
 
-JETAPI	jeSymbol *JETCC jeSymbol_TableFindSymbol(
-	jeSymbol_Table *	ST,
-	jeSymbol *			HQualifier,
+GRAPI	grSymbol *GRCC grSymbol_TableFindSymbol(
+	grSymbol_Table *	ST,
+	grSymbol *			HQualifier,
 	const char *		Name)
 {
 	unsigned short	HashValue;
 	int				Length;
 	SymListElt *	Elts;
-	jeSymbol_Rec *	Sym;
-	jeSymbol_Rec *	Qualifier;
+	grSymbol_Rec *	Sym;
+	grSymbol_Rec *	Qualifier;
 
 	assert(ST);
 	assert(Name);
 
-	assert(jeSymbol_TableIsValid(ST) == JE_TRUE);
+	assert(grSymbol_TableIsValid(ST) == GR_TRUE);
 
 	Length = strlen(Name);
 
@@ -1243,24 +1243,24 @@ JETAPI	jeSymbol *JETCC jeSymbol_TableFindSymbol(
 }
 
 #if 1
-typedef	jeBoolean	(*SymbolWalker)(jeSymbol_Rec *Symbol);
-typedef	jeBoolean	(*ListWalker)(jeSymbol_ListRec *List, SymbolWalker Walker);
+typedef	grBoolean	(*SymbolWalker)(grSymbol_Rec *Symbol);
+typedef	grBoolean	(*ListWalker)(grSymbol_ListRec *List, SymbolWalker Walker);
 
-static	jeBoolean	WalkListWithoutReference(jeSymbol_ListRec *List, SymbolWalker Walker)
+static	grBoolean	WalkListWithoutReference(grSymbol_ListRec *List, SymbolWalker Walker)
 {
 	SymListElt *	Elts;
 
 	Elts = List->Elts;
 	while	(Elts)
 	{
-		if	((Walker)(Elts->Symbol) == JE_FALSE)
-			return JE_FALSE;
+		if	((Walker)(Elts->Symbol) == GR_FALSE)
+			return GR_FALSE;
 		Elts = Elts->Next;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	WalkListAndMark(jeSymbol_ListRec *List, SymbolWalker Walker)
+static	grBoolean	WalkListAndMark(grSymbol_ListRec *List, SymbolWalker Walker)
 {
 	SymListElt *	Elts;
 
@@ -1272,38 +1272,38 @@ static	jeBoolean	WalkListAndMark(jeSymbol_ListRec *List, SymbolWalker Walker)
 	Elts = List->Elts;
 	while	(Elts)
 	{
-		if	((Walker)(Elts->Symbol) == JE_FALSE)
-			return JE_FALSE;
+		if	((Walker)(Elts->Symbol) == GR_FALSE)
+			return GR_FALSE;
 		Elts = Elts->Next;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	void	jeSymbol_Walk(jeSymbol_Rec *Symbol, SymbolWalker Walker, ListWalker LWalker)
+static	void	grSymbol_Walk(grSymbol_Rec *Symbol, SymbolWalker Walker, ListWalker LWalker)
 {
 	PropList *		PList;
 
 	if	(Symbol->Qualifier)
 	{
-		if	((Walker)(Symbol->Qualifier) == JE_FALSE)
+		if	((Walker)(Symbol->Qualifier) == GR_FALSE)
 			return;
 	}
 
 	PList = Symbol->Properties;
 	while	(PList)
 	{
-		if	((Walker)(PList->Symbol) == JE_FALSE)
+		if	((Walker)(PList->Symbol) == GR_FALSE)
 			return;
 		switch	(PList->Symbol->Type)
 		{
-		case	JE_SYMBOL_TYPE_ENUM:
-		case	JE_SYMBOL_TYPE_SYMBOL:
-			if	((Walker)(PList->Value.Sym) == JE_FALSE)
+		case	GR_SYMBOL_TYPE_ENUM:
+		case	GR_SYMBOL_TYPE_SYMBOL:
+			if	((Walker)(PList->Value.Sym) == GR_FALSE)
 				return;
 			break;
 
-		case	JE_SYMBOL_TYPE_LIST:
-			if	((LWalker)(PList->Value.List, Walker) == JE_FALSE)
+		case	GR_SYMBOL_TYPE_LIST:
+			if	((LWalker)(PList->Value.List, Walker) == GR_FALSE)
 				return;
 			break;
 		}
@@ -1312,25 +1312,25 @@ static	void	jeSymbol_Walk(jeSymbol_Rec *Symbol, SymbolWalker Walker, ListWalker 
 }
 #endif
 
-JETAPI	jeSymbol *JETCC jeSymbol_Create(
-	jeSymbol_Table *	ST,
-	jeSymbol *			HQualifier,
+GRAPI	grSymbol *GRCC grSymbol_Create(
+	grSymbol_Table *	ST,
+	grSymbol *			HQualifier,
 	const char *		Name,
-	jeSymbol_Type		Type)
+	grSymbol_Type		Type)
 {
 	unsigned short		HashValue;
 	int					Length;
 	SymListElt *		Elts;
-	jeSymbol_ListRec *	SymList;
-	jeSymbol_Rec *		Sym;
-	jeSymbol_Rec *		Qualifier;
-	jeSymbol *			HSymbol;
-	jeSymbol_List		List;
+	grSymbol_ListRec *	SymList;
+	grSymbol_Rec *		Sym;
+	grSymbol_Rec *		Qualifier;
+	grSymbol *			HSymbol;
+	grSymbol_List		List;
 
 	assert(ST);
 	assert(Name);
 
-	assert(jeSymbol_TableIsValid(ST) == JE_TRUE);
+	assert(grSymbol_TableIsValid(ST) == GR_TRUE);
 
 	if	(HQualifier)
 		Qualifier = HQualifier->Symbol;
@@ -1361,17 +1361,17 @@ JETAPI	jeSymbol *JETCC jeSymbol_Create(
 	if	(Elts)
 	{
 		assert(Sym);
-//		jeSymbol_CreateRef(Sym);
+//		grSymbol_CreateRef(Sym);
 		return ReferenceSymbol(Sym->SymbolTable, Sym);
 //		return Sym;
 	}
 
 	// Didn't find it.  Create one.
-//	Sym = jeRam_Allocate(sizeof(*Sym));
+//	Sym = grRam_Allocate(sizeof(*Sym));
 	Sym = GCHeap_AllocateFixed(ST->SymbolHeap);
 	if	(!Sym)
 		return NULL;
-	Sym->Name = jeRam_Allocate(Length + 1);
+	Sym->Name = grRam_Allocate(Length + 1);
 	if	(!Sym->Name)
 		return NULL;
 
@@ -1386,20 +1386,20 @@ JETAPI	jeSymbol *JETCC jeSymbol_Create(
 //	Sym->RefCount = 1;
 	Sym->Flags = 0;
 //	if	(Qualifier)
-//		jeSymbol_CreateRef(Qualifier);
+//		grSymbol_CreateRef(Qualifier);
 
 	SymList = ST->Symbols[HashValue % NUMHASHBUCKETS]->List;
 
-	HSymbol = (jeSymbol *)RefPool_RefCreate(ST->SymbolReferences);
+	HSymbol = (grSymbol *)RefPool_RefCreate(ST->SymbolReferences);
 	HSymbol->Symbol = Sym;
 
 	List.List = SymList;
-	if	(jeSymbol_ListAddSymbol(&List, HSymbol) == JE_FALSE)
+	if	(grSymbol_ListAddSymbol(&List, HSymbol) == GR_FALSE)
 	{
 //		if	(Qualifier)
-//			jeSymbol_Destroy(&Qualifier);
-		jeRam_Free(Sym->Name);
-//		jeRam_Free(Sym);
+//			grSymbol_Destroy(&Qualifier);
+		grRam_Free(Sym->Name);
+//		grRam_Free(Sym);
 		return NULL;
 	}
 
@@ -1409,12 +1409,12 @@ JETAPI	jeSymbol *JETCC jeSymbol_Create(
 	return HSymbol;
 }
 
-JETAPI	jeBoolean JETCC jeSymbol_Compare(const jeSymbol *S1, const jeSymbol *S2)
+GRAPI	grBoolean GRCC grSymbol_Compare(const grSymbol *S1, const grSymbol *S2)
 {
 	if	(S1->Symbol == S2->Symbol)
-		return JE_TRUE;
+		return GR_TRUE;
 	else
-		return JE_FALSE;
+		return GR_FALSE;
 }
 
 static	char *	DuplicateString(const char *S)
@@ -1425,15 +1425,15 @@ static	char *	DuplicateString(const char *S)
 	assert(S);
 
 	Length = strlen(S) + 1;
-	Result = jeRam_Allocate(Length);
+	Result = grRam_Allocate(Length);
 	if	(Result)
 		memcpy(Result, S, Length);
 	return Result;
 }
 
-JETAPI	jeBoolean JETCC jeSymbol_Rename(jeSymbol *HSymbol, const char *NewName)
+GRAPI	grBoolean GRCC grSymbol_Rename(grSymbol *HSymbol, const char *NewName)
 {
-	jeSymbol_Rec *	Symbol;
+	grSymbol_Rec *	Symbol;
 	unsigned short	HashValue;
 	int				Length;
 	char *			NewNameCopy;
@@ -1448,46 +1448,46 @@ JETAPI	jeBoolean JETCC jeSymbol_Rename(jeSymbol *HSymbol, const char *NewName)
 //		HashValue += Symbol->Qualifier->HashValue;
 	NewNameCopy = DuplicateString(NewName);
 	if	(!NewNameCopy)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if	(jeSymbol_ListAddSymbol(Symbol->SymbolTable->Symbols[HashValue % NUMHASHBUCKETS], HSymbol) == JE_FALSE)
+	if	(grSymbol_ListAddSymbol(Symbol->SymbolTable->Symbols[HashValue % NUMHASHBUCKETS], HSymbol) == GR_FALSE)
 	{
-		jeRam_Free(NewNameCopy);
-		return JE_FALSE;
+		grRam_Free(NewNameCopy);
+		return GR_FALSE;
 	}
-	jeRam_Free(Symbol->Name);
+	grRam_Free(Symbol->Name);
 	Symbol->Name = NewNameCopy;
 	Symbol->HashValue = HashValue;
-	jeSymbol_ListRemoveSymbol(Symbol->SymbolTable->Symbols[Symbol->HashValue % NUMHASHBUCKETS], HSymbol);
-	return JE_TRUE;
+	grSymbol_ListRemoveSymbol(Symbol->SymbolTable->Symbols[Symbol->HashValue % NUMHASHBUCKETS], HSymbol);
+	return GR_TRUE;
 }
 
-static	jeBoolean jeSymbol_MarkSymbol(jeSymbol_Rec *Sym)
+static	grBoolean grSymbol_MarkSymbol(grSymbol_Rec *Sym)
 {
 	assert(Sym);
 
 	if	(Sym->Flags & SYMBOL_MARKED)
-		return JE_TRUE;
+		return GR_TRUE;
 
 	Sym->Flags |= SYMBOL_MARKED;
 	GCHeap_MarkObject(Sym);
-	jeSymbol_Walk(Sym, jeSymbol_MarkSymbol, WalkListAndMark);
-	return JE_TRUE;
+	grSymbol_Walk(Sym, grSymbol_MarkSymbol, WalkListAndMark);
+	return GR_TRUE;
 }
 
-static	jeBoolean jeSymbol_ClearMarks(jeSymbol_Rec *Sym)
+static	grBoolean grSymbol_ClearMarks(grSymbol_Rec *Sym)
 {
 	assert(Sym);
 
 	if	(!(Sym->Flags & SYMBOL_MARKED))
-		return JE_TRUE;
+		return GR_TRUE;
 
 	Sym->Flags &= ~SYMBOL_MARKED;
-	jeSymbol_Walk(Sym, jeSymbol_ClearMarks, WalkListWithoutReference);
-	return JE_TRUE;
+	grSymbol_Walk(Sym, grSymbol_ClearMarks, WalkListWithoutReference);
+	return GR_TRUE;
 }
 
-JETAPI	void JETCC jeSymbol_TableCollectGarbage(jeSymbol_Table *ST)
+GRAPI	void GRCC grSymbol_TableCollectGarbage(grSymbol_Table *ST)
 {
 	void **	Ref;
 
@@ -1502,14 +1502,14 @@ JETAPI	void JETCC jeSymbol_TableCollectGarbage(jeSymbol_Table *ST)
 	Ref = RefPool_GetNextRef(ST->SymbolReferences, NULL);
 	while	(Ref)
 	{
-		jeSymbol_MarkSymbol(*Ref);
+		grSymbol_MarkSymbol(*Ref);
 		Ref = RefPool_GetNextRef(ST->SymbolReferences, Ref);
 	}
 
 	Ref = RefPool_GetNextRef(ST->ListReferences, NULL);
 	while	(Ref)
 	{
-		WalkListAndMark(*Ref, jeSymbol_MarkSymbol);
+		WalkListAndMark(*Ref, grSymbol_MarkSymbol);
 		Ref = RefPool_GetNextRef(ST->ListReferences, Ref);
 	}
 
@@ -1519,19 +1519,19 @@ JETAPI	void JETCC jeSymbol_TableCollectGarbage(jeSymbol_Table *ST)
 	Ref = RefPool_GetNextRef(ST->SymbolReferences, NULL);
 	while	(Ref)
 	{
-		jeSymbol_ClearMarks(*Ref);
+		grSymbol_ClearMarks(*Ref);
 		Ref = RefPool_GetNextRef(ST->SymbolReferences, Ref);
 	}
 
 	Ref = RefPool_GetNextRef(ST->ListReferences, NULL);
 	while	(Ref)
 	{
-		WalkListWithoutReference(*Ref, jeSymbol_ClearMarks);
+		WalkListWithoutReference(*Ref, grSymbol_ClearMarks);
 		Ref = RefPool_GetNextRef(ST->ListReferences, Ref);
 	}
 }
 
-JETAPI	void JETCC jeSymbol_CreateRef(jeSymbol *HS, jeSymbol **Result)
+GRAPI	void GRCC grSymbol_CreateRef(grSymbol *HS, grSymbol **Result)
 {
 	assert(HS);
 	assert(HS->Symbol);
@@ -1541,7 +1541,7 @@ JETAPI	void JETCC jeSymbol_CreateRef(jeSymbol *HS, jeSymbol **Result)
 static	void FinalizeSymbol(void *P)
 {
 	PropList *		PList;
-	jeSymbol_Rec *	Symbol;
+	grSymbol_Rec *	Symbol;
 
 	assert(P);
 
@@ -1556,20 +1556,20 @@ static	void FinalizeSymbol(void *P)
 
 		assert(PList->Symbol);
 
-		if	(PList->Symbol->Type == JE_SYMBOL_TYPE_STRING)
+		if	(PList->Symbol->Type == GR_SYMBOL_TYPE_STRING)
 		{
 			assert(PList->Value.String);
-			jeRam_Free(PList->Value.String);
+			grRam_Free(PList->Value.String);
 		}
 		Temp = PList;
 		PList = PList->Next;
-		jeRam_Free(Temp);
+		grRam_Free(Temp);
 	}
 
-	jeRam_Free(Symbol->Name);
+	grRam_Free(Symbol->Name);
 }
 
-JETAPI	void JETCC jeSymbol_Destroy(jeSymbol **pHS)
+GRAPI	void GRCC grSymbol_Destroy(grSymbol **pHS)
 {
 	assert(pHS);
 	assert(*pHS);
@@ -1577,16 +1577,16 @@ JETAPI	void JETCC jeSymbol_Destroy(jeSymbol **pHS)
 	RefPool_RefDestroy((*pHS)->Symbol->SymbolTable->SymbolReferences, (void ***)pHS);
 }
 
-JETAPI	jeSymbol_Type JETCC jeSymbol_GetType(const jeSymbol *HSym)
+GRAPI	grSymbol_Type GRCC grSymbol_GetType(const grSymbol *HSym)
 {
 	assert(HSym);
 	assert(HSym->Symbol);
 	return HSym->Symbol->Type;
 }
 
-JETAPI	jeSymbol *JETCC jeSymbol_GetQualifier(const jeSymbol *HSym)
+GRAPI	grSymbol *GRCC grSymbol_GetQualifier(const grSymbol *HSym)
 {
-	jeSymbol_Rec *	Sym;
+	grSymbol_Rec *	Sym;
 
 	assert(HSym);
 	assert(HSym->Symbol);
@@ -1596,7 +1596,7 @@ JETAPI	jeSymbol *JETCC jeSymbol_GetQualifier(const jeSymbol *HSym)
 	return ReferenceSymbol(Sym->SymbolTable, Sym->Qualifier);
 }
 
-static	PropList *	JETCC FindProperty(PropList *List, const jeSymbol_Rec *Sym)
+static	PropList *	GRCC FindProperty(PropList *List, const grSymbol_Rec *Sym)
 {
 //	assert(List);
 	assert(Sym);
@@ -1607,17 +1607,17 @@ static	PropList *	JETCC FindProperty(PropList *List, const jeSymbol_Rec *Sym)
 	return List;
 }
 
-JETAPI	jeBoolean JETCC jeSymbol_SetProperty(
-	jeSymbol *		HSym,
-	jeSymbol *		HProperty,
+GRAPI	grBoolean GRCC grSymbol_SetProperty(
+	grSymbol *		HSym,
+	grSymbol *		HProperty,
 	const void *	Data,
 	int 			DataLength,
-	jeSymbol_Type	Type)
+	grSymbol_Type	Type)
 {
-	jeSymbol_Rec *	Sym;
-	jeSymbol_Rec *	Property;
+	grSymbol_Rec *	Sym;
+	grSymbol_Rec *	Property;
 	PropList *	Prop;
-	jeBoolean	IsNewProperty;
+	grBoolean	IsNewProperty;
 
 	assert(HSym);
 	assert(HSym->Symbol);
@@ -1630,81 +1630,81 @@ JETAPI	jeBoolean JETCC jeSymbol_SetProperty(
 	Property = HProperty->Symbol;
 
 	if	(Type != Property->Type)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Prop = FindProperty(Sym->Properties, Property);
 	if	(!Prop)
 	{
-		Prop = jeRam_Allocate(sizeof(*Prop));
+		Prop = grRam_Allocate(sizeof(*Prop));
 		if	(!Prop)
-			return JE_FALSE;
+			return GR_FALSE;
 		Prop->Symbol = Property;
-		IsNewProperty = JE_TRUE;
+		IsNewProperty = GR_TRUE;
 	}
 	else
 	{
-		IsNewProperty = JE_FALSE;
+		IsNewProperty = GR_FALSE;
 	}
 
 	switch	(Type)
 	{
-	case	JE_SYMBOL_TYPE_INT:
+	case	GR_SYMBOL_TYPE_INT:
 		if	(DataLength != sizeof(Prop->Value.Integer))
 			goto fail;
 		assert(sizeof(Prop->Value.Integer) == sizeof(int));
 		Prop->Value.Integer = *(int *)Data;
 		break;
 
-	case	JE_SYMBOL_TYPE_FLOAT:
+	case	GR_SYMBOL_TYPE_FLOAT:
 		if	(DataLength != sizeof(Prop->Value.Float))
 			goto fail;
-		assert(sizeof(Prop->Value.Float) == sizeof(jeFloat));
-		Prop->Value.Float = *(jeFloat *)Data;
+		assert(sizeof(Prop->Value.Float) == sizeof(grFloat));
+		Prop->Value.Float = *(grFloat *)Data;
 		break;
 
-	case	JE_SYMBOL_TYPE_VEC3D:
+	case	GR_SYMBOL_TYPE_VEC3D:
 		if	(DataLength != sizeof(Prop->Value.Vec3d))
 			goto fail;
-		assert(sizeof(Prop->Value.Vec3d) == sizeof(jeVec3d));
-		Prop->Value.Vec3d = *(jeVec3d *)Data;
+		assert(sizeof(Prop->Value.Vec3d) == sizeof(grVec3d));
+		Prop->Value.Vec3d = *(grVec3d *)Data;
 		break;
 
-	case	JE_SYMBOL_TYPE_COLOR:
+	case	GR_SYMBOL_TYPE_COLOR:
 		if	(DataLength != sizeof(Prop->Value.Color))
 			goto fail;
-		assert(sizeof(Prop->Value.Color) == sizeof(JE_RGBA));
-		Prop->Value.Color = *(JE_RGBA *)Data;
+		assert(sizeof(Prop->Value.Color) == sizeof(GR_RGBA));
+		Prop->Value.Color = *(GR_RGBA *)Data;
 		break;
 
-	case	JE_SYMBOL_TYPE_BOOLEAN:
+	case	GR_SYMBOL_TYPE_BOOLEAN:
 		if	(DataLength != sizeof(Prop->Value.Boolean))
 			goto fail;
-		assert(sizeof(Prop->Value.Boolean) == sizeof(jeBoolean));
-		Prop->Value.Boolean = *(jeBoolean *)Data;
+		assert(sizeof(Prop->Value.Boolean) == sizeof(grBoolean));
+		Prop->Value.Boolean = *(grBoolean *)Data;
 		break;
 
-	case	JE_SYMBOL_TYPE_STRING:
+	case	GR_SYMBOL_TYPE_STRING:
 		Prop->Value.String = DuplicateString(Data);
 		if	(!Prop->Value.String)
 			goto fail;
 		break;
 
-	case	JE_SYMBOL_TYPE_ENUM:
-	case	JE_SYMBOL_TYPE_SYMBOL:
+	case	GR_SYMBOL_TYPE_ENUM:
+	case	GR_SYMBOL_TYPE_SYMBOL:
 		if	(DataLength != sizeof(Prop->Value.Sym))
 			goto fail;
-		assert(sizeof(Prop->Value.Sym) == sizeof(jeSymbol *));
-		Prop->Value.Sym = (*(jeSymbol **)Data)->Symbol;
+		assert(sizeof(Prop->Value.Sym) == sizeof(grSymbol *));
+		Prop->Value.Sym = (*(grSymbol **)Data)->Symbol;
 		break;
 
-	case	JE_SYMBOL_TYPE_LIST:
+	case	GR_SYMBOL_TYPE_LIST:
 		if	(DataLength != sizeof(Prop->Value.List))
 			goto fail;
-		assert(sizeof(Prop->Value.List) == sizeof(jeSymbol_List *));
-		Prop->Value.List = (*(jeSymbol_List **)Data)->List;
+		assert(sizeof(Prop->Value.List) == sizeof(grSymbol_List *));
+		Prop->Value.List = (*(grSymbol_List **)Data)->List;
 
 		if	(++Sym->SymbolTable->GCAbleOperationCount > GCABLE_OP_COUNT_THRESHHOLD)
-			jeSymbol_TableCollectGarbage(Sym->SymbolTable);
+			grSymbol_TableCollectGarbage(Sym->SymbolTable);
 
 		break;
 
@@ -1713,31 +1713,31 @@ JETAPI	jeBoolean JETCC jeSymbol_SetProperty(
 		assert(!"Not implemented");
 	}
 
-	if	(IsNewProperty == JE_TRUE)
+	if	(IsNewProperty == GR_TRUE)
 	{
 		Prop->Next = Sym->Properties;
 		Sym->Properties = Prop;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 fail:
-	if	(IsNewProperty == JE_TRUE)
-		jeRam_Free(Prop);
-	return JE_FALSE;
+	if	(IsNewProperty == GR_TRUE)
+		grRam_Free(Prop);
+	return GR_FALSE;
 }
 
-JETAPI	jeBoolean JETCC jeSymbol_GetProperty(
-	jeSymbol *	HSym,
-	jeSymbol *	HProperty,
+GRAPI	grBoolean GRCC grSymbol_GetProperty(
+	grSymbol *	HSym,
+	grSymbol *	HProperty,
 	void *				Data,
 	int 				DataLength,
-	jeSymbol_Type 		Type)
+	grSymbol_Type 		Type)
 {
-	jeSymbol_Rec *	Sym;
-	jeSymbol_Rec *	Property;
+	grSymbol_Rec *	Sym;
+	grSymbol_Rec *	Property;
 	PropList *		Prop;
-//	jeBoolean		Result;
+//	grBoolean		Result;
 
 	assert(HSym);
 	assert(HSym->Symbol);
@@ -1751,70 +1751,70 @@ JETAPI	jeBoolean JETCC jeSymbol_GetProperty(
 
 	Prop = FindProperty(Sym->Properties, Property);
 	if	(!Prop)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if	(Property->Type != Type)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	switch	(Type)
 	{
-	case	JE_SYMBOL_TYPE_INT:
+	case	GR_SYMBOL_TYPE_INT:
 		if	(DataLength != sizeof(Prop->Value.Integer))
-			return JE_FALSE;
+			return GR_FALSE;
 		assert(sizeof(Prop->Value.Integer) == sizeof(int));
 		*(int *)Data = Prop->Value.Integer;
 		break;
 
-	case	JE_SYMBOL_TYPE_FLOAT:
+	case	GR_SYMBOL_TYPE_FLOAT:
 		if	(DataLength != sizeof(Prop->Value.Float))
-			return JE_FALSE;
-		assert(sizeof(Prop->Value.Float) == sizeof(jeFloat));
-		*(jeFloat *)Data = Prop->Value.Float;
+			return GR_FALSE;
+		assert(sizeof(Prop->Value.Float) == sizeof(grFloat));
+		*(grFloat *)Data = Prop->Value.Float;
 		break;
 
-	case	JE_SYMBOL_TYPE_VEC3D:
+	case	GR_SYMBOL_TYPE_VEC3D:
 		if	(DataLength != sizeof(Prop->Value.Vec3d))
-			return JE_FALSE;
-		assert(sizeof(Prop->Value.Vec3d) == sizeof(jeVec3d));
-		*(jeVec3d *)Data = Prop->Value.Vec3d;
+			return GR_FALSE;
+		assert(sizeof(Prop->Value.Vec3d) == sizeof(grVec3d));
+		*(grVec3d *)Data = Prop->Value.Vec3d;
 		break;
 
-	case	JE_SYMBOL_TYPE_COLOR:
+	case	GR_SYMBOL_TYPE_COLOR:
 		if	(DataLength != sizeof(Prop->Value.Color))
-			return JE_FALSE;
-		assert(sizeof(Prop->Value.Color) == sizeof(JE_RGBA));
-		*(JE_RGBA *)Data = Prop->Value.Color;
+			return GR_FALSE;
+		assert(sizeof(Prop->Value.Color) == sizeof(GR_RGBA));
+		*(GR_RGBA *)Data = Prop->Value.Color;
 		break;
 
-	case	JE_SYMBOL_TYPE_BOOLEAN:
+	case	GR_SYMBOL_TYPE_BOOLEAN:
 		if	(DataLength != sizeof(Prop->Value.Boolean))
-			return JE_FALSE;
-		assert(sizeof(Prop->Value.Boolean) == sizeof(jeBoolean));
-		*(jeBoolean *)Data = Prop->Value.Boolean;
+			return GR_FALSE;
+		assert(sizeof(Prop->Value.Boolean) == sizeof(grBoolean));
+		*(grBoolean *)Data = Prop->Value.Boolean;
 		break;
 
-	case	JE_SYMBOL_TYPE_STRING:
+	case	GR_SYMBOL_TYPE_STRING:
 		assert(sizeof(Prop->Value.String) == sizeof(char *));
 		*(char **)Data = Prop->Value.String;
 		break;
 
-	case	JE_SYMBOL_TYPE_ENUM:
-	case	JE_SYMBOL_TYPE_SYMBOL:
+	case	GR_SYMBOL_TYPE_ENUM:
+	case	GR_SYMBOL_TYPE_SYMBOL:
 		if	(DataLength != sizeof(Prop->Value.Sym))
-			return JE_FALSE;
-		assert(sizeof(Prop->Value.Sym) == sizeof(jeSymbol *));
-		*(jeSymbol **)Data = ReferenceSymbol(Prop->Value.Sym->SymbolTable, Prop->Value.Sym);
-		if	(!*(jeSymbol **)Data)
-			return JE_FALSE;
+			return GR_FALSE;
+		assert(sizeof(Prop->Value.Sym) == sizeof(grSymbol *));
+		*(grSymbol **)Data = ReferenceSymbol(Prop->Value.Sym->SymbolTable, Prop->Value.Sym);
+		if	(!*(grSymbol **)Data)
+			return GR_FALSE;
 		break;
 
-	case	JE_SYMBOL_TYPE_LIST:
+	case	GR_SYMBOL_TYPE_LIST:
 		if	(DataLength != sizeof(Prop->Value.List))
-			return JE_FALSE;
-		assert(sizeof(Prop->Value.List) == sizeof(jeSymbol_List *));
-		*(jeSymbol_List **)Data = ReferenceList(Prop->Value.List->SymbolTable, Prop->Value.List);
-		if	(!*(jeSymbol_List **)Data)
-			return JE_FALSE;
+			return GR_FALSE;
+		assert(sizeof(Prop->Value.List) == sizeof(grSymbol_List *));
+		*(grSymbol_List **)Data = ReferenceList(Prop->Value.List->SymbolTable, Prop->Value.List);
+		if	(!*(grSymbol_List **)Data)
+			return GR_FALSE;
 		break;
 
 	default:
@@ -1822,20 +1822,20 @@ JETAPI	jeBoolean JETCC jeSymbol_GetProperty(
 		assert(!"Not implemented");
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	jeBoolean JETCC jeSymbol_CopyProperty(
-	jeSymbol *HDest,
-	jeSymbol *HDestProp,
-	jeSymbol *HSrc,
-	jeSymbol *HSrcProp)
+GRAPI	grBoolean GRCC grSymbol_CopyProperty(
+	grSymbol *HDest,
+	grSymbol *HDestProp,
+	grSymbol *HSrc,
+	grSymbol *HSrcProp)
 {
-	jeSymbol_Rec *	Dest;
-	jeSymbol_Rec *	DestProp;
-	jeSymbol_Rec *	Src;
-	jeSymbol_Rec *	SrcProp;
-//	jeBoolean		Result;
+	grSymbol_Rec *	Dest;
+	grSymbol_Rec *	DestProp;
+	grSymbol_Rec *	Src;
+	grSymbol_Rec *	SrcProp;
+//	grBoolean		Result;
 
 	assert(HDest);
 	assert(HDestProp);
@@ -1852,124 +1852,124 @@ JETAPI	jeBoolean JETCC jeSymbol_CopyProperty(
 	SrcProp = HSrcProp->Symbol;
 
 	if	(DestProp->Type != SrcProp->Type)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	switch	(DestProp->Type)
 	{
 		int				Integer;
-		jeFloat			Float;
-		jeVec3d			Vector;
-		JE_RGBA			Color;
-		jeSymbol *		Symbol;
-		jeSymbol_List *	SymList;
+		grFloat			Float;
+		grVec3d			Vector;
+		GR_RGBA			Color;
+		grSymbol *		Symbol;
+		grSymbol_List *	SymList;
 		void *			Data;
 		char *			String;
-		jeBoolean		Result;
+		grBoolean		Result;
 
-	case	JE_SYMBOL_TYPE_INT:
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &Integer, sizeof(Integer), JE_SYMBOL_TYPE_INT) == JE_FALSE)
-			return JE_FALSE;
-		return jeSymbol_SetProperty(HDest, HDestProp, &Integer, sizeof(Integer), JE_SYMBOL_TYPE_INT);
+	case	GR_SYMBOL_TYPE_INT:
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &Integer, sizeof(Integer), GR_SYMBOL_TYPE_INT) == GR_FALSE)
+			return GR_FALSE;
+		return grSymbol_SetProperty(HDest, HDestProp, &Integer, sizeof(Integer), GR_SYMBOL_TYPE_INT);
 
-	case	JE_SYMBOL_TYPE_STRING:
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &String, sizeof(String), JE_SYMBOL_TYPE_STRING) == JE_FALSE)
-			return JE_FALSE;
+	case	GR_SYMBOL_TYPE_STRING:
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &String, sizeof(String), GR_SYMBOL_TYPE_STRING) == GR_FALSE)
+			return GR_FALSE;
 		String = DuplicateString(String);
 		if	(!String)
-			return JE_FALSE;
-		Result = jeSymbol_SetProperty(HDest, HDestProp, String, sizeof(String), JE_SYMBOL_TYPE_STRING);
-		if	(Result == JE_FALSE)
-			jeRam_Free(String);
+			return GR_FALSE;
+		Result = grSymbol_SetProperty(HDest, HDestProp, String, sizeof(String), GR_SYMBOL_TYPE_STRING);
+		if	(Result == GR_FALSE)
+			grRam_Free(String);
 		return Result;
 
-	case	JE_SYMBOL_TYPE_FLOAT:
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &Float, sizeof(Float), JE_SYMBOL_TYPE_FLOAT) == JE_FALSE)
-			return JE_FALSE;
-		return jeSymbol_SetProperty(HDest, HDestProp, &Float, sizeof(Float), JE_SYMBOL_TYPE_FLOAT);
+	case	GR_SYMBOL_TYPE_FLOAT:
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &Float, sizeof(Float), GR_SYMBOL_TYPE_FLOAT) == GR_FALSE)
+			return GR_FALSE;
+		return grSymbol_SetProperty(HDest, HDestProp, &Float, sizeof(Float), GR_SYMBOL_TYPE_FLOAT);
 
-	case	JE_SYMBOL_TYPE_COLOR:
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &Color, sizeof(Color), JE_SYMBOL_TYPE_COLOR) == JE_FALSE)
-			return JE_FALSE;
-		return jeSymbol_SetProperty(HDest, HDestProp, &Color, sizeof(Color), JE_SYMBOL_TYPE_COLOR);
+	case	GR_SYMBOL_TYPE_COLOR:
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &Color, sizeof(Color), GR_SYMBOL_TYPE_COLOR) == GR_FALSE)
+			return GR_FALSE;
+		return grSymbol_SetProperty(HDest, HDestProp, &Color, sizeof(Color), GR_SYMBOL_TYPE_COLOR);
 
-	case	JE_SYMBOL_TYPE_VEC3D:
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &Vector, sizeof(Vector), JE_SYMBOL_TYPE_VEC3D) == JE_FALSE)
-			return JE_FALSE;
-		return jeSymbol_SetProperty(HDest, HDestProp, &Vector, sizeof(Vector), JE_SYMBOL_TYPE_VEC3D);
+	case	GR_SYMBOL_TYPE_VEC3D:
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &Vector, sizeof(Vector), GR_SYMBOL_TYPE_VEC3D) == GR_FALSE)
+			return GR_FALSE;
+		return grSymbol_SetProperty(HDest, HDestProp, &Vector, sizeof(Vector), GR_SYMBOL_TYPE_VEC3D);
 
-	case	JE_SYMBOL_TYPE_BOOLEAN:
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &Result, sizeof(Result), JE_SYMBOL_TYPE_BOOLEAN) == JE_FALSE)
-			return JE_FALSE;
-		return jeSymbol_SetProperty(HDest, HDestProp, &Result, sizeof(Result), JE_SYMBOL_TYPE_BOOLEAN);
+	case	GR_SYMBOL_TYPE_BOOLEAN:
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &Result, sizeof(Result), GR_SYMBOL_TYPE_BOOLEAN) == GR_FALSE)
+			return GR_FALSE;
+		return grSymbol_SetProperty(HDest, HDestProp, &Result, sizeof(Result), GR_SYMBOL_TYPE_BOOLEAN);
 
-	case	JE_SYMBOL_TYPE_ENUM:
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &Symbol, sizeof(Symbol), JE_SYMBOL_TYPE_ENUM) == JE_FALSE)
-			return JE_FALSE;
-		Result = jeSymbol_SetProperty(HDest, HDestProp, &Symbol, sizeof(Symbol), JE_SYMBOL_TYPE_ENUM);
-		jeSymbol_Destroy(&Symbol);
+	case	GR_SYMBOL_TYPE_ENUM:
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &Symbol, sizeof(Symbol), GR_SYMBOL_TYPE_ENUM) == GR_FALSE)
+			return GR_FALSE;
+		Result = grSymbol_SetProperty(HDest, HDestProp, &Symbol, sizeof(Symbol), GR_SYMBOL_TYPE_ENUM);
+		grSymbol_Destroy(&Symbol);
 		return Result;
 
-	case	JE_SYMBOL_TYPE_PVOID:
+	case	GR_SYMBOL_TYPE_PVOID:
 #pragma message ("We don't copy void data, we just copy the pointer")
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &Data, sizeof(Data), JE_SYMBOL_TYPE_PVOID) == JE_FALSE)
-			return JE_FALSE;
-		return jeSymbol_SetProperty(HDest, HDestProp, &Data, sizeof(Data), JE_SYMBOL_TYPE_PVOID);
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &Data, sizeof(Data), GR_SYMBOL_TYPE_PVOID) == GR_FALSE)
+			return GR_FALSE;
+		return grSymbol_SetProperty(HDest, HDestProp, &Data, sizeof(Data), GR_SYMBOL_TYPE_PVOID);
 
-	case	JE_SYMBOL_TYPE_LIST:
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &SymList, sizeof(SymList), JE_SYMBOL_TYPE_LIST) == JE_FALSE)
-			return JE_FALSE;
-		Result = jeSymbol_SetProperty(HDest, HDestProp, &SymList, sizeof(SymList), JE_SYMBOL_TYPE_LIST);
-		jeSymbol_ListDestroy(&SymList);
+	case	GR_SYMBOL_TYPE_LIST:
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &SymList, sizeof(SymList), GR_SYMBOL_TYPE_LIST) == GR_FALSE)
+			return GR_FALSE;
+		Result = grSymbol_SetProperty(HDest, HDestProp, &SymList, sizeof(SymList), GR_SYMBOL_TYPE_LIST);
+		grSymbol_ListDestroy(&SymList);
 		return Result;
 
-	case	JE_SYMBOL_TYPE_SYMBOL:
-		if	(jeSymbol_GetProperty(HSrc, HSrcProp, &Symbol, sizeof(Symbol), JE_SYMBOL_TYPE_SYMBOL) == JE_FALSE)
-			return JE_FALSE;
-		Result = jeSymbol_SetProperty(HDest, HDestProp, &Symbol, sizeof(Symbol), JE_SYMBOL_TYPE_SYMBOL);
-		jeSymbol_Destroy(&Symbol);
+	case	GR_SYMBOL_TYPE_SYMBOL:
+		if	(grSymbol_GetProperty(HSrc, HSrcProp, &Symbol, sizeof(Symbol), GR_SYMBOL_TYPE_SYMBOL) == GR_FALSE)
+			return GR_FALSE;
+		Result = grSymbol_SetProperty(HDest, HDestProp, &Symbol, sizeof(Symbol), GR_SYMBOL_TYPE_SYMBOL);
+		grSymbol_Destroy(&Symbol);
 		return Result;
 
-	case	JE_SYMBOL_TYPE_MODEL:
-	case	JE_SYMBOL_TYPE_PORTAL:
+	case	GR_SYMBOL_TYPE_MODEL:
+	case	GR_SYMBOL_TYPE_PORTAL:
 #pragma message ("CopyProperty: Model and portal not implemented")
 		assert(!"Not implemented");
-		return JE_FALSE;
+		return GR_FALSE;
 
-	case	JE_SYMBOL_TYPE_VOID:
-		return JE_FALSE;
+	case	GR_SYMBOL_TYPE_VOID:
+		return GR_FALSE;
 
 	default:
 		assert(!"Bad symbol type");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	assert(!"Shouldn't get here");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-JETAPI	jeBoolean JETCC jeSymbol_GetEnumValue(const jeSymbol *HSym, int *Value)
+GRAPI	grBoolean GRCC grSymbol_GetEnumValue(const grSymbol *HSym, int *Value)
 {
 	assert(HSym);
 	assert(HSym->Symbol);
 	assert(Value);
 
-	if	(HSym->Symbol->Type != JE_SYMBOL_TYPE_ENUM)
-		return JE_FALSE;
+	if	(HSym->Symbol->Type != GR_SYMBOL_TYPE_ENUM)
+		return GR_FALSE;
 	*Value = HSym->Symbol->EnumValue;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	jeBoolean JETCC jeSymbol_SetEnumValue(jeSymbol *HSym, int Value)
+GRAPI	grBoolean GRCC grSymbol_SetEnumValue(grSymbol *HSym, int Value)
 {
 	assert(HSym);
 	assert(HSym->Symbol);
 
-	if	(HSym->Symbol->Type != JE_SYMBOL_TYPE_ENUM)
-		return JE_FALSE;
+	if	(HSym->Symbol->Type != GR_SYMBOL_TYPE_ENUM)
+		return GR_FALSE;
 	HSym->Symbol->EnumValue = Value;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	const char *JETCC jeSymbol_GetName(const jeSymbol *HSym)
+GRAPI	const char *GRCC grSymbol_GetName(const grSymbol *HSym)
 {
 	assert(HSym);
 	assert(HSym->Symbol);
@@ -1978,10 +1978,10 @@ JETAPI	const char *JETCC jeSymbol_GetName(const jeSymbol *HSym)
 	return HSym->Symbol->Name;
 }
 
-JETAPI	jeBoolean	JETCC jeSymbol_GetFullName(const jeSymbol *HSym, char *Buff, int MaxLen)
+GRAPI	grBoolean	GRCC grSymbol_GetFullName(const grSymbol *HSym, char *Buff, int MaxLen)
 {
 	// Really slow implementation for deeply nested names
-	jeSymbol_Rec *	Sym;
+	grSymbol_Rec *	Sym;
 
 	assert(HSym);
 	assert(HSym->Symbol);
@@ -1992,31 +1992,31 @@ JETAPI	jeBoolean	JETCC jeSymbol_GetFullName(const jeSymbol *HSym, char *Buff, in
 	*Buff = '\0';
 	if	(Sym->Qualifier)
 	{
-		jeSymbol *		HQualifier;
-		jeBoolean		Result;
+		grSymbol *		HQualifier;
+		grBoolean		Result;
 
 		HQualifier = ReferenceSymbol(Sym->SymbolTable, Sym->Qualifier);
 		if	(!HQualifier)
-			return JE_FALSE;
-		Result = jeSymbol_GetFullName(HQualifier, Buff, MaxLen);
-		jeSymbol_Destroy(&HQualifier);
-		if	(Result == JE_FALSE)
-			return JE_FALSE;
+			return GR_FALSE;
+		Result = grSymbol_GetFullName(HQualifier, Buff, MaxLen);
+		grSymbol_Destroy(&HQualifier);
+		if	(Result == GR_FALSE)
+			return GR_FALSE;
 	}
 
 	MaxLen -= strlen(Buff) + 2;
 	if	(MaxLen < Sym->NameLength + 1)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	strcat(Buff, "::");
 	strcat(Buff, Sym->Name);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	jeSymbol_List *	JETCC jeSymbol_ListCreate(jeSymbol_Table *ST)
+GRAPI	grSymbol_List *	GRCC grSymbol_ListCreate(grSymbol_Table *ST)
 {
-	jeSymbol_ListRec *	List;
+	grSymbol_ListRec *	List;
 	
 	assert(ST);
 	assert(ST->ListHeap);
@@ -2024,14 +2024,14 @@ JETAPI	jeSymbol_List *	JETCC jeSymbol_ListCreate(jeSymbol_Table *ST)
 	List = GCHeap_AllocateFixed(ST->ListHeap);
 	if	(List)
 	{
-		jeSymbol_List *	HList;
+		grSymbol_List *	HList;
 
 		List->Elts = NULL;
 		List->CurrentIndex = -1;
 		List->Current = NULL;
 		List->SymbolTable = ST;
 
-		HList = (jeSymbol_List *)RefPool_RefCreate(ST->ListReferences);
+		HList = (grSymbol_List *)RefPool_RefCreate(ST->ListReferences);
 		if	(HList)
 			HList->List = List;
 
@@ -2041,14 +2041,14 @@ JETAPI	jeSymbol_List *	JETCC jeSymbol_ListCreate(jeSymbol_Table *ST)
 	return NULL;
 }
 
-JETAPI	void JETCC jeSymbol_ListCreateRef(jeSymbol_List *HL, jeSymbol_List **Result)
+GRAPI	void GRCC grSymbol_ListCreateRef(grSymbol_List *HL, grSymbol_List **Result)
 {
-	jeSymbol_List *	HList;
+	grSymbol_List *	HList;
 
 	assert(HL);
 	assert(HL->List);
 
-	HList = (jeSymbol_List *)RefPool_RefCreate(HL->List->SymbolTable->ListReferences);
+	HList = (grSymbol_List *)RefPool_RefCreate(HL->List->SymbolTable->ListReferences);
 	if	(HList)
 		HList->List = HL->List;
 
@@ -2057,7 +2057,7 @@ JETAPI	void JETCC jeSymbol_ListCreateRef(jeSymbol_List *HL, jeSymbol_List **Resu
 
 static	void FinalizeList(void *P)
 {
-	jeSymbol_ListRec *	List;
+	grSymbol_ListRec *	List;
 	SymListElt *		Elts;
 
 	assert(P);
@@ -2072,11 +2072,11 @@ static	void FinalizeList(void *P)
 
 		Temp = Elts;
 		Elts = Elts->Next;
-		jeRam_Free(Temp);
+		grRam_Free(Temp);
 	}
 }
 
-JETAPI	void JETCC jeSymbol_ListDestroy(jeSymbol_List **pSymList)
+GRAPI	void GRCC grSymbol_ListDestroy(grSymbol_List **pSymList)
 {
 	assert(pSymList);
 	assert(*pSymList);
@@ -2084,10 +2084,10 @@ JETAPI	void JETCC jeSymbol_ListDestroy(jeSymbol_List **pSymList)
 	RefPool_RefDestroy((*pSymList)->List->SymbolTable->ListReferences, (void ***)pSymList);
 }
 
-JETAPI	jeSymbol *JETCC jeSymbol_ListGetSymbol(const jeSymbol_List *HL, int Index)
+GRAPI	grSymbol *GRCC grSymbol_ListGetSymbol(const grSymbol_List *HL, int Index)
 {
 	SymListElt *		Elts;
-	jeSymbol_ListRec *	L;
+	grSymbol_ListRec *	L;
 
 	assert(HL);
 	assert(HL->List);
@@ -2128,11 +2128,11 @@ JETAPI	jeSymbol *JETCC jeSymbol_ListGetSymbol(const jeSymbol_List *HL, int Index
 	return ReferenceSymbol(L->SymbolTable, L->Current->Symbol);
 }
 
-JETAPI	jeBoolean	JETCC jeSymbol_TableRemoveSymbol(
-	jeSymbol_Table *	ST,
-	jeSymbol *			HSymbol)
+GRAPI	grBoolean	GRCC grSymbol_TableRemoveSymbol(
+	grSymbol_Table *	ST,
+	grSymbol *			HSymbol)
 {
-	jeSymbol_Rec *	Symbol;
+	grSymbol_Rec *	Symbol;
 
 	assert(ST);
 	assert(HSymbol);
@@ -2141,19 +2141,19 @@ JETAPI	jeBoolean	JETCC jeSymbol_TableRemoveSymbol(
 	Symbol = HSymbol->Symbol;
 
 	if	(Symbol->Flags & SYMBOL_REMOVED)
-		return JE_TRUE;
+		return GR_TRUE;
 
 	Symbol->Flags |= SYMBOL_REMOVED;
 
-	jeSymbol_ListRemoveSymbol(ST->Symbols[Symbol->HashValue % NUMHASHBUCKETS], HSymbol);
+	grSymbol_ListRemoveSymbol(ST->Symbols[Symbol->HashValue % NUMHASHBUCKETS], HSymbol);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	jeBoolean JETCC jeSymbol_ListAddSymbol(jeSymbol_List *HL, jeSymbol *HS)
+GRAPI	grBoolean GRCC grSymbol_ListAddSymbol(grSymbol_List *HL, grSymbol *HS)
 {
 	SymListElt *		NewElt;
-	jeSymbol_ListRec *	List;
+	grSymbol_ListRec *	List;
 
 	assert(HL);
 	assert(HL->List);
@@ -2162,9 +2162,9 @@ JETAPI	jeBoolean JETCC jeSymbol_ListAddSymbol(jeSymbol_List *HL, jeSymbol *HS)
 
 	List = HL->List;
 
-	NewElt = jeRam_Allocate(sizeof(*NewElt));
+	NewElt = grRam_Allocate(sizeof(*NewElt));
 	if	(!NewElt)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	NewElt->Next = List->Elts;
 	NewElt->Symbol = HS->Symbol;
@@ -2173,16 +2173,16 @@ JETAPI	jeBoolean JETCC jeSymbol_ListAddSymbol(jeSymbol_List *HL, jeSymbol *HS)
 	List->CurrentIndex = -1;
 	List->Current = NULL;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	void JETCC jeSymbol_ListRemoveSymbol(jeSymbol_List *HL, jeSymbol *HS)
+GRAPI	void GRCC grSymbol_ListRemoveSymbol(grSymbol_List *HL, grSymbol *HS)
 {
-	jeSymbol_ListRec *	L;
+	grSymbol_ListRec *	L;
 	SymListElt			Head;
 	SymListElt *		Elts;
 	SymListElt *		Temp;
-	jeSymbol_Rec *		S;
+	grSymbol_Rec *		S;
 
 	assert(HL);
 	assert(HL->List);
@@ -2210,17 +2210,17 @@ JETAPI	void JETCC jeSymbol_ListRemoveSymbol(jeSymbol_List *HL, jeSymbol *HS)
 		L->Elts = Elts->Next;
 
 	if	(++L->SymbolTable->GCAbleOperationCount > GCABLE_OP_COUNT_THRESHHOLD)
-		jeSymbol_TableCollectGarbage(L->SymbolTable);
+		grSymbol_TableCollectGarbage(L->SymbolTable);
 
 	assert(Temp);
 	assert(Temp->Symbol == S);
-	jeRam_Free(Temp);
+	grRam_Free(Temp);
 }
 
 #if 1
 #ifdef	_DEBUG
 #if 0
-static	void RefCountString(const jeSymbol *Sym, char *Buff)
+static	void RefCountString(const grSymbol *Sym, char *Buff)
 {
 	char *	p;
 
@@ -2235,23 +2235,23 @@ static	void RefCountString(const jeSymbol *Sym, char *Buff)
 #endif
 
 #if 1
-jeBoolean jeSymbol_Dump(const jeSymbol *HSym, jeVFile *File)
+grBoolean grSymbol_Dump(const grSymbol *HSym, grVFile *File)
 {
 	char 	Buff[256];
-	jeSymbol_GetFullName(HSym, Buff, sizeof(Buff));
+	grSymbol_GetFullName(HSym, Buff, sizeof(Buff));
 #if 0
 {
 	char	RFString[256];
 	RefCountString(Sym, RFString);
-	return jeVFile_Printf(File, "  %s (%s)\n", Buff, RFString);
+	return grVFile_Printf(File, "  %s (%s)\n", Buff, RFString);
 }
 #else
-	return jeVFile_Printf(File, "  %s\n", Buff);
+	return grVFile_Printf(File, "  %s\n", Buff);
 #endif
 }
 #else
 static	int	indent;
-jeBoolean jeSymbol_Dump1(jeSymbol_Rec *Sym)
+grBoolean grSymbol_Dump1(grSymbol_Rec *Sym)
 {
 	int	i;
 
@@ -2262,48 +2262,48 @@ jeBoolean jeSymbol_Dump1(jeSymbol_Rec *Sym)
 	printf("%s\n", Sym->Name);
 
 	if	(Sym->Flags & SYMBOL_MARKED)
-		return JE_TRUE;
+		return GR_TRUE;
 
 	Sym->Flags |= SYMBOL_MARKED;
 	indent += 2;
-	jeSymbol_Walk(Sym, jeSymbol_Dump1, WalkListWithoutReference);
+	grSymbol_Walk(Sym, grSymbol_Dump1, WalkListWithoutReference);
 	indent -= 2;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeSymbol_Dump(const jeSymbol *HSym, jeVFile *File)
+grBoolean grSymbol_Dump(const grSymbol *HSym, grVFile *File)
 {
 	indent = 0;
 	printf("---\n");
-//	printf("%s\n", jeSymbol_GetName(Sym));
-//	jeSymbol_Walk((jeSymbol *)Sym, jeSymbol_Dump1, WalkListWithoutReference);
-	jeSymbol_Dump1(HSym->Symbol);
-//	jeSymbol_ClearMarks((jeSymbol **)&Sym);
-	jeSymbol_ClearMarks(HSym->Symbol);
-	return JE_TRUE;
+//	printf("%s\n", grSymbol_GetName(Sym));
+//	grSymbol_Walk((grSymbol *)Sym, grSymbol_Dump1, WalkListWithoutReference);
+	grSymbol_Dump1(HSym->Symbol);
+//	grSymbol_ClearMarks((grSymbol **)&Sym);
+	grSymbol_ClearMarks(HSym->Symbol);
+	return GR_TRUE;
 }
 #endif
 
 static	int	__cdecl CmpSyms(const void *p1, const void *p2)
 {
-	jeSymbol_Rec *	S1;
-	jeSymbol_Rec *	S2;
-	jeSymbol		HS1;
-	jeSymbol		HS2;
+	grSymbol_Rec *	S1;
+	grSymbol_Rec *	S2;
+	grSymbol		HS1;
+	grSymbol		HS2;
 	char 		Buff1[1024];
 	char 		Buff2[1024];
 
-	S1 = *(jeSymbol_Rec **)p1;
-	S2 = *(jeSymbol_Rec **)p2;
+	S1 = *(grSymbol_Rec **)p1;
+	S2 = *(grSymbol_Rec **)p2;
 
 	HS1.Symbol = S1;
 	HS2.Symbol = S2;
-	jeSymbol_GetFullName(&HS1, Buff1, sizeof(Buff1));
-	jeSymbol_GetFullName(&HS2, Buff2, sizeof(Buff2));
+	grSymbol_GetFullName(&HS1, Buff1, sizeof(Buff1));
+	grSymbol_GetFullName(&HS2, Buff2, sizeof(Buff2));
 	return strcmp(Buff1, Buff2);
 }
 
-jeBoolean jeSymbol_TableDump(const jeSymbol_Table *ST, jeVFile *File, jeBoolean SortNames)
+grBoolean grSymbol_TableDump(const grSymbol_Table *ST, grVFile *File, grBoolean SortNames)
 {
 	int	i;
 	int	MaxLength;
@@ -2313,8 +2313,8 @@ jeBoolean jeSymbol_TableDump(const jeSymbol_Table *ST, jeVFile *File, jeBoolean 
 
 	if	(File)
 	{
-		jeVFile_Printf(File, "Dump of Symbol Table\n");
-		jeVFile_Printf(File, "--------------------\n");
+		grVFile_Printf(File, "Dump of Symbol Table\n");
+		grVFile_Printf(File, "--------------------\n");
 	}
 	else
 	{
@@ -2329,28 +2329,28 @@ jeBoolean jeSymbol_TableDump(const jeSymbol_Table *ST, jeVFile *File, jeBoolean 
 	{
 		SymListElt *	Elts;
 		int				BucketCount;
-		jeSymbol		LocalSym;
+		grSymbol		LocalSym;
 
 		BucketCount = 0;
 	
 		Elts = ST->Symbols[i]->List->Elts;
 		if	(File)
-			jeVFile_Printf(File, "Bucket %d:\n", i);
+			grVFile_Printf(File, "Bucket %d:\n", i);
 		else
 			printf("Bucket %d:\n", i);
-		if	(SortNames == JE_FALSE)
+		if	(SortNames == GR_FALSE)
 		{
 			while	(Elts)
 			{
 				LocalSym.Symbol = Elts->Symbol;
-				jeSymbol_Dump(&LocalSym, File);
+				grSymbol_Dump(&LocalSym, File);
 				BucketCount++;
 				Elts = Elts->Next;
 			}
 		}
 		else
 		{
-			jeSymbol_Rec **	SortedSyms;
+			grSymbol_Rec **	SortedSyms;
 			int			j;
 
 			while	(Elts)
@@ -2358,9 +2358,9 @@ jeBoolean jeSymbol_TableDump(const jeSymbol_Table *ST, jeVFile *File, jeBoolean 
 				BucketCount++;
 				Elts = Elts->Next;
 			}
-			SortedSyms = jeRam_Allocate(sizeof(*SortedSyms) * BucketCount);
+			SortedSyms = grRam_Allocate(sizeof(*SortedSyms) * BucketCount);
 			if	(!SortedSyms)
-				return JE_FALSE;
+				return GR_FALSE;
 			Elts = ST->Symbols[i]->List->Elts;
 			j = 0;
 			while	(Elts)
@@ -2371,11 +2371,11 @@ jeBoolean jeSymbol_TableDump(const jeSymbol_Table *ST, jeVFile *File, jeBoolean 
 			qsort(SortedSyms, BucketCount, sizeof(*SortedSyms), CmpSyms);
 			for	(j = 0; j < BucketCount; j++)
 			{
-				jeSymbol	LocalSym;
+				grSymbol	LocalSym;
 				LocalSym.Symbol = SortedSyms[j];
-				jeSymbol_Dump(&LocalSym, File);
+				grSymbol_Dump(&LocalSym, File);
 			}
-			jeRam_Free(SortedSyms);
+			grRam_Free(SortedSyms);
 		}
 		TotalSyms += BucketCount;
 		if	(MinLength > BucketCount)
@@ -2388,12 +2388,12 @@ jeBoolean jeSymbol_TableDump(const jeSymbol_Table *ST, jeVFile *File, jeBoolean 
 
 	if	(File)
 	{
-		return jeVFile_Printf(File, "Max Length: %d\nMin Length: %d\nTotal Syms: %d\nAvg Syms: %4.2f\nNum Empty: %d", MaxLength, MinLength, TotalSyms, (float)TotalSyms / (float)NUMHASHBUCKETS, NumEmpty);
+		return grVFile_Printf(File, "Max Length: %d\nMin Length: %d\nTotal Syms: %d\nAvg Syms: %4.2f\nNum Empty: %d", MaxLength, MinLength, TotalSyms, (float)TotalSyms / (float)NUMHASHBUCKETS, NumEmpty);
 	}
 	else
 	{
 		printf("Max Length: %d\nMin Length: %d\nTotal Syms: %d\nAvg Syms: %4.2f\nNum Empty: %d", MaxLength, MinLength, TotalSyms, (float)TotalSyms / (float)NUMHASHBUCKETS, NumEmpty);
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 }
 #endif

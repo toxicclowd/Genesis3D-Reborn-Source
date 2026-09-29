@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_BRANDO_YUV_H
-#define JE_BRANDO_YUV_H
+#ifndef GR_BRANDO_YUV_H
+#define GR_BRANDO_YUV_H
 
 #include "BaseType.h"
 

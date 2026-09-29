@@ -34,85 +34,85 @@
 //	coming in here might want different gamma values, which
 //	would mean different tables!
 
-extern jeThreadQueue_Semaphore * Bitmap_Gamma_Lock;
+extern grThreadQueue_Semaphore * Bitmap_Gamma_Lock;
 
 static uint32	Gamma_Lut[256];
 static uint32	Gamma_Lut_Inverse[256];
-static jeFloat	ComputedGamma_Lut = 0.0f;
+static grFloat	ComputedGamma_Lut = 0.0f;
 
 static uint16 	Gamma_565_RGB[1<<16];			// 128k !
-static jeFloat	ComputedGamma_565_RGB = 0.0f;
+static grFloat	ComputedGamma_565_RGB = 0.0f;
 static uint16	Gamma_4444_ARGB[1<<16];			// 128k !
-static jeFloat	ComputedGamma_4444_ARGB = 0.0f;
+static grFloat	ComputedGamma_4444_ARGB = 0.0f;
 
 /*}{*******************************************************/
 
-void jeBitmap_Gamma_Compute_Lut(double Gamma);
-void jeBitmap_GammaCorrect_Data_4444_ARGB(void * Bits,jeBitmap_Info * pInfo);
-void jeBitmap_GammaCorrect_Data_565_RGB(void * Bits,jeBitmap_Info * pInfo);
-jeBoolean jeBitmap_GammaCorrect_Data(void * Bits,jeBitmap_Info * pInfo, jeBoolean Invert);
+void grBitmap_Gamma_Compute_Lut(double Gamma);
+void grBitmap_GammaCorrect_Data_4444_ARGB(void * Bits,grBitmap_Info * pInfo);
+void grBitmap_GammaCorrect_Data_565_RGB(void * Bits,grBitmap_Info * pInfo);
+grBoolean grBitmap_GammaCorrect_Data(void * Bits,grBitmap_Info * pInfo, grBoolean Invert);
 
 /*}{*******************************************************/
 
-jeBoolean jeBitmap_Gamma_Apply(jeBitmap * Bitmap,jeBoolean Invert)
+grBoolean grBitmap_Gamma_Apply(grBitmap * Bitmap,grBoolean Invert)
 {
-jeBoolean Ret = JE_TRUE;
-jeFloat Gamma;
+grBoolean Ret = GR_TRUE;
+grFloat Gamma;
 
 	assert(Bitmap);
 
 	Gamma = Bitmap->DriverGamma;
 	if ( Gamma <= 0.1f ) // assume they meant 1.0f
-		return JE_TRUE;
+		return GR_TRUE;
 
 	// Gamma only works on driver data
 
 	// do-nothing gamma:
 	if ( fabs(Gamma - 1.0) < 0.1 )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	if ( Bitmap->LockOwner )
 		Bitmap = Bitmap->LockOwner;
 	if ( Bitmap->LockCount || Bitmap->DataOwner )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( ! Bitmap->DriverHandle )	// nothing to do
-		return JE_TRUE;
+		return GR_TRUE;
 
 	assert(Bitmap_Gamma_Lock);
-	jeThreadQueue_Semaphore_Lock(Bitmap_Gamma_Lock);
+	grThreadQueue_Semaphore_Lock(Bitmap_Gamma_Lock);
 
 	if ( ComputedGamma_Lut != Gamma )
 	{
-		jeBitmap_Gamma_Compute_Lut(Gamma);
+		grBitmap_Gamma_Compute_Lut(Gamma);
 	}
 
-	if ( jePixelFormat_HasPalette(Bitmap->DriverInfo.Format) )
+	if ( grPixelFormat_HasPalette(Bitmap->DriverInfo.Format) )
 	{
-	jeBitmap_Palette *	Pal;
-	jeBitmap_Info		PalInfo;
+	grBitmap_Palette *	Pal;
+	grBitmap_Info		PalInfo;
 	void *	Bits;
 	int		Size;
-	jePixelFormat Format;
+	grPixelFormat Format;
 	
 		// gamma correct the palette
 
 		assert(Bitmap->DriverInfo.Palette);
 		Pal = Bitmap->DriverInfo.Palette;
 
-		if ( ! jeBitmap_Palette_Lock(Pal,&Bits,&Format,&Size) )
+		if ( ! grBitmap_Palette_Lock(Pal,&Bits,&Format,&Size) )
 			goto fail;
 
-		jeBitmap_Palette_GetInfo(Pal,&PalInfo);
+		grBitmap_Palette_GetInfo(Pal,&PalInfo);
 
-		if ( ! jeBitmap_GammaCorrect_Data(Bits,&PalInfo,Invert) )
-			Ret = JE_FALSE;
+		if ( ! grBitmap_GammaCorrect_Data(Bits,&PalInfo,Invert) )
+			Ret = GR_FALSE;
 
-		jeBitmap_Palette_UnLock(Pal);
+		grBitmap_Palette_UnLock(Pal);
 	}
 	else
 	{
-	jeBitmap_Info	Info;
+	grBitmap_Info	Info;
 	void * 			Bits;
 	int				mip,mipCount;
 
@@ -130,42 +130,42 @@ jeFloat Gamma;
 		for(mip=0;mip<mipCount;mip++)
 		{
 			Info = Bitmap->DriverInfo;
-			if ( ! jeBitmap_MakeDriverLockInfo(Bitmap,mip,&Info) )
+			if ( ! grBitmap_MakeDriverLockInfo(Bitmap,mip,&Info) )
 			{
-				jeErrorLog_AddString(-1,"jeBitmap_Gamma_Apply : UpdateInfo failed", NULL);
+				grErrorLog_AddString(-1,"grBitmap_Gamma_Apply : UpdateInfo failed", NULL);
 				goto fail;
 			}
 
 			if ( ! Bitmap->Driver->THandle_Lock(Bitmap->DriverHandle,mip,&Bits) )
 			{
-				jeErrorLog_AddString(-1,"jeBitmap_Gamma_Apply : THandle_Lock", NULL);
+				grErrorLog_AddString(-1,"grBitmap_Gamma_Apply : THandle_Lock", NULL);
 				goto fail;
 			}
 			assert(Bits);
 
-			if ( ! jeBitmap_GammaCorrect_Data(Bits,&Info,Invert) )
+			if ( ! grBitmap_GammaCorrect_Data(Bits,&Info,Invert) )
 			{
-				jeErrorLog_AddString(-1,"jeBitmap_Gamma_Apply : GammaCorrect_Data", NULL);
-				Ret = JE_FALSE;
+				grErrorLog_AddString(-1,"grBitmap_Gamma_Apply : GammaCorrect_Data", NULL);
+				Ret = GR_FALSE;
 			}
 			
 			if ( ! Bitmap->Driver->THandle_UnLock(Bitmap->DriverHandle,mip) )
 			{
-				jeErrorLog_AddString(-1,"jeBitmap_Gamma_Apply : THandle_UnLock", NULL);
+				grErrorLog_AddString(-1,"grBitmap_Gamma_Apply : THandle_UnLock", NULL);
 				goto fail;
 			}
 		}
 
 #else
 		{
-		jeBitmap *Locks[8],*Lock;
+		grBitmap *Locks[8],*Lock;
 
 		//if ( mipCount > 1 ) ; true, but pointless
 		//	assert(mipCount == 4);
 
-		if ( ! jeBitmap_LockForWrite(Bitmap,Locks,0,mipCount-1) )
+		if ( ! grBitmap_LockForWrite(Bitmap,Locks,0,mipCount-1) )
 		{
-			jeErrorLog_AddString(-1,"jeBitmap_Gamma_Apply : LockforWrite failed", "");
+			grErrorLog_AddString(-1,"grBitmap_Gamma_Apply : LockforWrite failed", "");
 			goto fail;
 		}
 
@@ -173,25 +173,25 @@ jeFloat Gamma;
 		{
 			Lock = Locks[mip];
 			
-			if ( ! jeBitmap_GetInfo(Lock,&Info,0) )
+			if ( ! grBitmap_GetInfo(Lock,&Info,0) )
 			{
-				jeErrorLog_AddString(-1,"jeBitmap_Gamma_Apply : GetInfo failed", "");
+				grErrorLog_AddString(-1,"grBitmap_Gamma_Apply : GetInfo failed", "");
 				goto fail;
 			}
 
-			Bits = jeBitmap_GetBits(Lock);
+			Bits = grBitmap_GetBits(Lock);
 			assert(Bits);
 
-			if ( ! jeBitmap_GammaCorrect_Data(Bits,&Info,Invert) )
+			if ( ! grBitmap_GammaCorrect_Data(Bits,&Info,Invert) )
 			{
-				jeErrorLog_AddString(-1,"jeBitmap_Gamma_Apply : GammaCorrect_Data", "");
-				Ret = JE_FALSE;
+				grErrorLog_AddString(-1,"grBitmap_Gamma_Apply : GammaCorrect_Data", "");
+				Ret = GR_FALSE;
 			}
 		}
 
-		if ( ! jeBitmap_UnLockArray_NoChange(Locks,mipCount) )
+		if ( ! grBitmap_UnLockArray_NoChange(Locks,mipCount) )
 		{
-			jeErrorLog_AddString(-1,"jeBitmap_Gamma_Apply : UnLock failed", "");
+			grErrorLog_AddString(-1,"grBitmap_Gamma_Apply : UnLock failed", "");
 			goto fail;
 		}
 
@@ -199,34 +199,34 @@ jeFloat Gamma;
 #endif
 	}
 
-	jeThreadQueue_Semaphore_UnLock(Bitmap_Gamma_Lock);
+	grThreadQueue_Semaphore_UnLock(Bitmap_Gamma_Lock);
 
 return Ret;
 
 fail:
 
-	jeThreadQueue_Semaphore_UnLock(Bitmap_Gamma_Lock);
+	grThreadQueue_Semaphore_UnLock(Bitmap_Gamma_Lock);
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
 /*}{*******************************************************/
 
-jeBoolean jeBitmap_GammaCorrect_Data(void * Bits,jeBitmap_Info * pInfo, jeBoolean Invert)
+grBoolean grBitmap_GammaCorrect_Data(void * Bits,grBitmap_Info * pInfo, grBoolean Invert)
 {
-const jePixelFormat_Operations * ops;
+const grPixelFormat_Operations * ops;
 uint32 bpp,w,h,xtra,x,y;
 uint32 * Lut;
-jePixelFormat Format;
-jePixelFormat_Decomposer	Decompose;
-jePixelFormat_Composer		Compose;
-jePixelFormat_ColorGetter	GetColor;
-jePixelFormat_ColorPutter	PutColor;
+grPixelFormat Format;
+grPixelFormat_Decomposer	Decompose;
+grPixelFormat_Composer		Compose;
+grPixelFormat_ColorGetter	GetColor;
+grPixelFormat_ColorPutter	PutColor;
 
 	Format = pInfo->Format;
-	ops = jePixelFormat_GetOperations(Format);
+	ops = grPixelFormat_GetOperations(Format);
 	if ( ! ops )
-		return JE_FALSE;
+		return GR_FALSE;
 	
 	Decompose	= ops->DecomposePixel;
 	Compose		= ops->ComposePixel;
@@ -237,15 +237,15 @@ jePixelFormat_ColorPutter	PutColor;
 
 	if ( ! Invert )
 	{
-		if ( Format == JE_PIXELFORMAT_16BIT_565_RGB )
+		if ( Format == GR_PIXELFORMAT_16BIT_565_RGB )
 		{
-			jeBitmap_GammaCorrect_Data_565_RGB(Bits,pInfo);
-			return JE_TRUE;
+			grBitmap_GammaCorrect_Data_565_RGB(Bits,pInfo);
+			return GR_TRUE;
 		}
-		else if ( Format == JE_PIXELFORMAT_16BIT_4444_ARGB )
+		else if ( Format == GR_PIXELFORMAT_16BIT_4444_ARGB )
 		{
-			jeBitmap_GammaCorrect_Data_4444_ARGB(Bits,pInfo);
-			return JE_TRUE;
+			grBitmap_GammaCorrect_Data_4444_ARGB(Bits,pInfo);
+			return GR_TRUE;
 		}
 	}
 
@@ -265,7 +265,7 @@ jePixelFormat_ColorPutter	PutColor;
 		{
 			default:
 			case 0:
-				return JE_FALSE;
+				return GR_FALSE;
 			case 1:
 			{
 			uint8 *ptr,ck;
@@ -395,7 +395,7 @@ jePixelFormat_ColorPutter	PutColor;
 		{
 			default:
 			case 0:
-				return JE_FALSE;
+				return GR_FALSE;
 			case 1:
 			{
 			uint8 *ptr;
@@ -478,12 +478,12 @@ jePixelFormat_ColorPutter	PutColor;
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*}{*******************************************************/
 
-void jeBitmap_GammaCorrect_Data_565_RGB(void * Bits,jeBitmap_Info * pInfo)
+void grBitmap_GammaCorrect_Data_565_RGB(void * Bits,grBitmap_Info * pInfo)
 {
 uint32 w,h,xtra,x,y;
 uint16 * ptr;
@@ -554,7 +554,7 @@ uint16 * ptr;
 
 }
 					
-void jeBitmap_GammaCorrect_Data_4444_ARGB(void * Bits,jeBitmap_Info * pInfo)
+void grBitmap_GammaCorrect_Data_4444_ARGB(void * Bits,grBitmap_Info * pInfo)
 {
 uint32 w,h,xtra,x,y;
 uint16 * ptr;
@@ -627,7 +627,7 @@ uint16 * ptr;
 	assert( (int)(ptr) == ( ((int)Bits) + pInfo->Height * pInfo->Stride * 2 ) );
 }
 																	
-void jeBitmap_Gamma_Compute_Lut(double Gamma)
+void grBitmap_Gamma_Compute_Lut(double Gamma)
 {
 uint32 c,gc,lgc;
 

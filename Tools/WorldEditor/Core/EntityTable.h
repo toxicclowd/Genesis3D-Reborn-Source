@@ -31,25 +31,25 @@
 extern "C" {
 #endif
 
-typedef jeBoolean (*EntityTable_ForEachCallback)(jeSymbol *pSymbol, void *lParam);
+typedef grBoolean (*EntityTable_ForEachCallback)(grSymbol *pSymbol, void *lParam);
 
-jeSymbol_Table *	EntityTable_Create( void ) ;
-void				EntityTable_Destroy( jeSymbol_Table ** ppSymbols ) ;
+grSymbol_Table *	EntityTable_Create( void ) ;
+void				EntityTable_Destroy( grSymbol_Table ** ppSymbols ) ;
 
-jeSymbol *			EntityTable_AddEntity( jeSymbol_Table * pST, const char * pszType, const char * pszName ) ;
-jeBoolean			EntityTable_AddField( jeSymbol_Table * pSymbols, jeSymbol * pTypeSym, const char *Name, jeSymbol_Type Type, void *DefaultValue ) ;
-jeBoolean			EntityTable_AddFieldToInstances( jeSymbol_Table * pSymbols, jeSymbol * pDef, const char * pszName, jeSymbol_Type Type, void * DefaultValue ) ;
-jeSymbol *			EntityTable_CopyEntity( jeSymbol_Table * pST, jeSymbol * pEntity, const char * pszName ) ;
-jeSymbol *			EntityTable_CreateType( jeSymbol_Table * pSymbols, const char * pszName ) ;
-jeBoolean			EntityTable_EnumDefinitions( jeSymbol_Table * pSymbols, void * pVoid, EntityTable_ForEachCallback Callback ) ;
-jeBoolean			EntityTable_EnumFields( jeSymbol_Table * pST, const char * pszType, void * pVoid, EntityTable_ForEachCallback Callback ) ;
-jeSymbol *			EntityTable_FindSymbol( jeSymbol_Table * pST, const char * pszType, const char * pszName ) ;
-jeSymbol *			EntityTable_GetField( jeSymbol_Table * pST, jeSymbol * pEntity, const char * pszName ) ;
-jeBoolean			EntityTable_InitDefault( jeSymbol_Table * pSymbols ) ;
-int32				EntityTable_ListGetNumItems( jeSymbol_List * pList ) ;
-void				EntityTable_RemoveDefaultEntityField( jeSymbol_Table * pST, jeSymbol * pSymbol ) ;
-void				EntityTable_RemoveEntityAndInstances( jeSymbol_Table * pST, jeSymbol * pEntityDef ) ;
-jeBoolean			EntityTable_SetDefaultValue( jeSymbol_Table *pST, jeSymbol *pFieldSym, void *DefaultValue ) ;
+grSymbol *			EntityTable_AddEntity( grSymbol_Table * pST, const char * pszType, const char * pszName ) ;
+grBoolean			EntityTable_AddField( grSymbol_Table * pSymbols, grSymbol * pTypeSym, const char *Name, grSymbol_Type Type, void *DefaultValue ) ;
+grBoolean			EntityTable_AddFieldToInstances( grSymbol_Table * pSymbols, grSymbol * pDef, const char * pszName, grSymbol_Type Type, void * DefaultValue ) ;
+grSymbol *			EntityTable_CopyEntity( grSymbol_Table * pST, grSymbol * pEntity, const char * pszName ) ;
+grSymbol *			EntityTable_CreateType( grSymbol_Table * pSymbols, const char * pszName ) ;
+grBoolean			EntityTable_EnumDefinitions( grSymbol_Table * pSymbols, void * pVoid, EntityTable_ForEachCallback Callback ) ;
+grBoolean			EntityTable_EnumFields( grSymbol_Table * pST, const char * pszType, void * pVoid, EntityTable_ForEachCallback Callback ) ;
+grSymbol *			EntityTable_FindSymbol( grSymbol_Table * pST, const char * pszType, const char * pszName ) ;
+grSymbol *			EntityTable_GetField( grSymbol_Table * pST, grSymbol * pEntity, const char * pszName ) ;
+grBoolean			EntityTable_InitDefault( grSymbol_Table * pSymbols ) ;
+int32				EntityTable_ListGetNumItems( grSymbol_List * pList ) ;
+void				EntityTable_RemoveDefaultEntityField( grSymbol_Table * pST, grSymbol * pSymbol ) ;
+void				EntityTable_RemoveEntityAndInstances( grSymbol_Table * pST, grSymbol * pEntityDef ) ;
+grBoolean			EntityTable_SetDefaultValue( grSymbol_Table *pST, grSymbol *pFieldSym, void *DefaultValue ) ;
 
 #ifdef __cplusplus
 }

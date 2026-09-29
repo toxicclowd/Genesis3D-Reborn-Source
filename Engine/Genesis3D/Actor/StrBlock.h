@@ -18,34 +18,34 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_STRBLOCK_H
-#define JE_STRBLOCK_H
+#ifndef GR_STRBLOCK_H
+#define GR_STRBLOCK_H
 
-#include "BaseType.h"	// jeBoolean
+#include "BaseType.h"	// grBoolean
 #include "VFile.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct jeStrBlock jeStrBlock;
+typedef struct grStrBlock grStrBlock;
 
-JETAPI jeStrBlock *JETCC jeStrBlock_Create(void);
-JETAPI void JETCC jeStrBlock_Destroy(jeStrBlock **SB);
+GRAPI grStrBlock *GRCC grStrBlock_Create(void);
+GRAPI void GRCC grStrBlock_Destroy(grStrBlock **SB);
 
-JETAPI jeBoolean JETCC jeStrBlock_Append(jeStrBlock **ppSB,const char *String);
+GRAPI grBoolean GRCC grStrBlock_Append(grStrBlock **ppSB,const char *String);
 
-JETAPI void JETCC jeStrBlock_Delete(jeStrBlock **ppSB,int Nth);
+GRAPI void GRCC grStrBlock_Delete(grStrBlock **ppSB,int Nth);
 
-JETAPI const char *JETCC jeStrBlock_GetString(const jeStrBlock *SB, int Index);
+GRAPI const char *GRCC grStrBlock_GetString(const grStrBlock *SB, int Index);
 
-JETAPI jeBoolean JETCC jeStrBlock_FindString(const jeStrBlock* pSB, const char* String, int* pIndex);
+GRAPI grBoolean GRCC grStrBlock_FindString(const grStrBlock* pSB, const char* String, int* pIndex);
 
-JETAPI int JETCC jeStrBlock_GetCount(const jeStrBlock *SB);
-JETAPI int JETCC jeStrBlock_GetChecksum(const jeStrBlock *SB);
+GRAPI int GRCC grStrBlock_GetCount(const grStrBlock *SB);
+GRAPI int GRCC grStrBlock_GetChecksum(const grStrBlock *SB);
 
-JETAPI jeStrBlock* JETCC jeStrBlock_CreateFromFile(jeVFile* pFile);
-JETAPI jeBoolean JETCC jeStrBlock_WriteToFile(const jeStrBlock *SB,jeVFile *pFile);
+GRAPI grStrBlock* GRCC grStrBlock_CreateFromFile(grVFile* pFile);
+GRAPI grBoolean GRCC grStrBlock_WriteToFile(const grStrBlock *SB,grVFile *pFile);
 
 #ifdef __cplusplus
 }

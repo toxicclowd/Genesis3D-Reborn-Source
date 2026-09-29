@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_PATH_H
-#define JE_PATH_H
+#ifndef GR_PATH_H
+#define GR_PATH_H
 
 #include "BaseType.h"
 #include "Xform3d.h"
@@ -31,119 +31,119 @@
 #endif
 
 
-typedef struct _jePath jePath;
+typedef struct _grPath grPath;
 
-#define JE_PATH_ROTATION_CHANNEL    1
-#define JE_PATH_TRANSLATION_CHANNEL 2
+#define GR_PATH_ROTATION_CHANNEL    1
+#define GR_PATH_TRANSLATION_CHANNEL 2
 
-#define JE_PATH_ALL_CHANNELS (JE_PATH_ROTATION_CHANNEL | JE_PATH_TRANSLATION_CHANNEL)
+#define GR_PATH_ALL_CHANNELS (GR_PATH_ROTATION_CHANNEL | GR_PATH_TRANSLATION_CHANNEL)
 
-#ifndef JE_PATH_ENUMS
-	#define JE_PATH_ENUMS
+#ifndef GR_PATH_ENUMS
+	#define GR_PATH_ENUMS
 	typedef enum 
 	{
-		JE_PATH_INTERPOLATE_LINEAR  = 0,	// linear blend for translation or rotation channel
-		JE_PATH_INTERPOLATE_HERMITE,		// hermite cubic spline for translation channel
-		JE_PATH_INTERPOLATE_SLERP,			// spherical-linear blend for rotation channel
-		JE_PATH_INTERPOLATE_SQUAD,			// higher order blend for rotation channel 'G1' continuity
-		//JE_PATH_INTEROPLATE_TRIPOD,		 // not supported yet.
-		JE_PATH_INTERPOLATE_HERMITE_ZERO_DERIV = 7	// hermite cubic with zero derivative at keyframes ('easing' curve)
-	}jePath_Interpolator;
+		GR_PATH_INTERPOLATE_LINEAR  = 0,	// linear blend for translation or rotation channel
+		GR_PATH_INTERPOLATE_HERMITE,		// hermite cubic spline for translation channel
+		GR_PATH_INTERPOLATE_SLERP,			// spherical-linear blend for rotation channel
+		GR_PATH_INTERPOLATE_SQUAD,			// higher order blend for rotation channel 'G1' continuity
+		//GR_PATH_INTEROPLATE_TRIPOD,		 // not supported yet.
+		GR_PATH_INTERPOLATE_HERMITE_ZERO_DERIV = 7	// hermite cubic with zero derivative at keyframes ('easing' curve)
+	}grPath_Interpolator;
 #endif
 
 
-#define JE_PATH_MAXIMUM_CUT_TIME (0.001f)
+#define GR_PATH_MAXIMUM_CUT_TIME (0.001f)
 
-JETAPI void JETCC jePath_CreateRef( jePath *P );
+GRAPI void GRCC grPath_CreateRef( grPath *P );
 
-JETAPI jePath *JETCC jePath_Create(
-	jePath_Interpolator TranslationInterpolation,	// type of interpolation for translation channel
-	jePath_Interpolator RotationInterpolation,	// type of interpolation for rotation channel
-	jeBoolean Looped);				// True if end of path is connected to head
-	// creates new jePath
+GRAPI grPath *GRCC grPath_Create(
+	grPath_Interpolator TranslationInterpolation,	// type of interpolation for translation channel
+	grPath_Interpolator RotationInterpolation,	// type of interpolation for rotation channel
+	grBoolean Looped);				// True if end of path is connected to head
+	// creates new grPath
 	//  A looping path should have the same first & last point.  The path
 	//  generator will choose arbitrarily between these points for a 
 	//  sample exactly at the end of the loop.
 
-JETAPI jePath *JETCC jePath_CreateCopy( const jePath *P );
+GRAPI grPath *GRCC grPath_CreateCopy( const grPath *P );
 	
-JETAPI void JETCC jePath_Destroy(jePath **PP);		
+GRAPI void GRCC grPath_Destroy(grPath **PP);		
 	// destroys path *PP
 
-JETAPI void JETCC jePath_SetCutMode(jePath *P, jeBoolean Enable);
-	// If 'Cut' mode is enabled, keyframes with times that differ by <= JE_PATH_MAXIMUM_CUT_TIME
+GRAPI void GRCC grPath_SetCutMode(grPath *P, grBoolean Enable);
+	// If 'Cut' mode is enabled, keyframes with times that differ by <= GR_PATH_MAXIMUM_CUT_TIME
 	// are treated as discontinuous.  This can be used to create 'cuts' or 'jumps' in the path.
 	// The mode is set per path.
 
-JETAPI jeBoolean JETCC jePath_GetCutMode(jePath *P);
+GRAPI grBoolean GRCC grPath_GetCutMode(grPath *P);
 	// returns the status of the 'cut' mode in the given path P
 
 //------------------ time based keyframe operations
-JETAPI jeBoolean JETCC jePath_InsertKeyframe(
-	jePath *P, 
+GRAPI grBoolean GRCC grPath_InsertKeyframe(
+	grPath *P, 
 	int ChannelMask, 
-	jeFloat Time, 
-	const jeXForm3d *Matrix); 
+	grFloat Time, 
+	const grXForm3d *Matrix); 
 	// inserts a keyframe at a specific time.
 	
-JETAPI jeBoolean JETCC jePath_DeleteKeyframe(
-	jePath *P,
+GRAPI grBoolean GRCC grPath_DeleteKeyframe(
+	grPath *P,
 	int Index,
 	int ChannelMask); 
 	// deletes the nth keyframe
 
-JETAPI jeBoolean JETCC jePath_GetTimeExtents(
-	const jePath *P,
-	jeFloat *StartTime, 
-	jeFloat *EndTime);
+GRAPI grBoolean GRCC grPath_GetTimeExtents(
+	const grPath *P,
+	grFloat *StartTime, 
+	grFloat *EndTime);
 	// gets the time for the first and last keys in the path (ignoring looping)
-	// if there are no keys, return JE_FALSE and times are not set.
-	// returns JE_TRUE if there are keys.
+	// if there are no keys, return GR_FALSE and times are not set.
+	// returns GR_TRUE if there are keys.
 
 //----------------- index based keyframe operations
-JETAPI void JETCC jePath_GetKeyframe(
-	const jePath *P, 
+GRAPI void GRCC grPath_GetKeyframe(
+	const grPath *P, 
 	int Index,				// gets keyframe[index]
 	int Channel,			// for this channel
-	jeFloat *Time,			// returns the time of the keyframe
-	jeXForm3d *Matrix);		// returns the matrix of the keyframe
+	grFloat *Time,			// returns the time of the keyframe
+	grXForm3d *Matrix);		// returns the matrix of the keyframe
 	// retrieves keyframe[index], and it's time
 
-JETAPI int JETCC jePath_GetKeyframeCount(const jePath *P,int Channel);
+GRAPI int GRCC grPath_GetKeyframeCount(const grPath *P,int Channel);
 	// retrieves count of keyframes for a specific channel
 
-JETAPI int JETCC jePath_GetKeyframeIndex(const jePath *P, int Channel, jeFloat Time);
+GRAPI int GRCC grPath_GetKeyframeIndex(const grPath *P, int Channel, grFloat Time);
 	// retrieves the index of the keyframe at a specific time for a specific channel
 
 //----------------- sampling a path  (time based)
-JETAPI void JETCC jePath_Sample(const jePath *P, jeFloat Time,jeXForm3d *Matrix);
+GRAPI void GRCC grPath_Sample(const grPath *P, grFloat Time,grXForm3d *Matrix);
 	// returns a transform matrix sampled at 'Time'.
 	// p is not const because information is cached in p for next sample
 
-JETAPI void JETCC jePath_SampleChannels(
-	const jePath *P, 
-	jeFloat Time, 
-	jeQuaternion *Rotation, 
-	jeVec3d *Translation);
+GRAPI void GRCC grPath_SampleChannels(
+	const grPath *P, 
+	grFloat Time, 
+	grQuaternion *Rotation, 
+	grVec3d *Translation);
 	// returns a rotation and a translation for the path at 'Time'
 	// p is not const because information is cached in p for next sample
 
-JETAPI jeBoolean JETCC jePath_OffsetTimes(jePath *P, 
-	int StartingIndex, int ChannelMask, jeFloat TimeOffset );
+GRAPI grBoolean GRCC grPath_OffsetTimes(grPath *P, 
+	int StartingIndex, int ChannelMask, grFloat TimeOffset );
 		// slides all samples in path starting with StartingIndex down by TimeOffset
 
-JETAPI jeBoolean JETCC jePath_ModifyKeyframe(
-	jePath *P,
+GRAPI grBoolean GRCC grPath_ModifyKeyframe(
+	grPath *P,
 	int Index,
 	int ChannelMask,
-	const jeXForm3d *Matrix);
+	const grXForm3d *Matrix);
 	
 
 //------------------ saving/loading a path
-JETAPI jePath* JETCC jePath_CreateFromFile(jeVFile *F);
+GRAPI grPath* GRCC grPath_CreateFromFile(grVFile *F);
 	// loads a file 
 
-JETAPI jeBoolean JETCC jePath_WriteToFile(const jePath *P, jeVFile *F);
+GRAPI grBoolean GRCC grPath_WriteToFile(const grPath *P, grVFile *F);
 	// dumps a path to a file
 
 #ifdef __cplusplus

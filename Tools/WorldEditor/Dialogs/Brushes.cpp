@@ -229,7 +229,7 @@ void CBrushes::FillFields( uint32 Contents, int32 BlankFieldFlag )
 	if( BlankFieldFlag & BRUSH_FIELD_FLOCK ) 
 		m_Flocking.SetCheck( 2 ) ;
 	else
-		m_Flocking.SetCheck( (Contents & JE_BSP_CONTENTS_FLOCK) ? true : false ) ;
+		m_Flocking.SetCheck( (Contents & GR_BSP_CONTENTS_FLOCK) ? true : false ) ;
 
 	if( BlankFieldFlag & BRUSH_FIELD_TEXT_LOCK ) 
 		m_LockTextures.SetCheck( 2 ) ;
@@ -240,10 +240,10 @@ void CBrushes::FillFields( uint32 Contents, int32 BlankFieldFlag )
 	if( BlankFieldFlag & BRUSH_FIELD_DRAW ) 
 		m_Draw = -1;
 	else
-	if( Contents & JE_BSP_CONTENTS_AIR) 
+	if( Contents & GR_BSP_CONTENTS_AIR) 
 		m_Draw = 0;
 	else
-	if( Contents & JE_BSP_CONTENTS_EMPTY) 
+	if( Contents & GR_BSP_CONTENTS_EMPTY) 
 		m_Draw = 1;
 	else
 		m_Draw = 2;
@@ -259,7 +259,7 @@ void CBrushes::OnCkFlocking()
 	ASSERT( pDoc ) ;
 
 	if( m_Flocking.GetCheck( ) )
-		Contents = JE_BSP_CONTENTS_FLOCK ;
+		Contents = GR_BSP_CONTENTS_FLOCK ;
 	else
 		Contents = 0 ;
 
@@ -277,15 +277,15 @@ void CBrushes::SetDrawMode()
 	switch( m_Draw )
 	{
 	case 0:
-		Contents = JE_BSP_CONTENTS_AIR;
+		Contents = GR_BSP_CONTENTS_AIR;
 		break;
 
 	case 1:
-		Contents = JE_BSP_CONTENTS_EMPTY;
+		Contents = GR_BSP_CONTENTS_EMPTY;
 		break;
 
 	case 2:
-		Contents = JE_BSP_CONTENTS_SOLID;
+		Contents = GR_BSP_CONTENTS_SOLID;
 		break;
 	}
 	UpdateData( false );

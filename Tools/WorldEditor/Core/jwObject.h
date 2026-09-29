@@ -34,7 +34,7 @@ extern "C" {
 #include "ExtBox.h"
 #include "Defs.h"
 #include "vfile.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 #include "Ortho.h"
 #include "object.h"
 
@@ -48,7 +48,7 @@ typedef struct tagFindInfo
 	const Ortho *	pOrtho ;
 	const Point	*	pViewPt ;
 	Object		*	pObject ;
-	jeFloat			fMinDistance ;
+	grFloat			fMinDistance ;
 	int32			nFace ;
 	int32			nFaceEdge ;
 	MODE			eMode ;
@@ -65,7 +65,7 @@ enum {
 	OBJECT_POSITION_FIELD_END
 };
 
-typedef jeBoolean (*ObjectListCB)( Object *pObject, void * pVoid ) ;
+typedef grBoolean (*ObjectListCB)( Object *pObject, void * pVoid ) ;
 
 void		Object_Free( Object ** ppObject ) ;
 Object *	Object_Copy( Object * pObject, const int32 nNumber ) ;
@@ -79,43 +79,43 @@ OBJECT_KIND		Object_GetKind( const Object * pObject );
 const char *	Object_GetName( const Object * pObject ) ;
 int32			Object_GetNameTag( const Object * pObject  );
 char		*	Object_GetNameAndTag( const Object * pObject ) ; //Allocates name
-jeBoolean		Object_GetTransform( Object * pObject, jeXForm3d * pXForm );
-jeBoolean		Object_GetWorldAxialBounds( Object * pObject, jeExtBox *ObjectBounds );
-jeBoolean		Object_GetWorldDrawBounds( Object * pObject, jeExtBox *ObjectBounds );
+grBoolean		Object_GetTransform( Object * pObject, grXForm3d * pXForm );
+grBoolean		Object_GetWorldAxialBounds( Object * pObject, grExtBox *ObjectBounds );
+grBoolean		Object_GetWorldDrawBounds( Object * pObject, grExtBox *ObjectBounds );
 uint32			Object_GetMiscFlags( const Object * pObject );
 Group		*   Object_GetGroup( const Object * pObject );
 uint32			Object_GetGroupTag( const Object * pObject );
-jeBoolean		Object_IsInLevel( const Object * pObject );
-jeBoolean		Object_SelectClosest(  Object * pObject, FindInfo	*	pFindInfo );
+grBoolean		Object_IsInLevel( const Object * pObject );
+grBoolean		Object_SelectClosest(  Object * pObject, FindInfo	*	pFindInfo );
 int32			Object_GetXFormModFlags( Object * pObject );
-jeObject	*	Object_GetjeObject( Object * pObject );
+grObject	*	Object_GetgrObject( Object * pObject );
 
 // MODIFY
 void			Object_ClearMiscFlags( Object * pObject, uint32 nMiscFlags );
 void			Object_SetMiscFlags( Object * pObject, uint32 nMiscFlags );
-jeBoolean		Object_Move(  Object * pObject, const jeVec3d * pWorldDistance );
-jeBoolean		Object_Rotate( Object * pObject, ORTHO_AXIS RAxis, jeFloat RadianAngle, const jeVec3d * pRotationCenter ) ;
-jeBoolean		Object_Size( Object * pObject, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
-jeBoolean		Object_SetTransform( Object *pObject, jeXForm3d * pXForm );
-jeBoolean		Object_SetName( Object * pObject, const char * Name, int32 nNumber );
-void			Object_Shear( Object * pObject, const jeVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const jeExtBox * pSelectedBounds);
+grBoolean		Object_Move(  Object * pObject, const grVec3d * pWorldDistance );
+grBoolean		Object_Rotate( Object * pObject, ORTHO_AXIS RAxis, grFloat RadianAngle, const grVec3d * pRotationCenter ) ;
+grBoolean		Object_Size( Object * pObject, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
+grBoolean		Object_SetTransform( Object *pObject, grXForm3d * pXForm );
+grBoolean		Object_SetName( Object * pObject, const char * Name, int32 nNumber );
+void			Object_Shear( Object * pObject, const grVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const grExtBox * pSelectedBounds);
 void			Object_SetGroupTag( Object * pObject, uint32 Tag  );
 void			Object_SetGroup( Object * pObject, Group * pGroup );
-jeProperty_List * Object_BuildDescriptor( Object * pObject );
-void			Object_SetProperty( Object * pObject, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bLightUpdate, jeBoolean bBrushUpdate, jeBoolean bBrushLighting  );
-void			Object_Update( Object *pObject, int Update_Type, jeBoolean bOverideDirty );
+grProperty_List * Object_BuildDescriptor( Object * pObject );
+void			Object_SetProperty( Object * pObject, int DataId, int DataType, grProperty_Data * pData, grBoolean bLightUpdate, grBoolean bBrushUpdate, grBoolean bBrushLighting  );
+void			Object_Update( Object *pObject, int Update_Type, grBoolean bOverideDirty );
 void			Object_Dirty( Object *pObject );
-void			Object_SetInLevel( Object *pObject, jeBoolean bInLevel );
-jeBoolean		Object_SendMessage( Object *pObect, int32 message, void * data );
+void			Object_SetInLevel( Object *pObject, grBoolean bInLevel );
+grBoolean		Object_SendMessage( Object *pObect, int32 message, void * data );
 
 // CAN/IS
-jeBoolean		Object_IsInRect( const Object * pObject, jeExtBox *pSelRect, jeBoolean bSelEncompeses );
+grBoolean		Object_IsInRect( const Object * pObject, grExtBox *pSelRect, grBoolean bSelEncompeses );
 Group		*	Object_IsMemberOfLockedGroup( const Object * pObject );
 
 //FILE
 
-jeBoolean		Object_WriteToFile( Object * pObject, jeVFile * pF );
-jeBoolean		Object_InitFromFile( jeVFile * pF , Object * pObject );
+grBoolean		Object_WriteToFile( Object * pObject, grVFile * pF );
+grBoolean		Object_InitFromFile( grVFile * pF , Object * pObject );
 #ifdef __cplusplus
 }
 #endif

@@ -57,7 +57,7 @@ struct	INetFile : public IBindStatusCallback
 {
 	INetFile();
 	~INetFile();
-	jeBoolean				Initialize(jeBoolean InitAsDirectory);
+	grBoolean				Initialize(grBoolean InitAsDirectory);
 
 	STDMETHODIMP			QueryInterface(REFIID riid,  void **ppvObj);
 	STDMETHODIMP_(ULONG)	AddRef(void);
@@ -104,10 +104,10 @@ struct	INetFile : public IBindStatusCallback
 
 	uint32 BytesAvailable(void)
 	{
-		return (CheckedForHints == JE_TRUE) ? (long)m_dwTotalRead - MemoryFilePos() : 0;
+		return (CheckedForHints == GR_TRUE) ? (long)m_dwTotalRead - MemoryFilePos() : 0;
 	}
 
-	jeBoolean	GetFullPath(char *Buff, int MaxLen) const;
+	grBoolean	GetFullPath(char *Buff, int MaxLen) const;
 
 	unsigned int	Signature;
 	INetFileState	State;
@@ -116,29 +116,29 @@ struct	INetFile : public IBindStatusCallback
 	DWORD			RefCount;
 	IStream *		m_spStream;
 	DWORD			m_dwTotalRead;
-	jeVFile *		MemoryFile;
+	grVFile *		MemoryFile;
 	CRITICAL_SECTION	Lock;
 
-	jeThreadQueue_Job *	Job;
+	grThreadQueue_Job *	Job;
 
-	jeBoolean		IgnoreHints;		// Should we ignore hints completely?
-	jeBoolean		HasHints;			// Does this file have hints
-	jeBoolean		CheckedForHints;	// We have decided whether or not we have hints
+	grBoolean		IgnoreHints;		// Should we ignore hints completely?
+	grBoolean		HasHints;			// Does this file have hints
+	grBoolean		CheckedForHints;	// We have decided whether or not we have hints
 	long			TrueFileBase;		// Position of first user bits (past hint)
 	long			ClientPos;			// Client's file position
-	jeVFile_Hints	Hints;
-	jeVFile *		HintsFile;
+	grVFile_Hints	Hints;
+	grVFile *		HintsFile;
 	long			HintsPosition;		// Relative position into the hints
 
-	jeBoolean		IsDirectory;		// Only set if this is really a directory
+	grBoolean		IsDirectory;		// Only set if this is really a directory
 	INetFile *		Parent;				// Set to outer 
 
-	jeVFile_RemoteFileStatistics		Stats;
+	grVFile_RemoteFileStatistics		Stats;
 };
 
 #ifdef	__BORLANDC__
-#define	jeRam_Allocate	malloc
-#define	jeRam_Free	free
+#define	grRam_Allocate	malloc
+#define	grRam_Free	free
 #endif
 
 //	"IF01"
@@ -159,14 +159,14 @@ INetFile::INetFile()
 	TrueFileBase = 0;
 	ClientPos = 0;
 	Job = NULL;
-	IgnoreHints = JE_FALSE;
-	HasHints = JE_FALSE;
-	CheckedForHints = JE_FALSE;
+	IgnoreHints = GR_FALSE;
+	HasHints = GR_FALSE;
+	CheckedForHints = GR_FALSE;
 	Hints.HintData = NULL;
 	Hints.HintDataLength = 0;
 	HintsPosition = 0;
 	State = STATE_READING;
-	IsDirectory = JE_FALSE;
+	IsDirectory = GR_FALSE;
 	Parent = NULL;
 	memset(&Stats, 0, sizeof(Stats));
 	InitializeCriticalSection(&Lock);
@@ -177,47 +177,47 @@ INetFile::~INetFile()
 
 	// CB : this wait must be outside the critical section !
 	if	(Job)
-		jeThreadQueue_WaitOnJob(Job, JE_THREADQUEUE_STATUS_COMPLETED);
+		grThreadQueue_WaitOnJob(Job, GR_THREADQUEUE_STATUS_COMPLETED);
 
 	EnterCriticalSection(&Lock);
 
 	if	(Job)
-		jeThreadQueue_JobDestroy(&Job);
+		grThreadQueue_JobDestroy(&Job);
 
 	Signature = 0;
 	if	(FullPath)
-		jeRam_Free(FullPath);
+		grRam_Free(FullPath);
 
-	if	(HasHints == JE_TRUE)
+	if	(HasHints == GR_TRUE)
 	{
 		assert(Hints.HintData != NULL);
 		assert(Hints.HintDataLength > 0);
-		jeRam_Free(Hints.HintData);
+		grRam_Free(Hints.HintData);
 	}
 
 	if	(MemoryFile)
-		jeVFile_Close(MemoryFile);
+		grVFile_Close(MemoryFile);
 
 	LeaveCriticalSection(&Lock);
 	DeleteCriticalSection(&Lock);
 }
 
 // This function is a little pointless.  Should clean this up
-jeBoolean INetFile::Initialize(jeBoolean InitAsDirectory)
+grBoolean INetFile::Initialize(grBoolean InitAsDirectory)
 {
-	jeVFile_MemoryContext	Context;
+	grVFile_MemoryContext	Context;
 
 	// This function is only used for non-directory files.
 
-	if	(InitAsDirectory == JE_FALSE)
+	if	(InitAsDirectory == GR_FALSE)
 	{
 		memset(&Context, 0, sizeof(Context));
-		MemoryFile = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_MEMORY, NULL, &Context, JE_VFILE_OPEN_CREATE);
+		MemoryFile = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_MEMORY, NULL, &Context, GR_VFILE_OPEN_CREATE);
 		if	(!MemoryFile)
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 STDMETHODIMP INetFile::QueryInterface(REFIID riid,  void **ppvObj)
@@ -338,7 +338,7 @@ STDMETHODIMP INetFile::OnDataAvailable(
 		if	(dwRead > 0)
 		{
 			BYTE* 					pBytes;
-			jeVFile_MemoryContext	MemoryContext;
+			grVFile_MemoryContext	MemoryContext;
 
 			ThreadLog_Printf("FSInet: got %d bytes on '%s'\n", dwRead, FullPath);
 			// Update statistics
@@ -348,19 +348,19 @@ STDMETHODIMP INetFile::OnDataAvailable(
 			if	(dwRead < (DWORD)(Stats.MinBlockSize))
 				Stats.MinBlockSize = dwRead;
 
-			if	(jeVFile_Seek(MemoryFile, 0, JE_VFILE_SEEKEND) == JE_FALSE)
+			if	(grVFile_Seek(MemoryFile, 0, GR_VFILE_SEEKEND) == GR_FALSE)
 			{
 				LeaveCriticalSection(&Lock);
 				State = STATE_ERROR;
 				return S_OK;
 			}
-			if	(jeVFile_Seek(MemoryFile, dwRead, JE_VFILE_SEEKCUR) == JE_FALSE)
+			if	(grVFile_Seek(MemoryFile, dwRead, GR_VFILE_SEEKCUR) == GR_FALSE)
 			{
 				LeaveCriticalSection(&Lock);
 				State = STATE_ERROR;
 				return S_OK;
 			}
-			jeVFile_UpdateContext(MemoryFile, &MemoryContext, sizeof(MemoryContext));
+			grVFile_UpdateContext(MemoryFile, &MemoryContext, sizeof(MemoryContext));
 			pBytes = ((BYTE *)MemoryContext.Data) + MemoryContext.DataLength - dwRead;
 			if (pBytes == NULL)
 			{
@@ -387,29 +387,29 @@ STDMETHODIMP INetFile::OnDataAvailable(
 		State = STATE_DATACOMPLETE;
 	}
 
-	if	(CheckedForHints == JE_FALSE && State != STATE_ERROR)
+	if	(CheckedForHints == GR_FALSE && State != STATE_ERROR)
 	{
-		jeVFile_HintsFileHeader *	HintsHeader;
+		grVFile_HintsFileHeader *	HintsHeader;
 
 		if	(m_dwTotalRead > sizeof(HintsHeader))
 		{
-			jeVFile_MemoryContext	MemoryContext;
+			grVFile_MemoryContext	MemoryContext;
 
-			jeVFile_UpdateContext(MemoryFile, &MemoryContext, sizeof(MemoryContext));
-			HintsHeader = (jeVFile_HintsFileHeader *)MemoryContext.Data;
-			if	(HintsHeader->Signature != JE_VFILE_HINTSFILEHEADER_SIGNATURE)
+			grVFile_UpdateContext(MemoryFile, &MemoryContext, sizeof(MemoryContext));
+			HintsHeader = (grVFile_HintsFileHeader *)MemoryContext.Data;
+			if	(HintsHeader->Signature != GR_VFILE_HINTSFILEHEADER_SIGNATURE)
 			{
-				CheckedForHints = JE_TRUE;
+				CheckedForHints = GR_TRUE;
 			}
 			else
 			{
 				if	(HintsHeader->HintDataLength + sizeof(*HintsHeader) <= m_dwTotalRead)
 				{
 					Hints.HintDataLength = HintsHeader->HintDataLength;
-					Hints.HintData = jeRam_Allocate(HintsHeader->HintDataLength);
+					Hints.HintData = grRam_Allocate(HintsHeader->HintDataLength);
 					if	(Hints.HintData)
 					{
-						jeVFile_MemoryContext	Context;
+						grVFile_MemoryContext	Context;
 
 #pragma message("FSInet : Need to clean up the hints file implementation")
 
@@ -417,17 +417,17 @@ STDMETHODIMP INetFile::OnDataAvailable(
 						Context.DataLength = Hints.HintDataLength;
 						memcpy(Hints.HintData, (char *)MemoryContext.Data + sizeof(*HintsHeader), HintsHeader->HintDataLength);
 						TrueFileBase = sizeof(*HintsHeader) + HintsHeader->HintDataLength;
-						HintsFile = jeVFile_OpenNewSystem(NULL,
-														  JE_VFILE_TYPE_MEMORY,
+						HintsFile = grVFile_OpenNewSystem(NULL,
+														  GR_VFILE_TYPE_MEMORY,
 														  NULL,
 														  &Context,
-														  JE_VFILE_OPEN_READONLY);
+														  GR_VFILE_OPEN_READONLY);
 						if	(!HintsFile)
 							State = STATE_ERROR;
 														  
 						ThreadLog_Printf("FSInet: got hints for '%s'\n", FullPath);
-						CheckedForHints = JE_TRUE;
-						HasHints = JE_TRUE;
+						CheckedForHints = GR_TRUE;
+						HasHints = GR_TRUE;
 					}
 					else
 					{
@@ -440,7 +440,7 @@ STDMETHODIMP INetFile::OnDataAvailable(
 		{
 			// Total size of the file is smaller than the hints header!
 			// Now why would anyone stream that?
-			CheckedForHints = JE_TRUE;
+			CheckedForHints = GR_TRUE;
 		}
 	}
 
@@ -457,7 +457,7 @@ STDMETHODIMP INetFile::OnObjectAvailable(
 	return S_OK;
 }
 
-jeBoolean	INetFile::GetFullPath(char *Buff, int MaxLen) const
+grBoolean	INetFile::GetFullPath(char *Buff, int MaxLen) const
 {
 	int	Length;
 
@@ -465,7 +465,7 @@ jeBoolean	INetFile::GetFullPath(char *Buff, int MaxLen) const
 
 	Length = strlen(FullPath) + 1;
 	if	(Length > MaxLen)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	// <> CB 2/23
 	if ( strstr(FullPath,":/") ) // absolute path
@@ -476,8 +476,8 @@ jeBoolean	INetFile::GetFullPath(char *Buff, int MaxLen) const
 	{
 		if	(Parent)
 		{
-			if	(Parent->GetFullPath(Buff, MaxLen - Length) == JE_FALSE)
-				return JE_FALSE;
+			if	(Parent->GetFullPath(Buff, MaxLen - Length) == GR_FALSE)
+				return GR_FALSE;
 		}
 
 		if ( strlen(Buff) > 0 )
@@ -492,35 +492,35 @@ jeBoolean	INetFile::GetFullPath(char *Buff, int MaxLen) const
 		strcat(Buff, FullPath);
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	void *	JETCC FSINet_FinderCreate(
-	jeVFile *		/*FS*/,
+static	void *	GRCC FSINet_FinderCreate(
+	grVFile *		/*FS*/,
 	void *			/*Handle*/,
 	const char *	/*FileSpec*/)
 {
 	return NULL;
 }
 
-static	jeBoolean	JETCC FSINet_FinderGetNextFile(void * /*Handle*/)
+static	grBoolean	GRCC FSINet_FinderGetNextFile(void * /*Handle*/)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSINet_FinderGetProperties(void * /*Handle*/, jeVFile_Properties * /*Props*/)
+static	grBoolean	GRCC FSINet_FinderGetProperties(void * /*Handle*/, grVFile_Properties * /*Props*/)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	void JETCC FSINet_FinderDestroy(void * /*Handle*/)
+static	void GRCC FSINet_FinderDestroy(void * /*Handle*/)
 {
 	assert(!"Not implemented");
 }
 
 WINOLEAPI CoInitializeEx(LPVOID reserved, DWORD flags);
 
-void	MyOpenFile(jeThreadQueue_Job *Job, void *Context)
+void	MyOpenFile(grThreadQueue_Job *Job, void *Context)
 {
 	INetFile *	File;
 	HRESULT		hr;
@@ -573,7 +573,7 @@ void	MyOpenFile(jeThreadQueue_Job *Job, void *Context)
 	CoInitializeEx(NULL, 2);
 //	printf("[%p] about to open the file\n", File);
 	AbsolutePath[0] = 0;
-	if	(File->GetFullPath(AbsolutePath, sizeof(AbsolutePath)) == JE_TRUE)
+	if	(File->GetFullPath(AbsolutePath, sizeof(AbsolutePath)) == GR_TRUE)
 	{
 //		Log_Printf("FSInet : about to open : %s\n",AbsolutePath);
 		ThreadLog_Printf("FSInet : about to open : %s\n", AbsolutePath);
@@ -618,8 +618,8 @@ void	MyOpenFile(jeThreadQueue_Job *Job, void *Context)
 	}
 }
 
-static	void *	JETCC FSINet_Open(
-	jeVFile *		/*FS*/,
+static	void *	GRCC FSINet_Open(
+	grVFile *		/*FS*/,
 	void *			Handle,
 	const char *	Name,
 	void *			/*Context*/,
@@ -647,7 +647,7 @@ static	void *	JETCC FSINet_Open(
 //	CoInitializeEx(NULL, 2);
 //	CoInitializeEx(NULL, 0);
 
-	if	(!(OpenModeFlags & JE_VFILE_OPEN_READONLY))
+	if	(!(OpenModeFlags & GR_VFILE_OPEN_READONLY))
 		return NULL;
 	if ( ! Name )	// <> CB 2/10
 		return NULL;
@@ -659,20 +659,20 @@ static	void *	JETCC FSINet_Open(
 	if	(!NewFile)
 		return NewFile;
 
-	if	(OpenModeFlags & JE_VFILE_OPEN_DIRECTORY)
-		NewFile->IsDirectory = JE_TRUE;
+	if	(OpenModeFlags & GR_VFILE_OPEN_DIRECTORY)
+		NewFile->IsDirectory = GR_TRUE;
 
-	if	(OpenModeFlags & JE_VFILE_OPEN_RAW)
-		NewFile->IgnoreHints = JE_TRUE;
+	if	(OpenModeFlags & GR_VFILE_OPEN_RAW)
+		NewFile->IgnoreHints = GR_TRUE;
 
-	if	(NewFile->Initialize(NewFile->IsDirectory) == JE_FALSE)
+	if	(NewFile->Initialize(NewFile->IsDirectory) == GR_FALSE)
 	{
 		delete NewFile;
 		return NULL;
 	}
 
 	Length = strlen(Name) + 2;
-	NewFile->FullPath = (char *)jeRam_Allocate(Length);
+	NewFile->FullPath = (char *)grRam_Allocate(Length);
 	if	(!NewFile->FullPath)
 	{
 		delete NewFile;
@@ -681,7 +681,7 @@ static	void *	JETCC FSINet_Open(
 
 	memcpy(NewFile->FullPath, Name, Length - 1);
 #if 0 // <> CB 2/10
-	if	(NewFile->IsDirectory == JE_TRUE)
+	if	(NewFile->IsDirectory == GR_TRUE)
 		strcat(NewFile->FullPath, "/");
 #endif
 
@@ -689,21 +689,21 @@ static	void *	JETCC FSINet_Open(
 	NewFile->Signature = INETFILE_SIGNATURE;
 	NewFile->State = STATE_READING;
 
-	if	(NewFile->IsDirectory == JE_FALSE)
+	if	(NewFile->IsDirectory == GR_FALSE)
 	{
 		ThreadLog_Printf("FSInet : starting open thread for : %s\n", NewFile->FullPath);
-		NewFile->Job = jeThreadQueue_JobCreate(MyOpenFile, NewFile, NULL, 0x1000);
+		NewFile->Job = grThreadQueue_JobCreate(MyOpenFile, NewFile, NULL, 0x1000);
 	#if 1 
 		// we have to do this right now, because we don't have the emergency wait on job
-		jeThreadQueue_PollJobs();
+		grThreadQueue_PollJobs();
 	#endif
 	}
 
 	return (void *)NewFile;
 }
 
-static	void *	JETCC FSINet_OpenNewSystem(
-	jeVFile *		/*Base*/,
+static	void *	GRCC FSINet_OpenNewSystem(
+	grVFile *		/*Base*/,
 	const char *	Name,
 	void *			/*Context*/,
 	unsigned int 	OpenModeFlags)
@@ -711,15 +711,15 @@ static	void *	JETCC FSINet_OpenNewSystem(
 	INetFile *	File;
 	int			Length;
 
-	if	(!(OpenModeFlags & (JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY)))
+	if	(!(OpenModeFlags & (GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY)))
 		return NULL;
 
 	File = new INetFile;
 	if	(!File)
 		return (void *)File;
 	
-	File->IsDirectory = JE_TRUE;
-	if	(File->Initialize(File->IsDirectory) == JE_FALSE)
+	File->IsDirectory = GR_TRUE;
+	if	(File->Initialize(File->IsDirectory) == GR_FALSE)
 	{
 		delete File;
 		return NULL;
@@ -728,7 +728,7 @@ static	void *	JETCC FSINet_OpenNewSystem(
 	if ( ! Name ) Name = "http://"; //<> CB 2/10
 
 	Length = strlen(Name) + 2;
-	File->FullPath = (char *)jeRam_Allocate(Length);
+	File->FullPath = (char *)grRam_Allocate(Length);
 	if	(File->FullPath == NULL)
 	{
 		delete File;
@@ -745,35 +745,35 @@ static	void *	JETCC FSINet_OpenNewSystem(
 	return (void *)File;
 }
 
-static	jeBoolean	JETCC FSINet_UpdateContext(
-	jeVFile *		/*FS*/,
+static	grBoolean	GRCC FSINet_UpdateContext(
+	grVFile *		/*FS*/,
 	void *			Handle,
 	void *			Context,
 	int 			ContextSize)
 {
 	INetFile *						File;
-	jeVFile_RemoteFileStatistics *	Stats;
+	grVFile_RemoteFileStatistics *	Stats;
 	
 	File = (INetFile *)Handle;
 
-	if	(File->IsDirectory == JE_TRUE)
-		return JE_FALSE;
+	if	(File->IsDirectory == GR_TRUE)
+		return GR_FALSE;
 	
 	CHECK_HANDLE(File);
 
-	Stats = (jeVFile_RemoteFileStatistics *)Context;
+	Stats = (grVFile_RemoteFileStatistics *)Context;
 	if	(ContextSize != sizeof(*Stats))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if	(File->State == STATE_ERROR)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	*Stats = File->Stats;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSINet_Close(void *Handle)
+static	grBoolean	GRCC FSINet_Close(void *Handle)
 {
 	INetFile *	File;
 	
@@ -785,15 +785,15 @@ static	jeBoolean	JETCC FSINet_Close(void *Handle)
 
 //	<> CB moved inside the delete
 //	if	(File->Job)
-//		jeThreadQueue_WaitOnJob(File->Job,JE_THREADQUEUE_STATUS_COMPLETED);
+//		grThreadQueue_WaitOnJob(File->Job,GR_THREADQUEUE_STATUS_COMPLETED);
 	
 	ThreadLog_Printf("FSInet: closing '%s'\n", File->FullPath);
 	delete File;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSINet_GetS(void *Handle, void *Buff, int MaxLen)
+static	grBoolean	GRCC FSINet_GetS(void *Handle, void *Buff, int MaxLen)
 {
 	INetFile *	File;
 //	DWORD		BytesRead;
@@ -809,7 +809,7 @@ static	jeBoolean	JETCC FSINet_GetS(void *Handle, void *Buff, int MaxLen)
 	CHECK_HANDLE(File);
 
 	if	(File->State == STATE_ERROR)
-		return JE_FALSE;
+		return GR_FALSE;
 
 #pragma message ("FSINet_GetS: Not implemented")
 
@@ -817,7 +817,7 @@ static	jeBoolean	JETCC FSINet_GetS(void *Handle, void *Buff, int MaxLen)
 	Result = ReadFile(File->FileHandle, Buff, MaxLen - 1, &BytesRead, NULL);
 	if	(BytesRead == 0)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	End = (char *)Buff + BytesRead;
@@ -845,7 +845,7 @@ static	jeBoolean	JETCC FSINet_GetS(void *Handle, void *Buff, int MaxLen)
 			// Set the file pointer back a bit since we probably overran
 			SetFilePointer(File->FileHandle, -(int)(BytesRead - ((p + Skip) - (char *)Buff)), NULL, FILE_CURRENT); 
 			assert(p - (char *)Buff <= MaxLen);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else if	(*p == '\n')
 		{
@@ -854,15 +854,15 @@ static	jeBoolean	JETCC FSINet_GetS(void *Handle, void *Buff, int MaxLen)
 			SetFilePointer(File->FileHandle, -(int)(BytesRead - (p - (char *)Buff)), NULL, FILE_CURRENT); 
 			*p = '\0';
 			assert(p - (char *)Buff <= MaxLen);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		p++;
 	}
 #endif
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSINet_BytesAvailable(void *Handle, long *Count)
+static	grBoolean	GRCC FSINet_BytesAvailable(void *Handle, long *Count)
 {
 	INetFile *	File;
 	MSG			Msg;
@@ -874,16 +874,16 @@ static	jeBoolean	JETCC FSINet_BytesAvailable(void *Handle, long *Count)
 	CHECK_HANDLE(File);
 
 	if	(File->State == STATE_ERROR)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	PeekMessage(&Msg, NULL, 0, 0, PM_NOREMOVE);
 
 	if	(File->Job)
 	{
-		if	(!jeThreadQueue_WaitOnJob(File->Job, JE_THREADQUEUE_STATUS_RUNNING))
+		if	(!grThreadQueue_WaitOnJob(File->Job, GR_THREADQUEUE_STATUS_RUNNING))
 		{
-			jeErrorLog_AddString((jeErrorLog_ErrorClassType)-1,"FSInet : Wait on job failed!",File->FullPath);
-			return JE_FALSE;
+			grErrorLog_AddString((grErrorLog_ErrorClassType)-1,"FSInet : Wait on job failed!",File->FullPath);
+			return GR_FALSE;
 		}
 	}
 
@@ -891,17 +891,17 @@ static	jeBoolean	JETCC FSINet_BytesAvailable(void *Handle, long *Count)
 	*Count = File->BytesAvailable();
 	LeaveCriticalSection(&File->Lock);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 extern "C" {
-	extern jeVFile * Hack_VFS_File;
+	extern grVFile * Hack_VFS_File;
 };
 
-static	jeBoolean	JETCC FSINet_Read(void *Handle, void *Buff, uint32 Count)
+static	grBoolean	GRCC FSINet_Read(void *Handle, void *Buff, uint32 Count)
 {
 	INetFile *	File;
-	jeBoolean	DataAlreadyAvailable;
+	grBoolean	DataAlreadyAvailable;
 
 	assert(Buff);
 	assert(Count != 0);
@@ -910,45 +910,45 @@ static	jeBoolean	JETCC FSINet_Read(void *Handle, void *Buff, uint32 Count)
 
 	CHECK_HANDLE(File);
 
-	assert(!Hack_VFS_File || jeVFile_IsValid(Hack_VFS_File));
+	assert(!Hack_VFS_File || grVFile_IsValid(Hack_VFS_File));
 
 	if	(((File->State >= STATE_DATACOMPLETE ) && File->BytesAvailable() < Count) ||
 		 (File->State == STATE_ERROR))
 	{
 		if	(File->State == STATE_ERROR)
-			jeErrorLog_AddString((jeErrorLog_ErrorClassType)-1,"FSInet : Read on file with error",File->FullPath);
+			grErrorLog_AddString((grErrorLog_ErrorClassType)-1,"FSInet : Read on file with error",File->FullPath);
 		else
 		{
-			jeErrorLog_AddString((jeErrorLog_ErrorClassType)-1,"FSInet : Read past EOF", File->FullPath);
+			grErrorLog_AddString((grErrorLog_ErrorClassType)-1,"FSInet : Read past EOF", File->FullPath);
 			assert(0);
 		}
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	assert(!Hack_VFS_File || jeVFile_IsValid(Hack_VFS_File));
+	assert(!Hack_VFS_File || grVFile_IsValid(Hack_VFS_File));
 	
-	if	(!jeThreadQueue_WaitOnJob(File->Job,JE_THREADQUEUE_STATUS_RUNNING))
+	if	(!grThreadQueue_WaitOnJob(File->Job,GR_THREADQUEUE_STATUS_RUNNING))
 	{
-		jeErrorLog_AddString((jeErrorLog_ErrorClassType)-1,"FSInet : Wait on job failed!", File->FullPath);
-		return JE_FALSE;
+		grErrorLog_AddString((grErrorLog_ErrorClassType)-1,"FSInet : Wait on job failed!", File->FullPath);
+		return GR_FALSE;
 	}
 
-	assert(!Hack_VFS_File || jeVFile_IsValid(Hack_VFS_File));
+	assert(!Hack_VFS_File || grVFile_IsValid(Hack_VFS_File));
 
 #pragma message("FSInet : doesn't check for VFHH and handle hints!!!")
 
 	if	(File->BytesAvailable() < Count)
 	{
 		ThreadLog_Printf("FSInet: stalling in read for %d bytes, %d available on '%s'\n", Count, File->BytesAvailable(), File->FullPath);
-		DataAlreadyAvailable = JE_FALSE;
+		DataAlreadyAvailable = GR_FALSE;
 	}
 	else
-		DataAlreadyAvailable = JE_TRUE;
+		DataAlreadyAvailable = GR_TRUE;
 
 	// Block until we've got enough bytes
 	while	(File->BytesAvailable() < Count)
 	{
-		jeThreadQueue_Sleep(1);
+		grThreadQueue_Sleep(1);
 	
 		if	(((File->State >= STATE_DATACOMPLETE ) && 
 					File->BytesAvailable() < Count) ||
@@ -956,47 +956,47 @@ static	jeBoolean	JETCC FSINet_Read(void *Handle, void *Buff, uint32 Count)
 		{
 			if	(File->State == STATE_ERROR)
 			{
-				jeErrorLog_AddString((jeErrorLog_ErrorClassType)-1,"FSInet : Read on file with error",File->FullPath);
+				grErrorLog_AddString((grErrorLog_ErrorClassType)-1,"FSInet : Read on file with error",File->FullPath);
 			}
 			else
 			{
-				jeErrorLog_AddString((jeErrorLog_ErrorClassType)-1,"FSInet : Read past EOF",File->FullPath);
+				grErrorLog_AddString((grErrorLog_ErrorClassType)-1,"FSInet : Read past EOF",File->FullPath);
 				assert(0);
 			}
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
 	
-	if	(DataAlreadyAvailable == JE_FALSE)
+	if	(DataAlreadyAvailable == GR_FALSE)
 		ThreadLog_Printf("FSInet: finished wait for data on '%s'\n", File->FullPath);
 
-	assert(!Hack_VFS_File || jeVFile_IsValid(Hack_VFS_File)); // @@ !
+	assert(!Hack_VFS_File || grVFile_IsValid(Hack_VFS_File)); // @@ !
 
 #pragma message ("FSInet : Investigate strange behaviour with sleep in FSINet_Read")
 		// Behaviour seems better with the sleep out of the loop!??
-//		jeThreadQueue_Sleep(1);
+//		grThreadQueue_Sleep(1);
 
 	EnterCriticalSection(&File->Lock);
 
 	assert(File->BytesAvailable() >= Count);
-	jeVFile_Seek(File->MemoryFile, File->MemoryFilePos(), JE_VFILE_SEEKSET);
-	jeVFile_Read(File->MemoryFile, Buff, Count);
-	jeVFile_Seek(File->MemoryFile, File->m_dwTotalRead, JE_VFILE_SEEKSET);
+	grVFile_Seek(File->MemoryFile, File->MemoryFilePos(), GR_VFILE_SEEKSET);
+	grVFile_Read(File->MemoryFile, Buff, Count);
+	grVFile_Seek(File->MemoryFile, File->m_dwTotalRead, GR_VFILE_SEEKSET);
 	File->ClientPos += Count;
 
 	LeaveCriticalSection(&File->Lock);
 
-	assert(!Hack_VFS_File || jeVFile_IsValid(Hack_VFS_File));
+	assert(!Hack_VFS_File || grVFile_IsValid(Hack_VFS_File));
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSINet_Write(void * /*Handle*/, const void * /*Buff*/, int /*Count*/)
+static	grBoolean	GRCC FSINet_Write(void * /*Handle*/, const void * /*Buff*/, int /*Count*/)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSINet_Seek(void *Handle, int Where, jeVFile_Whence Whence)
+static	grBoolean	GRCC FSINet_Seek(void *Handle, int Where, grVFile_Whence Whence)
 {
 	INetFile *	File;
 	long		FinalPos = 0;
@@ -1004,32 +1004,32 @@ static	jeBoolean	JETCC FSINet_Seek(void *Handle, int Where, jeVFile_Whence Whenc
 
 	File = (INetFile *)Handle;
 
-	if	(File->IsDirectory == JE_TRUE)
-		return JE_FALSE;
+	if	(File->IsDirectory == GR_TRUE)
+		return GR_FALSE;
 	
 	CHECK_HANDLE(File);
 
 	EnterCriticalSection(&File->Lock);
 
-	jeVFile_Size(File->MemoryFile, &MemoryFileSize);
+	grVFile_Size(File->MemoryFile, &MemoryFileSize);
 
 	switch	(Whence)
 	{
-	case	JE_VFILE_SEEKCUR:
+	case	GR_VFILE_SEEKCUR:
 		FinalPos = File->MemoryFilePos() + Where;
 		break;
 
-	case	JE_VFILE_SEEKEND:
+	case	GR_VFILE_SEEKEND:
 		if	(File->State < STATE_DATACOMPLETE)
 		{
 			LeaveCriticalSection(&File->Lock);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		FinalPos = MemoryFileSize - Where;
 		break;
 
-	case	JE_VFILE_SEEKSET:
+	case	GR_VFILE_SEEKSET:
 		FinalPos = File->TrueFileBase + Where;
 		break;
 
@@ -1045,7 +1045,7 @@ static	jeBoolean	JETCC FSINet_Seek(void *Handle, int Where, jeVFile_Whence Whenc
 		// Block until we've got enough bytes
 
 		#pragma message("Fsinet : Seek past EOF ! Grudgingly allowed..")
-		jeErrorLog_AddString((jeErrorLog_ErrorClassType)-1,
+		grErrorLog_AddString((grErrorLog_ErrorClassType)-1,
 			"Fsinet : Seek past EOF ! Grudgingly allowed..",NULL);
 
 		if	(FinalPos > MemoryFileSize)
@@ -1053,17 +1053,17 @@ static	jeBoolean	JETCC FSINet_Seek(void *Handle, int Where, jeVFile_Whence Whenc
 
 		while	(FinalPos > MemoryFileSize)
 		{
-			jeThreadQueue_PollJobs();
-			jeThreadQueue_Sleep(1);
+			grThreadQueue_PollJobs();
+			grThreadQueue_Sleep(1);
 
 			EnterCriticalSection(&File->Lock);
-			jeVFile_Size(File->MemoryFile, &MemoryFileSize);
+			grVFile_Size(File->MemoryFile, &MemoryFileSize);
 			
 			if	((File->State >= STATE_DATACOMPLETE ) ||
 				 (File->State == STATE_ERROR))
 			{
 				LeaveCriticalSection(&File->Lock);
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 
 			LeaveCriticalSection(&File->Lock);
@@ -1076,10 +1076,10 @@ static	jeBoolean	JETCC FSINet_Seek(void *Handle, int Where, jeVFile_Whence Whenc
 
 	LeaveCriticalSection(&File->Lock);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSINet_EOF(const void *Handle)
+static	grBoolean	GRCC FSINet_EOF(const void *Handle)
 {
 	INetFile *	File;
 
@@ -1092,13 +1092,13 @@ static	jeBoolean	JETCC FSINet_EOF(const void *Handle)
 	if	((File->State >= STATE_DATACOMPLETE ) &&
 		 (File->MemoryFilePos() == (long)File->m_dwTotalRead))
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSINet_Tell(const void *Handle, long *Position)
+static	grBoolean	GRCC FSINet_Tell(const void *Handle, long *Position)
 {
 	const INetFile *	File;
 
@@ -1107,14 +1107,14 @@ static	jeBoolean	JETCC FSINet_Tell(const void *Handle, long *Position)
 	CHECK_HANDLE(File);
 
 	if	(File->State == STATE_ERROR)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	*Position = File->ClientPos;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSINet_Size(const void *Handle, long * Size)
+static	grBoolean	GRCC FSINet_Size(const void *Handle, long * Size)
 {
 	INetFile *	File;
 	MSG Msg;
@@ -1124,10 +1124,10 @@ static	jeBoolean	JETCC FSINet_Size(const void *Handle, long * Size)
 	CHECK_HANDLE(File);
 
 	if	(File->State == STATE_ERROR)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if	(File->State < STATE_DATACOMPLETE) // can only return size when complete!
-		return JE_FALSE;
+		return GR_FALSE;
 
 	PeekMessage(&Msg, NULL, 0, 0, PM_NOREMOVE);
 
@@ -1135,13 +1135,13 @@ static	jeBoolean	JETCC FSINet_Size(const void *Handle, long * Size)
 	*Size = File->m_dwTotalRead;
 	LeaveCriticalSection(&File->Lock);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSINet_GetProperties(const void *Handle, jeVFile_Properties *Properties)
+static	grBoolean	GRCC FSINet_GetProperties(const void *Handle, grVFile_Properties *Properties)
 {
 	const INetFile *	File;
-	jeVFile_Attributes	Attribs;
+	grVFile_Attributes	Attribs;
 
 	assert(Properties);
 
@@ -1150,14 +1150,14 @@ static	jeBoolean	JETCC FSINet_GetProperties(const void *Handle, jeVFile_Properti
 	CHECK_HANDLE(File);
 
 	if	(File->State == STATE_ERROR)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	Attribs = JE_VFILE_ATTRIB_READONLY | JE_VFILE_ATTRIB_REMOTE;
+	Attribs = GR_VFILE_ATTRIB_READONLY | GR_VFILE_ATTRIB_REMOTE;
 	
 	#pragma message("FSINet : GetProperties says nothing about _DIRECTORY !")
 	
 	if	(File->IsDirectory) // <> CB 2/11 !
-		Attribs |= JE_VFILE_ATTRIB_DIRECTORY;
+		Attribs |= GR_VFILE_ATTRIB_DIRECTORY;
 
 	Properties->Time.Time1 = 0;
 	Properties->Time.Time2 = 0;
@@ -1170,28 +1170,28 @@ static	jeBoolean	JETCC FSINet_GetProperties(const void *Handle, jeVFile_Properti
 	return File->GetFullPath(Properties->Name, sizeof(Properties->Name));
 }
 
-static	jeBoolean	JETCC FSINet_SetSize(void * /*Handle*/, long /*size*/)
+static	grBoolean	GRCC FSINet_SetSize(void * /*Handle*/, long /*size*/)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSINet_SetAttributes(void * /*Handle*/, jeVFile_Attributes /*Attributes*/)
+static	grBoolean	GRCC FSINet_SetAttributes(void * /*Handle*/, grVFile_Attributes /*Attributes*/)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSINet_SetTime(void * /*Handle*/, const jeVFile_Time * /*Time*/)
+static	grBoolean	GRCC FSINet_SetTime(void * /*Handle*/, const grVFile_Time * /*Time*/)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeVFile *	JETCC FSINet_GetHintsFile(void *Handle)
+static	grVFile *	GRCC FSINet_GetHintsFile(void *Handle)
 {
 	INetFile *	File;
 
 	File = (INetFile *)Handle;
 
-	if	(File->IsDirectory == JE_TRUE)
+	if	(File->IsDirectory == GR_TRUE)
 		return NULL;
 	
 	CHECK_HANDLE(File);
@@ -1199,29 +1199,29 @@ static	jeVFile *	JETCC FSINet_GetHintsFile(void *Handle)
 	if	(File->State == STATE_ERROR)
 		return NULL;
 
-	if	(File->IgnoreHints == JE_TRUE)
+	if	(File->IgnoreHints == GR_TRUE)
 		return NULL;
 
-	if	(File->CheckedForHints == JE_FALSE)
+	if	(File->CheckedForHints == GR_FALSE)
 		ThreadLog_Printf("FSInet: stalling in GetHintsFile on '%s'\n", File->FullPath);
 
-	while	(File->CheckedForHints == JE_FALSE)
+	while	(File->CheckedForHints == GR_FALSE)
 	{
-		jeThreadQueue_JobStatus Status;
+		grThreadQueue_JobStatus Status;
 
-		Status = jeThreadQueue_JobGetStatus(File->Job);
-		if ( Status == JE_THREADQUEUE_STATUS_WAITINGTOBEGIN )
+		Status = grThreadQueue_JobGetStatus(File->Job);
+		if ( Status == GR_THREADQUEUE_STATUS_WAITINGTOBEGIN )
 		{
-			jeThreadQueue_PollJobs();
+			grThreadQueue_PollJobs();
 		}
-		if ( Status == JE_THREADQUEUE_STATUS_WAITINGFORTHREAD )
+		if ( Status == GR_THREADQUEUE_STATUS_WAITINGFORTHREAD )
 		{
-			jeThreadQueue_PollJobs();
+			grThreadQueue_PollJobs();
 		}
-		jeThreadQueue_Sleep(1);
+		grThreadQueue_Sleep(1);
 	}
 
-	if	(File->HasHints == JE_TRUE)
+	if	(File->HasHints == GR_TRUE)
 	{
 		assert(File->HintsFile != NULL);
 		return File->HintsFile;
@@ -1230,42 +1230,42 @@ static	jeVFile *	JETCC FSINet_GetHintsFile(void *Handle)
 	return NULL;
 }
 
-static	jeBoolean	JETCC FSINet_FileExists(jeVFile * /*FS*/, void *Handle, const char * /*Name*/)
+static	grBoolean	GRCC FSINet_FileExists(grVFile * /*FS*/, void *Handle, const char * /*Name*/)
 {
 	INetFile *	File;
 
 	File = (INetFile *)Handle;
 
 //	if	(File != (void *)INETFILE_SIGNATURE)
-//		return JE_TRUE;
+//		return GR_TRUE;
 
 //	CHECK_HANDLE(File);
 
 //	assert(!"Not implemented");
-//	return JE_FALSE;
-#pragma message ("FSInet : FileExists is hacked to make jeVFile_Open function")
-	return JE_TRUE;
+//	return GR_FALSE;
+#pragma message ("FSInet : FileExists is hacked to make grVFile_Open function")
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSINet_Disperse(
-	jeVFile *	/*FS*/,
+static	grBoolean	GRCC FSINet_Disperse(
+	grVFile *	/*FS*/,
 	void *		/*Handle*/,
 	const char * /*Directory*/)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSINet_DeleteFile(jeVFile * /*FS*/, void * /*Handle*/, const char * /*Name*/)
+static	grBoolean	GRCC FSINet_DeleteFile(grVFile * /*FS*/, void * /*Handle*/, const char * /*Name*/)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSINet_RenameFile(jeVFile * /*FS*/, void * /*Handle*/, const char * /*Name*/, const char * /*NewName*/)
+static	grBoolean	GRCC FSINet_RenameFile(grVFile * /*FS*/, void * /*Handle*/, const char * /*Name*/, const char * /*NewName*/)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeVFile_SystemAPIs	FSINet_APIs =
+static	grVFile_SystemAPIs	FSINet_APIs =
 {
 	FSINet_FinderCreate,
 	FSINet_FinderGetNextFile,
@@ -1300,7 +1300,7 @@ static	jeVFile_SystemAPIs	FSINet_APIs =
 
 };
 
-const jeVFile_SystemAPIs *JETCC FSINet_GetAPIs(void)
+const grVFile_SystemAPIs *GRCC FSINet_GetAPIs(void)
 {
 	return &FSINet_APIs;
 }

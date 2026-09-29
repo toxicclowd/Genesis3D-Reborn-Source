@@ -33,7 +33,7 @@
 
 #include "Defs.h"
 #include "ExtBox.h"
-#include "Jet.h"
+#include "Genesis3D.h"
 #include "Level.h"
 #include "jwObject.h"
 #include "Ortho.h"
@@ -50,34 +50,34 @@ typedef	enum {
 	SELECT_RESULT_SUBSELECT
 } SELECT_RESULT;
 
-jeBoolean		Select_IsCorner( SELECT_HANDLE SelectHandle ) ;
-jeBoolean		Select_IsPointOverVertex( const Ortho * pOrtho, const Point * pViewPt, Level * pLevel ) ;
+grBoolean		Select_IsCorner( SELECT_HANDLE SelectHandle ) ;
+grBoolean		Select_IsPointOverVertex( const Ortho * pOrtho, const Point * pViewPt, Level * pLevel ) ;
 
-SELECT_RESULT	Select_ClosestThing( Level * pLevel, const Ortho * pOrtho, const Point * pViewPt, LEVEL_STATE eState, jeExtBox * pWorldBounds, MODE eMode, jeBoolean bControl_Held ) ;
-jeBoolean		Select_Face(Level * pLevel, const jeCamera * pCamera,  const Point * pViewPt, uint32 *c1, uint32 *c2 ) ;
-jeBoolean		Select_CreateModel( Level * pLevel, const char * pszName ) ;
-jeBoolean		Select_CreateSelectedUndo( Level * pLevel, UNDO_TYPES Type ) ;
-jeBoolean		Select_Delete( Level * pLevel, jeExtBox * pWorldBounds ) ;
-jeBoolean		Select_DeselectAll( Level * pLevel, jeExtBox * pWorldBounds ) ;
-jeBoolean		Select_DupAndDeselectSelections( Level * pLevel ) ;
-jeBoolean		Select_Dup ( Level * pLevel ) ; // Added JH 25.03.2000
-jeBoolean		Select_DragBeginSub( Level * pLevel );
-jeBoolean		Select_DragEndSub( Level * pLevel );
-jeBoolean		Select_DragBegin( Level * pLevel );
-jeBoolean		Select_DragEnd( Level * pLevel );
-jeBoolean		Select_MoveSelectedVert( Level * pLevel, jeVec3d * dWorldDist, jeExtBox * WorldBounds );
+SELECT_RESULT	Select_ClosestThing( Level * pLevel, const Ortho * pOrtho, const Point * pViewPt, LEVEL_STATE eState, grExtBox * pWorldBounds, MODE eMode, grBoolean bControl_Held ) ;
+grBoolean		Select_Face(Level * pLevel, const grCamera * pCamera,  const Point * pViewPt, uint32 *c1, uint32 *c2 ) ;
+grBoolean		Select_CreateModel( Level * pLevel, const char * pszName ) ;
+grBoolean		Select_CreateSelectedUndo( Level * pLevel, UNDO_TYPES Type ) ;
+grBoolean		Select_Delete( Level * pLevel, grExtBox * pWorldBounds ) ;
+grBoolean		Select_DeselectAll( Level * pLevel, grExtBox * pWorldBounds ) ;
+grBoolean		Select_DupAndDeselectSelections( Level * pLevel ) ;
+grBoolean		Select_Dup ( Level * pLevel ) ; // Added JH 25.03.2000
+grBoolean		Select_DragBeginSub( Level * pLevel );
+grBoolean		Select_DragEndSub( Level * pLevel );
+grBoolean		Select_DragBegin( Level * pLevel );
+grBoolean		Select_DragEnd( Level * pLevel );
+grBoolean		Select_MoveSelectedVert( Level * pLevel, grVec3d * dWorldDist, grExtBox * WorldBounds );
 // implemented new version - see below - DJT 
-//jeBoolean		Select_HasSelected( Level * pLevel, OBJECT_KIND eKinds ) ;
+//grBoolean		Select_HasSelected( Level * pLevel, OBJECT_KIND eKinds ) ;
 //
-jeBoolean		Select_HasSelectedVerts( Level * pLevel );
-jeBoolean		Select_DeselectAllVerts( Level *pLevel );
-jeBoolean		Select_DeselectAllFaces( Level *pLevel );
-jeBoolean		Select_AllFaces( Level * pLevel );
+grBoolean		Select_HasSelectedVerts( Level * pLevel );
+grBoolean		Select_DeselectAllVerts( Level *pLevel );
+grBoolean		Select_DeselectAllFaces( Level *pLevel );
+grBoolean		Select_AllFaces( Level * pLevel );
 void			Select_NextFace( Level * pLevel );
 void			Select_PrevFace( Level * pLevel );
 void			Select_ApplyCurMaterial( Level * pLevel );
-jeBoolean		Select_GetEntityField( Level * pLevel, jeSymbol *FieldSymbol, void *pData, int32 DataSize );
-void			Select_GetFaceInfo( Level * pLevel, jeFaceInfo *pFaceInfo, int32 *BlankFieldFlag );
+grBoolean		Select_GetEntityField( Level * pLevel, grSymbol *FieldSymbol, void *pData, int32 DataSize );
+void			Select_GetFaceInfo( Level * pLevel, grFaceInfo *pFaceInfo, int32 *BlankFieldFlag );
 void			Select_GetLightInfo( Level * pLevel, LightInfo *LightInfo, int32 *pBlankFieldFlag  );
 //	Goes through the selection 
 //  If the selection has differet types returns NULL
@@ -85,25 +85,25 @@ void			Select_GetLightInfo( Level * pLevel, LightInfo *LightInfo, int32 *pBlankF
 //  If the selection has same type with same name return the name but nNumber set to SELECT_INVALID_NNUMBER
 //  If the selctiion has only one thing it returns the name and the nNumber
 const char  *	Select_GetName( Level * pLevel, int32 *nNumber );
-SELECT_HANDLE	Select_NearestCornerHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox * pWorldBox ) ;
-jeBoolean		Select_Rectangle( Level * pLevel, jeExtBox *pSelBox, jeBoolean bSelEncompeses, int32 Mask, jeExtBox *Bounds ); 
-void			Select_SetFaceInfo( Level * pLevel, jeFaceInfo *pFaceInfo, int32 BlankFieldFlag );
+SELECT_HANDLE	Select_NearestCornerHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox ) ;
+grBoolean		Select_Rectangle( Level * pLevel, grExtBox *pSelBox, grBoolean bSelEncompeses, int32 Mask, grExtBox *Bounds ); 
+void			Select_SetFaceInfo( Level * pLevel, grFaceInfo *pFaceInfo, int32 BlankFieldFlag );
 void			Select_SetLightInfo( Level * pLevel, LightInfo *pLightInfo, int32 BlankFieldFlag );
-void			Select_SetEntityField( Level * pLevel, jeSymbol *FieldSymbol, void *pData, int32 DataSize );
+void			Select_SetEntityField( Level * pLevel, grSymbol *FieldSymbol, void *pData, int32 DataSize );
 void			Select_SetName( Level * pLevel, const char * Name ) ;
-jeBoolean		Select_VertsInRectangle( Level * pLevel, jeExtBox *pSelBox, jeBoolean bSelEncompeses, jeExtBox *Bounds ) ;
-SELECT_HANDLE	Select_ViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox * pWorldBox ) ;
+grBoolean		Select_VertsInRectangle( Level * pLevel, grExtBox *pSelBox, grBoolean bSelEncompeses, grExtBox *Bounds ) ;
+SELECT_HANDLE	Select_ViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox ) ;
 const char	*   Select_GetFirstEntityType( Level * pLevel );
-jeBoolean		Select_IsEdge( SELECT_HANDLE SelectHandle );
+grBoolean		Select_IsEdge( SELECT_HANDLE SelectHandle );
 void			Select_GetBrushInfo( Level * pLevel, uint32 *Contents, int32 *pBlankFieldFlag );
 void			Select_SetBrushInfo( Level * pLevel, uint32 Contents, int32 FieldFlag );
-jeProperty_List * Select_BuildDescriptor( Level * pLevel );
-void			Select_SetProperty( int DataId, int DataType, jeProperty_Data * pData );
+grProperty_List * Select_BuildDescriptor( Level * pLevel );
+void			Select_SetProperty( int DataId, int DataType, grProperty_Data * pData );
 
 //---------------------------------------------------
 // Added DJT
 //---------------------------------------------------
-jeBoolean       Select_All(Level * pLevel, int32 Mask, jeExtBox *Bounds);
+grBoolean       Select_All(Level * pLevel, int32 Mask, grExtBox *Bounds);
 int32           Select_KindsSelected(Level * pLevel);
 //---------------------------------------------------
 // End DJT

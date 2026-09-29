@@ -164,51 +164,51 @@ void CMainFrame::OnSize(UINT nType, int cx, int cy)
 	m_wndToolBrowser.SetWindowPos(NULL, 0, 0, w.right - w.left, w.bottom - w.top, SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE); 
 }
 
-jeBoolean CMainFrame::LoadActor(const char * filename, const char *actorname)
+grBoolean CMainFrame::LoadActor(const char * filename, const char *actorname)
 {
-	jeVFile					*File = NULL;
-	jeObject				*Object = NULL;
-	jeActor_Def				*ActorDef = NULL;
-	jeActor					*Actor = NULL;
+	grVFile					*File = NULL;
+	grObject				*Object = NULL;
+	grActor_Def				*ActorDef = NULL;
+	grActor					*Actor = NULL;
 	HTREEITEM				BonesItem, MaterialsItem, MotionsItem, Item;
 	CTreeCtrl				*pTree = NULL;
-	jeXForm3d				Attachment;
+	grXForm3d				Attachment;
 
-	File = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS, filename, NULL, JE_VFILE_OPEN_READONLY);
+	File = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS, filename, NULL, GR_VFILE_OPEN_READONLY);
 	if (!File)
 	{
 		AfxMessageBox("Could not open actor file!!", 48, 0);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	ActorDef = jeActor_DefCreateFromFile(File);
+	ActorDef = grActor_DefCreateFromFile(File);
 	if (!ActorDef)
 	{
 		AfxMessageBox("Could not create actor def!!", 48, 0);
-		jeVFile_Close(File);
-		return JE_FALSE;
+		grVFile_Close(File);
+		return GR_FALSE;
 	}
 
-	jeVFile_Close(File);
+	grVFile_Close(File);
 
-	Object = jeObject_Create("Actor");
+	Object = grObject_Create("Actor");
 	if (!Object)
 	{
 		AfxMessageBox("Could not create actor object!!", 48, 0);
-		jeActor_DefDestroy(&ActorDef);
-		return JE_FALSE;
+		grActor_DefDestroy(&ActorDef);
+		return GR_FALSE;
 	}
 
-	Actor = (jeActor*)jeObject_GetInstance(Object);
+	Actor = (grActor*)grObject_GetInstance(Object);
 	if (!Actor)
 	{
 		AfxMessageBox("Could not get actor instance!!", 48, 0);
-		jeActor_DefDestroy(&ActorDef);
-		jeObject_Destroy(&Object);
-		return JE_FALSE;
+		grActor_DefDestroy(&ActorDef);
+		grObject_Destroy(&Object);
+		return GR_FALSE;
 	}
 
-	jeActor_SetActorDef(Actor, ActorDef);
+	grActor_SetActorDef(Actor, ActorDef);
 
 	pTree = &m_wndToolBrowser.m_TreeCtrl;
 
@@ -217,62 +217,62 @@ jeBoolean CMainFrame::LoadActor(const char * filename, const char *actorname)
 	m_RootItem = pTree->InsertItem(actorname, TVI_ROOT);
 	BonesItem = pTree->InsertItem("Bones", m_RootItem);
 
-	jeBody *Body = jeActor_GetBody(ActorDef);
+	grBody *Body = grActor_GetBody(ActorDef);
 	if (!Body)
 	{
 		AfxMessageBox("Could not get body!!", 48, 0);
-		jeActor_DefDestroy(&ActorDef);
-		jeObject_Destroy(&Object);
-		return JE_FALSE;
+		grActor_DefDestroy(&ActorDef);
+		grObject_Destroy(&Object);
+		return GR_FALSE;
 	}
 
-	for (int i = 0; i < jeBody_GetBoneCount(Body); i++)
+	for (int i = 0; i < grBody_GetBoneCount(Body); i++)
 	{
 		const char				*bonename = NULL;
 		int						parent;
 
-		jeBody_GetBone(Body, i, &bonename, &Attachment, &parent);
+		grBody_GetBone(Body, i, &bonename, &Attachment, &parent);
 		Item = pTree->InsertItem(bonename, BonesItem);
 	}
 
 	MaterialsItem = pTree->InsertItem("Materials", m_RootItem);
 
 	//	by trilobite	Jan. 2011
-	//for (i = 0; i < jeBody_GetMaterialCount(Body); i++)
-	for (int i = 0; i < jeBody_GetMaterialCount(Body); i++)
+	//for (i = 0; i < grBody_GetMaterialCount(Body); i++)
+	for (int i = 0; i < grBody_GetMaterialCount(Body); i++)
 	//
 	{
 		const char						*matname = NULL;
-		jeMaterialSpec					*bmp = NULL;
+		grMaterialSpec					*bmp = NULL;
 		float							r, g, b;
-		jeUVMapper						pMapper;
+		grUVMapper						pMapper;
 
-		jeBody_GetMaterial(Body, i, &matname, &bmp, &r, &g, &b, &pMapper);
+		grBody_GetMaterial(Body, i, &matname, &bmp, &r, &g, &b, &pMapper);
 		Item = pTree->InsertItem(matname, MaterialsItem);
 	}
 
 	MotionsItem = pTree->InsertItem("Motions", m_RootItem);
 
 	//	by trilobite	Jan. 2011
-	//for (i = 0; i < jeActor_GetMotionCount(ActorDef); i++)
-	for (int i = 0; i < jeActor_GetMotionCount(ActorDef); i++)
+	//for (i = 0; i < grActor_GetMotionCount(ActorDef); i++)
+	for (int i = 0; i < grActor_GetMotionCount(ActorDef); i++)
 	//
 	{
-		jeMotion						*Motion = NULL;
+		grMotion						*Motion = NULL;
 
-		Motion = jeActor_GetMotionByIndex(ActorDef, i);
+		Motion = grActor_GetMotionByIndex(ActorDef, i);
 		if (!Motion)
 		{
 			AfxMessageBox("Could not get motion!!", 48, 0);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
-		Item = pTree->InsertItem(jeMotion_GetName(Motion), MotionsItem);
+		Item = pTree->InsertItem(grMotion_GetName(Motion), MotionsItem);
 	}
 
 	((CJet3DView*)GetActiveView())->SetActiveActor(Object);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void CMainFrame::OnFileOpen()

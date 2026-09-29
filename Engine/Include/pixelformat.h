@@ -29,31 +29,31 @@ extern "C" {
 
 typedef enum		// all supported formats (including shifts)
 {
-	JE_PIXELFORMAT_NO_DATA = 0,
-	JE_PIXELFORMAT_8BIT,				// PAL
-	JE_PIXELFORMAT_8BIT_GRAY,		// no palette (intensity from bit value)
-	JE_PIXELFORMAT_16BIT_555_RGB,
-	JE_PIXELFORMAT_16BIT_555_BGR,
-	JE_PIXELFORMAT_16BIT_565_RGB,	// #5
-	JE_PIXELFORMAT_16BIT_565_BGR, 
-	JE_PIXELFORMAT_16BIT_4444_ARGB, // #7
-	JE_PIXELFORMAT_16BIT_1555_ARGB, 
-	JE_PIXELFORMAT_24BIT_RGB,		// #9
-	JE_PIXELFORMAT_24BIT_BGR,
-	JE_PIXELFORMAT_24BIT_YUV,		// * see note below
-	JE_PIXELFORMAT_32BIT_RGBX, 
-	JE_PIXELFORMAT_32BIT_XRGB, 
-	JE_PIXELFORMAT_32BIT_BGRX, 
-	JE_PIXELFORMAT_32BIT_XBGR,
-	JE_PIXELFORMAT_32BIT_RGBA, 
-	JE_PIXELFORMAT_32BIT_ARGB,		// #17
-	JE_PIXELFORMAT_32BIT_BGRA, 
-	JE_PIXELFORMAT_32BIT_ABGR,
+	GR_PIXELFORMAT_NO_DATA = 0,
+	GR_PIXELFORMAT_8BIT,				// PAL
+	GR_PIXELFORMAT_8BIT_GRAY,		// no palette (intensity from bit value)
+	GR_PIXELFORMAT_16BIT_555_RGB,
+	GR_PIXELFORMAT_16BIT_555_BGR,
+	GR_PIXELFORMAT_16BIT_565_RGB,	// #5
+	GR_PIXELFORMAT_16BIT_565_BGR, 
+	GR_PIXELFORMAT_16BIT_4444_ARGB, // #7
+	GR_PIXELFORMAT_16BIT_1555_ARGB, 
+	GR_PIXELFORMAT_24BIT_RGB,		// #9
+	GR_PIXELFORMAT_24BIT_BGR,
+	GR_PIXELFORMAT_24BIT_YUV,		// * see note below
+	GR_PIXELFORMAT_32BIT_RGBX, 
+	GR_PIXELFORMAT_32BIT_XRGB, 
+	GR_PIXELFORMAT_32BIT_BGRX, 
+	GR_PIXELFORMAT_32BIT_XBGR,
+	GR_PIXELFORMAT_32BIT_RGBA, 
+	GR_PIXELFORMAT_32BIT_ARGB,		// #17
+	GR_PIXELFORMAT_32BIT_BGRA, 
+	GR_PIXELFORMAT_32BIT_ABGR,
 	
-	JE_PIXELFORMAT_WAVELET,			// #20 , Wavelet Compression
+	GR_PIXELFORMAT_WAVELET,			// #20 , Wavelet Compression
 
-	JE_PIXELFORMAT_COUNT
-} jePixelFormat;
+	GR_PIXELFORMAT_COUNT
+} grPixelFormat;
 	
 /******
 
@@ -72,18 +72,18 @@ there's something wacked out about these format names :
 
 *********/
 
-#define JE_PIXELFORMAT_8BIT_PAL JE_PIXELFORMAT_8BIT
+#define GR_PIXELFORMAT_8BIT_PAL GR_PIXELFORMAT_8BIT
 
-typedef uint32	(*jePixelFormat_Composer   )(int R,int G,int B,int A);
-typedef void	(*jePixelFormat_Decomposer )(uint32 Pixel,int *R,int *G,int *B,int *A);
+typedef uint32	(*grPixelFormat_Composer   )(int R,int G,int B,int A);
+typedef void	(*grPixelFormat_Decomposer )(uint32 Pixel,int *R,int *G,int *B,int *A);
 
-typedef void	(*jePixelFormat_ColorGetter)(uint8 **ppData,int *R,int *G,int *B,int *A);
-typedef void	(*jePixelFormat_ColorPutter)(uint8 **ppData,int  R,int  G,int  B,int  A);
+typedef void	(*grPixelFormat_ColorGetter)(uint8 **ppData,int *R,int *G,int *B,int *A);
+typedef void	(*grPixelFormat_ColorPutter)(uint8 **ppData,int  R,int  G,int  B,int  A);
 
-typedef uint32	(*jePixelFormat_PixelGetter)(uint8 **ppData);
-typedef void	(*jePixelFormat_PixelPutter)(uint8 **ppData,uint32 Pixel);
+typedef uint32	(*grPixelFormat_PixelGetter)(uint8 **ppData);
+typedef void	(*grPixelFormat_PixelPutter)(uint8 **ppData,uint32 Pixel);
 
-typedef struct jePixelFormat_Operations
+typedef struct grPixelFormat_Operations
 {
 	uint32	RMask;
 	uint32	GMask;
@@ -101,45 +101,45 @@ typedef struct jePixelFormat_Operations
 	int		AAdd;
 
 	int			BytesPerPel;
-	jeBoolean	HasPalette;
+	grBoolean	HasPalette;
 	char *		Description;
 	
-	jePixelFormat_Composer		ComposePixel;
-	jePixelFormat_Decomposer	DecomposePixel;
+	grPixelFormat_Composer		ComposePixel;
+	grPixelFormat_Decomposer	DecomposePixel;
 
-	jePixelFormat_ColorGetter	GetColor;
-	jePixelFormat_ColorPutter	PutColor;
+	grPixelFormat_ColorGetter	GetColor;
+	grPixelFormat_ColorPutter	PutColor;
 
-	jePixelFormat_PixelGetter	GetPixel;
-	jePixelFormat_PixelPutter	PutPixel;
-} jePixelFormat_Operations;
+	grPixelFormat_PixelGetter	GetPixel;
+	grPixelFormat_PixelPutter	PutPixel;
+} grPixelFormat_Operations;
 
 	// the Masks double as boolean "HaveAlpha" .. etc..
 
-JETAPI const jePixelFormat_Operations * JETCC jePixelFormat_GetOperations( jePixelFormat Format );
+GRAPI const grPixelFormat_Operations * GRCC grPixelFormat_GetOperations( grPixelFormat Format );
 
 	// quick accessors to _GetOps
-JETAPI jeBoolean	JETCC jePixelFormat_IsValid(		jePixelFormat Format);
-JETAPI unsigned int JETCC jePixelFormat_BytesPerPel(	jePixelFormat Format );
-JETAPI jeBoolean	JETCC jePixelFormat_HasPalette(		jePixelFormat Format );
-JETAPI jeBoolean	JETCC jePixelFormat_HasAlpha(		jePixelFormat Format );
-JETAPI jeBoolean	JETCC jePixelFormat_HasGoodAlpha(	jePixelFormat Format ); // more than 1 bit of alpha
-JETAPI const char * JETCC jePixelFormat_Description(	jePixelFormat Format );
-JETAPI jeBoolean	JETCC jePixelFormat_IsRaw(			jePixelFormat Format );
+GRAPI grBoolean	GRCC grPixelFormat_IsValid(		grPixelFormat Format);
+GRAPI unsigned int GRCC grPixelFormat_BytesPerPel(	grPixelFormat Format );
+GRAPI grBoolean	GRCC grPixelFormat_HasPalette(		grPixelFormat Format );
+GRAPI grBoolean	GRCC grPixelFormat_HasAlpha(		grPixelFormat Format );
+GRAPI grBoolean	GRCC grPixelFormat_HasGoodAlpha(	grPixelFormat Format ); // more than 1 bit of alpha
+GRAPI const char * GRCC grPixelFormat_Description(	grPixelFormat Format );
+GRAPI grBoolean	GRCC grPixelFormat_IsRaw(			grPixelFormat Format );
 									// 'Raw' means pixels can be made with the Compose operations
 
-JETAPI uint32		JETCC jePixelFormat_ComposePixel(	jePixelFormat Format,int R,int G,int B,int A);
-JETAPI void			JETCC jePixelFormat_DecomposePixel(	jePixelFormat Format,uint32 Pixel,int *R,int *G,int *B,int *A);
+GRAPI uint32		GRCC grPixelFormat_ComposePixel(	grPixelFormat Format,int R,int G,int B,int A);
+GRAPI void			GRCC grPixelFormat_DecomposePixel(	grPixelFormat Format,uint32 Pixel,int *R,int *G,int *B,int *A);
 			
 															// these four functions move ppData to the next pixel
 
-JETAPI void			JETCC jePixelFormat_GetColor(jePixelFormat Format,uint8 **ppData,int *R,int *G,int *B,int *A);
-JETAPI void			JETCC jePixelFormat_PutColor(jePixelFormat Format,uint8 **ppData,int R,int G,int B,int A);
+GRAPI void			GRCC grPixelFormat_GetColor(grPixelFormat Format,uint8 **ppData,int *R,int *G,int *B,int *A);
+GRAPI void			GRCC grPixelFormat_PutColor(grPixelFormat Format,uint8 **ppData,int R,int G,int B,int A);
 
-JETAPI uint32		JETCC jePixelFormat_GetPixel(jePixelFormat Format,uint8 **ppData);
-JETAPI void			JETCC jePixelFormat_PutPixel(jePixelFormat Format,uint8 **ppData,uint32 Pixel);
+GRAPI uint32		GRCC grPixelFormat_GetPixel(grPixelFormat Format,uint8 **ppData);
+GRAPI void			GRCC grPixelFormat_PutPixel(grPixelFormat Format,uint8 **ppData,uint32 Pixel);
 	
-JETAPI uint32		JETCC jePixelFormat_ConvertPixel(jePixelFormat Format,uint32 Pixel,jePixelFormat ToFormat);
+GRAPI uint32		GRCC grPixelFormat_ConvertPixel(grPixelFormat Format,uint32 Pixel,grPixelFormat ToFormat);
 
 
 #ifdef __cplusplus
@@ -148,13 +148,6 @@ JETAPI uint32		JETCC jePixelFormat_ConvertPixel(jePixelFormat Format,uint32 Pixe
 
 
 // Genesis3D: Reborn gr* Aliases
-typedef jePixelFormat grPixelFormat;
-#define grPixelFormat_ComposePixel jePixelFormat_ComposePixel
-#define grPixelFormat_DecomposePixel jePixelFormat_DecomposePixel
-#define grPixelFormat_GetColor jePixelFormat_GetColor
-#define grPixelFormat_PutColor jePixelFormat_PutColor
-#define grPixelFormat_GetPixel jePixelFormat_GetPixel
-#define grPixelFormat_PutPixel jePixelFormat_PutPixel
-#define grPixelFormat_ConvertPixel jePixelFormat_ConvertPixel
+typedef grPixelFormat grPixelFormat;
 
 #endif

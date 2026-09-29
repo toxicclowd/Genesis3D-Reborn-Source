@@ -24,57 +24,57 @@
 #include "ObjectPos.h"
 
 #ifndef NDEBUG
-	static jeBoolean jeObjectPos_MaximalAssertionMode = JE_TRUE;
-	#define jeObjectPos_Assert if (jeObjectPos_MaximalAssertionMode) assert
+	static grBoolean grObjectPos_MaximalAssertionMode = GR_TRUE;
+	#define grObjectPos_Assert if (grObjectPos_MaximalAssertionMode) assert
 
-JETAPI 	void JETCC jeObjectPos_SetMaximalAssertionMode( jeBoolean Enable )
+GRAPI 	void GRCC grObjectPos_SetMaximalAssertionMode( grBoolean Enable )
 	{
-		assert( (Enable == JE_TRUE) || (Enable == JE_FALSE) );
-		jeObjectPos_MaximalAssertionMode = Enable;
+		assert( (Enable == GR_TRUE) || (Enable == GR_FALSE) );
+		grObjectPos_MaximalAssertionMode = Enable;
 	}
 #else
-	#define jeObjectPos_Assert(x)
+	#define grObjectPos_Assert(x)
 #endif
 
-#define JE_OBJECTPOS_NORMAL			(1<<0)		// BMatrix is identity
-#define JE_OBJECTPOS_XFORMED		(1<<1)		// BMatrix is NOT identity
+#define GR_OBJECTPOS_NORMAL			(1<<0)		// BMatrix is identity
+#define GR_OBJECTPOS_XFORMED		(1<<1)		// BMatrix is NOT identity
 
 // -----------------------------------------------------------------------------------------------
 // Matrix34 Methods
 // -----------------------------------------------------------------------------------------------
 
-jeBoolean JETCC Matrix34_IsValid(const Matrix34 *M)
-	// returns JE_TRUE if M is 'valid'  
+grBoolean GRCC Matrix34_IsValid(const Matrix34 *M)
+	// returns GR_TRUE if M is 'valid'  
 	// 'valid' means that M is non NULL, and there are no NAN's in the matrix.
 {
 	if (M == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ((M->x[0][0] * M->x[0][0]) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((M->x[0][1] * M->x[0][1]) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((M->x[0][2] * M->x[0][2]) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ((M->x[1][0] * M->x[1][0]) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((M->x[1][1] * M->x[1][1]) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((M->x[1][2] * M->x[1][2]) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 	
 	if ((M->x[2][0] * M->x[2][0]) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((M->x[2][1] * M->x[2][1]) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((M->x[2][2] * M->x[2][2]) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-void JETCC Matrix34_Multiply(const Matrix34 *M1, const Matrix34 *M2, Matrix34 *M12)
+void GRCC Matrix34_Multiply(const Matrix34 *M1, const Matrix34 *M2, Matrix34 *M12)
 {
 	#define FSIZE	4
 	_asm {
@@ -122,16 +122,16 @@ RowMult:
 												// Any improvement possible?
 }
 
-void JETCC ASM_RecalcRotation(jeObjectPos *APos)
+void GRCC ASM_RecalcRotation(grObjectPos *APos)
 {
-/*	APos->SPhi=jeFloat_Sin(APos->Phi);
-	APos->CPhi=jeFloat_Cos(APos->Phi);
+/*	APos->SPhi=grFloat_Sin(APos->Phi);
+	APos->CPhi=grFloat_Cos(APos->Phi);
 
-	APos->SPsi=jeFloat_Sin(APos->Psi);
-	APos->CPsi=jeFloat_Cos(APos->Psi);
+	APos->SPsi=grFloat_Sin(APos->Psi);
+	APos->CPsi=grFloat_Cos(APos->Psi);
 
-	APos->SRho=jeFloat_Sin(APos->Rho);
-	APos->CRho=jeFloat_Cos(APos->Rho);
+	APos->SRho=grFloat_Sin(APos->Rho);
+	APos->CRho=grFloat_Cos(APos->Rho);
 
 	APos->RMatrix.x[0][0]= CPhi * CRho + SPhi * SPsi * SRho;
 	APos->RMatrix.x[0][1]=-CPhi * SRho + SPhi * SPsi * CRho;
@@ -217,16 +217,16 @@ void JETCC ASM_RecalcRotation(jeObjectPos *APos)
 		fstp  dword ptr [MATRIX(2,2)]	// 2  ;
 	}											// ca. 4+3*255+2*21+11=824 cycles, dunno exact cycles/command
 												// Any improvement possible?
-	if (APos->Flags&JE_OBJECTPOS_XFORMED)
+	if (APos->Flags&GR_OBJECTPOS_XFORMED)
 		Matrix34_Multiply(&APos->RMatrix,&APos->BMatrix,&APos->Matrix);
 	else 
 		APos->Matrix=APos->RMatrix;
 }
 
-void JETCC ASM_RecalcSpin(jeObjectPos *APos)
+void GRCC ASM_RecalcSpin(grObjectPos *APos)
 {
-/*	APos->SPhi=jeFloat_Sin(APos->Phi);
-	APos->CPhi=jeFloat_Cos(APos->Phi);
+/*	APos->SPhi=grFloat_Sin(APos->Phi);
+	APos->CPhi=grFloat_Cos(APos->Phi);
 
 	APos->RMatrix.x[0][0]= APos->CPhi * APos->CRho + APos->SPhi * APos->SPsi * APos->SRho;
 	APos->RMatrix.x[0][1]=-APos->CPhi * APos->SRho + APos->SPhi * APos->SPsi * APos->CRho;
@@ -291,16 +291,16 @@ void JETCC ASM_RecalcSpin(jeObjectPos *APos)
 		fstp  dword ptr [MATRIX(2,2)]	// 2  ;
 	}											// ca. 4+255+2*21=301 cycles, dunno exact cycles/command
 												// Any improvement possible?
-	if (APos->Flags&JE_OBJECTPOS_XFORMED)
+	if (APos->Flags&GR_OBJECTPOS_XFORMED)
 		Matrix34_Multiply(&APos->RMatrix,&APos->BMatrix,&APos->Matrix);
 	else 
 		APos->Matrix=APos->RMatrix;
 }
 
-void JETCC ASM_RecalcSlope(jeObjectPos *APos)
+void GRCC ASM_RecalcSlope(grObjectPos *APos)
 {
-/*	APos->SPsi=jeFloat_Sin(APos->Psi);
-	APos->CPsi=jeFloat_Cos(APos->Psi);
+/*	APos->SPsi=grFloat_Sin(APos->Psi);
+	APos->CPsi=grFloat_Cos(APos->Psi);
 
 	APos->RMatrix.x[0][0]= CPhi * CRho + SPhi * SPsi * SRho;
 	APos->RMatrix.x[0][1]=-CPhi * SRho + SPhi * SPsi * CRho;
@@ -378,16 +378,16 @@ void JETCC ASM_RecalcSlope(jeObjectPos *APos)
 		fstp  dword ptr [MATRIX(2,2)]	// 2  ;
 	}											// ca. 4+255+2*21+11=312 cycles, dunno exact cycles/command
 												// Any improvement possible?
-	if (APos->Flags&JE_OBJECTPOS_XFORMED)
+	if (APos->Flags&GR_OBJECTPOS_XFORMED)
 		Matrix34_Multiply(&APos->RMatrix,&APos->BMatrix,&APos->Matrix);
 	else 
 		APos->Matrix=APos->RMatrix;
 }
 
-void JETCC ASM_RecalcTilt(jeObjectPos *APos)
+void GRCC ASM_RecalcTilt(grObjectPos *APos)
 {
-/*	APos->SRho=jeFloat_Sin(APos->Rho);
-	APos->CRho=jeFloat_Cos(APos->Rho);
+/*	APos->SRho=grFloat_Sin(APos->Rho);
+	APos->CRho=grFloat_Cos(APos->Rho);
 
 	APos->RMatrix.x[0][0]= APos->CPhi * APos->CRho + APos->SPhi * APos->SPsi * APos->SRho;
 	APos->RMatrix.x[0][1]=-APos->CPhi * APos->SRho + APos->SPhi * APos->SPsi * APos->CRho;
@@ -453,13 +453,13 @@ void JETCC ASM_RecalcTilt(jeObjectPos *APos)
 		fstp  dword ptr [MATRIX(2,1)]	// 2  ;
 	}											// ca. 4+255+2*21=301 cycles, dunno exact cycles/command
 												// Any improvement possible?
-	if (APos->Flags&JE_OBJECTPOS_XFORMED)
+	if (APos->Flags&GR_OBJECTPOS_XFORMED)
 		Matrix34_Multiply(&APos->RMatrix,&APos->BMatrix,&APos->Matrix);
 	else 
 		APos->Matrix=APos->RMatrix;
 }
 
-void JETCC Matrix34_SetIdentity(Matrix34 *M)
+void GRCC Matrix34_SetIdentity(Matrix34 *M)
 {
 	int i, j;
 	for (i = 0; i < 3; i++)
@@ -471,15 +471,15 @@ void JETCC Matrix34_SetIdentity(Matrix34 *M)
 		}
 }
 
-void JETCC Matrix34_CutZeroOne(Matrix34 *M)
+void GRCC Matrix34_CutZeroOne(Matrix34 *M)
 {
 	int i, j;
 	for (i = 0; i < 3; i++)
 		for (j = 0; j < 4; j++)
 		{
-			if (JE_FLOATS_EQUAL(M->x[i][j],1.0f))
+			if (GR_FLOATS_EQUAL(M->x[i][j],1.0f))
 				M->x[i][j] = 1.0f;
-			else if (JE_FLOAT_ISZERO(M->x[i][j]))
+			else if (GR_FLOAT_ISZERO(M->x[i][j]))
 				M->x[i][j] = 0.0f;
 		}
 }
@@ -488,7 +488,7 @@ void JETCC Matrix34_CutZeroOne(Matrix34 *M)
 // Init-Methods
 // -----------------------------------------------------------------------------------------------
 
-JETAPI void JETCC jeObjectPos_SetIdentity(jeObjectPos *APos)
+GRAPI void GRCC grObjectPos_SetIdentity(grObjectPos *APos)
 {
 	assert(APos!=NULL);
 	APos->Phi=APos->Psi=APos->Rho=APos->SPhi=APos->SPsi=APos->SRho=0.0f;
@@ -496,22 +496,22 @@ JETAPI void JETCC jeObjectPos_SetIdentity(jeObjectPos *APos)
 	APos->Translation.X=APos->Translation.Y=APos->Translation.Z=0.0f;
 	Matrix34_SetIdentity(&APos->RMatrix);
 	APos->Matrix=APos->RMatrix;
-	APos->Flags=JE_OBJECTPOS_NORMAL;
+	APos->Flags=GR_OBJECTPOS_NORMAL;
 }
 
-JETAPI void JETCC jeObjectPos_SetBaseXForm(jeObjectPos *APos, const jeXForm3d *BaseXF)
+GRAPI void GRCC grObjectPos_SetBaseXForm(grObjectPos *APos, const grXForm3d *BaseXF)
 {
-	jeObjectPos_SetIdentity(APos);
-	jeObjectPos_SetNewBaseXForm(APos,BaseXF);
+	grObjectPos_SetIdentity(APos);
+	grObjectPos_SetNewBaseXForm(APos,BaseXF);
 }
 
-JETAPI void JETCC jeObjectPos_SetBaseXFormByAxis(jeObjectPos *APos, const jeVec3d *X, const jeVec3d *Y, const jeVec3d *Z)
+GRAPI void GRCC grObjectPos_SetBaseXFormByAxis(grObjectPos *APos, const grVec3d *X, const grVec3d *Y, const grVec3d *Z)
 {
-	jeObjectPos_SetIdentity(APos);
-	jeObjectPos_SetNewBaseXFormByAxis(APos,X,Y,Z);
+	grObjectPos_SetIdentity(APos);
+	grObjectPos_SetNewBaseXFormByAxis(APos,X,Y,Z);
 }
 
-JETAPI void JETCC jeObjectPos_SetTranslation(jeObjectPos *APos, jeFloat X, jeFloat Y, jeFloat Z)
+GRAPI void GRCC grObjectPos_SetTranslation(grObjectPos *APos, grFloat X, grFloat Y, grFloat Z)
 {
 	assert(APos!=NULL);
 	assert(X*X>=0.0f);
@@ -522,16 +522,16 @@ JETAPI void JETCC jeObjectPos_SetTranslation(jeObjectPos *APos, jeFloat X, jeFlo
 	APos->Translation.X=X;APos->Translation.Y=Y;APos->Translation.Z=Z;
 	Matrix34_SetIdentity(&APos->RMatrix);
 	APos->Matrix=APos->RMatrix;
-	APos->Flags=JE_OBJECTPOS_NORMAL;
+	APos->Flags=GR_OBJECTPOS_NORMAL;
 }
 
-JETAPI void JETCC jeObjectPos_SetTranslationByVec(jeObjectPos *APos, jeVec3d *T)
+GRAPI void GRCC grObjectPos_SetTranslationByVec(grObjectPos *APos, grVec3d *T)
 {
 	assert(T!=NULL);
-	jeObjectPos_SetTranslation(APos,T->X,T->Y,T->Z);
+	grObjectPos_SetTranslation(APos,T->X,T->Y,T->Z);
 }
 
-JETAPI void JETCC jeObjectPos_SetRotation(jeObjectPos *APos, jeFloat Phi, jeFloat Psi, jeFloat Rho)
+GRAPI void GRCC grObjectPos_SetRotation(grObjectPos *APos, grFloat Phi, grFloat Psi, grFloat Rho)
 {
 	assert(APos!=NULL);
 	assert(Phi*Phi>=0.0f);
@@ -539,7 +539,7 @@ JETAPI void JETCC jeObjectPos_SetRotation(jeObjectPos *APos, jeFloat Phi, jeFloa
 	assert(Rho*Rho>=0.0f);
 
 	APos->Phi=Phi;APos->Psi=Psi;APos->Rho=Rho;
-	APos->Flags=JE_OBJECTPOS_NORMAL;
+	APos->Flags=GR_OBJECTPOS_NORMAL;
 	ASM_RecalcRotation(APos);
 	APos->Translation.X=APos->Translation.Y=APos->Translation.Z=0.0f;
 }
@@ -549,7 +549,7 @@ JETAPI void JETCC jeObjectPos_SetRotation(jeObjectPos *APos, jeFloat Phi, jeFloa
 // Set-Methods
 // -----------------------------------------------------------------------------------------------
 
-JETAPI void JETCC jeObjectPos_SetNewRotation(jeObjectPos *APos, jeFloat Phi, jeFloat Psi, jeFloat Rho)
+GRAPI void GRCC grObjectPos_SetNewRotation(grObjectPos *APos, grFloat Phi, grFloat Psi, grFloat Rho)
 {
 	assert(APos!=NULL);
 	assert(Phi*Phi>=0.0f);
@@ -560,11 +560,11 @@ JETAPI void JETCC jeObjectPos_SetNewRotation(jeObjectPos *APos, jeFloat Phi, jeF
 	ASM_RecalcRotation(APos);
 }
 
-JETAPI void JETCC jeObjectPos_SetNewBaseXForm(jeObjectPos *APos, const jeXForm3d *BaseXF)
+GRAPI void GRCC grObjectPos_SetNewBaseXForm(grObjectPos *APos, const grXForm3d *BaseXF)
 {
 	assert(APos!=NULL);assert(BaseXF!=NULL);
-	jeObjectPos_Assert(jeXForm3d_IsOrthonormal(BaseXF));
-	jeObjectPos_Assert(Matrix34_IsValid(&APos->RMatrix));
+	grObjectPos_Assert(grXForm3d_IsOrthonormal(BaseXF));
+	grObjectPos_Assert(Matrix34_IsValid(&APos->RMatrix));
 
 	APos->BMatrix=((MatrixXForm*)BaseXF)->Matrix;
 	Matrix34_CutZeroOne(&APos->BMatrix);
@@ -577,23 +577,23 @@ JETAPI void JETCC jeObjectPos_SetNewBaseXForm(jeObjectPos *APos, const jeXForm3d
 		(APos->BMatrix.x[1][2]==0.0f) ||
 		(APos->BMatrix.x[2][0]==0.0f) ||
 		(APos->BMatrix.x[2][1]==0.0f)) {
-		APos->Flags=JE_OBJECTPOS_XFORMED;
+		APos->Flags=GR_OBJECTPOS_XFORMED;
 		Matrix34_Multiply(&APos->RMatrix,&APos->BMatrix,&APos->Matrix);
 	} else {
-		APos->Flags=JE_OBJECTPOS_NORMAL;
+		APos->Flags=GR_OBJECTPOS_NORMAL;
 		APos->Matrix=APos->RMatrix;
 	}
 }
 
-JETAPI void JETCC jeObjectPos_SetNewBaseXFormByAxis(jeObjectPos *APos, const jeVec3d *X, const jeVec3d *Y, const jeVec3d *Z)
+GRAPI void GRCC grObjectPos_SetNewBaseXFormByAxis(grObjectPos *APos, const grVec3d *X, const grVec3d *Y, const grVec3d *Z)
 {
 	assert(APos!=NULL);assert(X!=NULL);assert(Y!=NULL);assert(Z!=NULL);
 	// ASSERT Vectors are Orthonormal
-	jeObjectPos_Assert(jeVec3d_IsNormalized(X) && jeVec3d_IsNormalized(Y) && jeVec3d_IsNormalized(Z));
-	jeObjectPos_Assert(JE_FLOAT_ISZERO(jeVec3d_DotProduct(X,Y)) &&
-					   JE_FLOAT_ISZERO(jeVec3d_DotProduct(X,Z)) &&
-					   JE_FLOAT_ISZERO(jeVec3d_DotProduct(Y,Z)));
-	jeObjectPos_Assert(Matrix34_IsValid(&APos->RMatrix));
+	grObjectPos_Assert(grVec3d_IsNormalized(X) && grVec3d_IsNormalized(Y) && grVec3d_IsNormalized(Z));
+	grObjectPos_Assert(GR_FLOAT_ISZERO(grVec3d_DotProduct(X,Y)) &&
+					   GR_FLOAT_ISZERO(grVec3d_DotProduct(X,Z)) &&
+					   GR_FLOAT_ISZERO(grVec3d_DotProduct(Y,Z)));
+	grObjectPos_Assert(Matrix34_IsValid(&APos->RMatrix));
 	
 	APos->BMatrix.x[0][0]=-X->X;
 	APos->BMatrix.x[1][0]=-X->Y;
@@ -605,19 +605,19 @@ JETAPI void JETCC jeObjectPos_SetNewBaseXFormByAxis(jeObjectPos *APos, const jeV
 	APos->BMatrix.x[1][2]=-Z->Y;
 	APos->BMatrix.x[2][2]=-Z->Z;
 	
-	if (!JE_FLOATS_EQUAL(X->X,1.0f) ||
-		!JE_FLOATS_EQUAL(Y->Y,1.0f) ||
-		!JE_FLOATS_EQUAL(Z->Z,1.0f) ||
-		!JE_FLOAT_ISZERO(X->Y) ||
-		!JE_FLOAT_ISZERO(X->Z) ||
-		!JE_FLOAT_ISZERO(Y->X) ||
-		!JE_FLOAT_ISZERO(Y->Z) ||
-		!JE_FLOAT_ISZERO(Z->X) ||
-		!JE_FLOAT_ISZERO(Z->Y)) {
-		APos->Flags=JE_OBJECTPOS_XFORMED;
+	if (!GR_FLOATS_EQUAL(X->X,1.0f) ||
+		!GR_FLOATS_EQUAL(Y->Y,1.0f) ||
+		!GR_FLOATS_EQUAL(Z->Z,1.0f) ||
+		!GR_FLOAT_ISZERO(X->Y) ||
+		!GR_FLOAT_ISZERO(X->Z) ||
+		!GR_FLOAT_ISZERO(Y->X) ||
+		!GR_FLOAT_ISZERO(Y->Z) ||
+		!GR_FLOAT_ISZERO(Z->X) ||
+		!GR_FLOAT_ISZERO(Z->Y)) {
+		APos->Flags=GR_OBJECTPOS_XFORMED;
 		Matrix34_Multiply(&APos->RMatrix,&APos->BMatrix,&APos->Matrix);
 	} else {
-		APos->Flags=JE_OBJECTPOS_NORMAL;
+		APos->Flags=GR_OBJECTPOS_NORMAL;
 		APos->Matrix=APos->RMatrix;
 	}
 }
@@ -626,234 +626,234 @@ JETAPI void JETCC jeObjectPos_SetNewBaseXFormByAxis(jeObjectPos *APos, const jeV
 // Transform-Methods
 // -----------------------------------------------------------------------------------------------
 
-JETAPI void JETCC jeObjectPos_Spin(jeObjectPos *APos, jeFloat DPhi)
+GRAPI void GRCC grObjectPos_Spin(grObjectPos *APos, grFloat DPhi)
 {
 	assert(APos!=NULL);
 	assert(DPhi*DPhi>=0.0f);
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 
 	APos->Phi+=DPhi;
 	ASM_RecalcSpin(APos);
 
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 }
 
-JETAPI void JETCC jeObjectPos_Slope(jeObjectPos *APos, jeFloat DPsi)
+GRAPI void GRCC grObjectPos_Slope(grObjectPos *APos, grFloat DPsi)
 {
 	assert(APos!=NULL);
 	assert(DPsi*DPsi>=0.0f);
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 
 	APos->Psi+=DPsi;
 	ASM_RecalcSlope(APos);
 
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 }
 
-JETAPI void JETCC jeObjectPos_Tilt(jeObjectPos *APos, jeFloat DRho)
+GRAPI void GRCC grObjectPos_Tilt(grObjectPos *APos, grFloat DRho)
 {
 	assert(APos!=NULL);
 	assert(DRho*DRho>=0.0f);
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 
 	APos->Rho+=DRho;
 	ASM_RecalcTilt(APos);
 
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 }
 
-JETAPI void JETCC jeObjectPos_Rotate(jeObjectPos *APos, jeFloat DPhi, jeFloat DPsi, jeFloat DRho)
+GRAPI void GRCC grObjectPos_Rotate(grObjectPos *APos, grFloat DPhi, grFloat DPsi, grFloat DRho)
 {
 
 	assert(APos!=NULL);
 	assert(DPhi*DPhi>=0.0f);
 	assert(DPsi*DPsi>=0.0f);
 	assert(DRho*DRho>=0.0f);
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 
 	APos->Phi+=DPhi;
 	APos->Psi+=DPsi;
 	APos->Rho+=DRho;
 	ASM_RecalcRotation(APos);
 
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 }
 
-JETAPI void JETCC jeObjectPos_Translate(jeObjectPos *APos, jeFloat DX, jeFloat DY, jeFloat DZ)
+GRAPI void GRCC grObjectPos_Translate(grObjectPos *APos, grFloat DX, grFloat DY, grFloat DZ)
 {
 	assert(APos!=NULL);
 	assert(DX*DX>=0.0f);
 	assert(DY*DY>=0.0f);
 	assert(DZ*DZ>=0.0f);
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 	APos->Translation.X+=DX;
 	APos->Translation.Y+=DY;
 	APos->Translation.Z+=DZ;
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 }
 
 // -----------------------------------------------------------------------------------------------
 // "Move"-Methods
 // -----------------------------------------------------------------------------------------------
 
-JETAPI void JETCC jeObjectPos_Move(jeObjectPos *APos, jeVec3d *Dir, jeFloat Dist)
+GRAPI void GRCC grObjectPos_Move(grObjectPos *APos, grVec3d *Dir, grFloat Dist)
 {
 	assert(APos!=NULL);
 	assert(Dist*Dist>=0.0f);
-	assert(jeVec3d_IsValid(Dir)!=JE_FALSE);
+	assert(grVec3d_IsValid(Dir)!=GR_FALSE);
 	
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 	APos->Translation.X+=Dist*Dir->X;
 	APos->Translation.Y+=Dist*Dir->Y;
 	APos->Translation.Z+=Dist*Dir->Z;
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 }
 
-JETAPI void JETCC jeObjectPos_MoveIn(jeObjectPos *APos, jeFloat Dist)
+GRAPI void GRCC grObjectPos_MoveIn(grObjectPos *APos, grFloat Dist)
 {
 	assert(APos!=NULL);
 	assert(Dist*Dist>=0.0f);
 	
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 	APos->Translation.X-=Dist*APos->RMatrix.x[0][2]; // -AZ
 	APos->Translation.Y-=Dist*APos->RMatrix.x[1][2]; // -BZ
 	APos->Translation.Z-=Dist*APos->RMatrix.x[2][2]; // -CZ
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 }
 
-JETAPI void JETCC jeObjectPos_MoveUp(jeObjectPos *APos, jeFloat Dist)
+GRAPI void GRCC grObjectPos_MoveUp(grObjectPos *APos, grFloat Dist)
 {
 	assert(APos!=NULL);
 	assert(Dist*Dist>=0.0f);
 	
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 	APos->Translation.X+=Dist*APos->RMatrix.x[0][1]; // AY 
 	APos->Translation.Y+=Dist*APos->RMatrix.x[1][1]; // BY
 	APos->Translation.Z+=Dist*APos->RMatrix.x[2][1]; // BZ
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 }
 
-JETAPI void JETCC jeObjectPos_MoveLeft(jeObjectPos *APos, jeFloat Dist)
+GRAPI void GRCC grObjectPos_MoveLeft(grObjectPos *APos, grFloat Dist)
 {
 	assert(APos!=NULL);
 	assert(Dist*Dist>=0.0f);
 	
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 	APos->Translation.X-=Dist*APos->RMatrix.x[0][0]; // -AX
 	APos->Translation.Y-=Dist*APos->RMatrix.x[1][0]; // -BX
 	APos->Translation.Z-=Dist*APos->RMatrix.x[2][0]; // -CX
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 }
 
-JETAPI void JETCC jeObjectPos_MoveByDifference(const jeObjectPos *OPos, const jeObjectPos *NPos, jeObjectPos *APos)
+GRAPI void GRCC grObjectPos_MoveByDifference(const grObjectPos *OPos, const grObjectPos *NPos, grObjectPos *APos)
 {
-	jeFloat		DX,DY,DZ;
+	grFloat		DX,DY,DZ;
 
 	assert(OPos!=NULL);assert(NPos!=NULL);assert(APos!=NULL);
-	jeObjectPos_Assert(jeObjectPos_IsValid(OPos));
-	jeObjectPos_Assert(jeObjectPos_IsValid(NPos));
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(OPos));
+	grObjectPos_Assert(grObjectPos_IsValid(NPos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 
 	DX=NPos->Translation.X-OPos->Translation.X;
-	if (JE_FLOAT_ISZERO(DX)) DX=0.0f;
+	if (GR_FLOAT_ISZERO(DX)) DX=0.0f;
 
 	DY=NPos->Translation.Y-OPos->Translation.Y;
-	if (JE_FLOAT_ISZERO(DY)) DY=0.0f;
+	if (GR_FLOAT_ISZERO(DY)) DY=0.0f;
 
 	DZ=NPos->Translation.Z-OPos->Translation.Z;
-	if (JE_FLOAT_ISZERO(DZ)) DZ=0.0f;
+	if (GR_FLOAT_ISZERO(DZ)) DZ=0.0f;
 
-	jeObjectPos_Translate(APos,DX,DY,DZ);
+	grObjectPos_Translate(APos,DX,DY,DZ);
 }
 
-JETAPI void JETCC jeObjectPos_TransformByDifference(const jeObjectPos *OPos, const jeObjectPos *NPos, jeObjectPos *APos)
+GRAPI void GRCC grObjectPos_TransformByDifference(const grObjectPos *OPos, const grObjectPos *NPos, grObjectPos *APos)
 {
-	jeFloat		DPhi,DPsi,DRho,DX,DY,DZ;
-	jeBoolean	PhiChange,PsiChange,RhoChange;
+	grFloat		DPhi,DPsi,DRho,DX,DY,DZ;
+	grBoolean	PhiChange,PsiChange,RhoChange;
 
 	assert(OPos!=NULL);assert(NPos!=NULL);assert(APos!=NULL);
-	jeObjectPos_Assert(jeObjectPos_IsValid(OPos));
-	jeObjectPos_Assert(jeObjectPos_IsValid(NPos));
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(OPos));
+	grObjectPos_Assert(grObjectPos_IsValid(NPos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 
 	DPhi=NPos->Phi-OPos->Phi;
-	PhiChange=!JE_FLOAT_ISZERO(DPhi);
+	PhiChange=!GR_FLOAT_ISZERO(DPhi);
 	if (!PhiChange) DPhi=0.0f;
 
 	DPsi=NPos->Psi-OPos->Psi;
-	PsiChange=!JE_FLOAT_ISZERO(DPsi);
+	PsiChange=!GR_FLOAT_ISZERO(DPsi);
 	if (!PsiChange) DPsi=0.0f;
 
 	DRho=NPos->Rho-OPos->Rho;
-	RhoChange=!JE_FLOAT_ISZERO(DRho);
+	RhoChange=!GR_FLOAT_ISZERO(DRho);
 	if (!RhoChange) DRho=0.0f;
 
 	if (PsiChange || (PhiChange && RhoChange)) {
-		jeObjectPos_Rotate(APos,DPhi,DPsi,DRho);
+		grObjectPos_Rotate(APos,DPhi,DPsi,DRho);
 	} else if (PhiChange) {
-		jeObjectPos_Spin(APos,DPhi);
+		grObjectPos_Spin(APos,DPhi);
 	} else if (RhoChange) {
-		jeObjectPos_Tilt(APos,DRho);
+		grObjectPos_Tilt(APos,DRho);
 	}
 
 	DX=NPos->Translation.X-OPos->Translation.X;
-	if (JE_FLOAT_ISZERO(DX)) DX=0.0f;
+	if (GR_FLOAT_ISZERO(DX)) DX=0.0f;
 
 	DY=NPos->Translation.Y-OPos->Translation.Y;
-	if (JE_FLOAT_ISZERO(DY)) DY=0.0f;
+	if (GR_FLOAT_ISZERO(DY)) DY=0.0f;
 
 	DZ=NPos->Translation.Z-OPos->Translation.Z;
-	if (JE_FLOAT_ISZERO(DZ)) DZ=0.0f;
+	if (GR_FLOAT_ISZERO(DZ)) DZ=0.0f;
 
-	jeObjectPos_Translate(APos,DX,DY,DZ);
+	grObjectPos_Translate(APos,DX,DY,DZ);
 }
 
 // -----------------------------------------------------------------------------------------------
 // Query-Methods
 // -----------------------------------------------------------------------------------------------
 
-JETAPI void JETCC jeObjectPos_GetIn(const jeObjectPos *APos, jeVec3d *V)
+GRAPI void GRCC grObjectPos_GetIn(const grObjectPos *APos, grVec3d *V)
 {
 	assert(APos!=NULL);assert(V!=NULL);
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 	V->X=-APos->RMatrix.x[0][2]; // -AZ
 	V->Y=-APos->RMatrix.x[1][2]; // -BZ
 	V->Z=-APos->RMatrix.x[2][2]; // -CZ
 }
 
-JETAPI void JETCC jeObjectPos_GetUp(const jeObjectPos *APos, jeVec3d *V)
+GRAPI void GRCC grObjectPos_GetUp(const grObjectPos *APos, grVec3d *V)
 {
 	assert(APos!=NULL);assert(V!=NULL);
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 	V->X=APos->RMatrix.x[0][1]; // AY
 	V->Y=APos->RMatrix.x[1][1]; // BY
 	V->Z=APos->RMatrix.x[2][1]; // CY
 }
 
-JETAPI void JETCC jeObjectPos_GetLeft(const jeObjectPos *APos, jeVec3d *V)
+GRAPI void GRCC grObjectPos_GetLeft(const grObjectPos *APos, grVec3d *V)
 {
 	assert(APos!=NULL);assert(V!=NULL);
-	jeObjectPos_Assert(jeObjectPos_IsValid(APos));
+	grObjectPos_Assert(grObjectPos_IsValid(APos));
 	V->X=-APos->RMatrix.x[0][0]; // -AX
 	V->Y=-APos->RMatrix.x[1][0]; // -BX
 	V->Z=-APos->RMatrix.x[2][0]; // -CX
 }
 
-JETAPI jeBoolean JETCC jeObjectPos_IsValid(const jeObjectPos *APos)
+GRAPI grBoolean GRCC grObjectPos_IsValid(const grObjectPos *APos)
 {
 	if (APos == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (!Matrix34_IsValid(&APos->RMatrix))
-		return JE_FALSE;
-	if ((APos->Flags&JE_OBJECTPOS_XFORMED) && !Matrix34_IsValid(&APos->BMatrix))
-		return JE_FALSE;
-	if (!jeXForm3d_IsValid(&APos->XForm))
-		return JE_FALSE;
+		return GR_FALSE;
+	if ((APos->Flags&GR_OBJECTPOS_XFORMED) && !Matrix34_IsValid(&APos->BMatrix))
+		return GR_FALSE;
+	if (!grXForm3d_IsValid(&APos->XForm))
+		return GR_FALSE;
 	if (((APos->Phi*APos->Phi)<0.0f) || ((APos->CPhi*APos->CPhi)<0.0f) || ((APos->SPhi*APos->SPhi)<0.0f))
-		return JE_FALSE;
+		return GR_FALSE;
 	if (((APos->Psi*APos->Psi)<0.0f) || ((APos->CPsi*APos->CPsi)<0.0f) || ((APos->SPsi*APos->SPsi)<0.0f))
-		return JE_FALSE;
+		return GR_FALSE;
 	if (((APos->Rho*APos->Rho)<0.0f) || ((APos->CRho*APos->CRho)<0.0f) || ((APos->SRho*APos->SRho)<0.0f))
-		return JE_FALSE;
-	return JE_TRUE;
+		return GR_FALSE;
+	return GR_TRUE;
 }

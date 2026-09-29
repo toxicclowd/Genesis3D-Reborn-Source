@@ -32,23 +32,23 @@ private:
         class VecTable
         {
         public:
-                jeFloat             x[256], y[256], z[256], o[256];
+                grFloat             x[256], y[256], z[256], o[256];
 
                                     VecTable (int32 seed);
         };
 
 static  const HashTable             hTable;
 static  const VecTable              vTable;
-static  const jeVec3d                bigvect;
+static  const grVec3d                bigvect;
 
 public:
-        jeFloat                     NoiseAt (const jeVec3d &) const;
-        jeVec3d                     DNoiseAt (const jeVec3d &) const;
+        grFloat                     NoiseAt (const grVec3d &) const;
+        grVec3d                     DNoiseAt (const grVec3d &) const;
 
-        jeFloat                     fBm (jeVec3d, jeFloat, jeFloat, uint32) const;
-        jeVec3d                     DfBm (jeVec3d, jeFloat, jeFloat, uint32) const;
+        grFloat                     fBm (grVec3d, grFloat, grFloat, uint32) const;
+        grVec3d                     DfBm (grVec3d, grFloat, grFloat, uint32) const;
 
-        jeFloat                     Turbulence (jeVec3d, jeFloat, jeFloat, uint32) const;
+        grFloat                     Turbulence (grVec3d, grFloat, grFloat, uint32) const;
 };
 
 class Noise2
@@ -68,7 +68,7 @@ private:
         class VecTable
         {
         public:
-                jeFloat             x[256], y[256], o[256];
+                grFloat             x[256], y[256], o[256];
 
                                     VecTable (int32 seed);
         };
@@ -77,11 +77,11 @@ static  const HashTable             hTable;
 static  const VecTable              vTable;
 
 public:
-        jeFloat                     NoiseAt (jeFloat, jeFloat) const;
+        grFloat                     NoiseAt (grFloat, grFloat) const;
 
-        jeFloat                     fBm (jeFloat, jeFloat, jeFloat, jeFloat, uint32) const;
+        grFloat                     fBm (grFloat, grFloat, grFloat, grFloat, uint32) const;
 
-        jeFloat                     Turbulence (jeFloat, jeFloat, jeFloat, jeFloat, uint32) const;
+        grFloat                     Turbulence (grFloat, grFloat, grFloat, grFloat, uint32) const;
 };
 
 #endif

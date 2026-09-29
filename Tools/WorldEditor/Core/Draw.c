@@ -24,7 +24,7 @@
 
 #include "AppData.h"
 #include "ExtBox.h"
-//#include "jet.h"
+//#include "Genesis3D.h"
 #include "GroupList.h"
 #include "Rect.h"
 #include "Settings.h"
@@ -43,13 +43,13 @@ typedef struct tagBrushDrawData
 {
 	HDC					hDC ;
 	Ortho			*	pOrtho ;
-	jeBoolean			bDrawVertex ;
-	jeBoolean			bDrawFaces ;
-	jeBoolean			bColorOverRide;
+	grBoolean			bDrawVertex ;
+	grBoolean			bDrawFaces ;
+	grBoolean			bColorOverRide;
 } BrushDrawData ;
 
 
-static jeBoolean Draw_Object( Object *pObject, void *lParam )
+static grBoolean Draw_Object( Object *pObject, void *lParam )
 {
 	BrushDrawData	*	pData = (BrushDrawData*)lParam ;
 	uint32 flags;
@@ -64,7 +64,7 @@ static jeBoolean Draw_Object( Object *pObject, void *lParam )
 	{
 		hPen = CreatePen( PS_SOLID, 1, Settings_GetSubSelectedColor( ) ) ;		// Selected objects
 		hOldPen = SelectPen( pData->hDC, hPen ) ;
-		pData->bColorOverRide = JE_TRUE;
+		pData->bColorOverRide = GR_TRUE;
 	}
 	switch( Object_GetKind( pObject ) )
 	{
@@ -100,7 +100,7 @@ static jeBoolean Draw_Object( Object *pObject, void *lParam )
 		hPen = SelectPen( pData->hDC, hOldPen ) ;
 		DeletePen( hPen ) ;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 }// Draw_Object
 
@@ -146,7 +146,7 @@ static HBITMAP Draw_SelectHandleBitmap( HDC hMemDC, SELECT_HANDLE Select_Handle,
 
 }// Draw_SelectHandleBitmap
 
-void Draw_SelectGetElipseBox( const jeExtBox * pSelWorldBounds, Ortho * pOrtho, Rect *pBox )
+void Draw_SelectGetElipseBox( const grExtBox * pSelWorldBounds, Ortho * pOrtho, Rect *pBox )
 {
 	Rect SelBounds;
 	Point Center;
@@ -176,10 +176,10 @@ void Draw_SelectGetElipseBox( const jeExtBox * pSelWorldBounds, Ortho * pOrtho, 
 void Draw_ObjectAxis( Object * pObject, Ortho *pOrtho, HDC hDC )
 {
 	Point			points[2];
-	jeXForm3d XF;
+	grXForm3d XF;
 	HPEN				hOldPen ;
-	jeVec3d			Vert1 ;
-	jeVec3d			Vert2 ;
+	grVec3d			Vert1 ;
+	grVec3d			Vert2 ;
 	HPEN				hPen ;
 
 	if( !Object_GetTransform( pObject, &XF ) )
@@ -187,10 +187,10 @@ void Draw_ObjectAxis( Object * pObject, Ortho *pOrtho, HDC hDC )
 	hPen = CreatePen( PS_SOLID, 1, RGB( 255, 255, 255 ) ) ;		// Selected objects
 	hOldPen = SelectPen( hDC, hPen ) ;
 	Vert1 = XF.Translation ;
-	jeXForm3d_GetIn( &XF, &Vert2 );
-	jeVec3d_Normalize( &Vert2 );
-	jeVec3d_Scale( &Vert2, 16.0f, &Vert2 );
-	jeVec3d_Add( &Vert2, &Vert1, &Vert2 );
+	grXForm3d_GetIn( &XF, &Vert2 );
+	grVec3d_Normalize( &Vert2 );
+	grVec3d_Scale( &Vert2, 16.0f, &Vert2 );
+	grVec3d_Add( &Vert2, &Vert1, &Vert2 );
 	Ortho_WorldToView( pOrtho, &Vert1, &points[0] ) ;
 	Ortho_WorldToView( pOrtho, &Vert2, &points[1] ) ;
 	Pen_Polyline( (long)hDC, points, 2 ) ;
@@ -201,10 +201,10 @@ void Draw_ObjectAxis( Object * pObject, Ortho *pOrtho, HDC hDC )
 	hPen = CreatePen( PS_SOLID, 1, RGB( 255, 0, 0 ) ) ;		// Selected objects
 	hOldPen = SelectPen( (HDC)hDC, hPen ) ;
 	Vert1 = XF.Translation ;
-	jeXForm3d_GetUp( &XF, &Vert2 );
-	jeVec3d_Normalize( &Vert2 );
-	jeVec3d_Scale( &Vert2, 16.0f, &Vert2 );
-	jeVec3d_Add( &Vert2, &Vert1, &Vert2 );
+	grXForm3d_GetUp( &XF, &Vert2 );
+	grVec3d_Normalize( &Vert2 );
+	grVec3d_Scale( &Vert2, 16.0f, &Vert2 );
+	grVec3d_Add( &Vert2, &Vert1, &Vert2 );
 	Ortho_WorldToView( pOrtho, &Vert1, &points[0] ) ;
 	Ortho_WorldToView( pOrtho, &Vert2, &points[1] ) ;
 	Pen_Polyline( (long)hDC, points, 2 ) ;
@@ -215,10 +215,10 @@ void Draw_ObjectAxis( Object * pObject, Ortho *pOrtho, HDC hDC )
 	hPen = CreatePen( PS_SOLID, 1, RGB( 0, 255, 0 ) ) ;		// Selected objects
 	hOldPen = SelectPen( (HDC)hDC, hPen ) ;
 	Vert1 = XF.Translation ;
-	jeXForm3d_GetLeft( &XF, &Vert2 );
-	jeVec3d_Normalize( &Vert2 );
-	jeVec3d_Scale( &Vert2, 16.0f, &Vert2 );
-	jeVec3d_Add( &Vert2, &Vert1, &Vert2 );
+	grXForm3d_GetLeft( &XF, &Vert2 );
+	grVec3d_Normalize( &Vert2 );
+	grVec3d_Scale( &Vert2, 16.0f, &Vert2 );
+	grVec3d_Add( &Vert2, &Vert1, &Vert2 );
 	Ortho_WorldToView( pOrtho, &Vert1, &points[0] ) ;
 	Ortho_WorldToView( pOrtho, &Vert2, &points[1] ) ;
 	Pen_Polyline( (long)hDC, points, 2 ) ;
@@ -245,7 +245,7 @@ void Draw_SelectAxis( Level * pLevel, Ortho * pOrtho, HDC hDC )
 
 }
 
-void Draw_SelectBoundElipse( const jeExtBox * pSelWorldBounds, Ortho * pOrtho, HDC hDC )
+void Draw_SelectBoundElipse( const grExtBox * pSelWorldBounds, Ortho * pOrtho, HDC hDC )
 {
 	HBRUSH				hOldBrush ;
 	COLORREF			coBackGround ;
@@ -267,7 +267,7 @@ void Draw_SelectBoundElipse( const jeExtBox * pSelWorldBounds, Ortho * pOrtho, H
 	SetBkColor( hDC, coOld ) ;
 	SelectBrush( hDC, hOldBrush ) ;
 }
-void Draw_SelectBounds( const jeExtBox * pSelWorldBounds, Ortho * pOrtho, HDC hDC, 	Rect * pSelBounds, COLORREF	co )
+void Draw_SelectBounds( const grExtBox * pSelWorldBounds, Ortho * pOrtho, HDC hDC, 	Rect * pSelBounds, COLORREF	co )
 {
 	HPEN				hOldPen ;
 	HPEN				hPen ;
@@ -291,7 +291,7 @@ void Draw_SelectBounds( const jeExtBox * pSelWorldBounds, Ortho * pOrtho, HDC hD
 		pSelBounds->Left = pSelBounds->Right;
 		pSelBounds->Right = Temp;
 	}
-	if( Rect_IsEmpty( pSelBounds ) == JE_FALSE )
+	if( Rect_IsEmpty( pSelBounds ) == GR_FALSE )
 	{
 		coBackGround = Settings_GetSelectedBk() ;
 
@@ -372,9 +372,9 @@ void Draw_Objects(  Level * pLevel, Ortho * pOrtho, HDC hDC )
 
 	bdd.hDC = hDC ;
 	bdd.pOrtho = pOrtho ;
-	bdd.bDrawVertex = JE_FALSE ;
-	bdd.bDrawFaces = JE_FALSE ;
-	bdd.bColorOverRide = JE_FALSE;
+	bdd.bDrawVertex = GR_FALSE ;
+	bdd.bDrawFaces = GR_FALSE ;
+	bdd.bColorOverRide = GR_FALSE;
 
     // Create and assign the group pen
 	hPen = CreatePen( PS_SOLID, 1, Group_GetColor( pGroup ) ) ;
@@ -405,12 +405,12 @@ void Draw_Selected( Level * pLevel, Ortho * pOrtho, HDC hDC, MODE eMode )
 
 	bdd.hDC = hDC ;
 	bdd.pOrtho = pOrtho ;
-	bdd.bColorOverRide = JE_TRUE;
+	bdd.bColorOverRide = GR_TRUE;
 	Level_SetMiscFlags( pLevel, BRUSH_EFLAG_SELECTED ) ;	// Set sel flags
 
 	// Draw the selected things
-	bdd.bDrawVertex = ( eMode == MODE_POINTER_VM ) ? JE_TRUE : JE_FALSE ;
-	bdd.bDrawFaces = ( eMode == MODE_POINTER_FM ) ? JE_TRUE : JE_FALSE ;
+	bdd.bDrawVertex = ( eMode == MODE_POINTER_VM ) ? GR_TRUE : GR_FALSE ;
+	bdd.bDrawFaces = ( eMode == MODE_POINTER_FM ) ? GR_TRUE : GR_FALSE ;
 	hPen = CreatePen( PS_SOLID, 1, Settings_GetSelectedColor( ) ) ;		// Selected objects
 	hOldPen = SelectPen( hDC, hPen ) ;
 	Level_EnumSelected( pLevel, &bdd, Draw_Object ) ;
@@ -425,16 +425,16 @@ void Draw_SelectHandles( Level * pLevel, HDC hDC, MODE eMode, Rect*pSelBounds )
 	int32				ModFlags;
 
 	ModFlags = Level_SelXFormModFlags( pLevel );
-	if( (eMode == MODE_POINTER_BB && ModFlags & JE_OBJECT_XFORM_SCALE) ||
-		(eMode == MODE_POINTER_RS  && ModFlags & JE_OBJECT_XFORM_ROTATE))
+	if( (eMode == MODE_POINTER_BB && ModFlags & GR_OBJECT_XFORM_SCALE) ||
+		(eMode == MODE_POINTER_RS  && ModFlags & GR_OBJECT_XFORM_ROTATE))
 	{
 	
 		Draw_CornerHandles( pSelBounds, hDC, eMode );
 
 	}
 
-	if( (eMode == MODE_POINTER_BB && ModFlags & JE_OBJECT_XFORM_SCALE) ||
-		(eMode == MODE_POINTER_RS  && ModFlags & JE_OBJECT_XFORM_SHEAR))
+	if( (eMode == MODE_POINTER_BB && ModFlags & GR_OBJECT_XFORM_SCALE) ||
+		(eMode == MODE_POINTER_RS  && ModFlags & GR_OBJECT_XFORM_SHEAR))
 	{
 		Draw_EdgeHandles( pSelBounds, hDC, eMode );
 
@@ -455,8 +455,8 @@ void Draw_OrthoName( Ortho * pOrtho, HDC hDC )
 
 void Draw_Grid( const Level * pLevel, const Ortho * pOrtho, HDC hDC ) 
 {
-	jeFloat	fGridSize ;
-	jeFloat	fSnapSize ;
+	grFloat	fGridSize ;
+	grFloat	fSnapSize ;
 	HPEN	hPen ;
 	HPEN	hOldPen ;
 
@@ -464,7 +464,7 @@ void Draw_Grid( const Level * pLevel, const Ortho * pOrtho, HDC hDC )
 	assert( pOrtho != NULL ) ;
 
 	fGridSize = Ortho_GetGridDistance( pOrtho ) ;
-	fSnapSize = (jeFloat)Level_GetGridSnapSize( pLevel ) ;
+	fSnapSize = (grFloat)Level_GetGridSnapSize( pLevel ) ;
 
 	//  If the grid size and the snap size are the same, then just render
 	//  the snap grid.
@@ -516,25 +516,25 @@ void Draw_ConstructorLine( const Level * pLevel, const Ortho * pOrtho, HDC hDC )
 {
 	float Plane;
 	float TempFloat;
-	jeVec3d TempVec;
+	grVec3d TempVec;
 	Point MinPt;
 	Point MaxPt;
 	HPEN				hPen ;
 	HPEN				hOldPen ;
-	jeExtBox			ViewBox ;
+	grExtBox			ViewBox ;
 	ORTHO_AXIS			OrthoAxis ;
-	jeVec3d				XTemp ;
+	grVec3d				XTemp ;
 
 	// Setup the world bounding box for this view (xz(top), xy(front), yz(side))
 	Ortho_ViewToWorld( pOrtho, 0, 0, &XTemp ) ;
-	jeExtBox_SetToPoint( &ViewBox, &XTemp ) ;
+	grExtBox_SetToPoint( &ViewBox, &XTemp ) ;
 	Ortho_ViewToWorld( pOrtho, Ortho_GetWidth( pOrtho ), Ortho_GetHeight( pOrtho ), &XTemp ) ;
-	jeExtBox_ExtendToEnclose( &ViewBox, &XTemp ) ;
+	grExtBox_ExtendToEnclose( &ViewBox, &XTemp ) ;
 
 	// The remaining axis is set to extremes
 	OrthoAxis = Ortho_GetOrthogonalAxis( pOrtho ) ;
-	jeVec3d_SetElement( &ViewBox.Min, OrthoAxis, -FLT_MAX ) ;
-	jeVec3d_SetElement( &ViewBox.Max, OrthoAxis, FLT_MAX ) ;
+	grVec3d_SetElement( &ViewBox.Min, OrthoAxis, -FLT_MAX ) ;
+	grVec3d_SetElement( &ViewBox.Max, OrthoAxis, FLT_MAX ) ;
 
 	hPen = CreatePen( PS_SOLID, 1, Settings_GetConstructorColor() ) ;
 	hOldPen = SelectPen( hDC, hPen ) ;
@@ -543,25 +543,25 @@ void Draw_ConstructorLine( const Level * pLevel, const Ortho * pOrtho, HDC hDC )
 	Plane = Level_GetConstructorPlane( pLevel, Ortho_GetVerticalAxis( pOrtho ) );
 	
 	//Does the Plane intersect the view box
-	if( Plane > jeVec3d_GetElement( &ViewBox.Min, Ortho_GetVerticalAxis( pOrtho ) ) &&
-		Plane < jeVec3d_GetElement( &ViewBox.Max, Ortho_GetVerticalAxis( pOrtho ) ) )
+	if( Plane > grVec3d_GetElement( &ViewBox.Min, Ortho_GetVerticalAxis( pOrtho ) ) &&
+		Plane < grVec3d_GetElement( &ViewBox.Max, Ortho_GetVerticalAxis( pOrtho ) ) )
 	{
 		// Calc the Min point of the line to be drawn
-		jeVec3d_SetElement( &TempVec, Ortho_GetVerticalAxis( pOrtho ), Plane );
+		grVec3d_SetElement( &TempVec, Ortho_GetVerticalAxis( pOrtho ), Plane );
 		
 		// set the horzontal axis element to view Min
-		TempFloat = jeVec3d_GetElement( &ViewBox.Min, Ortho_GetHorizontalAxis( pOrtho ) );
-		jeVec3d_SetElement( &TempVec, Ortho_GetHorizontalAxis( pOrtho ), TempFloat );
+		TempFloat = grVec3d_GetElement( &ViewBox.Min, Ortho_GetHorizontalAxis( pOrtho ) );
+		grVec3d_SetElement( &TempVec, Ortho_GetHorizontalAxis( pOrtho ), TempFloat );
 
 		// set the Orthognal axis element to 0.0f since its not important here
-		jeVec3d_SetElement( &TempVec, Ortho_GetOrthogonalAxis( pOrtho ), 0.0f );
+		grVec3d_SetElement( &TempVec, Ortho_GetOrthogonalAxis( pOrtho ), 0.0f );
 
 		//Get the Min View point
 		Ortho_WorldToView( pOrtho, &TempVec, &MinPt ) ;
 
 		// set the horzontal axis element to view Max
-		TempFloat = jeVec3d_GetElement( &ViewBox.Max, Ortho_GetHorizontalAxis( pOrtho ) );
-		jeVec3d_SetElement( &TempVec, Ortho_GetHorizontalAxis( pOrtho ), TempFloat );
+		TempFloat = grVec3d_GetElement( &ViewBox.Max, Ortho_GetHorizontalAxis( pOrtho ) );
+		grVec3d_SetElement( &TempVec, Ortho_GetHorizontalAxis( pOrtho ), TempFloat );
 
 		//Get the Max View point
 		Ortho_WorldToView( pOrtho, &TempVec, &MaxPt ) ;
@@ -574,25 +574,25 @@ void Draw_ConstructorLine( const Level * pLevel, const Ortho * pOrtho, HDC hDC )
 	Plane = Level_GetConstructorPlane( pLevel, Ortho_GetHorizontalAxis( pOrtho ) );
 	
 	//Does the Plane intersect the view box
-	if( Plane > jeVec3d_GetElement( &ViewBox.Min, Ortho_GetHorizontalAxis( pOrtho ) ) &&
-		Plane < jeVec3d_GetElement( &ViewBox.Max, Ortho_GetHorizontalAxis( pOrtho ) ) )
+	if( Plane > grVec3d_GetElement( &ViewBox.Min, Ortho_GetHorizontalAxis( pOrtho ) ) &&
+		Plane < grVec3d_GetElement( &ViewBox.Max, Ortho_GetHorizontalAxis( pOrtho ) ) )
 	{
 		// Calc the Min point of the line to be drawn
-		jeVec3d_SetElement( &TempVec, Ortho_GetHorizontalAxis( pOrtho ), Plane );
+		grVec3d_SetElement( &TempVec, Ortho_GetHorizontalAxis( pOrtho ), Plane );
 		
 		// set the horzontal axis element to view Min
-		TempFloat = jeVec3d_GetElement( &ViewBox.Min, Ortho_GetVerticalAxis( pOrtho ) );
-		jeVec3d_SetElement( &TempVec, Ortho_GetVerticalAxis( pOrtho ), TempFloat );
+		TempFloat = grVec3d_GetElement( &ViewBox.Min, Ortho_GetVerticalAxis( pOrtho ) );
+		grVec3d_SetElement( &TempVec, Ortho_GetVerticalAxis( pOrtho ), TempFloat );
 
 		// set the Orthognal axis element to 0.0f since its not important here
-		jeVec3d_SetElement( &TempVec, Ortho_GetOrthogonalAxis( pOrtho ), 0.0f );
+		grVec3d_SetElement( &TempVec, Ortho_GetOrthogonalAxis( pOrtho ), 0.0f );
 
 		//Get the Min View point
 		Ortho_WorldToView( pOrtho, &TempVec, &MinPt ) ;
 
 		// set the horzontal axis element to view Max
-		TempFloat = jeVec3d_GetElement( &ViewBox.Max, Ortho_GetVerticalAxis( pOrtho ) );
-		jeVec3d_SetElement( &TempVec, Ortho_GetVerticalAxis( pOrtho ), TempFloat );
+		TempFloat = grVec3d_GetElement( &ViewBox.Max, Ortho_GetVerticalAxis( pOrtho ) );
+		grVec3d_SetElement( &TempVec, Ortho_GetVerticalAxis( pOrtho ), TempFloat );
 
 		//Get the Max View point
 		Ortho_WorldToView( pOrtho, &TempVec, &MaxPt ) ;
@@ -605,15 +605,15 @@ void Draw_ConstructorLine( const Level * pLevel, const Ortho * pOrtho, HDC hDC )
 	DeletePen( hPen ) ;
 }
 
-void Draw_GridAtSize( const Ortho * pOrtho, jeFloat fInterval, HDC hDC )
+void Draw_GridAtSize( const Ortho * pOrtho, grFloat fInterval, HDC hDC )
 {
-	jeVec3d		xstep ;
-	jeVec3d		ystep ;
-	jeVec3d		Delta, End ;
+	grVec3d		xstep ;
+	grVec3d		ystep ;
+	grVec3d		Delta, End ;
 	int			i ;
 	int			cnt ;
-	jeFloat		gsinv ;
-	jeExtBox	ViewBox ;
+	grFloat		gsinv ;
+	grExtBox	ViewBox ;
 	Point		sp ;
 	ORTHO_AXIS	HAxis ;
 	ORTHO_AXIS	VAxis ;
@@ -644,65 +644,65 @@ void Draw_GridAtSize( const Ortho * pOrtho, jeFloat fInterval, HDC hDC )
 		&End
 	) ;
 
-	jeExtBox_Set 
+	grExtBox_Set 
 	(
 		&ViewBox,
 		Delta.X, Delta.Y, Delta.Z,
 		End.X, End.Y, End.Z
 	) ;
 
-	jeVec3d_SetElement( &ViewBox.Min, OAxis, -FLT_MAX ) ;
-	jeVec3d_SetElement( &ViewBox.Max, OAxis, FLT_MAX ) ;
+	grVec3d_SetElement( &ViewBox.Min, OAxis, -FLT_MAX ) ;
+	grVec3d_SetElement( &ViewBox.Max, OAxis, FLT_MAX ) ;
 
 	//snap ViewBox to the grid
-	gsinv = 1.0f/(jeFloat)fInterval;
-	jeVec3d_SetElement
+	gsinv = 1.0f/(grFloat)fInterval;
+	grVec3d_SetElement
 	( 
 		&ViewBox.Min, 
 		HAxis,
-		((int)(jeVec3d_GetElement( &ViewBox.Min, HAxis ) * gsinv))*fInterval
+		((int)(grVec3d_GetElement( &ViewBox.Min, HAxis ) * gsinv))*fInterval
 	);
-	jeVec3d_SetElement
+	grVec3d_SetElement
 	( 
 		&ViewBox.Max, 
 		HAxis,
-		((int)(jeVec3d_GetElement( &ViewBox.Max, HAxis ) * gsinv))*fInterval
+		((int)(grVec3d_GetElement( &ViewBox.Max, HAxis ) * gsinv))*fInterval
 	);
-	jeVec3d_SetElement
+	grVec3d_SetElement
 	( 
 		&ViewBox.Min, 
 		VAxis,
-		((int)(jeVec3d_GetElement( &ViewBox.Min, VAxis ) * gsinv))*fInterval
+		((int)(grVec3d_GetElement( &ViewBox.Min, VAxis ) * gsinv))*fInterval
 	);
-	jeVec3d_SetElement
+	grVec3d_SetElement
 	( 
 		&ViewBox.Max, 
 		VAxis,
-		((int)(jeVec3d_GetElement( &ViewBox.Max, VAxis ) * gsinv))*fInterval
+		((int)(grVec3d_GetElement( &ViewBox.Max, VAxis ) * gsinv))*fInterval
 	);
 // ???? WHY does this change OAxis to Zero?
 //	for(i=0;i<3;i++)
 //	{
-//		VectorToSUB(ViewBox.Min, i)	=(jeFloat) ((int)(VectorToSUB(ViewBox.Min, i)*gsinv))*Interval;
-//		VectorToSUB(ViewBox.Max, i)	=(jeFloat) ((int)(VectorToSUB(ViewBox.Max, i)*gsinv))*Interval;
+//		VectorToSUB(ViewBox.Min, i)	=(grFloat) ((int)(VectorToSUB(ViewBox.Min, i)*gsinv))*Interval;
+//		VectorToSUB(ViewBox.Max, i)	=(grFloat) ((int)(VectorToSUB(ViewBox.Max, i)*gsinv))*Interval;
 //	}
 
-	jeVec3d_Clear( &xstep ) ;
-	jeVec3d_Clear( &ystep ) ;
-	jeVec3d_SetElement( &xstep, HAxis, fInterval ) ;
-	jeVec3d_SetElement( &ystep, VAxis, fInterval ) ;
-//	VectorToSUB(ystep, yaxis)	=(jeFloat)Interval;
-//	VectorToSUB(xstep, xaxis)	=(jeFloat)Interval;
+	grVec3d_Clear( &xstep ) ;
+	grVec3d_Clear( &ystep ) ;
+	grVec3d_SetElement( &xstep, HAxis, fInterval ) ;
+	grVec3d_SetElement( &ystep, VAxis, fInterval ) ;
+//	VectorToSUB(ystep, yaxis)	=(grFloat)Interval;
+//	VectorToSUB(xstep, xaxis)	=(grFloat)Interval;
 
 	// horizontal lines
-	jeVec3d_Copy( &ViewBox.Min, &Delta );
-	jeVec3d_Copy( &ViewBox.Min, &End );
+	grVec3d_Copy( &ViewBox.Min, &Delta );
+	grVec3d_Copy( &ViewBox.Min, &End );
 //	VectorToSUB(Delt2, xaxis)	=VectorToSUB(ViewBox.Max, xaxis);
-	jeVec3d_SetElement( &End, HAxis, jeVec3d_GetElement( &ViewBox.Max, HAxis ) ) ;
+	grVec3d_SetElement( &End, HAxis, grVec3d_GetElement( &ViewBox.Max, HAxis ) ) ;
 //	cnt	=Units_Round((VectorToSUB(ViewBox.Max, yaxis) - VectorToSUB(ViewBox.Min, yaxis))*gsinv);
 	cnt = Units_Round
 	(
-		(jeVec3d_GetElement( &ViewBox.Max, VAxis ) - jeVec3d_GetElement( &ViewBox.Min, VAxis ))*gsinv
+		(grVec3d_GetElement( &ViewBox.Max, VAxis ) - grVec3d_GetElement( &ViewBox.Min, VAxis ))*gsinv
 	) ;
 	for( i=0; i <= cnt; i++ )
 	{
@@ -710,19 +710,19 @@ void Draw_GridAtSize( const Ortho * pOrtho, jeFloat fInterval, HDC hDC )
 		MoveToEx( hDC, 0, sp.Y, NULL ) ;
 //Ortho_WorldToView( pOrtho, &End, &sp );
 		LineTo( hDC, Ortho_GetWidth( pOrtho ), sp.Y ) ;
-		jeVec3d_Add( &Delta, &ystep, &Delta ) ;
-//jeVec3d_Add( &End, &ystep, &End ) ;
+		grVec3d_Add( &Delta, &ystep, &Delta ) ;
+//grVec3d_Add( &End, &ystep, &End ) ;
 	}
 
 	// vertical lines
-	jeVec3d_Copy( &ViewBox.Min, &Delta ) ;
-	jeVec3d_Copy( &ViewBox.Min, &End ) ;
+	grVec3d_Copy( &ViewBox.Min, &Delta ) ;
+	grVec3d_Copy( &ViewBox.Min, &End ) ;
 //	VectorToSUB(Delt2, yaxis)	=VectorToSUB(ViewBox.Max, yaxis);
-	jeVec3d_SetElement( &End, VAxis, jeVec3d_GetElement( &ViewBox.Max, VAxis ) ) ;
+	grVec3d_SetElement( &End, VAxis, grVec3d_GetElement( &ViewBox.Max, VAxis ) ) ;
 //	cnt	=Units_Round((VectorToSUB(ViewBox.Max, xaxis) - VectorToSUB(ViewBox.Min, xaxis))*gsinv);
 	cnt = Units_Round
 	(
-		(jeVec3d_GetElement( &ViewBox.Max, HAxis ) - jeVec3d_GetElement( &ViewBox.Min, HAxis)) * gsinv
+		(grVec3d_GetElement( &ViewBox.Max, HAxis ) - grVec3d_GetElement( &ViewBox.Min, HAxis)) * gsinv
 	) ;
 	for( i=0; i <= cnt ; i++ )
 	{
@@ -730,8 +730,8 @@ void Draw_GridAtSize( const Ortho * pOrtho, jeFloat fInterval, HDC hDC )
 		MoveToEx( hDC, sp.X, 0, NULL ) ;
 //Ortho_WorldToView( pOrtho, &End, &sp ) ;
 		LineTo( hDC, sp.X, Ortho_GetHeight( pOrtho ) ) ;
-		jeVec3d_Add( &Delta, &xstep, &Delta ) ;
-//jeVec3d_Add( &End, &xstep, &End ) ;
+		grVec3d_Add( &Delta, &xstep, &Delta ) ;
+//grVec3d_Add( &End, &xstep, &End ) ;
 	}
 
 

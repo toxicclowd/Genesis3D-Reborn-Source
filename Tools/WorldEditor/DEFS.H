@@ -94,7 +94,7 @@ typedef enum
 
 typedef enum
 {
-	Ortho_Axis_X,	// These correspond to jeVec3d's Get/Set Element
+	Ortho_Axis_X,	// These correspond to grVec3d's Get/Set Element
 	Ortho_Axis_Y,
 	Ortho_Axis_Z,
 	Ortho_Axis_Last	// Invalid

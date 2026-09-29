@@ -30,18 +30,18 @@ extern "C" {
 #endif
 
 #ifndef M_PI
-#define	M_PI		((jeFloat)3.14159265358979323846f)
+#define	M_PI		((grFloat)3.14159265358979323846f)
 #endif
 
-#define PI2				((jeFloat)(2.0f * (M_PI)))
-#define ONE_OVER_2PI	((jeFloat)(1.0f/(PI2)))
+#define PI2				((grFloat)(2.0f * (M_PI)))
+#define ONE_OVER_2PI	((grFloat)(1.0f/(PI2)))
 
 // some useful unit conversions
 #define UNITS_DEGREES_TO_RADIANS(d) Units_DegreesToRadians(d)
 #define UNITS_RADIANS_TO_DEGREES(r) Units_RadiansToDegrees(r)
 
-#define Units_DegreesToRadians(d) ((((jeFloat)(d)) * M_PI) / 180.0f)
-#define Units_RadiansToDegrees(r) ((((jeFloat)(r)) * 180.0f) / M_PI)
+#define Units_DegreesToRadians(d) ((((grFloat)(d)) * M_PI) / 180.0f)
+#define Units_RadiansToDegrees(r) ((((grFloat)(r)) * 180.0f) / M_PI)
 
 // Engine <--> Centimeter conversions
 #define Units_CentimetersToEngine(c) (((float)(c)) / 2.54f)
@@ -53,7 +53,7 @@ extern "C" {
 
 #define Units_Round(n) ((int)Units_FRound((n)))
 #define Units_Trunc(n) ((int)(n))
-#define Units_FRound(n)	((jeFloat)floor((n)+0.5f))
+#define Units_FRound(n)	((grFloat)floor((n)+0.5f))
 
 #ifdef __cplusplus
 }

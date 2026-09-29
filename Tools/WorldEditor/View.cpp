@@ -334,7 +334,7 @@ void CJweView::OnDraw(CDC* pDC)
 	CRect	r ;
 	CJweDoc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
-	const jeExtBox * pNewBrushBounds;
+	const grExtBox * pNewBrushBounds;
 
 #ifdef TRACE_PERF
     char msg[80];
@@ -397,7 +397,7 @@ void CJweView::OnDraw(CDC* pDC)
 
 	pNewBrushBounds = pDoc->GetNewBrushBounds();
 	
-	if( jeExtBox_IsValid( pNewBrushBounds ) )
+	if( grExtBox_IsValid( pNewBrushBounds ) )
 	{
 		Ortho_WorldToViewRect( m_pOrtho, pNewBrushBounds, (Rect*)&r );
 		//BY TRILOBITE
@@ -447,7 +447,7 @@ void CJweView::OnDraw(CDC* pDC)
 //	CRect	r ;
 //	CJweDoc* pDoc = GetDocument();
 //	ASSERT_VALID(pDoc);
-//	const jeExtBox * pNewBrushBounds;
+//	const grExtBox * pNewBrushBounds;
 //
 //	CRect totalAreaWnd;				//	prepare for flicker-free view drawing
 //	GetClientRect(&totalAreaWnd);
@@ -479,7 +479,7 @@ void CJweView::OnDraw(CDC* pDC)
 //		pDoc->DrawOrthoName( memDC.GetSafeCDC(), m_pOrtho );
 //
 //		pNewBrushBounds = pDoc->GetNewBrushBounds();
-//		if( jeExtBox_IsValid( pNewBrushBounds ) )
+//		if( grExtBox_IsValid( pNewBrushBounds ) )
 //		{
 //			Ortho_WorldToViewRect( m_pOrtho, pNewBrushBounds, (Rect*)&r );
 //			memDC.GetSafeCDC()->FrameRect( &r, &SelBrush ) ;
@@ -523,7 +523,7 @@ void CJweView::OnDraw(CDC* pDC)
 	CRect	r ;
 	CJweDoc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
-	const jeExtBox * pNewBrushBounds;
+	const grExtBox * pNewBrushBounds;
 
 	// Added 28.3.2000 Double Buffering :)
 	CDC  *pdrawDC = CDC::FromHandle(pDC->m_hDC);
@@ -553,7 +553,7 @@ void CJweView::OnDraw(CDC* pDC)
 	pDoc->DrawOrthoName( pDCNew, m_pOrtho );
 
 	pNewBrushBounds = pDoc->GetNewBrushBounds();
-	if( jeExtBox_IsValid( pNewBrushBounds ) )
+	if( grExtBox_IsValid( pNewBrushBounds ) )
 	{
 		Ortho_WorldToViewRect( m_pOrtho, pNewBrushBounds, (Rect*)&r );
 		pDCNew->FrameRect( &r, &SelBrush ) ;
@@ -660,8 +660,8 @@ int32 CJweView::GetViewSigniture()
 
 void CJweView::OnInitialUpdate() 
 {
-	jeVec3d	Angles = { 0.0f, 0.0f, 0.0f } ;
-	jeVec3d CameraPos = { 0.0f, 0.0f, 0.0f } ;
+	grVec3d	Angles = { 0.0f, 0.0f, 0.0f } ;
+	grVec3d CameraPos = { 0.0f, 0.0f, 0.0f } ;
 	CView::OnInitialUpdate();
 	
 	// Get saved state information from the DOC
@@ -719,7 +719,7 @@ void CJweView::OnLButtonDown(UINT nFlags, CPoint point)
 		ReleaseCapture();
 		m_bCaptured =  false;
 		m_bDragging = false;
-		pDoc->PlaceBrush( JE_FALSE );
+		pDoc->PlaceBrush( GR_FALSE );
 		m_Mode = VIEW_MODE_NONE;
 		return;
 	}
@@ -782,11 +782,11 @@ void CJweView::SetAutoScroll( int32 ScrollRegion )
 	}
 }
 
-void CJweView::SetUpRotateBox(jeExtBox  *pSelBounds)
+void CJweView::SetUpRotateBox(grExtBox  *pSelBounds)
 {
 	float dx, dy;
 
-	jeExtBox_GetTranslation( pSelBounds, &m_Center3d );
+	grExtBox_GetTranslation( pSelBounds, &m_Center3d );
 	Ortho_WorldToView( m_pOrtho, &m_Center3d, (Point*)&m_SelCenter );
 	dx = (float)(m_ptAnchor.x - m_SelCenter.x);
 	dy = (float)(m_ptAnchor.y - m_SelCenter.y);
@@ -856,12 +856,12 @@ void CJweView::DrawRotateBox( HDC hDC)
 
 void CJweView::SetBeginDragViewMode(POINT ptCursor)
 {
-	jeBoolean bHasSelection;
-	jeBoolean bHasSubSelection;
-	jeBoolean		bShiftHeld ;
-	jeBoolean		bControlHeld ;
-	jeExtBox		WorldBox ;
-	jeExtBox		SubSelBox ;
+	grBoolean bHasSelection;
+	grBoolean bHasSubSelection;
+	grBoolean		bShiftHeld ;
+	grBoolean		bControlHeld ;
+	grExtBox		WorldBox ;
+	grExtBox		SubSelBox ;
 	SELECT_HANDLE	Handle ;
 	SELECT_HANDLE	SubHandle ;
 	DOC_HANDLE_MODE	HandleMode;
@@ -890,7 +890,7 @@ void CJweView::SetBeginDragViewMode(POINT ptCursor)
 	else
 	if( bHasSubSelection && (SubModFlags & SubSelect_Rotate )&& SubHandle != Select_None )
 	{
-		jeExtBox SelBounds;
+		grExtBox SelBounds;
 
 		pDoc->BeginRotateSub(  ) ;
 		if( pDoc->HasSubSelections( &SelBounds ) )
@@ -921,7 +921,7 @@ void CJweView::SetBeginDragViewMode(POINT ptCursor)
 				break;
 
 			case DOC_HANDLE_ROTATE:
-				jeExtBox SelBounds;
+				grExtBox SelBounds;
 
 				m_Mode = VIEW_MODE_ROTATE_HANDLE;
 				if( pDoc->HasSelections( &SelBounds ) )
@@ -967,15 +967,15 @@ void CJweView::SetBeginDragViewMode(POINT ptCursor)
 		m_Mode = VIEW_MODE_SELECT_RECT;
 	
 }
-void CJweView::Pan( jeVec3d *pWorldDistance )
+void CJweView::Pan( grVec3d *pWorldDistance )
 {
 	m_bPanning = true;
-   	jeVec3d_Scale( pWorldDistance, -1.0f, pWorldDistance ) ;
+   	grVec3d_Scale( pWorldDistance, -1.0f, pWorldDistance ) ;
 	Ortho_MoveCamera( m_pOrtho, pWorldDistance ) ;
 	Invalidate(false);		//TRUE
 }
 
-jeBoolean CJweView::IsBeginDrag( POINT ptCursor )
+grBoolean CJweView::IsBeginDrag( POINT ptCursor )
 {
 	return(		m_Mode != VIEW_MODE_PLACELIGHT	&& //We are not placing a light
 				false == m_bDragging			&& //We are not already draging
@@ -983,7 +983,7 @@ jeBoolean CJweView::IsBeginDrag( POINT ptCursor )
 		   abs( ptCursor.y - m_ptAnchor.y) > m_CYDRAG )); // Or moved enough in the Y
 }
 
-void CJweView::Drag( POINT ptCursor, jeVec3d *pWorldDistance )
+void CJweView::Drag( POINT ptCursor, grVec3d *pWorldDistance )
 {
 	CJweDoc	* pDoc = GetDocument() ;
 
@@ -1061,7 +1061,7 @@ void CJweView::Drag( POINT ptCursor, jeVec3d *pWorldDistance )
 
 void CJweView::OnMouseMove(UINT nFlags, CPoint point) 
 {
-	jeVec3d			WorldDistance ;
+	grVec3d			WorldDistance ;
 	POINT			ptCursor ;
 	int				dx, dy ;
 
@@ -1154,8 +1154,8 @@ void CJweView::OnMouseMove(UINT nFlags, CPoint point)
 void CJweView::DragEnd(CPoint point)
 {
 	CJweDoc* pDoc = GetDocument() ;
-	jeExtBox	WorldBounds ;
-	jeBoolean	bControlHeld ;
+	grExtBox	WorldBounds ;
+	grBoolean	bControlHeld ;
 
 	bControlHeld = Util_IsKeyDown( VK_CONTROL ) ;
 	switch( m_Mode )
@@ -1227,8 +1227,8 @@ void CJweView::DragEnd(CPoint point)
 
 void CJweView::OnLButtonUp(UINT nFlags, CPoint point) 
 {
-	jeBoolean	bControlHeld ;
-	jeVec3d		World ;
+	grBoolean	bControlHeld ;
+	grVec3d		World ;
 
 	if( m_bCaptured )
 	{
@@ -1258,7 +1258,7 @@ void CJweView::OnLButtonUp(UINT nFlags, CPoint point)
 			}
 			else
 			{
-				pDoc->PlaceAtPoint( m_pOrtho, (Point*)&point, JE_FALSE );
+				pDoc->PlaceAtPoint( m_pOrtho, (Point*)&point, GR_FALSE );
 				m_Mode = VIEW_MODE_NONE;
 			}
 		}
@@ -1308,7 +1308,7 @@ void CJweView::OnRButtonUp(UINT nFlags, CPoint point)
 
 	if( m_Mode == VIEW_MODE_PLACELIGHT ||  m_Mode == VIEW_MODE_PLACEBRUSH )
 	{
-		pDoc->PlaceAtPoint( m_pOrtho,(Point *)&point, JE_TRUE );
+		pDoc->PlaceAtPoint( m_pOrtho,(Point *)&point, GR_TRUE );
 		m_Mode = VIEW_MODE_NONE;
 	}
 	if( m_bZooming )
@@ -1360,7 +1360,7 @@ BOOL CJweView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 //---------------------------------------------------
 
 
-void CJweView::DoZoom( jeFloat fZoomInc )
+void CJweView::DoZoom( grFloat fZoomInc )
 {
 	Ortho_ZoomChange( m_pOrtho, fZoomInc ) ;
 
@@ -1370,7 +1370,7 @@ void CJweView::DoZoom( jeFloat fZoomInc )
 
 void CJweView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint) 
 {
-	jeExtBox *	pWorldBounds ;
+	grExtBox *	pWorldBounds ;
 	Rect		ViewRect ;
 	if( pHint == NULL )
 	{
@@ -1378,7 +1378,7 @@ void CJweView::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 		return ;
 	}
 	
-	pWorldBounds = (jeExtBox*)pHint ;
+	pWorldBounds = (grExtBox*)pHint ;
 	if( Ortho_TestWorldToViewRect( m_pOrtho, pWorldBounds, &ViewRect ) )
 	{
 		// Adjust for handles
@@ -1419,7 +1419,7 @@ void CJweView::OnUpdateViewZoomout(CCmdUI* pCmdUI)
 	pCmdUI->Enable( true ) ;
 }// OnUpdateViewZoomout
 
-void CJweView::SetCameraPos( jeVec3d * Pos )
+void CJweView::SetCameraPos( grVec3d * Pos )
 {
 	Ortho_SetCameraPos( m_pOrtho, Pos );
 	Invalidate(false);	// TRUE
@@ -1460,7 +1460,7 @@ void CJweView::OnTimer(UINT nIDEvent)
 	{
 		int x = 0;
 		int y = 0;
-		jeVec3d WorldDistance;
+		grVec3d WorldDistance;
 		CPoint point;
 		
 		point = m_ptLastMouse;
@@ -1537,7 +1537,7 @@ void CJweView::OnRButtonDown(UINT nFlags, CPoint point)
 		ReleaseCapture();
 		m_bCaptured =  false;
 		m_bDragging = false;
-		pDoc->PlaceBrush( JE_TRUE );
+		pDoc->PlaceBrush( GR_TRUE );
 		m_Mode = VIEW_MODE_NONE;
 		return;
 	}
@@ -1570,20 +1570,20 @@ void CJweView::OnUpdateEditClone(CCmdUI* pCmdUI)
 
 void CJweView::OnEditClone() 
 {
-	jeProperty_List *pArray;
+	grProperty_List *pArray;
 	CMainFrame *	pMainFrm;
 	CJweDoc	*       pDoc = GetDocument();
 	Level *         pLevel = pDoc->GetLevel();
 
 
-	if( JE_FALSE == Select_DupAndDeselectSelections(pLevel))
+	if( GR_FALSE == Select_DupAndDeselectSelections(pLevel))
 		return ;
 
 	pMainFrm = (CMainFrame*)AfxGetMainWnd();
 	pMainFrm->AddSelection(pDoc);
 
 	// Nudge the new cloned selection
-	jeVec3d WorldDistance;
+	grVec3d WorldDistance;
 	Ortho_ViewToWorldDistance(m_pOrtho, 16, 16, &WorldDistance);
 	pDoc->MoveSelected((SELECT_HANDLE)0, &WorldDistance);
 
@@ -1606,11 +1606,11 @@ void CJweView::OnMButtonDown(UINT nFlags, CPoint point)
 	switch (eState)
 	{
 		case mbSelectAll:
-			pDoc->SelectAll(JE_TRUE);
+			pDoc->SelectAll(GR_TRUE);
 			break;
 
 		case mbSelectNone:
-			pDoc->DeselectAll(JE_TRUE);
+			pDoc->DeselectAll(GR_TRUE);
 			break;
 
 		case mbDisabled:

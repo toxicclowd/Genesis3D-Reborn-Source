@@ -27,10 +27,10 @@
 #include "grPlane.h"
 
 /*!
-	@struct jeRay
+	@struct grRay
 	@brief Represents a ray in 3D space
 */
-typedef struct jeRay
+typedef struct grRay
 {
 	grVec3d						Origin;			///< Where the ray begins
 	grVec3d						Direction;		///< The direction the ray is pointing
@@ -96,14 +96,5 @@ GRAPI grBoolean GRCC grRay_IntersectsWithExtBox(const grRay *Ray, const grExtBox
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeRay_Get                                grRay_Get
-#define jeRay_IntersectsWithExtBox               grRay_IntersectsWithExtBox
-#define jeRay_IntersectsWithPlane                grRay_IntersectsWithPlane
-#define jeRay_IntersectsWithTriangle             grRay_IntersectsWithTriangle
-#define jeRay_Set                                grRay_Set
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

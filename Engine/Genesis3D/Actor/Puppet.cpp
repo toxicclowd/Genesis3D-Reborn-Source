@@ -45,117 +45,117 @@
 #include "Engine._h" // for Engine->DebugInfo
 #include "Camera._h"
 
-#include "jeMaterial._h"
+#include "grMaterial._h"
 
 #define PUPPET_DEFAULT_MAX_DYNAMIC_LIGHTS 3
 #define PUPPET_DEFAULT_MAX_STATIC_LIGHTS 3
 
-typedef struct jePuppet_Color
+typedef struct grPuppet_Color
 {
-	jeFloat				Red,Green,Blue;
-} jePuppet_Color;
+	grFloat				Red,Green,Blue;
+} grPuppet_Color;
 
-typedef struct jePuppet_Material
+typedef struct grPuppet_Material
 {
-	jePuppet_Color		 Color;
-	jeBoolean			 UseTexture;
-	//jeBitmap			*Bitmap;
-	jeMaterialSpec		*Material;
-	jeUVMapper			Mapper;
+	grPuppet_Color		 Color;
+	grBoolean			 UseTexture;
+	//grBitmap			*Bitmap;
+	grMaterialSpec		*Material;
+	grUVMapper			Mapper;
 	const char			*TextureName;
 	const char			*AlphaName;
-} jePuppet_Material;
+} grPuppet_Material;
 
 #define MAX_DYNAMIC_LIGHTS			(32)
 #define MAX_STATIC_LIGHTS				(32)
 
 typedef struct
 {
-	jeVec3d			Normal;
-	jePuppet_Color	Color;
-	jeFloat			Distance;
-	jeFloat			Radius;
-} jePuppet_Light;
+	grVec3d			Normal;
+	grPuppet_Color	Color;
+	grFloat			Distance;
+	grFloat			Radius;
+} grPuppet_Light;
 
 typedef struct
 {
-	jePuppet_Light DLights[MAX_DYNAMIC_LIGHTS];
-	jePuppet_Light SLights[MAX_STATIC_LIGHTS];
+	grPuppet_Light DLights[MAX_DYNAMIC_LIGHTS];
+	grPuppet_Light SLights[MAX_STATIC_LIGHTS];
 	int DLightCount;
 	int SLightCount;
-} jePuppet_BoneLight;
+} grPuppet_BoneLight;
 
-typedef struct jePuppet
+typedef struct grPuppet
 {
-	jeVFile *			 TextureFileContext;
-	//jeXFArray			*JointTransforms;	
-	jeBodyInst			*BodyInstance;
+	grVFile *			 TextureFileContext;
+	//grXFArray			*JointTransforms;	
+	grBodyInst			*BodyInstance;
 	int					 MaterialCount;
-	jePuppet_Material	*MaterialArray;
+	grPuppet_Material	*MaterialArray;
 	int					 MaxDynamicLightsToUse;
 	int						MaxStaticLightsToUse;
 	int					 LightReferenceBoneIndex;
 		
-	jeVec3d				 FillLightNormal;
-	jePuppet_Color		 FillLightColor;			// 0..255
-	jeBoolean			 UseFillLight;				// use fill light normal
+	grVec3d				 FillLightNormal;
+	grPuppet_Color		 FillLightColor;			// 0..255
+	grBoolean			 UseFillLight;				// use fill light normal
 	
-	jePuppet_Color		 AmbientLightIntensity;		// 0..1
-	jeBoolean			 AmbientLightFromFloor;		// use local lighting from floor
+	grPuppet_Color		 AmbientLightIntensity;		// 0..1
+	grBoolean			 AmbientLightFromFloor;		// use local lighting from floor
 
-	jeBoolean			 PerBoneLighting;
+	grBoolean			 PerBoneLighting;
 
 // @@
 	// for the case of non- per-bone lighting
-	jePuppet_Light	SLights[MAX_STATIC_LIGHTS]; // cached static lights
+	grPuppet_Light	SLights[MAX_STATIC_LIGHTS]; // cached static lights
 	int							SLightCount; // cached static light count
 
 	// for the case of per-bone lighting
-	jePuppet_BoneLight *BoneLightArray;
+	grPuppet_BoneLight *BoneLightArray;
 	int BoneLightArraySize;
 
-	jeBoolean			 DoShadow;
-	jeFloat				 ShadowScale;
-	const jeMaterialSpec *ShadowMap;
+	grBoolean			 DoShadow;
+	grFloat				 ShadowScale;
+	const grMaterialSpec *ShadowMap;
 	int					 ShadowBoneIndex;
 
-	jeEngine*			pEngine;
+	grEngine*			pEngine;
 
 //	[MacroArt::Begin]
 //	Thanks Dee(cryscan@home.net)	
 	float				 fOverallAlpha;
 //	[MacroArt::End]
 
-} jePuppet;
+} grPuppet;
 
 typedef struct
 {
-	jeBoolean		UseFillLight;
-	jeVec3d			FillLightNormal;
-	jePuppet_Color	MaterialColor;
-	jePuppet_Color  FillLightColor;
-	jePuppet_Color	Ambient;
-	jeVec3d			SurfaceNormal;
-	jePuppet_Light	DLights[MAX_DYNAMIC_LIGHTS];
+	grBoolean		UseFillLight;
+	grVec3d			FillLightNormal;
+	grPuppet_Color	MaterialColor;
+	grPuppet_Color  FillLightColor;
+	grPuppet_Color	Ambient;
+	grVec3d			SurfaceNormal;
+	grPuppet_Light	DLights[MAX_DYNAMIC_LIGHTS];
 	int				DLightCount;
-	jeBoolean		PerBoneLighting;
-} jePuppet_LightParamGroup;
+	grBoolean		PerBoneLighting;
+} grPuppet_LightParamGroup;
 
 //	[MacroArt::Begin]
 
-float JETCF jePuppet_GetAlpha(const jePuppet *P)
+float GRCF grPuppet_GetAlpha(const grPuppet *P)
 {
 	assert( P );
 	return P->fOverallAlpha;
 }
 
-void JETCF jePuppet_SetAlpha(jePuppet *P, float Alpha)
+void GRCF grPuppet_SetAlpha(grPuppet *P, float Alpha)
 {
 	assert( P );
 	P->fOverallAlpha = Alpha;
 }
 
-jeEngine* JETCF jePuppet_GetEngine(jePuppet *P)
+grEngine* GRCF grPuppet_GetEngine(grPuppet *P)
 {
 	return P->pEngine;
 }
@@ -164,83 +164,83 @@ jeEngine* JETCF jePuppet_GetEngine(jePuppet *P)
 
 // Local info stored across multiple puppets to avoid resource waste.
 
-jePuppet_LightParamGroup jePuppet_StaticLightGrp;
+grPuppet_LightParamGroup grPuppet_StaticLightGrp;
 /*
-jePuppet_BoneLight		 *jePuppet_StaticBoneLightArray=NULL;
-int						  jePuppet_StaticBoneLightArraySize=0;
+grPuppet_BoneLight		 *grPuppet_StaticBoneLightArray=NULL;
+int						  grPuppet_StaticBoneLightArraySize=0;
 */
-int						  jePuppet_StaticPuppetCount=0;
-int						  jePuppet_StaticFlags[2]={1768710981,560296816};
+int						  grPuppet_StaticPuppetCount=0;
+int						  grPuppet_StaticFlags[2]={1768710981,560296816};
 
-static jeBoolean JETCF jePuppet_FetchTextures(jePuppet *P, const jeBody *B)
+static grBoolean GRCF grPuppet_FetchTextures(grPuppet *P, const grBody *B)
 {
 	int i;
 	assert( P );
 	
-	P->MaterialCount = jeBody_GetMaterialCount(B);
+	P->MaterialCount = grBody_GetMaterialCount(B);
 	if (P->MaterialCount <= 0)
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	
-	P->MaterialArray = JE_RAM_ALLOCATE_ARRAY_CLEAR(jePuppet_Material, P->MaterialCount);
+	P->MaterialArray = GR_RAM_ALLOCATE_ARRAY_CLEAR(grPuppet_Material, P->MaterialCount);
 	if (P->MaterialArray == NULL)
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE,"jePuppet_FetchTextures: Failed to allocate puppet material array");
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE,"grPuppet_FetchTextures: Failed to allocate puppet material array");
+		return GR_FALSE;
 	}
 	
 	for (i=0; i<P->MaterialCount; i++)
 	{
 		const char *Name;
-		jeMaterialSpec *Bitmap;
-		jeUVMapper Mapper;
-		jePuppet_Material *M;
+		grMaterialSpec *Bitmap;
+		grUVMapper Mapper;
+		grPuppet_Material *M;
 
 		M = P->MaterialArray + i;
 
-		jeBody_GetMaterial( B, i, &(Name), &(Bitmap),
+		grBody_GetMaterial( B, i, &(Name), &(Bitmap),
 						&(M->Color.Red),&(M->Color.Green),&(M->Color.Blue), 
 						&Mapper);
 
 		if (Bitmap == NULL )
 		{
 			M->Material     = NULL;
-			M->UseTexture = JE_FALSE;
+			M->UseTexture = GR_FALSE;
 		}
 		else
 		{
-			M->UseTexture = JE_TRUE;
+			M->UseTexture = GR_TRUE;
 			assert( P->pEngine );
 
 			M->Material = Bitmap;
-			jeMaterialSpec_CreateRef(Bitmap);
+			grMaterialSpec_CreateRef(Bitmap);
 
 /*
-			if ( ! jeEngine_AddBitmap(P->pEngine,Bitmap, JE_ENGINE_BITMAP_TYPE_3D) )
+			if ( ! grEngine_AddBitmap(P->pEngine,Bitmap, GR_ENGINE_BITMAP_TYPE_3D) )
 			{
-				jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_FetchTextures : Engine_AddBitmap", NULL);
-				jeRam_Free(P->MaterialArray);
+				grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_FetchTextures : Engine_AddBitmap", NULL);
+				grRam_Free(P->MaterialArray);
 				P->MaterialArray = NULL;
 				P->MaterialCount = 0;
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 */
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }	
 
-int JETCF jePuppet_GetMaterialCount( jePuppet *P )
+int GRCF grPuppet_GetMaterialCount( grPuppet *P )
 {
 	assert( P );
 	return P->MaterialCount;
 }
 
-jeBoolean     jePuppet_GetMaterial( jePuppet *P, int MaterialIndex,
-									jeMaterialSpec **Bitmap, 
-									jeFloat *Red, jeFloat *Green, jeFloat *Blue, jeUVMapper * pMapper)
+grBoolean     grPuppet_GetMaterial( grPuppet *P, int MaterialIndex,
+									grMaterialSpec **Bitmap, 
+									grFloat *Red, grFloat *Green, grFloat *Blue, grUVMapper * pMapper)
 {
 	assert( P      );
 	assert( Red    );
@@ -252,7 +252,7 @@ jeBoolean     jePuppet_GetMaterial( jePuppet *P, int MaterialIndex,
 	assert( MaterialIndex < P->MaterialCount );
 
 	{
-		jePuppet_Material *M = &(P->MaterialArray[MaterialIndex]);
+		grPuppet_Material *M = &(P->MaterialArray[MaterialIndex]);
 		*Bitmap = M->Material;
 		*Red    = M->Color.Red;
 		*Green  = M->Color.Green;
@@ -264,21 +264,21 @@ jeBoolean     jePuppet_GetMaterial( jePuppet *P, int MaterialIndex,
 #endif
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean	jePuppet_SetMaterial(jePuppet *P, int MaterialIndex, jeMaterialSpec *Bitmap, 
-								 jeFloat Red, jeFloat Green, jeFloat Blue, 
-								 jeUVMapper Mapper)
+grBoolean	grPuppet_SetMaterial(grPuppet *P, int MaterialIndex, grMaterialSpec *Bitmap, 
+								 grFloat Red, grFloat Green, grFloat Blue, 
+								 grUVMapper Mapper)
 {
 	assert( P );
 	assert( MaterialIndex >= 0 );
 	assert( MaterialIndex < P->MaterialCount );
 
 	{
-		jeMaterialSpec * OldBitmap;
-		jePuppet_Material *M = P->MaterialArray + MaterialIndex;
+		grMaterialSpec * OldBitmap;
+		grPuppet_Material *M = P->MaterialArray + MaterialIndex;
 
 		OldBitmap = M->Material;
 
@@ -294,43 +294,43 @@ jeBoolean	jePuppet_SetMaterial(jePuppet *P, int MaterialIndex, jeMaterialSpec *B
 			if ( OldBitmap )
 			{
 				assert( M->UseTexture );		
-				jeEngine_RemoveBitmap( P->pEngine, OldBitmap );
-				jeMaterialSpec_Destroy( &(OldBitmap) );
+				grEngine_RemoveBitmap( P->pEngine, OldBitmap );
+				grMaterialSpec_Destroy( &(OldBitmap) );
 			}
 */			
-			M->UseTexture = JE_FALSE;
+			M->UseTexture = GR_FALSE;
 
 			if ( Bitmap )
 			{
-				jeMaterialSpec_CreateRef(Bitmap);
+				grMaterialSpec_CreateRef(Bitmap);
 						
-				M->UseTexture = JE_TRUE;
+				M->UseTexture = GR_TRUE;
 
 /*
-				if ( ! jeEngine_AddBitmap(P->pEngine,Bitmap, JE_ENGINE_BITMAP_TYPE_3D) )
+				if ( ! grEngine_AddBitmap(P->pEngine,Bitmap, GR_ENGINE_BITMAP_TYPE_3D) )
 				{
-					jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_SetMaterial : Engine_AddBitmap", NULL);
-					return JE_FALSE;
+					grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_SetMaterial : Engine_AddBitmap", NULL);
+					return GR_FALSE;
 				}
 */
 			}
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 	
 
-jePuppet* JETCF jePuppet_Create(jeVFile *TextureFS, const jeBody *B, jeEngine *pEngine)
+grPuppet* GRCF grPuppet_Create(grVFile *TextureFS, const grBody *B, grEngine *pEngine)
 {
-	jePuppet *P;
+	grPuppet *P;
 
-	assert( jeBody_IsValid(B)!=JE_FALSE );
+	assert( grBody_IsValid(B)!=GR_FALSE );
 	
-	P = JE_RAM_ALLOCATE_STRUCT_CLEAR(jePuppet);
+	P = GR_RAM_ALLOCATE_STRUCT_CLEAR(grPuppet);
 	if (P==NULL)
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE,"jePuppet_Create: Failed to allocate instance");
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE,"grPuppet_Create: Failed to allocate instance");
 		return NULL;
 	}
 
@@ -338,25 +338,25 @@ jePuppet* JETCF jePuppet_Create(jeVFile *TextureFS, const jeBody *B, jeEngine *p
 	P->BodyInstance = NULL;
 	P->MaxDynamicLightsToUse = PUPPET_DEFAULT_MAX_DYNAMIC_LIGHTS;
 	P->MaxStaticLightsToUse = PUPPET_DEFAULT_MAX_STATIC_LIGHTS;
-	P->LightReferenceBoneIndex = JE_POSE_ROOT_JOINT;
+	P->LightReferenceBoneIndex = GR_POSE_ROOT_JOINT;
 
 	P->FillLightNormal.X = -0.2f;
 	P->FillLightNormal.Y = 1.0f;
 	P->FillLightNormal.Z = 0.4f;
-	jeVec3d_Normalize(&(P->FillLightNormal));
+	grVec3d_Normalize(&(P->FillLightNormal));
 	P->FillLightColor.Red    = 0.25f;
 	P->FillLightColor.Green  = 0.25f;
 	P->FillLightColor.Blue   = 0.25f;
-	P->UseFillLight = JE_TRUE;
+	P->UseFillLight = GR_TRUE;
 
 	P->AmbientLightIntensity.Red   = 0.1f;
 	P->AmbientLightIntensity.Green = 0.1f;
 	P->AmbientLightIntensity.Blue  = 0.1f;
-	P->AmbientLightFromFloor = JE_TRUE;
+	P->AmbientLightFromFloor = GR_TRUE;
 
-	P->DoShadow = JE_FALSE;
+	P->DoShadow = GR_FALSE;
 	P->ShadowScale = 0.0f;
-	P->ShadowBoneIndex =  JE_POSE_ROOT_JOINT;
+	P->ShadowBoneIndex =  GR_POSE_ROOT_JOINT;
 	P->TextureFileContext = TextureFS;
 
 	P->BoneLightArray = NULL;
@@ -368,17 +368,17 @@ jePuppet* JETCF jePuppet_Create(jeVFile *TextureFS, const jeBody *B, jeEngine *p
 // @@
 	P->pEngine = pEngine;
 				
-	if (jePuppet_FetchTextures(P,B)==JE_FALSE)
+	if (grPuppet_FetchTextures(P,B)==GR_FALSE)
 	{
-		jeRam_Free(P);
+		grRam_Free(P);
 		return NULL;
 	}
 
-	P->BodyInstance = jeBodyInst_Create(B);
+	P->BodyInstance = grBodyInst_Create(B);
 	if (P->BodyInstance == NULL)
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE,"jePuppet_Create: Failed to allocate body");
-		jePuppet_Destroy( &P );
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE,"grPuppet_Create: Failed to allocate body");
+		grPuppet_Destroy( &P );
 		return NULL;
 	}
 
@@ -386,18 +386,18 @@ jePuppet* JETCF jePuppet_Create(jeVFile *TextureFS, const jeBody *B, jeEngine *p
 }
 
 
-void JETCF jePuppet_Destroy(jePuppet **P)
+void GRCF grPuppet_Destroy(grPuppet **P)
 {
 	assert( P  );
 	assert( *P );
 	if ( (*P)->BodyInstance )
 	{
-		jeBodyInst_Destroy( &((*P)->BodyInstance) );
+		grBodyInst_Destroy( &((*P)->BodyInstance) );
 		(*P)->BodyInstance = NULL;
 	}
 	if ( (*P)->MaterialArray )
 	{
-		jePuppet_Material *M;
+		grPuppet_Material *M;
 		int i;
 
 		for (i=0; i<(*P)->MaterialCount; i++)
@@ -406,61 +406,61 @@ void JETCF jePuppet_Destroy(jePuppet **P)
 			if (M->UseTexture )
 			{					
 				assert( M->Material );
-				//jeEngine_RemoveBitmap( (*P)->pEngine, M->Bitmap );
-				jeMaterialSpec_Destroy( &(M->Material) );
-				M->UseTexture = JE_FALSE;
+				//grEngine_RemoveBitmap( (*P)->pEngine, M->Bitmap );
+				grMaterialSpec_Destroy( &(M->Material) );
+				M->UseTexture = GR_FALSE;
 			}
 		}
 
 
-		jeRam_Free( (*P)->MaterialArray );
+		grRam_Free( (*P)->MaterialArray );
 		(*P)->BodyInstance = NULL;
 	}
 	if ( (*P)->ShadowMap )
 	{
-		jeBitmap_Destroy((jeBitmap **)&((*P)->ShadowMap));
+		grBitmap_Destroy((grBitmap **)&((*P)->ShadowMap));
 		(*P)->ShadowMap = NULL;
 	}
 
 	if ( (*P)->BoneLightArray!=NULL)
 		{
-			jeRam_Free((*P)->BoneLightArray);
+			grRam_Free((*P)->BoneLightArray);
 		}
 
-	jeRam_Free( (*P) );
+	grRam_Free( (*P) );
 	*P = NULL;
 
 	// clean up any shared resources.
-	jePuppet_StaticPuppetCount--;
-	if (jePuppet_StaticPuppetCount==0)
+	grPuppet_StaticPuppetCount--;
+	if (grPuppet_StaticPuppetCount==0)
 	{
 		/*
-		if (jePuppet_StaticBoneLightArray!=NULL)
-			jeRam_Free(jePuppet_StaticBoneLightArray);
-		jePuppet_StaticBoneLightArray=NULL;
-		jePuppet_StaticBoneLightArraySize = 0;
+		if (grPuppet_StaticBoneLightArray!=NULL)
+			grRam_Free(grPuppet_StaticBoneLightArray);
+		grPuppet_StaticBoneLightArray=NULL;
+		grPuppet_StaticBoneLightArraySize = 0;
 		*/
 	}	
 }
 
 
-void jePuppet_GetLightingOptions(const jePuppet *P,
-	jeBoolean *UseFillLight,
-	jeVec3d *FillLightNormal,
-	jeFloat *FillLightRed,				
-	jeFloat *FillLightGreen,				
-	jeFloat *FillLightBlue,				
-	jeFloat *AmbientLightRed,			
-	jeFloat *AmbientLightGreen,			
-	jeFloat *AmbientLightBlue,			
-	jeBoolean *UseAmbientLightFromFloor,
+void grPuppet_GetLightingOptions(const grPuppet *P,
+	grBoolean *UseFillLight,
+	grVec3d *FillLightNormal,
+	grFloat *FillLightRed,				
+	grFloat *FillLightGreen,				
+	grFloat *FillLightBlue,				
+	grFloat *AmbientLightRed,			
+	grFloat *AmbientLightGreen,			
+	grFloat *AmbientLightBlue,			
+	grBoolean *UseAmbientLightFromFloor,
 	int32 *MaximumDynamicLightsToUse,
 	int32 *MaximumStaticLightsToUse,
 	int32 *LightReferenceBoneIndex,
-	jeBoolean *PerBoneLighting
+	grBoolean *PerBoneLighting
 	)
 {
-	jeFloat Scaler;
+	grFloat Scaler;
 	assert( P != NULL);
 	assert( UseFillLight );
 	assert( FillLightNormal );
@@ -494,28 +494,28 @@ void jePuppet_GetLightingOptions(const jePuppet *P,
 	*PerBoneLighting		   = P->PerBoneLighting;
 }	
 
-void jePuppet_SetLightingOptions(jePuppet *P,
-	jeBoolean UseFillLight,
-	const jeVec3d *FillLightNormal,
-	jeFloat FillLightRed,				// 0 .. 255
-	jeFloat FillLightGreen,				// 0 .. 255
-	jeFloat FillLightBlue,				// 0 .. 255
-	jeFloat AmbientLightRed,			// 0 .. 255
-	jeFloat AmbientLightGreen,			// 0 .. 255
-	jeFloat AmbientLightBlue,			// 0 .. 255
-	jeBoolean UseAmbientLightFromFloor,
+void grPuppet_SetLightingOptions(grPuppet *P,
+	grBoolean UseFillLight,
+	const grVec3d *FillLightNormal,
+	grFloat FillLightRed,				// 0 .. 255
+	grFloat FillLightGreen,				// 0 .. 255
+	grFloat FillLightBlue,				// 0 .. 255
+	grFloat AmbientLightRed,			// 0 .. 255
+	grFloat AmbientLightGreen,			// 0 .. 255
+	grFloat AmbientLightBlue,			// 0 .. 255
+	grBoolean UseAmbientLightFromFloor,
 	int MaximumDynamicLightsToUse,		// 0 for none
 	int MaximumStaticLightsToUse, // 0 for none
 	int LightReferenceBoneIndex,
-	jeBoolean PerBoneLighting
+	grBoolean PerBoneLighting
 	)
 {
-	jeFloat Scaler;
+	grFloat Scaler;
 	assert( P!= NULL);
 	assert( FillLightNormal );
-	assert( jeVec3d_IsNormalized(FillLightNormal) );
+	assert( grVec3d_IsNormalized(FillLightNormal) );
 	assert( MaximumDynamicLightsToUse >= 0 );
-	assert( (LightReferenceBoneIndex >=0) || (LightReferenceBoneIndex==JE_POSE_ROOT_JOINT));
+	assert( (LightReferenceBoneIndex >=0) || (LightReferenceBoneIndex==GR_POSE_ROOT_JOINT));
 		
 	P->UseFillLight = UseFillLight;
 
@@ -540,45 +540,45 @@ void jePuppet_SetLightingOptions(jePuppet *P,
 
 // LP = array of lights
 // ReferencePoint = world space location of attachment point
-static int JETCC jePuppet_PrepDynamicLights(const jePuppet *P, 
-	const jeWorld *World,
-	jePuppet_Light *LP,
-	const jeVec3d *ReferencePoint)
+static int GRCC grPuppet_PrepDynamicLights(const grPuppet *P, 
+	const grWorld *World,
+	grPuppet_Light *LP,
+	const grVec3d *ReferencePoint)
 {
 	int				i,j,cnt;
-	jeChain			*DLightChain;
-	jeChain_Link	*Link;
+	grChain			*DLightChain;
+	grChain_Link	*Link;
 
 
 	assert( P );
 	assert( LP );
 
-	DLightChain = jeWorld_GetDLightChain(World);
+	DLightChain = grWorld_GetDLightChain(World);
 	
 	cnt=0;
 
-	for (Link = jeChain_GetFirstLink(DLightChain); Link; Link = jeChain_LinkGetNext(Link))
+	for (Link = grChain_GetFirstLink(DLightChain); Link; Link = grChain_LinkGetNext(Link))
 	{
-		jeLight		*L;
-		jeVec3d		Position; 
-		jeVec3d		Color;
-		jeVec3d		Normal;
-		jeFloat		Radius; 
-		jeFloat		Brightness;
+		grLight		*L;
+		grVec3d		Position; 
+		grVec3d		Color;
+		grVec3d		Normal;
+		grFloat		Radius; 
+		grFloat		Brightness;
 		uint32		Flags;
 
-		L = (jeLight*)jeChain_LinkGetLinkData(Link);
+		L = (grLight*)grChain_LinkGetLinkData(Link);
 
-		if (!jeLight_GetAttributes(	L, &Position,&Color,&Radius,&Brightness, &Flags))
+		if (!grLight_GetAttributes(	L, &Position,&Color,&Radius,&Brightness, &Flags))
 		{
-			jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_PrepDynamicLights: failed to get light attributes",NULL);
+			grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_PrepDynamicLights: failed to get light attributes",NULL);
 			continue;
 		}
 
-		if (!(Flags & JE_LIGHT_FLAG_FAST_LIGHTING_MODEL))
+		if (!(Flags & GR_LIGHT_FLAG_FAST_LIGHTING_MODEL))
 			continue;
 
-		jeVec3d_Subtract(&Position,ReferencePoint,&Normal);
+		grVec3d_Subtract(&Position,ReferencePoint,&Normal);
 
 		LP[cnt].Distance =	Normal.X * Normal.X + 
 							Normal.Y * Normal.Y +
@@ -601,7 +601,7 @@ static int JETCC jePuppet_PrepDynamicLights(const jePuppet *P,
 			{
 				if (LP[j].Distance > LP[j+1].Distance)
 					{
-						jePuppet_Light Swap = LP[j];
+						grPuppet_Light Swap = LP[j];
 						LP[j] = LP[j+1];
 						LP[j+1] = Swap;
 					}
@@ -613,9 +613,9 @@ static int JETCC jePuppet_PrepDynamicLights(const jePuppet *P,
 	// go back and finish setting up closest lights
 	for (i=0; i<cnt; i++)
 		{
-			jeFloat Distance = (jeFloat)sqrt(LP[i].Distance);
-			jeFloat OneOverDistance;
-			jeFloat Scale;
+			grFloat Distance = (grFloat)sqrt(LP[i].Distance);
+			grFloat OneOverDistance;
+			grFloat Scale;
 			if (Distance < 1.0f)
 				Distance = 1.0f;
 			OneOverDistance = 1.0f / Distance;
@@ -643,14 +643,14 @@ static int JETCC jePuppet_PrepDynamicLights(const jePuppet *P,
 // recache = indicate whether to scan thru all static lights to see which are
 //						closest to actor
 
-static int JETCC jePuppet_PrepStaticLights(const jePuppet *P, 
-	const jeWorld *World,
-	jePuppet_Light *LP,
-	const jeVec3d *ReferencePoint)
+static int GRCC grPuppet_PrepStaticLights(const grPuppet *P, 
+	const grWorld *World,
+	grPuppet_Light *LP,
+	const grVec3d *ReferencePoint)
 {
 	int				i,j, cnt;
-	jeChain			*SLightChain;
-	jeChain_Link	*Link;
+	grChain			*SLightChain;
+	grChain_Link	*Link;
 
 
 	assert( P );
@@ -658,36 +658,36 @@ static int JETCC jePuppet_PrepStaticLights(const jePuppet *P,
 
 	
 #pragma message("**************************************************************************")
-#pragma message("puppet.c: jePuppet_PrepStaticLights()")
+#pragma message("puppet.c: grPuppet_PrepStaticLights()")
 #pragma message("Instead of cycling thru all the static lights in the world, find out what area the")
 #pragma message("ReferencePoint is in and use the lights that are in that (and possibly)")
 #pragma message("neighboring areas!")
 #pragma message("**************************************************************************")
 
-	SLightChain = jeWorld_GetLightChain(World);
+	SLightChain = grWorld_GetLightChain(World);
 	
 	cnt=0;
 
-	for (Link = jeChain_GetFirstLink(SLightChain); Link; Link = jeChain_LinkGetNext(Link))
+	for (Link = grChain_GetFirstLink(SLightChain); Link; Link = grChain_LinkGetNext(Link))
 	{
-		jeLight		*L;
-		jeVec3d		Position; 
-		jeVec3d		Color;
-		jeVec3d		Normal;
-		jeFloat		Radius; 
-		jeFloat		Brightness;
+		grLight		*L;
+		grVec3d		Position; 
+		grVec3d		Color;
+		grVec3d		Normal;
+		grFloat		Radius; 
+		grFloat		Brightness;
 		uint32		Flags;
 
-		L = (jeLight*)jeChain_LinkGetLinkData(Link);
+		L = (grLight*)grChain_LinkGetLinkData(Link);
 
-		if (!jeLight_GetAttributes(	L, &Position,&Color,&Radius,&Brightness, &Flags))
+		if (!grLight_GetAttributes(	L, &Position,&Color,&Radius,&Brightness, &Flags))
 		{
-			jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_PrepStaticLights: failed to get light attributes",NULL);
+			grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_PrepStaticLights: failed to get light attributes",NULL);
 			continue;
 		}
 
 		/*
-		if (!(Flags & JE_LIGHT_FLAG_FAST_LIGHTING_MODEL))
+		if (!(Flags & GR_LIGHT_FLAG_FAST_LIGHTING_MODEL))
 			continue;
 		*/
 
@@ -716,7 +716,7 @@ static int JETCC jePuppet_PrepStaticLights(const jePuppet *P,
 			{
 				if (LP[j].Distance > LP[j+1].Distance)
 					{
-						jePuppet_Light Swap = LP[j];
+						grPuppet_Light Swap = LP[j];
 						LP[j] = LP[j+1];
 						LP[j+1] = Swap;
 					}
@@ -728,9 +728,9 @@ static int JETCC jePuppet_PrepStaticLights(const jePuppet *P,
 	// go back and finish setting up closest static lights
 	for (i = 0; i < cnt; i ++)
 		{
-			jeFloat Distance = (jeFloat)sqrt(LP[i].Distance);
-			jeFloat OneOverDistance;
-			jeFloat Scale;
+			grFloat Distance = (grFloat)sqrt(LP[i].Distance);
+			grFloat OneOverDistance;
+			grFloat Scale;
 
 			if (Distance < 1.0f)
 				Distance = 1.0f;
@@ -754,24 +754,24 @@ static int JETCC jePuppet_PrepStaticLights(const jePuppet *P,
 }
 
 	
-static void JETCC jePuppet_ComputeAmbientLight(
-		const jePuppet *P, 
-		jePuppet_Color *Ambient,
-		const jeVec3d *ReferencePoint)
+static void GRCC grPuppet_ComputeAmbientLight(
+		const grPuppet *P, 
+		grPuppet_Color *Ambient,
+		const grVec3d *ReferencePoint)
 {
 	assert( P );
 	assert( Ambient );
 
 #if 0
-	if (P->AmbientLightFromFloor != JE_FALSE)
+	if (P->AmbientLightFromFloor != GR_FALSE)
 		{
-			#define JE_PUPPET_MAX_AMBIENT (0.3f)
+			#define GR_PUPPET_MAX_AMBIENT (0.3f)
 			int32			Node, Plane, i;
-			jeVec3d			Pos1, Pos2, Impact;
+			grVec3d			Pos1, Pos2, Impact;
 			GFX_Node		*GFXNodes;
 			Surf_SurfInfo	*Surf;
-			JE_RGBA			RGBA;
-			jeBoolean		Col1, Col2;
+			GR_RGBA			RGBA;
+			grBoolean		Col1, Col2;
 			
 			GFXNodes = World->CurrentBSP->BSPData.GFXNodes;
 			
@@ -782,8 +782,8 @@ static void JETCC jePuppet_ComputeAmbientLight(
 			Pos2.Y -= 30000.0f;
 
 			// Get shadow hit plane impact point
-			Col1 = Trace_WorldCollisionExact2((jeWorld*)World, &Pos1, &Pos1, &Impact, &Node, &Plane, NULL);
-			Col2 = Trace_WorldCollisionExact2((jeWorld*)World, &Pos1, &Pos2, &Impact, &Node, &Plane, NULL);
+			Col1 = Trace_WorldCollisionExact2((grWorld*)World, &Pos1, &Pos1, &Impact, &Node, &Plane, NULL);
+			Col2 = Trace_WorldCollisionExact2((grWorld*)World, &Pos1, &Pos2, &Impact, &Node, &Plane, NULL);
 
 			// Now find the color of the mesh by getting the lightmap point he is standing on...
 			if (!Col1 && Col2)
@@ -803,21 +803,21 @@ static void JETCC jePuppet_ComputeAmbientLight(
 
 									if (Light_GetLightmapRGB(Surf, &Impact, &RGBA))
 										{
-											jeFloat Scale = 1.0f / 255.0f;
+											grFloat Scale = 1.0f / 255.0f;
 											Ambient->Red   = RGBA.r * Scale;
 											Ambient->Green = RGBA.g * Scale;
 											Ambient->Blue  = RGBA.b * Scale;
-											if (Ambient->Red > JE_PUPPET_MAX_AMBIENT) 
+											if (Ambient->Red > GR_PUPPET_MAX_AMBIENT) 
 												{
-													Ambient->Red = JE_PUPPET_MAX_AMBIENT;
+													Ambient->Red = GR_PUPPET_MAX_AMBIENT;
 												}
-											if (Ambient->Green > JE_PUPPET_MAX_AMBIENT) 
+											if (Ambient->Green > GR_PUPPET_MAX_AMBIENT) 
 												{
-													Ambient->Green = JE_PUPPET_MAX_AMBIENT;
+													Ambient->Green = GR_PUPPET_MAX_AMBIENT;
 												}
-											if (Ambient->Blue > JE_PUPPET_MAX_AMBIENT) 
+											if (Ambient->Blue > GR_PUPPET_MAX_AMBIENT) 
 												{
-													Ambient->Blue = JE_PUPPET_MAX_AMBIENT;
+													Ambient->Blue = GR_PUPPET_MAX_AMBIENT;
 												}
 											break;
 										}
@@ -839,46 +839,46 @@ static void JETCC jePuppet_ComputeAmbientLight(
 
 
 // @@
-static void JETCC jePuppet_SetVertexColor(jePuppet* P,
-	jeLVertex *v,int BoneIndex)
+static void GRCC grPuppet_SetVertexColor(grPuppet* P,
+	grLVertex *v,int BoneIndex)
 {
-	jeFloat RedIntensity,GreenIntensity,BlueIntensity;
-	jeFloat Color;						
+	grFloat RedIntensity,GreenIntensity,BlueIntensity;
+	grFloat Color;						
 	int l;
-	jeVec3d surfaceNormal;
+	grVec3d surfaceNormal;
 
 	assert(v != NULL);
 	
-	RedIntensity   = jePuppet_StaticLightGrp.Ambient.Red;
-	GreenIntensity = jePuppet_StaticLightGrp.Ambient.Green;
-	BlueIntensity  = jePuppet_StaticLightGrp.Ambient.Blue;
+	RedIntensity   = grPuppet_StaticLightGrp.Ambient.Red;
+	GreenIntensity = grPuppet_StaticLightGrp.Ambient.Green;
+	BlueIntensity  = grPuppet_StaticLightGrp.Ambient.Blue;
 
-	surfaceNormal = jePuppet_StaticLightGrp.SurfaceNormal;
+	surfaceNormal = grPuppet_StaticLightGrp.SurfaceNormal;
 
-	if (jePuppet_StaticLightGrp.UseFillLight)
+	if (grPuppet_StaticLightGrp.UseFillLight)
 	{
-		jeFloat Intensity;
-		Intensity = jePuppet_StaticLightGrp.FillLightNormal.X * surfaceNormal.X + 
-					jePuppet_StaticLightGrp.FillLightNormal.Y * surfaceNormal.Y + 
-					jePuppet_StaticLightGrp.FillLightNormal.Z * surfaceNormal.Z;
+		grFloat Intensity;
+		Intensity = grPuppet_StaticLightGrp.FillLightNormal.X * surfaceNormal.X + 
+					grPuppet_StaticLightGrp.FillLightNormal.Y * surfaceNormal.Y + 
+					grPuppet_StaticLightGrp.FillLightNormal.Z * surfaceNormal.Z;
 		if (Intensity > 0.0)
 		{
-			RedIntensity   += Intensity * jePuppet_StaticLightGrp.FillLightColor.Red;
-			GreenIntensity += Intensity * jePuppet_StaticLightGrp.FillLightColor.Green;
-			BlueIntensity  += Intensity * jePuppet_StaticLightGrp.FillLightColor.Blue;
+			RedIntensity   += Intensity * grPuppet_StaticLightGrp.FillLightColor.Red;
+			GreenIntensity += Intensity * grPuppet_StaticLightGrp.FillLightColor.Green;
+			BlueIntensity  += Intensity * grPuppet_StaticLightGrp.FillLightColor.Blue;
 		}
 	}
 
-	if (jePuppet_StaticLightGrp.PerBoneLighting)
+	if (grPuppet_StaticLightGrp.PerBoneLighting)
 	{
-		jePuppet_BoneLight *L;
+		grPuppet_BoneLight *L;
 
 		L = &P->BoneLightArray[BoneIndex];
 
 		// accumulate dynamic lighting
 		for (l = 0; l < L->DLightCount; l ++)
 		{
-			jeVec3d *LightNormal;
+			grVec3d *LightNormal;
 			float Intensity;
 		
 			LightNormal = &(L->DLights[l].Normal);
@@ -897,7 +897,7 @@ static void JETCC jePuppet_SetVertexColor(jePuppet* P,
 		// accumulate static lighting
 		for (l = 0; l < L->SLightCount; l ++)
 		{
-			jeVec3d *LightNormal;
+			grVec3d *LightNormal;
 			float Intensity;
 		
 			LightNormal = &(L->SLights[l].Normal);
@@ -916,28 +916,28 @@ static void JETCC jePuppet_SetVertexColor(jePuppet* P,
 	else // not doing per-bone lighting
 	{
 		// accumulate dynamic lighting
-		for (l = 0; l < jePuppet_StaticLightGrp.DLightCount; l ++)
+		for (l = 0; l < grPuppet_StaticLightGrp.DLightCount; l ++)
 		{
-			jeVec3d *LightNormal;
+			grVec3d *LightNormal;
 			float Intensity;
 		
-			LightNormal = &(jePuppet_StaticLightGrp.DLights[l].Normal);
+			LightNormal = &(grPuppet_StaticLightGrp.DLights[l].Normal);
 
 			Intensity=	LightNormal->X * surfaceNormal.X + 
 						LightNormal->Y * surfaceNormal.Y + 
 						LightNormal->Z * surfaceNormal.Z;
 			if (Intensity > 0.0f)
 			{
-				RedIntensity   += Intensity * jePuppet_StaticLightGrp.DLights[l].Color.Red;
-				GreenIntensity += Intensity * jePuppet_StaticLightGrp.DLights[l].Color.Green;
-				BlueIntensity  += Intensity * jePuppet_StaticLightGrp.DLights[l].Color.Blue;
+				RedIntensity   += Intensity * grPuppet_StaticLightGrp.DLights[l].Color.Red;
+				GreenIntensity += Intensity * grPuppet_StaticLightGrp.DLights[l].Color.Green;
+				BlueIntensity  += Intensity * grPuppet_StaticLightGrp.DLights[l].Color.Blue;
 			}
 		}
 
 		// accumulate static lighting
 		for (l = 0; l < P->SLightCount; l ++)
 		{
-			jeVec3d *LightNormal;
+			grVec3d *LightNormal;
 			float Intensity;
 		
 			LightNormal = &P->SLights[l].Normal;
@@ -954,47 +954,47 @@ static void JETCC jePuppet_SetVertexColor(jePuppet* P,
 		}
 	}
 
-	Color = jePuppet_StaticLightGrp.MaterialColor.Red * RedIntensity;
-	v->r = JE_CLAMP(Color, 0.0f, 255.0f);
+	Color = grPuppet_StaticLightGrp.MaterialColor.Red * RedIntensity;
+	v->r = GR_CLAMP(Color, 0.0f, 255.0f);
 
-	Color = jePuppet_StaticLightGrp.MaterialColor.Green * GreenIntensity;
-	v->g = JE_CLAMP(Color, 0.0f, 255.0f);
+	Color = grPuppet_StaticLightGrp.MaterialColor.Green * GreenIntensity;
+	v->g = GR_CLAMP(Color, 0.0f, 255.0f);
 
-	Color = jePuppet_StaticLightGrp.MaterialColor.Blue * BlueIntensity;
-	v->b = JE_CLAMP(Color, 0.0f, 255.0f);
+	Color = grPuppet_StaticLightGrp.MaterialColor.Blue * BlueIntensity;
+	v->b = GR_CLAMP(Color, 0.0f, 255.0f);
 }
 
-#pragma message ("Make a jePuppet_SetShadowPosition(...) ")
+#pragma message ("Make a grPuppet_SetShadowPosition(...) ")
 
 #pragma warning (disable:4100)
-static void JETCC jePuppet_DrawShadow(const jePuppet *P, 
-						const jePose *Joints, 
-						jeEngine *Engine, 
-						const jeCamera *Camera)
+static void GRCC grPuppet_DrawShadow(const grPuppet *P, 
+						const grPose *Joints, 
+						grEngine *Engine, 
+						const grCamera *Camera)
 {
 #if 0
-	jeLVertex v[3];
+	grLVertex v[3];
 	
-	jeVec3d		Impact;
-	jeXForm3d	RootTransform;
+	grVec3d		Impact;
+	grXForm3d	RootTransform;
 	
 	assert( P );
 	assert( Camera );
 	assert( Joints );
 
-	assert( (P->ShadowBoneIndex < jePose_GetJointCount(Joints)) || (P->ShadowBoneIndex ==JE_POSE_ROOT_JOINT));
-	assert( (P->ShadowBoneIndex >=0)					    	|| (P->ShadowBoneIndex ==JE_POSE_ROOT_JOINT));
+	assert( (P->ShadowBoneIndex < grPose_GetJointCount(Joints)) || (P->ShadowBoneIndex ==GR_POSE_ROOT_JOINT));
+	assert( (P->ShadowBoneIndex >=0)					    	|| (P->ShadowBoneIndex ==GR_POSE_ROOT_JOINT));
 
-	jePose_GetJointTransform(Joints,P->ShadowBoneIndex,&RootTransform);
+	grPose_GetJointTransform(Joints,P->ShadowBoneIndex,&RootTransform);
 	
 	{
 		GFX_Plane		Plane;
-		jeVec3d			Pos1, Pos2;
+		grVec3d			Pos1, Pos2;
 		GFX_Node		*GFXNodes;
-		jeWorld_Model	*Model;
+		grWorld_Model	*Model;
 		Mesh_RenderQ	*Mesh;
-		jeActor         *Actor;
-		jeBoolean		GoodImpact;
+		grActor         *Actor;
+		grBoolean		GoodImpact;
 
 			
 		GFXNodes = (World)->CurrentBSP->BSPData.GFXNodes;
@@ -1007,7 +1007,7 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 
 		// Get shadow hit plane impact point
 		GoodImpact = Trace_WorldCollisionExact(World, 
-									&Pos1,&Pos2,JE_COLLIDE_MODELS,&Impact,&Plane,&Model,&Mesh,&Actor,0, NULL, NULL);
+									&Pos1,&Pos2,GR_COLLIDE_MODELS,&Impact,&Plane,&Model,&Mesh,&Actor,0, NULL, NULL);
 
 	}
 	Impact.Y += 1.0f;
@@ -1019,31 +1019,31 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 #ifdef SHADOW_MAP
 	{
 		int i;
-		jeLVertex s[4];
-		jeVec3d ws[4];
-		jeVec3d In,Left;
-		jeVec3d Up;
-		jeVec3d Zero = {0.0f,0.0f,0.0f};
+		grLVertex s[4];
+		grVec3d ws[4];
+		grVec3d In,Left;
+		grVec3d Up;
+		grVec3d Zero = {0.0f,0.0f,0.0f};
 		
-		jeVec3d_Subtract(&Impact,&(RootTransform.Translation),&Up);
-		jeVec3d_Normalize(&Up);
-		jeVec3d_CrossProduct(&(Plane.Normal),&Up,&Left);
-		if (jeVec3d_Compare(&Left,&Zero,0.001f)!=JE_FALSE)
+		grVec3d_Subtract(&Impact,&(RootTransform.Translation),&Up);
+		grVec3d_Normalize(&Up);
+		grVec3d_CrossProduct(&(Plane.Normal),&Up,&Left);
+		if (grVec3d_Compare(&Left,&Zero,0.001f)!=GR_FALSE)
 			{
-				jeXForm3d_GetLeft(&(RootTransform),&Left);
+				grXForm3d_GetLeft(&(RootTransform),&Left);
 			}
-		jeVec3d_CrossProduct(&Left,&(Plane.Normal),&In);
+		grVec3d_CrossProduct(&Left,&(Plane.Normal),&In);
 
-		jeVec3d_Normalize(&Left);
-		jeVec3d_Normalize(&In);
+		grVec3d_Normalize(&Left);
+		grVec3d_Normalize(&In);
 
 		s[0].r = s[0].b = s[0].g = 0.0f;
 		s[1].r = s[1].b = s[1].g = 0.0f;
 		s[2].r = s[2].b = s[2].g = 0.0f;
 		s[3].r = s[3].b = s[3].g = 0.0f;
 
-		jeVec3d_Scale(&In  ,P->ShadowScale,&In);
-		jeVec3d_Scale(&Left,P->ShadowScale,&Left);
+		grVec3d_Scale(&In  ,P->ShadowScale,&In);
+		grVec3d_Scale(&Left,P->ShadowScale,&Left);
 
 		s[0].a = s[1].a = s[2].a = s[3].a  = 160.0f;
 
@@ -1067,8 +1067,8 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 
 		for (i=0; i<4; i++)
 			{
-				jeCamera_Transform(Camera,&ws[i],&ws[i]);
-				jeCamera_Project(Camera,&ws[i],&ws[i]);
+				grCamera_Transform(Camera,&ws[i],&ws[i]);
+				grCamera_Project(Camera,&ws[i],&ws[i]);
 			}
 
 		
@@ -1077,13 +1077,13 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 		s[2].X = ws[2].X; s[2].Y = ws[2].Y; s[2].Z = ws[2].Z;
 		s[3].X = ws[3].X; s[3].Y = ws[3].Y; s[3].Z = ws[3].Z;
 		
-		jeTClip_SetTexture(P->ShadowMap);
+		grTClip_SetTexture(P->ShadowMap);
 
-		jeTClip_Triangle(s);
+		grTClip_Triangle(s);
 		s[1] = s[2];
 		s[2] = s[3];
 
-		jeTClip_Triangle(s);
+		grTClip_Triangle(s);
 		
 	}
 #endif
@@ -1100,24 +1100,24 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 	{
 		int steps = 30;
 		int i;
-		jeVec3d V;
-		jeFloat Angle = 0.0f;
-		jeFloat DAngleDStep = -(2.0f * 3.14159f / (jeFloat)steps);
-		jeFloat Radius = P->ShadowScale;
+		grVec3d V;
+		grFloat Angle = 0.0f;
+		grFloat DAngleDStep = -(2.0f * 3.14159f / (grFloat)steps);
+		grFloat Radius = P->ShadowScale;
 
 		V = Impact;
-		jeCamera_Transform(Camera,&V,&V);
-		jeCamera_Project(Camera,&V,&V);
+		grCamera_Transform(Camera,&V,&V);
+		grCamera_Project(Camera,&V,&V);
 		v[0].X = V.X;
 		v[0].Y = V.Y;
 		v[0].Z = V.Z;
 
-		jeTClip_SetTexture(NULL);
+		grTClip_SetTexture(NULL);
 
 		V = Impact;
 		V.Z += Radius;
-		jeCamera_Transform(Camera,&V,&V);
-		jeCamera_Project(Camera,&V,&V);
+		grCamera_Transform(Camera,&V,&V);
+		grCamera_Project(Camera,&V,&V);
 		v[1].X = V.X;
 		v[1].Y = V.Y;
 		v[1].Z = V.Z;
@@ -1126,16 +1126,16 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 				v[2] = v[1];
 
 				V = Impact;
-				V.X += (jeFloat)(sin( Angle ) * Radius);
-				V.Z += (jeFloat)(cos( Angle ) * Radius);
-				jeCamera_Transform(Camera,&V,&V);
-				jeCamera_Project(Camera,&V,&V);
+				V.X += (grFloat)(sin( Angle ) * Radius);
+				V.Z += (grFloat)(cos( Angle ) * Radius);
+				grCamera_Transform(Camera,&V,&V);
+				grCamera_Project(Camera,&V,&V);
 				v[1].X = V.X;
 				v[1].Y = V.Y;
 				v[1].Z = V.Z;
 
 				Angle = Angle + DAngleDStep;
-				jeTClip_Triangle(v);
+				grTClip_Triangle(v);
 			}
 	}
 #endif
@@ -1143,20 +1143,20 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 #ifdef PROJECTED_SHADOW			
 	{
 		int i,j,Count;
-		jeBodyInst_Index *List;
-		jeBodyInst_Index Command;
-		jeBody_SkinVertex *SV;
+		grBodyInst_Index *List;
+		grBodyInst_Index Command;
+		grBody_SkinVertex *SV;
 		
-		G = jeBodyInst_GetShadowGeometry(P->BodyInstance,
-						jePose_GetAllJointTransforms(Joints),0,Camera,&Impact);
+		G = grBodyInst_GetShadowGeometry(P->BodyInstance,
+						grPose_GetAllJointTransforms(Joints),0,Camera,&Impact);
 
 		if ( G == NULL )
 			{
-				jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_DrawShadow:  Failed to get shadow geometry",NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_DrawShadow:  Failed to get shadow geometry",NULL);
+				return GR_FALSE;
 			}
 
-		jeTClip_SetTexture(NULL);
+		grTClip_SetTexture(NULL);
 
 		Count = G->FaceCount;
 		List  = G->FaceList;
@@ -1168,11 +1168,11 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 				//Material = *List;
 				List ++;
 
-				assert( Command == JE_BODY_FACE_TRIANGLE );
+				assert( Command == GR_BODY_FACE_TRIANGLE );
 
 				{
 					float AX,AY,BXMinusAX,BYMinusAY,CYMinusAY,CXMinusAX;
-					jeBodyInst_Index *List2;
+					grBodyInst_Index *List2;
 					
 					List2 = List;
 					SV = &(G->SkinVertexArray[ *List2 ]);
@@ -1223,7 +1223,7 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 			
 				if ((v[0].a > 0) && (v[1].a > 0) && (v[2].a > 0))
 					{
-						jeTClip_Triangle(v);
+						grTClip_Triangle(v);
 					}
 			}
 		assert( ((uint32)List) - ((uint32)G->FaceList) == (uint32)(G->FaceListSize) );
@@ -1236,46 +1236,46 @@ static void JETCC jePuppet_DrawShadow(const jePuppet *P,
 
 #pragma warning (default:4100)
 
-extern jeBoolean	h_LeftHanded;		// Hack of all mothers, need to check camera to see if left/right handed...
+extern grBoolean	h_LeftHanded;		// Hack of all mothers, need to check camera to see if left/right handed...
 
 #define	DO_UV_MAPPING
 
-extern jeWorld_DebugInfo g_WorldDebugInfo;
+extern grWorld_DebugInfo g_WorldDebugInfo;
 
-jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P, 
-										const jePose		*Joints, 
-										const jeExtBox		*Box, 
-										jeEngine			*Engine, 
-										const jeWorld		*World,
-										const jeCamera		*Camera, 
-										const jeFrustum		*Frustum,
-										jeBoolean updateStaticLightingFlag)
+grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P, 
+										const grPose		*Joints, 
+										const grExtBox		*Box, 
+										grEngine			*Engine, 
+										const grWorld		*World,
+										const grCamera		*Camera, 
+										const grFrustum		*Frustum,
+										grBoolean updateStaticLightingFlag)
 {
 	//	TOM 05-24-03 This function needs to be rewritten to make it easier to handle
 	//	pointer assignment errors -- especially for local var PM.
 
 	uint32						ClipFlags;
-	jeVec3d						Scale;
-	const jeXFArray				*JointTransforms = NULL;
-	const jeBodyInst_Geometry	*G = NULL;
-	jeFrustum					WorldSpaceFrustum;
-	jePuppet					*LP = NULL;
+	grVec3d						Scale;
+	const grXFArray				*JointTransforms = NULL;
+	const grBodyInst_Geometry	*G = NULL;
+	grFrustum					WorldSpaceFrustum;
+	grPuppet					*LP = NULL;
 
 	assert( P      );
 	assert( Engine );
 	assert( Camera );
 	assert( Joints );
 
-	LP = (jePuppet *)P;
+	LP = (grPuppet *)P;
 
-	JointTransforms = jePose_GetAllJointTransforms(Joints);
+	JointTransforms = grPose_GetAllJointTransforms(Joints);
 
 #pragma message ("Level of detail hacked:")
 
-	jePose_GetScale(Joints,&Scale);
-	G = jeBodyInst_GetGeometry(P->BodyInstance, &Scale, JointTransforms, 0, NULL);
+	grPose_GetScale(Joints,&Scale);
+	G = grBodyInst_GetGeometry(P->BodyInstance, &Scale, JointTransforms, 0, NULL);
 
-	jeFrustum_TransformToWorldSpace(Frustum, Camera, &WorldSpaceFrustum);
+	grFrustum_TransformToWorldSpace(Frustum, Camera, &WorldSpaceFrustum);
 	Frustum = &WorldSpaceFrustum;
 
 	// Setup clip flags to clip to all frustum planes...
@@ -1284,21 +1284,21 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 	// Now either totally reject actor against frustum, or remove planes that don't need to be clipped against, etc...
 //#if 1
 	{
-		jePlane		*pPlane = NULL;
+		grPlane		*pPlane = NULL;
 		int32		k;
 
-		pPlane = ((jeFrustum*)Frustum)->Planes;
+		pPlane = ((grFrustum*)Frustum)->Planes;
 
 		for (k=0; k< Frustum->NumPlanes; k++, pPlane++)
 		{
-			jePlane_Side	Side;
+			grPlane_Side	Side;
 
 			pPlane->Type = Type_Any;
 
-			Side = jePlane_BoxSide(pPlane, Box, 0.01f);
+			Side = grPlane_BoxSide(pPlane, Box, 0.01f);
 
 			if (Side == PSIDE_BACK)
-				return JE_TRUE;			// Actor not in view frustum
+				return GR_TRUE;			// Actor not in view frustum
 
 			if (Side == PSIDE_FRONT)
 				ClipFlags ^= (1<<k);	// Don't need to clip to this plane
@@ -1308,35 +1308,35 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 
 	if (G == NULL)
 	{
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_RenderThroughFrustum: Failed to get draw geometry");
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_RenderThroughFrustum: Failed to get draw geometry");
+		return GR_FALSE;
 	}
 
 	{
 		int32				NumFaces;
 		int32				i;
-		jeBodyInst_Index	*List = NULL;
-		jeXForm3d			RootTransform;
-		const jeXForm3d		*pActorToWorldXForm = NULL;
-		jeXForm3d			MapperXForm, *pMapperXForm;
+		grBodyInst_Index	*List = NULL;
+		grXForm3d			RootTransform;
+		const grXForm3d		*pActorToWorldXForm = NULL;
+		grXForm3d			MapperXForm, *pMapperXForm;
 		uint32				RenderFlags;
-		jeBodyInst_Index	LastMaterial;
+		grBodyInst_Index	LastMaterial;
 
 		if (h_LeftHanded)
 			RenderFlags = 0;
 		else
-			RenderFlags = JE_RENDER_FLAG_COUNTER_CLOCKWISE;
+			RenderFlags = GR_RENDER_FLAG_COUNTER_CLOCKWISE;
 
-		jePuppet_StaticLightGrp.UseFillLight		 = P->UseFillLight;
-		jePuppet_StaticLightGrp.FillLightNormal		 = P->FillLightNormal;
-		jePuppet_StaticLightGrp.FillLightColor.Red	 = P->FillLightColor.Red;
-		jePuppet_StaticLightGrp.FillLightColor.Green = P->FillLightColor.Green;
-		jePuppet_StaticLightGrp.FillLightColor.Blue  = P->FillLightColor.Blue;
-		jePuppet_StaticLightGrp.PerBoneLighting      = P->PerBoneLighting;
+		grPuppet_StaticLightGrp.UseFillLight		 = P->UseFillLight;
+		grPuppet_StaticLightGrp.FillLightNormal		 = P->FillLightNormal;
+		grPuppet_StaticLightGrp.FillLightColor.Red	 = P->FillLightColor.Red;
+		grPuppet_StaticLightGrp.FillLightColor.Green = P->FillLightColor.Green;
+		grPuppet_StaticLightGrp.FillLightColor.Blue  = P->FillLightColor.Blue;
+		grPuppet_StaticLightGrp.PerBoneLighting      = P->PerBoneLighting;
 
-		jePose_GetJointTransform(Joints,P->LightReferenceBoneIndex,&(RootTransform));
+		grPose_GetJointTransform(Joints,P->LightReferenceBoneIndex,&(RootTransform));
 
-		pActorToWorldXForm = jeCamera_XForm(Camera);
+		pActorToWorldXForm = grCamera_XForm(Camera);
 
 		// do dynamic lighting pass
 
@@ -1345,19 +1345,19 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 			if (P->PerBoneLighting)
 			{
 				int BoneCount;
-				const jeXForm3d *XFA = jeXFArray_GetElements(JointTransforms, &BoneCount);
+				const grXForm3d *XFA = grXFArray_GetElements(JointTransforms, &BoneCount);
 				if (BoneCount>0)
 				{
 					if (P->BoneLightArraySize < BoneCount)
 					{
 						// realloc light array to correct size
-						jePuppet_BoneLight *LG;
+						grPuppet_BoneLight *LG;
 
-						LG = (jePuppet_BoneLight *)jeRam_Realloc(P->BoneLightArray, sizeof(jePuppet_BoneLight) * BoneCount);
+						LG = (grPuppet_BoneLight *)grRam_Realloc(P->BoneLightArray, sizeof(grPuppet_BoneLight) * BoneCount);
 						if (LG==NULL)
 						{
-							jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_Render: Failed to allocate space for bone lighting info cache");
-							return JE_FALSE;
+							grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_Render: Failed to allocate space for bone lighting info cache");
+							return GR_FALSE;
 						}
 						LP->BoneLightArray = LG;
 						LP->BoneLightArraySize = BoneCount;
@@ -1365,21 +1365,21 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 					for (i=0; i<BoneCount; i++) // loop thru the bones
 					{
 						// for all dynamic lights, accumulate onto bone i
-						P->BoneLightArray[i].DLightCount = jePuppet_PrepDynamicLights(P,World,
+						P->BoneLightArray[i].DLightCount = grPuppet_PrepDynamicLights(P,World,
 							P->BoneLightArray[i].DLights,&(XFA[i].Translation));
 					}
 				}
 			}
 			else
 			{
-				jePuppet_StaticLightGrp.DLightCount = jePuppet_PrepDynamicLights(P,World,
-					jePuppet_StaticLightGrp.DLights,&(RootTransform.Translation));
+				grPuppet_StaticLightGrp.DLightCount = grPuppet_PrepDynamicLights(P,World,
+					grPuppet_StaticLightGrp.DLights,&(RootTransform.Translation));
 			}
 		}
 
 		else
 		{
-			jePuppet_StaticLightGrp.DLightCount = 0;
+			grPuppet_StaticLightGrp.DLightCount = 0;
 		}
 
 		// do static lighting pass
@@ -1391,19 +1391,19 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 				if (P->PerBoneLighting)
 				{
 					int BoneCount;
-					const jeXForm3d *XFA = jeXFArray_GetElements(JointTransforms, &BoneCount);
+					const grXForm3d *XFA = grXFArray_GetElements(JointTransforms, &BoneCount);
 					if (BoneCount>0)
 					{
 						if (P->BoneLightArraySize < BoneCount)
 						{
 							// realloc light array to correct size
-							jePuppet_BoneLight *LG = NULL;
+							grPuppet_BoneLight *LG = NULL;
 
-							LG = (jePuppet_BoneLight *)jeRam_Realloc(P->BoneLightArray, sizeof(jePuppet_BoneLight) * BoneCount);
+							LG = (grPuppet_BoneLight *)grRam_Realloc(P->BoneLightArray, sizeof(grPuppet_BoneLight) * BoneCount);
 							if (LG==NULL)
 							{
-								jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_Render: Failed to allocate space for bone lighting info cache");
-								return JE_FALSE;
+								grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_Render: Failed to allocate space for bone lighting info cache");
+								return GR_FALSE;
 							}
 							LP->BoneLightArray = LG;
 							LP->BoneLightArraySize = BoneCount;
@@ -1411,7 +1411,7 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 						for (i=0; i<BoneCount; i++) // loop thru the bones
 						{
 							// for all static lights, accumulate onto bone i
-							P->BoneLightArray[i].SLightCount = jePuppet_PrepStaticLights(P,
+							P->BoneLightArray[i].SLightCount = grPuppet_PrepStaticLights(P,
 								World,
 								P->BoneLightArray[i].SLights,
 								&(XFA[i].Translation));
@@ -1420,7 +1420,7 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 				}
 				else // not doing per-bone lighting
 				{
-					LP->SLightCount = jePuppet_PrepStaticLights(P,
+					LP->SLightCount = grPuppet_PrepStaticLights(P,
 						World,
 						LP->SLights,
 						&(RootTransform.Translation));
@@ -1434,7 +1434,7 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 		}
 
 		// @@
-		jePuppet_ComputeAmbientLight(P, &(jePuppet_StaticLightGrp.Ambient), &(RootTransform.Translation));
+		grPuppet_ComputeAmbientLight(P, &(grPuppet_StaticLightGrp.Ambient), &(RootTransform.Translation));
 
 		NumFaces	= G->FaceCount;
 		List		= G->FaceList;
@@ -1442,25 +1442,25 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 		LastMaterial = -1;
 
 		// For each face, clip it to the view frustum 
-		jePuppet_Material	*PM = NULL;
+		grPuppet_Material	*PM = NULL;
 		for (i=0; i<NumFaces; i++)
 		{
 #define MAX_TEMP_VERTS		64		
 
 			int32				v;
-			jeBodyInst_Index	Command, Material;
+			grBodyInst_Index	Command, Material;
 			float				Dist;
-			jeLVertex			LVerts1[MAX_TEMP_VERTS], LVerts2[MAX_TEMP_VERTS], *pLVert;
-			jeTLVertex			TLVerts[MAX_TEMP_VERTS];
-			jeVec3d				v1, v2, v3;
-			jeFrustum_LClipInfo	ClipInfo;
+			grLVertex			LVerts1[MAX_TEMP_VERTS], LVerts2[MAX_TEMP_VERTS], *pLVert;
+			grTLVertex			TLVerts[MAX_TEMP_VERTS];
+			grVec3d				v1, v2, v3;
+			grFrustum_LClipInfo	ClipInfo;
 
 			Command	= *List;
 			List++;
 			Material = *List;
 			List ++;
 
-			assert( Command == JE_BODYINST_FACE_TRIANGLE );
+			assert( Command == GR_BODYINST_FACE_TRIANGLE );
 			assert( Material>=0 );
 			assert( Material<P->MaterialCount);
 
@@ -1470,44 +1470,44 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 				PM = &(P->MaterialArray[Material]);
 				if (PM)
 				{
-					jePuppet_StaticLightGrp.MaterialColor = PM->Color;
+					grPuppet_StaticLightGrp.MaterialColor = PM->Color;
 
-					if (PM->Mapper != jeUVMap_Projection)
+					if (PM->Mapper != grUVMap_Projection)
 					{
-						pMapperXForm = (jeXForm3d*)pActorToWorldXForm;
+						pMapperXForm = (grXForm3d*)pActorToWorldXForm;
 					}
 					else
 					{
-#pragma message("Puppet.c: hard-coded default projection matrix vals for case of jeUVMap_Projection")
-						jeXForm3d		ProjXForm;
+#pragma message("Puppet.c: hard-coded default projection matrix vals for case of grUVMap_Projection")
+						grXForm3d		ProjXForm;
 
 						ProjXForm.AX = 0.03f; ProjXForm.AY = 0.02f; ProjXForm.AZ = 0.0f;
 						ProjXForm.BX = 0.01f; ProjXForm.BY = 0.09f; ProjXForm.BZ = 0.0f;
 						ProjXForm.CX = 0.06f; ProjXForm.CY = 0.08f; ProjXForm.CZ = 0.0f;
 
-						jeVec3d_Clear(&ProjXForm.Translation);
+						grVec3d_Clear(&ProjXForm.Translation);
 
 						pMapperXForm = &MapperXForm;
 
-						jeXForm3d_Multiply(&ProjXForm, pActorToWorldXForm, pMapperXForm);
+						grXForm3d_Multiply(&ProjXForm, pActorToWorldXForm, pMapperXForm);
 					}	//	else...
 
 					LastMaterial = Material;		// Make LastMaterial current
 				}	//	if (PM)...
 //				else
 //				{
-//					return JE_FALSE;
+//					return GR_FALSE;
 //				}
 			}	//	if (Material != LastMaterial)...
 #else
 			PM = &(P->MaterialArray[Material]);
 			if (PM)
 			{
-				jePuppet_StaticLightGrp.MaterialColor = PM->Color;
+				grPuppet_StaticLightGrp.MaterialColor = PM->Color;
 			}
 			else
 			{
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 #endif
 
@@ -1516,13 +1516,13 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 
 				for (v=0; v< 3; v++, pLVert++)
 				{
-					jeBodyInst_SkinVertex	*SVert;
+					grBodyInst_SkinVertex	*SVert;
 
 					SVert = &G->SkinVertexArray[*List];
 					List++;
 
 					// Get XYZ
-					*((jeVec3d*)pLVert) = SVert->SVPoint;
+					*((grVec3d*)pLVert) = SVert->SVPoint;
 
 					// Get UV
 #ifdef DO_UV_MAPPING
@@ -1531,9 +1531,9 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 					{
 						if (PM->Mapper != NULL)
 						{
-							jeLVertex		MapVert;
+							grLVertex		MapVert;
 
-							*((jeVec3d*)&MapVert) = SVert->SVW;
+							*((grVec3d*)&MapVert) = SVert->SVW;
 
 							PM->Mapper(pMapperXForm, &MapVert, &G->NormalArray[*List], 1);
 
@@ -1548,24 +1548,24 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 						}
 					}	//	if (PM)...
 
-					assert( ((float)fabs(1.0-jeVec3d_Length( &(G->NormalArray[ *List ] ))))< 0.001f );
+					assert( ((float)fabs(1.0-grVec3d_Length( &(G->NormalArray[ *List ] ))))< 0.001f );
 
-					jePuppet_StaticLightGrp.SurfaceNormal = (G->NormalArray[ *List ]);
+					grPuppet_StaticLightGrp.SurfaceNormal = (G->NormalArray[ *List ]);
 					List++;
 
 					// Get RGB
-					jePuppet_SetVertexColor(LP, pLVert,SVert->ReferenceBoneIndex);
+					grPuppet_SetVertexColor(LP, pLVert,SVert->ReferenceBoneIndex);
 				}	//	for...
 
 #pragma message ("This backface rejection code should go above uv/lighting computations...")
-				jeVec3d_Subtract((jeVec3d*)&LVerts1[2], (jeVec3d*)&LVerts1[1], &v1);
-				jeVec3d_Subtract((jeVec3d*)&LVerts1[0], (jeVec3d*)&LVerts1[1], &v2);
-				jeVec3d_CrossProduct(&v1, &v2, &v3);
-				jeVec3d_Normalize(&v3);
+				grVec3d_Subtract((grVec3d*)&LVerts1[2], (grVec3d*)&LVerts1[1], &v1);
+				grVec3d_Subtract((grVec3d*)&LVerts1[0], (grVec3d*)&LVerts1[1], &v2);
+				grVec3d_CrossProduct(&v1, &v2, &v3);
+				grVec3d_Normalize(&v3);
 
-				Dist = jeVec3d_DotProduct(&v3, (jeVec3d*)&LVerts1[0]);
+				Dist = grVec3d_DotProduct(&v3, (grVec3d*)&LVerts1[0]);
 
-				Dist = jeVec3d_DotProduct(&v3, jeCamera_GetPov(Camera)) - Dist;
+				Dist = grVec3d_DotProduct(&v3, grCamera_GetPov(Camera)) - Dist;
 
 				if (Dist <= 0)
 					continue;		// Backfaced to camera
@@ -1579,30 +1579,30 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 				ClipInfo.ClipFlags = ClipFlags;
 
 				// Clip UVRGB
-				if (!jeFrustum_ClipLVertsXYZUVRGB(Frustum, &ClipInfo))
+				if (!grFrustum_ClipLVertsXYZUVRGB(Frustum, &ClipInfo))
 					continue;		// Poly was clipped away
 
 				// Transform to world space...
 				for (pLVert = ClipInfo.DstVerts, v=0; v< ClipInfo.NumDstVerts; v++, pLVert++)
-					jeXForm3d_Transform(pActorToWorldXForm, (jeVec3d*)pLVert, (jeVec3d*)pLVert);
+					grXForm3d_Transform(pActorToWorldXForm, (grVec3d*)pLVert, (grVec3d*)pLVert);
 
 				// Project to screenspace
-				jeCamera_ProjectAndClampLArray(Camera, ClipInfo.DstVerts, TLVerts, ClipInfo.NumDstVerts);
+				grCamera_ProjectAndClampLArray(Camera, ClipInfo.DstVerts, TLVerts, ClipInfo.NumDstVerts);
 
 				//TLVerts[0].a = 255.0f;
 				//	[MacroArt::Begin]
 				TLVerts[0].a = P->fOverallAlpha;
-				//			if(P->fOverallAlpha<255.0f) RenderFlags=RenderFlags|JE_RENDER_FLAG_ALPHA;
+				//			if(P->fOverallAlpha<255.0f) RenderFlags=RenderFlags|GR_RENDER_FLAG_ALPHA;
 				//	[MacroArt::End]
 
 				g_WorldDebugInfo.NumActorPolys++;
 			if (PM)
 			{
-				jeEngine_RenderPoly(Engine, TLVerts, ClipInfo.NumDstVerts, PM->Material, RenderFlags);
+				grEngine_RenderPoly(Engine, TLVerts, ClipInfo.NumDstVerts, PM->Material, RenderFlags);
 			}	//	if (PM)...
 //			else
 //			{
-//				return JE_FALSE;
+//				return GR_FALSE;
 //			}
 
 		}
@@ -1612,10 +1612,10 @@ jeBoolean jePuppet_RenderThroughFrustum(const jePuppet		*P,
 	/*
 	if (P->DoShadow)
 	{
-	jePuppet_DrawShadow(P,Engine,World,Camera);
+	grPuppet_DrawShadow(P,Engine,World,Camera);
 	}
 	*/
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 #ifdef PROFILE
@@ -1631,31 +1631,31 @@ int Puppet_AverageIndex = 0;
 #endif
 
 
-jeBoolean	jePuppet_Render(const jePuppet	*P, 
-							const jePose	*Joints,
-							jeEngine		*Engine, 
-							const jeWorld	*World,
-							const jeCamera	*Camera, 
-							jeExtBox		*TestBox,
-							jeBoolean		updateStaticLightingFlag)
+grBoolean	grPuppet_Render(const grPuppet	*P, 
+							const grPose	*Joints,
+							grEngine		*Engine, 
+							const grWorld	*World,
+							const grCamera	*Camera, 
+							grExtBox		*TestBox,
+							grBoolean		updateStaticLightingFlag)
 {
-	jePuppet *LP;
-	const jeXFArray *JointTransforms;
-	jeVec3d Scale;
+	grPuppet *LP;
+	const grXFArray *JointTransforms;
+	grVec3d Scale;
 	#ifdef PROFILE
 	rdtsc_timer_type RDTSCStart,RDTSCEnd;
 	#endif
-	jeRect ClippingRect;
-	jeBoolean Clipping = JE_TRUE;
+	grRect ClippingRect;
+	grBoolean Clipping = GR_TRUE;
 
 	// BEGIN - Fixed far clip plane for actors - paradoxnj 4/21/2005
-	jeBoolean Enable;
+	grBoolean Enable;
 	float ZFar;
 	// END - Fixed far clip plane for actors - paradoxnj 4/21/2005
 
 	#define BACK_EDGE (1.0f)
 
-	const jeBodyInst_Geometry *G;
+	const grBodyInst_Geometry *G;
 //	[MacroArt::Begin]
 	uint32	RenderFlags;
 //	[MacroArt::End]
@@ -1670,11 +1670,11 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 	#endif
 
 
-	LP = (jePuppet*)P;
-	jeCamera_GetClippingRect(Camera,&ClippingRect);
+	LP = (grPuppet*)P;
+	grCamera_GetClippingRect(Camera,&ClippingRect);
 	
 	// BEGIN - Fixed far clip plane for actors - paradoxnj 4/21/2005
-	jeCamera_GetFarClipPlane(Camera, &Enable, &ZFar);
+	grCamera_GetFarClipPlane(Camera, &Enable, &ZFar);
 	if (!Enable)
 		ZFar = BACK_EDGE;
 	// END - Fixed far clip plane for actor - paradoxnj 4/21/2005
@@ -1684,9 +1684,9 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 		// see if the test box is visible on the screen.  If not: don't draw actor.
 		// (transform and project it to the screen, then check extents of that projection
 		//  against the clipping rect)
-		jeVec3d BoxCorners[8];
-		const jeXForm3d *ObjectToCamera;
-		jeVec3d Maxs,Mins;
+		grVec3d BoxCorners[8];
+		const grXForm3d *ObjectToCamera;
+		grVec3d Maxs,Mins;
 		#define BIG_NUMBER (99e9f)  
 		int i;
 
@@ -1699,16 +1699,16 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 		BoxCorners[6] = BoxCorners[4];  BoxCorners[6].Y = TestBox->Min.Y;
 		BoxCorners[7] = BoxCorners[4];  BoxCorners[7].Z = TestBox->Min.Z;
 
-		ObjectToCamera = jeCamera_XForm(Camera);
+		ObjectToCamera = grCamera_XForm(Camera);
 		assert( ObjectToCamera );
 
-		jeVec3d_Set(&Maxs,-BIG_NUMBER,-BIG_NUMBER,-BIG_NUMBER);
-		jeVec3d_Set(&Mins, BIG_NUMBER, BIG_NUMBER, BIG_NUMBER);
+		grVec3d_Set(&Maxs,-BIG_NUMBER,-BIG_NUMBER,-BIG_NUMBER);
+		grVec3d_Set(&Mins, BIG_NUMBER, BIG_NUMBER, BIG_NUMBER);
 		for (i=0; i<8; i++)
 		{
-			jeVec3d V;
-			jeXForm3d_Transform(  ObjectToCamera,&(BoxCorners[i]),&(BoxCorners[i]));
-			jeCamera_Project(  Camera,&(BoxCorners[i]),&V);
+			grVec3d V;
+			grXForm3d_Transform(  ObjectToCamera,&(BoxCorners[i]),&(BoxCorners[i]));
+			grCamera_Project(  Camera,&(BoxCorners[i]),&V);
 			if (V.X > Maxs.X ) Maxs.X = V.X;
 			if (V.X < Mins.X ) Mins.X = V.X;
 			if (V.Y > Maxs.Y ) Maxs.Y = V.Y;
@@ -1724,41 +1724,41 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 			|| (Maxs.Z < BACK_EDGE) )
 		{
 			// not gonna draw: box is not visible.
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
 		// BEGIN - Fixed far clip plane for actors - paradoxnj 4/21/2005
 		if (Enable)
 		{
 			if (Mins.Z > ZFar)
-				return JE_TRUE;				// Beyond ZFar ClipPlane
+				return GR_TRUE;				// Beyond ZFar ClipPlane
 		}
 		// END - Fixed far clip plane for actors - paradoxnj 4/21/2005
 	}
 
 	// Now actor is in the camera field - test it against the BSP area
-	//extern jeBSPNode_Area *jeBSP_FindArea(jeBSP *BSP, const jeVec3d *Pos);
+	//extern grBSPNode_Area *grBSP_FindArea(grBSP *BSP, const grVec3d *Pos);
 
 
 	Engine->DebugInfo.NumActors++;
-	jeTClip_SetupEdges(Engine,
-						(jeFloat)ClippingRect.Left,
-						(jeFloat)ClippingRect.Right,
-						(jeFloat)ClippingRect.Top,
-						(jeFloat)ClippingRect.Bottom,
+	grTClip_SetupEdges(Engine,
+						(grFloat)ClippingRect.Left,
+						(grFloat)ClippingRect.Right,
+						(grFloat)ClippingRect.Top,
+						(grFloat)ClippingRect.Bottom,
 						BACK_EDGE);
 		
-	JointTransforms = jePose_GetAllJointTransforms(Joints);
+	JointTransforms = grPose_GetAllJointTransforms(Joints);
 
 //#pragma message ("Level of detail hacked:")
-	jePose_GetScale(Joints,&Scale);
+	grPose_GetScale(Joints,&Scale);
 
-	G = jeBodyInst_GetGeometry(P->BodyInstance, &Scale, JointTransforms, 0,Camera);
+	G = grBodyInst_GetGeometry(P->BodyInstance, &Scale, JointTransforms, 0,Camera);
 
 	if ( G == NULL )
 	{
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_Render: Failed to get draw geometry");
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_Render: Failed to get draw geometry");
+		return GR_FALSE;
 	}
 
 #ifdef ONE_OVER_Z_PIPELINE
@@ -1780,7 +1780,7 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 			|| ( TEST_Z_OUT( G->Maxs.Z, BACK_EDGE) ) )
 		{
 			// not gonna draw
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
 		if (   (G->Maxs.X < ClippingRect.Right) 
@@ -1790,36 +1790,36 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 			&& ( TEST_Z_IN( G->Mins.Z, BACK_EDGE) ) )
 		{
 			// not gonna clip
-			Clipping = JE_FALSE;
+			Clipping = GR_FALSE;
 		}
 		else
 		{
-			Clipping = JE_TRUE;
+			Clipping = GR_TRUE;
 		}
 	}
 
 	{
-		jeLVertex v[3], mapVert;
+		grLVertex v[3], mapVert;
 		int i,j,Count;
-		jeBodyInst_Index *List;
-		jeBodyInst_Index Command;
-		jeBodyInst_SkinVertex *SV;
-		jeXForm3d RootTransform;
-		jePuppet_Material *PM;
-		jeBodyInst_Index Material,LastMaterial;
-		jeXForm3d CamXForm, projXForm, mapperXForm;
+		grBodyInst_Index *List;
+		grBodyInst_Index Command;
+		grBodyInst_SkinVertex *SV;
+		grXForm3d RootTransform;
+		grPuppet_Material *PM;
+		grBodyInst_Index Material,LastMaterial;
+		grXForm3d CamXForm, projXForm, mapperXForm;
 
-		jeCamera_GetTransposeXForm(Camera, &CamXForm);
+		grCamera_GetTransposeXForm(Camera, &CamXForm);
 		PM = NULL;
 
-		jePuppet_StaticLightGrp.UseFillLight		 = P->UseFillLight;
-		jePuppet_StaticLightGrp.FillLightNormal		 = P->FillLightNormal;
-		jePuppet_StaticLightGrp.FillLightColor.Red	 = P->FillLightColor.Red;
-		jePuppet_StaticLightGrp.FillLightColor.Green = P->FillLightColor.Green;
-		jePuppet_StaticLightGrp.FillLightColor.Blue  = P->FillLightColor.Blue;
-		jePuppet_StaticLightGrp.PerBoneLighting		 = P->PerBoneLighting;
+		grPuppet_StaticLightGrp.UseFillLight		 = P->UseFillLight;
+		grPuppet_StaticLightGrp.FillLightNormal		 = P->FillLightNormal;
+		grPuppet_StaticLightGrp.FillLightColor.Red	 = P->FillLightColor.Red;
+		grPuppet_StaticLightGrp.FillLightColor.Green = P->FillLightColor.Green;
+		grPuppet_StaticLightGrp.FillLightColor.Blue  = P->FillLightColor.Blue;
+		grPuppet_StaticLightGrp.PerBoneLighting		 = P->PerBoneLighting;
 
-		jePose_GetJointTransform(Joints,P->LightReferenceBoneIndex,&(RootTransform));
+		grPose_GetJointTransform(Joints,P->LightReferenceBoneIndex,&(RootTransform));
 
 		// do dynamic lighting pass
 
@@ -1828,19 +1828,19 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 			if (P->PerBoneLighting)
 			{
 				int BoneCount;
-				const jeXForm3d *XFA = jeXFArray_GetElements(JointTransforms, &BoneCount);
+				const grXForm3d *XFA = grXFArray_GetElements(JointTransforms, &BoneCount);
 				if (BoneCount>0)
 				{
 					if (P->BoneLightArraySize < BoneCount)
 					{
 						// realloc light array to correct size
-						jePuppet_BoneLight *LG;
+						grPuppet_BoneLight *LG;
 				
-						LG = (jePuppet_BoneLight *)jeRam_Realloc(P->BoneLightArray, sizeof(jePuppet_BoneLight) * BoneCount);
+						LG = (grPuppet_BoneLight *)grRam_Realloc(P->BoneLightArray, sizeof(grPuppet_BoneLight) * BoneCount);
 						if (LG==NULL)
 						{
-							jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_Render: Failed to allocate space for bone lighting info cache");
-							return JE_FALSE;
+							grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_Render: Failed to allocate space for bone lighting info cache");
+							return GR_FALSE;
 						}
 						LP->BoneLightArray = LG;
 						LP->BoneLightArraySize = BoneCount;
@@ -1848,21 +1848,21 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 					for (i=0; i<BoneCount; i++) // loop thru the bones
 					{
 						// for all dynamic lights, accumulate onto bone i
-						LP->BoneLightArray[i].DLightCount = jePuppet_PrepDynamicLights(P,World,
+						LP->BoneLightArray[i].DLightCount = grPuppet_PrepDynamicLights(P,World,
 							P->BoneLightArray[i].DLights,&(XFA[i].Translation));
 					}
 				}
 			}
 			else
 			{
-				jePuppet_StaticLightGrp.DLightCount = jePuppet_PrepDynamicLights(P,World,
-							jePuppet_StaticLightGrp.DLights,&(RootTransform.Translation));
+				grPuppet_StaticLightGrp.DLightCount = grPuppet_PrepDynamicLights(P,World,
+							grPuppet_StaticLightGrp.DLights,&(RootTransform.Translation));
 			}
 		}
 
 		else
 		{
-			jePuppet_StaticLightGrp.DLightCount = 0;
+			grPuppet_StaticLightGrp.DLightCount = 0;
 		}
 
 		// do static lighting pass
@@ -1874,19 +1874,19 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 				if (P->PerBoneLighting)
 				{
 					int BoneCount;
-					const jeXForm3d *XFA = jeXFArray_GetElements(JointTransforms, &BoneCount);
+					const grXForm3d *XFA = grXFArray_GetElements(JointTransforms, &BoneCount);
 					if (BoneCount>0)
 					{
 						if (P->BoneLightArraySize < BoneCount)
 						{
 							// realloc light array to correct size
-							jePuppet_BoneLight *LG;
+							grPuppet_BoneLight *LG;
 					
-							LG = (jePuppet_BoneLight *)jeRam_Realloc(P->BoneLightArray, sizeof(jePuppet_BoneLight) * BoneCount);
+							LG = (grPuppet_BoneLight *)grRam_Realloc(P->BoneLightArray, sizeof(grPuppet_BoneLight) * BoneCount);
 							if (LG==NULL)
 							{
-								jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jePuppet_Render: Failed to allocate space for bone lighting info cache");
-								return JE_FALSE;
+								grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grPuppet_Render: Failed to allocate space for bone lighting info cache");
+								return GR_FALSE;
 							}
 							LP->BoneLightArray = LG;
 							LP->BoneLightArraySize = BoneCount;
@@ -1894,7 +1894,7 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 						for (i=0; i<BoneCount; i++) // loop thru the bones
 						{
 							// for all static lights, accumulate onto bone i
-							LP->BoneLightArray[i].SLightCount = jePuppet_PrepStaticLights(P,
+							LP->BoneLightArray[i].SLightCount = grPuppet_PrepStaticLights(P,
 								World,
 								P->BoneLightArray[i].SLights,
 								&(XFA[i].Translation));
@@ -1903,7 +1903,7 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 				}
 				else // not doing per-bone lighting
 				{
-					LP->SLightCount = jePuppet_PrepStaticLights(P,
+					LP->SLightCount = grPuppet_PrepStaticLights(P,
 						World,
 						LP->SLights,
 						&(RootTransform.Translation));
@@ -1917,7 +1917,7 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 		}
 
 // @@
-		jePuppet_ComputeAmbientLight(P, &(jePuppet_StaticLightGrp.Ambient),&(RootTransform.Translation));
+		grPuppet_ComputeAmbientLight(P, &(grPuppet_StaticLightGrp.Ambient),&(RootTransform.Translation));
 		
 		Count = G->FaceCount;
 		List  = G->FaceList;
@@ -1925,8 +1925,8 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 
 //	[MacroArt::Begin]
 	v[0].a = v[1].a= v[2].a =P->fOverallAlpha;
-	RenderFlags=JE_RENDER_FLAG_COUNTER_CLOCKWISE;
-//	if(P->fOverallAlpha<255.0f) RenderFlags=RenderFlags|JE_RENDER_FLAG_ALPHA;
+	RenderFlags=GR_RENDER_FLAG_COUNTER_CLOCKWISE;
+//	if(P->fOverallAlpha<255.0f) RenderFlags=RenderFlags|GR_RENDER_FLAG_ALPHA;
 //	[MacroArt::End]
 
 
@@ -1940,13 +1940,13 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 			Material = *List;
 			List ++;
 
-			assert( Command == JE_BODYINST_FACE_TRIANGLE );
+			assert( Command == GR_BODYINST_FACE_TRIANGLE );
 			assert( Material>=0 );
 			assert( Material<P->MaterialCount);
 
 			{
 				float AX,AY,BXMinusAX,BYMinusAY,CYMinusAY,CXMinusAX;
-				jeBodyInst_Index *List2;
+				grBodyInst_Index *List2;
 				
 				List2 = List;
 				SV = &(G->SkinVertexArray[ *List2 ]);
@@ -1982,22 +1982,22 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 			if (Material != LastMaterial)
 			{
 				PM = &(P->MaterialArray[Material]);
-				jeTClip_SetTexture(PM->Material,0);
-				jePuppet_StaticLightGrp.MaterialColor = PM->Color;
+				grTClip_SetTexture(PM->Material,0);
+				grPuppet_StaticLightGrp.MaterialColor = PM->Color;
 
-				if (PM->Mapper != jeUVMap_Projection)
+				if (PM->Mapper != grUVMap_Projection)
 				{
 					mapperXForm = CamXForm;
 				}
 				else
 				{
-#pragma message("Puppet.c: hard-coded default projection matrix vals for case of jeUVMap_Projection")
+#pragma message("Puppet.c: hard-coded default projection matrix vals for case of grUVMap_Projection")
 					projXForm.AX = 0.03f; projXForm.AY = 0.02f; projXForm.AZ = 0.0f;
 					projXForm.BX = 0.01f; projXForm.BY = 0.09f; projXForm.BZ = 0.0f;
 					projXForm.CX = 0.06f; projXForm.CY = 0.08f; projXForm.CZ = 0.0f;
-					jeVec3d_Clear(&projXForm.Translation);
+					grVec3d_Clear(&projXForm.Translation);
 
-					jeXForm3d_Multiply(&projXForm, &CamXForm, &mapperXForm);
+					grXForm3d_Multiply(&projXForm, &CamXForm, &mapperXForm);
 				}
 
 				LastMaterial = Material;		// Make LastMaterial current
@@ -2015,7 +2015,7 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 #pragma message("Puppet : UVMapper should act on an array of verts!")
 				if (PM->Mapper != NULL)
 				{
-					*((jeVec3d *)&mapVert) = SV->SVW;
+					*((grVec3d *)&mapVert) = SV->SVW;
 
 					PM->Mapper(&mapperXForm, &mapVert, &G->NormalArray[*List], 1);
 
@@ -2027,12 +2027,12 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 					v[j].u = SV->SVU;
 					v[j].v = SV->SVV;
 				}
-				assert( ((float)fabs(1.0-jeVec3d_Length( &(G->NormalArray[ *List ] ))))< 0.001f );
+				assert( ((float)fabs(1.0-grVec3d_Length( &(G->NormalArray[ *List ] ))))< 0.001f );
 				
-				jePuppet_StaticLightGrp.SurfaceNormal = (G->NormalArray[ *List ]);
+				grPuppet_StaticLightGrp.SurfaceNormal = (G->NormalArray[ *List ]);
 				List++;
 
-				jePuppet_SetVertexColor(LP, &v[j], SV->ReferenceBoneIndex);
+				grPuppet_SetVertexColor(LP, &v[j], SV->ReferenceBoneIndex);
 
 			}
 		
@@ -2040,7 +2040,7 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 
 			if (Clipping)
 			{
-				jeTClip_Triangle(v);
+				grTClip_Triangle(v);
 			}
 			else
 			{
@@ -2048,9 +2048,9 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 
 //	[MacroArt::Begin]
 				// BEGIN - Get rid of JE_ crap - paradoxnj 4/21/2005
-				jeEngine_RenderPoly(Engine, (jeTLVertex *)v, 3, PM->Material,RenderFlags);
+				grEngine_RenderPoly(Engine, (grTLVertex *)v, 3, PM->Material,RenderFlags);
 				// END - Get rid of JE_ crap - paradoxnj 4/21/2005
-//				jeEngine_RenderPoly(Engine, (JE_TLVertex *)v, 3, PM->Bitmap,JE_RENDER_FLAG_COUNTER_CLOCKWISE );
+//				grEngine_RenderPoly(Engine, (GR_TLVertex *)v, 3, PM->Bitmap,GR_RENDER_FLAG_COUNTER_CLOCKWISE );
 //	[MacroArt::End]
 
 			}
@@ -2064,7 +2064,7 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 /*
 	if (P->DoShadow)
 	{
-		jePuppet_DrawShadow(P,Joints,Engine, Camera);
+		grPuppet_DrawShadow(P,Joints,Engine, Camera);
 	}
 */
 
@@ -2075,8 +2075,8 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 
 		rdtsc_read(&RDTSCEnd);
 		rdtsc_delta(&RDTSCStart,&RDTSCEnd,&RDTSCEnd);
-		//jeEngine_Printf(Engine, 320,10,"Puppet Render Time=%f",(double)(rdtsc_cycles(&RDTSCEnd)/200000000.0));
-		//jeEngine_Printf(Engine, 320,30,"Puppet Render Cycles=%f",(double)(rdtsc_cycles(&RDTSCEnd)));
+		//grEngine_Printf(Engine, 320,10,"Puppet Render Time=%f",(double)(rdtsc_cycles(&RDTSCEnd)/200000000.0));
+		//grEngine_Printf(Engine, 320,30,"Puppet Render Cycles=%f",(double)(rdtsc_cycles(&RDTSCEnd)));
 		Puppet_AverageCount[(Puppet_AverageIndex++)%PUPPET_AVERAGE_ACROSS] = rdtsc_cycles(&RDTSCEnd);
 		for (i=0; i<PUPPET_AVERAGE_ACROSS; i++)
 			{	
@@ -2084,25 +2084,25 @@ jeBoolean	jePuppet_Render(const jePuppet	*P,
 			}
 		Count /= (double)PUPPET_AVERAGE_ACROSS;
 
-		//jeEngine_Printf(Engine, 320,60,"Puppet AVG Render Time=%f",(double)(Count/200000000.0));
-		//jeEngine_Printf(Engine, 320,90,"Puppet AVG Render Cycles=%f",(double)(Count));
+		//grEngine_Printf(Engine, 320,60,"Puppet AVG Render Time=%f",(double)(Count/200000000.0));
+		//grEngine_Printf(Engine, 320,90,"Puppet AVG Render Cycles=%f",(double)(Count));
 				
 	}
 	#endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-void jePuppet_SetShadow(jePuppet *P, jeBoolean DoShadow, 
-		jeFloat Scale, const jeMaterialSpec *ShadowMap,
+void grPuppet_SetShadow(grPuppet *P, grBoolean DoShadow, 
+		grFloat Scale, const grMaterialSpec *ShadowMap,
 		int BoneIndex)
 {
 	assert( P );
-	assert( (DoShadow==JE_FALSE) || (DoShadow==JE_TRUE));
+	assert( (DoShadow==GR_FALSE) || (DoShadow==GR_TRUE));
 
 	if ( P->ShadowMap )
-//		jeBitmap_Destroy((jeBitmap **)&(P->ShadowMap));
-		jeMaterialSpec_Destroy((jeMaterialSpec **)&(P->ShadowMap));
+//		grBitmap_Destroy((grBitmap **)&(P->ShadowMap));
+		grMaterialSpec_Destroy((grMaterialSpec **)&(P->ShadowMap));
 
 	P->DoShadow = DoShadow;
 	P->ShadowScale = Scale;
@@ -2110,5 +2110,5 @@ void jePuppet_SetShadow(jePuppet *P, jeBoolean DoShadow,
 	P->ShadowBoneIndex = BoneIndex;
 
 	if ( P->ShadowMap )
-		jeMaterialSpec_CreateRef((jeMaterialSpec *)P->ShadowMap);
+		grMaterialSpec_CreateRef((grMaterialSpec *)P->ShadowMap);
 }

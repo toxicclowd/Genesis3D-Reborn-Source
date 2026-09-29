@@ -3,7 +3,7 @@
 
 #include "Mp3Mgr_h.h"
 #include "sound.h"
-#include "jet.h"
+#include "Genesis3D.h"
 #include "assert.h"
 
 
@@ -13,7 +13,7 @@ static Media media;
 
 //	FUNCTIONS	==============================================================
 
-jeBoolean Initmp3Mgr(HWND mainwindowhandle)
+grBoolean Initmp3Mgr(HWND mainwindowhandle)
 {
     // Filter interface initialize?
     if( SUCCEEDED( CoInitialize( NULL )))
@@ -40,13 +40,13 @@ void UnInitmp3Mgr(HWND mainwindowhandle)
 
 //this is the main component and the engine should init it with the soundsystem
 
-JETAPI jeMp3Mgr * JETCC jeMp3_CreateManager(HWND mainwindowhandle)
+GRAPI grMp3Mgr * GRCC grMp3_CreateManager(HWND mainwindowhandle)
 {
-	jeMp3Mgr *Mp3Mgr;
+	grMp3Mgr *Mp3Mgr;
 	
-	Mp3Mgr = JE_RAM_ALLOCATE_STRUCT(jeMp3Mgr);
+	Mp3Mgr = GR_RAM_ALLOCATE_STRUCT(grMp3Mgr);
 	
-	memset(Mp3Mgr, 0, sizeof(jeMp3Mgr));
+	memset(Mp3Mgr, 0, sizeof(grMp3Mgr));
 	
 	// Initialise COM and the application
     Initmp3Mgr(mainwindowhandle);
@@ -60,10 +60,10 @@ JETAPI jeMp3Mgr * JETCC jeMp3_CreateManager(HWND mainwindowhandle)
 		
 }	// Mp3Mgr
 
-JETAPI jeBoolean JETCC jeMp3_DestroyManager(jeMp3Mgr **Mp3Mgr)
+GRAPI grBoolean GRCC grMp3_DestroyManager(grMp3Mgr **Mp3Mgr)
 {
 	//destroys the Mp3Manager
-	jeMp3Mgr *	mp3;
+	grMp3Mgr *	mp3;
 	int i;
 
 	assert(Mp3Mgr != NULL);
@@ -87,13 +87,13 @@ JETAPI jeBoolean JETCC jeMp3_DestroyManager(jeMp3Mgr **Mp3Mgr)
 			}
 		}
 
-		jeRam_Free(mp3);
+		grRam_Free(mp3);
 
-		return JE_TRUE;
+		return GR_TRUE;
 
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
 
@@ -142,14 +142,14 @@ void ChangeStateTo( State newState )
 //
 // Initialization
 //
-jeBoolean InitMedia(HWND mainwindowhandle)
+grBoolean InitMedia(HWND mainwindowhandle)
 {
     ChangeStateTo( Uninitialized );
 	
     media.hGraphNotifyEvent = NULL;
     media.pGraph = NULL;
 	
-    return JE_TRUE;
+    return GR_TRUE;
 }
 
 /*	WHAT THE HECK ARE FILTER GRAPHS!?	(explaination by Tom Morris)
@@ -286,16 +286,16 @@ BOOL RenderFile( LPSTR szFileName )
 // This function opens and renders the specified media file.
 // File..Open has been selected
 //
-jeBoolean OpenMediaFile(LPSTR szFile )
+grBoolean OpenMediaFile(LPSTR szFile )
 {
     if( RenderFile( szFile ))	//	this calls the filter graph
     {
 		ChangeStateTo( Stopped );
-		return JE_TRUE;
+		return GR_TRUE;
 		
     }
 
-	return JE_FALSE;
+	return GR_FALSE;
 } // OpenMediaFile
 
 
@@ -303,7 +303,7 @@ jeBoolean OpenMediaFile(LPSTR szFile )
 // PlayMp3
 //
 
-void PlayMp3(long volume, jeBoolean loop)
+void PlayMp3(long volume, grBoolean loop)
 {
 	
     if( CanPlay() )
@@ -339,7 +339,7 @@ void PlayMp3(long volume, jeBoolean loop)
 			}			
 			
 			
-			if (loop == JE_TRUE)
+			if (loop == GR_TRUE)
 			{			
 				hr = media.pGraph->QueryInterface(IID_IMediaPosition,
 					(void**) &pMP);
@@ -459,7 +459,7 @@ void OnGraphNotify()
 MP3PLAYING
 This function checks to see if the current mp3 file is still playing.
 =====================================================================================*/
-jeBoolean Mp3Playing()
+grBoolean Mp3Playing()
 {
 	HRESULT				hr;
 	IMediaPosition		*pMP;
@@ -478,10 +478,10 @@ jeBoolean Mp3Playing()
 							
 							//	Test to see if there is any time left
 							while ((tLength - tCurrent) > 0) 
-								return JE_TRUE;	// if so, still playing, buddy.
+								return GR_TRUE;	// if so, still playing, buddy.
 						}
 					}
 				}							//	when done playing...
 				pMP->Release();	//	release our access to the interface
-				return JE_FALSE;			//	mp3 file is all done playing.				
+				return GR_FALSE;			//	mp3 file is all done playing.				
 }	//Mp3Playing

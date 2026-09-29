@@ -24,16 +24,16 @@
 #define CAMERALIST_H
 
 #include "CamObj.h"
-#include "jeWorld.h"
-#include "jeList.h"
+#include "grWorld.h"
+#include "grList.h"
 #include "VFile.h"
-#include "jePtrMgr.h"
+#include "grPtrMgr.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef jeBoolean (*CameraListCB)( Camera *pCamera, void * pVoid ) ;
+typedef grBoolean (*CameraListCB)( Camera *pCamera, void * pVoid ) ;
 
 typedef struct		CameraList		CameraList;
 
@@ -59,8 +59,8 @@ void				CameraList_DeleteCamera( CameraList * pList, Camera * pCamera ) ;
 int32				CameraList_EnumCameras( CameraList * pList, void * pVoid, CameraListCB Callback ) ;
 
 // FILE HANDLING
-CameraList *			CameraList_CreateFromFile( jeVFile * pF, jePtrMgr *pPtrMgr  ) ;
-jeBoolean			CameraList_WriteToFile( CameraList * pList, jeVFile * pF, jePtrMgr *pPtrMgr ) ;
+CameraList *			CameraList_CreateFromFile( grVFile * pF, grPtrMgr *pPtrMgr  ) ;
+grBoolean			CameraList_WriteToFile( CameraList * pList, grVFile * pF, grPtrMgr *pPtrMgr ) ;
 
 #ifdef __cplusplus
 }

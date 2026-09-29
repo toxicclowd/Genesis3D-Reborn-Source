@@ -53,14 +53,14 @@
 #include "Bitmap._h"
 #include "Log.h"
 #include "List.h"
-#include "jeAssert.h"
+#include "grAssert.h"
 #include "Cpu.h"
 #include "VFile.h"
-#include "jeChain.h"
+#include "grChain.h"
 #include "Ram.h"
-#include "jeVersion.h" // Incarnadine
+#include "grVersion.h" // Incarnadine
 
-#include "jeBSP.h"
+#include "grBSP.h"
 
 #ifdef _DEBUG
 	#define DEBUG_OUTPUT_LEVEL		0
@@ -71,29 +71,29 @@
 
 //=====================================================================================
 //=====================================================================================
-typedef jeBoolean JETCC jeEngine_ShutdownDriverCB(DRV_Driver *Driver, void *Conext);
-typedef jeBoolean JETCC jeEngine_StartupDriverCB(DRV_Driver *Driver, void *Conext);
+typedef grBoolean GRCC grEngine_ShutdownDriverCB(DRV_Driver *Driver, void *Conext);
+typedef grBoolean GRCC grEngine_StartupDriverCB(DRV_Driver *Driver, void *Conext);
 
-typedef struct jeEngine_ChangeDriverCB
+typedef struct grEngine_ChangeDriverCB
 {
-	jeEngine_ShutdownDriverCB		*ShutdownDriverCB;
-	jeEngine_StartupDriverCB		*StartupDriverCB;
+	grEngine_ShutdownDriverCB		*ShutdownDriverCB;
+	grEngine_StartupDriverCB		*StartupDriverCB;
 	void							*Context;
-} jeEngine_ChangeDriverCB;
+} grEngine_ChangeDriverCB;
 
 //=====================================================================================
 //=====================================================================================
-static jeBoolean Engine_EnumSubDrivers(Engine_DriverInfo *DriverInfo, const char *DriverDirectory);
-static jeBoolean Engine_EnumSubDriversCB(int32 DriverId, char *Name, void *Context);
-static jeBoolean Engine_EnumModesCB(int32 ModeId, char *Name, int32 Width, int32 Height, int32 Bpp, void *Context);
+static grBoolean Engine_EnumSubDrivers(Engine_DriverInfo *DriverInfo, const char *DriverDirectory);
+static grBoolean Engine_EnumSubDriversCB(int32 DriverId, char *Name, void *Context);
+static grBoolean Engine_EnumModesCB(int32 ModeId, char *Name, int32 Width, int32 Height, int32 Bpp, void *Context);
 
-static jeBoolean Engine_InitDriver(	jeEngine		*Engine, 
+static grBoolean Engine_InitDriver(	grEngine		*Engine, 
 									HWND			hWnd,
-									jeDriver		*Driver,
-									jeDriver_Mode	*DriverMode);
+									grDriver		*Driver,
+									grDriver_Mode	*DriverMode);
 
-static void Engine_DrawFontBuffer(jeEngine *Engine);
-static void Engine_Tick(jeEngine *Engine);
+static void Engine_DrawFontBuffer(grEngine *Engine);
+static void Engine_Tick(grEngine *Engine);
 
 static void SubLarge(LARGE_INTEGER *start, LARGE_INTEGER *end, LARGE_INTEGER *delta);
 
@@ -110,22 +110,22 @@ extern int32 NumSubdividedFaces;
 //=====================================================================================
 
 //=====================================================================================
-//	jeEngine_Create
+//	grEngine_Create
 //=====================================================================================
-JETAPI jeEngine * JETCC jeEngine_Create(HWND hWnd, const char *AppName, const char *DriverDirectory)
+GRAPI grEngine * GRCC grEngine_Create(HWND hWnd, const char *AppName, const char *DriverDirectory)
 {
-	jeEngine* Engine{};
+	grEngine* Engine{};
 	int32		i{}, Length{};
 
 	assert(AppName);
 	assert(hWnd);
 
 	// Attempt to create a new engine object
-	Engine = (jeEngine *)jeRam_AllocateClear(sizeof(jeEngine));
+	Engine = (grEngine *)grRam_AllocateClear(sizeof(grEngine));
 
 	if (!Engine)
 	{
-		jeErrorLog_Add(JE_ERR_OUT_OF_MEMORY, NULL);
+		grErrorLog_Add(GR_ERR_OUT_OF_MEMORY, NULL);
 		goto ExitWithError;
 	}
 
@@ -136,14 +136,14 @@ JETAPI jeEngine * JETCC jeEngine_Create(HWND hWnd, const char *AppName, const ch
 	
 	if (!List_Start())
 	{
-		jeErrorLog_Add(JE_ERR_OUT_OF_MEMORY, NULL);
+		grErrorLog_Add(GR_ERR_OUT_OF_MEMORY, NULL);
 		goto ExitWithError;
 	}	
 
 	if	(DriverDirectory)
 	{
 		Length = strlen(DriverDirectory) + 1;
-		Engine->DriverDirectory = (char *)jeRam_Allocate(Length);
+		Engine->DriverDirectory = (char *)grRam_Allocate(Length);
 
 		if (!Engine->DriverDirectory)
 			goto ExitWithError;
@@ -165,26 +165,26 @@ JETAPI jeEngine * JETCC jeEngine_Create(HWND hWnd, const char *AppName, const ch
 			goto ExitWithError;
 	}
 
-	if (!jeEngine_BitmapListInit(Engine))
+	if (!grEngine_BitmapListInit(Engine))
 		goto ExitWithError;
 
-	if (!jeEngine_InitFonts(Engine))				// Must be after BitmapList
+	if (!grEngine_InitFonts(Engine))				// Must be after BitmapList
 		goto ExitWithError;
 
-	Engine->DisplayFrameRateCounter = JE_TRUE;	// Default to showing the FPS counter
+	Engine->DisplayFrameRateCounter = GR_TRUE;	// Default to showing the FPS counter
 
 #if 0
 	// @@ impolite !!
-	jeAssert_SetCriticalShutdownCallback( (jeAssert_CriticalShutdownCallback)jeEngine_ShutdownDriver , (uint32)Engine,
+	grAssert_SetCriticalShutdownCallback( (grAssert_CriticalShutdownCallback)grEngine_ShutdownDriver , (uint32)Engine,
 											NULL, NULL);
 #endif	
 
 	Engine->CurrentGamma = 3.0f;
 
-	if (!jeCPU_GetInfo() )
+	if (!grCPU_GetInfo() )
 		goto ExitWithError;
 
-	Engine->ChangeDriverCBChain = jeChain_Create();
+	Engine->ChangeDriverCBChain = grChain_Create();
 
 	if (!Engine->ChangeDriverCBChain)
 		goto ExitWithError;
@@ -200,18 +200,18 @@ JETAPI jeEngine * JETCC jeEngine_Create(HWND hWnd, const char *AppName, const ch
 		if (Engine)
 		{
 			if (Engine->DriverDirectory)
-				jeRam_Free(Engine->DriverDirectory);
+				grRam_Free(Engine->DriverDirectory);
 
 			// BEGIN - FIX - Engine not cleaning up everything on error - paradoxnj
 			if (Engine->ChangeDriverCBChain != nullptr)
-				jeChain_Destroy(&Engine->ChangeDriverCBChain);
+				grChain_Destroy(&Engine->ChangeDriverCBChain);
 
-//			jeEngine_ShutdownFonts(Engine);
-			jeEngine_BitmapListShutdown(Engine);
+//			grEngine_ShutdownFonts(Engine);
+			grEngine_BitmapListShutdown(Engine);
 			List_Stop();
 			// END - FIX - Engine not cleaning up everything on error - paradoxnj
 
-			jeRam_Free(Engine);
+			grRam_Free(Engine);
 		}
 
 		return nullptr;
@@ -219,33 +219,33 @@ JETAPI jeEngine * JETCC jeEngine_Create(HWND hWnd, const char *AppName, const ch
 }
 
 //=====================================================================================
-//	jeEngine_CreateRef
+//	grEngine_CreateRef
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_CreateRef(jeEngine *Engine)
+GRAPI grBoolean GRCC grEngine_CreateRef(grEngine *Engine)
 {
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 
 	Engine->RefCount++;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeEngine_Free
+//	grEngine_Free
 //=====================================================================================
 
-JETAPI void	JETCC jeEngine_Destroy(jeEngine **pEngine)
+GRAPI void	GRCC grEngine_Destroy(grEngine **pEngine)
 {
 	assert( pEngine );
-	jeEngine_Free(*pEngine);
+	grEngine_Free(*pEngine);
 	*pEngine = nullptr;
 }
 
-JETAPI void JETCC jeEngine_Free(jeEngine *Engine)
+GRAPI void GRCC grEngine_Free(grEngine *Engine)
 {
-	jeBoolean		Ret{};
+	grBoolean		Ret{};
 
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 	assert( Engine->RefCount > 0);
 
 	Engine->RefCount--;
@@ -253,44 +253,44 @@ JETAPI void JETCC jeEngine_Free(jeEngine *Engine)
 	if (Engine->RefCount > 0)
 		return;
 
-	Ret = jeEngine_ShutdownFonts(Engine);
-	assert(Ret == JE_TRUE);
+	Ret = grEngine_ShutdownFonts(Engine);
+	assert(Ret == GR_TRUE);
 
-	Ret = jeEngine_ShutdownDriver(Engine);
-	assert(Ret == JE_TRUE);
+	Ret = grEngine_ShutdownDriver(Engine);
+	assert(Ret == GR_TRUE);
 
-	Ret = jeEngine_BitmapListShutdown(Engine);
-	assert(Ret == JE_TRUE);
+	Ret = grEngine_BitmapListShutdown(Engine);
+	assert(Ret == GR_TRUE);
 
 	if (Engine->DriverDirectory)
-		jeRam_Free(Engine->DriverDirectory);
+		grRam_Free(Engine->DriverDirectory);
 
 	if (Engine->ChangeDriverCBChain)
-		jeChain_Destroy(&Engine->ChangeDriverCBChain);
+		grChain_Destroy(&Engine->ChangeDriverCBChain);
 
 	List_Stop();
 
-	jeRam_Free(Engine);
+	grRam_Free(Engine);
 }
 
 //=====================================================================================
-//	jeEngine_IsValid
+//	grEngine_IsValid
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_IsValid(const jeEngine *E)
+GRAPI grBoolean GRCC grEngine_IsValid(const grEngine *E)
 {
 	if (!E) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if (E->MySelf1 != E) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if (E->MySelf2 != E) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if (E->RefCount < 0)
-		return JE_FALSE;
+		return GR_FALSE;
 	//if (!IsWindowHandleValid(E->hWnd)) 
 	if (!E->hWnd) 
-		return JE_FALSE;
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
@@ -298,24 +298,24 @@ JETAPI jeBoolean JETCC jeEngine_IsValid(const jeEngine *E)
 //=====================================================================================
 
 //=====================================================================================
-//	jeEngine_EnabledFrameRateCounter
+//	grEngine_EnabledFrameRateCounter
 //=====================================================================================
-JETAPI void	JETCC jeEngine_EnableFrameRateCounter(jeEngine *Engine, jeBoolean Enabled)
+GRAPI void	GRCC grEngine_EnableFrameRateCounter(grEngine *Engine, grBoolean Enabled)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	Engine->DisplayFrameRateCounter = Enabled;
 }
 
 //=====================================================================================
-//	jeEngine_Activate
+//	grEngine_Activate
 //		this hits the drivers activation code to manage
 //		surfaces and exclusive modes for devices (WM_ACTIVATEAPP)
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_Activate(jeEngine *Engine, jeBoolean bActive)
+GRAPI grBoolean GRCC grEngine_Activate(grEngine *Engine, grBoolean bActive)
 {
 	DRV_Driver	*RDriver{};
 	
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_None);
 
 	RDriver	=Engine->DriverInfo.RDriver;
@@ -326,20 +326,20 @@ JETAPI jeBoolean JETCC jeEngine_Activate(jeEngine *Engine, jeBoolean bActive)
 			return	RDriver->SetActive(bActive);
 	}
 
-	return	JE_TRUE;
+	return	GR_TRUE;
 }
 
 static int32 UpdateWindowRecursion = 0;
 //====================================================================================
-//	jeEngine_UpdateWindow
+//	grEngine_UpdateWindow
 //		this call updates the drivers with a new rect to blit to
 //		(usually the result of a window move or resize)
 //====================================================================================
-JETAPI jeBoolean JETCC jeEngine_UpdateWindow(jeEngine *Engine)
+GRAPI grBoolean GRCC grEngine_UpdateWindow(grEngine *Engine)
 {
 	DRV_Driver	*RDriver{};
 		
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_None);
 
 	assert(UpdateWindowRecursion == 0);
@@ -355,14 +355,14 @@ JETAPI jeBoolean JETCC jeEngine_UpdateWindow(jeEngine *Engine)
 		if (RDriver->UpdateWindow )
 			return RDriver->UpdateWindow();
 	#else
-		jeDriver* Driver{};
-		jeDriver_Mode* DriverMode{};
+		grDriver* Driver{};
+		grDriver_Mode* DriverMode{};
 
-		if (!jeEngine_GetDriverAndMode(Engine, &Driver, &DriverMode))
-			return JE_FALSE;
+		if (!grEngine_GetDriverAndMode(Engine, &Driver, &DriverMode))
+			return GR_FALSE;
 
-		if (!jeEngine_SetDriverAndMode(Engine, Engine->hWnd, Driver, DriverMode))
-			return JE_FALSE;		
+		if (!grEngine_SetDriverAndMode(Engine, Engine->hWnd, Driver, DriverMode))
+			return GR_FALSE;		
 	#endif
 	}
 
@@ -370,17 +370,17 @@ JETAPI jeBoolean JETCC jeEngine_UpdateWindow(jeEngine *Engine)
 
 	assert(UpdateWindowRecursion == 0);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //===================================================================================
-//	jeEngine_GetFrameState
+//	grEngine_GetFrameState
 //===================================================================================
-JETAPI jeBoolean JETCC jeEngine_GetFrameState(const jeEngine *Engine, jeEngine_FrameState *FrameState)
+GRAPI grBoolean GRCC grEngine_GetFrameState(const grEngine *Engine, grEngine_FrameState *FrameState)
 {
 	*FrameState = Engine->FrameState;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //===================================================================================
@@ -388,40 +388,40 @@ JETAPI jeBoolean JETCC jeEngine_GetFrameState(const jeEngine *Engine, jeEngine_F
 //===================================================================================
 
 //=====================================================================================
-//	jeEngine_Prep
+//	grEngine_Prep
 //=====================================================================================
-static	jeBoolean jeEngine_Prep(jeEngine *Engine)
+static	grBoolean grEngine_Prep(grEngine *Engine)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 
-	return jeEngine_AttachAll(Engine);
+	return grEngine_AttachAll(Engine);
 }
 
 //===================================================================================
-//	jeEngine_BeginFrame
+//	grEngine_BeginFrame
 //===================================================================================
-JETAPI jeBoolean JETCC jeEngine_BeginFrame(jeEngine *Engine, jeCamera *Camera, jeBoolean ClearScreen)
+GRAPI grBoolean GRCC grEngine_BeginFrame(grEngine *Engine, grCamera *Camera, grBoolean ClearScreen)
 {
 	RECT	DrvRect{}, *pDrvRect{};
 
 #if (DEBUG_OUTPUT_LEVEL >= 2)
-	OutputDebugString("BEGIN jeEngine_BeginFrame\n");
+	OutputDebugString("BEGIN grEngine_BeginFrame\n");
 #endif
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_None);
 	
 	// Make sure the driver is avtive
 	if (!Engine->DriverInfo.RDriver)
 	{
-		jeErrorLog_Add(JE_ERR_DRIVER_NOT_INITIALIZED, NULL);
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_DRIVER_NOT_INITIALIZED, NULL);
+		return GR_FALSE;
 	}
 	
 	assert(Engine->DriverInfo.RDriver != NULL);
 
-	if (!jeEngine_Prep(Engine))
-		return JE_FALSE;
+	if (!grEngine_Prep(Engine))
+		return GR_FALSE;
 
 	// Do some timing stuff
 #ifdef WIN32
@@ -435,10 +435,10 @@ JETAPI jeBoolean JETCC jeEngine_BeginFrame(jeEngine *Engine, jeCamera *Camera, j
 
 	if(Camera)
 	{
-		jeRect			gDrvRect{};
-		jeDriver_Mode* CurMode{};
+		grRect			gDrvRect{};
+		grDriver_Mode* CurMode{};
 
-		jeCamera_GetClippingRect(Camera, &gDrvRect);
+		grCamera_GetClippingRect(Camera, &gDrvRect);
 	
 		CurMode = Engine->DriverInfo.CurMode;
 
@@ -446,26 +446,26 @@ JETAPI jeBoolean JETCC jeEngine_BeginFrame(jeEngine *Engine, jeCamera *Camera, j
 		{
 			if (gDrvRect.Left < 0)
 			{
-				jeErrorLog_AddString(-1, "Invalid Camera for FULLSCREEN", NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(-1, "Invalid Camera for FULLSCREEN", NULL);
+				return GR_FALSE;
 			}
 
 			if (gDrvRect.Right >= CurMode->Width)
 			{
-				jeErrorLog_AddString(-1, "Invalid Camera for FULLSCREEN", NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(-1, "Invalid Camera for FULLSCREEN", NULL);
+				return GR_FALSE;
 			}
 
 			if (gDrvRect.Top < 0)
 			{
-				jeErrorLog_AddString(-1, "Invalid Camera for FULLSCREEN", NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(-1, "Invalid Camera for FULLSCREEN", NULL);
+				return GR_FALSE;
 			}
 
 			if (gDrvRect.Bottom >= CurMode->Height)
 			{
-				jeErrorLog_AddString(-1, "Invalid Camera for FULLSCREEN", NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(-1, "Invalid Camera for FULLSCREEN", NULL);
+				return GR_FALSE;
 			}
 		}
 
@@ -479,69 +479,69 @@ JETAPI jeBoolean JETCC jeEngine_BeginFrame(jeEngine *Engine, jeCamera *Camera, j
 	else
 		pDrvRect = nullptr;
 
-	if (!Engine->DriverInfo.RDriver->BeginScene(ClearScreen, JE_TRUE, pDrvRect, (Engine->RenderMode==RenderMode_Lines)))
+	if (!Engine->DriverInfo.RDriver->BeginScene(ClearScreen, GR_TRUE, pDrvRect, (Engine->RenderMode==RenderMode_Lines)))
 	{
-		jeErrorLog_Add(JE_ERR_DRIVER_BEGIN_SCENE_FAILED, NULL);
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_DRIVER_BEGIN_SCENE_FAILED, NULL);
+		return GR_FALSE;
 	}
 
 	Engine->FrameState = FrameState_Begin;
 
 #if (DEBUG_OUTPUT_LEVEL >= 2)
-	OutputDebugString("END jeEngine_BeginFrame\n");
+	OutputDebugString("END grEngine_BeginFrame\n");
 #endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 #ifdef WIN32
 //=====================================================================================
 //	IsKeyDown
 //=====================================================================================
-static jeBoolean IsKeyDown(int KeyCode, HWND hWnd)
+static grBoolean IsKeyDown(int KeyCode, HWND hWnd)
 {
 	//if (GetFocus() == hWnd)
 		if (GetAsyncKeyState(KeyCode) & 0x8000)
-			return JE_TRUE;
+			return GR_TRUE;
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 #endif
 
 //===================================================================================
-//	jeEngine_GetFPS
+//	grEngine_GetFPS
 //===================================================================================
-JETAPI jeFloat JETCC jeEngine_GetFPS(jeEngine *Engine)
+GRAPI grFloat GRCC grEngine_GetFPS(grEngine *Engine)
 {
 	return Engine->Fps;
 }
 
 //===================================================================================
-//	jeEngine_EndFrame
+//	grEngine_EndFrame
 //===================================================================================
-JETAPI jeBoolean JETCC jeEngine_EndFrame(jeEngine *Engine)
+GRAPI grBoolean GRCC grEngine_EndFrame(grEngine *Engine)
 {
 	LARGE_INTEGER		NowTic{}, DeltaTic{};
 	float				Fps{};
 	//DRV_Debug			*Debug;
 
 #if (DEBUG_OUTPUT_LEVEL >= 2)
-	OutputDebugString("BEGIN jeEngine_EndFrame\n");
+	OutputDebugString("BEGIN grEngine_EndFrame\n");
 #endif
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_Begin);
 
 	if (!Engine->DriverInfo.RDriver)
 	{
-		jeErrorLog_Add(JE_ERR_DRIVER_NOT_INITIALIZED, NULL);
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_DRIVER_NOT_INITIALIZED, NULL);
+		return GR_FALSE;
 	}
 	
 	assert(Engine->DriverInfo.RDriver != NULL);
 
 	// Flush the scene before the text is drawn...
-	jeEngine_FlushScene(Engine);
+	grEngine_FlushScene(Engine);
 
 	// Draw the text
 	Engine_DrawFontBuffer(Engine);
@@ -550,8 +550,8 @@ JETAPI jeBoolean JETCC jeEngine_EndFrame(jeEngine *Engine)
 
 	if (!Engine->DriverInfo.RDriver->EndScene())
 	{
-		jeErrorLog_Add(JE_ERR_DRIVER_END_SCENE_FAILED, NULL);
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_DRIVER_END_SCENE_FAILED, NULL);
+		return GR_FALSE;
 	}
 
 	// Do some timing stuff
@@ -559,7 +559,7 @@ JETAPI jeBoolean JETCC jeEngine_EndFrame(jeEngine *Engine)
 	SubLarge(&Engine->CurrentTic, &NowTic, &DeltaTic);	
 	
 	if (DeltaTic.LowPart > 0)
-		Fps =  (float)jeCPU_PerformanceFreq / (float)DeltaTic.LowPart;
+		Fps =  (float)grCPU_PerformanceFreq / (float)DeltaTic.LowPart;
 	else 
 		Fps = 100.0f;
 
@@ -567,7 +567,7 @@ JETAPI jeBoolean JETCC jeEngine_EndFrame(jeEngine *Engine)
 
 	#define AVERAGE_FPS_HISTORY (30)	// about one second
 
-	if (Engine->DisplayFrameRateCounter == JE_TRUE)			// Dieplay debug info
+	if (Engine->DisplayFrameRateCounter == GR_TRUE)			// Dieplay debug info
 	{
 	float AverageFps{};
 	DRV_CacheInfo	*pCacheInfo{};
@@ -582,30 +582,30 @@ JETAPI jeBoolean JETCC jeEngine_EndFrame(jeEngine *Engine)
 
 		AverageFps *= (1.0f/(float)AVERAGE_FPS_HISTORY);
 
-		jeEngine_DebugPrintf(Engine, JE_COLOR_XRGB(255, 255, 255), "Fps    : %2.2f / %2.2f", Fps, AverageFps);
+		grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "Fps    : %2.2f / %2.2f", Fps, AverageFps);
 		
 		
 		Engine->DebugInfo.RenderedPolys = Engine->DriverInfo.RDriver->NumRenderedPolys;
 
-		jeEngine_DebugPrintf(Engine, JE_COLOR_XRGB(255, 255, 255), "Polys  : %4i/%4i/%4i", Engine->DebugInfo.TraversedPolys, Engine->DebugInfo.SentPolys, Engine->DebugInfo.RenderedPolys);
+		grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "Polys  : %4i/%4i/%4i", Engine->DebugInfo.TraversedPolys, Engine->DebugInfo.SentPolys, Engine->DebugInfo.RenderedPolys);
 
-		jeEngine_DebugPrintf(Engine, JE_COLOR_XRGB(255, 255, 255), "Mirrors: %3i, DLights: %3i, Fog    : %3i", 
+		grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "Mirrors: %3i, DLights: %3i, Fog    : %3i", 
 								Engine->DebugInfo.NumMirrors,Engine->DebugInfo.NumDLights,Engine->DebugInfo.NumFog);
 
-		jeEngine_DebugPrintf(Engine, JE_COLOR_XRGB(255, 255, 255), "Actors : %3i, Models: %3i", Engine->DebugInfo.NumActors, Engine->DebugInfo.NumModels);
-		jeEngine_DebugPrintf(Engine, JE_COLOR_XRGB(255, 255, 255), "LMap1  : %3i, LMap2  : %3i", Engine->DebugInfo.LMap1, Engine->DebugInfo.LMap2);
+		grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "Actors : %3i, Models: %3i", Engine->DebugInfo.NumActors, Engine->DebugInfo.NumModels);
+		grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "LMap1  : %3i, LMap2  : %3i", Engine->DebugInfo.LMap1, Engine->DebugInfo.LMap2);
 		
-		jeEngine_DebugPrintf(Engine, JE_COLOR_XRGB(255, 255, 255), "BSP    : TF %d", NumMakeFaces);
+		grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "BSP    : TF %d", NumMakeFaces);
 
 		pCacheInfo = Engine->DriverInfo.RDriver->CacheInfo;
 
 		if (pCacheInfo)
 		{
-			jeEngine_DebugPrintf(Engine, JE_COLOR_XRGB(255, 255, 255), "Cache : tex: %3i (%3ik), lmap: %3i (%3ik)",
+			grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "Cache : tex: %3i (%3ik), lmap: %3i (%3ik)",
 										pCacheInfo->TexMisses , pCacheInfo->TexMissBytes >>10,
 										pCacheInfo->LMapMisses,pCacheInfo->LMapMissBytes >>10);
 										
-			jeEngine_DebugPrintf(Engine, JE_COLOR_XRGB(255, 255, 255), "Cache : mem: %3ik/%3ik/%3ik bal=%d bias=%f",
+			grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "Cache : mem: %3ik/%3ik/%3ik bal=%d bias=%f",
 										pCacheInfo->CardMem >>10,pCacheInfo->SlotMem >>10,pCacheInfo->UsedMem >>10,
 										pCacheInfo->Balances,pCacheInfo->MipBias);
 
@@ -624,7 +624,7 @@ JETAPI jeBoolean JETCC jeEngine_EndFrame(jeEngine *Engine)
 					strcat(str,work);
 				}
 
-				jeEngine_DebugPrintf(Engine, JE_COLOR_XRGB(255, 255, 255), str);
+				grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), str);
 			}
 		}
 	}
@@ -651,48 +651,48 @@ JETAPI jeBoolean JETCC jeEngine_EndFrame(jeEngine *Engine)
 				continue;
 			}
 							
-			jeEngine_ScreenShot(Engine, Name);
+			grEngine_ScreenShot(Engine, Name);
 		}
 	}
 #endif
 
 #if (DEBUG_OUTPUT_LEVEL >= 2)
-	OutputDebugString("END jeEngine_EndFrame\n");
+	OutputDebugString("END grEngine_EndFrame\n");
 #endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeEngine_ScreenShot
+//	grEngine_ScreenShot
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_ScreenShot(jeEngine *Engine, const char *FileName)
+GRAPI grBoolean GRCC grEngine_ScreenShot(grEngine *Engine, const char *FileName)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 
 	return Engine->DriverInfo.RDriver->ScreenShot(FileName);
 }
 
 //=====================================================================================
-//	jeEngine_DrawDDText
+//	grEngine_DrawDDText
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_DrawText(jeEngine *Engine, char *text, int x,int y,uint32 color)
+GRAPI grBoolean GRCC grEngine_DrawText(grEngine *Engine, char *text, int x,int y,uint32 color)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
    
    if (Engine->DriverInfo.RDriver->DrawText) {
 	   return Engine->DriverInfo.RDriver->DrawText(text,x,y,color);
    } else {
-      return jeEngine_Printf(Engine, Engine->FontInfo.Font, x, y, color, text);
+      return grEngine_Printf(Engine, Engine->FontInfo.Font, x, y, color, text);
    }
 }
 
 //=====================================================================================
-//	jeEngine_SetFog
+//	grEngine_SetFog
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_SetFog(jeEngine *Engine, float r, float g, float b, float start, float endi, jeBoolean enable)
+GRAPI grBoolean GRCC grEngine_SetFog(grEngine *Engine, float r, float g, float b, float start, float endi, grBoolean enable)
 {
-	//assert( jeEngine_IsValid(Engine) ); 
+	//assert( grEngine_IsValid(Engine) ); 
 	//for some reason this prevents the code from working...
 #pragma message ("Krouer: do not tested at 17th january 2005")
 
@@ -701,31 +701,31 @@ JETAPI jeBoolean JETCC jeEngine_SetFog(jeEngine *Engine, float r, float g, float
 }
 
 //=====================================================================================
-//	jeEngine_GetDriver
+//	grEngine_GetDriver
 //=====================================================================================
-DRV_Driver * JETCF jeEngine_GetDriver(const jeEngine * Engine)
+DRV_Driver * GRCF grEngine_GetDriver(const grEngine * Engine)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	
 	return Engine->DriverInfo.RDriver;
 }
 
 //===================================================================================
-//	jeEngine_CreateChangeDriverCB
+//	grEngine_CreateChangeDriverCB
 //===================================================================================
-JETAPI jeEngine_ChangeDriverCB * JETCC jeEngine_CreateChangeDriverCB(	jeEngine					*Engine, 
-																	jeEngine_ShutdownDriverCB	*ShutdownDriverCB, 
-																	jeEngine_StartupDriverCB	*StartupDriverCB,
+GRAPI grEngine_ChangeDriverCB * GRCC grEngine_CreateChangeDriverCB(	grEngine					*Engine, 
+																	grEngine_ShutdownDriverCB	*ShutdownDriverCB, 
+																	grEngine_StartupDriverCB	*StartupDriverCB,
 																	void						*Context)
 {
-	jeEngine_ChangeDriverCB		*ChangeDriverCB{};
+	grEngine_ChangeDriverCB		*ChangeDriverCB{};
 
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 	assert(Engine->ChangeDriverCBChain);
 	assert(ShutdownDriverCB);
 	assert(StartupDriverCB);
 
-	ChangeDriverCB = JE_RAM_ALLOCATE_STRUCT(jeEngine_ChangeDriverCB);
+	ChangeDriverCB = GR_RAM_ALLOCATE_STRUCT(grEngine_ChangeDriverCB);
 
 	if (!ChangeDriverCB)
 		return nullptr;
@@ -739,20 +739,20 @@ JETAPI jeEngine_ChangeDriverCB * JETCC jeEngine_CreateChangeDriverCB(	jeEngine		
 	{
 		if (!StartupDriverCB(Engine->DriverInfo.RDriver, Context))
 		{
-			jeRam_Free(ChangeDriverCB);
+			grRam_Free(ChangeDriverCB);
 			return nullptr;
 		}
 	}
 
 	
 
-	if (!jeChain_AddLinkData(Engine->ChangeDriverCBChain, ChangeDriverCB))
+	if (!grChain_AddLinkData(Engine->ChangeDriverCBChain, ChangeDriverCB))
 	{
 		if (!ShutdownDriverCB(Engine->DriverInfo.RDriver, Context))
 		{
 			assert(0);
 		}
-		jeRam_Free(ChangeDriverCB);
+		grRam_Free(ChangeDriverCB);
 		return nullptr;
 	}
 
@@ -760,19 +760,19 @@ JETAPI jeEngine_ChangeDriverCB * JETCC jeEngine_CreateChangeDriverCB(	jeEngine		
 }
 
 //===================================================================================
-//	jeEngine_DestroyChangeDriverCB
+//	grEngine_DestroyChangeDriverCB
 //===================================================================================
 
-JETAPI void JETCC jeEngine_DestroyChangeDriverCB(jeEngine *Engine, jeEngine_ChangeDriverCB **ChangeDriverCB)
+GRAPI void GRCC grEngine_DestroyChangeDriverCB(grEngine *Engine, grEngine_ChangeDriverCB **ChangeDriverCB)
 {
-	jeBoolean		Ret{};
+	grBoolean		Ret{};
 
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 	assert(ChangeDriverCB);
 	assert(*ChangeDriverCB);
 	assert((*ChangeDriverCB)->ShutdownDriverCB);
 	assert((*ChangeDriverCB)->StartupDriverCB);
-	assert(jeChain_FindLink(Engine->ChangeDriverCBChain, *ChangeDriverCB));
+	assert(grChain_FindLink(Engine->ChangeDriverCBChain, *ChangeDriverCB));
 
 	// Actual calls to shutdown driver start here.
 	// If there is a driver, shut it down now
@@ -784,54 +784,54 @@ JETAPI void JETCC jeEngine_DestroyChangeDriverCB(jeEngine *Engine, jeEngine_Chan
 		}
 	}
 
-	Ret = jeChain_RemoveLinkData(Engine->ChangeDriverCBChain, *ChangeDriverCB);
-	assert(Ret == JE_TRUE);
+	Ret = grChain_RemoveLinkData(Engine->ChangeDriverCBChain, *ChangeDriverCB);
+	assert(Ret == GR_TRUE);
 
-	jeRam_Free(*ChangeDriverCB);
+	grRam_Free(*ChangeDriverCB);
 	*ChangeDriverCB = nullptr;
 }
 
 /*}{**** SECTION : Bitmap Lists  *********************/
 
 //=====================================================================================
-//	jeEngine_SetGamma
+//	grEngine_SetGamma
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_SetGamma(jeEngine *Engine, float Gamma)
+GRAPI grBoolean GRCC grEngine_SetGamma(grEngine *Engine, float Gamma)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 
 	if ( Gamma < 0.01f )
 		Gamma  = 0.01f;
 
 	if ( ABS( Engine->CurrentGamma - Gamma) < 0.01f )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	Engine->CurrentGamma = Gamma;
 
-	jeEngine_UpdateGamma(Engine);
+	grEngine_UpdateGamma(Engine);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeEngine_GetGamma
+//	grEngine_GetGamma
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_GetGamma(jeEngine *Engine, float *Gamma)
+GRAPI grBoolean GRCC grEngine_GetGamma(grEngine *Engine, float *Gamma)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Gamma);
 
 	*Gamma = Engine->CurrentGamma;
 
-	return JE_TRUE;//Engine->DriverInfo.RDriver->GetGamma(Gamma);
+	return GR_TRUE;//Engine->DriverInfo.RDriver->GetGamma(Gamma);
 }
 
-JETAPI void JETCC jeEngine_UpdateGamma(jeEngine *Engine)
+GRAPI void GRCC grEngine_UpdateGamma(grEngine *Engine)
 {
 	DRV_Driver * RDriver{};
-	jeFloat LastBitmapGamma{};
+	grFloat LastBitmapGamma{};
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 
 	RDriver = Engine->DriverInfo.RDriver;
 
@@ -858,19 +858,19 @@ JETAPI void JETCC jeEngine_UpdateGamma(jeEngine *Engine)
 		// Attach all the bitmaps for the engine
 		if (!BitmapList_SetGamma(Engine->AttachedBitmaps, Engine->BitmapGamma))
 		{
-			jeErrorLog_AddString(-1, "jeEngine_UpdateGamma:  BitmapList_SetGamma for Engine failed", NULL);
+			grErrorLog_AddString(-1, "grEngine_UpdateGamma:  BitmapList_SetGamma for Engine failed", NULL);
 		}
 	}
 
 }
 
 //================================================================================
-//	jeEngine_BitmapListInit
+//	grEngine_BitmapListInit
 //	Initializes the engine bitmaplist
 //================================================================================
-jeBoolean jeEngine_BitmapListInit(jeEngine *Engine)
+grBoolean grEngine_BitmapListInit(grEngine *Engine)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->AttachedBitmaps == NULL);
 
 	if ( Engine->AttachedBitmaps == NULL )
@@ -878,19 +878,19 @@ jeBoolean jeEngine_BitmapListInit(jeEngine *Engine)
 		Engine->AttachedBitmaps = BitmapList_Create();
 		if ( ! Engine->AttachedBitmaps )
 		{
-			jeErrorLog_AddString(-1, "jeEngine_BitmapListInit:  BitmapList_Create failed...", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1, "grEngine_BitmapListInit:  BitmapList_Create failed...", NULL);
+			return GR_FALSE;
 		}
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //================================================================================
-//	jeEngine_BitmapListShutdown
+//	grEngine_BitmapListShutdown
 //================================================================================
-jeBoolean jeEngine_BitmapListShutdown(jeEngine *Engine)
+grBoolean grEngine_BitmapListShutdown(grEngine *Engine)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 
 	if ( Engine->AttachedBitmaps )
 	{
@@ -902,105 +902,105 @@ jeBoolean jeEngine_BitmapListShutdown(jeEngine *Engine)
 		Engine->AttachedBitmaps = nullptr;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //================================================================================
-//	jeEngine_AddBitmap
+//	grEngine_AddBitmap
 //================================================================================
-JETAPI jeBoolean JETCC jeEngine_AddBitmap(jeEngine *Engine, jeBitmap *Bitmap, jeEngine_BitmapType Type)
+GRAPI grBoolean GRCC grEngine_AddBitmap(grEngine *Engine, grBitmap *Bitmap, grEngine_BitmapType Type)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Bitmap);
 	assert(Engine->AttachedBitmaps);
 	//assert(Engine->FrameState == FrameState_None);
 
 #if (DEBUG_OUTPUT_LEVEL >= 1)
-	OutputDebugString("jeEngine_AddBitmap...\n");
+	OutputDebugString("grEngine_AddBitmap...\n");
 #endif
 
-	if ( Type == JE_ENGINE_BITMAP_TYPE_2D )
+	if ( Type == GR_ENGINE_BITMAP_TYPE_2D )
 	{
-		jeBitmap_SetDriverFlags(Bitmap,RDRIVER_PF_2D);
+		grBitmap_SetDriverFlags(Bitmap,RDRIVER_PF_2D);
 	}
-	else if ( Type == JE_ENGINE_BITMAP_TYPE_3D )
+	else if ( Type == GR_ENGINE_BITMAP_TYPE_3D )
 	{
-		jeBitmap_SetDriverFlags(Bitmap,RDRIVER_PF_3D); // <> combine lightmap is irrelevant ?
+		grBitmap_SetDriverFlags(Bitmap,RDRIVER_PF_3D); // <> combine lightmap is irrelevant ?
 	}
 	else
 	{
-		jeErrorLog_AddString(-1, "jeEngine_AddBitmap:  Invalid Type!", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1, "grEngine_AddBitmap:  Invalid Type!", NULL);
+		return GR_FALSE;
 	}
 
 	// Add bitmap to the list of bitmaps attached to the engine
-	if ( BitmapList_Add(Engine->AttachedBitmaps, (jeBitmap *)Bitmap) )
+	if ( BitmapList_Add(Engine->AttachedBitmaps, (grBitmap *)Bitmap) )
 	{
 		if ( Engine->DriverInfo.RDriver )
 		{
-			if ( ! jeBitmap_AttachToDriver(Bitmap,Engine->DriverInfo.RDriver,0) )
+			if ( ! grBitmap_AttachToDriver(Bitmap,Engine->DriverInfo.RDriver,0) )
 			{
-				jeErrorLog_AddString(-1, "jeEngine_AddBitmap:  AttachToDriver failed!", NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(-1, "grEngine_AddBitmap:  AttachToDriver failed!", NULL);
+				return GR_FALSE;
 			}
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //================================================================================
-//	jeEngine_RemoveBitmap
+//	grEngine_RemoveBitmap
 //================================================================================
-JETAPI jeBoolean JETCC jeEngine_RemoveBitmap(jeEngine *Engine, jeBitmap *Bitmap)
+GRAPI grBoolean GRCC grEngine_RemoveBitmap(grEngine *Engine, grBitmap *Bitmap)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Bitmap);
 	assert(Engine->AttachedBitmaps);
 //	assert(Engine->FrameState == FrameState_None);
 
 #if (DEBUG_OUTPUT_LEVEL >= 1)
-	OutputDebugString("jeEngine_RemoveBitmap...\n");
+	OutputDebugString("grEngine_RemoveBitmap...\n");
 #endif
 
 	if ( BitmapList_Remove(Engine->AttachedBitmaps, Bitmap) )
 	{
-		if (!jeBitmap_DetachDriver(Bitmap, JE_TRUE))
+		if (!grBitmap_DetachDriver(Bitmap, GR_TRUE))
 		{
-			jeErrorLog_AddString(-1, "jeEngine_RemoveBitmap:  jeBitmap_DetachDriver failed...", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1, "grEngine_RemoveBitmap:  grBitmap_DetachDriver failed...", NULL);
+			return GR_FALSE;
 		}
 	}
 	
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
 /*}{**** SECTION : Render/Draw  *********************/
 
 //================================================================================
-//	jeEngine_RenderPoly
+//	grEngine_RenderPoly
 //================================================================================
-JETAPI void JETCC jeEngine_RenderPoly(const jeEngine *Engine,
-	const jeTLVertex *Points, int NumPoints, const jeMaterialSpec *Texture, uint32 Flags)
+GRAPI void GRCC grEngine_RenderPoly(const grEngine *Engine,
+	const grTLVertex *Points, int NumPoints, const grMaterialSpec *Texture, uint32 Flags)
 {
-	jeBoolean	Ret{};
+	grBoolean	Ret{};
 
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 	assert(Engine->FrameState == FrameState_Begin);
 	assert(Points );
 
 	if ( Texture )
 	{
-		jeTexture* TH{};
-		jeRDriver_Layer		Layer{};
-		//assert(jeEngine_HasBitmap(Engine, Texture) == JE_TRUE);		// This check is slow, but safe
+		grTexture* TH{};
+		grRDriver_Layer		Layer{};
+		//assert(grEngine_HasBitmap(Engine, Texture) == GR_TRUE);		// This check is slow, but safe
 
-		TH = jeMaterialSpec_GetLayerTexture(Texture, 0);
+		TH = grMaterialSpec_GetLayerTexture(Texture, 0);
 		if (TH==nullptr) {
-			jeBitmap* bmp = jeMaterialSpec_GetLayerBitmap(Texture, 0);
+			grBitmap* bmp = grMaterialSpec_GetLayerBitmap(Texture, 0);
 			if (bmp == nullptr) return;
-			TH = jeBitmap_GetTHandle(bmp);
+			TH = grBitmap_GetTHandle(bmp);
 		}
 		assert(TH);
 
@@ -1008,26 +1008,26 @@ JETAPI void JETCC jeEngine_RenderPoly(const jeEngine *Engine,
 
 		Flags |= Engine->DefaultRenderFlags;
 
-		Ret = Engine->DriverInfo.RDriver->RenderMiscTexturePoly((jeTLVertex *)Points, NumPoints, &Layer, 1, Flags);
+		Ret = Engine->DriverInfo.RDriver->RenderMiscTexturePoly((grTLVertex *)Points, NumPoints, &Layer, 1, Flags);
 	}
 	else
 	{
-		Ret = Engine->DriverInfo.RDriver->RenderGouraudPoly((jeTLVertex *)Points, NumPoints, Flags);
+		Ret = Engine->DriverInfo.RDriver->RenderGouraudPoly((grTLVertex *)Points, NumPoints, Flags);
 	}
 
-	assert(Ret == JE_TRUE);
+	assert(Ret == GR_TRUE);
 }
 
-JETAPI void JETCC jeEngine_RenderPolyArray(const jeEngine *Engine, const jeTLVertex ** pPoints, int * pNumPoints, int NumPolys, 
-								const jeMaterialSpec *Texture, uint32 Flags)
+GRAPI void GRCC grEngine_RenderPolyArray(const grEngine *Engine, const grTLVertex ** pPoints, int * pNumPoints, int NumPolys, 
+								const grMaterialSpec *Texture, uint32 Flags)
 {
-	jeBoolean		Ret{};
+	grBoolean		Ret{};
 	int				pn{};
 	DRV_Driver* Driver{};
-	jeRDriver_Layer Layer{};
+	grRDriver_Layer Layer{};
 
 
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 	assert(Engine->FrameState == FrameState_Begin);
 	assert(pPoints && pNumPoints );
 
@@ -1036,9 +1036,9 @@ JETAPI void JETCC jeEngine_RenderPolyArray(const jeEngine *Engine, const jeTLVer
 
 	if ( Texture )
 	{
-		jeTexture* TH{};
+		grTexture* TH{};
 	
-		TH = jeMaterialSpec_GetLayerTexture(Texture, 0);
+		TH = grMaterialSpec_GetLayerTexture(Texture, 0);
 		assert(TH);
 
 		Layer.THandle = TH;
@@ -1048,7 +1048,7 @@ JETAPI void JETCC jeEngine_RenderPolyArray(const jeEngine *Engine, const jeTLVer
 		for(pn=0;pn<NumPolys;pn++)
 		{
 			assert(pPoints[pn]);
-			Ret = Driver->RenderMiscTexturePoly((jeTLVertex *)pPoints[pn],pNumPoints[pn],&Layer, 1, Flags);
+			Ret = Driver->RenderMiscTexturePoly((grTLVertex *)pPoints[pn],pNumPoints[pn],&Layer, 1, Flags);
 			assert(Ret);
 		}
 	}
@@ -1057,7 +1057,7 @@ JETAPI void JETCC jeEngine_RenderPolyArray(const jeEngine *Engine, const jeTLVer
 		for(pn=0;pn<NumPolys;pn++)
 		{
 			assert(pPoints[pn]);
-			Ret = Driver->RenderGouraudPoly((jeTLVertex *)pPoints[pn],pNumPoints[pn],Flags);
+			Ret = Driver->RenderGouraudPoly((grTLVertex *)pPoints[pn],pNumPoints[pn],Flags);
 			assert(Ret);
 		}
 	}
@@ -1065,28 +1065,28 @@ JETAPI void JETCC jeEngine_RenderPolyArray(const jeEngine *Engine, const jeTLVer
 }
 
 //================================================================================
-//	jeEngine_DrawBitmap
+//	grEngine_DrawBitmap
 //================================================================================
-JETAPI jeBoolean JETCC jeEngine_DrawBitmap(const jeEngine *Engine,
-	const jeBitmap *Bitmap,
-	const jeRect * Source, uint32 x, uint32 y)
+GRAPI grBoolean GRCC grEngine_DrawBitmap(const grEngine *Engine,
+	const grBitmap *Bitmap,
+	const grRect * Source, uint32 x, uint32 y)
 {
-	jeTexture* TH{};
-	jeBoolean			Ret{};
+	grTexture* TH{};
+	grBoolean			Ret{};
 	
-	//#pragma message("make jeRect the same as RECT, or don't use RECT!?")
+	//#pragma message("make grRect the same as RECT, or don't use RECT!?")
 	// The drivers once did not include Jet3D .h's
 	// (D3D uses RECT so thats why the drivers adopted RECT's...)
-	#pragma message("Engine : Make the drivers use jeRect, JP")
+	#pragma message("Engine : Make the drivers use grRect, JP")
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_Begin);
 	assert(Bitmap);
 	
 	assert(Engine->AttachedBitmaps);
-	assert(BitmapList_Has(Engine->AttachedBitmaps, (jeBitmap *)Bitmap) == JE_TRUE);
+	assert(BitmapList_Has(Engine->AttachedBitmaps, (grBitmap *)Bitmap) == GR_TRUE);
 
-	TH = jeBitmap_GetTHandle(Bitmap);
+	TH = grBitmap_GetTHandle(Bitmap);
 	assert(TH);
 
 	//Ret = Engine->DriverInfo.RDriver->Drawdecal(TH,(RECT *)Source,x,y);
@@ -1107,67 +1107,67 @@ JETAPI jeBoolean JETCC jeEngine_DrawBitmap(const jeEngine *Engine,
 
 	if ( ! Ret )
 	{
-		jeErrorLog_AddString(-1,"jeEngine_DrawBitmap : DrawDecal failed", NULL);	
+		grErrorLog_AddString(-1,"grEngine_DrawBitmap : DrawDecal failed", NULL);	
 	}
 
 	return Ret;
 }
 
-JETAPI jeTexture *JETCC jeEngine_CreateTextureFromFile(const jeEngine *Engine, jeVFile *File)
+GRAPI grTexture *GRCC grEngine_CreateTextureFromFile(const grEngine *Engine, grVFile *File)
 {
-	jeBitmap* pBmp{};
+	grBitmap* pBmp{};
 
 	if (Engine->DriverInfo.RDriver->THandle_CreateFromFile) {
 		return Engine->DriverInfo.RDriver->THandle_CreateFromFile(File);
 	}
 	
 	// code to replace the splash screen - This is a memory leak - paradoxnj
-	//pBmp = jeBitmap_CreateFromFile(File);
-	//jeEngine_AddBitmap((jeEngine*)Engine, pBmp, JE_ENGINE_BITMAP_TYPE_3D);
-	//return jeBitmap_GetTHandle(pBmp);
+	//pBmp = grBitmap_CreateFromFile(File);
+	//grEngine_AddBitmap((grEngine*)Engine, pBmp, GR_ENGINE_BITMAP_TYPE_3D);
+	//return grBitmap_GetTHandle(pBmp);
 	return NULL;
 }
 
-JETAPI void JETCC jeEngine_DestroyTexture(const jeEngine *Engine, jeTexture *Texture)
+GRAPI void GRCC grEngine_DestroyTexture(const grEngine *Engine, grTexture *Texture)
 {
 	Engine->DriverInfo.RDriver->THandle_Destroy(Texture);
 }
 
-JETAPI jeBoolean JETCC jeEngine_DrawTexture(const jeEngine *Engine, const jeTexture *Texture, int32 x, int32 y)
+GRAPI grBoolean GRCC grEngine_DrawTexture(const grEngine *Engine, const grTexture *Texture, int32 x, int32 y)
 {
-	return Engine->DriverInfo.RDriver->DrawDecal((jeTexture*)Texture, NULL, x, y);
+	return Engine->DriverInfo.RDriver->DrawDecal((grTexture*)Texture, NULL, x, y);
 }
 
 //================================================================================
-//	jeEngine_DrawBitmap3D
+//	grEngine_DrawBitmap3D
 //================================================================================
-JETAPI jeBoolean JETCC jeEngine_DrawBitmap3D(const jeEngine *Engine,
-	const jeBitmap *Bitmap, const jeRect * pRect, uint32 x, uint32 y)
+GRAPI grBoolean GRCC grEngine_DrawBitmap3D(const grEngine *Engine,
+	const grBitmap *Bitmap, const grRect * pRect, uint32 x, uint32 y)
 {
-	jeTexture* TH{};
-	jeBoolean			Ret{};
+	grTexture* TH{};
+	grBoolean			Ret{};
 	float				w{}, h{};
 	float				u1{}, v1{}, u2{}, v2{};
-	jeTLVertex			Points[4];
-	jeRect				Rect{};
-	jeRDriver_Layer		Layer{};
+	grTLVertex			Points[4];
+	grRect				Rect{};
+	grRDriver_Layer		Layer{};
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_Begin);
 	assert(Bitmap);
 	
 	assert(Engine->AttachedBitmaps);
-	assert(BitmapList_Has(Engine->AttachedBitmaps, (jeBitmap *)Bitmap) == JE_TRUE);
+	assert(BitmapList_Has(Engine->AttachedBitmaps, (grBitmap *)Bitmap) == GR_TRUE);
 
-	w = (float)jeBitmap_Width( Bitmap);
-	h = (float)jeBitmap_Height(Bitmap);
+	w = (float)grBitmap_Width( Bitmap);
+	h = (float)grBitmap_Height(Bitmap);
 
 	assert( w <= 256.0f );
 	assert( h <= 256.0f );
 
 	w = 1.0f/w; h = 1.0f/h;
 
-	TH = jeBitmap_GetTHandle(Bitmap);
+	TH = grBitmap_GetTHandle(Bitmap);
 	assert(TH);
 
 	if ( pRect )
@@ -1179,8 +1179,8 @@ JETAPI jeBoolean JETCC jeEngine_DrawBitmap3D(const jeEngine *Engine,
 	else
 	{
 		Rect.Left = Rect.Top = 0;
-		Rect.Right = jeBitmap_Width( Bitmap);
-		Rect.Bottom = jeBitmap_Height(Bitmap);
+		Rect.Right = grBitmap_Width( Bitmap);
+		Rect.Bottom = grBitmap_Height(Bitmap);
 	}
 
 	u1 = Rect.Left * w;
@@ -1216,20 +1216,20 @@ JETAPI jeBoolean JETCC jeEngine_DrawBitmap3D(const jeEngine *Engine,
 
 	Layer.THandle = TH;
 
-	Ret = Engine->DriverInfo.RDriver->RenderMiscTexturePoly((jeTLVertex *)Points, 4, &Layer, 1, JE_RENDER_FLAG_CLAMP_UV);
+	Ret = Engine->DriverInfo.RDriver->RenderMiscTexturePoly((grTLVertex *)Points, 4, &Layer, 1, GR_RENDER_FLAG_CLAMP_UV);
 
 	if ( ! Ret )
 	{
-		jeErrorLog_AddString(-1,"jeEngine_DrawBitmap3D : Render failed", NULL);	
+		grErrorLog_AddString(-1,"grEngine_DrawBitmap3D : Render failed", NULL);	
 	}
 
 	return Ret;
 }
 
 //=====================================================================================
-//	jeEngine_AttachAll
+//	grEngine_AttachAll
 //=====================================================================================
-jeBoolean jeEngine_AttachAll(jeEngine *Engine)
+grBoolean grEngine_AttachAll(grEngine *Engine)
 {
 	DRV_Driver* RDriver{};
 
@@ -1241,7 +1241,7 @@ jeBoolean jeEngine_AttachAll(jeEngine *Engine)
 
     // If current driver is not active, then split
 	if (! RDriver)
-        return JE_TRUE;
+        return GR_TRUE;
 
 #if (DEBUG_OUTPUT_LEVEL >= 2)
 	OutputDebugString("BEGIN BitmapList_AttachAll\n");
@@ -1250,52 +1250,52 @@ jeBoolean jeEngine_AttachAll(jeEngine *Engine)
 	// Attach all the bitmaps for the engine
 	if (!BitmapList_AttachAll(Engine->AttachedBitmaps, RDriver, Engine->BitmapGamma))
 	{
-		jeErrorLog_AddString(-1, "jeEngine_AttachAll:  BitmapList_AttachAll for Engine failed...", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1, "grEngine_AttachAll:  BitmapList_AttachAll for Engine failed...", NULL);
+		return GR_FALSE;
 	}
 
 #if (DEBUG_OUTPUT_LEVEL >= 2)
 	OutputDebugString("END BitmapList_AttachAll\n");
 #endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeEngine_DetachAll
+//	grEngine_DetachAll
 //=====================================================================================
-jeBoolean jeEngine_DetachAll(jeEngine *Engine)
+grBoolean grEngine_DetachAll(grEngine *Engine)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 
-	// Shutdown all the jeBitmaps
+	// Shutdown all the grBitmaps
 	if (!BitmapList_DetachAll(Engine->AttachedBitmaps))
 	{
-		jeErrorLog_AddString(-1, "jeEngine_DetachAll:  BitmapList_DetachAll failed for engine.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1, "grEngine_DetachAll:  BitmapList_DetachAll failed for engine.", NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*}{**** SECTION : Init/Reset/Shutdown  *********************/
 
 extern unsigned char splash_bmp[];
 extern int splash_bmp_Length;
-static	jeBoolean	jeEngine_DoSplashScreen(jeEngine *Engine, jeDriver_Mode *DriverMode)
+static	grBoolean	grEngine_DoSplashScreen(grEngine *Engine, grDriver_Mode *DriverMode)
 {
 	int32					Width{}, Height{};
-	jeRect 					Rect{};
-	jeBitmap* Bitmap{};
-	jeTexture* Texture{};
-	jeTexture_Info			Info{};
-	jeVFile* MemFile{};
-	jeVFile_MemoryContext	Context{};
+	grRect 					Rect{};
+	grBitmap* Bitmap{};
+	grTexture* Texture{};
+	grTexture_Info			Info{};
+	grVFile* MemFile{};
+	grVFile_MemoryContext	Context{};
 	int32					ImageWidth{}, ImageHeight{};
 	int32					X{}, Y{};
-	jeBoolean				UseJeBitmap = JE_FALSE;
+	grBoolean				UseJeBitmap = GR_FALSE;
 
-	jeDriver_ModeGetWidthHeight(DriverMode, &Width, &Height);
+	grDriver_ModeGetWidthHeight(DriverMode, &Width, &Height);
 	if (Width == -1)
 	{
 	
@@ -1317,30 +1317,30 @@ static	jeBoolean	jeEngine_DoSplashScreen(jeEngine *Engine, jeDriver_Mode *Driver
 
 	Context.Data = splash_bmp;
 	Context.DataLength = splash_bmp_Length;
-	MemFile = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_MEMORY, NULL, &Context, JE_VFILE_OPEN_READONLY);
+	MemFile = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_MEMORY, NULL, &Context, GR_VFILE_OPEN_READONLY);
 	if	(!MemFile)
-		return JE_FALSE;
+		return GR_FALSE;
 	
-	Texture = jeEngine_CreateTextureFromFile(Engine, MemFile);
+	Texture = grEngine_CreateTextureFromFile(Engine, MemFile);
 	if (!Texture)
 	{
-		UseJeBitmap = JE_TRUE;
+		UseJeBitmap = GR_TRUE;
 
-		Bitmap = jeBitmap_CreateFromFile(MemFile);
+		Bitmap = grBitmap_CreateFromFile(MemFile);
 		if (!Bitmap)
 		{
-			OutputDebugString("jeEngine_DoSplashScreen:  Could not create bitmap!!");
-			return JE_FALSE;
+			OutputDebugString("grEngine_DoSplashScreen:  Could not create bitmap!!");
+			return GR_FALSE;
 		}
 
-		if (jeEngine_AddBitmap(Engine, Bitmap, JE_ENGINE_BITMAP_TYPE_2D) == JE_FALSE)
+		if (grEngine_AddBitmap(Engine, Bitmap, GR_ENGINE_BITMAP_TYPE_2D) == GR_FALSE)
 		{
-			OutputDebugString("jeEngine_DoSplashScreen:  Could not add bitmap to engine!!");
-			return JE_FALSE;
+			OutputDebugString("grEngine_DoSplashScreen:  Could not add bitmap to engine!!");
+			return GR_FALSE;
 		}
 
-		ImageWidth = jeBitmap_Width(Bitmap);
-		ImageHeight = jeBitmap_Height(Bitmap);
+		ImageWidth = grBitmap_Width(Bitmap);
+		ImageHeight = grBitmap_Height(Bitmap);
 	}
 	else
 	{
@@ -1350,128 +1350,128 @@ static	jeBoolean	jeEngine_DoSplashScreen(jeEngine *Engine, jeDriver_Mode *Driver
 		ImageHeight = Info.Height;
 	}
 
-	jeVFile_Close(MemFile);
+	grVFile_Close(MemFile);
 
 	X = (Rect.Right - ImageWidth) / 2;
 	Y = (Rect.Bottom - ImageHeight) / 2;
 	
 	
-	jeEngine_BeginFrame(Engine, NULL, JE_TRUE);
+	grEngine_BeginFrame(Engine, NULL, GR_TRUE);
 
 	if (!UseJeBitmap)
-		jeEngine_DrawTexture(Engine, Texture, X, Y);
+		grEngine_DrawTexture(Engine, Texture, X, Y);
 	else
-		jeEngine_DrawBitmap(Engine, Bitmap, NULL, X, Y);
+		grEngine_DrawBitmap(Engine, Bitmap, NULL, X, Y);
 
-	jeEngine_EndFrame(Engine);
+	grEngine_EndFrame(Engine);
 	
 	if (UseJeBitmap)
 	{
-		jeEngine_RemoveBitmap(Engine, Bitmap);
-		jeBitmap_Destroy(&Bitmap);
+		grEngine_RemoveBitmap(Engine, Bitmap);
+		grBitmap_Destroy(&Bitmap);
 	}
 	else
 	{
-		jeEngine_DestroyTexture(Engine, Texture);
+		grEngine_DestroyTexture(Engine, Texture);
 		Texture = nullptr;
 	}
 
 	Sleep(2000);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeEngine_SetDriverAndMode
+//	grEngine_SetDriverAndMode
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_SetDriverAndMode(	jeEngine		*Engine, 
+GRAPI grBoolean GRCC grEngine_SetDriverAndMode(	grEngine		*Engine, 
 												HWND			hWnd,
-												jeDriver		*Driver, 
-												jeDriver_Mode	*DriverMode)
+												grDriver		*Driver, 
+												grDriver_Mode	*DriverMode)
 {
-	jeDeviceCaps		DeviceCaps{};
+	grDeviceCaps		DeviceCaps{};
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_None);		// They can't change modes in between begin/end frame calls
 	assert(Driver);
 	assert(DriverMode);
 
 #if (DEBUG_OUTPUT_LEVEL >= 1)
-	OutputDebugString("BEGIN jeEngine_SetDriverAndMode\n");
+	OutputDebugString("BEGIN grEngine_SetDriverAndMode\n");
 #endif
 
 	//	Set up the Render Driver
 	if (!Engine_InitDriver(Engine, hWnd, Driver, DriverMode))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	// Get the default suggested render flags
-	jeEngine_GetDeviceCaps(Engine, &DeviceCaps);
+	grEngine_GetDeviceCaps(Engine, &DeviceCaps);
 	// Set them
-	jeEngine_SetDefaultRenderFlags(Engine, DeviceCaps.SuggestedDefaultRenderFlags);
+	grEngine_SetDefaultRenderFlags(Engine, DeviceCaps.SuggestedDefaultRenderFlags);
 
-	jeEngine_UpdateGamma(Engine);
+	grEngine_UpdateGamma(Engine);
 
 	//if (!Engine->FontInfo.Font) {
-	//	Engine->FontInfo.Font = jeEngine_CreateFont(Engine, 18, 0, JE_FONT_BOLD, JE_FALSE, "Arial");
+	//	Engine->FontInfo.Font = grEngine_CreateFont(Engine, 18, 0, GR_FONT_BOLD, GR_FALSE, "Arial");
 	//}
 /*
 	if (!Engine->FontInfo.Font)
-		return JE_FALSE;
+		return GR_FALSE;
 */
 #if 1
 	// Do the splash screen
-	if	(Engine->SplashDisplayed == JE_FALSE)
+	if	(Engine->SplashDisplayed == GR_FALSE)
 	{
-		if	(jeEngine_DoSplashScreen(Engine, DriverMode) == JE_FALSE)
-			return JE_FALSE;
-		Engine->SplashDisplayed = JE_TRUE;
+		if	(grEngine_DoSplashScreen(Engine, DriverMode) == GR_FALSE)
+			return GR_FALSE;
+		Engine->SplashDisplayed = GR_TRUE;
 	}
 #endif
 
 #if (DEBUG_OUTPUT_LEVEL >= 1)
-	OutputDebugString("END jeEngine_SetDriverAndMode\n");
+	OutputDebugString("END grEngine_SetDriverAndMode\n");
 #endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeEngine_GetDriverAndMode
+//	grEngine_GetDriverAndMode
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_GetDriverAndMode(	const jeEngine *Engine, 
-												jeDriver **Driver, 
-												jeDriver_Mode **DriverMode)
+GRAPI grBoolean GRCC grEngine_GetDriverAndMode(	const grEngine *Engine, 
+												grDriver **Driver, 
+												grDriver_Mode **DriverMode)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Driver);
 	assert(DriverMode);
 
 	*Driver = Engine->DriverInfo.CurDriver;
 	*DriverMode = Engine->DriverInfo.CurMode;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeEngine_GetDriverSystem
+//	grEngine_GetDriverSystem
 //=====================================================================================
-JETAPI jeDriver_System * JETCC jeEngine_GetDriverSystem(jeEngine *Engine)
+GRAPI grDriver_System * GRCC grEngine_GetDriverSystem(grEngine *Engine)
 {
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 
-	return (jeDriver_System*)&Engine->DriverInfo;
+	return (grDriver_System*)&Engine->DriverInfo;
 }
 
 //=====================================================================================
-//	jeEngine_ShutdownDriver
+//	grEngine_ShutdownDriver
 //=====================================================================================
-JETAPI jeBoolean JETCC jeEngine_ShutdownDriver(jeEngine *Engine)
+GRAPI grBoolean GRCC grEngine_ShutdownDriver(grEngine *Engine)
 {
 	//	by trilobite jan. 2011
 	//Engine_DriverInfo *DrvInfo;
 	Engine_DriverInfo* DrvInfo{};
 	//
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_None);
 
 	DrvInfo = &(Engine->DriverInfo);
@@ -1479,17 +1479,17 @@ JETAPI jeBoolean JETCC jeEngine_ShutdownDriver(jeEngine *Engine)
 	assert(DrvInfo);
 
 	if (!DrvInfo->RDriver)
-		return JE_TRUE;			// Just return true, and don't do nothing
+		return GR_TRUE;			// Just return true, and don't do nothing
 
 	// Destroy the font
 	//if (Engine->FontInfo.Font)
-	//	jeEngine_DestroyFont(Engine, &Engine->FontInfo.Font);
+	//	grEngine_DestroyFont(Engine, &Engine->FontInfo.Font);
 
 	// First, reset the driver
-	if (!jeEngine_ResetDriver(Engine))
+	if (!grEngine_ResetDriver(Engine))
 	{
-		jeErrorLog_AddString(-1, "jeEngine_ShutdownDriver:  jeEngine_ResetDriver failed.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1, "grEngine_ShutdownDriver:  grEngine_ResetDriver failed.", NULL);
+		return GR_FALSE;
 	}
 
 	// Shutdown the driver
@@ -1498,61 +1498,61 @@ JETAPI jeBoolean JETCC jeEngine_ShutdownDriver(jeEngine *Engine)
 	if	(DrvInfo->DriverHandle)
 	{
 		if (!FreeLibrary((HINSTANCE)(DrvInfo->DriverHandle)) )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
 	DrvInfo->RDriver = nullptr;
 	DrvInfo->DriverHandle = (int32)NULL;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeEngine_ResetDriver
+//	grEngine_ResetDriver
 //=====================================================================================
-jeBoolean jeEngine_ResetDriver(jeEngine *Engine)
+grBoolean grEngine_ResetDriver(grEngine *Engine)
 {
-	jeChain_Link		*Link{};
+	grChain_Link		*Link{};
 
 	assert(Engine != NULL);
 	assert(Engine->DriverInfo.RDriver);
 
 	// To be safe, detach all things from the current driver
-	if (!jeEngine_DetachAll(Engine))
+	if (!grEngine_DetachAll(Engine))
 	{
-		jeErrorLog_AddString(-1, "jeEngine_ResetDriver:  jeEngine_DetachAll failed.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1, "grEngine_ResetDriver:  grEngine_DetachAll failed.", NULL);
+		return GR_FALSE;
 	}
 
-	for (Link = jeChain_GetFirstLink(Engine->ChangeDriverCBChain); Link; Link = jeChain_LinkGetNext(Link))
+	for (Link = grChain_GetFirstLink(Engine->ChangeDriverCBChain); Link; Link = grChain_LinkGetNext(Link))
 	{
-		jeEngine_ChangeDriverCB* ChangeDriverCB{};
+		grEngine_ChangeDriverCB* ChangeDriverCB{};
 
-		ChangeDriverCB = (jeEngine_ChangeDriverCB*)jeChain_LinkGetLinkData(Link);
+		ChangeDriverCB = (grEngine_ChangeDriverCB*)grChain_LinkGetLinkData(Link);
 		assert(ChangeDriverCB);
 
 		if (!ChangeDriverCB->ShutdownDriverCB(Engine->DriverInfo.RDriver, ChangeDriverCB->Context))
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
 	// Reset the driver
 	if (!Engine->DriverInfo.RDriver->Reset())
 	{
-		jeErrorLog_AddString(-1, "jeEngine_ResetDriver:  Engine->DriverInfo.RDriver->Reset() failed.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1, "grEngine_ResetDriver:  Engine->DriverInfo.RDriver->Reset() failed.", NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //===================================================================================
-//	jeEngine_InitFonts
+//	grEngine_InitFonts
 //===================================================================================
-jeBoolean jeEngine_InitFonts(jeEngine *Engine)
+grBoolean grEngine_InitFonts(grEngine *Engine)
 {
 	Engine_FontInfo* Fi{};
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_None);
 
 	Fi = &Engine->FontInfo;
@@ -1561,8 +1561,8 @@ jeBoolean jeEngine_InitFonts(jeEngine *Engine)
 
 	// Load the bitmap
 	{
-		jeVFile* MemFile{};
-		jeVFile_MemoryContext	Context{};
+		grVFile* MemFile{};
+		grVFile_MemoryContext	Context{};
 
 		{
 			extern unsigned char font_bmp[];
@@ -1571,18 +1571,18 @@ jeBoolean jeEngine_InitFonts(jeEngine *Engine)
 			Context.Data = font_bmp;
 			Context.DataLength = font_bmp_length;
 
-			MemFile = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_MEMORY, NULL, &Context, JE_VFILE_OPEN_READONLY);
+			MemFile = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_MEMORY, NULL, &Context, GR_VFILE_OPEN_READONLY);
 		}
 
 		if	(!MemFile)
 		{
-			jeErrorLog_AddString(-1,"InitFonts : jeVFile_OpenNewSystem Memory fontbmp failed.", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"InitFonts : grVFile_OpenNewSystem Memory fontbmp failed.", NULL);
+			return GR_FALSE;
 		}
 
-		if ( (Fi->FontBitmap = jeBitmap_CreateFromFile(MemFile)) == NULL)
+		if ( (Fi->FontBitmap = grBitmap_CreateFromFile(MemFile)) == NULL)
 		{
-			jeErrorLog_AddString(-1,"InitFonts : jeBitmap_CreateFromFile failed.", NULL);
+			grErrorLog_AddString(-1,"InitFonts : grBitmap_CreateFromFile failed.", NULL);
 			goto fail;
 		}
 
@@ -1591,35 +1591,35 @@ jeBoolean jeEngine_InitFonts(jeEngine *Engine)
 		// <> CB : give fonts alpha so they look purty
 		//			pointless right now cuz we don't get enum'ed a _2D_ type with alpha
 		{
-		jeBitmap * FontAlpha;
-			FontAlpha = jeBitmap_Create( jeBitmap_Width(Fi->FontBitmap), jeBitmap_Height(Fi->FontBitmap), 1, JE_PIXELFORMAT_8BIT_GRAY );
+		grBitmap * FontAlpha;
+			FontAlpha = grBitmap_Create( grBitmap_Width(Fi->FontBitmap), grBitmap_Height(Fi->FontBitmap), 1, GR_PIXELFORMAT_8BIT_GRAY );
 			if ( FontAlpha )
 			{
-				if ( jeBitmap_BlitBitmap(Fi->FontBitmap,FontAlpha) )
+				if ( grBitmap_BlitBitmap(Fi->FontBitmap,FontAlpha) )
 				{
-					if ( ! jeBitmap_SetAlpha( Fi->FontBitmap, FontAlpha ) )
+					if ( ! grBitmap_SetAlpha( Fi->FontBitmap, FontAlpha ) )
 					{
-						jeErrorLog_AddString(-1,"InitFonts : SetAlpha failed : non-fatal", NULL);
+						grErrorLog_AddString(-1,"InitFonts : SetAlpha failed : non-fatal", NULL);
 					}
 				}
 				else
 				{
-					jeErrorLog_AddString(-1,"InitFonts : BlitBitmap failed : non-fatal", NULL);
+					grErrorLog_AddString(-1,"InitFonts : BlitBitmap failed : non-fatal", NULL);
 				}
-				jeBitmap_Destroy(&FontAlpha);
+				grBitmap_Destroy(&FontAlpha);
 			}
 		}
 		#endif
 
-		if (!jeBitmap_SetColorKey(Fi->FontBitmap, JE_TRUE, 0, JE_FALSE))
+		if (!grBitmap_SetColorKey(Fi->FontBitmap, GR_TRUE, 0, GR_FALSE))
 		{
-			jeErrorLog_AddString(-1,"InitFonts : jeBitmap_SetColorKey failed.", NULL);
+			grErrorLog_AddString(-1,"InitFonts : grBitmap_SetColorKey failed.", NULL);
 			goto fail;
 		}
 
-		if ( ! jeEngine_AddBitmap(Engine,Fi->FontBitmap,JE_ENGINE_BITMAP_TYPE_2D) )
+		if ( ! grEngine_AddBitmap(Engine,Fi->FontBitmap,GR_ENGINE_BITMAP_TYPE_2D) )
 		{
-			jeErrorLog_AddString(-1,"InitFonts : jeEngine_AddBitmap failed.", NULL);
+			grErrorLog_AddString(-1,"InitFonts : grEngine_AddBitmap failed.", NULL);
 			goto fail;
 		}
 
@@ -1627,12 +1627,12 @@ jeBoolean jeEngine_InitFonts(jeEngine *Engine)
 
 		fail:
 
-		jeVFile_Close(MemFile);
-		return JE_FALSE;
+		grVFile_Close(MemFile);
+		return GR_FALSE;
 
 		success:
 		
-		jeVFile_Close(MemFile);
+		grVFile_Close(MemFile);
 	}
 
 	//
@@ -1658,40 +1658,40 @@ jeBoolean jeEngine_InitFonts(jeEngine *Engine)
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //===================================================================================
-//	jeEngine_ShutdownFonts
+//	grEngine_ShutdownFonts
 //===================================================================================
-jeBoolean jeEngine_ShutdownFonts(jeEngine *Engine)
+grBoolean grEngine_ShutdownFonts(grEngine *Engine)
 {
 	Engine_FontInfo* Fi{};
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_None);
 
 	Fi = &Engine->FontInfo;
 
 	if (Fi->FontBitmap)
 	{
-		if (!jeEngine_RemoveBitmap(Engine, Fi->FontBitmap))
+		if (!grEngine_RemoveBitmap(Engine, Fi->FontBitmap))
 		{
-			jeErrorLog_AddString(-1, "jeEngine_ShutdownFonts:  jeEngine_RemoveBitmap failed.", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1, "grEngine_ShutdownFonts:  grEngine_RemoveBitmap failed.", NULL);
+			return GR_FALSE;
 		}
 
-		jeBitmap_Destroy(&Fi->FontBitmap);
+		grBitmap_Destroy(&Fi->FontBitmap);
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeEngine_LoadLibrary
+//	grEngine_LoadLibrary
 //=====================================================================================
 
-HINSTANCE jeEngine_LoadLibrary( const char * lpLibFileName, const char *DriverDirectory)
+HINSTANCE grEngine_LoadLibrary( const char * lpLibFileName, const char *DriverDirectory)
 {
 	char	Buff[_MAX_PATH];
 	char* StrEnd{};
@@ -1709,7 +1709,7 @@ HINSTANCE jeEngine_LoadLibrary( const char * lpLibFileName, const char *DriverDi
 	if ( Library )
 		return Library;
 
-#pragma message("Engine : LoadLibrary : need jeConfig_GetDriverDir")
+#pragma message("Engine : LoadLibrary : need grConfig_GetDriverDir")
 #ifdef LOADLIBRARY_HARDCODES
 	#pragma message("Engine : using LoadLibrary HardCodes : curdir, q:\\jet, c:\\jet")
 
@@ -1749,18 +1749,18 @@ extern GInfo GlobalInfo;		// AHH!!!  Get rid of this!!!
 //	EngineInitDriver
 //=====================================================================================
 
-static jeBoolean Engine_InitDriver(	jeEngine		*Engine, 
+static grBoolean Engine_InitDriver(	grEngine		*Engine, 
 									HWND			hWnd,
-									jeDriver		*Driver,
-									jeDriver_Mode	*DriverMode)
+									grDriver		*Driver,
+									grDriver_Mode	*DriverMode)
 {
 	Engine_DriverInfo* DrvInfo{};
 	DRV_Hook* Hook{};
 	DRV_DriverHook		DLLDriverHook{};
 	DRV_Driver* RDriver{};
-	jeChain_Link* Link{};
+	grChain_Link* Link{};
 
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 	assert(Engine->FrameState == FrameState_None);
 
 	assert(Driver != NULL);
@@ -1768,11 +1768,11 @@ static jeBoolean Engine_InitDriver(	jeEngine		*Engine,
 
 	DrvInfo = &Engine->DriverInfo;
 
-	// jeEngine_ShutdownDriver calls _Reset which detaches all
+	// grEngine_ShutdownDriver calls _Reset which detaches all
 
-	if (! jeEngine_ShutdownDriver(Engine))
+	if (! grEngine_ShutdownDriver(Engine))
 	{
-		jeErrorLog_AddString(-1, "Engine_InitDriver:  jeEngine_ShutdownDriver failed.", NULL);
+		grErrorLog_AddString(-1, "Engine_InitDriver:  grEngine_ShutdownDriver failed.", NULL);
 		goto Failure;
 	}
 	assert(!DrvInfo->RDriver);
@@ -1783,18 +1783,18 @@ static jeBoolean Engine_InitDriver(	jeEngine		*Engine,
 	if (!Driver->HookProc)
 	{
 		assert(Engine->DriverDirectory);
-		DrvInfo->DriverHandle = (int32)jeEngine_LoadLibrary(Driver->FileName, Engine->DriverDirectory);
+		DrvInfo->DriverHandle = (int32)grEngine_LoadLibrary(Driver->FileName, Engine->DriverDirectory);
 	
 		if (!DrvInfo->DriverHandle)
 		{
-			jeErrorLog_Add(JE_ERR_DRIVER_NOT_FOUND, NULL);
+			grErrorLog_Add(GR_ERR_DRIVER_NOT_FOUND, NULL);
 			goto Failure;
 		}
 	
 		Hook = (DRV_Hook*)GetProcAddress((HINSTANCE)(DrvInfo->DriverHandle), "DriverHook");		
 		if (!Hook)
 		{
-			jeErrorLog_Add(JE_ERR_INVALID_DRIVER, NULL);
+			grErrorLog_Add(GR_ERR_INVALID_DRIVER, NULL);
 			goto Failure;
 		}
 	}
@@ -1806,7 +1806,7 @@ static jeBoolean Engine_InitDriver(	jeEngine		*Engine,
 	if (!Hook(&DrvInfo->RDriver))
 	{
 		DrvInfo->RDriver = NULL;
-		jeErrorLog_Add(JE_ERR_INVALID_DRIVER, NULL);
+		grErrorLog_Add(GR_ERR_INVALID_DRIVER, NULL);
 		goto Failure;
 	}
 
@@ -1817,7 +1817,7 @@ static jeBoolean Engine_InitDriver(	jeEngine		*Engine,
 
 	if (RDriver->VersionMajor != DRV_VERSION_MAJOR || RDriver->VersionMinor != DRV_VERSION_MINOR)
 	{
-		jeErrorLog_Add(JE_ERR_INVALID_DRIVER, NULL);
+		grErrorLog_Add(GR_ERR_INVALID_DRIVER, NULL);
 		goto Failure;
 	}
 
@@ -1837,8 +1837,8 @@ static jeBoolean Engine_InitDriver(	jeEngine		*Engine,
 	
 	if (!RDriver->Init(&DLLDriverHook))
 	{
-		jeErrorLog_Add(JE_ERR_DRIVER_INIT_FAILED, NULL);
-		jeErrorLog_AddString(-1, RDriver->LastErrorStr , NULL);
+		grErrorLog_Add(GR_ERR_DRIVER_INIT_FAILED, NULL);
+		grErrorLog_AddString(-1, RDriver->LastErrorStr , NULL);
 		goto Failure;
 	}
 
@@ -1849,16 +1849,16 @@ static jeBoolean Engine_InitDriver(	jeEngine		*Engine,
 #endif
 
 	// Call all the changedriver CB's to notify them of the new driver
-	for (Link = jeChain_GetFirstLink(Engine->ChangeDriverCBChain); Link; Link = jeChain_LinkGetNext(Link))
+	for (Link = grChain_GetFirstLink(Engine->ChangeDriverCBChain); Link; Link = grChain_LinkGetNext(Link))
 	{
-		jeEngine_ChangeDriverCB* ChangeDriverCB{};
+		grEngine_ChangeDriverCB* ChangeDriverCB{};
 
-		ChangeDriverCB = (jeEngine_ChangeDriverCB*)jeChain_LinkGetLinkData(Link);
+		ChangeDriverCB = (grEngine_ChangeDriverCB*)grChain_LinkGetLinkData(Link);
 		assert(ChangeDriverCB);
 
 		if (!ChangeDriverCB->StartupDriverCB(RDriver, ChangeDriverCB->Context))
 			{
-				jeErrorLog_Add(JE_ERR_DRIVER_INIT_FAILED, NULL);
+				grErrorLog_Add(GR_ERR_DRIVER_INIT_FAILED, NULL);
 				goto Failure;
 			}
 	}
@@ -1867,21 +1867,21 @@ static jeBoolean Engine_InitDriver(	jeEngine		*Engine,
 	OutputDebugString("END StartupDriverCB\n");
 #endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 	Failure:
 	#pragma message("need better clean up on failure (restore previous mode)")
 	DrvInfo->RDriver = nullptr;
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 #pragma warning (default:4100)
 
-JETAPI jeBoolean JETCC jeEngine_FlushScene(jeEngine *Engine)
+GRAPI grBoolean GRCC grEngine_FlushScene(grEngine *Engine)
 {
 	DRV_Driver* RDriver{};
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(Engine->FrameState == FrameState_Begin);
 
 	RDriver = Engine->DriverInfo.RDriver;
@@ -1890,13 +1890,13 @@ JETAPI jeBoolean JETCC jeEngine_FlushScene(jeEngine *Engine)
 	RDriver->EndBatch();
 	RDriver->BeginBatch();
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //===================================================================================
 //	Engine_Tick
 //===================================================================================
-static void Engine_Tick(jeEngine *Engine)
+static void Engine_Tick(grEngine *Engine)
 {
 	int32		i{};
 
@@ -1924,16 +1924,16 @@ static void Engine_Tick(jeEngine *Engine)
 //===================================================================================
 //	Engine_DrawFontBuffer
 //===================================================================================
-static void Engine_DrawFontBuffer(jeEngine *Engine)
+static void Engine_DrawFontBuffer(grEngine *Engine)
 {
-	//jeRect			Rect;
+	//grRect			Rect;
 	int32			i{}, x{}, y{}, size{}, StrLength{};
 	//int32           w, r,g,b;
 	Engine_FontInfo* Fi{};
 	char* Str{};
 	int32			FontWidth{}, FontHeight{};
 
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 	assert(Engine->FrameState == FrameState_Begin);
 		
 	Fi = &Engine->FontInfo;
@@ -1942,7 +1942,7 @@ static void Engine_DrawFontBuffer(jeEngine *Engine)
 		return;
 
 	assert( Fi->FontBitmap );
-	assert( jeBitmap_GetTHandle(Fi->FontBitmap) );
+	assert( grBitmap_GetTHandle(Fi->FontBitmap) );
 
 	FontWidth	= 8;
 	FontHeight	= 15;
@@ -1961,7 +1961,7 @@ static void Engine_DrawFontBuffer(jeEngine *Engine)
 		Str = Fi->ClientStrings[i].String;
 		StrLength = strlen(Str);
 
-		//jeEngine_DrawText(Engine,Str,x,y,r,g,b);
+		//grEngine_DrawText(Engine,Str,x,y,r,g,b);
 		//if (Engine->DriverInfo.RDriver->Font_Draw) 
 		//{
 		//	Engine->DriverInfo.RDriver->Font_Draw(Fi->ClientStrings[i].Font, x, y, color, Str);
@@ -1984,11 +1984,11 @@ static void Engine_DrawFontBuffer(jeEngine *Engine)
 			   Rect.Top = (Fi->FontLUT1[*Str]&0xffff);
 			   Rect.Bottom = Rect.Top + FontHeight - 1;
 
-			   if ( ! jeEngine_DrawBitmap(Engine, Fi->FontBitmap, &Rect, x, y) )
+			   if ( ! grEngine_DrawBitmap(Engine, Fi->FontBitmap, &Rect, x, y) )
 			   {
 				   // this is circular : printf failed, so use printf to write an error !?
-				   //jeEngine_Printf(Engine, 10, 50, "Could not draw font...\n");
-				   jeErrorLog_AddString(-1,"DrawFontBuffer : Could not draw font...\n", NULL);
+				   //grEngine_Printf(Engine, 10, 50, "Could not draw font...\n");
+				   grErrorLog_AddString(-1,"DrawFontBuffer : Could not draw font...\n", NULL);
 			   }
 			   //x+= 16;
 			   x += FontWidth;
@@ -2020,19 +2020,19 @@ static void SubLarge(LARGE_INTEGER *start, LARGE_INTEGER *end, LARGE_INTEGER *de
 }
 
 //===================================================================================
-// jeEngine_Puts
+// grEngine_Puts
 //===================================================================================
-jeBoolean jeEngine_Puts(jeEngine *Engine, jeFont *Font, int32 x, int32 y, uint32 Color, const char *String)
+grBoolean grEngine_Puts(grEngine *Engine, grFont *Font, int32 x, int32 y, uint32 Color, const char *String)
 {
 	Engine_FontInfo* Fi{};
 
 	Fi = &Engine->FontInfo;
 
 	if (strlen(String) >= MAX_CLIENT_STRING_LEN)
-		return JE_FALSE;
+		return GR_FALSE;
 					 
 	if (Fi->NumStrings >= MAX_CLIENT_STRINGS)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	strcpy(Fi->ClientStrings[Fi->NumStrings].String, String);
 
@@ -2045,42 +2045,42 @@ jeBoolean jeEngine_Puts(jeEngine *Engine, jeFont *Font, int32 x, int32 y, uint32
 
 	Fi->NumStrings++;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //========================================================================================
-//	jeEngine_Printf
+//	grEngine_Printf
 //========================================================================================
-JETAPI jeBoolean JETCC jeEngine_Printf(jeEngine *Engine, jeFont *Font, int32 x, int32 y, uint32 Color, const char *String, ...)
+GRAPI grBoolean GRCC grEngine_Printf(grEngine *Engine, grFont *Font, int32 x, int32 y, uint32 Color, const char *String, ...)
 {
 	va_list			ArgPtr{};
     char			TempStr[1024];
 
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 //	assert(Engine->FrameState == FrameState_Begin); // can do this anywhere
 
 	va_start(ArgPtr, String);
     vsprintf(TempStr, String, ArgPtr);
 	va_end(ArgPtr);
 
-	return jeEngine_Puts(Engine, Font, x, y, Color, TempStr);
+	return grEngine_Puts(Engine, Font, x, y, Color, TempStr);
 }
 
 
-jeBoolean jeEngine_DebugPrintf(jeEngine *Engine, uint32 Color, const char *String, ...)
+grBoolean grEngine_DebugPrintf(grEngine *Engine, uint32 Color, const char *String, ...)
 {
-	jeBoolean ret{};
+	grBoolean ret{};
 	va_list			ArgPtr{};
    	char			TempStr[1024];
 
-	assert(jeEngine_IsValid(Engine));
+	assert(grEngine_IsValid(Engine));
 //	assert(Engine->FrameState == FrameState_Begin); // can do this anywhere
 
 	va_start(ArgPtr, String);
     vsprintf(TempStr, String, ArgPtr);
 	va_end(ArgPtr);
 
-	ret = jeEngine_Puts(Engine, Engine->FontInfo.Font, 2, 2 + 15 * Engine->FontInfo.NumDebugStrings, Color, TempStr);
+	ret = grEngine_Puts(Engine, Engine->FontInfo.Font, 2, 2 + 15 * Engine->FontInfo.NumDebugStrings, Color, TempStr);
 
 	Engine->FontInfo.NumDebugStrings++;
 
@@ -2090,17 +2090,17 @@ jeBoolean jeEngine_DebugPrintf(jeEngine *Engine, uint32 Color, const char *Strin
 
 /*}{**** SECTION : THandles  *********************/
 
-/*}{**** SECTION : jeDriver stuff *********************/
+/*}{**** SECTION : grDriver stuff *********************/
 
-#pragma message ("Engine : jeDriver_* : do these go here?  (jeDriver name space) :")  
+#pragma message ("Engine : grDriver_* : do these go here?  (grDriver name space) :")  
 
 //=====================================================================================
-//	jeDriver_SystemGetNextDriver
+//	grDriver_SystemGetNextDriver
 //=====================================================================================
-JETAPI jeDriver * JETCC jeDriver_SystemGetNextDriver(jeDriver_System *DriverSystem, jeDriver *Start)
+GRAPI grDriver * GRCC grDriver_SystemGetNextDriver(grDriver_System *DriverSystem, grDriver *Start)
 {
 	Engine_DriverInfo* DriverInfo{};
-	jeDriver* Last{};
+	grDriver* Last{};
 
 	assert(DriverSystem != NULL);
 	
@@ -2126,11 +2126,11 @@ JETAPI jeDriver * JETCC jeDriver_SystemGetNextDriver(jeDriver_System *DriverSyst
 }
 
 //=====================================================================================
-//	jeDriver_GetNextMode
+//	grDriver_GetNextMode
 //=====================================================================================
-JETAPI jeDriver_Mode * JETCC jeDriver_GetNextMode(jeDriver *Driver, jeDriver_Mode *Start)
+GRAPI grDriver_Mode * GRCC grDriver_GetNextMode(grDriver *Driver, grDriver_Mode *Start)
 {
-	jeDriver_Mode* Last{};
+	grDriver_Mode* Last{};
 
 	Last = &Driver->Modes[Driver->NumModes-1];
 
@@ -2149,35 +2149,35 @@ JETAPI jeDriver_Mode * JETCC jeDriver_GetNextMode(jeDriver *Driver, jeDriver_Mod
 }
 
 //=====================================================================================
-//	jeDriver_GetName
+//	grDriver_GetName
 //=====================================================================================
-JETAPI jeBoolean JETCC jeDriver_GetName(const jeDriver *Driver, const char **Name)
+GRAPI grBoolean GRCC grDriver_GetName(const grDriver *Driver, const char **Name)
 {
 	assert(Driver);
 	assert(Name);
 
 	*Name = Driver->Name;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeDriver_ModeGetName
+//	grDriver_ModeGetName
 //=====================================================================================
-JETAPI jeBoolean JETCC jeDriver_ModeGetName(const jeDriver_Mode *Mode, const char **Name)
+GRAPI grBoolean GRCC grDriver_ModeGetName(const grDriver_Mode *Mode, const char **Name)
 {
 	assert(Mode);
 	assert(Name);
 
 	*Name = Mode->Name;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeDriver_ModeGetWidthHeight
+//	grDriver_ModeGetWidthHeight
 //=====================================================================================
-JETAPI jeBoolean JETCC jeDriver_ModeGetWidthHeight(const jeDriver_Mode *Mode, int32 *pWidth, int32 *pHeight)
+GRAPI grBoolean GRCC grDriver_ModeGetWidthHeight(const grDriver_Mode *Mode, int32 *pWidth, int32 *pHeight)
 {
 	assert(Mode);
 	assert(pWidth);
@@ -2186,10 +2186,10 @@ JETAPI jeBoolean JETCC jeDriver_ModeGetWidthHeight(const jeDriver_Mode *Mode, in
 	*pWidth = Mode->Width;
 	*pHeight = Mode->Height;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeBoolean	JETCC jeDriver_ModeGetAttributes(const jeDriver_Mode *Mode, int32 *pWidth, int32 *pHeight, int32 *pBpp)
+GRAPI grBoolean	GRCC grDriver_ModeGetAttributes(const grDriver_Mode *Mode, int32 *pWidth, int32 *pHeight, int32 *pBpp)
 {
 	assert(Mode);
 	assert(pWidth);
@@ -2199,21 +2199,21 @@ JETAPI jeBoolean	JETCC jeDriver_ModeGetAttributes(const jeDriver_Mode *Mode, int
 	*pHeight = Mode->Height;
 	*pBpp = Mode->Bpp;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //===================================================================================
 //	EnumSubDriversCB
 //===================================================================================
-static jeBoolean Engine_EnumSubDriversCB(int32 DriverId, char *Name, void *Context)
+static grBoolean Engine_EnumSubDriversCB(int32 DriverId, char *Name, void *Context)
 {
 	Engine_DriverInfo* DriverInfo{};
 	DriverInfo = (Engine_DriverInfo*)Context;
 	DRV_Driver* RDriver{};
-	jeDriver* Driver{};
+	grDriver* Driver{};
 
 	if (DriverInfo->NumSubDrivers+1 >= MAX_SUB_DRIVERS)
-		return JE_FALSE;		// Stop when no more driver slots available
+		return GR_FALSE;		// Stop when no more driver slots available
 
 	Driver = &DriverInfo->SubDrivers[DriverInfo->NumSubDrivers];
 	
@@ -2234,24 +2234,24 @@ static jeBoolean Engine_EnumSubDriversCB(int32 DriverId, char *Name, void *Conte
 
 	DriverInfo->NumSubDrivers++;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //===================================================================================
 //	EnumModesCB
 //===================================================================================
-static jeBoolean Engine_EnumModesCB(int32 ModeId, char *Name, int32 Width, int32 Height, int32 Bpp, void *Context)
+static grBoolean Engine_EnumModesCB(int32 ModeId, char *Name, int32 Width, int32 Height, int32 Bpp, void *Context)
 {
 	Engine_DriverInfo* DriverInfo{};
-	jeDriver* Driver{};
-	jeDriver_Mode* Mode{};
+	grDriver* Driver{};
+	grDriver_Mode* Mode{};
 
 	DriverInfo = (Engine_DriverInfo*)Context;
 
 	Driver = DriverInfo->CurDriver;
 	
 	if (Driver->NumModes+1 >= MAX_DRIVER_MODES)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Mode = &Driver->Modes[Driver->NumModes];
 
@@ -2263,14 +2263,14 @@ static jeBoolean Engine_EnumModesCB(int32 ModeId, char *Name, int32 Width, int32
 
 	Driver->NumModes++;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
 //===================================================================================
 //	EnumSubDrivers
 //===================================================================================
-static jeBoolean Engine_EnumSubDrivers(Engine_DriverInfo *DriverInfo, const char *DriverDirectory)
+static grBoolean Engine_EnumSubDrivers(Engine_DriverInfo *DriverInfo, const char *DriverDirectory)
 {
 	DRV_Hook* DriverHook{};
 #ifdef WIN32
@@ -2281,31 +2281,31 @@ static jeBoolean Engine_EnumSubDrivers(Engine_DriverInfo *DriverInfo, const char
 #endif
 
 	DRV_Driver* RDriver{};
-	jeVFile* DosDir{};
-	jeVFile_Finder* Finder{};
+	grVFile* DosDir{};
+	grVFile_Finder* Finder{};
 
 	assert(DriverDirectory);
 
-	DosDir = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS, DriverDirectory, NULL, JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY);
+	DosDir = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS, DriverDirectory, NULL, GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY);
 	if	(!DosDir)
-		return JE_TRUE;
-	Finder = jeVFile_CreateFinder(DosDir, "*.dll");
+		return GR_TRUE;
+	Finder = grVFile_CreateFinder(DosDir, "*.dll");
 	if	(!Finder)
 	{
-		jeVFile_Close(DosDir);
-		return JE_FALSE;
+		grVFile_Close(DosDir);
+		return GR_FALSE;
 	}
 
 	DriverInfo->NumSubDrivers = 0;
 	DriverInfo->CurHookProc = nullptr;
 
-	while	(jeVFile_FinderGetNextFile(Finder) == JE_TRUE)
+	while	(grVFile_FinderGetNextFile(Finder) == GR_TRUE)
 	{
-		jeVFile_Properties	Properties;
+		grVFile_Properties	Properties;
 
-		jeVFile_FinderGetProperties(Finder, &Properties);
+		grVFile_FinderGetProperties(Finder, &Properties);
 
-		Handle = jeEngine_LoadLibrary(Properties.Name, DriverDirectory);
+		Handle = grEngine_LoadLibrary(Properties.Name, DriverDirectory);
 
 		if (!Handle)
 			continue;
@@ -2327,7 +2327,7 @@ static jeBoolean Engine_EnumSubDrivers(Engine_DriverInfo *DriverInfo, const char
 
 		if (RDriver->VersionMajor != DRV_VERSION_MAJOR || RDriver->VersionMinor != DRV_VERSION_MINOR)
 		{
-			jeErrorLog_AddString(-1,"Engine_EnumSubDrivers : found driver of wrong vesion (non-fatal)",Properties.Name);
+			grErrorLog_AddString(-1,"Engine_EnumSubDrivers : found driver of wrong vesion (non-fatal)",Properties.Name);
 			FreeLibrary(Handle);
 			continue;
 		}
@@ -2336,7 +2336,7 @@ static jeBoolean Engine_EnumSubDrivers(Engine_DriverInfo *DriverInfo, const char
 		
 		if (!RDriver->EnumSubDrivers(Engine_EnumSubDriversCB, (void*)DriverInfo))
 		{
-			jeErrorLog_AddString(-1,"Engine_EnumSubDrivers : RDriver->EnumSub failed!)",Properties.Name);
+			grErrorLog_AddString(-1,"Engine_EnumSubDrivers : RDriver->EnumSub failed!)",Properties.Name);
 			FreeLibrary(Handle);
 			continue;		// Should we return FALSE, or just continue?
 							// if you change your mind and decide to return, be sure to destroy the finder.
@@ -2347,15 +2347,15 @@ static jeBoolean Engine_EnumSubDrivers(Engine_DriverInfo *DriverInfo, const char
 		FreeLibrary(Handle);
 	}
 
-	jeVFile_DestroyFinder (Finder);
-	jeVFile_Close(DosDir);
-	return JE_TRUE;
+	grVFile_DestroyFinder (Finder);
+	grVFile_Close(DosDir);
+	return GR_TRUE;
 }
 
 //===================================================================================
-//	jeEngine_RegisterDriver
+//	grEngine_RegisterDriver
 //===================================================================================
-JETAPI void* JETCC jeEngine_D3DDriver(void)
+GRAPI void* GRCC grEngine_D3DDriver(void)
 {
 #ifdef WIN32
 	// Preserve ABI compatibility with checked-in applications while routing the
@@ -2373,26 +2373,26 @@ JETAPI void* JETCC jeEngine_D3DDriver(void)
 #endif
 }
 
-JETAPI jeBoolean JETCC jeEngine_RegisterDriver(jeEngine *Engine, void* HookProc)
+GRAPI grBoolean GRCC grEngine_RegisterDriver(grEngine *Engine, void* HookProc)
 {
 	DRV_Hook* DriverHook{};
 	DRV_Driver* RDriver{};
 
-	assert( jeEngine_IsValid(Engine) );
+	assert( grEngine_IsValid(Engine) );
 	assert(HookProc);
 
 	DriverHook = (DRV_Hook *)HookProc;
 
 	if (!DriverHook(&RDriver))
 	{
-		jeErrorLog_AddString(-1,"jeEngine_RegisterDriver : Hook proc failed", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"grEngine_RegisterDriver : Hook proc failed", NULL);
+		return GR_FALSE;
 	}
 
 	if (RDriver->VersionMajor != DRV_VERSION_MAJOR || RDriver->VersionMinor != DRV_VERSION_MINOR)
 	{
-		jeErrorLog_AddString(-1,"jeEngine_RegisterDriver : driver wrong vesion", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"grEngine_RegisterDriver : driver wrong vesion", NULL);
+		return GR_FALSE;
 	}
 
 	Engine->DriverInfo.RDriver = RDriver;	// temporary storage of the RDriver pointer
@@ -2400,125 +2400,125 @@ JETAPI jeBoolean JETCC jeEngine_RegisterDriver(jeEngine *Engine, void* HookProc)
 	
 	if (!RDriver->EnumSubDrivers(Engine_EnumSubDriversCB, (void*)&Engine->DriverInfo))
 	{
-		jeErrorLog_AddString(-1,"Engine_EnumSubDrivers : RDriver->EnumSub failed!)", NULL);
+		grErrorLog_AddString(-1,"Engine_EnumSubDrivers : RDriver->EnumSub failed!)", NULL);
 		Engine->DriverInfo.RDriver = NULL;		// clear out the RDriver pointer!
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	Engine->DriverInfo.RDriver = nullptr;		// clear out the RDriver pointer!
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //===================================================================================
-//	jeEngine_GetDeviceCaps
+//	grEngine_GetDeviceCaps
 //===================================================================================
-JETAPI jeBoolean JETCC jeEngine_GetDeviceCaps(jeEngine *pEngine, jeDeviceCaps *DeviceCaps)
+GRAPI grBoolean GRCC grEngine_GetDeviceCaps(grEngine *pEngine, grDeviceCaps *DeviceCaps)
 {
 	memset(DeviceCaps, 0, sizeof(*DeviceCaps));
 
 	if (!pEngine->DriverInfo.RDriver)
-		return JE_FALSE;
+		return GR_FALSE;
 
 #if 0
-	DeviceCaps->SuggestedDefaultRenderFlags = JE_RENDER_FLAG_BILINEAR_FILTER;
+	DeviceCaps->SuggestedDefaultRenderFlags = GR_RENDER_FLAG_BILINEAR_FILTER;
 	DeviceCaps->CanChangeRenderFlags = 0xFFFFFFFF;
 #else
 	pEngine->DriverInfo.RDriver->GetDeviceCaps(DeviceCaps);
 #endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 	pEngine;
 }
 
 //===================================================================================
-//	jeEngine_GetDefaultRenderFlags
+//	grEngine_GetDefaultRenderFlags
 //===================================================================================
-JETAPI jeBoolean JETCC jeEngine_GetDefaultRenderFlags(jeEngine *pEngine, uint32 *RenderFlags)
+GRAPI grBoolean GRCC grEngine_GetDefaultRenderFlags(grEngine *pEngine, uint32 *RenderFlags)
 {
 	*RenderFlags = pEngine->DefaultRenderFlags;
 
-	return JE_TRUE;
+	return GR_TRUE;
 	pEngine;
 }
 
 //===================================================================================
-//	jeEngine_SetDefaultRenderFlags
+//	grEngine_SetDefaultRenderFlags
 //===================================================================================
-JETAPI jeBoolean JETCC jeEngine_SetDefaultRenderFlags(jeEngine *pEngine, uint32 RenderFlags )
+GRAPI grBoolean GRCC grEngine_SetDefaultRenderFlags(grEngine *pEngine, uint32 RenderFlags )
 {
 	pEngine->DefaultRenderFlags = RenderFlags;
 
-	return JE_TRUE;
+	return GR_TRUE;
 	pEngine;
 }
 
 /*}**** SECTION : EOF *********************/
 
 // Registers an Object given a handle to a DLL - Incarnadine
-JETAPI jeBoolean JETCC jeEngine_RegisterObject(HINSTANCE DllHandle)
+GRAPI grBoolean GRCC grEngine_RegisterObject(HINSTANCE DllHandle)
 {
-	jeBoolean (*RegisterDef)(float MajorVersion, float MinorVersion);
+	grBoolean (*RegisterDef)(float MajorVersion, float MinorVersion);
 
 	assert( DllHandle );
 
 #ifdef WIN32	
-	RegisterDef = (jeBoolean (*)(float MajorVersion, float MinorVersion))GetProcAddress( DllHandle, "Object_RegisterDef" );
+	RegisterDef = (grBoolean (*)(float MajorVersion, float MinorVersion))GetProcAddress( DllHandle, "Object_RegisterDef" );
 #endif
 
 #ifdef BUILD_BE
 		get_image_symbol(DllHandle, "Object_RegisterDef", B_SYMBOL_TYPE_TEXT, (void **)&RegisterDef);			
 #endif
 
-	return( (*RegisterDef)( JET_MAJOR_VERSION, JET_MINOR_VERSION) );
+	return( (*RegisterDef)( GRT_MAJOR_VERSION, GRT_MINOR_VERSION) );
 }
 
 // Registers all Objects in a particular path. - Incarnadine
-JETAPI jeBoolean JETCC jeEngine_RegisterObjects(char * DllPath)
+GRAPI grBoolean GRCC grEngine_RegisterObjects(char * DllPath)
 {
 	// locals
-	jeVFile* DllDir{};
-	jeVFile_Finder* Finder{};
-	jeVFile_Properties	Properties{};
+	grVFile* DllDir{};
+	grVFile_Finder* Finder{};
+	grVFile_Properties	Properties{};
 	HINSTANCE			DllHandle{};
 	char* FullName{};
 
 	// open dll directory
-	DllDir = jeVFile_OpenNewSystem(
+	DllDir = grVFile_OpenNewSystem(
 		NULL,
-		JE_VFILE_TYPE_DOS,
+		GR_VFILE_TYPE_DOS,
 		DllPath,
 		NULL,
-		JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY );
+		GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY );
 	if ( DllDir != nullptr )
 	{
 
 		// create our directory finder
 		#ifndef NDEBUG
-		Finder = jeVFile_CreateFinder( DllDir, "*.ddl" );
+		Finder = grVFile_CreateFinder( DllDir, "*.ddl" );
 		#else
-		Finder = jeVFile_CreateFinder( DllDir, "*.dll" );
+		Finder = grVFile_CreateFinder( DllDir, "*.dll" );
 		#endif
 		
 		if( Finder != nullptr )
 		{
 
 			// start processing files
-			while ( jeVFile_FinderGetNextFile( Finder ) == JE_TRUE )
+			while ( grVFile_FinderGetNextFile( Finder ) == GR_TRUE )
 			{
 
 				// get properties of current file
-				if( jeVFile_FinderGetProperties( Finder, &Properties ) == JE_FALSE )
+				if( grVFile_FinderGetProperties( Finder, &Properties ) == GR_FALSE )
 				{
-					jeErrorLog_AddString( JE_ERR_FILEIO_READ, "InitObjects: Unable to get dll file properties.", NULL );
+					grErrorLog_AddString( GR_ERR_FILEIO_READ, "InitObjects: Unable to get dll file properties.", NULL );
 					goto ERROR_INITOBJECTS;
 				}
 
 
 				// save dll full name
-				FullName = (char*)jeRam_Allocate( strlen( DllPath ) + strlen( Properties.Name ) + 2 );
+				FullName = (char*)grRam_Allocate( strlen( DllPath ) + strlen( Properties.Name ) + 2 );
 				if ( FullName == nullptr )
 				{
-					jeErrorLog_AddString( JE_ERR_MEMORY_RESOURCE, "InitObjects: Unable to allocate dll full name.", NULL );
+					grErrorLog_AddString( GR_ERR_MEMORY_RESOURCE, "InitObjects: Unable to allocate dll full name.", NULL );
 					goto ERROR_INITOBJECTS;
 				}
 				strcpy( FullName, DllPath );
@@ -2535,39 +2535,39 @@ JETAPI jeBoolean JETCC jeEngine_RegisterObjects(char * DllPath)
 
 				if ( DllHandle == nullptr )
 				{
-					jeErrorLog_AddString( JE_ERR_FILEIO_READ, "InitObjects: Unable to load object dll.", Properties.Name );
-					jeRam_Free( FullName );
+					grErrorLog_AddString( GR_ERR_FILEIO_READ, "InitObjects: Unable to load object dll.", Properties.Name );
+					grRam_Free( FullName );
 					continue;
 				}
 
 				// setup the object functions
-				if ( jeEngine_RegisterObject( DllHandle ) == JE_FALSE )
+				if ( grEngine_RegisterObject( DllHandle ) == GR_FALSE )
 				{
-					jeErrorLog_AddString( JE_ERR_INTERNAL_RESOURCE, "InitObjects: failed to find get functions for object dll.", Properties.Name  );
-					jeRam_Free( FullName );
+					grErrorLog_AddString( GR_ERR_INTERNAL_RESOURCE, "InitObjects: failed to find get functions for object dll.", Properties.Name  );
+					grRam_Free( FullName );
 					continue;
 				}
-				jeRam_Free( FullName );
+				grRam_Free( FullName );
 
 			}
 
 			// destroy finder
-			jeVFile_DestroyFinder( Finder );
+			grVFile_DestroyFinder( Finder );
 		}
 
 		// close file system
-		jeVFile_Close( DllDir );
+		grVFile_Close( DllDir );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 ERROR_INITOBJECTS:
-	jeVFile_DestroyFinder( Finder );
-	jeVFile_Close( DllDir );
-	return( JE_FALSE );
+	grVFile_DestroyFinder( Finder );
+	grVFile_Close( DllDir );
+	return( GR_FALSE );
 }
 
 // BSP stats accessor
-JETAPI jeBoolean JETCC jeEngine_GetBSPDebugInfo(jeEngine *Engine, int32 *pNumMakeFaces, int32 *pNumMergedFaces, int32 *pNumSubdividedFaces, int32 *pNumDrawFaces)
+GRAPI grBoolean GRCC grEngine_GetBSPDebugInfo(grEngine *Engine, int32 *pNumMakeFaces, int32 *pNumMergedFaces, int32 *pNumSubdividedFaces, int32 *pNumDrawFaces)
 {
    if (pNumMakeFaces)
 	   *pNumMakeFaces = NumMakeFaces;
@@ -2578,23 +2578,23 @@ JETAPI jeBoolean JETCC jeEngine_GetBSPDebugInfo(jeEngine *Engine, int32 *pNumMak
    if (pNumDrawFaces)
 	   *pNumDrawFaces = NumMakeFaces+NumSubdividedFaces-NumMergedFaces;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 // Engine render mode
-JETAPI jeBoolean JETCC jeEngine_SetRenderMode(jeEngine *Engine, int32 RenderMode)
+GRAPI grBoolean GRCC grEngine_SetRenderMode(grEngine *Engine, int32 RenderMode)
 {
    if (Engine) {
       Engine->RenderMode = RenderMode;
-      return JE_TRUE;
+      return GR_TRUE;
    }
-   return JE_FALSE;
+   return GR_FALSE;
 }
 
-// BEGIN - Bug Fix - jeEngine_FillRect() not implemented - paradoxnj
-JETAPI void JETCC jeEngine_FillRect(jeEngine *Engine, const jeRect *Rect, const jeRGBA *Color)
+// BEGIN - Bug Fix - grEngine_FillRect() not implemented - paradoxnj
+GRAPI void GRCC grEngine_FillRect(grEngine *Engine, const grRect *Rect, const grRGBA *Color)
 {
-	jeTLVertex		DrvVertex[4];
+	grTLVertex		DrvVertex[4];
 	DRV_Driver* RDriver{};
 
 	RDriver = Engine->DriverInfo.RDriver;
@@ -2644,39 +2644,39 @@ JETAPI void JETCC jeEngine_FillRect(jeEngine *Engine, const jeRect *Rect, const 
 	DrvVertex[3].a = Color->a;
 
 	if (Color->a != 255.0f)
-		RDriver->RenderGouraudPoly(DrvVertex, 4, JE_RENDER_FLAG_FLUSHBATCH);
+		RDriver->RenderGouraudPoly(DrvVertex, 4, GR_RENDER_FLAG_FLUSHBATCH);
 	else
-		RDriver->RenderGouraudPoly(DrvVertex, 4, JE_RENDER_FLAG_ALPHA | JE_RENDER_FLAG_FLUSHBATCH);
+		RDriver->RenderGouraudPoly(DrvVertex, 4, GR_RENDER_FLAG_ALPHA | GR_RENDER_FLAG_FLUSHBATCH);
 }
-// END - Bug Fix - jeEngine_FillRect() not implemented - paradoxnj
+// END - Bug Fix - grEngine_FillRect() not implemented - paradoxnj
 
 // BEGIN - Hardware T&L - paradoxnj 6/8/2005
-JETAPI jeBoolean JETCC jeEngine_SetMatrix(jeEngine *Engine, uint32 Type, jeXForm3d *Matrix)
+GRAPI grBoolean GRCC grEngine_SetMatrix(grEngine *Engine, uint32 Type, grXForm3d *Matrix)
 {
 	if (Engine->DriverInfo.RDriver->SetMatrix)
 		return Engine->DriverInfo.RDriver->SetMatrix(Type, Matrix);
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-JETAPI jeBoolean JETCC jeEngine_GetMatrix(jeEngine *Engine, uint32 Type, jeXForm3d *Matrix)
+GRAPI grBoolean GRCC grEngine_GetMatrix(grEngine *Engine, uint32 Type, grXForm3d *Matrix)
 {
 	if (Engine->DriverInfo.RDriver->GetMatrix)
 		return Engine->DriverInfo.RDriver->GetMatrix(Type, Matrix);
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-JETAPI jeBoolean JETCC jeEngine_SetCamera(jeEngine *Engine, jeCamera *Camera)
+GRAPI grBoolean GRCC grEngine_SetCamera(grEngine *Engine, grCamera *Camera)
 {
 	if (Engine->DriverInfo.RDriver->SetCamera)
 		return Engine->DriverInfo.RDriver->SetCamera(Camera);
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 // END - Hardware T&L - paradoxnj 6/8/2005
 
-JETAPI jeFont * JETCC jeEngine_CreateFont(jeEngine *Engine, int32 Height, int32 Width, uint32 Weight, jeBoolean Italic, const char *facename)
+GRAPI grFont * GRCC grEngine_CreateFont(grEngine *Engine, int32 Height, int32 Width, uint32 Weight, grBoolean Italic, const char *facename)
 {
 	assert(Engine != NULL);
 	
@@ -2686,7 +2686,7 @@ JETAPI jeFont * JETCC jeEngine_CreateFont(jeEngine *Engine, int32 Height, int32 
 	return NULL;
 }
 
-JETAPI jeBoolean JETCC jeEngine_DestroyFont(jeEngine *Engine, jeFont **Font)
+GRAPI grBoolean GRCC grEngine_DestroyFont(grEngine *Engine, grFont **Font)
 {
 	assert(Engine != NULL);
 	assert(Font != NULL);
@@ -2694,5 +2694,5 @@ JETAPI jeBoolean JETCC jeEngine_DestroyFont(jeEngine *Engine, jeFont **Font)
 	if (Engine->DriverInfo.RDriver->Font_Destroy)
 		return Engine->DriverInfo.RDriver->Font_Destroy(Font);
 
-	return JE_FALSE;
+	return GR_FALSE;
 }

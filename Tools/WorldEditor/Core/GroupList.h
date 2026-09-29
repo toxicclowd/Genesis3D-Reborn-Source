@@ -23,7 +23,7 @@
 #define GROUPLIST_H
 
 #include "Group.h"
-#include "jeList.h"
+#include "grList.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +32,7 @@ extern "C" {
 typedef List GroupList ;
 typedef ListIterator GroupIterator ;
 typedef List_DestroyCallback GroupList_DestroyCallback ;
-typedef jeBoolean (*GroupListCB)( Group *pGroup, void * pVoid ) ;
+typedef grBoolean (*GroupListCB)( Group *pGroup, void * pVoid ) ;
 
 GroupList *		GroupList_Create( void ) ;
 void			GroupList_Destroy( GroupList **ppList, GroupList_DestroyCallback DestroyFcn ) ;
@@ -44,19 +44,19 @@ Group *			GroupList_GetFirst( GroupList * pList, GroupIterator * pGI ) ;
 Group *			GroupList_GetNext( GroupList * pList, GroupIterator * pGI ) ;
 
 // IS
-jeBoolean		GroupList_IsGroupVisible( GroupIterator pGI ) ;
+grBoolean		GroupList_IsGroupVisible( GroupIterator pGI ) ;
 
 // MODIFIERS
 GroupIterator	GroupList_Append( GroupList * pList, Group * pGroup ) ;
-jeBoolean		GroupList_ReattachObject( GroupList * pList, Object * pObject );
+grBoolean		GroupList_ReattachObject( GroupList * pList, Object * pObject );
 
 // ENUMERATION
 int32 GroupList_EnumGroups( GroupList * pGroupList, void * pVoid, GroupListCB Callback );
 
 // FILE HANDLING
 
-GroupList *			GroupList_CreateFromFile( jeVFile * pF  ) ;
-jeBoolean			GroupList_WriteToFile( GroupList * pList, jeVFile * pF ) ;
+GroupList *			GroupList_CreateFromFile( grVFile * pF  ) ;
+grBoolean			GroupList_WriteToFile( GroupList * pList, grVFile * pF ) ;
 
 #ifdef __cplusplus
 }

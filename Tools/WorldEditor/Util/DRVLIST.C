@@ -25,23 +25,23 @@
 #include	<stdlib.h>
 #include	<assert.h>
 
-#include	"jet.h"
+#include	"Genesis3D.h"
 
 #include	"..\resource.h"
 #include	"drvlist.h"
 
 typedef	struct	DriverInfo
 {
-	jeEngine				*Engine;
-	jeDriver * 				diDriver;
-	jeDriver_Mode *			diMode;
+	grEngine				*Engine;
+	grDriver * 				diDriver;
+	grDriver_Mode *			diMode;
 	struct	DriverInfo *	diNext;
 }	DriverInfo;
 
-static	jeDriver *		PickedDriver;
-static	jeDriver_Mode *	PickedMode;
-static	jeDriver		*CurDriver;
-static	jeDriver_Mode	*CurMode;
+static	grDriver *		PickedDriver;
+static	grDriver_Mode *	PickedMode;
+static	grDriver		*CurDriver;
+static	grDriver_Mode	*CurMode;
 
 
 static	void	DestroyDriverList(DriverInfo *dlist)
@@ -66,19 +66,19 @@ static	void	DestroyDriverList(DriverInfo *dlist)
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 static DriverInfo * Drvlist_Build(
-	jeEngine	*Engine,		// engine to use
+	grEngine	*Engine,		// engine to use
 	int			ModeFilter )	// how to choose modes
 {
 
 	// locals
-	jeDriver_System	*DriverSystem;
-	jeDriver		*Driver;
-	jeDriver_Mode	*Mode;
+	grDriver_System	*DriverSystem;
+	grDriver		*Driver;
+	grDriver_Mode	*Mode;
 	DriverInfo		*DriverList;
 	int				Count;
 
 	// get driver system
-	DriverSystem = jeEngine_GetDriverSystem( Engine );
+	DriverSystem = grEngine_GetDriverSystem( Engine );
 	if ( DriverSystem == NULL )
 	{
 		return NULL;
@@ -89,7 +89,7 @@ static DriverInfo * Drvlist_Build(
 	Count = 0;
 
 	// process all drivers
-	Driver = jeDriver_SystemGetNextDriver( DriverSystem, NULL );
+	Driver = grDriver_SystemGetNextDriver( DriverSystem, NULL );
 	while ( Driver != NULL )
 	{
 
@@ -98,21 +98,21 @@ static DriverInfo * Drvlist_Build(
 		const char	*DriverName;
 
 		// get driver name
-		jeDriver_GetName( Driver, &DriverName );
+		grDriver_GetName( Driver, &DriverName );
 
 		// process all modes
-		Mode = jeDriver_GetNextMode( Driver, NULL );
+		Mode = grDriver_GetNextMode( Driver, NULL );
 		while ( Mode != NULL )
 		{
 
 			// locals
 			const char	*ModeName;
 			int32		Width, Height;
-			jeBoolean	ValidMode;
+			grBoolean	ValidMode;
 
 			// get mode name and dimensions
-			jeDriver_ModeGetName( Mode, &ModeName );
-			jeDriver_ModeGetWidthHeight( Mode, &Width, &Height );
+			grDriver_ModeGetName( Mode, &ModeName );
+			grDriver_ModeGetWidthHeight( Mode, &Width, &Height );
 
 			// cool devug infp
 			OutputDebugString( DriverName );
@@ -121,44 +121,44 @@ static DriverInfo * Drvlist_Build(
 			OutputDebugString( "\r\n" );
 
 			// reset valid mode flag
-			ValidMode = JE_TRUE;
+			ValidMode = GR_TRUE;
 
 			// determine if its a valid mode
 			if ( !( ModeFilter & DRVLIST_WINDOW ) )
 			{
 				if ( ( Width == -1 ) && ( Height == -1 ) )
 				{
-					ValidMode = JE_FALSE;
+					ValidMode = GR_FALSE;
 				}
 			}
 			if ( !( ModeFilter & DRVLIST_FULLSCREEN ) )
 			{
 				if ( ( Width != -1 ) && ( Height != -1 ) )
 				{
-					ValidMode = JE_FALSE;
+					ValidMode = GR_FALSE;
 				}
 			}
 			/*if ( !( ModeFilter & DRVLIST_SOFTWARE ) )
 			{
 				if ( strnicmp( DriverName, "Software", 8 ) == 0 )
 				{
-					ValidMode = JE_FALSE;
+					ValidMode = GR_FALSE;
 				}
 			}*/
 
 			if ( !( ModeFilter & DRVLIST_HARDWARE ) )
 			{
 				// DirectX 12 is the engine's hardware-only renderer.
-				ValidMode = JE_FALSE;
+				ValidMode = GR_FALSE;
 			}
 
 			if ( ModeFilter & DRVLIST_ALL )
 			{
-				ValidMode = JE_TRUE;
+				ValidMode = GR_TRUE;
 			}
 
 			// add video mode to the list if required
-			if ( ValidMode == JE_TRUE )
+			if ( ValidMode == GR_TRUE )
 			{
 				dinfo = malloc(sizeof(*dinfo));
 				if	(!dinfo)
@@ -175,11 +175,11 @@ static DriverInfo * Drvlist_Build(
 			}
 
 			// get next mode
-			Mode = jeDriver_GetNextMode(Driver, Mode);
+			Mode = grDriver_GetNextMode(Driver, Mode);
 		}
 
 		// get next driver
-		Driver = jeDriver_SystemGetNextDriver(DriverSystem, Driver);
+		Driver = grDriver_SystemGetNextDriver(DriverSystem, Driver);
 	}
 
 	// if no available modes were found then just destroy the list
@@ -255,8 +255,8 @@ static	BOOL	CALLBACK	DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 				const char *	ModeName;
 				
 				// add this mode to the list
-				jeDriver_GetName(temp->diDriver, &DriverName);
-				jeDriver_ModeGetName(temp->diMode, &ModeName);
+				grDriver_GetName(temp->diDriver, &DriverName);
+				grDriver_ModeGetName(temp->diMode, &ModeName);
 				sprintf(buff, "%s %s", DriverName, ModeName);
 				SendDlgItemMessage(hwndDlg, IDC_DRIVERLIST, LB_ADDSTRING, 0, (LPARAM)buff);
 				GetTextExtentPoint32(hDC, buff, strlen(buff), &extents);
@@ -274,8 +274,8 @@ static	BOOL	CALLBACK	DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 					char			CurBuff[256];
 
 					// get current video mode name
-					jeDriver_GetName( CurDriver, &CurDriverName );
-					jeDriver_ModeGetName( CurMode, &CurModeName );
+					grDriver_GetName( CurDriver, &CurDriverName );
+					grDriver_ModeGetName( CurMode, &CurModeName );
 					sprintf( CurBuff, "%s %s", CurDriverName, CurModeName );
 
 					// if its the currently active one then make it the default selection
@@ -341,17 +341,17 @@ static	BOOL	CALLBACK	DlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 /*
 typedef	struct	DriverInfo
 {
-	jeEngine				*Engine;
-	jeDriver * 				diDriver;
-	jeDriver_Mode *			diMode;
+	grEngine				*Engine;
+	grDriver * 				diDriver;
+	grDriver_Mode *			diMode;
 	struct	DriverInfo *	diNext;
 }	DriverInfo;
 */
-jeBoolean DrvList_GetDriverByName(
-	jeEngine		*Engine,
+grBoolean DrvList_GetDriverByName(
+	grEngine		*Engine,
 	char			*sDriverMode,
-	jeDriver		**Driver,
-	jeDriver_Mode	**Mode)
+	grDriver		**Driver,
+	grDriver_Mode	**Mode)
 {
 	DriverInfo		*DriverList;
 	DriverInfo		*dlist;
@@ -366,7 +366,7 @@ jeBoolean DrvList_GetDriverByName(
 	DriverList = Drvlist_Build( Engine, DRVLIST_ALL );
 	if ( DriverList == NULL )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	
 
@@ -377,7 +377,7 @@ jeBoolean DrvList_GetDriverByName(
 		  DestroyDriverList( DriverList );
 		  DriverList = NULL;
 
-		  return JE_FALSE;
+		  return GR_FALSE;
 		}
 
 
@@ -388,7 +388,7 @@ jeBoolean DrvList_GetDriverByName(
 		  DestroyDriverList( DriverList );
 		  DriverList = NULL;
 
-		  return JE_FALSE;
+		  return GR_FALSE;
 		}
 	
 	// Find Modus
@@ -396,8 +396,8 @@ jeBoolean DrvList_GetDriverByName(
 	dlist=DriverList;
 	while	(dlist)
 	{
-		jeDriver_GetName( dlist->diDriver, &cWindowDriver );
-		jeDriver_ModeGetName( dlist->diMode, &cWindowMode );
+		grDriver_GetName( dlist->diDriver, &cWindowDriver );
+		grDriver_ModeGetName( dlist->diMode, &cWindowMode );
 		if (strcmp (cWindowDriver,sDriverString)==0)
 			if (strcmp (cWindowMode,cModeString)==0)
 			{	// Yep, found the right modus
@@ -407,7 +407,7 @@ jeBoolean DrvList_GetDriverByName(
 				DestroyDriverList( DriverList );
 				DriverList = NULL;
 
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 
 		dlist = dlist->diNext;
@@ -416,18 +416,18 @@ jeBoolean DrvList_GetDriverByName(
 	// Destroy DriverList
 	DestroyDriverList( DriverList );
 	DriverList = NULL;
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 // EOF JH
 
-jeBoolean DrvList_PickDriver(
+grBoolean DrvList_PickDriver(
 	HANDLE			hInstance,
 	HWND			hwndParent,
-	jeEngine		*Engine,
-	jeDriver		**Driver,
-	jeDriver_Mode	**Mode,
-	jeBoolean		DisplayDialog,
+	grEngine		*Engine,
+	grDriver		**Driver,
+	grDriver_Mode	**Mode,
+	grBoolean		DisplayDialog,
 	int				ModeFilter )
 {
 
@@ -446,11 +446,11 @@ jeBoolean DrvList_PickDriver(
 	if ( DriverList == NULL )
 	{
 		MessageBox( hwndParent, "Unable to find any supported video modes", "jDesigner3D 2.1", MB_OK );
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// default to first available mode...
-	if ( DisplayDialog == JE_FALSE )
+	if ( DisplayDialog == GR_FALSE )
 	{
 		PickedDriver = DriverList->diDriver;
 		PickedMode = DriverList->diMode;
@@ -479,10 +479,10 @@ jeBoolean DrvList_PickDriver(
 	// ...or fail if it didn't
 	else
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // DrvList_PickDriver()

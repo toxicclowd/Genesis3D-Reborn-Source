@@ -83,7 +83,7 @@ BOOL Disclaimer::OnInitDialog()
 	{
 		UpdateData( true );
 		m_AboutText = AboutText;
-		jeRam_Free( AboutText );
+		grRam_Free( AboutText );
 		m_BuildInfoText = _T(BUILD_TYPE "   " BUILD_NUMBER);
 		UpdateData( false );
 	}

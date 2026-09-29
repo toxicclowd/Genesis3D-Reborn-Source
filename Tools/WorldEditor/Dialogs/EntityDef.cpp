@@ -41,7 +41,7 @@ static char THIS_FILE[] = __FILE__;
 typedef struct tagEntityListInfo
 {
 	CComboBox	*	pCB ;
-	jeSymbol	*	pSelect ;
+	grSymbol	*	pSelect ;
 } EntityListInfo ;
 
 
@@ -122,7 +122,7 @@ BOOL CEntityDef::OnInitDialog()
 		}
 	}
 	m_FieldTypeCB.SetCurSel( 0 ) ;
-	m_SymbolType = (jeSymbol_Type)m_FieldTypeCB.GetItemData( 0 ) ;
+	m_SymbolType = (grSymbol_Type)m_FieldTypeCB.GetItemData( 0 ) ;
 	ShowFieldsBySymbolType( m_SymbolType ) ;
 
 	ASSERT( m_pEntities != NULL ) ;
@@ -143,31 +143,31 @@ void CEntityDef::FillProperties()
 {
 	int				nIndex ;
 	int				nItem ;
-	jeSymbol	*	pEntityDef ;
-	jeSymbol	*	pField ;
-	jeSymbol_List *	pFieldList ;
-	jeBoolean		bSuccess ;
+	grSymbol	*	pEntityDef ;
+	grSymbol	*	pField ;
+	grSymbol_List *	pFieldList ;
+	grBoolean		bSuccess ;
 
 	m_Properties.ResetContent() ;
 
 	nIndex = m_EntitiesCB.GetCurSel() ;
-	pEntityDef = (jeSymbol*)m_EntitiesCB.GetItemData( nIndex ) ;
+	pEntityDef = (grSymbol*)m_EntitiesCB.GetItemData( nIndex ) ;
 
-	bSuccess = jeSymbol_GetProperty
+	bSuccess = grSymbol_GetProperty
 	(	
 		pEntityDef, 
-		jeEclipseNames( m_pEntities, JE_ECLIPSENAMES_STRUCTUREFIELDS), 
+		grEclipseNames( m_pEntities, GR_ECLIPSENAMES_STRUCTUREFIELDS), 
 		&pFieldList, 
 		sizeof pFieldList, 
-		JE_SYMBOL_TYPE_LIST
+		GR_SYMBOL_TYPE_LIST
 	) ;
 	if( bSuccess )	// No fields if not set
 	{
 		nIndex = 0 ;
-		while( bSuccess && (pField = jeSymbol_ListGetSymbol( pFieldList, nIndex )) != NULL )
+		while( bSuccess && (pField = grSymbol_ListGetSymbol( pFieldList, nIndex )) != NULL )
 		{
 			nIndex++ ;
-			nItem = m_Properties.AddString( jeSymbol_GetName( pField ) ) ;
+			nItem = m_Properties.AddString( grSymbol_GetName( pField ) ) ;
 			if( nItem != LB_ERR && nItem != LB_ERRSPACE )
 			{
 				m_Properties.SetItemData( nItem, (DWORD)pField ) ;
@@ -188,12 +188,12 @@ void CEntityDef::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 	char			szName[ENTITY_MAXNAMELENGTH] ;
 	char			szValue[ENTITY_MAXSTRINGLENGTH] ;
 	HBRUSH			hOldBrush ;
-	jeSymbol	*	pField ;
-	jeSymbol_Type	Type ;
-	jeFloat			fValue ;
-	jeVec3d			Vec ;
+	grSymbol	*	pField ;
+	grSymbol_Type	Type ;
+	grFloat			fValue ;
+	grVec3d			Vec ;
 	int				nValue ;
-	JE_RGBA			Color ;
+	GR_RGBA			Color ;
 	char		*	pChar ;
 
 	if( nIDCtl != DEFE_LB_PROPERTIES )
@@ -205,7 +205,7 @@ void CEntityDef::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 	if( lpDrawItemStruct->itemID == -1 )
 		return ;
 
-	pField = (jeSymbol*)lpDrawItemStruct->itemData ;
+	pField = (grSymbol*)lpDrawItemStruct->itemData ;
 //	nNameWidth = (lpDrawItemStruct->rcItem.right/2)-1 ;
 	nNameWidth = 50 ;
 	nValueWidth = lpDrawItemStruct->rcItem.right-nNameWidth-3 ;
@@ -228,31 +228,31 @@ void CEntityDef::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		OldBk = ::SetBkColor( lpDrawItemStruct->hDC, GetSysColor( COLOR_WINDOW ) ) ;
 	}
 	
-	strcpy( szName, jeSymbol_GetName( pField ) ) ;
+	strcpy( szName, grSymbol_GetName( pField ) ) ;
 	TrimStringByPixelCount( lpDrawItemStruct->hDC, szName, nNameWidth ) ;
 	
 	
-	Type = jeSymbol_GetType( pField ) ;
+	Type = grSymbol_GetType( pField ) ;
 	switch( Type )
 	{
-		case JE_SYMBOL_TYPE_VEC3D :
-			jeSymbol_GetProperty( pField, pField, &Vec, sizeof Vec, Type ) ;
+		case GR_SYMBOL_TYPE_VEC3D :
+			grSymbol_GetProperty( pField, pField, &Vec, sizeof Vec, Type ) ;
 			sprintf( szValue, "%4.2f %4.2f %4.2f", Vec.X, Vec.Y, Vec.Z ) ;
 			break ;
-		case JE_SYMBOL_TYPE_INT :
-			jeSymbol_GetProperty( pField, pField, &nValue, sizeof nValue, Type ) ;
+		case GR_SYMBOL_TYPE_INT :
+			grSymbol_GetProperty( pField, pField, &nValue, sizeof nValue, Type ) ;
 			sprintf( szValue, "%d", nValue ) ;
 			break ;
-		case JE_SYMBOL_TYPE_FLOAT :
-			jeSymbol_GetProperty( pField, pField, &fValue, sizeof fValue, Type ) ;
+		case GR_SYMBOL_TYPE_FLOAT :
+			grSymbol_GetProperty( pField, pField, &fValue, sizeof fValue, Type ) ;
 			sprintf( szValue, "%4.2f", fValue ) ;
 			break ;
-		case JE_SYMBOL_TYPE_COLOR :
-			jeSymbol_GetProperty( pField, pField, &Color, sizeof Color, Type ) ;
+		case GR_SYMBOL_TYPE_COLOR :
+			grSymbol_GetProperty( pField, pField, &Color, sizeof Color, Type ) ;
 			sprintf( szValue, "R:%f G:%f, B:%f", Color.r, Color.g, Color.b ) ;
 			break ;
-		case JE_SYMBOL_TYPE_STRING :
-			jeSymbol_GetProperty( pField, pField, &pChar, sizeof szValue, Type ) ;
+		case GR_SYMBOL_TYPE_STRING :
+			grSymbol_GetProperty( pField, pField, &pChar, sizeof szValue, Type ) ;
 			strcpy( szValue, pChar ) ;
 			break ;
 	}
@@ -297,11 +297,11 @@ void CEntityDef::OnSelchangeCbFieldtype()
 	int	nIndex ;
 
 	nIndex = m_FieldTypeCB.GetCurSel() ;
-	m_SymbolType = (jeSymbol_Type)m_FieldTypeCB.GetItemData( nIndex ) ;
+	m_SymbolType = (grSymbol_Type)m_FieldTypeCB.GetItemData( nIndex ) ;
 	ShowFieldsBySymbolType( m_SymbolType ) ;
 }
 
-void CEntityDef::ShowFieldsBySymbolType(jeSymbol_Type Type )
+void CEntityDef::ShowFieldsBySymbolType(grSymbol_Type Type )
 {
 	CString	cstr ;
 	int		nIndex ;
@@ -322,36 +322,36 @@ void CEntityDef::ShowFieldsBySymbolType(jeSymbol_Type Type )
 
 	switch( Type )
 	{
-	case JE_SYMBOL_TYPE_VEC3D :
+	case GR_SYMBOL_TYPE_VEC3D :
 		GetDlgItem( DEFE_ED_DEFV3 )->ShowWindow( true ) ;
 		GetDlgItem( DEFE_ED_DEFV2 )->ShowWindow( true ) ;
 		// Fall Thru
 
-	case JE_SYMBOL_TYPE_INT :
-	case JE_SYMBOL_TYPE_FLOAT :
+	case GR_SYMBOL_TYPE_INT :
+	case GR_SYMBOL_TYPE_FLOAT :
 		GetDlgItem( DEFE_ED_DEFV1 )->ShowWindow( true ) ;
 		GetDlgItem( DEFE_ED_DEFV1 )->SetFocus() ;
 		break ;
 
-	case JE_SYMBOL_TYPE_ENUM :
-	case JE_SYMBOL_TYPE_STRING :
+	case GR_SYMBOL_TYPE_ENUM :
+	case GR_SYMBOL_TYPE_STRING :
 		GetDlgItem( DEFE_ED_DEFSTRING )->ShowWindow( true ) ;
 		GetDlgItem( DEFE_ED_DEFSTRING )->SetFocus() ;
 		break ;
 
-	case JE_SYMBOL_TYPE_COLOR :
+	case GR_SYMBOL_TYPE_COLOR :
 		GetDlgItem( DEFE_BN_COLOR )->EnableWindow( true ) ;
 		GetDlgItem( DEFE_BN_COLOR )->SetFocus() ;
 		break ;	
 	
-	case JE_SYMBOL_TYPE_BOOLEAN :
+	case GR_SYMBOL_TYPE_BOOLEAN :
 		m_DefEnumCB.ResetContent() ;
 		cstr.LoadString( IDS_TRUE ) ;
 		nIndex = m_DefEnumCB.AddString( cstr ) ;
-		m_DefEnumCB.SetItemData( nIndex, JE_TRUE ) ;
+		m_DefEnumCB.SetItemData( nIndex, GR_TRUE ) ;
 		cstr.LoadString( IDS_FALSE ) ;
 		nIndex = m_DefEnumCB.AddString( cstr ) ;
-		m_DefEnumCB.SetItemData( nIndex, JE_FALSE ) ;
+		m_DefEnumCB.SetItemData( nIndex, GR_FALSE ) ;
 		m_DefEnumCB.SetCurSel( 0 ) ;
 		GetDlgItem( DEFE_CB_DEFTF )->ShowWindow( true ) ;
 		GetDlgItem( DEFE_CB_DEFTF )->SetFocus() ;
@@ -362,19 +362,19 @@ void CEntityDef::ShowFieldsBySymbolType(jeSymbol_Type Type )
 
 }// ShowFieldsBySymbolType
 
-jeBoolean CEntityDef::UpdateDefinitionsCB(jeSymbol *pSymbol, void *lParam)
+grBoolean CEntityDef::UpdateDefinitionsCB(grSymbol *pSymbol, void *lParam)
 {
 	int					nIndex ;
 	EntityListInfo	*	peli = (EntityListInfo*)lParam ;
 
-	nIndex = peli->pCB->AddString( jeSymbol_GetName( pSymbol ) ) ;
+	nIndex = peli->pCB->AddString( grSymbol_GetName( pSymbol ) ) ;
 	if( nIndex != CB_ERR && nIndex != CB_ERRSPACE )
 	{
 		peli->pCB->SetItemData( nIndex, (DWORD)pSymbol ) ;
 		if( pSymbol == peli->pSelect )
 			peli->pCB->SetCurSel( nIndex ) ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// UpdateDefinitionsCB
 
 void CEntityDef::OnSelchangeCbEntities() 
@@ -399,15 +399,15 @@ void CEntityDef::OnSetfocusEdFieldname()
 void CEntityDef::OnSelchangeLbProperties() 
 {
 	int				nItem ;
-	jeSymbol_Type	Type ;
+	grSymbol_Type	Type ;
 
 	nItem = m_Properties.GetCurSel() ;	// LB item
 	if( nItem != -1 )
 	{
-		jeSymbol	*	pField ;
+		grSymbol	*	pField ;
 		
-		pField = (jeSymbol*)m_Properties.GetItemData( nItem ) ;
-		Type = jeSymbol_GetType( pField ) ;
+		pField = (grSymbol*)m_Properties.GetItemData( nItem ) ;
+		Type = grSymbol_GetType( pField ) ;
 		m_FieldTypeCB.SetCurSel( Type ) ;
 
 		ShowFieldsBySymbolType( Type ) ;
@@ -428,13 +428,13 @@ void CEntityDef::OnBnRemovefield()
 	iField = m_Properties.GetCurSel( ) ;
 	if( iField != -1 )
 	{	
-		jeSymbol	*	pField ;
-		jeSymbol	*	pEntity ;
+		grSymbol	*	pField ;
+		grSymbol	*	pEntity ;
 
-		pField = (jeSymbol*)m_Properties.GetItemData( iField ) ;
+		pField = (grSymbol*)m_Properties.GetItemData( iField ) ;
 		iEntity = m_EntitiesCB.GetCurSel() ;
 		ASSERT( iEntity != -1 ) ;
-		pEntity = (jeSymbol*)m_EntitiesCB.GetItemData( iEntity ) ;
+		pEntity = (grSymbol*)m_EntitiesCB.GetItemData( iEntity ) ;
 		ASSERT( pEntity != NULL ) ;
 		
 		// The level must remove this field from all instances...
@@ -450,11 +450,11 @@ void CEntityDef::OnBnRemovefield()
 
 void CEntityDef::OnBnAddfield() 
 {
-	jeSymbol_Type	Type ;
+	grSymbol_Type	Type ;
 	int				iIndex ;
 	int				iEntity ;
 	char			szDefault[ENTITY_MAXSTRINGLENGTH] ;
-	jeSymbol	*	pEntity ;
+	grSymbol	*	pEntity ;
 
 	UpdateData( true ) ;		// Get the fields
 	TrimString( m_csFieldName ) ;
@@ -465,7 +465,7 @@ void CEntityDef::OnBnAddfield()
 
 	iEntity = m_EntitiesCB.GetCurSel() ;
 	ASSERT( iEntity != -1 ) ;
-	pEntity = (jeSymbol*)m_EntitiesCB.GetItemData( iEntity ) ;
+	pEntity = (grSymbol*)m_EntitiesCB.GetItemData( iEntity ) ;
 	ASSERT( pEntity != NULL ) ;
 
 	if( m_csFieldName.IsEmpty() )
@@ -476,7 +476,7 @@ void CEntityDef::OnBnAddfield()
 	}
 	
 	iIndex = m_FieldTypeCB.GetCurSel() ;
-	Type = (jeSymbol_Type)m_FieldTypeCB.GetItemData( iIndex ) ;
+	Type = (grSymbol_Type)m_FieldTypeCB.GetItemData( iIndex ) ;
 	if( !GetFieldData( Type, szDefault ) )
 		return ;
 
@@ -496,40 +496,40 @@ void CEntityDef::OnBnAddfield()
 
 }// OnBnAddfield
 
-void CEntityDef::SetFields(jeSymbol *pField)
+void CEntityDef::SetFields(grSymbol *pField)
 {
-	jeSymbol_Type	Type ;
-	jeFloat			fValue ;
-	jeVec3d			Vec ;
+	grSymbol_Type	Type ;
+	grFloat			fValue ;
+	grVec3d			Vec ;
 	int				nValue ;
-	JE_RGBA			Color ;
+	GR_RGBA			Color ;
 	char		*	pChar ;
 
 	UpdateData( true ) ;
-	Type = jeSymbol_GetType( pField ) ;
+	Type = grSymbol_GetType( pField ) ;
 
 	switch( Type )
 	{
-		case JE_SYMBOL_TYPE_VEC3D :
-			jeSymbol_GetProperty( pField, pField, &Vec, sizeof Vec, Type ) ;
+		case GR_SYMBOL_TYPE_VEC3D :
+			grSymbol_GetProperty( pField, pField, &Vec, sizeof Vec, Type ) ;
 			m_csDef3.Format( "%f", Vec.Z ) ;
 			m_csDef2.Format( "%f", Vec.Y ) ;
 			m_csDef1.Format( "%f", Vec.X ) ;
 			break ;
-		case JE_SYMBOL_TYPE_INT :
-			jeSymbol_GetProperty( pField, pField, &nValue, sizeof nValue, Type ) ;
+		case GR_SYMBOL_TYPE_INT :
+			grSymbol_GetProperty( pField, pField, &nValue, sizeof nValue, Type ) ;
 			m_csDef1.Format( "%d", nValue ) ;
 			break ;
-		case JE_SYMBOL_TYPE_FLOAT :
-			jeSymbol_GetProperty( pField, pField, &fValue, sizeof fValue, Type ) ;
+		case GR_SYMBOL_TYPE_FLOAT :
+			grSymbol_GetProperty( pField, pField, &fValue, sizeof fValue, Type ) ;
 			m_csDef1.Format( "%f", fValue ) ;
 			break ;
-		case JE_SYMBOL_TYPE_COLOR :
-			jeSymbol_GetProperty( pField, pField, &Color, sizeof Color, Type ) ;
+		case GR_SYMBOL_TYPE_COLOR :
+			grSymbol_GetProperty( pField, pField, &Color, sizeof Color, Type ) ;
 			m_csDef1.Format( "R:%d G:%d B:%d", (int)Color.r, (int)Color.g, (int)Color.b ) ;
 			break ;
-		case JE_SYMBOL_TYPE_STRING :
-			jeSymbol_GetProperty( pField, pField, &pChar, sizeof pChar, Type ) ;
+		case GR_SYMBOL_TYPE_STRING :
+			grSymbol_GetProperty( pField, pField, &pChar, sizeof pChar, Type ) ;
 			m_csDefString = pChar ;
 			break ;
 	}
@@ -537,64 +537,64 @@ void CEntityDef::SetFields(jeSymbol *pField)
 }// SetFields
 
 
-jeBoolean CEntityDef::GetFieldData(jeSymbol_Type Type, char *pszDefaultValue)
+grBoolean CEntityDef::GetFieldData(grSymbol_Type Type, char *pszDefaultValue)
 {
 	int				iIndex ;
 
 	UpdateData( true ) ;
 	switch( Type )
 	{
-	case JE_SYMBOL_TYPE_BOOLEAN :
+	case GR_SYMBOL_TYPE_BOOLEAN :
 		iIndex = m_DefEnumCB.GetCurSel( ) ;
-		if( m_DefEnumCB.GetItemData( iIndex ) == JE_TRUE )
+		if( m_DefEnumCB.GetItemData( iIndex ) == GR_TRUE )
 			strcpy( pszDefaultValue, "1" ) ;
 		else
 			strcpy( pszDefaultValue, "0" ) ;
 		break ;
 
-	case JE_SYMBOL_TYPE_COLOR :
+	case GR_SYMBOL_TYPE_COLOR :
 		sprintf( pszDefaultValue, "%d %d %d", 1,2,3 ) ;
 		break ;
 
-	case JE_SYMBOL_TYPE_STRING :
+	case GR_SYMBOL_TYPE_STRING :
 		if( m_csDefString.IsEmpty() )
 		{
 			AfxMessageBox( IDS_MUSTSUPPLYDEFAULT, MB_OK, 0 ) ;
 			GetDlgItem( DEFE_ED_DEFSTRING )->SetFocus() ;
-			return JE_FALSE ;
+			return GR_FALSE ;
 		}
 		strcpy( pszDefaultValue, m_csDefString ) ;
 		break ;
 
-	case JE_SYMBOL_TYPE_INT :
-	case JE_SYMBOL_TYPE_FLOAT :
+	case GR_SYMBOL_TYPE_INT :
+	case GR_SYMBOL_TYPE_FLOAT :
 		if( m_csDef1.IsEmpty() )
 		{
 			AfxMessageBox( IDS_MUSTSUPPLYDEFAULT, MB_OK, 0 ) ;
 			GetDlgItem( DEFE_ED_DEFV1 )->SetFocus() ;
-			return JE_FALSE ;
+			return GR_FALSE ;
 		}
 		strcpy( pszDefaultValue, m_csDef1 ) ;
 		break ;
 
-	case JE_SYMBOL_TYPE_VEC3D :
+	case GR_SYMBOL_TYPE_VEC3D :
 		if( m_csDef1.IsEmpty() || m_csDef2.IsEmpty() || m_csDef3.IsEmpty() )
 		{
 			AfxMessageBox( IDS_MUSTSUPPLYDEFAULT, MB_OK, 0 ) ;
 			GetDlgItem( DEFE_ED_DEFV1 )->SetFocus() ;
-			return JE_FALSE ;
+			return GR_FALSE ;
 		}
 		sprintf( pszDefaultValue, "%s %s %s", m_csDef1, m_csDef2, m_csDef3 ) ;
 		break ;
 
-	case JE_SYMBOL_TYPE_ENUM :
+	case GR_SYMBOL_TYPE_ENUM :
 		ASSERT( 0 ) ;
 		break ;
 
 	default :
 		pszDefaultValue[0] = 0 ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// GetFieldData
 
 
@@ -602,19 +602,19 @@ void CEntityDef::OnBnApply()
 {
 	int				iEntity ;
 	int				iField ;
-	jeSymbol	*	pEntityDef ;
-	jeSymbol	*	pField ;
+	grSymbol	*	pEntityDef ;
+	grSymbol	*	pField ;
 	char			szValue[ENTITY_MAXSTRINGLENGTH] ;
 
 	iEntity = m_EntitiesCB.GetCurSel() ;
 	ASSERT( iEntity != -1 ) ;
-	pEntityDef = (jeSymbol*)m_EntitiesCB.GetItemData( iEntity ) ;
+	pEntityDef = (grSymbol*)m_EntitiesCB.GetItemData( iEntity ) ;
 	ASSERT( pEntityDef != NULL ) ;
 
 	iField = m_Properties.GetCurSel( ) ;
-	pField = (jeSymbol*)m_Properties.GetItemData( iField ) ;
+	pField = (grSymbol*)m_Properties.GetItemData( iField ) ;
 
-	if( GetFieldData( jeSymbol_GetType( pField ), szValue ) == JE_FALSE )
+	if( GetFieldData( grSymbol_GetType( pField ), szValue ) == GR_FALSE )
 		return ;
 	
 	EntityTable_SetDefaultValue( m_pEntities, pField, szValue ) ;
@@ -626,7 +626,7 @@ void CEntityDef::OnBnApply()
 void CEntityDef::OnBnNew() 
 {
 	CAddModel		AddModelDialog ;
-	jeSymbol	*	pEntityDef ;
+	grSymbol	*	pEntityDef ;
 	EntityListInfo	eli ;
 
 	AddModelDialog.m_nTitleID = IDS_NEWENTITY ;
@@ -659,8 +659,8 @@ void CEntityDef::OnBnNew()
 void CEntityDef::OnBnDelete() 
 {
 	int					iEntity ;
-	jeSymbol_List	*	pList ;
-	jeSymbol		*	pEntityDef ;
+	grSymbol_List	*	pList ;
+	grSymbol		*	pEntityDef ;
 	int					nInstances ;
 	CString				csMessage ;
 	int					nItemsLeft ;
@@ -668,13 +668,13 @@ void CEntityDef::OnBnDelete()
 	
 	iEntity = m_EntitiesCB.GetCurSel() ;
 	ASSERT( iEntity != -1 ) ;
-	pEntityDef = (jeSymbol*)m_EntitiesCB.GetItemData( iEntity ) ;
+	pEntityDef = (grSymbol*)m_EntitiesCB.GetItemData( iEntity ) ;
 	ASSERT( pEntityDef != NULL ) ;
 	
 	// Get all the instances (and the def) in a list
-	pList = jeSymbol_TableGetQualifiedSymbolList( m_pEntities, jeSymbol_GetQualifier(pEntityDef) ) ;
+	pList = grSymbol_TableGetQualifiedSymbolList( m_pEntities, grSymbol_GetQualifier(pEntityDef) ) ;
 	nInstances = EntityTable_ListGetNumItems( pList ) - 1 ;
-	jeSymbol_ListDestroy( &pList ) ;
+	grSymbol_ListDestroy( &pList ) ;
 	if( nInstances != 0 )
 	{
 		csMessage.Format( IDS_CONFIRMDELETEENTITIES, nInstances ) ;

@@ -35,9 +35,9 @@
 
 #include "Draw.h"
 #include "Draw3d.h"
-#include "Jet.h"
+#include "Genesis3D.h"
 #include "JetView.h"
-#include "jeWorld.h"
+#include "grWorld.h"
 #include "jwe.h"
 #include "MainFrm.h"
 #include "Rect.h"
@@ -46,7 +46,7 @@
 #include "View.h"
 #include "Stats.h"
 #include "rebuild.h"
-#include "jePtrMgr.h"
+#include "grPtrMgr.h"
 #include "ErrorLog.h"
 #include "ram.h"
 #include "units.h"
@@ -60,7 +60,7 @@
 #include "DrawTool.h"
 #include "ExtFileDialog.h"
 
-#include "jeBSP.h" // for RenderMode value
+#include "grBSP.h" // for RenderMode value
 #include ".\doc.h"
 
 
@@ -215,7 +215,7 @@ END_INTERFACE_MAP()
 CJweDoc::CJweDoc() : m_pLevel(nullptr), 
 m_Mode(MODE_POINTER_BB), 
 m_LastFOV( 2.0f ), 
-m_bLoaded( JE_FALSE ), 
+m_bLoaded( GR_FALSE ), 
 m_Anim_State(0)/*tom morris feb 2005*/,
 m_strRebuild("Rebuild All to reveal actors...")/*end tom morris*/
 {
@@ -227,7 +227,7 @@ m_strRebuild("Rebuild All to reveal actors...")/*end tom morris*/
    LightBitmap = nullptr;
 	pMainFrm->CloseCurDoc(  );
 
-	//jeMemAllocInfo_Activate();	// Added by Icestorm: Use this for memory debugging
+	//grMemAllocInfo_Activate();	// Added by Icestorm: Use this for memory debugging
 
 	EnableAutomation();
 	RebuildDlg = new( CRebuild );
@@ -240,13 +240,13 @@ m_strRebuild("Rebuild All to reveal actors...")/*end tom morris*/
 
 CJweDoc::~CJweDoc()
 {
-	jeBoolean Result{};
+	grBoolean Result{};
 
 	if( LightBitmap )
 #ifdef _USE_BITMAPS
-		Result = jeBitmap_Destroy( &LightBitmap);
+		Result = grBitmap_Destroy( &LightBitmap);
 #else
-		jeMaterialSpec_Destroy( &LightBitmap);
+		grMaterialSpec_Destroy( &LightBitmap);
 		Result = LightBitmap == nullptr;
 #endif
 	
@@ -257,37 +257,37 @@ CJweDoc::~CJweDoc()
 	if (m_pPrefsDialog != nullptr)
 		delete m_pPrefsDialog;
 
-	//jeMemAllocInfo_DeActivate(JE_TRUE);		// Added by Icestorm: Use this for memory debugging
+	//grMemAllocInfo_DeActivate(GR_TRUE);		// Added by Icestorm: Use this for memory debugging
 
 	AfxOleUnlockApp();
 }
 
-jeBitmap *	CJweDoc::InitBitmap( WORD Resource)
+grBitmap *	CJweDoc::InitBitmap( WORD Resource)
 {
 	// Jeff:  Load light bitmap from resources - 8/18/2005
-	jeVFile* BmpFile{};
-	jeBitmap * Bmp = nullptr;
+	grVFile* BmpFile{};
+	grBitmap * Bmp = nullptr;
 	POSITION	pos{};
 	CView* pView{};
 	HRSRC hFRes{};
 	HGLOBAL hRes{};
 	HMODULE hModule{};
-	jeVFile_MemoryContext Context{};
+	grVFile_MemoryContext Context{};
 
     hModule = GetModuleHandle (nullptr); 
-    hFRes = FindResource(hModule, MAKEINTRESOURCE(Resource) ,"jeBitmap"); 
+    hFRes = FindResource(hModule, MAKEINTRESOURCE(Resource) ,"grBitmap"); 
     hRes = LoadResource(hModule, hFRes) ;  
     
     Context.Data  = LockResource(hRes); 
     Context.DataLength = SizeofResource(hModule,hFRes); 
 
-	BmpFile = jeVFile_OpenNewSystem(nullptr,JE_VFILE_TYPE_MEMORY,nullptr,
-                            		&Context,JE_VFILE_OPEN_READONLY  );
+	BmpFile = grVFile_OpenNewSystem(nullptr,GR_VFILE_TYPE_MEMORY,nullptr,
+                            		&Context,GR_VFILE_OPEN_READONLY  );
 	if( BmpFile != nullptr )
 	{
-        Bmp = jeBitmap_CreateFromFile( BmpFile );
-		jeBitmap_SetColorKey( Bmp, JE_TRUE, 255, JE_TRUE );
-		jeVFile_Close( BmpFile );
+        Bmp = grBitmap_CreateFromFile( BmpFile );
+		grBitmap_SetColorKey( Bmp, GR_TRUE, 255, GR_TRUE );
+		grVFile_Close( BmpFile );
 		pos = GetFirstViewPosition();
 		while( pos != nullptr )
 		{
@@ -299,35 +299,35 @@ jeBitmap *	CJweDoc::InitBitmap( WORD Resource)
 		}
 	}
 	else
-		jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "InitBitmap:jeVFile_OpenNewSystem", MAKEINTRESOURCE(Resource) );
+		grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "InitBitmap:grVFile_OpenNewSystem", MAKEINTRESOURCE(Resource) );
 	return( Bmp );
 }
 
-jeMaterialSpec * CJweDoc::InitMaterial( WORD Resource )
+grMaterialSpec * CJweDoc::InitMaterial( WORD Resource )
 {
-	jeMaterialSpec* pMat = nullptr;
+	grMaterialSpec* pMat = nullptr;
 
 	HRSRC hFRes{};
 	HGLOBAL hRes{};
 	HMODULE hModule{};
 
-	jeVFile* BmpFile{};
-	jeVFile_MemoryContext Context{};
+	grVFile* BmpFile{};
+	grVFile_MemoryContext Context{};
 
     hModule = GetModuleHandle (nullptr); 
-    hFRes = FindResource(hModule, MAKEINTRESOURCE(Resource) ,"jeBitmap"); 
+    hFRes = FindResource(hModule, MAKEINTRESOURCE(Resource) ,"grBitmap"); 
     hRes = LoadResource(hModule, hFRes) ;  
     
     Context.Data  = LockResource(hRes); 
     Context.DataLength = SizeofResource(hModule,hFRes); 
 
-	BmpFile = jeVFile_OpenNewSystem(nullptr,JE_VFILE_TYPE_MEMORY,nullptr,
-                            		&Context,JE_VFILE_OPEN_READONLY  );
+	BmpFile = grVFile_OpenNewSystem(nullptr,GR_VFILE_TYPE_MEMORY,nullptr,
+                            		&Context,GR_VFILE_OPEN_READONLY  );
 
 	if (BmpFile) {
-		pMat = jeMaterialSpec_Create(GetJetEngine(), GetResourceMgr());
-		jeMaterialSpec_AddLayerFromFile(pMat, 0, BmpFile, JE_TRUE, 255);
-		jeVFile_Close( BmpFile );
+		pMat = grMaterialSpec_Create(GetJetEngine(), GetResourceMgr());
+		grMaterialSpec_AddLayerFromFile(pMat, 0, BmpFile, GR_TRUE, 255);
+		grVFile_Close( BmpFile );
 	}
 	return pMat;
 }
@@ -354,7 +354,7 @@ BOOL CJweDoc::OnNewDocument()
 		pApp->InitMaterialList(pJetView->GetEngine(), m_pResourceMgr);
 	}
 
-	m_pWorld = jeWorld_Create(m_pResourceMgr) ;
+	m_pWorld = grWorld_Create(m_pResourceMgr) ;
 	if( m_pWorld == nullptr )
 	{
 		TRACE0("World Create Failed\n") ;
@@ -380,9 +380,9 @@ BOOL CJweDoc::OnNewDocument()
 		return FALSE ;
 	}
 		
-	jeWorld_AttachSoundSystem( m_pWorld, pMainFrm->GetSoundSystem() );
+	grWorld_AttachSoundSystem( m_pWorld, pMainFrm->GetSoundSystem() );
 	
-	m_bLoaded = JE_TRUE;
+	m_bLoaded = GR_TRUE;
 
 	// Added JH: Bad Place to put, but i'm seaching a better one :)
 	char sTempString[200];
@@ -407,13 +407,13 @@ void CJweDoc::SetNewBrushBoundInvalid()
 
 void CJweDoc::SetNewBrushBound( Ortho * pOrtho, Point * pMousePt, Point *pAnchor )
 {
-	jeExtBox BrushBounds{};
-	jeVec3d MouseVec{};
-	jeVec3d AnchorVec{};
+	grExtBox BrushBounds{};
+	grVec3d MouseVec{};
+	grVec3d AnchorVec{};
 	int Index{};
 
 
-	if( jeExtBox_IsValid( &m_NewBrushBounds ) )
+	if( grExtBox_IsValid( &m_NewBrushBounds ) )
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&m_NewBrushBounds );
 
 	Ortho_ViewToWorld( pOrtho, pAnchor->X, pAnchor->Y, &AnchorVec );
@@ -424,22 +424,22 @@ void CJweDoc::SetNewBrushBound( Ortho * pOrtho, Point * pMousePt, Point *pAnchor
 		Transform_PointToGrid( m_pLevel, &MouseVec, &MouseVec ) ;
 	}
 	Index = Ortho_GetVerticalAxis( pOrtho );
-	if( jeVec3d_GetElement( &MouseVec, Index ) == jeVec3d_GetElement( &AnchorVec, Index ))
+	if( grVec3d_GetElement( &MouseVec, Index ) == grVec3d_GetElement( &AnchorVec, Index ))
 		return;
 	Index = Ortho_GetHorizontalAxis( pOrtho );
-	if( jeVec3d_GetElement( &MouseVec, Index ) == jeVec3d_GetElement( &AnchorVec, Index ))
+	if( grVec3d_GetElement( &MouseVec, Index ) == grVec3d_GetElement( &AnchorVec, Index ))
 		return;
-	jeExtBox_Set( &BrushBounds, MouseVec.X, MouseVec.Y, MouseVec.Z,
+	grExtBox_Set( &BrushBounds, MouseVec.X, MouseVec.Y, MouseVec.Z,
 								AnchorVec.X, AnchorVec.Y, AnchorVec.Z );
 	m_NewBrushBounds = BrushBounds;
 	Index = Ortho_GetOrthogonalAxis( pOrtho );
-	jeVec3d_SetElement( &m_NewBrushBounds.Min, Index, Level_GetConstructorPlane( m_pLevel, Index ) );
+	grVec3d_SetElement( &m_NewBrushBounds.Min, Index, Level_GetConstructorPlane( m_pLevel, Index ) );
 	if( Level_IsSnapGrid( m_pLevel ) )
-		jeVec3d_SetElement( &m_NewBrushBounds.Max, Index, Level_GetConstructorPlane( m_pLevel, Index ) + Level_GetGridSnapSize(  m_pLevel ));
+		grVec3d_SetElement( &m_NewBrushBounds.Max, Index, Level_GetConstructorPlane( m_pLevel, Index ) + Level_GetGridSnapSize(  m_pLevel ));
 	else
-		jeVec3d_SetElement( &m_NewBrushBounds.Max, Index, Level_GetConstructorPlane( m_pLevel, Index ) + 1);
+		grVec3d_SetElement( &m_NewBrushBounds.Max, Index, Level_GetConstructorPlane( m_pLevel, Index ) + 1);
 
-	if( jeExtBox_IsValid( &m_NewBrushBounds ) )
+	if( grExtBox_IsValid( &m_NewBrushBounds ) )
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&m_NewBrushBounds );
 }
 
@@ -450,10 +450,10 @@ void CJweDoc::SetNewBrushHeight( Ortho * pOrtho, Point * pMousePt, Point *pAncho
 	int Index{};
 	int VIndex{};
 	float Height{};
-	jeVec3d MouseVec{};
-	jeVec3d AnchorVec{};
+	grVec3d MouseVec{};
+	grVec3d AnchorVec{};
 
-	if( jeExtBox_IsValid( &m_NewBrushBounds ) )
+	if( grExtBox_IsValid( &m_NewBrushBounds ) )
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&m_NewBrushBounds );
 
 	Ortho_ViewToWorld( pOrtho, pAnchor->X, pAnchor->Y, &AnchorVec );
@@ -467,57 +467,57 @@ void CJweDoc::SetNewBrushHeight( Ortho * pOrtho, Point * pMousePt, Point *pAncho
 	Index = Ortho_GetOrthogonalAxis(pOrtho );
 	VIndex = Ortho_GetVerticalAxis(pOrtho );
 	
-	Height = jeVec3d_GetElement( &AnchorVec, VIndex ) -jeVec3d_GetElement( &MouseVec, VIndex );
+	Height = grVec3d_GetElement( &AnchorVec, VIndex ) -grVec3d_GetElement( &MouseVec, VIndex );
 	Plane  = Level_GetConstructorPlane( m_pLevel, Index );
 
-	if( jeVec3d_GetElement( &m_NewBrushBounds.Min, Index ) == Plane )
+	if( grVec3d_GetElement( &m_NewBrushBounds.Min, Index ) == Plane )
 	{
-		NewHeight = jeVec3d_GetElement( &m_NewBrushBounds.Min, Index ) + Height;
+		NewHeight = grVec3d_GetElement( &m_NewBrushBounds.Min, Index ) + Height;
 		
 		if( NewHeight < Plane )
 		{
-			jeVec3d_SetElement( &m_NewBrushBounds.Max, Index, Plane );
-			jeVec3d_SetElement( &m_NewBrushBounds.Min, Index, NewHeight );
+			grVec3d_SetElement( &m_NewBrushBounds.Max, Index, Plane );
+			grVec3d_SetElement( &m_NewBrushBounds.Min, Index, NewHeight );
 		}
 		else
 		if( NewHeight != Plane)
 		{
-			jeVec3d_SetElement( &m_NewBrushBounds.Max, Index, NewHeight );
+			grVec3d_SetElement( &m_NewBrushBounds.Max, Index, NewHeight );
 		}
 	}
 	else
 	{
-		NewHeight = jeVec3d_GetElement( &m_NewBrushBounds.Max, Index ) + Height;
+		NewHeight = grVec3d_GetElement( &m_NewBrushBounds.Max, Index ) + Height;
 		if( NewHeight > Plane )
 		{
-			jeVec3d_SetElement( &m_NewBrushBounds.Min, Index, Plane );
-			jeVec3d_SetElement( &m_NewBrushBounds.Max, Index, NewHeight );
+			grVec3d_SetElement( &m_NewBrushBounds.Min, Index, Plane );
+			grVec3d_SetElement( &m_NewBrushBounds.Max, Index, NewHeight );
 		}
 		else
 		if( NewHeight != Plane)
 		{
-			jeVec3d_SetElement( &m_NewBrushBounds.Min, Index, NewHeight );
+			grVec3d_SetElement( &m_NewBrushBounds.Min, Index, NewHeight );
 		}
 	}
 
 
-	if( jeExtBox_IsValid( &m_NewBrushBounds ) )
+	if( grExtBox_IsValid( &m_NewBrushBounds ) )
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&m_NewBrushBounds );
 
 }
 
-const jeExtBox * CJweDoc::GetNewBrushBounds()
+const grExtBox * CJweDoc::GetNewBrushBounds()
 {
 	return( &m_NewBrushBounds );
 }
 
 BOOL CJweDoc::CreateLevel()
 {
-	jeProperty_List *pArray = nullptr;
+	grProperty_List *pArray = nullptr;
 //	tom morris feb 2005 -- to support setting bsp rebuild defaults
-	jeBSP_Options		Options = 0;
-	jeBSP_Logic			Logic = Logic_Smart;
-	jeBSP_LogicBalance	LogicBalance = 3;
+	grBSP_Options		Options = 0;
+	grBSP_Logic			Logic = Logic_Smart;
+	grBSP_LogicBalance	LogicBalance = 3;
 //	end tom morris feb 2005
 	CJweApp		*App{};
 	App = (CJweApp*)AfxGetApp();
@@ -534,7 +534,7 @@ BOOL CJweDoc::CreateLevel()
 		}
 		pArray = Select_BuildDescriptor( m_pLevel );
 		pMainFrm->SetProperties( pArray );
-		jeProperty_ListDestroy( &pArray );
+		grProperty_ListDestroy( &pArray );
 	}
 
 //	tom morris feb 2005 -- necessary to ensure VIS areas are present
@@ -581,15 +581,15 @@ void CJweDoc::Dump(CDumpContext& dc) const
 /////////////////////////////////////////////////////////////////////////////
 // CJweDoc commands
 
-BOOL CJweDoc::RenderLights( jeCamera* pCamera )
+BOOL CJweDoc::RenderLights( grCamera* pCamera )
 {
 	LightList	*pLightList{};
 	Light		*pLight{};
 	LightIterator	LI{};
-	jeXForm3d		LightXForm{};
-	jeLVertex		Vertex{};
-	jeUserPoly	*Sprite{};
-	jeFrustum		Frustum{};
+	grXForm3d		LightXForm{};
+	grLVertex		Vertex{};
+	grUserPoly	*Sprite{};
+	grFrustum		Frustum{};
 
 	if( !LightBitmap )
 		return( FALSE );
@@ -601,18 +601,18 @@ BOOL CJweDoc::RenderLights( jeCamera* pCamera )
 	Vertex.a = 255.0f;
 	Vertex.u = 0.0f;
 	Vertex.v = 0.0f;
-	jeFrustum_SetFromCamera( &Frustum, pCamera );
+	grFrustum_SetFromCamera( &Frustum, pCamera );
 	while( pLight )
 	{
 		Light_GetXForm( pLight, &LightXForm );
 		Vertex.X = LightXForm.Translation.X;
 		Vertex.Y = LightXForm.Translation.Y;
 		Vertex.Z = LightXForm.Translation.Z;
-		Sprite = jeUserPoly_CreateSprite( &Vertex, LightBitmap, 1.0f, 0 );
+		Sprite = grUserPoly_CreateSprite( &Vertex, LightBitmap, 1.0f, 0 );
 		if( Sprite != nullptr )
 		{
-			jeWorld_AddUserPoly(m_pWorld, Sprite, JE_TRUE );
-			jeUserPoly_Destroy(&Sprite);
+			grWorld_AddUserPoly(m_pWorld, Sprite, GR_TRUE );
+			grUserPoly_Destroy(&Sprite);
 		}
 		pLight = LightList_GetNext( pLightList, &LI );
 	}
@@ -620,17 +620,17 @@ BOOL CJweDoc::RenderLights( jeCamera* pCamera )
 }
 
 typedef struct DrawFaceInfo_Struct {
-	jeEngine* pEngine;
-	jeBitmap* pBitmap;
+	grEngine* pEngine;
+	grBitmap* pBitmap;
 } DrawFaceInfo_Struct;
 
-void CJweDoc::DrawFaceCB(const jeTLVertex *Verts, int32 NumVerts, void *Context)
+void CJweDoc::DrawFaceCB(const grTLVertex *Verts, int32 NumVerts, void *Context)
 {
-	jeTLVertex *ModVerts{};
+	grTLVertex *ModVerts{};
 	int i;
 	DrawFaceInfo_Struct *pDrawFaceInfo = (DrawFaceInfo_Struct *)Context; 
 
-	ModVerts = JE_RAM_ALLOCATE_ARRAY( jeTLVertex, NumVerts );
+	ModVerts = GR_RAM_ALLOCATE_ARRAY( grTLVertex, NumVerts );
 	if( ModVerts == nullptr )
 		return;
 
@@ -642,25 +642,25 @@ void CJweDoc::DrawFaceCB(const jeTLVertex *Verts, int32 NumVerts, void *Context)
 		ModVerts[i].u = ModVerts[i].x * 0.0002f;
 		ModVerts[i].v = ModVerts[i].y * 0.0002f;
 	}
-	//jeEngine_RenderPoly(pDrawFaceInfo->pEngine, ModVerts, 
-	//					NumVerts, pDrawFaceInfo->pBitmap, JE_RENDER_FLAG_COLORKEY);
-	jeEngine_RenderPoly(pDrawFaceInfo->pEngine, ModVerts, 
-						NumVerts, nullptr, JE_RENDER_FLAG_ALPHA);
-	jeRam_Free( ModVerts );
+	//grEngine_RenderPoly(pDrawFaceInfo->pEngine, ModVerts, 
+	//					NumVerts, pDrawFaceInfo->pBitmap, GR_RENDER_FLAG_COLORKEY);
+	grEngine_RenderPoly(pDrawFaceInfo->pEngine, ModVerts, 
+						NumVerts, nullptr, GR_RENDER_FLAG_ALPHA);
+	grRam_Free( ModVerts );
 }
 
-jeBoolean CJweDoc::SetModelFaceCB( Model *pModel, void * pVoid ) 
+grBoolean CJweDoc::SetModelFaceCB( Model *pModel, void * pVoid ) 
 {
 	if (pVoid)
-		jeModel_SetBrushFaceCB( Model_GetguModel( pModel ), DrawFaceCB, pVoid );
+		grModel_SetBrushFaceCB( Model_GetguModel( pModel ), DrawFaceCB, pVoid );
 	else
-		jeModel_SetBrushFaceCB( Model_GetguModel( pModel ), nullptr, nullptr);
+		grModel_SetBrushFaceCB( Model_GetguModel( pModel ), nullptr, nullptr);
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-BOOL CJweDoc::SetDrawFaceCB(jeEngine *Engine, jeBoolean Enable)
+BOOL CJweDoc::SetDrawFaceCB(grEngine *Engine, grBoolean Enable)
 {
 	DrawFaceInfo_Struct DrawFaceInfo; 
 
@@ -677,17 +677,17 @@ BOOL CJweDoc::SetDrawFaceCB(jeEngine *Engine, jeBoolean Enable)
 BOOL CJweDoc::Render( class CJ3DView * pJ3DView )
 {
 	CJetView* pView{};
-	jeEngine* pEngine{};
-	jeCamera* pCamera{};
+	grEngine* pEngine{};
+	grCamera* pCamera{};
 	DrawFaceInfo_Struct DrawFaceInfo{}; 
-	jeXForm3d	CamXForm{};
+	grXForm3d	CamXForm{};
 	float FOV{};
 	
 	ASSERT(pJ3DView != nullptr);
 	ASSERT(pJ3DView->GetDocument() == this);
 	ASSERT(pJ3DView->IsKindOf(RUNTIME_CLASS(CJetView)));
 
-	if( m_bLoaded == JE_FALSE )
+	if( m_bLoaded == GR_FALSE )
 		return( TRUE );
 
 	if( m_pLevel == nullptr )
@@ -705,21 +705,21 @@ BOOL CJweDoc::Render( class CJ3DView * pJ3DView )
 	}
 
 	if( Level_GetCurCamXForm( m_pLevel, &CamXForm ) )
-		jeCamera_SetXForm( pCamera, &CamXForm );
+		grCamera_SetXForm( pCamera, &CamXForm );
 	if( Level_GetCurCamFOV( m_pLevel, &FOV ) )
 	{
 		if( FOV != m_LastFOV )
 		{
-			jeRect Rect;
-			jeCamera_GetClippingRect( pCamera, &Rect );
-			jeCamera_SetAttributes( pCamera, FOV, &Rect );
+			grRect Rect;
+			grCamera_GetClippingRect( pCamera, &Rect );
+			grCamera_SetAttributes( pCamera, FOV, &Rect );
 			m_LastFOV = FOV;
 		}
 	}
 	DrawFaceInfo.pEngine = pEngine;
 	Level_EnumModels( m_pLevel, &DrawFaceInfo, SetModelFaceCB );
 
-	if (jeEngine_BeginFrame(pEngine, pCamera, JE_TRUE) == JE_FALSE)
+	if (grEngine_BeginFrame(pEngine, pCamera, GR_TRUE) == GR_FALSE)
 	{
 		return(FALSE);
 	}
@@ -727,15 +727,15 @@ BOOL CJweDoc::Render( class CJ3DView * pJ3DView )
 	Draw3d_ManipulatedBrushes( m_pLevel, m_pWorld, pCamera, pEngine ) ;
 	RenderLights( pCamera );
 
-	if(jeWorld_Render(m_pWorld, pCamera, nullptr) == JE_FALSE)
+	if(grWorld_Render(m_pWorld, pCamera, nullptr) == GR_FALSE)
 	{
-		jeEngine_EndFrame(pEngine);
+		grEngine_EndFrame(pEngine);
 		return(FALSE);
 	}
 	
-	//jeBrush_Render(pBrush, pEngine, pCamera);
+	//grBrush_Render(pBrush, pEngine, pCamera);
 
-	if(jeEngine_EndFrame(pEngine) == JE_FALSE)
+	if(grEngine_EndFrame(pEngine) == GR_FALSE)
 	{
 		return(FALSE);
 	}
@@ -759,7 +759,7 @@ void CJweDoc::DeleteContents()
 
 	if( m_pWorld != nullptr)
 	{
-		jeWorld_Destroy(&m_pWorld);
+		grWorld_Destroy(&m_pWorld);
 		m_pWorld = nullptr;
 	}
 
@@ -939,14 +939,14 @@ void CJweDoc::DrawObjects( CDC *pDC, Ortho *pOrtho )
 
 void CJweDoc::DrawSelectBounds( CDC *pDC, Ortho *pOrtho )
 {
-	const jeExtBox *	pSelWorldBounds;
+	const grExtBox *	pSelWorldBounds;
 	Rect				SelBounds{};
 	CRect				cSelBounds{}; // Added jh
 	int32				ModFlags{};
 	COLORREF			co{};
 
 	pSelWorldBounds =	Level_GetSelDrawBounds( m_pLevel ) ;
-	if( jeExtBox_IsValid(  pSelWorldBounds ) && (m_Mode == MODE_POINTER_BB || m_Mode == MODE_POINTER_RS))
+	if( grExtBox_IsValid(  pSelWorldBounds ) && (m_Mode == MODE_POINTER_BB || m_Mode == MODE_POINTER_RS))
 	{
 		co = Settings_GetSelectedColor() ;
 		Draw_SelectBounds( pSelWorldBounds, pOrtho, pDC->m_hDC, &SelBounds, co );
@@ -956,23 +956,23 @@ void CJweDoc::DrawSelectBounds( CDC *pDC, Ortho *pOrtho )
 
 	}
 	pSelWorldBounds =	Level_GetSubSelDrawBounds( m_pLevel ) ;
-	if( jeExtBox_IsValid(  pSelWorldBounds ) )
+	if( grExtBox_IsValid(  pSelWorldBounds ) )
 	{
 		co = Settings_GetSubSelectedColor() ;
 		Draw_SelectBounds( pSelWorldBounds, pOrtho, pDC->m_hDC, &SelBounds, co );
 
 		ModFlags = Level_SubSelXFormModFlags( m_pLevel );
-		if( ModFlags & JE_OBJECT_XFORM_ROTATE) 
+		if( ModFlags & GR_OBJECT_XFORM_ROTATE) 
 			Draw_CornerHandles( &SelBounds, pDC->m_hDC, m_Mode );
 	}	
 }
 
 void CJweDoc::DrawSelectElipse( CDC *pDC, Ortho *pOrtho )
 {
-	const jeExtBox* pSelWorldBounds{};
+	const grExtBox* pSelWorldBounds{};
 
 	pSelWorldBounds =	Level_GetSelDrawBounds( m_pLevel ) ;
-	if( jeExtBox_IsValid(  pSelWorldBounds ) )
+	if( grExtBox_IsValid(  pSelWorldBounds ) )
 	{
 		Draw_SelectBoundElipse( pSelWorldBounds, pOrtho, pDC->m_hDC );
 	}
@@ -986,13 +986,13 @@ void CJweDoc::DrawSelectAxis( Ortho * pOrtho, HDC hDC )
 
 
 // Added JH 3.3.2000 // fixed again on 30.3.2000
-void CJweDoc::PrintRectDimensions( CDC *pDC,const Ortho * pOrtho, const jeExtBox	*pselBox )
+void CJweDoc::PrintRectDimensions( CDC *pDC,const Ortho * pOrtho, const grExtBox	*pselBox )
 {
 	char	sTempString1[200];
 	char	sTempString2[200];
 	char	sText[400];
 
-	jeVec3d pW{},pW1{};
+	grVec3d pW{},pW1{};
 
 	int		iBkMode=pDC->GetBkColor();
 
@@ -1043,16 +1043,16 @@ void CJweDoc::PrintRectDimensions( CDC *pDC,const Ortho * pOrtho, const jeExtBox
 
 
 
-jeBoolean CJweDoc::GetSelRadiusBox( Ortho *pOrtho, Rect *pBox )
+grBoolean CJweDoc::GetSelRadiusBox( Ortho *pOrtho, Rect *pBox )
 {
-	const jeExtBox* pSelWorldBounds{};
+	const grExtBox* pSelWorldBounds{};
 	pSelWorldBounds =	Level_GetSelDrawBounds( m_pLevel ) ;
-	if( jeExtBox_IsValid(  pSelWorldBounds ) )
+	if( grExtBox_IsValid(  pSelWorldBounds ) )
 	{
 		Draw_SelectGetElipseBox( pSelWorldBounds, pOrtho, pBox );
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
 void CJweDoc::RenderOrthoView(CDC *pDC, Ortho *pOrtho)
@@ -1064,7 +1064,7 @@ void CJweDoc::RenderOrthoView(CDC *pDC, Ortho *pOrtho)
 		return;
 }// RenderOrthoView
 
-jeBoolean CJweDoc::isPlaceBrushMode()
+grBoolean CJweDoc::isPlaceBrushMode()
 {
 
 	return( MODE_POINTER_CUBE		== m_Mode ||
@@ -1074,7 +1074,7 @@ jeBoolean CJweDoc::isPlaceBrushMode()
 			MODE_POINTER_ARCH		== m_Mode);
 }
 
-jeBoolean CJweDoc::isPlaceLightMode()
+grBoolean CJweDoc::isPlaceLightMode()
 {
 
 	return( MODE_POINTER_LIGHT == m_Mode ||
@@ -1131,13 +1131,13 @@ void CJweDoc::GetModeKind( int *Kind, int *SubKind )
 	}
 }
 
-void CJweDoc::PlaceObject(jeExtBox	*pObjectBounds, jeBoolean bSubtract )
+void CJweDoc::PlaceObject(grExtBox	*pObjectBounds, grBoolean bSubtract )
 {
-	jeExtBox		WorldBounds{} ;
+	grExtBox		WorldBounds{} ;
 	int Kind = KIND_INVALID;
 	int SubKind = BRUSH_INVALID;
 	Object * pObject{};
-	jeProperty_List *pArray{};
+	grProperty_List *pArray{};
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 
 	GetModeKind( &Kind, &SubKind );
@@ -1177,17 +1177,17 @@ void CJweDoc::PlaceObject(jeExtBox	*pObjectBounds, jeBoolean bSubtract )
 	else
 	{
 		pMainFrm->SetProperties( pArray );
-		jeProperty_ListDestroy( &pArray );
+		grProperty_ListDestroy( &pArray );
 	}
 }
 
-void CJweDoc::PlaceBrush( jeBoolean bSubtract )
+void CJweDoc::PlaceBrush( grBoolean bSubtract )
 {
-    if (!jeExtBox_IsValid( &m_NewBrushBounds )) {
+    if (!grExtBox_IsValid( &m_NewBrushBounds )) {
         return;
     }
 
-	//ASSERT( jeExtBox_IsValid( &m_NewBrushBounds ) );
+	//ASSERT( grExtBox_IsValid( &m_NewBrushBounds ) );
 	ASSERT( isPlaceBrushMode() );
 
 #pragma message ("Make new brush snap to grid" )
@@ -1211,18 +1211,18 @@ void CJweDoc::PlaceBrush( jeBoolean bSubtract )
 
 #define DEFAULT_OBJECT_SIZE 64.0f
 
-void CJweDoc::PlaceAtPoint( const Ortho * pOrtho, Point * pPoint,  jeBoolean bSubtract )
+void CJweDoc::PlaceAtPoint( const Ortho * pOrtho, Point * pPoint,  grBoolean bSubtract )
 {
-	jeVec3d WorldPt{};
-	jeVec3d SnapDelta{};
+	grVec3d WorldPt{};
+	grVec3d SnapDelta{};
 	ORTHO_AXIS Axis{};
 	float Constructor{};
-	jeExtBox DefaultBox{};
+	grExtBox DefaultBox{};
 
 
 	ASSERT( isPlaceBrushMode() || isPlaceLightMode() );
 
-	jeExtBox_Set( &DefaultBox, -DEFAULT_OBJECT_SIZE, -DEFAULT_OBJECT_SIZE, -DEFAULT_OBJECT_SIZE,
+	grExtBox_Set( &DefaultBox, -DEFAULT_OBJECT_SIZE, -DEFAULT_OBJECT_SIZE, -DEFAULT_OBJECT_SIZE,
 								DEFAULT_OBJECT_SIZE,  DEFAULT_OBJECT_SIZE,  DEFAULT_OBJECT_SIZE );
 
 
@@ -1233,26 +1233,26 @@ void CJweDoc::PlaceAtPoint( const Ortho * pOrtho, Point * pPoint,  jeBoolean bSu
 			( m_Mode == MODE_POINTER_CAMERA ) ||
 			( m_Mode == MODE_POINTER_USEROBJ ))
 	{
-		jeVec3d_SetElement( &WorldPt, Axis, Constructor );
+		grVec3d_SetElement( &WorldPt, Axis, Constructor );
 	}
 	else
 	{
-		jeVec3d_SetElement( &WorldPt, Axis, Constructor + DEFAULT_OBJECT_SIZE );
+		grVec3d_SetElement( &WorldPt, Axis, Constructor + DEFAULT_OBJECT_SIZE );
 	}
 	if( Level_IsSnapGrid( m_pLevel ) )
 	{
 		Transform_PlaceSnap( m_pLevel, &WorldPt, &SnapDelta );
-		jeVec3d_Add( &WorldPt, &SnapDelta, &WorldPt );
+		grVec3d_Add( &WorldPt, &SnapDelta, &WorldPt );
 	}
 
-	jeExtBox_SetTranslation( &DefaultBox, &WorldPt );
+	grExtBox_SetTranslation( &DefaultBox, &WorldPt );
 	PlaceObject( &DefaultBox, bSubtract );
 	SetMode( m_PrevMode );
 }
 
-jeBoolean CJweDoc::Select( const Ortho * pOrtho, const Point *pViewPt, LEVEL_STATE eState, jeBoolean bControl_Held )
+grBoolean CJweDoc::Select( const Ortho * pOrtho, const Point *pViewPt, LEVEL_STATE eState, grBoolean bControl_Held )
 {
-	jeExtBox		WorldBounds{};
+	grExtBox		WorldBounds{};
 	CMainFrame* pMainFrm{};
 	SELECT_RESULT	SelResult{};
 	ObjectList* SubSelList{};
@@ -1266,13 +1266,13 @@ jeBoolean CJweDoc::Select( const Ortho * pOrtho, const Point *pViewPt, LEVEL_STA
 	if( SELECT_RESULT_CHANGED == SelResult )
 	{
 
-		jeProperty_List *pArray;
+		grProperty_List *pArray;
 
 		pArray = Select_BuildDescriptor( m_pLevel );
 		if( pArray )
 		{
 			pMainFrm->SetProperties( pArray );			
-			jeProperty_ListDestroy( &pArray );
+			grProperty_ListDestroy( &pArray );
 		}
 		else
 			pMainFrm->ResetProperties();
@@ -1293,12 +1293,12 @@ jeBoolean CJweDoc::Select( const Ortho * pOrtho, const Point *pViewPt, LEVEL_STA
 	return( SELECT_RESULT_CHANGED == SelResult ) ;
 }// Select
 
-jeBoolean CJweDoc::SelectObject(Object *pObject, LEVEL_STATE eState)
+grBoolean CJweDoc::SelectObject(Object *pObject, LEVEL_STATE eState)
 {
-	jeBoolean b{};
+	grBoolean b{};
 	Group* pGroup{};
 	CMainFrame* pMainFrm{};
-	jeProperty_List* pArray{};
+	grProperty_List* pArray{};
 
 	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	pGroup = Object_IsMemberOfLockedGroup( pObject );
@@ -1314,15 +1314,15 @@ jeBoolean CJweDoc::SelectObject(Object *pObject, LEVEL_STATE eState)
 	pArray = Select_BuildDescriptor( m_pLevel );
 	pMainFrm->SetProperties( pArray );
 	if( pArray != nullptr )
-		jeProperty_ListDestroy( &pArray );
+		grProperty_ListDestroy( &pArray );
 	pMainFrm->UpdatePanel( MAINFRM_PANEL_LISTS ) ;
 	UpdateAllViews( nullptr ) ;
 	return b ;
 }//SelectObject
 
-jeBoolean CJweDoc::SubSelectgeObject(jeObject *pgeObject, LEVEL_STATE eState)
+grBoolean CJweDoc::SubSelectgeObject(grObject *pgeObject, LEVEL_STATE eState)
 {
-	jeBoolean b{};
+	grBoolean b{};
 	CMainFrame* pMainFrm{};
 
 	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
@@ -1332,9 +1332,9 @@ jeBoolean CJweDoc::SubSelectgeObject(jeObject *pgeObject, LEVEL_STATE eState)
 	return b ;
 }//SelectObject
 
-jeBoolean CJweDoc::MarkSubSelect(jeObject *pgeObject, int32 flag)
+grBoolean CJweDoc::MarkSubSelect(grObject *pgeObject, int32 flag)
 {
-	jeBoolean b{};
+	grBoolean b{};
 	CMainFrame* pMainFrm{};
 
 	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
@@ -1346,14 +1346,14 @@ jeBoolean CJweDoc::MarkSubSelect(jeObject *pgeObject, int32 flag)
 
 // Append or Toggle on CTRL?  Desktop uses toggle
 
-jeBoolean CJweDoc::RectangleSelect( jeExtBox *pBox, jeBoolean bAppend )
+grBoolean CJweDoc::RectangleSelect( grExtBox *pBox, grBoolean bAppend )
 {
-	jeExtBox	ChangedBounds{};
-	jeBoolean	bSelChanged = JE_FALSE ;
+	grExtBox	ChangedBounds{};
+	grBoolean	bSelChanged = GR_FALSE ;
 	
-	if( JE_FALSE == bAppend )
+	if( GR_FALSE == bAppend )
 	{
-		DeselectAll(JE_TRUE) ;
+		DeselectAll(GR_TRUE) ;
 
 	}
 
@@ -1372,13 +1372,13 @@ jeBoolean CJweDoc::RectangleSelect( jeExtBox *pBox, jeBoolean bAppend )
 			bSelChanged= Select_VertsInRectangle( m_pLevel, pBox, Settings_IsSelByEncompass(), &ChangedBounds ) ;
 			break ;
 	}
-	if( JE_TRUE == bSelChanged )
+	if( GR_TRUE == bSelChanged )
 	{
-		jeProperty_List *pArray;
+		grProperty_List *pArray;
 
 		pArray = Select_BuildDescriptor( m_pLevel );
 		((CMainFrame*)AfxGetMainWnd())->SetProperties( pArray );			
-		jeProperty_ListDestroy( &pArray );
+		grProperty_ListDestroy( &pArray );
 		((CMainFrame*)AfxGetMainWnd())->UpdatePanel( MAINFRM_PANEL_LISTS ) ;
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&ChangedBounds ) ;
 	}
@@ -1387,9 +1387,9 @@ jeBoolean CJweDoc::RectangleSelect( jeExtBox *pBox, jeBoolean bAppend )
 }// RectangleSelect
 
 
-jeBoolean CJweDoc::Select3d( const jeCamera * pCamera, const Point *pViewPt )
+grBoolean CJweDoc::Select3d( const grCamera * pCamera, const Point *pViewPt )
 {
-	jeBoolean	bSelChanged{};
+	grBoolean	bSelChanged{};
 	uint32		c1{}, c2{};
 	char		Buff[255];
 
@@ -1400,19 +1400,19 @@ jeBoolean CJweDoc::Select3d( const jeCamera * pCamera, const Point *pViewPt )
 	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	if( !Util_IsKeyDown( VK_CONTROL ) )
 	{
-		DeselectAll(JE_TRUE);
+		DeselectAll(GR_TRUE);
 	}
 	bSelChanged = Select_Face( m_pLevel, pCamera, pViewPt, &c1, &c2 ) ;
-	if( JE_TRUE == bSelChanged )
+	if( GR_TRUE == bSelChanged )
 	{
 
-		jeProperty_List *pArray;
+		grProperty_List *pArray;
 
 		pArray = Select_BuildDescriptor( m_pLevel );
 		sprintf_s( Buff, "Contents 1 %x Contents 2 %x", c1, c2 );
 		pMainFrm->SetStatusText( Buff);
 		pMainFrm->SetProperties( pArray );			
-		jeProperty_ListDestroy( &pArray );
+		grProperty_ListDestroy( &pArray );
 		pMainFrm->UpdatePanel( MAINFRM_PANEL_LISTS ) ;
 		UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)Level_GetSelBounds( m_pLevel) ) ;
 	}
@@ -1421,13 +1421,13 @@ jeBoolean CJweDoc::Select3d( const jeCamera * pCamera, const Point *pViewPt )
 
 void CJweDoc::DeselectAllSub()
 {
-	jeExtBox  WorldBounds{};
+	grExtBox  WorldBounds{};
 	Level_DeselectAllSub( m_pLevel, &WorldBounds );
 	UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&WorldBounds ) ;
 }
 
 
-SELECT_HANDLE CJweDoc::ViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox * pWorldBox )
+SELECT_HANDLE CJweDoc::ViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox )
 {
 	SELECT_HANDLE Handle{};
 	int32 XFormMod{};
@@ -1435,18 +1435,18 @@ SELECT_HANDLE CJweDoc::ViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeExtBo
 	Handle = Select_ViewPointHandle( pOrtho, pViewPt, pWorldBox );
 	XFormMod = Level_SelXFormModFlags( m_pLevel );
 
-	if( MODE_POINTER_BB == m_Mode && !(XFormMod & JE_OBJECT_XFORM_SCALE ) )
+	if( MODE_POINTER_BB == m_Mode && !(XFormMod & GR_OBJECT_XFORM_SCALE ) )
 		Handle = Select_None;
 
-	if( MODE_POINTER_RS == m_Mode && IS_CORNER_HANDLE(Handle) && !(XFormMod & JE_OBJECT_XFORM_ROTATE ) )
+	if( MODE_POINTER_RS == m_Mode && IS_CORNER_HANDLE(Handle) && !(XFormMod & GR_OBJECT_XFORM_ROTATE ) )
 		Handle = Select_None;
 
-	if( MODE_POINTER_RS == m_Mode && IS_EDGE_HANDLE(Handle) && !(XFormMod & JE_OBJECT_XFORM_SHEAR ) )
+	if( MODE_POINTER_RS == m_Mode && IS_EDGE_HANDLE(Handle) && !(XFormMod & GR_OBJECT_XFORM_SHEAR ) )
 		Handle = Select_None;
 	return( Handle );
 }
 
-SELECT_HANDLE CJweDoc::SubViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox * pWorldBox )
+SELECT_HANDLE CJweDoc::SubViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox )
 {
 	SELECT_HANDLE Handle{};
 	int32 XFormMod{};
@@ -1465,10 +1465,10 @@ SELECT_HANDLE CJweDoc::SubViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeEx
 	return( Handle );
 }
 
-void CJweDoc::DeselectAll( jeBoolean UpadatePannel )
+void CJweDoc::DeselectAll( grBoolean UpadatePannel )
 {
-	jeBoolean	bSelChanged{};
-	jeExtBox	WorldBounds{};
+	grBoolean	bSelChanged{};
+	grExtBox	WorldBounds{};
 
 	((CMainFrame*)AfxGetMainWnd())->ResetProperties();
 
@@ -1477,7 +1477,7 @@ void CJweDoc::DeselectAll( jeBoolean UpadatePannel )
 	else
 		bSelChanged = Select_DeselectAll( m_pLevel, &WorldBounds ) ;
 	
-	if( JE_TRUE == bSelChanged )
+	if( GR_TRUE == bSelChanged )
 	{
 		UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)&WorldBounds ) ;
 	}
@@ -1486,17 +1486,17 @@ void CJweDoc::DeselectAll( jeBoolean UpadatePannel )
 
 void CJweDoc::DeselectAllFaces()
 {
-	const jeExtBox* pWorldBounds{};
+	const grExtBox* pWorldBounds{};
 	Select_DeselectAllFaces( m_pLevel );
 	pWorldBounds = Level_GetSelBounds( m_pLevel ) ;
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)pWorldBounds ) ;
 }
 
-void CJweDoc::BeginMove( const Ortho * pOrtho, SELECT_HANDLE eCorner, jeBoolean bCopy )
+void CJweDoc::BeginMove( const Ortho * pOrtho, SELECT_HANDLE eCorner, grBoolean bCopy )
 {
-	jeVec3d		Distance{};
-	jeVec3d		SnapDelta{};
-	jeExtBox	WorldBounds{};
+	grVec3d		Distance{};
+	grVec3d		SnapDelta{};
+	grExtBox	WorldBounds{};
 	CMainFrame *	pMainFrm = nullptr;
 	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 		
@@ -1504,9 +1504,9 @@ void CJweDoc::BeginMove( const Ortho * pOrtho, SELECT_HANDLE eCorner, jeBoolean 
 	m_bCopying = bCopy ;
 	if( m_bCopying )
 	{
-		jeProperty_List *pArray;
+		grProperty_List *pArray;
 
-		if( JE_FALSE == Select_DupAndDeselectSelections( m_pLevel ) )
+		if( GR_FALSE == Select_DupAndDeselectSelections( m_pLevel ) )
 			return ;
 
 		pMainFrm->AddSelection( this ) ;
@@ -1519,15 +1519,15 @@ void CJweDoc::BeginMove( const Ortho * pOrtho, SELECT_HANDLE eCorner, jeBoolean 
 	else
 		Select_DragBegin( m_pLevel ) ;
 
-	jeVec3d_Clear( &m_DragPoint ) ;
+	grVec3d_Clear( &m_DragPoint ) ;
 
 #pragma message( "bCopy NZ means undo create at new location" )
-	if( JE_FALSE == m_bCopying )
+	if( GR_FALSE == m_bCopying )
 		Transform_AddSelectedUndo( m_pLevel, UNDO_MOVE ) ;
 
 	if( Level_IsSnapGrid( m_pLevel ) )
 	{
-		jeVec3d_Clear( &Distance ) ;
+		grVec3d_Clear( &Distance ) ;
 		Transform_MoveSnapSelected( m_pLevel, eCorner, Ortho_GetHorizontalAxis( pOrtho ), Ortho_GetVerticalAxis( pOrtho ), &WorldBounds, &SnapDelta ) ;
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&WorldBounds ) ;
 	}
@@ -1539,7 +1539,7 @@ void CJweDoc::BeginMoveSub( )
 
 	Select_DragBeginSub( m_pLevel ) ;
 
-	jeVec3d_Clear( &m_DragPoint ) ;
+	grVec3d_Clear( &m_DragPoint ) ;
 
 }// BeginMove
 
@@ -1575,12 +1575,12 @@ void CJweDoc::EndMoveSub()
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED, nullptr ) ;
 }// EndMoveSub
 
-void CJweDoc::MoveSelected( SELECT_HANDLE eCorner, jeVec3d *pWorldDistance )
+void CJweDoc::MoveSelected( SELECT_HANDLE eCorner, grVec3d *pWorldDistance )
 {
-	jeExtBox	WorldBounds{};
-	jeVec3d		SnapPoint{};
-	jeVec3d		GridPoint{};
-	jeVec3d		GridDiff{};
+	grExtBox	WorldBounds{};
+	grVec3d		SnapPoint{};
+	grVec3d		GridPoint{};
+	grVec3d		GridDiff{};
 	LEVEL_SEL	SelectType{};
 	DOC_HINT	Hint{};
 	LEVEL_UPDATE	LightUpdate{};
@@ -1605,14 +1605,14 @@ void CJweDoc::MoveSelected( SELECT_HANDLE eCorner, jeVec3d *pWorldDistance )
 	{
 		Transform_PointToGrid( m_pLevel, &m_DragPoint, &GridPoint ) ;
 
-		jeVec3d_Add( &m_DragPoint, pWorldDistance, &m_DragPoint ) ;
+		grVec3d_Add( &m_DragPoint, pWorldDistance, &m_DragPoint ) ;
 		Transform_PointToGrid( m_pLevel, &m_DragPoint, &SnapPoint ) ;
 		
-		if( jeVec3d_Compare( &GridPoint, &SnapPoint, 0.01f ) == JE_FALSE )
+		if( grVec3d_Compare( &GridPoint, &SnapPoint, 0.01f ) == GR_FALSE )
 		{
-			jeVec3d_Subtract( &SnapPoint, &GridPoint, &GridDiff ) ;
+			grVec3d_Subtract( &SnapPoint, &GridPoint, &GridDiff ) ;
 			Transform_MoveSelected( m_pLevel, &GridDiff, &WorldBounds ) ;
-//			jeVec3d_Subtract( &m_DragPoint, &Remainder, &m_DragPoint ) ;
+//			grVec3d_Subtract( &m_DragPoint, &Remainder, &m_DragPoint ) ;
 			UpdateAllViews( nullptr, Hint, (CObject*)&WorldBounds ) ;
 		}
 	}
@@ -1624,12 +1624,12 @@ void CJweDoc::MoveSelected( SELECT_HANDLE eCorner, jeVec3d *pWorldDistance )
 
 }// MoveSelected
 
-void CJweDoc::MoveSelectedSub( SELECT_HANDLE eCorner, jeVec3d *pWorldDistance )
+void CJweDoc::MoveSelectedSub( SELECT_HANDLE eCorner, grVec3d *pWorldDistance )
 {
-	jeExtBox	WorldBounds{};
-	jeVec3d		SnapPoint{};
-	jeVec3d		GridPoint{};
-	jeVec3d		GridDiff{};
+	grExtBox	WorldBounds{};
+	grVec3d		SnapPoint{};
+	grVec3d		GridPoint{};
+	grVec3d		GridDiff{};
 	DOC_HINT	Hint{};
 
 	ASSERT( pWorldDistance != nullptr ) ;
@@ -1643,12 +1643,12 @@ void CJweDoc::MoveSelectedSub( SELECT_HANDLE eCorner, jeVec3d *pWorldDistance )
 	{
 		Transform_PointToGrid( m_pLevel, &m_DragPoint, &GridPoint ) ;
 
-		jeVec3d_Add( &m_DragPoint, pWorldDistance, &m_DragPoint ) ;
+		grVec3d_Add( &m_DragPoint, pWorldDistance, &m_DragPoint ) ;
 		Transform_PointToGrid( m_pLevel, &m_DragPoint, &SnapPoint ) ;
 		
-		if( jeVec3d_Compare( &GridPoint, &SnapPoint, 0.01f ) == JE_FALSE )
+		if( grVec3d_Compare( &GridPoint, &SnapPoint, 0.01f ) == GR_FALSE )
 		{
-			jeVec3d_Subtract( &SnapPoint, &GridPoint, &GridDiff ) ;
+			grVec3d_Subtract( &SnapPoint, &GridPoint, &GridDiff ) ;
 			Transform_MoveSelectedSub( m_pLevel, &GridDiff, &WorldBounds ) ;
 			UpdateAllViews( nullptr, Hint, (CObject*)&WorldBounds ) ;
 		}
@@ -1661,36 +1661,36 @@ void CJweDoc::MoveSelectedSub( SELECT_HANDLE eCorner, jeVec3d *pWorldDistance )
 
 }// MoveSelected
 
-jeBoolean CJweDoc::BeginMoveVerts(const Ortho *pOrtho)
+grBoolean CJweDoc::BeginMoveVerts(const Ortho *pOrtho)
 {
 	CMainFrame *pMainFrm = nullptr;
 	pMainFrm = (CMainFrame*)AfxGetMainWnd();
 
-	jeVec3d_Clear( &m_DragPoint ) ;
+	grVec3d_Clear( &m_DragPoint ) ;
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 	pOrtho ;
 }//BeginMoveVerts
 
-jeBoolean CJweDoc::MoveVerts(const Ortho *pOrtho, jeVec3d *pWorldDistance)
+grBoolean CJweDoc::MoveVerts(const Ortho *pOrtho, grVec3d *pWorldDistance)
 {
-	jeVec3d		SnapPoint{};
-	jeVec3d		GridPoint{};
-	jeVec3d		GridDiff{};
-	jeExtBox	WorldBounds{};
+	grVec3d		SnapPoint{};
+	grVec3d		GridPoint{};
+	grVec3d		GridDiff{};
+	grExtBox	WorldBounds{};
 	
 	if( Level_IsSnapGrid( m_pLevel ) && Level_GetShouldSnapVerts( m_pLevel) )
 	{
 		Transform_PointToGrid( m_pLevel, &m_DragPoint, &GridPoint ) ;
 
-		jeVec3d_Add( &m_DragPoint, pWorldDistance, &m_DragPoint ) ;
+		grVec3d_Add( &m_DragPoint, pWorldDistance, &m_DragPoint ) ;
 		Transform_PointToGrid( m_pLevel, &m_DragPoint, &SnapPoint ) ;
 		
-		if( jeVec3d_Compare( &GridPoint, &SnapPoint, 0.01f ) == JE_FALSE )
+		if( grVec3d_Compare( &GridPoint, &SnapPoint, 0.01f ) == GR_FALSE )
 		{
-			jeVec3d_Subtract( &SnapPoint, &GridPoint, &GridDiff ) ;
+			grVec3d_Subtract( &SnapPoint, &GridPoint, &GridDiff ) ;
 			Select_MoveSelectedVert( m_pLevel, &GridDiff, &WorldBounds );
-//			jeVec3d_Subtract( &m_DragPoint, &Remainder, &m_DragPoint ) ;
+//			grVec3d_Subtract( &m_DragPoint, &Remainder, &m_DragPoint ) ;
 		}
 	}
 	else
@@ -1700,7 +1700,7 @@ jeBoolean CJweDoc::MoveVerts(const Ortho *pOrtho, jeVec3d *pWorldDistance)
 
 //	Select_MoveSelectedVert( m_pLevel, pWorldDistance, &WorldBounds );
 	UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&WorldBounds ) ;
-	return JE_TRUE ;
+	return GR_TRUE ;
 	pOrtho;pWorldDistance;
 }// MoveVerts
 
@@ -1711,9 +1711,9 @@ void CJweDoc::EndMoveVerts( void )
 }// EndMoveVerts
 
 
-jeBoolean CJweDoc::HasSelections( jeExtBox * pSelBounds )
+grBoolean CJweDoc::HasSelections( grExtBox * pSelBounds )
 {
-	jeBoolean	bHasSelections{};
+	grBoolean	bHasSelections{};
 
 	if( MODE_POINTER_VM == m_Mode )
 		bHasSelections = Select_HasSelectedVerts( m_pLevel ) ;
@@ -1727,9 +1727,9 @@ jeBoolean CJweDoc::HasSelections( jeExtBox * pSelBounds )
 	return bHasSelections ;
 }// HasSelections
 
-jeBoolean CJweDoc::HasSubSelections( jeExtBox * pSelBounds )
+grBoolean CJweDoc::HasSubSelections( grExtBox * pSelBounds )
 {
-	jeBoolean	bHasSelections{};
+	grBoolean	bHasSelections{};
 
 	bHasSelections = Level_HasSubSelections( m_pLevel ) ;
 
@@ -1752,7 +1752,7 @@ LEVEL_SEL CJweDoc::GetSelType()
 
 DOC_CONSTRUCTORS CJweDoc::ViewPointConstructor( Ortho * pOrtho, Point * pViewPt)
 {
-	jeVec3d WorldPt{};
+	grVec3d WorldPt{};
 	ORTHO_AXIS HAxis{};
 	ORTHO_AXIS VAxis{};
 	float	   Element{};
@@ -1765,7 +1765,7 @@ DOC_CONSTRUCTORS CJweDoc::ViewPointConstructor( Ortho * pOrtho, Point * pViewPt)
 
 	Ortho_ViewToWorld( pOrtho, pViewPt->X, pViewPt->Y, &WorldPt ) ;
 
-	Element = jeVec3d_GetElement( &WorldPt, HAxis );
+	Element = grVec3d_GetElement( &WorldPt, HAxis );
 	Plane = Level_GetConstructorPlane( m_pLevel, HAxis );
 	DifSq = ( Plane - Element ) * ( Plane - Element );
 	if( DifSq < Ortho_GetWorldSelectThreshold( pOrtho ) )
@@ -1773,7 +1773,7 @@ DOC_CONSTRUCTORS CJweDoc::ViewPointConstructor( Ortho * pOrtho, Point * pViewPt)
 		Constructor = DOC_HORIZONTAL_CONSTRUCTOR;
 	}
 
-	Element = jeVec3d_GetElement( &WorldPt, VAxis );
+	Element = grVec3d_GetElement( &WorldPt, VAxis );
 	Plane = Level_GetConstructorPlane( m_pLevel, VAxis );
 	DifSq = ( Plane - Element ) * ( Plane - Element );
 	if( DifSq < Ortho_GetWorldSelectThreshold( pOrtho ) )
@@ -1791,10 +1791,10 @@ void   CJweDoc::MoveConstructor( Ortho *pOrtho, DOC_CONSTRUCTORS Constructor, Po
 {
 	ORTHO_AXIS HAxis{};
 	ORTHO_AXIS VAxis{};
-	jeVec3d MouseVec{};
-	jeVec3d AnchorVec{};
-	jeVec3d WorldDistance{};
-	jeVec3d	Delta{};
+	grVec3d MouseVec{};
+	grVec3d AnchorVec{};
+	grVec3d WorldDistance{};
+	grVec3d	Delta{};
 	float	Element{};
 
 	Ortho_ViewToWorld( pOrtho, pAnchor->X, pAnchor->Y, &AnchorVec );
@@ -1804,28 +1804,28 @@ void   CJweDoc::MoveConstructor( Ortho *pOrtho, DOC_CONSTRUCTORS Constructor, Po
 		Transform_PointToGrid( m_pLevel, &AnchorVec, &AnchorVec ) ;
 		Transform_PointToGrid( m_pLevel, &MouseVec, &MouseVec ) ;
 	}
-	jeVec3d_Subtract( &MouseVec, &AnchorVec, &WorldDistance );
+	grVec3d_Subtract( &MouseVec, &AnchorVec, &WorldDistance );
 
 	HAxis = Ortho_GetHorizontalAxis( pOrtho );
 	VAxis = Ortho_GetVerticalAxis( pOrtho );
 
-	jeVec3d_Set( &Delta, 0.0f, 0.0f, 0.0f );
+	grVec3d_Set( &Delta, 0.0f, 0.0f, 0.0f );
 	switch( Constructor )
 	{
 	case DOC_HORIZONTAL_CONSTRUCTOR:
-		Element = jeVec3d_GetElement( &MouseVec, HAxis );
+		Element = grVec3d_GetElement( &MouseVec, HAxis );
 		Level_SetConstructor( m_pLevel, HAxis, Element );
 		break;
 
 	case DOC_VERTICAL_CONSTRUCTOR:
-		Element = jeVec3d_GetElement( &MouseVec, VAxis );
+		Element = grVec3d_GetElement( &MouseVec, VAxis );
 		Level_SetConstructor( m_pLevel, VAxis, Element );
 		break;
 
 	case DOC_BOTH_CONSTRUCTOR:
-		Element = jeVec3d_GetElement( &MouseVec, HAxis );
+		Element = grVec3d_GetElement( &MouseVec, HAxis );
 		Level_SetConstructor( m_pLevel, HAxis, Element );
-		Element = jeVec3d_GetElement( &MouseVec, VAxis );
+		Element = grVec3d_GetElement( &MouseVec, VAxis );
 		Level_SetConstructor( m_pLevel, VAxis, Element );
 		break;
 
@@ -1872,7 +1872,7 @@ void CJweDoc::SetCursor(Ortho *pOrtho, POINT *pViewPt)
 	int				nID{};
 	LPCTSTR			nIDStd{};
 	HCURSOR			hCursor{};
-	jeExtBox		WorldBox{};
+	grExtBox		WorldBox{};
 	SELECT_HANDLE	Handle{};
 	ASSERT( pOrtho != nullptr ) ;
 	ASSERT( pViewPt != nullptr ) ;
@@ -1934,7 +1934,7 @@ void CJweDoc::SetCursor(Ortho *pOrtho, POINT *pViewPt)
 		{
 			int32 XFormMod{};
 			WorldBox = *Level_GetSelDrawBounds( m_pLevel ) ;
-			if( jeExtBox_IsValid( &WorldBox ) && Ortho_IsViewPointInWorldBox( pOrtho, pViewPt->x, pViewPt->y, &WorldBox ) )
+			if( grExtBox_IsValid( &WorldBox ) && Ortho_IsViewPointInWorldBox( pOrtho, pViewPt->x, pViewPt->y, &WorldBox ) )
 			{
 				nID = IDC_MOVESELECT ;	
 			}
@@ -1942,13 +1942,13 @@ void CJweDoc::SetCursor(Ortho *pOrtho, POINT *pViewPt)
 			Handle = Select_ViewPointHandle( pOrtho, (Point*)pViewPt, &WorldBox ) ;
 			XFormMod = Level_SelXFormModFlags( m_pLevel );
 
-			if( MODE_POINTER_BB == m_Mode && !(XFormMod & JE_OBJECT_XFORM_SCALE ) )
+			if( MODE_POINTER_BB == m_Mode && !(XFormMod & GR_OBJECT_XFORM_SCALE ) )
 				Handle = Select_None;
 
-			if( MODE_POINTER_RS == m_Mode && IS_CORNER_HANDLE(Handle) && !(XFormMod & JE_OBJECT_XFORM_ROTATE ) )
+			if( MODE_POINTER_RS == m_Mode && IS_CORNER_HANDLE(Handle) && !(XFormMod & GR_OBJECT_XFORM_ROTATE ) )
 				Handle = Select_None;
 
-			if( MODE_POINTER_RS == m_Mode && IS_EDGE_HANDLE(Handle) && !(XFormMod & JE_OBJECT_XFORM_SHEAR ) )
+			if( MODE_POINTER_RS == m_Mode && IS_EDGE_HANDLE(Handle) && !(XFormMod & GR_OBJECT_XFORM_SHEAR ) )
 				Handle = Select_None;
 
 			if( Handle != Select_None )
@@ -2024,19 +2024,19 @@ void CJweDoc::SetCursor(Ortho *pOrtho, POINT *pViewPt)
 
 }// SetCursor
 
-jeBoolean CJweDoc::BeginRotateSub( )
+grBoolean CJweDoc::BeginRotateSub( )
 {
 	BeginRotate();
 	Select_DragBeginSub( m_pLevel ) ;
-	jeVec3d_Clear( &m_DragPoint ) ;
-	return JE_TRUE ;
+	grVec3d_Clear( &m_DragPoint ) ;
+	return GR_TRUE ;
 }// BeginRotateSub
 
-jeBoolean CJweDoc::BeginMoveHandle( const Ortho * pOrtho, SELECT_HANDLE eHandle, DOC_HANDLE_MODE *HandleMode )
+grBoolean CJweDoc::BeginMoveHandle( const Ortho * pOrtho, SELECT_HANDLE eHandle, DOC_HANDLE_MODE *HandleMode )
 {
-	jeExtBox	WorldBounds{};
-	jeVec3d		Distance{};
-	jeVec3d		SnapDelta{};
+	grExtBox	WorldBounds{};
+	grVec3d		Distance{};
+	grVec3d		SnapDelta{};
 
 	CMainFrame *pMainFrm = nullptr;
 	pMainFrm = (CMainFrame*)AfxGetMainWnd();
@@ -2068,11 +2068,11 @@ jeBoolean CJweDoc::BeginMoveHandle( const Ortho * pOrtho, SELECT_HANDLE eHandle,
 
 	Select_DragBegin( m_pLevel ) ;
 	
-	jeVec3d_Clear( &m_DragPoint ) ;
+	grVec3d_Clear( &m_DragPoint ) ;
 	WorldBounds = *(Level_GetSelDrawBounds( m_pLevel)) ;
 	if( Level_IsSnapGrid( m_pLevel ) && m_Mode == MODE_POINTER_BB)
 	{
-		jeVec3d_Clear( &Distance ) ;
+		grVec3d_Clear( &Distance ) ;
 
 		Transform_SizeSnapSelected
 		( 
@@ -2086,21 +2086,21 @@ jeBoolean CJweDoc::BeginMoveHandle( const Ortho * pOrtho, SELECT_HANDLE eHandle,
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&WorldBounds ) ;
 	}
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// BeginSize
 
 void CJweDoc::RotateSelectedSub(const Ortho * pOrtho,  Point * pMousePt, Point *pAnchor )
 {
-	jeFloat RotationAngle{};
-	jeVec3d SelCenter{};
+	grFloat RotationAngle{};
+	grVec3d SelCenter{};
 	CPoint	SelCenterPt{};
-	jeExtBox	WorldBounds{};
-	const jeExtBox* SubDrawBounds{};
-	jeFloat dRotationAngle{};
+	grExtBox	WorldBounds{};
+	const grExtBox* SubDrawBounds{};
+	grFloat dRotationAngle{};
 	
 	
 	SubDrawBounds = Level_GetSubSelDrawBounds( m_pLevel );
-	jeExtBox_GetTranslation( SubDrawBounds, &SelCenter ) ; 
+	grExtBox_GetTranslation( SubDrawBounds, &SelCenter ) ; 
 
 	Ortho_WorldToView( pOrtho, &SelCenter, (Point*)&SelCenterPt ) ;
 	RotationAngle = Ortho_GetRotationFromView( pOrtho, (Point*)pMousePt, (Point*)pAnchor, (Point*)&SelCenterPt );
@@ -2110,7 +2110,7 @@ void CJweDoc::RotateSelectedSub(const Ortho * pOrtho,  Point * pMousePt, Point *
 		float mod;
 		float Rad;
 
-		Rad = jeFloat_DegToRad( (float)Level_GetRotateSnapSize( m_pLevel ) );
+		Rad = grFloat_DegToRad( (float)Level_GetRotateSnapSize( m_pLevel ) );
 		mod = (float)fmod( dRotationAngle, Rad );
 		if( mod < (Rad*0.5f) )
 			dRotationAngle = dRotationAngle - mod;
@@ -2134,12 +2134,12 @@ void CJweDoc::RotateSelectedSub(const Ortho * pOrtho,  Point * pMousePt, Point *
 
 }
 
-void CJweDoc::MoveHandle(const Ortho * pOrtho, jeVec3d *pWorldDistance, SELECT_HANDLE eSizeType, Point * pMousePt, Point *pAnchor, jeVec3d *pCenter3d )
+void CJweDoc::MoveHandle(const Ortho * pOrtho, grVec3d *pWorldDistance, SELECT_HANDLE eSizeType, Point * pMousePt, Point *pAnchor, grVec3d *pCenter3d )
 {
-	jeExtBox	WorldBounds{};
-	jeVec3d		SnapPoint{};
-	jeVec3d		GridPoint{};
-	jeVec3d		GridDiff{};
+	grExtBox	WorldBounds{};
+	grVec3d		SnapPoint{};
+	grVec3d		GridPoint{};
+	grVec3d		GridDiff{};
 	ASSERT( pWorldDistance != nullptr ) ;
 
 	switch( m_Mode )
@@ -2148,11 +2148,11 @@ void CJweDoc::MoveHandle(const Ortho * pOrtho, jeVec3d *pWorldDistance, SELECT_H
 		if( Level_IsSnapGrid( m_pLevel ) )
 		{
 			Transform_PointToGrid( m_pLevel, &m_DragPoint, &GridPoint ) ;
-			jeVec3d_Add( &m_DragPoint, pWorldDistance, &m_DragPoint ) ;
+			grVec3d_Add( &m_DragPoint, pWorldDistance, &m_DragPoint ) ;
 			Transform_PointToGrid( m_pLevel, &m_DragPoint, &SnapPoint ) ;
-			if( jeVec3d_Compare( &GridPoint, &SnapPoint, 0.01f ) == JE_FALSE )
+			if( grVec3d_Compare( &GridPoint, &SnapPoint, 0.01f ) == GR_FALSE )
 			{
-				jeVec3d_Subtract( &SnapPoint, &GridPoint, &GridDiff ) ;
+				grVec3d_Subtract( &SnapPoint, &GridPoint, &GridDiff ) ;
 				Transform_SizeSelected
 				( 
 					m_pLevel, 
@@ -2162,7 +2162,7 @@ void CJweDoc::MoveHandle(const Ortho * pOrtho, jeVec3d *pWorldDistance, SELECT_H
 					Ortho_GetVerticalAxis( pOrtho ), 
 					&WorldBounds 
 				) ;
-				//jeVec3d_Subtract( &m_DragPoint, &Remainder, &m_DragPoint ) ;
+				//grVec3d_Subtract( &m_DragPoint, &Remainder, &m_DragPoint ) ;
 				UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&WorldBounds ) ;
 			}
 		}
@@ -2184,8 +2184,8 @@ void CJweDoc::MoveHandle(const Ortho * pOrtho, jeVec3d *pWorldDistance, SELECT_H
 	case MODE_POINTER_RS :
 		if( Select_IsCorner( eSizeType ) )
 		{
-			jeFloat RotationAngle{};
-			jeFloat dRotationAngle{};
+			grFloat RotationAngle{};
+			grFloat dRotationAngle{};
 			CPoint	SelCenterPt{};
 			LEVEL_SEL SelectType{};
 
@@ -2197,7 +2197,7 @@ void CJweDoc::MoveHandle(const Ortho * pOrtho, jeVec3d *pWorldDistance, SELECT_H
 				float mod{};
 				float Rad{};
 
-				Rad = jeFloat_DegToRad( (float)Level_GetRotateSnapSize( m_pLevel ) );
+				Rad = grFloat_DegToRad( (float)Level_GetRotateSnapSize( m_pLevel ) );
 				mod = (float)fmod( dRotationAngle, Rad );
 				if( mod < (Rad*0.5f) )
 					dRotationAngle = dRotationAngle - mod;
@@ -2245,11 +2245,11 @@ void CJweDoc::UpdateStats()
 {
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	Model* pModel{};
-	const jeBSP_DebugInfo *pDebugInfo;
+	const grBSP_DebugInfo *pDebugInfo;
 	
 	pModel = Level_GetCurModel( m_pLevel);
 	ASSERT( pModel );
-	pDebugInfo = jeModel_GetBSPDebugInfo( Model_GetguModel(pModel ) );
+	pDebugInfo = grModel_GetBSPDebugInfo( Model_GetguModel(pModel ) );
 	pMainFrm->SetStats(pDebugInfo );
 
 //	tom morris feb 2005 -- to constrain statusbar reminder to rebuild
@@ -2269,25 +2269,25 @@ void CJweDoc::UpdateStats()
 void CJweDoc::OnToolsRebuildall() 
 {
 	int Result{};
-	jeBSP_Options Options = 0;
-	jeBSP_Logic Logic{};
-	jeBSP_LogicBalance LogicBalance{};
+	grBSP_Options Options = 0;
+	grBSP_Logic Logic{};
+	grBSP_LogicBalance LogicBalance{};
 
 	Level_GetBSPBuildOptions( m_pLevel, &Options, &Logic, &LogicBalance );
 	if( Options & BSP_OPTIONS_CSG_BRUSHES )
-		RebuildDlg->m_CSG = JE_TRUE;
+		RebuildDlg->m_CSG = GR_TRUE;
 	else
-		RebuildDlg->m_CSG = JE_FALSE;
+		RebuildDlg->m_CSG = GR_FALSE;
 
 	if( Options & BSP_OPTIONS_MAKE_VIS_AREAS )
-		RebuildDlg->m_Vis = JE_TRUE;
+		RebuildDlg->m_Vis = GR_TRUE;
 	else
-		RebuildDlg->m_Vis = JE_FALSE;
+		RebuildDlg->m_Vis = GR_FALSE;
 
 	if( Options & BSP_OPTIONS_SOLID_FILL )
-		RebuildDlg->m_Solid = JE_TRUE;
+		RebuildDlg->m_Solid = GR_TRUE;
 	else
-		RebuildDlg->m_Solid = JE_FALSE;
+		RebuildDlg->m_Solid = GR_FALSE;
 	RebuildDlg->m_Logic = Logic;
 	RebuildDlg->m_Balance = LogicBalance;
 
@@ -2406,9 +2406,9 @@ void CJweDoc::OnFullscreen()
 
 	( (CJetView*)pView )->SetFullscreenModeByString (cFullscreenRes);
 
-	if ( ( (CJetView*)pView )->FullscreenView() == JE_FALSE )
+	if ( ( (CJetView*)pView )->FullscreenView() == GR_FALSE )
 	{
-		jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode" );
+		grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode" );
 		return ;
 	}
 
@@ -2548,7 +2548,7 @@ void CJweDoc::ObjectsToFront()
 	}
 
 		// Alloc mem to save selected Objects
-	pSaveSelObject = JE_RAM_ALLOCATE_ARRAY_CLEAR(Object*,iObjectNum+1);
+	pSaveSelObject = GR_RAM_ALLOCATE_ARRAY_CLEAR(Object*,iObjectNum+1);
 	if (pSaveSelObject==nullptr) return;
 
 		// Save Objects
@@ -2562,10 +2562,10 @@ void CJweDoc::ObjectsToFront()
 	}
 
 	// Copy Objects
-	if( JE_FALSE == Select_Dup (m_pLevel ) )
+	if( GR_FALSE == Select_Dup (m_pLevel ) )
 		goto Free; 		
 
-	jeProperty_List *pArray;
+	grProperty_List *pArray;
 
 	pArray = Select_BuildDescriptor( m_pLevel );
 	pMainFrm->SetProperties( pArray );			
@@ -2595,31 +2595,31 @@ void CJweDoc::ObjectsToFront()
 	pMainFrm->ResetProperties();
 
 	// Update Views
-	jeExtBox		WorldBounds ;
+	grExtBox		WorldBounds ;
 	Select_DeselectAll( m_pLevel, &WorldBounds ) ;	
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)&WorldBounds ) ;
 	UpdateAll();
 
 	// Free Mem
 Free:
-	jeRam_Free( pSaveSelObject );
+	grRam_Free( pSaveSelObject );
 
 }
 
 
-void CJweDoc::RotateObjects (jeFloat Angle )
+void CJweDoc::RotateObjects (grFloat Angle )
 {
 	Ortho* pOrtho{};
 	CMDIFrameWnd	*	pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
 	CMDIChildWnd	*	pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
 	CView			*	pView = pChild->GetActiveView();
-	jeVec3d				Center3d{};
+	grVec3d				Center3d{};
 	ObjectList* SelList{};
 	Object* pObject{};
 	ObjectIterator		Iterator{};
 	
-	const jeExtBox* pSelWorldBounds{};
-	jeExtBox			WorldBounds{};
+	const grExtBox* pSelWorldBounds{};
+	grExtBox			WorldBounds{};
 
 	if (pView == nullptr) return;
 
@@ -2634,7 +2634,7 @@ void CJweDoc::RotateObjects (jeFloat Angle )
 	if (pObject == nullptr) return;
 
 	pSelWorldBounds = Level_GetSelDrawBounds( m_pLevel ) ;
-	jeExtBox_GetTranslation( pSelWorldBounds, &Center3d );
+	grExtBox_GetTranslation( pSelWorldBounds, &Center3d );
 
 	Transform_AddSelectedUndo( m_pLevel, UNDO_ROTATE );
 
@@ -2658,9 +2658,9 @@ void CJweDoc::AlignObjects (DOC_ALIGN_MODE Align_Mode )
 	ObjectList* SelList{};
 	Object* pObject{};
 	ObjectIterator  Iterator{};
-	jeVec3d			Distance{};
-	jeExtBox		DestObjectBounds{};
-	jeExtBox		SourceObjectBounds{};
+	grVec3d			Distance{};
+	grExtBox		DestObjectBounds{};
+	grExtBox		SourceObjectBounds{};
 	Ortho* pOrtho{};
 
 	CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
@@ -2676,10 +2676,10 @@ void CJweDoc::AlignObjects (DOC_ALIGN_MODE Align_Mode )
 	pOrtho=((CJweView*)pView)->GetOrtho();
 	if (pOrtho == nullptr) return;
 
-	jeFloat XSource,  YSource,  ZSource;
-	jeFloat XDest, YDest,  ZDest;
+	grFloat XSource,  YSource,  ZSource;
+	grFloat XDest, YDest,  ZDest;
 
-	jeVec3d_Set (&Distance,0,0,0);
+	grVec3d_Set (&Distance,0,0,0);
 
 	if (Ortho_GetViewType(pOrtho)==Ortho_ViewTop)
 		{ if (Align_Mode==DOC_ALIGN_BOTTOM)
@@ -2705,14 +2705,14 @@ void CJweDoc::AlignObjects (DOC_ALIGN_MODE Align_Mode )
 
 		if ((Align_Mode==DOC_ALIGN_LEFT)||
 			(Align_Mode==DOC_ALIGN_BOTTOM) )
-			{ jeVec3d_Get(&SourceObjectBounds.Min, &XSource, &YSource, &ZSource);
-			  jeVec3d_Get(&DestObjectBounds.Min,   &XDest  , &YDest  , &ZDest);
+			{ grVec3d_Get(&SourceObjectBounds.Min, &XSource, &YSource, &ZSource);
+			  grVec3d_Get(&DestObjectBounds.Min,   &XDest  , &YDest  , &ZDest);
 			}
 
 		if ((Align_Mode==DOC_ALIGN_RIGHT)||
 			(Align_Mode==DOC_ALIGN_TOP) )
-			{ jeVec3d_Get(&SourceObjectBounds.Max, &XSource, &YSource, &ZSource);
-			  jeVec3d_Get(&DestObjectBounds.Max,   &XDest  , &YDest  , &ZDest);
+			{ grVec3d_Get(&SourceObjectBounds.Max, &XSource, &YSource, &ZSource);
+			  grVec3d_Get(&DestObjectBounds.Max,   &XDest  , &YDest  , &ZDest);
 			}
 
 		if ((Align_Mode==DOC_ALIGN_LEFT)||
@@ -2739,15 +2739,15 @@ void CJweDoc::AlignObjects (DOC_ALIGN_MODE Align_Mode )
 			{	XDest=XSource;YDest=YSource;
 			}
 
-		jeVec3d_Set(&DestObjectBounds.Min,   XDest  , YDest  , ZDest);
+		grVec3d_Set(&DestObjectBounds.Min,   XDest  , YDest  , ZDest);
 
 		if ((Align_Mode==DOC_ALIGN_LEFT)||
 			(Align_Mode==DOC_ALIGN_BOTTOM) )
-		jeVec3d_Subtract (&DestObjectBounds.Min,&SourceObjectBounds.Min,&Distance);
+		grVec3d_Subtract (&DestObjectBounds.Min,&SourceObjectBounds.Min,&Distance);
 
 		if ((Align_Mode==DOC_ALIGN_RIGHT)||
 			(Align_Mode==DOC_ALIGN_TOP) )
-		jeVec3d_Subtract (&DestObjectBounds.Min,&SourceObjectBounds.Max,&Distance);
+		grVec3d_Subtract (&DestObjectBounds.Min,&SourceObjectBounds.Max,&Distance);
 
 		Object_Move (  pObject, &Distance );
 		pObject = ObjectList_GetNext( SelList, &Iterator  );
@@ -2803,9 +2803,9 @@ MODE CJweDoc::SetMode( const MODE eMode )
 	return OldMode ;
 }// SetMode
 
-jeBoolean CJweDoc::IsVertexManipulationMode()
+grBoolean CJweDoc::IsVertexManipulationMode()
 {
-	return (MODE_POINTER_VM == m_Mode) ? JE_TRUE : JE_FALSE ;
+	return (MODE_POINTER_VM == m_Mode) ? GR_TRUE : GR_FALSE ;
 }//IsVertexManipulationMode
 
 void CJweDoc::EndMoveHandle()
@@ -2909,7 +2909,7 @@ void CJweDoc::UpdateAllViews(CView* pSender, LPARAM lHint, CObject* pHint)
 			//   --- Cyrius, Incarnadine, CJP
 			if(m_pLevel != nullptr)
 			{
-				if(IsVertexManipulationMode() == JE_FALSE) //cyrius (this fixes Chrisjp's bug)
+				if(IsVertexManipulationMode() == GR_FALSE) //cyrius (this fixes Chrisjp's bug)
 					Level_UpdateSelected(m_pLevel); // Incarnadine
 			}
 			break ;
@@ -2936,22 +2936,22 @@ void CJweDoc::UpdateAllViews(CView* pSender, LPARAM lHint, CObject* pHint)
 
 BOOL CJweDoc::OnSaveDocument(LPCTSTR lpszPathName) 
 {
-	jeVFile *	pFS = nullptr ;
-	jeVFile	*	pF = nullptr ;	// File Fork (Editor or Jet3D)
+	grVFile *	pFS = nullptr ;
+	grVFile	*	pF = nullptr ;	// File Fork (Editor or Jet3D)
 	CString		cstr ;
 	CString		backupext;
 	char		JustPath[MAX_PATH];
 	char		JustName[MAX_PATH];
 	char		TempName[MAX_PATH];
-	jePtrMgr	*pPtrMgr = nullptr;
+	grPtrMgr	*pPtrMgr = nullptr;
 	
 	int32 Signature = SIGNATURE;
 	float Version= DOC_VERSION;
 	
-	pPtrMgr = jePtrMgr_Create();
+	pPtrMgr = grPtrMgr_Create();
 	if( pPtrMgr == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:jePtrMgr_Create");
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:grPtrMgr_Create");
 		goto SAVE_DOC_ERR;
 	}
 
@@ -2967,30 +2967,30 @@ BOOL CJweDoc::OnSaveDocument(LPCTSTR lpszPathName)
 
 	if( !backupext.LoadString(IDS_TEMP_PREFIX) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:backupext.LoadString");
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:backupext.LoadString");
 		goto SAVE_DOC_ERR;
 	}
 
 	if( GetTempFileName(JustPath, backupext, 0, TempName) == 0 )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:GetTempFileName");
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:GetTempFileName");
 		goto SAVE_DOC_ERR;
 	}
 
 	// Create a new file system
-	pFS = jeVFile_OpenNewSystem
+	pFS = grVFile_OpenNewSystem
 	(
 		nullptr, 
-		JE_VFILE_TYPE_VIRTUAL,
+		GR_VFILE_TYPE_VIRTUAL,
 		TempName,
 		nullptr,
-		JE_VFILE_OPEN_CREATE|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_CREATE|GR_VFILE_OPEN_DIRECTORY
 	);
 	if( pFS == nullptr )
 	{
 		cstr.Format( IDS_CANTOPENFILE, TempName ) ;
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;
-		jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "OnSaveDocument:jeVFile_OpenNewSystem", TempName);
+		grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "OnSaveDocument:grVFile_OpenNewSystem", TempName);
 		goto SAVE_DOC_ERR;
 	}
 
@@ -3001,76 +3001,76 @@ BOOL CJweDoc::OnSaveDocument(LPCTSTR lpszPathName)
 	// and closed before proceeding to the next
 	// JET FORK
 	
-	pF = jeVFile_Open( pFS, "Version", JE_VFILE_OPEN_CREATE ) ;
+	pF = grVFile_Open( pFS, "Version", GR_VFILE_OPEN_CREATE ) ;
 	if( pF == nullptr )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString( JE_ERR_FILEIO_FORMAT, "OnSaveDocument:jeVFile_Open", lpszPathName);
-		ReportErrors( JE_FALSE );
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString( GR_ERR_FILEIO_FORMAT, "OnSaveDocument:grVFile_Open", lpszPathName);
+		ReportErrors( GR_FALSE );
 		return false ;
 	}
-	if( jeVFile_Write( pF, &Signature, sizeof Signature ) == JE_FALSE )
+	if( grVFile_Write( pF, &Signature, sizeof Signature ) == GR_FALSE )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "OnSaveDocument:jeVFile_Write", lpszPathName);
-		return JE_FALSE;
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "OnSaveDocument:grVFile_Write", lpszPathName);
+		return GR_FALSE;
 	}
 
-	if( jeVFile_Write( pF, &Version, sizeof Version ) == JE_FALSE )
+	if( grVFile_Write( pF, &Version, sizeof Version ) == GR_FALSE )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "OnSaveDocument:jeVFile_Write", lpszPathName);
-		return JE_FALSE;
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "OnSaveDocument:grVFile_Write", lpszPathName);
+		return GR_FALSE;
 	}
-	jeVFile_Close( pF ) ;
+	grVFile_Close( pF ) ;
 
-	pF = jeVFile_Open( pFS, "Jet3D", JE_VFILE_OPEN_CREATE);
+	pF = grVFile_Open( pFS, "Jet3D", GR_VFILE_OPEN_CREATE);
 	if( pF == nullptr )
 	{
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;
-		jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "OnSaveDocument:jeVFile_OpenNewSystem", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "OnSaveDocument:grVFile_OpenNewSystem", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 	
 
-	if( jeWorld_WriteToFile( m_pWorld, pF, pPtrMgr ) == JE_FALSE )
+	if( grWorld_WriteToFile( m_pWorld, pF, pPtrMgr ) == GR_FALSE )
 	{
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Writing
-		jeErrorLog_AddString( JE_ERR_FILEIO_WRITE, "OnSaveDocument:jeWorld_WriteToFile", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_WRITE, "OnSaveDocument:grWorld_WriteToFile", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 
-	if( jeVFile_Close( pF ) == JE_FALSE )	// Close the Jet3D fork
+	if( grVFile_Close( pF ) == GR_FALSE )	// Close the Jet3D fork
 	{
-		jeVFile_Close( pFS ) ;	
+		grVFile_Close( pFS ) ;	
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Writing
-		jeErrorLog_AddString( JE_ERR_FILEIO_CLOSE, "OnSaveDocument:jeVFile_Close", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_CLOSE, "OnSaveDocument:grVFile_Close", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 
 	// EDITOR FORK
 
-	pF = jeVFile_Open( pFS, "Editor", JE_VFILE_OPEN_CREATE);
+	pF = grVFile_Open( pFS, "Editor", GR_VFILE_OPEN_CREATE);
 	if( pF == nullptr )
 	{
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;
-		jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "OnSaveDocument:jeVFile_OpenNewSystem", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "OnSaveDocument:grVFile_OpenNewSystem", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 
 	// Write the Editor fork
-	if( Level_WriteToFile( m_pLevel, pF, pPtrMgr ) == JE_FALSE )
+	if( Level_WriteToFile( m_pLevel, pF, pPtrMgr ) == GR_FALSE )
 	{
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Writing
-		jeErrorLog_AddString( JE_ERR_FILEIO_WRITE, "OnSaveDocument:jeWorld_WriteToFile", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_WRITE, "OnSaveDocument:grWorld_WriteToFile", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 
-	if( jeVFile_Close( pF ) == JE_FALSE ) // Close the Editor fork
+	if( grVFile_Close( pF ) == GR_FALSE ) // Close the Editor fork
 	{
 		pF = nullptr;
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Writing
-		jeErrorLog_AddString( JE_ERR_FILEIO_CLOSE, "OnSaveDocument:jeVFile_Close", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_CLOSE, "OnSaveDocument:grVFile_Close", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 
@@ -3078,26 +3078,26 @@ BOOL CJweDoc::OnSaveDocument(LPCTSTR lpszPathName)
 	// Added JH 12.3.2000
 	// LevelProperties FORK
 
-	pF = jeVFile_Open( pFS, "LevelProperties", JE_VFILE_OPEN_CREATE);
+	pF = grVFile_Open( pFS, "LevelProperties", GR_VFILE_OPEN_CREATE);
 	if( pF == nullptr )
 	{
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;
-		jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "OnSaveDocument:jeVFile_OpenNewSystem LevelProperties", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "OnSaveDocument:grVFile_OpenNewSystem LevelProperties", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 
-	if( m_pPropsDialog->Properties_WriteToFile( pF, pPtrMgr ) == JE_FALSE )
+	if( m_pPropsDialog->Properties_WriteToFile( pF, pPtrMgr ) == GR_FALSE )
 	{
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Writing
-		jeErrorLog_AddString( JE_ERR_FILEIO_WRITE, "OnSaveDocument:jeWorld_WriteToFile LevelProperties", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_WRITE, "OnSaveDocument:grWorld_WriteToFile LevelProperties", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 
-	if( jeVFile_Close( pF ) == JE_FALSE ) // Close the LevelProperties fork
+	if( grVFile_Close( pF ) == GR_FALSE ) // Close the LevelProperties fork
 	{
 		pF = nullptr;
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Writing
-		jeErrorLog_AddString( JE_ERR_FILEIO_CLOSE, "OnSaveDocument:jeVFile_Close LevelProperties", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_CLOSE, "OnSaveDocument:grVFile_Close LevelProperties", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 
@@ -3107,11 +3107,11 @@ BOOL CJweDoc::OnSaveDocument(LPCTSTR lpszPathName)
 	if (Settings_GetGlobal_Thumbnail())
 	{
 
-		pF = jeVFile_Open( pFS, "LevelThumbnail", JE_VFILE_OPEN_CREATE);
+		pF = grVFile_Open( pFS, "LevelThumbnail", GR_VFILE_OPEN_CREATE);
 		if( pF == nullptr )
 		{
 			AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;
-			jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "OnSaveDocument:jeVFile_OpenNewSystem LevelThumbnail", "Jet3D");
+			grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "OnSaveDocument:grVFile_OpenNewSystem LevelThumbnail", "Jet3D");
 			goto SAVE_DOC_ERR;
 		}
 
@@ -3119,50 +3119,50 @@ BOOL CJweDoc::OnSaveDocument(LPCTSTR lpszPathName)
 		pJetView = (CJetView *)GetJetView();
 		Render(pJetView);
 
-		if (WriteWindowToDIB (pF, pPtrMgr, pJetView)==JE_FALSE)
+		if (WriteWindowToDIB (pF, pPtrMgr, pJetView)==GR_FALSE)
 		{
 			AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Writing
-			jeErrorLog_AddString( JE_ERR_FILEIO_CLOSE, "OnSaveDocument:jeWorld_WriteToFile LevelThumbnail", "Jet3D");
+			grErrorLog_AddString( GR_ERR_FILEIO_CLOSE, "OnSaveDocument:grWorld_WriteToFile LevelThumbnail", "Jet3D");
 			goto SAVE_DOC_ERR;
 		}
 
-		if( jeVFile_Close( pF ) == JE_FALSE ) // Close the LevelThumbnail fork
+		if( grVFile_Close( pF ) == GR_FALSE ) // Close the LevelThumbnail fork
 		{
 			pF = nullptr;
 			AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Writing
-			jeErrorLog_AddString( JE_ERR_FILEIO_CLOSE, "OnSaveDocument:jeVFile_Close LevelThumbnail", "Jet3D");
+			grErrorLog_AddString( GR_ERR_FILEIO_CLOSE, "OnSaveDocument:grVFile_Close LevelThumbnail", "Jet3D");
 			goto SAVE_DOC_ERR;
 		}
 	}
 
 
 	// Close the Compound file
-	if( jeVFile_Close( pFS ) == JE_FALSE )
+	if( grVFile_Close( pFS ) == GR_FALSE )
 	{
 		pFS = nullptr;
 		cstr.Format( IDS_ERRORCLOSING, lpszPathName, 0 ) ;
 		AfxMessageBox( cstr, MB_OK|MB_ICONERROR, 0 ) ;	// Error Closeing
-		jeErrorLog_AddString( JE_ERR_FILEIO_CLOSE, "OnSaveDocument:jeVFile_Close", "Jet3D");
+		grErrorLog_AddString( GR_ERR_FILEIO_CLOSE, "OnSaveDocument:grVFile_Close", "Jet3D");
 		goto SAVE_DOC_ERR;
 	}
 
-	pFS = jeVFile_OpenNewSystem	// Open the directory with the file
+	pFS = grVFile_OpenNewSystem	// Open the directory with the file
 	(
 		nullptr, 
-		JE_VFILE_TYPE_DOS,
+		GR_VFILE_TYPE_DOS,
 		JustPath,
 		nullptr,
-		JE_VFILE_OPEN_UPDATE|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_UPDATE|GR_VFILE_OPEN_DIRECTORY
 	);
 	if( pFS == nullptr )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "OnSaveDocument:jeVFile_OpenNewSystem", JustPath);
+		grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "OnSaveDocument:grVFile_OpenNewSystem", JustPath);
 		goto SAVE_DOC_ERR;
 	}
 	// Check for a backup file...
 	if( !backupext.LoadString(IDS_BAK_EXT) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:jePtrMgr_Create");
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:grPtrMgr_Create");
 		goto SAVE_DOC_ERR;
 	}
 
@@ -3172,53 +3172,53 @@ BOOL CJweDoc::OnSaveDocument(LPCTSTR lpszPathName)
 
 	// Added JH 12.3.2000
 	if (Settings_GetGlobal_BackupFile())
-		{	if( jeVFile_FileExists( pFS, JustPath) )
+		{	if( grVFile_FileExists( pFS, JustPath) )
 			{
-				if( !jeVFile_DeleteFile( pFS, JustPath))
+				if( !grVFile_DeleteFile( pFS, JustPath))
 				{
-					jeErrorLog_AddString( JE_ERR_FILEIO_WRITE, "OnSaveDocument:jeVFile_DeleteFile", JustPath);
+					grErrorLog_AddString( GR_ERR_FILEIO_WRITE, "OnSaveDocument:grVFile_DeleteFile", JustPath);
 					goto SAVE_DOC_ERR;
 				}
 			}
 		// If name.glf exists, Rename existing file to name.bak
-			if( jeVFile_FileExists( pFS, JustName ) )
-				if( !jeVFile_RenameFile( pFS, JustName, JustPath))
+			if( grVFile_FileExists( pFS, JustName ) )
+				if( !grVFile_RenameFile( pFS, JustName, JustPath))
 				{
-					jeErrorLog_AddString( JE_ERR_FILEIO_READ, "OnSaveDocument:jeVFile_RenameFile", JustPath);
+					grErrorLog_AddString( GR_ERR_FILEIO_READ, "OnSaveDocument:grVFile_RenameFile", JustPath);
 					goto SAVE_DOC_ERR;
 				}
 		}
 	else
 		{
-		  if( jeVFile_FileExists( pFS, JustName) )		
-			if( !jeVFile_DeleteFile( pFS, JustName))
+		  if( grVFile_FileExists( pFS, JustName) )		
+			if( !grVFile_DeleteFile( pFS, JustName))
 			{
-				jeErrorLog_AddString( JE_ERR_FILEIO_WRITE, "OnSaveDocument:jeVFile_DeleteFile", TempName);
+				grErrorLog_AddString( GR_ERR_FILEIO_WRITE, "OnSaveDocument:grVFile_DeleteFile", TempName);
 				goto SAVE_DOC_ERR;
 			}
 		}
 
 	
 	Util_NameOnly( TempName ) ;		// Rename our temp file to normal
-	if( !jeVFile_RenameFile(pFS, TempName, JustName) )
+	if( !grVFile_RenameFile(pFS, TempName, JustName) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "OnSaveDocument:jeVFile_RenameFile", JustPath);
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "OnSaveDocument:grVFile_RenameFile", JustPath);
 		goto SAVE_DOC_ERR;
 	}
-	jeVFile_Close( pFS ) ;
+	grVFile_Close( pFS ) ;
 
 	SetModifiedFlag( false ) ;
-	jePtrMgr_Destroy( &pPtrMgr );
+	grPtrMgr_Destroy( &pPtrMgr );
 	return TRUE ;
 
 SAVE_DOC_ERR:
 	if( pPtrMgr != nullptr )
-		jePtrMgr_Destroy( &pPtrMgr );
+		grPtrMgr_Destroy( &pPtrMgr );
 	if( pFS != nullptr )
-		jeVFile_Close( pFS ) ;
+		grVFile_Close( pFS ) ;
 	if( pF != nullptr )
-		jeVFile_Close( pF ) ;
-	ReportErrors( JE_FALSE );
+		grVFile_Close( pF ) ;
+	ReportErrors( GR_FALSE );
 	return FALSE;
 
 }// OnSaveDocument
@@ -3227,18 +3227,18 @@ SAVE_DOC_ERR:
 BOOL CJweDoc::OnOpenDocument(LPCTSTR lpszPathName) 
 {
 	CJweApp			*	App = (CJweApp*)AfxGetApp();
-	jeVFile			*	pFS = nullptr ;
-	jeVFile			*	pF = nullptr ;	// File Fork (Editor or Jet3D)
+	grVFile			*	pFS = nullptr ;
+	grVFile			*	pF = nullptr ;	// File Fork (Editor or Jet3D)
 	CString				Message ;
-	jeWorld			* pNewWorld{};
+	grWorld			* pNewWorld{};
 	Level			* pNewLevel{};
 	CMainFrame* pMainFrm{};
 	pMainFrm = (CMainFrame*)AfxGetMainWnd();
-	jePtrMgr	*pPtrMgr = nullptr;
-	jeResourceMgr	* pResourceMgr{};
-	jeBSP_Options Options = 0;
-	jeBSP_Logic Logic{};
-	jeBSP_LogicBalance LogicBalance{};
+	grPtrMgr	*pPtrMgr = nullptr;
+	grResourceMgr	* pResourceMgr{};
+	grBSP_Options Options = 0;
+	grBSP_Logic Logic{};
+	grBSP_LogicBalance LogicBalance{};
 	CJetView* pJetView{};
 	pJetView = (CJetView*)GetJetView();
 
@@ -3248,29 +3248,29 @@ BOOL CJweDoc::OnOpenDocument(LPCTSTR lpszPathName)
 
 
 	// Create a new file system
-	pPtrMgr = jePtrMgr_Create();
+	pPtrMgr = grPtrMgr_Create();
 	if( pPtrMgr == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:jePtrMgr_Create");
-		ReportErrors(JE_FALSE);
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "OnSaveDocument:grPtrMgr_Create");
+		ReportErrors(GR_FALSE);
 		return false;
 	}
 	pMainFrm->ResetLists();
 	//Set Invalid
 	SetNewBrushBoundInvalid();
 
-	pFS = jeVFile_OpenNewSystem
+	pFS = grVFile_OpenNewSystem
 	(
 		nullptr, 
-		JE_VFILE_TYPE_VIRTUAL,
+		GR_VFILE_TYPE_VIRTUAL,
 		lpszPathName,
 		nullptr,
-		JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY
 	);
 	if( pFS == nullptr )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "OnOpenDocument:jeVFile_OpenNewSystem", lpszPathName);
-		ReportErrors( JE_FALSE);
+		grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "OnOpenDocument:grVFile_OpenNewSystem", lpszPathName);
+		ReportErrors( GR_FALSE);
 		return false ;
 	}
 
@@ -3281,7 +3281,7 @@ BOOL CJweDoc::OnOpenDocument(LPCTSTR lpszPathName)
 #endif
 	if( LightBitmap == nullptr )
 	{
-		ReportErrors( JE_FALSE);
+		ReportErrors( GR_FALSE);
 		return FALSE ;
 	}
 
@@ -3290,115 +3290,115 @@ BOOL CJweDoc::OnOpenDocument(LPCTSTR lpszPathName)
 	
 	Message.Format( IDS_ERRORREADINGFILE, lpszPathName ) ;
 
-	pF = jeVFile_Open( pFS, "Version", JE_VFILE_OPEN_READONLY ) ;
+	pF = grVFile_Open( pFS, "Version", GR_VFILE_OPEN_READONLY ) ;
 	if( pF == nullptr )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString( JE_ERR_FILEIO_FORMAT, "OnOpenDocument:jeVFile_Open", lpszPathName);
-		//ReportErrors( JE_FALSE );
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString( GR_ERR_FILEIO_FORMAT, "OnOpenDocument:grVFile_Open", lpszPathName);
+		//ReportErrors( GR_FALSE );
 		return false ;
 	}
-	if( jeVFile_Read( pF, &Signature, sizeof Signature ) == JE_FALSE )
+	if( grVFile_Read( pF, &Signature, sizeof Signature ) == GR_FALSE )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "OnOpenDocument:jeVFile_Read", lpszPathName);
-		return JE_FALSE;
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "OnOpenDocument:grVFile_Read", lpszPathName);
+		return GR_FALSE;
 	}
 	if( Signature != SIGNATURE )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString(JE_ERR_FILEIO_VERSION, "OnOpenDocument:Signature", lpszPathName);
-		return JE_FALSE;
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString(GR_ERR_FILEIO_VERSION, "OnOpenDocument:Signature", lpszPathName);
+		return GR_FALSE;
 	}
 
-	if( jeVFile_Read( pF, &Version, sizeof Version ) == JE_FALSE )
+	if( grVFile_Read( pF, &Version, sizeof Version ) == GR_FALSE )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "OnOpenDocument:jeVFile_Read", lpszPathName);
-		return JE_FALSE;
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "OnOpenDocument:grVFile_Read", lpszPathName);
+		return GR_FALSE;
 	}
 	if( !(Version == DOC_VERSION || Version == DOC_OLDVERSION ) )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString(JE_ERR_FILEIO_VERSION, "OnOpenDocument:Version", lpszPathName);
-		return JE_FALSE;
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString(GR_ERR_FILEIO_VERSION, "OnOpenDocument:Version", lpszPathName);
+		return GR_FALSE;
 	}
-	jeVFile_Close( pF ) ;
+	grVFile_Close( pF ) ;
 
 	// Open the Jet3D Fork
-	pF = jeVFile_Open( pFS, "Jet3D", JE_VFILE_OPEN_READONLY) ;
+	pF = grVFile_Open( pFS, "Jet3D", GR_VFILE_OPEN_READONLY) ;
 	if( pF == nullptr )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString( JE_ERR_FILEIO_FORMAT, "OnOpenDocument:jeVFile_Open", lpszPathName);
-		ReportErrors( JE_FALSE );
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString( GR_ERR_FILEIO_FORMAT, "OnOpenDocument:grVFile_Open", lpszPathName);
+		ReportErrors( GR_FALSE );
 		return false ;
 	}
 	
 	pResourceMgr = Level_CreateResourceMgr(pJetView->GetEngine());
 	if( pResourceMgr == nullptr )
 		return( FALSE );
-	pNewWorld = jeWorld_CreateFromFile( pF, pPtrMgr, pResourceMgr );
+	pNewWorld = grWorld_CreateFromFile( pF, pPtrMgr, pResourceMgr );
 
-	jeVFile_Close( pF ) ;
+	grVFile_Close( pF ) ;
 	if( pNewWorld == nullptr )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE, "OnOpenDocument:jeWorld_CreateFromFile", lpszPathName);
-		ReportErrors(JE_FALSE);
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "OnOpenDocument:grWorld_CreateFromFile", lpszPathName);
+		ReportErrors(GR_FALSE);
 		return false ;
 	}
 
 	// Open the Editor Fork
-	pF = jeVFile_Open( pFS, "Editor", JE_VFILE_OPEN_READONLY ) ;
+	pF = grVFile_Open( pFS, "Editor", GR_VFILE_OPEN_READONLY ) ;
 	if( pF == nullptr )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString( JE_ERR_FILEIO_FORMAT, "OnOpenDocument:jeVFile_Open", lpszPathName);
-		ReportErrors(JE_FALSE);
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString( GR_ERR_FILEIO_FORMAT, "OnOpenDocument:grVFile_Open", lpszPathName);
+		ReportErrors(GR_FALSE);
 		return false ;
 	}
 
 	pNewLevel = Level_CreateFromFile( pF, pNewWorld, App->GetMaterialList(),  pPtrMgr, Version ) ;
-	jeVFile_Close( pF ) ;
+	grVFile_Close( pF ) ;
 	if( pNewLevel == nullptr )
 	{
-		jeVFile_Close( pFS ) ;
-		jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE, "OnOpenDocument:Level_CreateFromFile", lpszPathName);
-		ReportErrors(JE_FALSE);
+		grVFile_Close( pFS ) ;
+		grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "OnOpenDocument:Level_CreateFromFile", lpszPathName);
+		ReportErrors(GR_FALSE);
 		return false ;
 	}
 
 	// Added JH 12.3.2000
 	// LEVEL Info FORK
 
-	pF = jeVFile_Open( pFS, "LevelProperties", JE_VFILE_OPEN_READONLY);
+	pF = grVFile_Open( pFS, "LevelProperties", GR_VFILE_OPEN_READONLY);
 	if( pF != nullptr )
 	{
-		if( m_pPropsDialog->Properties_ReadFromFile( pF, pPtrMgr ) == JE_FALSE )
+		if( m_pPropsDialog->Properties_ReadFromFile( pF, pPtrMgr ) == GR_FALSE )
 		{
-			jeVFile_Close( pFS ) ;
-			jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE, "OnOpenDocument:LevelProperties", lpszPathName);
-			ReportErrors(JE_FALSE);
+			grVFile_Close( pFS ) ;
+			grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "OnOpenDocument:LevelProperties", lpszPathName);
+			ReportErrors(GR_FALSE);
 			return false ;
 		}
 
-		if( jeVFile_Close( pF ) == JE_FALSE ) // Close the Editor fork
+		if( grVFile_Close( pF ) == GR_FALSE ) // Close the Editor fork
 		{
-			jeVFile_Close( pFS ) ;
-			jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE, "OnOpenDocument:LevelProperties", lpszPathName);
-			ReportErrors(JE_FALSE);
+			grVFile_Close( pFS ) ;
+			grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "OnOpenDocument:LevelProperties", lpszPathName);
+			ReportErrors(GR_FALSE);
 			return false ;
 		}
 	}
 
-	jeVFile_Close( pFS ) ;
+	grVFile_Close( pFS ) ;
 
 	DeleteContents() ;
 	m_pWorld = pNewWorld ;
 	m_pLevel = pNewLevel ;
-	jePtrMgr_Destroy( &pPtrMgr );
-	jeWorld_AttachSoundSystem( m_pWorld, pMainFrm->GetSoundSystem() );
+	grPtrMgr_Destroy( &pPtrMgr );
+	grWorld_AttachSoundSystem( m_pWorld, pMainFrm->GetSoundSystem() );
 	Level_GetBSPBuildOptions( m_pLevel, &Options, &Logic, &LogicBalance );
 
 //	tom morris	feb 2005 -- necessary to ensure VIS areas are present
@@ -3411,7 +3411,7 @@ BOOL CJweDoc::OnOpenDocument(LPCTSTR lpszPathName)
 //	end tom morris feb 2005
 
 	Level_RebuildAll( m_pLevel, Options, Logic, LogicBalance ) ;
-	m_bLoaded = JE_TRUE;
+	m_bLoaded = GR_TRUE;
 	return true ;
 }// OnOpenDocument
 
@@ -3421,7 +3421,7 @@ void CJweDoc::OnEditUndo()
 	Undo* pUndo{};
 	int Type{};
 
-	jeProperty_List *pArray;
+	grProperty_List *pArray;
 
 	pUndo = Level_GetUndo( m_pLevel );
 	Type = Undo_GetTopType( pUndo );
@@ -3435,7 +3435,7 @@ void CJweDoc::OnEditUndo()
 		if( pArray )
 		{
 			pMainFrm->UpdateProperties(pArray );
-			jeProperty_ListDestroy( &pArray );
+			grProperty_ListDestroy( &pArray );
 		}
 		else
 			pMainFrm->ResetProperties();
@@ -3448,7 +3448,7 @@ void CJweDoc::OnEditUndo()
 void CJweDoc::OnUpdateEditUndo(CCmdUI* pCmdUI) 
 {
 	int32		nID{};
-	jeBoolean	bEnable{};
+	grBoolean	bEnable{};
 	char		szMessage[UNDO_MAX_STRING+UNDOREDOLENGTH] ;
 	char		szBuffer[UNDO_MAX_STRING] ;
 
@@ -3481,7 +3481,7 @@ void CJweDoc::OnUpdateEditRedo(CCmdUI* pCmdUI)
 
 void CJweDoc::DeleteSelection()
 {
-	jeExtBox	WorldBounds{};
+	grExtBox	WorldBounds{};
 	CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 
 	Select_Delete( m_pLevel, &WorldBounds ) ;
@@ -3522,7 +3522,7 @@ void CJweDoc::BeginShear()
 
 void CJweDoc::ApplyMaterial( void )
 {
-	Level_SetChanged( m_pLevel, JE_TRUE );
+	Level_SetChanged( m_pLevel, GR_TRUE );
 	Select_ApplyCurMaterial( m_pLevel ) ;
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED ) ;
 }// ApplyMaterial
@@ -3546,7 +3546,7 @@ Class *	CJweDoc::CreateClass( const char * pszName, int Kind )
 	return( Level_AddClass( m_pLevel, pszName, Kind ) );
 }
 
-void CJweDoc::ModelLock( Model * pModel, jeBoolean bLock )
+void CJweDoc::ModelLock( Model * pModel, grBoolean bLock )
 {
 	Level_ModelLock( m_pLevel, pModel, bLock );
 }
@@ -3588,13 +3588,13 @@ ObjectList * CJweDoc::GetSelectList( void )
 	return Level_GetSelList( m_pLevel ) ;
 }// GetSelectList
 
-jeBoolean CJweDoc::EnumSelected(void *lParam, ObjectListCB Callback)
+grBoolean CJweDoc::EnumSelected(void *lParam, ObjectListCB Callback)
 {
 	// This functions is used by Lists.cpp, which has it's own callback
 	return Level_EnumSelected( m_pLevel, lParam, Callback ) ;
 }// EnumSelected
 
-jeBoolean CJweDoc::EnumObjects(void *lParam, ObjectListCB Callback)
+grBoolean CJweDoc::EnumObjects(void *lParam, ObjectListCB Callback)
 {
 	// This functions is used by Lists.cpp, which has it's own callback
 	return Level_EnumObjects( m_pLevel, lParam, Callback ) ;
@@ -3607,12 +3607,12 @@ void CJweDoc::CenterViewsOnSelection(  )
 {
 	POSITION	pos{};
 	CView* pView{};
-	jeExtBox	SelBounds{};
-	jeVec3d		Center{};
+	grExtBox	SelBounds{};
+	grVec3d		Center{};
 
 	if( !HasSelections( &SelBounds ) )
 		return;
-	jeExtBox_GetTranslation( &SelBounds, &Center );
+	grExtBox_GetTranslation( &SelBounds, &Center );
 
 
 	pos = GetFirstViewPosition();
@@ -3667,12 +3667,12 @@ void CJweDoc::RebuildLights(  )
 	UpdateAllViews( nullptr, DOC_HINT_RENDERED ) ;
 }
 
-void CJweDoc::SetProperty( int DataId, int DataType, jeProperty_Data * pData )
+void CJweDoc::SetProperty( int DataId, int DataType, grProperty_Data * pData )
 {
-	jeVec3d 		WorldDistance{};
-	jeVec3d 		Center{};
+	grVec3d 		WorldDistance{};
+	grVec3d 		Center{};
 	CMainFrame* pMainFrm{};
-	jeBoolean	CenterValid{};
+	grBoolean	CenterValid{};
 
 	ObjectList* pSelList{};
 	Object* pObject{};
@@ -3680,16 +3680,16 @@ void CJweDoc::SetProperty( int DataId, int DataType, jeProperty_Data * pData )
 	int				  LightUpdate{};
 	int				  BrushUpdate{};
 	int				  BrushLighting{};
-	jeBoolean		  bBrushUpdate{};
-	jeBoolean		  bLightUpdate{};
+	grBoolean		  bBrushUpdate{};
+	grBoolean		  bLightUpdate{};
 
 		pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 
-	Level_SetChanged( m_pLevel, JE_TRUE );
+	Level_SetChanged( m_pLevel, GR_TRUE );
 
-	jeVec3d_Set( &WorldDistance, 0.0f, 0.0f, 0.0f );
+	grVec3d_Set( &WorldDistance, 0.0f, 0.0f, 0.0f );
 	CenterValid = Level_GetSelBoundsCenter( m_pLevel, &Center );
-	jeVec3d_Clear( &m_DragPoint );
+	grVec3d_Clear( &m_DragPoint );
 	switch( DataId )
 	{
 
@@ -3750,7 +3750,7 @@ void CJweDoc::SetProperty( int DataId, int DataType, jeProperty_Data * pData )
 
 void CJweDoc::UpdateProperties()
 {
-	jeProperty_List* pArray{};
+	grProperty_List* pArray{};
 	CMainFrame* pMainFrm{};
 
 	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
@@ -3758,7 +3758,7 @@ void CJweDoc::UpdateProperties()
 	if( pArray )
 	{
 		pMainFrm->UpdateProperties(pArray );
-		jeProperty_ListDestroy( &pArray );
+		grProperty_ListDestroy( &pArray );
 	}
 }
 
@@ -3828,7 +3828,7 @@ int CJweDoc::GetLightUpdate(  )
 	return( Level_GetLightUpdate( m_pLevel ) );
 }
 
-jeBoolean CJweDoc::GetBrushLighting(  )
+grBoolean CJweDoc::GetBrushLighting(  )
 {
 	return( Level_GetBrushLighting( m_pLevel ) );
 }
@@ -3864,26 +3864,26 @@ void CJweDoc::UpdateSelection()
 
 void CJweDoc::RotCurCamX( float Radians )
 {
-	Level_SetChanged( m_pLevel, JE_TRUE );
+	Level_SetChanged( m_pLevel, GR_TRUE );
 	Level_RotCurCamX( m_pLevel, Radians );
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)nullptr );
 }
 
 void CJweDoc::RotCurCamY( float Radians )
 {
-	Level_SetChanged( m_pLevel, JE_TRUE );
+	Level_SetChanged( m_pLevel, GR_TRUE );
 	Level_RotCurCamY( m_pLevel, Radians );
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)nullptr );
 }
 
-void CJweDoc::TranslateCurCam( jeVec3d * Offset )
+void CJweDoc::TranslateCurCam( grVec3d * Offset )
 {
-	Level_SetChanged( m_pLevel, JE_TRUE );
+	Level_SetChanged( m_pLevel, GR_TRUE );
 	Level_TranslateCurCam( m_pLevel, Offset );
 	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)nullptr  );
 }
 
-jeObject *	CJweDoc::GetCurCamObject( )
+grObject *	CJweDoc::GetCurCamObject( )
 {
 	return( Level_GetCurCamObject( m_pLevel ) );
 }
@@ -3898,10 +3898,10 @@ void CJweDoc::SetCurCamXYRot( float XRot, float YRot )
 	Level_SetCurCamXYRot( m_pLevel, XRot, YRot );
 }
 
-jeBoolean CJweDoc::HasChanged()
+grBoolean CJweDoc::HasChanged()
 {
 	if( m_pLevel == nullptr )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	return( Level_HasChanged( m_pLevel ) );
 }
 
@@ -3953,7 +3953,7 @@ void CJweDoc::OnToolsPlaceuserobj()
 	
 }
 
-jeBoolean CJweDoc::SetRenderMode( int Mode )
+grBoolean CJweDoc::SetRenderMode( int Mode )
 {
    m_RenderMode = Mode;
 	return( Level_SetRenderMode( m_pLevel, Mode ) );
@@ -3971,12 +3971,12 @@ void CJweDoc::UpdateTimeDelta(  float TimeDelta )
 
 	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 
-	jeWorld_Frame( m_pWorld, TimeDelta );
+	grWorld_Frame( m_pWorld, TimeDelta );
 	pMainFrm->UpdateTimeDelta( TimeDelta );
 }
 
 
-void CJweDoc::RenderAnimate( jeBoolean bAnimate )
+void CJweDoc::RenderAnimate( grBoolean bAnimate )
 {
 	CJetView* pJetView{};
 	pJetView = (CJetView *)GetJetView();
@@ -4026,7 +4026,7 @@ CView * CJweDoc::GetJetView()
 
 } // CJweDoc::GetJetView()
 
-jeEngine* CJweDoc::GetJetEngine()
+grEngine* CJweDoc::GetJetEngine()
 {
 	CJetView * pJetView;
 	pJetView = (CJetView *) GetJetView();
@@ -4051,15 +4051,15 @@ void CJweDoc::OnFullscreenView()
 	// switch modes
 	pView = GetJetView();
 	assert( pView != nullptr );
-	if ( ( (CJetView*)pView )->FullscreenView() == JE_FALSE )
+	if ( ( (CJetView*)pView )->FullscreenView() == GR_FALSE )
 	{
-		jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode" );
-//		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode" );
+//		return GR_FALSE;
 	}
 
 	// all done
 
-//	return JE_TRUE;
+//	return GR_TRUE;
 
 } // OnFullscreenView()
 
@@ -4079,14 +4079,14 @@ void CJweDoc::OnVideosettingsWindowmode()
 	// choose window video settings
 	pView = GetJetView();
 	assert( pView != nullptr );
-	if ( ( (CJetView *)pView )->ChooseWindowVideoSettings() == JE_FALSE )
+	if ( ( (CJetView *)pView )->ChooseWindowVideoSettings() == GR_FALSE )
 	{
-		jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnVideosettingsWindowmode", "TRACE" );
-//		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnVideosettingsWindowmode", "TRACE" );
+//		return GR_FALSE;
 	}
 
 	// all done
-//	return JE_TRUE;
+//	return GR_TRUE;
 	
 } // CJweDoc::OnVideosettingsWindowmode()
 
@@ -4110,14 +4110,14 @@ void CJweDoc::OnVideosettingsFullscreenmode()
 	pView = GetJetView();
 	assert( pView != nullptr );
 
-	if ( ( (CJetView*)pView )->FullscreenView() == JE_FALSE )
+	if ( ( (CJetView*)pView )->FullscreenView() == GR_FALSE )
 	{
-		jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode" );
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode" );
+		return GR_FALSE;
 	}
 */
 	// all done
-//	return JE_TRUE;
+//	return GR_TRUE;
 	
 } // CJweDoc::OnVideosettingsFullscreenmode()
 
@@ -4166,20 +4166,20 @@ BOOL CJweDoc::UpdateWindow(
 // Added DJT
 //---------------------------------------------------
 
-void CJweDoc::SelectAll(jeBoolean UpdatePanel, int32 Mask)
+void CJweDoc::SelectAll(grBoolean UpdatePanel, int32 Mask)
 {
-	jeExtBox	ChangedBounds{};
-	jeBoolean	bSelChanged = JE_FALSE ;
+	grExtBox	ChangedBounds{};
+	grBoolean	bSelChanged = GR_FALSE ;
 	
 	bSelChanged = Select_All(m_pLevel, Mask, &ChangedBounds);
 
-	if( JE_TRUE == bSelChanged )
+	if( GR_TRUE == bSelChanged )
 	{
-		jeProperty_List *pArray;
+		grProperty_List *pArray;
 
 		pArray = Select_BuildDescriptor( m_pLevel );
 		((CMainFrame*)AfxGetMainWnd())->SetProperties( pArray );			
-		jeProperty_ListDestroy( &pArray );
+		grProperty_ListDestroy( &pArray );
 		((CMainFrame*)AfxGetMainWnd())->UpdatePanel( MAINFRM_PANEL_LISTS ) ;
 		UpdateAllViews( nullptr, DOC_HINT_ORTHO, (CObject*)&ChangedBounds ) ;
 	}
@@ -4197,7 +4197,7 @@ void CJweDoc::OnUpdateEditSelectAll(CCmdUI* pCmdUI)
 
 void CJweDoc::OnEditSelectAll()
 {
-	this->SelectAll(JE_TRUE);
+	this->SelectAll(GR_TRUE);
 }
 
 
@@ -4208,7 +4208,7 @@ void CJweDoc::OnUpdateEditSelectNone(CCmdUI* pCmdUI)
 
 void CJweDoc::OnEditSelectNone()
 {
-	DeselectAll(JE_TRUE);
+	DeselectAll(GR_TRUE);
 }
 
 void CJweDoc::OnUpdateEditSelectInvert(CCmdUI* pCmdUI)
@@ -4227,7 +4227,7 @@ void CJweDoc::OnEditSelectInvert()
 
 void CJweDoc::OnUpdateEditSelectType(CCmdUI* pCmdUI)
 {
-	jeBoolean bEnabled;
+	grBoolean bEnabled;
 
 	// There must be something selectable of this type
 	switch (pCmdUI->m_nID)
@@ -4254,7 +4254,7 @@ void CJweDoc::OnUpdateEditSelectType(CCmdUI* pCmdUI)
 			bEnabled = Level_TestForObject(m_pLevel, KIND_USEROBJ);
 			break;
 		default:
-			bEnabled = JE_FALSE;
+			bEnabled = GR_FALSE;
 			assert(true);
 	}
 
@@ -4266,37 +4266,37 @@ void CJweDoc::OnUpdateEditSelectType(CCmdUI* pCmdUI)
 
 void CJweDoc::OnEditSelectCameras()
 {
-	this->SelectAll(JE_TRUE, KIND_CAMERA);
+	this->SelectAll(GR_TRUE, KIND_CAMERA);
 }
 
 void CJweDoc::OnEditSelectBrushes()
 {
-	this->SelectAll(JE_TRUE, KIND_BRUSH);
+	this->SelectAll(GR_TRUE, KIND_BRUSH);
 }
 
 void CJweDoc::OnEditSelectEntities()
 {
-	this->SelectAll(JE_TRUE, KIND_ENTITY);
+	this->SelectAll(GR_TRUE, KIND_ENTITY);
 }
 
 void CJweDoc::OnEditSelectLights()
 {
-	this->SelectAll(JE_TRUE, KIND_LIGHT);
+	this->SelectAll(GR_TRUE, KIND_LIGHT);
 }
 
 void CJweDoc::OnEditSelectModels()
 {
-	this->SelectAll(JE_TRUE, KIND_MODEL);
+	this->SelectAll(GR_TRUE, KIND_MODEL);
 }
 
 void CJweDoc::OnEditSelectTerrain()
 {
-	this->SelectAll(JE_TRUE, KIND_TERRAIN);
+	this->SelectAll(GR_TRUE, KIND_TERRAIN);
 }
 
 void CJweDoc::OnEditSelectUser()
 {
-	this->SelectAll(JE_TRUE, KIND_USEROBJ);
+	this->SelectAll(GR_TRUE, KIND_USEROBJ);
 }
 //---------------------------------------------------
 // End DJT
@@ -4347,9 +4347,9 @@ void CJweDoc::OnPreferences()
 
 				((CJetView*)pView)->SetWindowModeByString(cWindowRes);
 
-				if (((CJetView*)pView)->ChooseWindowVideoSettings() == JE_FALSE)
+				if (((CJetView*)pView)->ChooseWindowVideoSettings() == GR_FALSE)
 				{
-					jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode");
+					grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "CJweDoc::OnFullscreenView", "Failed to switch to full screen mode");
 					return;
 				}
 			}
@@ -4470,36 +4470,36 @@ struct EnumLevelData
 	CArray<VertInfo, VertInfo&> VertInfoList;
 	CDWordArray                 IndexArray;
 
-	jeWorld					    *pWorld;
+	grWorld					    *pWorld;
 	CJweDoc						*pDoc;
 };
 
-jeBoolean EnumLevelCB(Brush* curBrush, void* param)
+grBoolean EnumLevelCB(Brush* curBrush, void* param)
 {
-	jeVec3d Tri[3];
-	jeVec3d VecU{}, VecV{};
-	jePlane Plane{};
+	grVec3d Tri[3];
+	grVec3d VecU{}, VecV{};
+	grPlane Plane{};
 
 	EnumLevelData* pEnumerator = (EnumLevelData*) param;
 
 	// Get the XForm matrices of the brush
-	const jeXForm3d *XForm = jeBrush_GetXForm(Brush_GetjeBrush(curBrush));
-	const jeXForm3d *WorldToLocked = jeBrush_GetWorldToLockedXForm(Brush_GetjeBrush(curBrush));
-	const jeXForm3d *LockedToWorld = jeBrush_GetLockedToWorldXForm(Brush_GetjeBrush(curBrush));
+	const grXForm3d *XForm = grBrush_GetXForm(Brush_GetgrBrush(curBrush));
+	const grXForm3d *WorldToLocked = grBrush_GetWorldToLockedXForm(Brush_GetgrBrush(curBrush));
+	const grXForm3d *LockedToWorld = grBrush_GetLockedToWorldXForm(Brush_GetgrBrush(curBrush));
 
 	int i;
 	int fcnt = Brush_GetFaceCount(curBrush);
 	for (i=0; i<fcnt; i++) {
-		jeFaceInfo finfo;
+		grFaceInfo finfo;
 
-		jeBrush_Face* pFace = Brush_GetFaceByIndex(curBrush, i);
-		jeBrush_FaceGetFaceInfo(pFace, &finfo);
+		grBrush_Face* pFace = Brush_GetFaceByIndex(curBrush, i);
+		grBrush_FaceGetFaceInfo(pFace, &finfo);
 
 		VertInfo vi;
-		const jeMaterial* pMat = jeMaterial_ArrayGetMaterialByIndex(jeWorld_GetMaterialArray(pEnumerator->pWorld), finfo.MaterialIndex);
-		strcpy(vi.MatName, jeMaterial_GetName(pMat));
+		const grMaterial* pMat = grMaterial_ArrayGetMaterialByIndex(grWorld_GetMaterialArray(pEnumerator->pWorld), finfo.MaterialIndex);
+		strcpy(vi.MatName, grMaterial_GetName(pMat));
 
-		const jeMaterialSpec* pMatSpec = jeMaterial_GetMaterialSpec(pMat);
+		const grMaterialSpec* pMatSpec = grMaterial_GetMaterialSpec(pMat);
 
 		int k;
 		long matidx = -1;
@@ -4520,69 +4520,69 @@ jeBoolean EnumLevelCB(Brush* curBrush, void* param)
 		// Create the world space plane
 		for (j=0; j< 3; j++)
 		{
-			Tri[j] = jeBrush_FaceGetWorldSpaceVertByIndex(pFace, j);
+			Tri[j] = grBrush_FaceGetWorldSpaceVertByIndex(pFace, j);
 		}
-		jePlane_SetFromVerts(&Plane, &Tri[0], &Tri[1], &Tri[2]);
+		grPlane_SetFromVerts(&Plane, &Tri[0], &Tri[1], &Tri[2]);
 
 		// Put the normal into locked space
-		jeXForm3d_Rotate(WorldToLocked, &Plane.Normal, &Plane.Normal);
-		jeVec3d_Normalize(&Plane.Normal);
+		grXForm3d_Rotate(WorldToLocked, &Plane.Normal, &Plane.Normal);
+		grVec3d_Normalize(&Plane.Normal);
 		
 		// Get the locked texture vectors from the locked normal
-		jePlane_GetAAVectors(&Plane, &VecU, &VecV);
+		grPlane_GetAAVectors(&Plane, &VecU, &VecV);
 
-		jeVec3d_Scale(&VecU, 1.0f/finfo.LMapScaleU, &VecU);
-		jeVec3d_Scale(&VecV, 1.0f/finfo.LMapScaleV, &VecV);
+		grVec3d_Scale(&VecU, 1.0f/finfo.LMapScaleU, &VecU);
+		grVec3d_Scale(&VecV, 1.0f/finfo.LMapScaleV, &VecV);
 		
 		// Rotate the texture vectors
 		{
-			jeVec3d			Axis{};
-			jeXForm3d		RotXForm{};
-			jeQuaternion	Quat{};
+			grVec3d			Axis{};
+			grXForm3d		RotXForm{};
+			grQuaternion	Quat{};
 			
-			jeVec3d_CrossProduct(&VecU, &VecV, &Axis);
+			grVec3d_CrossProduct(&VecU, &VecV, &Axis);
 			
-			jeVec3d_Normalize(&Axis);
+			grVec3d_Normalize(&Axis);
 			
-			jeQuaternion_SetFromAxisAngle(&Quat, &Axis, (finfo.Rotate/180.0f)*JE_PI);
-			jeQuaternion_ToMatrix(&Quat, &RotXForm);
+			grQuaternion_SetFromAxisAngle(&Quat, &Axis, (finfo.Rotate/180.0f)*GR_PI);
+			grQuaternion_ToMatrix(&Quat, &RotXForm);
 			
-			jeXForm3d_Transform(&RotXForm, &VecU, &VecU);
-			jeXForm3d_Transform(&RotXForm, &VecV, &VecV);
+			grXForm3d_Transform(&RotXForm, &VecU, &VecU);
+			grXForm3d_Transform(&RotXForm, &VecV, &VecV);
 		}
 		
 		
 		// Rotate the locked texture vectors into world space
-		jeXForm3d_Rotate(LockedToWorld, &VecU, &VecU);
-		jeXForm3d_Rotate(LockedToWorld, &VecV, &VecV);
+		grXForm3d_Rotate(LockedToWorld, &VecU, &VecU);
+		grXForm3d_Rotate(LockedToWorld, &VecV, &VecV);
 
-		int texWidth = jeMaterialSpec_Width(pMatSpec);
-		int texHeight = jeMaterialSpec_Height(pMatSpec);
+		int texWidth = grMaterialSpec_Width(pMatSpec);
+		int texHeight = grMaterialSpec_Height(pMatSpec);
 
-		jeFloat ShiftU{};
-		jeFloat ShiftV{};
+		grFloat ShiftU{};
+		grFloat ShiftV{};
 
 		bool bFirstUV = true;
-		int vcnt = jeBrush_FaceGetVertCount(pFace);
+		int vcnt = grBrush_FaceGetVertCount(pFace);
 		for (j=0; j<vcnt; j++) {
 			VertData vd;
-			const jeVec3d* pos = jeBrush_FaceGetVertByIndex(pFace, j);
+			const grVec3d* pos = grBrush_FaceGetVertByIndex(pFace, j);
 			// Position
 			vd.pos[0] = pos->X;
 			vd.pos[1] = pos->Y;
 			vd.pos[2] = pos->Z;
 
-			const jeVec3d* normal = &Plane.Normal;
+			const grVec3d* normal = &Plane.Normal;
 			vd.nor[0] = normal->X;
 			vd.nor[1] = normal->Y;
 			vd.nor[2] = normal->Z;
 
-			vd.u = jeVec3d_DotProduct(pos, &VecU);
-			vd.v = jeVec3d_DotProduct(pos, &VecV);
+			vd.u = grVec3d_DotProduct(pos, &VecU);
+			vd.v = grVec3d_DotProduct(pos, &VecV);
 
 			if (bFirstUV) {
-				ShiftU = (jeFloat)(((int32)(vd.u/(jeFloat)texWidth))*texWidth);
-				ShiftV = (jeFloat)(((int32)(vd.v/(jeFloat)texHeight))*texHeight);
+				ShiftU = (grFloat)(((int32)(vd.u/(grFloat)texWidth))*texWidth);
+				ShiftV = (grFloat)(((int32)(vd.v/(grFloat)texHeight))*texHeight);
 
 				ShiftU *= (finfo.DrawScaleU/finfo.LMapScaleU);
 				ShiftV *= (finfo.DrawScaleV/finfo.LMapScaleV);
@@ -4598,7 +4598,7 @@ jeBoolean EnumLevelCB(Brush* curBrush, void* param)
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 #ifndef MAKEFOURCC
@@ -4629,7 +4629,7 @@ void CJweDoc::OnFileExportExportforbtprojectworkspacebtw()
 		fwrite(&toWrite, 4, 1, file);
 
 		EnumLevelData enumLevelData;
-		enumLevelData.pWorld = Level_GetjeWorld(m_pLevel);
+		enumLevelData.pWorld = Level_GetgrWorld(m_pLevel);
 		enumLevelData.pDoc = this;
 
 		ModelList* modelLst = Level_GetModelList(m_pLevel);

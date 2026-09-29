@@ -145,37 +145,5 @@ typedef struct grHWVertex
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-typedef grDeviceCaps jeDeviceCaps;
-typedef grUVRGBA jeUVRGBA;
-typedef grRGBA jeRGBA;
-typedef grRGB jeRGB;
-typedef grRect jeRect;
-typedef grFloatRect jeFloatRect;
-typedef grLVertex jeLVertex;
-typedef grTLVertex jeTLVertex;
-typedef grVertex jeVertex;
-typedef grHWVertex jeHWVertex;
-#define JE_LVertex                               GR_LVertex
-#define JE_RENDER_FLAG_ALPHA                     GR_RENDER_FLAG_ALPHA
-#define JE_RENDER_FLAG_BILINEAR_FILTER           GR_RENDER_FLAG_BILINEAR_FILTER
-#define JE_RENDER_FLAG_CLAMP_UV                  GR_RENDER_FLAG_CLAMP_UV
-#define JE_RENDER_FLAG_COLORKEY                  GR_RENDER_FLAG_COLORKEY
-#define JE_RENDER_FLAG_COUNTER_CLOCKWISE         GR_RENDER_FLAG_COUNTER_CLOCKWISE
-#define JE_RENDER_FLAG_FLUSHBATCH                GR_RENDER_FLAG_FLUSHBATCH
-#define JE_RENDER_FLAG_HWTRANSFORM               GR_RENDER_FLAG_HWTRANSFORM
-#define JE_RENDER_FLAG_NO_ZTEST                  GR_RENDER_FLAG_NO_ZTEST
-#define JE_RENDER_FLAG_NO_ZWRITE                 GR_RENDER_FLAG_NO_ZWRITE
-#define JE_RENDER_FLAG_SPECULAR                  GR_RENDER_FLAG_SPECULAR
-#define JE_RENDER_FLAG_STEST                     GR_RENDER_FLAG_STEST
-#define JE_RENDER_FLAG_SWRITE                    GR_RENDER_FLAG_SWRITE
-#define JE_RENDER_FLAG_VERTEXBUFFER              GR_RENDER_FLAG_VERTEXBUFFER
-#define JE_RENDER_FLAG_WIREFRAME                 GR_RENDER_FLAG_WIREFRAME
-#define JE_RGBA                                  GR_RGBA
-#define JE_Rect                                  GR_Rect
-#define JE_TLVertex                              GR_TLVertex
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

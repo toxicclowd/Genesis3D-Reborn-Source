@@ -33,17 +33,6 @@
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#ifndef JET_MAJOR_VERSION
-#define JET_MAJOR_VERSION GRT_MAJOR_VERSION
-#endif
-
-#ifndef JET_MINOR_VERSION
-#define JET_MINOR_VERSION GRT_MINOR_VERSION
-#endif
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif
 

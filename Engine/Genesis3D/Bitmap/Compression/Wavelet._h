@@ -26,7 +26,7 @@
 #include "ThreadQueue.h"
 #include "Tsc.h"
 
-struct jeWavelet
+struct grWavelet
 {
 	uint32 tag;
 	int RefCount;
@@ -37,16 +37,16 @@ struct jeWavelet
 	uint32 compLen,compLenLL,stopLen;
 	uint8 * comp;
 
-	jeBoolean transposeLHs,tblock;
+	grBoolean transposeLHs,tblock;
 	tsc_type DecompressTSC;
 
-	jeVFile * StreamingFile;
-	jeThreadQueue_Semaphore * StreamingLock;
-	jeThreadQueue_Job *	StreamingJob;
+	grVFile * StreamingFile;
+	grThreadQueue_Semaphore * StreamingLock;
+	grThreadQueue_Job *	StreamingJob;
 	uint streamDecoded,streamGot;
 };
 
-#define Wavelet_AlphaIsTransparency(w) ( (w)->alphaMask < 0 ? JE_TRUE : JE_FALSE )
+#define Wavelet_AlphaIsTransparency(w) ( (w)->alphaMask < 0 ? GR_TRUE : GR_FALSE )
 
 #define WAVELET_TAG ((uint32)0x65566157)	// 'WaVe'
 

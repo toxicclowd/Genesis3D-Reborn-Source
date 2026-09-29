@@ -18,11 +18,11 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_VISOBJECT_H
-#define JE_VISOBJECT_H
+#ifndef GR_VISOBJECT_H
+#define GR_VISOBJECT_H
 
 #include "Engine.h"
-#include "jeFrustum.h"
+#include "grFrustum.h"
 #include "Object.h"
 #include "List.h"
 
@@ -32,41 +32,41 @@ extern "C" {
 
 //-------------------------
 
-typedef struct jeVisObject		jeVisObject;
-typedef struct jeVisObjectList	jeVisObjectList;
+typedef struct grVisObject		grVisObject;
+typedef struct grVisObjectList	grVisObjectList;
 
 //-------------------------
 
-jeVisObjectList *	jeVisObjectList_Create(void);
-void				jeVisObjectList_Destroy(jeVisObjectList ** pList);
-jeBoolean			jeVisObjectList_IsValid(const jeVisObjectList * List);
+grVisObjectList *	grVisObjectList_Create(void);
+void				grVisObjectList_Destroy(grVisObjectList ** pList);
+grBoolean			grVisObjectList_IsValid(const grVisObjectList * List);
 
 //-------------------------
 
-jeVisObject *		jeVisObjectList_CreateObject(	jeVisObjectList * List,jeObject *Obj);
-jeVisObject *		jeVisObjectList_FindObject(	const jeVisObjectList * List,const jeObject *Obj);
-void				jeVisObjectList_DestroyObject(jeVisObjectList * List,jeVisObject *VO);
+grVisObject *		grVisObjectList_CreateObject(	grVisObjectList * List,grObject *Obj);
+grVisObject *		grVisObjectList_FindObject(	const grVisObjectList * List,const grObject *Obj);
+void				grVisObjectList_DestroyObject(grVisObjectList * List,grVisObject *VO);
 
-jeVisObject *		jeVisObjectList_GetNext(const jeVisObjectList * List,jeVisObject *VO); // use NULL to start the walk
-
-//-------------------------
-
-void				jeVisObjectList_RenderStart(jeVisObjectList * List, const jeEngine *Engine, 
-							const jeCamera *Camera, uint32 VisFrame);
-
-void				jeVisObjectList_RenderAll(const jeVisObjectList * List,uint32 VisFrame);
-
+grVisObject *		grVisObjectList_GetNext(const grVisObjectList * List,grVisObject *VO); // use NULL to start the walk
 
 //-------------------------
 
-void				jeVisObject_MarkVis(jeVisObject *VO,uint32 VisFrame);
+void				grVisObjectList_RenderStart(grVisObjectList * List, const grEngine *Engine, 
+							const grCamera *Camera, uint32 VisFrame);
 
-void				jeVisObject_Render(jeVisObject *VO,const jeFrustum *Frustum,uint32 VisFrame);
+void				grVisObjectList_RenderAll(const grVisObjectList * List,uint32 VisFrame);
+
+
+//-------------------------
+
+void				grVisObject_MarkVis(grVisObject *VO,uint32 VisFrame);
+
+void				grVisObject_Render(grVisObject *VO,const grFrustum *Frustum,uint32 VisFrame);
 								// not const, cuz it marks visframe
 
-const jeObject *	jeVisObject_Object(const jeVisObject *VO);
+const grObject *	grVisObject_Object(const grVisObject *VO);
 
-void				jeVisObject_AddArea(jeVisObject *VO,uint32 AreaUID); // use 0 to clear the list
+void				grVisObject_AddArea(grVisObject *VO,uint32 AreaUID); // use 0 to clear the list
 
 //-------------------------
 

@@ -30,20 +30,20 @@
 
 
 /////////////////////////////////////////////////////////////////////
-// jeBox_ functions
+// grBox_ functions
 
 
 // Box needs to know what its axes are like in world space
 // this involves a simplified rotation of the Box's local
 // frame axes into global coord system
 
-static void jeBox_ComputeGlobalFrameAxes(jeBox* Box)
+static void grBox_ComputeGlobalFrameAxes(grBox* Box)
 {
-	jeBoolean isOrthonormal;
+	grBoolean isOrthonormal;
 
 	assert(Box != NULL);
 
-	isOrthonormal = jeXForm3d_IsOrthonormal(&(Box->Transform));
+	isOrthonormal = grXForm3d_IsOrthonormal(&(Box->Transform));
 	assert(isOrthonormal);
 
 	Box->GlobalFrameAxes[0].X = Box->Transform.AX * Box->xScale;
@@ -64,71 +64,71 @@ static void jeBox_ComputeGlobalFrameAxes(jeBox* Box)
 // set up an Box; call when initializing an Box or when
 // the Box's scale(s) change
 
-void jeBox_Set(jeBox* Box, float xScale, float yScale, float zScale, const jeXForm3d* Transform)
+void grBox_Set(grBox* Box, float xScale, float yScale, float zScale, const grXForm3d* Transform)
 {
-	jeBoolean isOrthonormal;
+	grBoolean isOrthonormal;
 
 	assert(Box != NULL);
 	assert(Transform != NULL);
 
-	isOrthonormal = jeXForm3d_IsOrthonormal(&(Box->Transform));
+	isOrthonormal = grXForm3d_IsOrthonormal(&(Box->Transform));
 	assert(isOrthonormal);
 
 	Box->xScale = xScale;
 	Box->yScale = yScale;
 	Box->zScale = zScale;
 
-	jeBox_SetXForm(Box, Transform);	
+	grBox_SetXForm(Box, Transform);	
 }
 
 // set an Box's Transform
 
-void jeBox_SetXForm(jeBox* Box, const jeXForm3d* Transform)
+void grBox_SetXForm(grBox* Box, const grXForm3d* Transform)
 {
-	jeBoolean isOrthonormal;
+	grBoolean isOrthonormal;
 
 	assert(Box != NULL);
 	assert(Transform != NULL);
 
-	isOrthonormal = jeXForm3d_IsOrthonormal(Transform);
+	isOrthonormal = grXForm3d_IsOrthonormal(Transform);
 	assert(isOrthonormal);
 
-	jeXForm3d_Copy(Transform, &(Box->Transform));
+	grXForm3d_Copy(Transform, &(Box->Transform));
 
-	isOrthonormal = jeXForm3d_IsOrthonormal(&(Box->Transform));
+	isOrthonormal = grXForm3d_IsOrthonormal(&(Box->Transform));
 	assert(isOrthonormal);
 
-	jeXForm3d_GetTranspose(Transform, &(Box->TransformInv));
+	grXForm3d_GetTranspose(Transform, &(Box->TransformInv));
 
-	isOrthonormal = jeXForm3d_IsOrthonormal(&(Box->TransformInv));
+	isOrthonormal = grXForm3d_IsOrthonormal(&(Box->TransformInv));
 	assert(isOrthonormal);
 
-	jeBox_ComputeGlobalFrameAxes(Box);
+	grBox_ComputeGlobalFrameAxes(Box);
 }
 
 
 // test for Box overlap between 2 Boxs
 // tests for overlap between B against A and then A against B
 
-jeBoolean jeBox_DetectCollisionBetween(const jeBox* Box1, const jeBox* Box2)
+grBoolean grBox_DetectCollisionBetween(const grBox* Box1, const grBox* Box2)
 {
 	int i, c;
 	float radius;
-	const jeBox* BoxA;
-	const jeBox* BoxB;
-	static jeVec3d centerToCenterVector, xformedCenterToCenterVector;
-	static jeVec3d inverseXFormedGlobalFrameAxes[3];
-	jeBoolean isOrthonormal;
+	const grBox* BoxA;
+	const grBox* BoxB;
+	static grVec3d centerToCenterVector, xformedCenterToCenterVector;
+	static grVec3d inverseXFormedGlobalFrameAxes[3];
+	grBoolean isOrthonormal;
 
 	assert(Box1 != NULL);
 	assert(Box2 != NULL);
 
 	// assert orthonormality
 
-	isOrthonormal = jeXForm3d_IsOrthonormal(&(Box1->Transform));
+	isOrthonormal = grXForm3d_IsOrthonormal(&(Box1->Transform));
 	assert(isOrthonormal);
 
-	isOrthonormal = jeXForm3d_IsOrthonormal(&(Box2->Transform));
+	isOrthonormal = grXForm3d_IsOrthonormal(&(Box2->Transform));
 	assert(isOrthonormal);
 
 	// test B against A and if necessary A against B
@@ -152,24 +152,24 @@ jeBoolean jeBox_DetectCollisionBetween(const jeBox* Box1, const jeBox* Box2)
 
 		for (i = 0; i < 3; i++)
 		{
-			jeXForm3d_Rotate(&(BoxA->TransformInv), &(BoxB->GlobalFrameAxes[i]),
+			grXForm3d_Rotate(&(BoxA->TransformInv), &(BoxB->GlobalFrameAxes[i]),
 				&inverseXFormedGlobalFrameAxes[i]);
 		}
 
 		// get B's translation offset from A in global coord system
 
-		jeVec3d_Subtract(&(BoxB->Transform.Translation), &(BoxA->Transform.Translation),
+		grVec3d_Subtract(&(BoxB->Transform.Translation), &(BoxA->Transform.Translation),
 			&centerToCenterVector);
 
 		// rotate offset by the amount A was rotated to bring it
 		// back into its local coord system
 		
-		jeXForm3d_Rotate(&(BoxA->TransformInv), &centerToCenterVector,
+		grXForm3d_Rotate(&(BoxA->TransformInv), &centerToCenterVector,
 			&xformedCenterToCenterVector);
 
-		xformedCenterToCenterVector.X = (jeFloat)fabs(xformedCenterToCenterVector.X);
-		xformedCenterToCenterVector.Y = (jeFloat)fabs(xformedCenterToCenterVector.Y);
-		xformedCenterToCenterVector.Z = (jeFloat)fabs(xformedCenterToCenterVector.Z);
+		xformedCenterToCenterVector.X = (grFloat)fabs(xformedCenterToCenterVector.X);
+		xformedCenterToCenterVector.Y = (grFloat)fabs(xformedCenterToCenterVector.Y);
+		xformedCenterToCenterVector.Z = (grFloat)fabs(xformedCenterToCenterVector.Z);
 
 		// test every radius of BoxB
 		// for every global frame-axis-aligned axis of BoxA
@@ -177,32 +177,32 @@ jeBoolean jeBox_DetectCollisionBetween(const jeBox* Box1, const jeBox* Box2)
 
 		// test overlap in X axis
 
-		radius = (jeFloat)(fabs(inverseXFormedGlobalFrameAxes[0].X) +
+		radius = (grFloat)(fabs(inverseXFormedGlobalFrameAxes[0].X) +
 			fabs(inverseXFormedGlobalFrameAxes[1].X) +
 			fabs(inverseXFormedGlobalFrameAxes[2].X));
 
 		if ((radius + BoxA->xScale) < xformedCenterToCenterVector.X)
-			return JE_FALSE;
+			return GR_FALSE;
 
 		// test overlap in Y axis
 
-		radius = (jeFloat)(fabs(inverseXFormedGlobalFrameAxes[0].Y) +
+		radius = (grFloat)(fabs(inverseXFormedGlobalFrameAxes[0].Y) +
 			fabs(inverseXFormedGlobalFrameAxes[1].Y) +
 			fabs(inverseXFormedGlobalFrameAxes[2].Y));
 
 		if ((radius + BoxA->yScale) < xformedCenterToCenterVector.Y)
-			return JE_FALSE;
+			return GR_FALSE;
 
 		// test overlap in Z axis
 
-		radius = (jeFloat)(fabs(inverseXFormedGlobalFrameAxes[0].Z) +
+		radius = (grFloat)(fabs(inverseXFormedGlobalFrameAxes[0].Z) +
 			fabs(inverseXFormedGlobalFrameAxes[1].Z) +
 			fabs(inverseXFormedGlobalFrameAxes[2].Z));
 
 		if ((radius + BoxA->zScale) < xformedCenterToCenterVector.Z)
-			return JE_FALSE;
+			return GR_FALSE;
 
 	} // c
 
-	return JE_TRUE; // all tests checked out, overlap occurred
+	return GR_TRUE; // all tests checked out, overlap occurred
 }

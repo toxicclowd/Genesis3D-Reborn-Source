@@ -231,7 +231,7 @@ int CJetView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			}
 
 			//	register world objects located in the 'objects' dir
-			if (!jeEngine_RegisterObjects(m_strObjectDir.GetBuffer(m_strObjectDir.GetLength())))
+			if (!grEngine_RegisterObjects(m_strObjectDir.GetBuffer(m_strObjectDir.GetLength())))
 			{			
 				AfxMessageBox("Failed to register objects.\n\n Shutting Down...");
 				pMainFrame->PostMessage(WM_CLOSE);
@@ -384,7 +384,7 @@ void CJetView::OnTimer(UINT nIDEvent)
 	{
 		if (m_bReadyToRender)
 		{
-			jeFloat			fElapsedTime(0.0f);
+			grFloat			fElapsedTime(0.0f);
 			LARGE_INTEGER	LICurTick, LIDeltaTick;
 
 			//	close the gate -- so no interruptions until we're completely

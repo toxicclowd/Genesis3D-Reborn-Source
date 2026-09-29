@@ -65,7 +65,7 @@ void LBitIO_WriteBits(BII,uint32 BitStrg,long BitStrgLen);
 void LBitIO_WriteBit(BII,uint32 Bit);
 void LBitIO_WriteZeroBit(BII);
 void LBitIO_InitRead(BII);
-void LBitIO_ReadBit(BII,jeBoolean Bit); //fills out Bit
+void LBitIO_ReadBit(BII,grBoolean Bit); //fills out Bit
 void LBitIO_ReadBits(BII,uint32 BitStrg,long BitStrgLen); //fills out BitStrg
 void LBitIO_PeekBits(BII,uint32 BitStrg,long BitStrgLen); //fills out BitStrg
 void LBitIO_SkipBits(BII,long BitStrgLen);
@@ -187,7 +187,7 @@ BII->BitsToGo = 32; } while(0)
 extern const uint32 LBitIOReadBitMask;
 
 /*
- *  Read a bit from BII into (jeBoolean Bit)
+ *  Read a bit from BII into (grBoolean Bit)
  *
  */
 #define LBitIO_ReadBit(BII,Bit)  do {                \
@@ -416,7 +416,7 @@ if ( ! LocalBitsToGo )               				\
 extern const uint32 LBitIOReadBitMask;
 
 /*
- *  Read a bit from BII into (jeBoolean Bit)
+ *  Read a bit from BII into (grBoolean Bit)
  *
  */
 #define LocalLBitIO_ReadBit(Bit)    do {        \

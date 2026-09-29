@@ -59,8 +59,8 @@ TIMER_VARS(List_RadixInit);
 #define DebugAlert()
 #endif
 
-#define MemAlloc(size)	jeRam_AllocateClear(size)
-#define MemFree(mem)	jeRam_Free(mem)
+#define MemAlloc(size)	grRam_AllocateClear(size)
+#define MemFree(mem)	grRam_Free(mem)
 
 #ifdef DO_TIMER // {
 #undef new
@@ -346,8 +346,8 @@ Link * pNode;
 	assert(pLink);
 	pNode = (Link *)MemPool_GetHunk(LinkPool_g);
 	assert(pNode);
-//	DebugWarn(jeRam_IsValidPtr(pLink));
-//	DebugWarn(jeRam_IsValidPtr(pNode));
+//	DebugWarn(grRam_IsValidPtr(pLink));
+//	DebugWarn(grRam_IsValidPtr(pNode));
 	pNode->Data = Data;
 
 	pNode->Next = pLink->Next;
@@ -359,10 +359,10 @@ void *	LISTCALL Link_Pop(Link *pLink)
 void *pData;
 Link * pNode;
 	if ( ! pLink ) return NULL;
-//	DebugWarn(jeRam_IsValidPtr(pLink));
+//	DebugWarn(grRam_IsValidPtr(pLink));
 	pNode = pLink->Next;
 	if ( ! pNode ) return NULL;
-//	DebugWarn(jeRam_IsValidPtr(pNode));
+//	DebugWarn(grRam_IsValidPtr(pNode));
 	pData = pNode->Data;
 	pLink->Next = pNode->Next;
 	MemPool_FreeHunk(LinkPool_g,pNode);
@@ -374,10 +374,10 @@ void *	LISTCALL Link_Peek(Link *pLink)
 void *pData;
 Link * pNode;
 	if ( ! pLink ) return NULL;
-//	DebugWarn(jeRam_IsValidPtr(pLink));
+//	DebugWarn(grRam_IsValidPtr(pLink));
 	pNode = pLink->Next;
 	if ( ! pNode ) return NULL;
-//	DebugWarn(jeRam_IsValidPtr(pNode));
+//	DebugWarn(grRam_IsValidPtr(pNode));
 	pData = pNode->Data;
 return pData;
 }
@@ -1035,11 +1035,11 @@ HashNode * hn;
 		H->NodeArrayLen = H->NodeCount + 100;
 		if ( H->NodeArray )
 		{
-			H->NodeArray = jeRam_Realloc(H->NodeArray,H->NodeArrayLen*sizeof(HashNode *));
+			H->NodeArray = grRam_Realloc(H->NodeArray,H->NodeArrayLen*sizeof(HashNode *));
 		}
 		else
 		{
-			H->NodeArray = jeRam_Allocate(H->NodeArrayLen*sizeof(HashNode *));
+			H->NodeArray = grRam_Allocate(H->NodeArrayLen*sizeof(HashNode *));
 		}
 		assert(H->NodeArray);
 	}
@@ -1443,25 +1443,25 @@ return pNode->Key;
 
 /***************************/
 
-jeBoolean List_Start(void)
+grBoolean List_Start(void)
 {
 	assert(UsageCount >= 0 );
 	if ( UsageCount == 0 )
 	{
 		assert(ListPool_g == NULL && LinkPool_g == NULL);
 		if ( ! (ListPool_g = MemPool_Create(sizeof(List),1024,1024) ) )
-			return JE_FALSE;
+			return GR_FALSE;
 		if ( ! (LinkPool_g = MemPool_Create(sizeof(Link),128,128) ) )
-			return JE_FALSE;
+			return GR_FALSE;
 		if ( ! (HashNodePool_g = MemPool_Create(sizeof(HashNode),128,128) ) )
-			return JE_FALSE;
+			return GR_FALSE;
 		// could latch ListFuncs_Stop() on atexit() , but no need, really..
 	}
 	UsageCount ++;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean List_Stop(void)
+grBoolean List_Stop(void)
 {
 	assert(UsageCount > 0 );
 	UsageCount --;
@@ -1472,5 +1472,5 @@ jeBoolean List_Stop(void)
 		MemPool_Destroy(&LinkPool_g); LinkPool_g = NULL;
 		MemPool_Destroy(&HashNodePool_g); HashNodePool_g = NULL;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }

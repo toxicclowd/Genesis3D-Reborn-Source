@@ -27,7 +27,7 @@
 #include	<string.h>
 
 #include	"BaseType.h"
-#include	"jeTypes.h"
+#include	"grTypes.h"
 #include	"Ram.h"
 
 #include	"Bitmap.h"
@@ -65,45 +65,45 @@
 #pragma message("Bitmap BlitData : holding a semaphore on static variables")
 #pragma warning (disable : 4731)
 
-extern jeThreadQueue_Semaphore * Bitmap_BlitData_Lock;
+extern grThreadQueue_Semaphore * Bitmap_BlitData_Lock;
 
 static int SrcXtra,DstXtra;
 static int SrcPelBytes,DstPelBytes;
 static int SrcRowBytes,DstRowBytes;
 static int SrcXtraBytes,DstXtraBytes;
-static const jePixelFormat_Operations *SrcOps,*DstOps;
-static jePixelFormat SrcFormat,DstFormat;
+static const grPixelFormat_Operations *SrcOps,*DstOps;
+static grPixelFormat SrcFormat,DstFormat;
 
-static const jeBitmap_Info * SrcInfo;
-static		 jeBitmap_Info * DstInfo;
+static const grBitmap_Info * SrcInfo;
+static		 grBitmap_Info * DstInfo;
 static const void *SrcData;
 static		 void *DstData;
-static const jeBitmap *SrcBmp;
-static		 jeBitmap *DstBmp;
-static const jeBitmap_Palette *SrcPal;
-static		 jeBitmap_Palette *DstPal;
+static const grBitmap *SrcBmp;
+static		 grBitmap *DstBmp;
+static const grBitmap_Palette *SrcPal;
+static		 grBitmap_Palette *DstPal;
 static int SizeX,SizeY;
 
-static jePixelFormat_Decomposer		SrcDecomposePixel;
-static jePixelFormat_Composer		DstComposePixel;
-static jePixelFormat_ColorGetter	SrcGetColor;
-static jePixelFormat_ColorPutter	DstPutColor;
-static jePixelFormat_PixelGetter	SrcGetPixel;
-static jePixelFormat_PixelPutter	DstPutPixel;
+static grPixelFormat_Decomposer		SrcDecomposePixel;
+static grPixelFormat_Composer		DstComposePixel;
+static grPixelFormat_ColorGetter	SrcGetColor;
+static grPixelFormat_ColorPutter	DstPutColor;
+static grPixelFormat_PixelGetter	SrcGetPixel;
+static grPixelFormat_PixelPutter	DstPutPixel;
 
 /*}{*********************************************************************/
 
-jeBoolean BlitData_Raw(void);
-jeBoolean BlitData_SameFormat(void);
-jeBoolean BlitData_Palettize(void);
-jeBoolean BlitData_DePalettize(void);
-jeBoolean BlitData_FromSeparateAlpha(void);
-jeBoolean BlitData_ToSeparateAlpha(void);
-jeBoolean BlitData_Wavelet_Compress(void);
-jeBoolean BlitData_Wavelet_DeCompress(void);
+grBoolean BlitData_Raw(void);
+grBoolean BlitData_SameFormat(void);
+grBoolean BlitData_Palettize(void);
+grBoolean BlitData_DePalettize(void);
+grBoolean BlitData_FromSeparateAlpha(void);
+grBoolean BlitData_ToSeparateAlpha(void);
+grBoolean BlitData_Wavelet_Compress(void);
+grBoolean BlitData_Wavelet_DeCompress(void);
 
-jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrcData, const jeBitmap *iSrcBmp,
-								jeBitmap_Info * iDstInfo,void *iDstData,	const jeBitmap *iDstBmp,
+grBoolean grBitmap_BlitData_Sub(	const grBitmap_Info * iSrcInfo,const void *iSrcData, const grBitmap *iSrcBmp,
+								grBitmap_Info * iDstInfo,void *iDstData,	const grBitmap *iDstBmp,
 								int iSizeX,int iSizeY)
 {
 
@@ -114,7 +114,7 @@ jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrc
 	SrcData = iSrcData;
 	DstData = iDstData;
 	SrcBmp  = iSrcBmp;
-	DstBmp  = (jeBitmap *)iDstBmp;
+	DstBmp  = (grBitmap *)iDstBmp;
 	SizeX	= iSizeX;
 	SizeY	= iSizeY;
 
@@ -126,18 +126,18 @@ jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrc
 	if ( SizeX > SrcInfo->Width || SizeX > DstInfo->Width ||
 		 SizeY > SrcInfo->Height|| SizeY > DstInfo->Height)
 	{
-		jeErrorLog_AddString(-1,"Bitmap_BlitData : size mismatch", NULL);	
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Bitmap_BlitData : size mismatch", NULL);	
+		return GR_FALSE;
 	}
 
 	SrcFormat = SrcInfo->Format;
 	DstFormat = DstInfo->Format;
 
-	SrcOps = jePixelFormat_GetOperations(SrcFormat);
-	DstOps = jePixelFormat_GetOperations(DstFormat);
+	SrcOps = grPixelFormat_GetOperations(SrcFormat);
+	DstOps = grPixelFormat_GetOperations(DstFormat);
 
 	if ( ! SrcOps || ! DstOps )
-		return JE_FALSE;
+		return GR_FALSE;
 		
 	SrcPelBytes = SrcOps->BytesPerPel;
 	DstPelBytes = DstOps->BytesPerPel;
@@ -160,54 +160,54 @@ jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrc
 
 	SrcPal = SrcInfo->Palette;
 	if ( ! SrcPal && SrcBmp )
-		SrcPal = jeBitmap_GetPalette(SrcBmp);
+		SrcPal = grBitmap_GetPalette(SrcBmp);
 	DstPal = DstInfo->Palette;
 	if ( ! DstPal && DstBmp )
-		DstPal = jeBitmap_GetPalette(DstBmp);
+		DstPal = grBitmap_GetPalette(DstBmp);
 
 	// all systems go!
 
 	/** copy the palette **/
 
-	if ( jePixelFormat_HasPalette(SrcFormat) && ! SrcPal )
+	if ( grPixelFormat_HasPalette(SrcFormat) && ! SrcPal )
 	{
-		jeErrorLog_AddString(-1, "jeBitmap_BlitData:  Palettized format, with no palette.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1, "grBitmap_BlitData:  Palettized format, with no palette.", NULL);
+		return GR_FALSE;
 	}
 
-	if ( SrcPal && jePixelFormat_HasPalette(DstFormat) )
+	if ( SrcPal && grPixelFormat_HasPalette(DstFormat) )
 	{
 		if ( ! DstInfo->Palette )
 		{
-		jePixelFormat Format;
+		grPixelFormat Format;
 			Format = SrcPal->Format;
-			if ( ! jePixelFormat_HasAlpha(Format) )
+			if ( ! grPixelFormat_HasAlpha(Format) )
 			{
 				if ( SrcInfo->HasColorKey && ! DstInfo->HasColorKey )
-					Format = JE_PIXELFORMAT_32BIT_ARGB;
+					Format = GR_PIXELFORMAT_32BIT_ARGB;
 			}
-			jeBitmap_AllocPalette(DstBmp,Format,DstBmp->Driver);
+			grBitmap_AllocPalette(DstBmp,Format,DstBmp->Driver);
 			if ( ! DstInfo->Palette )
-				DstInfo->Palette = jeBitmap_GetPalette(DstBmp);
+				DstInfo->Palette = grBitmap_GetPalette(DstBmp);
 		}
 		DstPal = DstInfo->Palette;
 		if ( ! DstPal )
 		{
-			jeErrorLog_AddString(-1, "jeBitmap_BlitData:  couldn't alloc new dest palette.", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1, "grBitmap_BlitData:  couldn't alloc new dest palette.", NULL);
+			return GR_FALSE;
 		}
 
-		if ( ! jeBitmap_Palette_Copy(SrcPal,DstPal) )
+		if ( ! grBitmap_Palette_Copy(SrcPal,DstPal) )
 		{
-			jeErrorLog_AddString(-1,"Bitmap_BlitData : Palette_Copy failed", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_BlitData : Palette_Copy failed", NULL);
+			return GR_FALSE;
 		}
 		
 		if ( SrcInfo->HasColorKey )
 		{
-			if ( ! jeBitmap_Palette_SetEntryColor(DstInfo->Palette,SrcInfo->ColorKey,0,0,0,0) )
+			if ( ! grBitmap_Palette_SetEntryColor(DstInfo->Palette,SrcInfo->ColorKey,0,0,0,0) )
 			{
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		}
 	}
@@ -232,12 +232,12 @@ jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrc
 	if (	SrcBmp && SrcBmp->Alpha && SrcBmp->Alpha->LockOwner && 
 		DstBmp && DstBmp->Alpha && DstBmp->Alpha->LockOwner )
 	{
-		if ( ! jeBitmap_BlitBitmap(SrcBmp->Alpha,DstBmp->Alpha) )
-			return JE_FALSE;
+		if ( ! grBitmap_BlitBitmap(SrcBmp->Alpha,DstBmp->Alpha) )
+			return GR_FALSE;
 		// now continue through to blit the main bitmap
 	}
 	else if ( SrcBmp && SrcBmp->Alpha && SrcBmp->Alpha->LockOwner && 
-			( jePixelFormat_HasAlpha(DstFormat) || DstInfo->HasColorKey ) )
+			( grPixelFormat_HasAlpha(DstFormat) || DstInfo->HasColorKey ) )
 	{
 		// there is no separate alpha -> color key conversion
 		// note that we cannot add separate alpha -> CK because the 
@@ -245,7 +245,7 @@ jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrc
 		return BlitData_FromSeparateAlpha();
 	}
 	else if ( DstBmp && DstBmp->Alpha && DstBmp->Alpha->LockOwner && 
-			jePixelFormat_HasAlpha(SrcFormat) )
+			grPixelFormat_HasAlpha(SrcFormat) )
 	{
 		// there is no separate alpha -> color key conversion
 		// note that we cannot add separate alpha -> CK because the 
@@ -255,26 +255,26 @@ jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrc
 
 	/****/
 
-	if (	SrcFormat == JE_PIXELFORMAT_WAVELET ||
-			DstFormat == JE_PIXELFORMAT_WAVELET )
+	if (	SrcFormat == GR_PIXELFORMAT_WAVELET ||
+			DstFormat == GR_PIXELFORMAT_WAVELET )
 	{
-		if (	SrcFormat == JE_PIXELFORMAT_WAVELET &&
-				DstFormat == JE_PIXELFORMAT_WAVELET )
+		if (	SrcFormat == GR_PIXELFORMAT_WAVELET &&
+				DstFormat == GR_PIXELFORMAT_WAVELET )
 		{
 			// or just memcpy
-			jeErrorLog_AddString(-1,"Bitmap_BlitData : no wavelet->wavelet blits yet", NULL);	
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_BlitData : no wavelet->wavelet blits yet", NULL);	
+			return GR_FALSE;
 		}
 
 		if ( SizeX != SrcInfo->Width || SizeX != DstInfo->Width ||
 			 SizeY != SrcInfo->Height || SizeY != DstInfo->Height )
 		{
 			// no partial blits right now for wavelets
-			jeErrorLog_AddString(-1,"Bitmap_BlitData : no partial wavelet blits yet", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_BlitData : no partial wavelet blits yet", NULL);
+			return GR_FALSE;
 		}
 
-		if ( SrcFormat == JE_PIXELFORMAT_WAVELET )
+		if ( SrcFormat == GR_PIXELFORMAT_WAVELET )
 		{
 			return BlitData_Wavelet_DeCompress();	
 		}
@@ -287,15 +287,15 @@ jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrc
 	{
 		return BlitData_SameFormat();
 	}
-	else if (	jePixelFormat_HasPalette(SrcFormat) ||
-				jePixelFormat_HasPalette(DstFormat) )
+	else if (	grPixelFormat_HasPalette(SrcFormat) ||
+				grPixelFormat_HasPalette(DstFormat) )
 	{
 		assert(SrcFormat != DstFormat);
-		if (	jePixelFormat_HasPalette(SrcFormat) &&
-				jePixelFormat_HasPalette(DstFormat) )
-			return JE_FALSE;	// already picked up by SameFormat , or two different palettized = abort!
+		if (	grPixelFormat_HasPalette(SrcFormat) &&
+				grPixelFormat_HasPalette(DstFormat) )
+			return GR_FALSE;	// already picked up by SameFormat , or two different palettized = abort!
 
-		if ( jePixelFormat_HasPalette(SrcFormat) )
+		if ( grPixelFormat_HasPalette(SrcFormat) )
 		{
 			return BlitData_DePalettize();
 		}
@@ -306,61 +306,61 @@ jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrc
 				// make it
 				if ( DstBmp && DstBmp->Driver )
 				{
-				jePixelFormat Format;
-					Format = SrcInfo->Palette ? SrcInfo->Palette->Format : JE_PIXELFORMAT_32BIT_XRGB;
-					if ( ! jePixelFormat_HasAlpha(Format) )
+				grPixelFormat Format;
+					Format = SrcInfo->Palette ? SrcInfo->Palette->Format : GR_PIXELFORMAT_32BIT_XRGB;
+					if ( ! grPixelFormat_HasAlpha(Format) )
 					{
 						if ( SrcInfo->HasColorKey && ! DstInfo->HasColorKey )
-							Format = JE_PIXELFORMAT_32BIT_ARGB;
+							Format = GR_PIXELFORMAT_32BIT_ARGB;
 					}
-					jeBitmap_AllocPalette(DstBmp,Format,DstBmp->Driver);
+					grBitmap_AllocPalette(DstBmp,Format,DstBmp->Driver);
 					if ( ! DstInfo->Palette )
-						DstInfo->Palette = jeBitmap_GetPalette(DstBmp);
+						DstInfo->Palette = grBitmap_GetPalette(DstBmp);
 				}
 				else
 				{
-					DstInfo->Palette = jeBitmap_Palette_Create(PALETTE_FORMAT_DEFAULT,256);
+					DstInfo->Palette = grBitmap_Palette_Create(PALETTE_FORMAT_DEFAULT,256);
 				}
 				if ( ! DstInfo->Palette )
 				{
-					jeErrorLog_AddString(-1,"Bitmap_BlitData : Pal create failed", NULL);	
-					return JE_FALSE;
+					grErrorLog_AddString(-1,"Bitmap_BlitData : Pal create failed", NULL);	
+					return GR_FALSE;
 				}
 
 				if ( SrcPal )
 				{
-					jeBitmap_Palette_Copy(SrcPal,DstInfo->Palette);
+					grBitmap_Palette_Copy(SrcPal,DstInfo->Palette);
 				}
 				else if ( DstPal )
 				{
-					jeBitmap_Palette_Copy(DstPal,DstInfo->Palette);
+					grBitmap_Palette_Copy(DstPal,DstInfo->Palette);
 				}
 				else // Nobody had a palette !
 				{
-				jeBitmap_Palette * NewPal;
-				jeBitmap_Info Info;
+				grBitmap_Palette * NewPal;
+				grBitmap_Info Info;
 					Info = *SrcInfo;
 					Info.Width = SizeX;
 					Info.Height = SizeY;
 					NewPal = createPalette(&Info,SrcData);
 					if ( ! NewPal )
 					{
-						jeErrorLog_AddString(-1,"Bitmap_BlitData : createPalette failed", NULL);	
-						return JE_FALSE;
+						grErrorLog_AddString(-1,"Bitmap_BlitData : createPalette failed", NULL);	
+						return GR_FALSE;
 					}
-					jeBitmap_Palette_Copy(NewPal,DstInfo->Palette);
+					grBitmap_Palette_Copy(NewPal,DstInfo->Palette);
 					if ( SrcBmp && ((SizeX*SizeY) > ((SrcInfo->Width * SrcInfo->Height)>>2)) )
 					{
-						jeBitmap_SetPalette((jeBitmap *)SrcBmp,NewPal);
+						grBitmap_SetPalette((grBitmap *)SrcBmp,NewPal);
 					}
-					jeBitmap_Palette_Destroy(&NewPal);
+					grBitmap_Palette_Destroy(&NewPal);
 				}
 
 				DstPal = DstInfo->Palette;
 
 				SrcPal = SrcInfo->Palette;
 				if ( ! SrcPal && SrcBmp )
-					SrcPal = jeBitmap_GetPalette(SrcBmp);
+					SrcPal = grBitmap_GetPalette(SrcBmp);
 			}
 
 			return BlitData_Palettize();
@@ -373,27 +373,27 @@ jeBoolean jeBitmap_BlitData_Sub(	const jeBitmap_Info * iSrcInfo,const void *iSrc
 
 	assert(0);
 	// must have returned before here
-	//return JE_FALSE;
+	//return GR_FALSE;
 }
 
-jeBoolean jeBitmap_BlitData(	const jeBitmap_Info * iSrcInfo,const void *iSrcData, const jeBitmap *iSrcBmp,
-								jeBitmap_Info * iDstInfo,void *iDstData,	const jeBitmap *iDstBmp,
+grBoolean grBitmap_BlitData(	const grBitmap_Info * iSrcInfo,const void *iSrcData, const grBitmap *iSrcBmp,
+								grBitmap_Info * iDstInfo,void *iDstData,	const grBitmap *iDstBmp,
 								int iSizeX,int iSizeY)
 {
-jeBoolean Ret;
+grBoolean Ret;
 	assert(Bitmap_BlitData_Lock);
-	jeThreadQueue_Semaphore_Lock(Bitmap_BlitData_Lock);
-	Ret = jeBitmap_BlitData_Sub(	
+	grThreadQueue_Semaphore_Lock(Bitmap_BlitData_Lock);
+	Ret = grBitmap_BlitData_Sub(	
 							iSrcInfo,iSrcData,iSrcBmp,
 							iDstInfo,iDstData,iDstBmp,	
 							iSizeX,iSizeY);
-	jeThreadQueue_Semaphore_UnLock(Bitmap_BlitData_Lock);
+	grThreadQueue_Semaphore_UnLock(Bitmap_BlitData_Lock);
 return Ret;
 }
 
 /*}{*********************************************************************/
 
-jeBoolean BlitData_Raw(void)
+grBoolean BlitData_Raw(void)
 {
 int x,y;
 char *SrcPtr,*DstPtr;
@@ -401,7 +401,7 @@ int R,G,B,A;
 uint32 ColorKey,Pixel;
 
 	if ( ! SrcOps || ! DstOps )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	SrcPtr = (char *)SrcData;
 	DstPtr = (char *)DstData;
@@ -412,8 +412,8 @@ uint32 ColorKey,Pixel;
 
 	if ( SrcPelBytes == 0 || DstPelBytes == 0 ) 
 	{
-		jeErrorLog_AddString(-1,"Bitmap_BlitData : invalid format", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Bitmap_BlitData : invalid format", NULL);
+		return GR_FALSE;
 	}
 	else if ( SrcOps->AMask && ! (DstOps->AMask) && DstInfo->HasColorKey )
 	{
@@ -444,7 +444,7 @@ uint32 ColorKey,Pixel;
 			DstPtr += DstXtraBytes;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 	else if ( SrcInfo->HasColorKey && DstInfo->HasColorKey )
 	{
@@ -475,7 +475,7 @@ uint32 ColorKey,Pixel;
 			DstPtr += DstXtraBytes;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 	else if ( DstInfo->HasColorKey )
 	{
@@ -497,7 +497,7 @@ uint32 ColorKey,Pixel;
 			DstPtr += DstXtraBytes;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 	else if ( SrcInfo->HasColorKey )
 	{
@@ -524,7 +524,7 @@ uint32 ColorKey,Pixel;
 			DstPtr += DstXtraBytes;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 	else
 	{
@@ -539,15 +539,15 @@ uint32 ColorKey,Pixel;
 			DstPtr += DstXtraBytes;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 }
 
 /*}{*********************************************************************/
 
-jeBoolean BlitData_FromSeparateAlpha(void)
+grBoolean BlitData_FromSeparateAlpha(void)
 {
-jeBitmap_Info AlphaInfo;
+grBitmap_Info AlphaInfo;
 void * AlphaData;
 uint8 *SrcPtr,*DstPtr,*AlphaPtr;
 int x,y,R,G,B,A;
@@ -569,22 +569,22 @@ int AlphaXtra;
 	SrcPtr = (uint8 *)SrcData;
 	DstPtr = (uint8 *)DstData;
 
-	if ( ! jeBitmap_GetInfo(SrcBmp->Alpha,&AlphaInfo,NULL) )
-		return JE_FALSE;
-	if ( AlphaInfo.Format != JE_PIXELFORMAT_8BIT_GRAY )
+	if ( ! grBitmap_GetInfo(SrcBmp->Alpha,&AlphaInfo,NULL) )
+		return GR_FALSE;
+	if ( AlphaInfo.Format != GR_PIXELFORMAT_8BIT_GRAY )
 	{
-		jeErrorLog_AddString(-1,"Bitmap_BlitData : Alpha must be grayscale", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Bitmap_BlitData : Alpha must be grayscale", NULL);
+		return GR_FALSE;
 	}
 
-	AlphaData = jeBitmap_GetBits(SrcBmp->Alpha);
+	AlphaData = grBitmap_GetBits(SrcBmp->Alpha);
 	if ( ! AlphaData )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	AlphaPtr = (uint8 *)AlphaData;
 	AlphaXtra = AlphaInfo.Stride - SizeX;
 
-	if ( jePixelFormat_HasPalette(SrcFormat) )
+	if ( grPixelFormat_HasPalette(SrcFormat) )
 	{
 		if ( SrcFormat == DstFormat )
 		{
@@ -608,19 +608,19 @@ int AlphaXtra;
 				DstPtr += DstXtraBytes;
 				AlphaPtr += AlphaXtra;
 			}
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-		else if ( SrcFormat == JE_PIXELFORMAT_8BIT )
+		else if ( SrcFormat == GR_PIXELFORMAT_8BIT )
 		{
 		uint8 *PalPtr,PalData[768];
 		int pal;
 
-			if ( ! jeBitmap_Palette_GetData(SrcPal,PalData,JE_PIXELFORMAT_24BIT_RGB,256) )
-				return JE_FALSE;
+			if ( ! grBitmap_Palette_GetData(SrcPal,PalData,GR_PIXELFORMAT_24BIT_RGB,256) )
+				return GR_FALSE;
 
 			// with seperate alpha
 
-			if ( ! jePixelFormat_HasAlpha(DstFormat) && DstInfo->HasColorKey )
+			if ( ! grPixelFormat_HasAlpha(DstFormat) && DstInfo->HasColorKey )
 			{
 			uint32 Pixel,DstColorKey;
 				// source is palettized
@@ -701,11 +701,11 @@ int AlphaXtra;
 				}
 			}
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		assert("should not get here" == NULL);
 	}
@@ -724,21 +724,21 @@ int AlphaXtra;
 		//	should never get a (separates)->(palettized) with current driver, but bad to assume...
 		// perhaps the best thing is to do separates -> 32bitRGBA then do 32bitRGBA -> Dest with the normal converters
 
-		if ( jePixelFormat_HasPalette(DstFormat) )
+		if ( grPixelFormat_HasPalette(DstFormat) )
 		{
-			jeErrorLog_AddString(-1,"Bitmap_BlitData : FromSeparateAlpha : doesn't do Palettize!", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_BlitData : FromSeparateAlpha : doesn't do Palettize!", NULL);
+			return GR_FALSE;
 		}
 
 		if ( SrcPelBytes == 0 ) 
 		{
-			jeErrorLog_AddString(-1,"Bitmap_BlitData : FromSeparateAlpha : bad Src format", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_BlitData : FromSeparateAlpha : bad Src format", NULL);
+			return GR_FALSE;
 		}
 		else if ( DstPelBytes == 0 || ! DstPutColor || ! DstComposePixel ) 
 		{
-			jeErrorLog_AddString(-1,"Bitmap_BlitData : FromSeparateAlpha : bad Dst format", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_BlitData : FromSeparateAlpha : bad Dst format", NULL);
+			return GR_FALSE;
 		}
 
 
@@ -781,7 +781,7 @@ int AlphaXtra;
 					AlphaPtr += AlphaXtra;
 				}
 
-			return JE_TRUE;
+			return GR_TRUE;
 			}
 			else if ( DstInfo->HasColorKey )
 			{
@@ -807,7 +807,7 @@ int AlphaXtra;
 					AlphaPtr += AlphaXtra;
 				}
 
-			return JE_TRUE;
+			return GR_TRUE;
 			}
 			else if ( SrcInfo->HasColorKey )
 			{
@@ -837,7 +837,7 @@ int AlphaXtra;
 					AlphaPtr += AlphaXtra;
 				}
 
-			return JE_TRUE;
+			return GR_TRUE;
 			}
 			else
 			{
@@ -855,7 +855,7 @@ int AlphaXtra;
 					AlphaPtr += AlphaXtra;
 				}
 
-			return JE_TRUE;
+			return GR_TRUE;
 			}
 
 		}
@@ -891,20 +891,20 @@ int AlphaXtra;
 				AlphaPtr += AlphaXtra;
 			}
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	}
 
 	assert("should not get here" == NULL);
-return JE_FALSE;
+return GR_FALSE;
 // end Seperate Alpha conversions
 }
 
 /*}{*********************************************************************/
 
-jeBoolean BlitData_ToSeparateAlpha(void)
+grBoolean BlitData_ToSeparateAlpha(void)
 {
-jeBitmap_Info AlphaInfo;
+grBitmap_Info AlphaInfo;
 void * AlphaData;
 uint8 *SrcPtr,*DstPtr,*AlphaPtr;
 int x,y,R,G,B,A;
@@ -924,28 +924,28 @@ int AlphaXtra;
 	SrcPtr = (uint8 *)SrcData;
 	DstPtr = (uint8 *)DstData;
 
-	if ( ! jeBitmap_GetInfo(DstBmp->Alpha,&AlphaInfo,NULL) )
-		return JE_FALSE;
-	if ( AlphaInfo.Format != JE_PIXELFORMAT_8BIT_GRAY )
+	if ( ! grBitmap_GetInfo(DstBmp->Alpha,&AlphaInfo,NULL) )
+		return GR_FALSE;
+	if ( AlphaInfo.Format != GR_PIXELFORMAT_8BIT_GRAY )
 	{
-		jeErrorLog_AddString(-1,"Bitmap_BlitData : Alpha must be grayscale", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Bitmap_BlitData : Alpha must be grayscale", NULL);
+		return GR_FALSE;
 	}
 
-	AlphaData = jeBitmap_GetBits(DstBmp->Alpha);
+	AlphaData = grBitmap_GetBits(DstBmp->Alpha);
 	if ( ! AlphaData )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	AlphaPtr = (uint8 *)AlphaData;
 	AlphaXtra = AlphaInfo.Stride - SizeX;
 
-	if ( jePixelFormat_HasPalette(DstFormat) )
+	if ( grPixelFormat_HasPalette(DstFormat) )
 	{
 		// <>
-		jeErrorLog_AddString(-1,"BlitData : doesn't support blit to palettized separates now", NULL);
+		grErrorLog_AddString(-1,"BlitData : doesn't support blit to palettized separates now", NULL);
 		// (alpha) -> pal + separate
 		//	requires palettization !!
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	else
 	{
@@ -957,8 +957,8 @@ int AlphaXtra;
 
 		if ( SrcPelBytes == 0 || DstPelBytes == 0 ) 
 		{
-			jeErrorLog_AddString(-1,"Bitmap_BlitData : bad formats", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_BlitData : bad formats", NULL);
+			return GR_FALSE;
 		}
 		else if ( SrcInfo->HasColorKey && DstInfo->HasColorKey )
 		{
@@ -1063,20 +1063,20 @@ int AlphaXtra;
 		assert( SrcPtr		== (((uint8 *)SrcData) + SrcRowBytes * SizeY ) );
 		assert( DstPtr		== (((uint8 *)DstData) + DstRowBytes * SizeY ) );
 
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 
 	// end Seperate Alpha conversions
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
 /*}{*********************************************************************/
 
-jeBoolean BlitData_SameFormat(void)
+grBoolean BlitData_SameFormat(void)
 {
 char *SrcPtr,*DstPtr;
-jePixelFormat Format;
+grPixelFormat Format;
 
 	Format = SrcFormat;
 	SrcPtr = (char *)SrcData;
@@ -1098,7 +1098,7 @@ jePixelFormat Format;
 			DstPtr += DstStepBytes;
 		}
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	else // same format, different color key
 	{
@@ -1123,7 +1123,7 @@ jePixelFormat Format;
 			switch(SrcPelBytes)
 			{
 				default:
-					return JE_FALSE;
+					return GR_FALSE;
 				case 1:
 				{
 				uint8 *pSrc,*pDst;
@@ -1144,7 +1144,7 @@ jePixelFormat Format;
 						pSrc += SrcXtra;
 						pDst += DstXtra;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 				case 2:
 				{
@@ -1166,7 +1166,7 @@ jePixelFormat Format;
 						pSrc += SrcXtra;
 						pDst += DstXtra;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 				case 3:
 				{
@@ -1192,7 +1192,7 @@ jePixelFormat Format;
 						pSrc += SrcXtraBytes;
 						pDst += DstXtraBytes;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 				case 4:
 				{
@@ -1214,7 +1214,7 @@ jePixelFormat Format;
 						pSrc += SrcXtra;
 						pDst += DstXtra;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 			}
 
@@ -1228,7 +1228,7 @@ jePixelFormat Format;
 			switch(SrcPelBytes)
 			{
 				default:
-					return JE_FALSE;
+					return GR_FALSE;
 				case 1:
 				{
 				uint8 *pSrc,*pDst;
@@ -1247,7 +1247,7 @@ jePixelFormat Format;
 						pSrc += SrcXtra;
 						pDst += DstXtra;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 				case 2:
 				{
@@ -1267,7 +1267,7 @@ jePixelFormat Format;
 						pSrc += SrcXtra;
 						pDst += DstXtra;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 				case 3:
 				{
@@ -1291,7 +1291,7 @@ jePixelFormat Format;
 						pSrc += SrcXtraBytes;
 						pDst += DstXtraBytes;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 				case 4:
 				{
@@ -1311,65 +1311,65 @@ jePixelFormat Format;
 						pSrc += SrcXtra;
 						pDst += DstXtra;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 			}
 			
 			// end : formats same, dest had color key, source doesn't
 		}
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 // must have returned by now
 }
 /*}{*********************************************************************/
 
-jeBoolean BlitData_DePalettize(void)
+grBoolean BlitData_DePalettize(void)
 {
 	// pal -> unpal : easy
-	if ( SrcFormat == JE_PIXELFORMAT_8BIT )
+	if ( SrcFormat == GR_PIXELFORMAT_8BIT )
 	{
 	uint8 * SrcPtr;
-	jeBitmap_Palette * DstPal;
+	grBitmap_Palette * DstPal;
 	int x,y,pal;
-	const jePixelFormat_Operations *SrcOps,*DstOps;
+	const grPixelFormat_Operations *SrcOps,*DstOps;
 
 		x = y = pal = 0; //touch 'em
 
-		SrcOps = jePixelFormat_GetOperations(SrcPal->Format);
-		DstOps = jePixelFormat_GetOperations(DstFormat);
+		SrcOps = grPixelFormat_GetOperations(SrcPal->Format);
+		DstOps = grPixelFormat_GetOperations(DstFormat);
 		if ( ! SrcOps || ! DstOps )
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// NO special cases
 		// just convert the Palette to the desired format, then do raw writes!
 
-		DstPal = jeBitmap_Palette_Create(DstFormat,256);
+		DstPal = grBitmap_Palette_Create(DstFormat,256);
 		if ( ! DstPal )
 		{
-			jeErrorLog_AddString(-1,"Bitmap_BlitData : Palette_Create failed", NULL);	
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_BlitData : Palette_Create failed", NULL);	
+			return GR_FALSE;
 		}
 
 		// we do all alpha & colorkey by manipulating the DstPal lookup table !
 
-		//{} all these _jeBitmap_Palette functions need failure checking
+		//{} all these _grBitmap_Palette functions need failure checking
 
-		if ( ! jeBitmap_Palette_Copy(SrcPal,DstPal) )
+		if ( ! grBitmap_Palette_Copy(SrcPal,DstPal) )
 		{
-			jeErrorLog_AddString(-1,"Bitmap_BlitData : Palette_Copy failed", NULL);
-			jeBitmap_Palette_Destroy(&DstPal);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_BlitData : Palette_Copy failed", NULL);
+			grBitmap_Palette_Destroy(&DstPal);
+			return GR_FALSE;
 		}
 
 		if ( SrcInfo->HasColorKey )
 		{
-			if ( ! jeBitmap_Palette_SetEntryColor(DstPal,SrcInfo->ColorKey,0,0,0,0) )
+			if ( ! grBitmap_Palette_SetEntryColor(DstPal,SrcInfo->ColorKey,0,0,0,0) )
 			{
-				jeBitmap_Palette_Destroy(&DstPal);
-				return JE_FALSE;
+				grBitmap_Palette_Destroy(&DstPal);
+				return GR_FALSE;
 			}
 		}
 
@@ -1380,10 +1380,10 @@ jeBoolean BlitData_DePalettize(void)
 			for(pal=0;pal<DstPal->Size;pal++)
 			{
 				//{} all this GetEntry/SetEntry is awfully slow
-				jeBitmap_Palette_GetEntry(DstPal,pal,&Pixel);
+				grBitmap_Palette_GetEntry(DstPal,pal,&Pixel);
 				if ( Pixel == DstInfo->ColorKey )
 				{
-					jeBitmap_Palette_SetEntry(DstPal,pal,Pixel^1);
+					grBitmap_Palette_SetEntry(DstPal,pal,Pixel^1);
 				}
 			}
 			
@@ -1391,10 +1391,10 @@ jeBoolean BlitData_DePalettize(void)
 
 		if ( SrcInfo->HasColorKey && DstInfo->HasColorKey )
 		{
-			if ( ! jeBitmap_Palette_SetEntry(DstPal,SrcInfo->ColorKey,DstInfo->ColorKey) )
+			if ( ! grBitmap_Palette_SetEntry(DstPal,SrcInfo->ColorKey,DstInfo->ColorKey) )
 			{
-				jeBitmap_Palette_Destroy(&DstPal);
-				return JE_FALSE;
+				grBitmap_Palette_Destroy(&DstPal);
+				return GR_FALSE;
 			}
 		}
 
@@ -1407,17 +1407,17 @@ jeBoolean BlitData_DePalettize(void)
 
 			for(pal=0;pal<DstPal->Size;pal++)
 			{
-				jeBitmap_Palette_GetEntry(SrcPal,pal,&Pixel);
+				grBitmap_Palette_GetEntry(SrcPal,pal,&Pixel);
 				if ( SrcInfo->HasColorKey && Pixel == SrcInfo->ColorKey )
 				{
 					A = 0;
 				}
 				else
 				{
-					jePixelFormat_DecomposePixel(SrcPal->Format,Pixel,&R,&G,&B,&A);
+					grPixelFormat_DecomposePixel(SrcPal->Format,Pixel,&R,&G,&B,&A);
 				}
 				if ( A < ALPHA_TO_TRANSPARENCY_THRESHOLD )
-					jeBitmap_Palette_SetEntry(DstPal,pal,DstInfo->ColorKey);
+					grBitmap_Palette_SetEntry(DstPal,pal,DstInfo->ColorKey);
 			}
 		}
 
@@ -1425,12 +1425,12 @@ jeBoolean BlitData_DePalettize(void)
 
 		// Pal -> UnPal loops : very common & very fast
 
-		switch( jePixelFormat_BytesPerPel(DstFormat) )
+		switch( grPixelFormat_BytesPerPel(DstFormat) )
 		{
 			default:
 			{
-				jeBitmap_Palette_Destroy(&DstPal);
-				return JE_FALSE;
+				grBitmap_Palette_Destroy(&DstPal);
+				return GR_FALSE;
 			}
 			case 1:
 			{
@@ -1810,16 +1810,16 @@ jeBoolean BlitData_DePalettize(void)
 			}
 		}
 
-		jeBitmap_Palette_Destroy(&DstPal);
+		grBitmap_Palette_Destroy(&DstPal);
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}
-return JE_FALSE;
+return GR_FALSE;
 }
 
 /*}{*********************************************************************/
 
-jeBoolean BlitData_Palettize(void)
+grBoolean BlitData_Palettize(void)
 {
 	// unpal -> pal : hard
 return palettizePlane(	SrcInfo,SrcData,
@@ -1829,42 +1829,42 @@ return palettizePlane(	SrcInfo,SrcData,
 
 /*}{*********************************************************************/
 
-jeBoolean BlitData_Wavelet_Compress(void)
+grBoolean BlitData_Wavelet_Compress(void)
 {
-const jeWavelet_Options * opts;
+const grWavelet_Options * opts;
 	if ( DstBmp && DstBmp->HasWaveletOptions )
 		opts = &(DstBmp->WaveletOptions);
 	else if ( SrcBmp && SrcBmp->HasWaveletOptions )
 		opts = &(SrcBmp->WaveletOptions);
 	else
 		opts = NULL;
-return jeWavelet_Compress((jeWavelet *)DstData,SrcInfo,SrcData,SrcBmp,opts);
+return grWavelet_Compress((grWavelet *)DstData,SrcInfo,SrcData,SrcBmp,opts);
 }
 
 /*}{*********************************************************************/
 
-jeBoolean BlitData_Wavelet_DeCompress(void)
+grBoolean BlitData_Wavelet_DeCompress(void)
 {
 	if ( SrcBmp && SrcBmp->WaveletMipLock > 0 )
 	{
-		if ( ! jeWavelet_DecompressMips((jeWavelet *)SrcData,(const jeBitmap_Info **)&DstInfo,(const void **)&DstData,SrcBmp->WaveletMipLock,SrcBmp->WaveletMipLock) )
+		if ( ! grWavelet_DecompressMips((grWavelet *)SrcData,(const grBitmap_Info **)&DstInfo,(const void **)&DstData,SrcBmp->WaveletMipLock,SrcBmp->WaveletMipLock) )
 		{
-			jeErrorLog_AddString(-1,"Wavelet_DecompressMips failed!",NULL);
+			grErrorLog_AddString(-1,"Wavelet_DecompressMips failed!",NULL);
 			assert(0);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
 	else
 	{
-		if ( ! jeWavelet_Decompress((jeWavelet *)SrcData,DstInfo,DstData) )
+		if ( ! grWavelet_Decompress((grWavelet *)SrcData,DstInfo,DstData) )
 		{
-			jeErrorLog_AddString(-1,"Wavelet_Decompress failed!",NULL);
+			grErrorLog_AddString(-1,"Wavelet_Decompress failed!",NULL);
 			assert(0);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 #pragma warning (default : 4731)

@@ -40,7 +40,7 @@
 #include "Disclaimer.h"
 #include "vfile.h"
 #include "Errorlog.h"
-#include "jeVersion.h"
+#include "grVersion.h"
 #include "BuildNumber.h"
 #include "BuildType.h"
 #include "label.h"
@@ -193,7 +193,7 @@ BOOL CAboutDlg::OnInitDialog()
 	{
 		UpdateData( true );
 		m_AboutText = AboutText;
-		jeRam_Free( AboutText );
+		grRam_Free( AboutText );
 		m_BuildInfoText = _T(BUILD_TYPE "   " BUILD_NUMBER);
 		UpdateData( false );
 	}
@@ -247,60 +247,60 @@ BOOL CAboutDlg::OnInitDialog()
 
 BOOL CJweApp::RegisterObject( HINSTANCE	DllHandle )
 {
-	jeBoolean (*RegisterDef)(float MajorVersion, float MinorVersion);
+	grBoolean (*RegisterDef)(float MajorVersion, float MinorVersion);
 
 	ASSERT( DllHandle );
 
-	RegisterDef = (jeBoolean (*)(float MajorVersion, float MinorVersion))GetProcAddress( DllHandle, "Object_RegisterDef" );
-	return( (*RegisterDef)( JET_MAJOR_VERSION, JET_MINOR_VERSION) );
+	RegisterDef = (grBoolean (*)(float MajorVersion, float MinorVersion))GetProcAddress( DllHandle, "Object_RegisterDef" );
+	return( (*RegisterDef)( GRT_MAJOR_VERSION, GRT_MINOR_VERSION) );
 }
 
 BOOL CJweApp::InitObjects( char * DllPath)
 {
 	// locals
-	jeVFile* DllDir{};
-	jeVFile_Finder* Finder{};
-	jeVFile_Properties	Properties{};
+	grVFile* DllDir{};
+	grVFile_Finder* Finder{};
+	grVFile_Properties	Properties{};
 	HINSTANCE			DllHandle{};
 	char* FullName{};
 
 	// open dll directory
-	DllDir = jeVFile_OpenNewSystem(
+	DllDir = grVFile_OpenNewSystem(
 		NULL,
-		JE_VFILE_TYPE_DOS,
+		GR_VFILE_TYPE_DOS,
 		DllPath,
 		NULL,
-		JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY );
+		GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY );
 	if ( DllDir != NULL )
 	{
 
 		// create our directory finder
 		#ifndef NDEBUG
-		Finder = jeVFile_CreateFinder( DllDir, "*.ddl" );
+		Finder = grVFile_CreateFinder( DllDir, "*.ddl" );
 		#else
-		Finder = jeVFile_CreateFinder( DllDir, "*.dll" );
+		Finder = grVFile_CreateFinder( DllDir, "*.dll" );
 		#endif
 		
 		if( Finder != nullptr )
 		{
 
 			// start processing files
-			while ( jeVFile_FinderGetNextFile( Finder ) == JE_TRUE )
+			while ( grVFile_FinderGetNextFile( Finder ) == GR_TRUE )
 			{
 
 				// get properties of current file
-				if( jeVFile_FinderGetProperties( Finder, &Properties ) == JE_FALSE )
+				if( grVFile_FinderGetProperties( Finder, &Properties ) == GR_FALSE )
 				{
-					jeErrorLog_AddString( JE_ERR_FILEIO_READ, "InitObjects: Unable to get dll file properties.", NULL );
+					grErrorLog_AddString( GR_ERR_FILEIO_READ, "InitObjects: Unable to get dll file properties.", NULL );
 					goto ERROR_INITOBJECTS;
 				}
 
 
 				// save dll full name
-				FullName = (char*)jeRam_Allocate( strlen( DllPath ) + strlen( Properties.Name ) + 2 );
+				FullName = (char*)grRam_Allocate( strlen( DllPath ) + strlen( Properties.Name ) + 2 );
 				if ( FullName == nullptr )
 				{
-					jeErrorLog_AddString( JE_ERR_MEMORY_RESOURCE, "InitObjects: Unable to allocate dll full name.", NULL );
+					grErrorLog_AddString( GR_ERR_MEMORY_RESOURCE, "InitObjects: Unable to allocate dll full name.", NULL );
 					goto ERROR_INITOBJECTS;
 				}
 				strcpy( FullName, DllPath );
@@ -311,34 +311,34 @@ BOOL CJweApp::InitObjects( char * DllPath)
 				DllHandle = LoadLibrary( FullName );
 				if ( DllHandle == nullptr )
 				{
-					jeErrorLog_AddString( JE_ERR_FILEIO_READ, "InitObjects: Unable to load object dll.", Properties.Name );
-					jeRam_Free( FullName );
+					grErrorLog_AddString( GR_ERR_FILEIO_READ, "InitObjects: Unable to load object dll.", Properties.Name );
+					grRam_Free( FullName );
 					continue;
 				}
 
 				// setup the object functions
-				if ( RegisterObject( DllHandle ) == JE_FALSE )
+				if ( RegisterObject( DllHandle ) == GR_FALSE )
 				{
-					jeErrorLog_AddString( JE_ERR_INTERNAL_RESOURCE, "InitObjects: failed to find get functions for object dll.", Properties.Name  );
-					jeRam_Free( FullName );
+					grErrorLog_AddString( GR_ERR_INTERNAL_RESOURCE, "InitObjects: failed to find get functions for object dll.", Properties.Name  );
+					grRam_Free( FullName );
 					continue;
 				}
-				jeRam_Free( FullName );
+				grRam_Free( FullName );
 
 			}
 
 			// destroy finder
-			jeVFile_DestroyFinder( Finder );
+			grVFile_DestroyFinder( Finder );
 		}
 
 		// close file system
-		jeVFile_Close( DllDir );
+		grVFile_Close( DllDir );
 	}
 	return( TRUE );
 
 ERROR_INITOBJECTS:
-	jeVFile_DestroyFinder( Finder );
-	jeVFile_Close( DllDir );
+	grVFile_DestroyFinder( Finder );
+	grVFile_Close( DllDir );
 	return( FALSE );
 
 
@@ -368,11 +368,11 @@ void CJweApp::SetRegistryKey(LPCTSTR lpszRegistryKey)
 BOOL CJweApp::InitInstance()
 {
 	CString	cstr ;
-	//jeXForm3d_SetMaximalAssertionMode( JE_FALSE ) ;
+	//grXForm3d_SetMaximalAssertionMode( GR_FALSE ) ;
 	CString	ObjectDllPath;
 	char Path[MAX_PATH];
 
-	//jeMemAllocInfo_Create("Preferences.jMAI");	// Added by Icestorm: Use this for memory debugging
+	//grMemAllocInfo_Create("Preferences.jMAI");	// Added by Icestorm: Use this for memory debugging
 
 	// InitCommonControls() is required on Windows XP if an application
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
@@ -569,7 +569,7 @@ BOOL CJweApp::InitInstance()
 		CString CurDirectory = Path;
 		CurDirectory += "\\Levels";
 		if( !SetCurrentDirectory( CurDirectory.GetBuffer(0) ) ) 
-			jeErrorLog_Add( JE_ERR_FILEIO_OPEN, "Unable to set Level Directory" );
+			grErrorLog_Add( GR_ERR_FILEIO_OPEN, "Unable to set Level Directory" );
 	}
 
 	Disclaimer DisclaimerDlg;
@@ -603,7 +603,7 @@ int CJweApp::ExitInstance()
 	if( m_pSettings != nullptr )
 		Settings_Destroy( &m_pSettings ) ;
 	
-	//jeMemAllocInfo_Destroy();	// Added by Icestorm : Use this for memory debugging
+	//grMemAllocInfo_Destroy();	// Added by Icestorm : Use this for memory debugging
 		
 	return CWinApp::ExitInstance();
 }// ExitInstance
@@ -628,8 +628,8 @@ bool	 CJweApp::RefreshMaterialList()
 
 		if (pDoc)
 		{
-			jeEngine* pEngine = pDoc->GetJetEngine();
-			jeResourceMgr* pResMgr = pDoc->GetResourceMgr();
+			grEngine* pEngine = pDoc->GetJetEngine();
+			grResourceMgr* pResMgr = pDoc->GetResourceMgr();
 			InitMaterialList(pEngine, pResMgr);
 
 			if (pDoc)
@@ -675,7 +675,7 @@ bool	 CJweApp::RefreshMaterialList()
 }
 
 
-bool	CJweApp::InitMaterialList(jeEngine* pEngine, jeResourceMgr* pResMgr)
+bool	CJweApp::InitMaterialList(grEngine* pEngine, grResourceMgr* pResMgr)
 {
 	MaterialList = MaterialList_Create();
 	if( MaterialList == nullptr )
@@ -718,11 +718,11 @@ bool	CJweApp::SquareAwayAutosave()
 
 
 
-BOOL CJweApp::GetDriverAndMode(jeEngine* pEngine, jeDriver **ppDriver, jeDriver_Mode **ppMode)
+BOOL CJweApp::GetDriverAndMode(grEngine* pEngine, grDriver **ppDriver, grDriver_Mode **ppMode)
 {
 
 	// locals
-	jeBoolean	DisplayVideoSettingsDialog = JE_FALSE;
+	grBoolean	DisplayVideoSettingsDialog = GR_FALSE;
 
 	// determine if video settings dialog should be displayed
 	{
@@ -731,7 +731,7 @@ BOOL CJweApp::GetDriverAndMode(jeEngine* pEngine, jeDriver **ppDriver, jeDriver_
 		{
 			if ( stricmp( __argv[count], "-videosettings" ) == 0 )
 			{
-				DisplayVideoSettingsDialog = JE_TRUE;
+				DisplayVideoSettingsDialog = GR_TRUE;
 			}
 		}
 	}
@@ -797,14 +797,14 @@ void CJweApp::EndLogPlay()
 		MsgLog_EndPlay( m_pMsgLog );
 }
 
-jeBoolean CJweApp::GetAppPath( char * PathBuf, int BuffSize )
+grBoolean CJweApp::GetAppPath( char * PathBuf, int BuffSize )
 {
 	int i;
 
 	// get the exe's path and name
 	if(GetModuleFileName( m_hInstance,PathBuf,BuffSize-1)==0)
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	// strip off exe name to leave path
@@ -818,9 +818,9 @@ jeBoolean CJweApp::GetAppPath( char * PathBuf, int BuffSize )
 	}
 	if (i==0)
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 	
 }
 
@@ -856,7 +856,7 @@ BOOL CJweApp::OnIdle(LONG lCount)
 		MsgLog_Play( m_pMsgLog );
 		return( 0 );
 	}
-	ReportErrors(JE_TRUE);
+	ReportErrors(GR_TRUE);
 	return CWinApp::OnIdle(lCount);
 }
 

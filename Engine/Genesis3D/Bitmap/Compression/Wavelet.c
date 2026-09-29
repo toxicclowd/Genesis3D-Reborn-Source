@@ -71,21 +71,21 @@ Zero-ing takes almost as much time as the blit or the decode !!
 #include "Wavelet._h"
 
 #include "Bitmap.h"
-#include "Bitmap._h"	// just for jeBitmap_UsesColorKey
+#include "Bitmap._h"	// just for grBitmap_UsesColorKey
 #include "Bitmap.__h"
 
-jeBoolean	jeWavelet_AddFromFile(jeWavelet *W,jeVFile * File,jeBoolean Streaming);
+grBoolean	grWavelet_AddFromFile(grWavelet *W,grVFile * File,grBoolean Streaming);
 static int chooseLevels(int size);
-static jeBoolean BlitBitmapToImageYUV(const jeBitmap_Info * Info,const void * Bits,const jeBitmap * Bmp,image * im);
-static jeBoolean BlitImageYUVToBitmap(const image * im,int imw,int imh, const jeBitmap_Info * Info, void *Bits);
+static grBoolean BlitBitmapToImageYUV(const grBitmap_Info * Info,const void * Bits,const grBitmap * Bmp,image * im);
+static grBoolean BlitImageYUVToBitmap(const image * im,int imw,int imh, const grBitmap_Info * Info, void *Bits);
 
-static jeWavelet_Options defaultOpts =
+static grWavelet_Options defaultOpts =
 {
 	1,
 	0,
-	JE_FALSE,
+	GR_FALSE,
 	1.0,
-	JE_FALSE
+	GR_FALSE
 };
 
 static tsc_type GlobalDecompressTSC;
@@ -99,24 +99,24 @@ TIMER_VARS(Wavelet_Transform);
 
 /*}{********************************************************************/
 
-jeBoolean	jeWavelet_SetExpertOptions(jeWavelet_Options *opts,jeFloat Ratio,int TransformN,int CoderN,jeBoolean TransposeLHs,jeBoolean Block)
+grBoolean	grWavelet_SetExpertOptions(grWavelet_Options *opts,grFloat Ratio,int TransformN,int CoderN,grBoolean TransposeLHs,grBoolean Block)
 {
 	assert(opts);
 
 	if ( CoderN >= num_coders || CoderN < 0 )
 	{
-		jeErrorLog_AddString(-1,"Wavelet : bad options : coderN invalid",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Wavelet : bad options : coderN invalid",NULL);
+		return GR_FALSE;
 	}
 	if ( TransformN >= nTransforms || TransformN < 0 )
 	{
-		jeErrorLog_AddString(-1,"Wavelet : bad options : transformN invalid",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Wavelet : bad options : transformN invalid",NULL);
+		return GR_FALSE;
 	}
 	if ( Ratio < 1.0f )
 	{
-		jeErrorLog_AddString(-1,"Wavelet : bad options : Ratio invalid",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Wavelet : bad options : Ratio invalid",NULL);
+		return GR_FALSE;
 	}
 
 	opts->transformN = TransformN;
@@ -141,10 +141,10 @@ jeBoolean	jeWavelet_SetExpertOptions(jeWavelet_Options *opts,jeFloat Ratio,int T
 	if ( opts->ratio > 1.0 )
 		Log_Printf("Brando : Options : Truncate to ratio : %f\n",opts->ratio);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean	jeWavelet_SetOptions(jeWavelet_Options *opts,int clevel,jeBoolean NeedMips,jeFloat ratio)
+grBoolean	grWavelet_SetOptions(grWavelet_Options *opts,int clevel,grBoolean NeedMips,grFloat ratio)
 {
 	assert(opts);
 
@@ -156,16 +156,16 @@ jeBoolean	jeWavelet_SetOptions(jeWavelet_Options *opts,int clevel,jeBoolean Need
 
 	// trans 0 is l97, 1 is cdf22
 
-	opts->transposeLHs = JE_FALSE;
+	opts->transposeLHs = GR_FALSE;
 
 	if ( NeedMips )
 	{
 		opts->transformN = 1;
-		opts->tblock = JE_FALSE;
+		opts->tblock = GR_FALSE;
 	}
 	else
 	{
-		opts->tblock = JE_TRUE;
+		opts->tblock = GR_TRUE;
 		if ( clevel <= 0 || clevel == 2 || clevel == 3 )
 			opts->transformN = 1;
 		else
@@ -175,7 +175,7 @@ jeBoolean	jeWavelet_SetOptions(jeWavelet_Options *opts,int clevel,jeBoolean Need
 	// @@ we never get transformN == 6 == S+P
 
 	if ( clevel == 5 || clevel > 6 )
-		opts->transposeLHs = JE_TRUE;
+		opts->transposeLHs = GR_TRUE;
 
 	if ( ratio < 1.0 ) ratio = 1.0;
 	opts->ratio = ratio;
@@ -196,10 +196,10 @@ jeBoolean	jeWavelet_SetOptions(jeWavelet_Options *opts,int clevel,jeBoolean Need
 	if ( opts->ratio > 1.0 )
 		Log_Printf("Brando : Options : Truncate to ratio : %f\n",opts->ratio);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-const char * jeWavelet_GetOptionsDescription(void)
+const char * grWavelet_GetOptionsDescription(void)
 {
 int i;
 static char opts_desc[4096];
@@ -221,16 +221,16 @@ static char opts_desc[4096];
 return (const char *)opts_desc;
 }
 
-jeBoolean	jeWavelet_HasAlpha(const jeWavelet *w)
+grBoolean	grWavelet_HasAlpha(const grWavelet *w)
 {
 	assert(w);
 	if ( w->planes == 4 || ( w->alphaMask > 0 ) )
-		return JE_TRUE;
+		return GR_TRUE;
 	else
-		return JE_FALSE;
+		return GR_FALSE;
 }
 
-void jeWavelet_GetInfo(const jeWavelet *w, jeBitmap_Info * Info)
+void grWavelet_GetInfo(const grWavelet *w, grBitmap_Info * Info)
 {
 	assert( w && Info );
 
@@ -239,14 +239,14 @@ void jeWavelet_GetInfo(const jeWavelet *w, jeBitmap_Info * Info)
 	Info->ColorKey = 1;
 
 	if ( w->planes == 4 )
-		Info->Format = JE_PIXELFORMAT_32BIT_ARGB;
+		Info->Format = GR_PIXELFORMAT_32BIT_ARGB;
 	else if ( w->planes == 1 )
-		Info->Format = JE_PIXELFORMAT_8BIT_GRAY;
+		Info->Format = GR_PIXELFORMAT_8BIT_GRAY;
 	else
-		Info->Format = JE_PIXELFORMAT_24BIT_RGB;
+		Info->Format = GR_PIXELFORMAT_24BIT_RGB;
 
 	if ( w->alphaMask == -1 )
-		Info->HasColorKey = JE_TRUE;
+		Info->HasColorKey = GR_TRUE;
 
 	Info->MaximumMip = w->levels - 1;
 	Info->Width  = w->width;
@@ -254,7 +254,7 @@ void jeWavelet_GetInfo(const jeWavelet *w, jeBitmap_Info * Info)
 	Info->Stride = w->width;
 }
 
-void jeWavelet_MakeWH(int width,int height,int *pwidth,int *pheight)
+void grWavelet_MakeWH(int width,int height,int *pwidth,int *pheight)
 {
 int shift,s;
 int llw,llh;
@@ -284,13 +284,13 @@ int llw,llh;
 #endif
 }
 
-void jeWavelet_Setup(jeWavelet * w,int width,int height)
+void grWavelet_Setup(grWavelet * w,int width,int height)
 {
 int levels;
 
 	assert(w);
 
-	jeWavelet_MakeWH(width,height,&width,&height);
+	grWavelet_MakeWH(width,height,&width,&height);
 
 	// the original width & height are stored in the bitmap wrapper
 
@@ -310,19 +310,19 @@ int levels;
 	w->compLen = width*height*4;
 }
 
-jeWavelet * jeWavelet_CreateEmpty(int width,int height)
+grWavelet * grWavelet_CreateEmpty(int width,int height)
 {
-jeWavelet * w;
+grWavelet * w;
 
-	w = (jeWavelet *)new(jeWavelet);
+	w = (grWavelet *)new(grWavelet);
 	if ( ! w )
 		return NULL;
 
 	w->RefCount = 1;
 
-	jeWavelet_Setup(w,width,height);
+	grWavelet_Setup(w,width,height);
 
-	if ( (w->comp = (uint8*)jeRam_Allocate(w->compLen)) == NULL ) 
+	if ( (w->comp = (uint8*)grRam_Allocate(w->compLen)) == NULL ) 
 	{
 		destroy(w); return NULL;
 	}
@@ -330,71 +330,71 @@ jeWavelet * w;
 return w;
 }
 
-void jeWavelet_CreateRef(jeWavelet * w)
+void grWavelet_CreateRef(grWavelet * w)
 {
 	assert(w);
 
 	w->RefCount ++;
 }
 
-jeWavelet * jeWavelet_CreateFromBitmap(const jeBitmap * Bmp,const jeWavelet_Options * opts)
+grWavelet * grWavelet_CreateFromBitmap(const grBitmap * Bmp,const grWavelet_Options * opts)
 {
-jeBitmap * Lock;
-jeBitmap_Info Info;
+grBitmap * Lock;
+grBitmap_Info Info;
 void * Bits;
-jeWavelet * w;
+grWavelet * w;
 
-	if ( ! jeBitmap_LockForReadNative(Bmp,&Lock,0,0) )
+	if ( ! grBitmap_LockForReadNative(Bmp,&Lock,0,0) )
 		return NULL;
 
-	jeBitmap_GetInfo(Lock,&Info,NULL);
-	Bits = jeBitmap_GetBits(Lock);
+	grBitmap_GetInfo(Lock,&Info,NULL);
+	Bits = grBitmap_GetBits(Lock);
 
-	w = jeWavelet_Create(&Info,Bits,Lock,opts);
+	w = grWavelet_Create(&Info,Bits,Lock,opts);
 
-	jeBitmap_UnLock(Lock);
+	grBitmap_UnLock(Lock);
 
 #if 0 // <> if you want to see the Mirrored Image
-	((jeBitmap *)Bmp)->Info.Width = w->width;
-	((jeBitmap *)Bmp)->Info.Height = w->height;
-	((jeBitmap *)Bmp)->Info.Stride = Bmp->Info.Width;
+	((grBitmap *)Bmp)->Info.Width = w->width;
+	((grBitmap *)Bmp)->Info.Height = w->height;
+	((grBitmap *)Bmp)->Info.Stride = Bmp->Info.Width;
 #endif
 
 return w;
 }
 
-jeWavelet * jeWavelet_Create(const jeBitmap_Info * Info,const void * Bits,const jeBitmap * Bmp,
-	const jeWavelet_Options * opts)
+grWavelet * grWavelet_Create(const grBitmap_Info * Info,const void * Bits,const grBitmap * Bmp,
+	const grWavelet_Options * opts)
 {
-jeWavelet * w;
+grWavelet * w;
 
 	if ( ! Info || ! Bits || ! Bmp )
 		return NULL;
 
-	w = jeWavelet_CreateEmpty(Info->Width,Info->Height);
+	w = grWavelet_CreateEmpty(Info->Width,Info->Height);
 	if ( ! w )
 	{
-		BrandoError("jeWavelet_Create : Alloc failed");
+		BrandoError("grWavelet_Create : Alloc failed");
 		return NULL;
 	}
 
-	if ( ! jeWavelet_Compress(w,Info,Bits,Bmp,opts) )
+	if ( ! grWavelet_Compress(w,Info,Bits,Bmp,opts) )
 	{
-		jeWavelet_Destroy(&w);
+		grWavelet_Destroy(&w);
 		return NULL;
 	}
 
 return w;
 }
 
-jeBoolean jeWavelet_Compress(jeWavelet *w,const jeBitmap_Info * Info,const void * Bits,const jeBitmap * Bmp,
-	const jeWavelet_Options * opts)
+grBoolean grWavelet_Compress(grWavelet *w,const grBitmap_Info * Info,const void * Bits,const grBitmap * Bmp,
+	const grWavelet_Options * opts)
 {
 image *im = NULL;
 
 	SetupUtility();
 
-	jeWavelet_Setup(w,Info->Width,Info->Height);
+	grWavelet_Setup(w,Info->Width,Info->Height);
 
 	if ( ! opts ) opts = &defaultOpts;
 	w->transformN = opts->transformN;
@@ -404,23 +404,23 @@ image *im = NULL;
 
 	if ( Info->HasColorKey && Bmp )
 	{
-		if ( ! jeBitmap_UsesColorKey(Bmp) )
-			((jeBitmap_Info *)Info)->HasColorKey = JE_FALSE;
+		if ( ! grBitmap_UsesColorKey(Bmp) )
+			((grBitmap_Info *)Info)->HasColorKey = GR_FALSE;
 	}
 
-	if ( Bmp->Info.Format == JE_PIXELFORMAT_8BIT_GRAY )
+	if ( Bmp->Info.Format == GR_PIXELFORMAT_8BIT_GRAY )
 		w->planes = 1;
 	else
 		w->planes = 3;
 
-	if ( jeBitmap_HasAlpha(Bmp) )
+	if ( grBitmap_HasAlpha(Bmp) )
 	{
 		w->planes = 4;
 		im = newImage(w->width,w->height,w->planes);
 	}
 	else if ( Info->HasColorKey )
 	{
-		im = newImageAlpha(w->width,w->height,w->planes,JE_TRUE);
+		im = newImageAlpha(w->width,w->height,w->planes,GR_TRUE);
 		w->alphaMask = -1;
 	}
 	else
@@ -429,17 +429,17 @@ image *im = NULL;
 	}
 			
 	if ( ! im )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	// that's a float!
 	w->stopLen = (uint32)((Info->Width * Info->Height * w->planes) / (opts->ratio));
 
-	jeCPU_EnterMMX();
+	grCPU_EnterMMX();
 
-	w->comp = (uint8*)jeRam_Realloc(w->comp,im->tot_size);
+	w->comp = (uint8*)grRam_Realloc(w->comp,im->tot_size);
 	if ( ! w->comp )
 	{
-		BrandoError("jeWavelet_Compress : realloc failed");
+		BrandoError("grWavelet_Compress : realloc failed");
 		goto fail;
 	}
 		
@@ -448,17 +448,17 @@ image *im = NULL;
 	// copy and YUV
 	if ( ! BlitBitmapToImageYUV(Info,Bits,Bmp,im) )
 	{
-		BrandoError("jeWavelet_Compress : BlitBitmapToImage failed");
+		BrandoError("grWavelet_Compress : BlitBitmapToImage failed");
 		goto fail;
 	}
 
 	if ( ! extendImage(im,Info->Width,Info->Height) )
 	{
-		BrandoError("jeWavelet_Compress : extendImage failed");
+		BrandoError("grWavelet_Compress : extendImage failed");
 		goto fail;
 	}
 
-	transformImageInt(im,w->levels,JE_FALSE,w->transformN,w->transposeLHs,w->tblock);
+	transformImageInt(im,w->levels,GR_FALSE,w->transformN,w->transposeLHs,w->tblock);
 
 	// might have transposed :
 	w->width  = im->width;
@@ -471,7 +471,7 @@ image *im = NULL;
 		// transposed !
 		if ( ! zeroExtendedImage(im,Info->Height,Info->Width,w->levels) )
 		{
-			BrandoError("jeWavelet_Compress : extendImage failed");
+			BrandoError("grWavelet_Compress : extendImage failed");
 			goto fail;
 		}
 	}
@@ -480,47 +480,47 @@ image *im = NULL;
 		// not transposed !
 		if ( ! zeroExtendedImage(im,Info->Width,Info->Height,w->levels) )
 		{
-			BrandoError("jeWavelet_Compress : extendImage failed");
+			BrandoError("grWavelet_Compress : extendImage failed");
 			goto fail;
 		}
 	}
 
 	if ( ! zeroAlphaImage(im,w->levels) )
 	{
-		BrandoError("jeWavelet_Compress : zeroAlphaImage failed");
+		BrandoError("grWavelet_Compress : zeroAlphaImage failed");
 		goto fail;
 	}
 
 	if ( ! encodeWaveletImage(w,im) ) 
 	{
-		BrandoError("jeWavelet_Compress : encodeWavelet failed");
+		BrandoError("grWavelet_Compress : encodeWavelet failed");
 		goto fail;
 	}
 
 	freeImage(im); im = NULL;
 
-	jeCPU_LeaveMMX();
+	grCPU_LeaveMMX();
 
 	w->stopLen = min(w->stopLen,w->compLen);
 	w->stopLen = max(w->stopLen,w->compLenLL);
 	w->compLen = w->stopLen;
 	w->streamGot = w->stopLen;
 
-	w->comp = (uint8*)jeRam_Realloc(w->comp,w->compLen + 1024);
+	w->comp = (uint8*)grRam_Realloc(w->comp,w->compLen + 1024);
 	assert(w->comp);
 
 	Log_Printf("Wavelet_Compress : %7d -> %7d = %1.3f bpp\n",	(Info->Width * Info->Height * w->planes),
 																w->compLen,
 																8.0f * w->compLen / (Info->Width * Info->Height * w->planes) );
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 fail :
 
 	assert(im);
 	freeImage(im);
-	jeCPU_LeaveMMX();
-	return JE_FALSE;
+	grCPU_LeaveMMX();
+	return GR_FALSE;
 }
 
 #define WAVE_FLAG_HASALPHA		(1<<0)
@@ -535,15 +535,15 @@ fail :
 #define LL_LEN_MASK		((1<<VERSION_SHIFT)-1)
 #define WRITE_WAVELET_VERSION	((WAVELET_VERSION << VERSION_SHIFT)&0xFFFF)
 
-jeBoolean jeWavelet_WriteToFile(const jeWavelet * w,jeVFile * F)
+grBoolean grWavelet_WriteToFile(const grWavelet * w,grVFile * F)
 {
 uint8 byte;
 uint16 word;
-jeVFile * HF;
+grVFile * HF;
 
 	assert(w && F);
 	
-	HF = jeVFile_GetHintsFile(F);
+	HF = grVFile_GetHintsFile(F);
 	assert(HF);
 
 	/*{*
@@ -578,71 +578,71 @@ jeVFile * HF;
 	if ( w->tblock )
 		byte |= WAVE_FLAG_TBLOCK;
 
-	if ( ! jeVFile_Write(HF, &byte, sizeof(byte)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(HF, &byte, sizeof(byte)) )
+		return GR_FALSE;
 
 	assert(w->coderN <= 0xF);
 	assert(w->transformN <= 0xF);
 
 	byte = (uint8)(((w->coderN)<<4) + (w->transformN));
-	if ( ! jeVFile_Write(HF, &byte, sizeof(byte)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(HF, &byte, sizeof(byte)) )
+		return GR_FALSE;
 
 	assert(w->levels <= 0xF);
 	assert(w->bps <= 0xF);
 
 	byte = (uint8)(((w->levels)<<4) + (w->bps));
-	if ( ! jeVFile_Write(HF, &byte, sizeof(byte)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(HF, &byte, sizeof(byte)) )
+		return GR_FALSE;
 
 	assert( w->compLenLL <= LL_LEN_MASK);
 
 	word = (uint16)w->compLenLL;
 	word |= WRITE_WAVELET_VERSION;
-	if ( ! jeVFile_Write(HF, &word, sizeof(word)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(HF, &word, sizeof(word)) )
+		return GR_FALSE;
 
-	if ( ! jeVFile_Write(HF, &(w->compLen), sizeof(w->compLen)))
-		return JE_FALSE;
+	if ( ! grVFile_Write(HF, &(w->compLen), sizeof(w->compLen)))
+		return GR_FALSE;
 
-	if ( ! jeVFile_Write(HF, w->comp, w->compLenLL))
-		return JE_FALSE;
+	if ( ! grVFile_Write(HF, w->comp, w->compLenLL))
+		return GR_FALSE;
 
-	if ( ! jeVFile_Write(F, w->comp + w->compLenLL, w->compLen - w->compLenLL))
-		return JE_FALSE;
+	if ( ! grVFile_Write(F, w->comp + w->compLenLL, w->compLen - w->compLenLL))
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeThreadQueue_Job * jeWavelet_StreamingJob(const jeWavelet *w)
+grThreadQueue_Job * grWavelet_StreamingJob(const grWavelet *w)
 {
 	assert(w);
 	return w->StreamingJob;
 }
 
-void jeWavelet_AddFromFileFunc(jeThreadQueue_Job * MyJob,void * Context)
+void grWavelet_AddFromFileFunc(grThreadQueue_Job * MyJob,void * Context)
 {
-jeWavelet * w;
-	w = (jeWavelet *)Context;
+grWavelet * w;
+	w = (grWavelet *)Context;
 	if ( ! w )
 		return;
 	assert( w->StreamingJob );
-	if ( ! jeWavelet_AddFromFile(w,w->StreamingFile,JE_TRUE) )
+	if ( ! grWavelet_AddFromFile(w,w->StreamingFile,GR_TRUE) )
 	{
-		jeErrorLog_AddString(-1,"jeWavelet_AddFromFile",NULL); //<> use ErrorLog
+		grErrorLog_AddString(-1,"grWavelet_AddFromFile",NULL); //<> use ErrorLog
 	}
 }
 
-jeWavelet * jeWavelet_CreateFromFile(jeBitmap * Bmp,jeVFile * F)
+grWavelet * grWavelet_CreateFromFile(grBitmap * Bmp,grVFile * F)
 {
-jeWavelet * w;
+grWavelet * w;
 uint8 byte;
 uint16 word;
-jeVFile * HF;
+grVFile * HF;
 
 	assert(F);
 
-	w = (jeWavelet *)new(jeWavelet);
+	w = (grWavelet *)new(grWavelet);
 	if ( ! w )
 		return NULL;
 
@@ -650,12 +650,12 @@ jeVFile * HF;
 	w->comp = NULL;
 	w->RefCount = 1;
 
-	jeWavelet_MakeWH(Bmp->Info.Width,Bmp->Info.Height,&(w->width),&(w->height));
+	grWavelet_MakeWH(Bmp->Info.Width,Bmp->Info.Height,&(w->width),&(w->height));
 
-	HF = jeVFile_GetHintsFile(F);
+	HF = grVFile_GetHintsFile(F);
 	assert(HF);
 
-	if ( ! jeVFile_Read(HF, &byte, sizeof(byte)) )
+	if ( ! grVFile_Read(HF, &byte, sizeof(byte)) )
 		goto fail;
 
 	w->planes = (byte)>>WAVE_FLAG_PLANES_SHIFT;
@@ -664,7 +664,7 @@ jeVFile * HF;
 	{
 		if ( byte & WAVE_FLAG_ALPHAISBOOL )
 		{
-			Bmp->Info.HasColorKey = JE_TRUE;			
+			Bmp->Info.HasColorKey = GR_TRUE;			
 			w->alphaMask = -1;
 		}
 		else
@@ -674,15 +674,15 @@ jeVFile * HF;
 	}
 	
 	if ( byte & WAVE_FLAG_TRANSPOSELHS )
-		w->transposeLHs = JE_TRUE;
+		w->transposeLHs = GR_TRUE;
 
 	if ( byte & WAVE_FLAG_TBLOCK )
 	{
-		w->tblock = JE_TRUE;
+		w->tblock = GR_TRUE;
 		swapints(w->width,w->height);
 	}
 
-	if ( ! jeVFile_Read(HF, &byte, sizeof(byte)) )
+	if ( ! grVFile_Read(HF, &byte, sizeof(byte)) )
 		goto fail;
 
 	w->coderN = byte>>4;
@@ -690,16 +690,16 @@ jeVFile * HF;
 
 	if ( w->coderN >= num_coders )
 	{
-		jeErrorLog_AddString(-1,"Wavelet : bad header : coderN invalid",NULL);
+		grErrorLog_AddString(-1,"Wavelet : bad header : coderN invalid",NULL);
 		goto fail;
 	}
 	if ( w->transformN >= nTransforms )
 	{
-		jeErrorLog_AddString(-1,"Wavelet : bad header : transformN invalid",NULL);
+		grErrorLog_AddString(-1,"Wavelet : bad header : transformN invalid",NULL);
 		goto fail;
 	}
 
-	if ( ! jeVFile_Read(HF, &byte, sizeof(byte)) )
+	if ( ! grVFile_Read(HF, &byte, sizeof(byte)) )
 		goto fail;
 
 	w->levels = byte>>4;
@@ -707,11 +707,11 @@ jeVFile * HF;
 
 	if ( (1L<<(w->levels)) >= w->width || (1L<<(w->levels)) >= w->height )
 	{
-		jeErrorLog_AddString(-1,"Wavelet : bad header : levels invalid",NULL);
+		grErrorLog_AddString(-1,"Wavelet : bad header : levels invalid",NULL);
 		goto fail;
 	}
 
-	if ( ! jeVFile_Read(HF, &word, sizeof(word)) )
+	if ( ! grVFile_Read(HF, &word, sizeof(word)) )
 		goto fail;
 		
 	w->compLenLL = (word & LL_LEN_MASK);
@@ -719,24 +719,24 @@ jeVFile * HF;
 	word &= ~ LL_LEN_MASK;
 	if ( word != WRITE_WAVELET_VERSION )
 	{
-		jeErrorLog_AddString(-1,"Wavelet : bad header : incompatible version",NULL);
+		grErrorLog_AddString(-1,"Wavelet : bad header : incompatible version",NULL);
 		goto fail;
 	}	
 
-	if ( ! jeVFile_Read(HF, &(w->compLen), sizeof(w->compLen)) )
+	if ( ! grVFile_Read(HF, &(w->compLen), sizeof(w->compLen)) )
 		goto fail;
 
 	if ( w->compLen > (uint32)(w->width * w->height * 4) )
 	{
-		jeErrorLog_AddString(-1,"Wavelet : bad header : compLen invalid",NULL);
+		grErrorLog_AddString(-1,"Wavelet : bad header : compLen invalid",NULL);
 		goto fail;
 	}
 
-	if ( ! (w->comp = (uint8*)jeRam_AllocateClear(w->compLen)) )
+	if ( ! (w->comp = (uint8*)grRam_AllocateClear(w->compLen)) )
 		goto fail;
 
 #if 1 // @@ ?
-	readTSC(((jeWavelet *)w)->DecompressTSC);
+	readTSC(((grWavelet *)w)->DecompressTSC);
 #endif
 
 #if 0 // make it not decompress until an explicit attach triggers a decompress
@@ -745,29 +745,29 @@ jeVFile * HF;
 	w->DecompressTSC[1] = 0x7FFFFFFF;
 #endif
 
-	if ( ! jeVFile_Read(HF, w->comp, w->compLenLL))
+	if ( ! grVFile_Read(HF, w->comp, w->compLenLL))
 		goto fail;
 
 	w->streamGot = w->compLenLL;
 
 	{
-	jeVFile_Properties Prop;
+	grVFile_Properties Prop;
 
-		if ( jeVFile_GetProperties(F,&Prop) && (Prop.AttributeFlags & JE_VFILE_ATTRIB_REMOTE) )
+		if ( grVFile_GetProperties(F,&Prop) && (Prop.AttributeFlags & GR_VFILE_ATTRIB_REMOTE) )
 		{
-			w->StreamingLock = jeThreadQueue_Semaphore_Create();
+			w->StreamingLock = grThreadQueue_Semaphore_Create();
 			if ( ! w->StreamingLock )
 				goto fail;
 
 			w->StreamingFile = F;
-			jeVFile_CreateRef(F);
+			grVFile_CreateRef(F);
 
-			w->StreamingJob = jeThreadQueue_JobCreate(jeWavelet_AddFromFileFunc,w,NULL,16384);
+			w->StreamingJob = grThreadQueue_JobCreate(grWavelet_AddFromFileFunc,w,NULL,16384);
 			assert(w->StreamingJob);
 		}
 		else
 		{
-			jeWavelet_AddFromFile(w,F,JE_FALSE);
+			grWavelet_AddFromFile(w,F,GR_FALSE);
 		}
 	}
 
@@ -778,36 +778,36 @@ fail :
 	return NULL;
 }
 
-jeBoolean LockStreamingFile(jeWavelet * w)
+grBoolean LockStreamingFile(grWavelet * w)
 {
 	if ( w->StreamingFile )
 	{
 		assert( w->StreamingLock );
-		jeThreadQueue_Semaphore_Lock(w->StreamingLock);
+		grThreadQueue_Semaphore_Lock(w->StreamingLock);
 		
 		if ( ! w->StreamingFile )
 		{
-			jeThreadQueue_Semaphore_UnLock(w->StreamingLock);
-			return JE_FALSE;
+			grThreadQueue_Semaphore_UnLock(w->StreamingLock);
+			return GR_FALSE;
 		}
-		return JE_TRUE;
+		return GR_TRUE;
 	}
-return JE_FALSE;
+return GR_FALSE;
 }
 
-void UnLockStreamingFile(jeWavelet * w)
+void UnLockStreamingFile(grWavelet * w)
 {
 	if ( w->StreamingFile )
 	{
 		assert(w->StreamingLock);
-		jeThreadQueue_Semaphore_UnLock(w->StreamingLock);
+		grThreadQueue_Semaphore_UnLock(w->StreamingLock);
 	}
 }
 
-jeBoolean jeWavelet_AddFromFile(jeWavelet *w,jeVFile * F,jeBoolean Streaming)
+grBoolean grWavelet_AddFromFile(grWavelet *w,grVFile * F,grBoolean Streaming)
 {
 int32 qlen;
-jeBoolean KeepGoing;
+grBoolean KeepGoing;
 uint32 millis;
 int32 startpos,fsize;
 
@@ -815,22 +815,22 @@ int32 startpos,fsize;
 	
 	ThreadLog_Printf("AddFromFile : starting %08X \n",(uint32)w);
 
-	if ( ! jeVFile_Tell(F,&startpos) )
+	if ( ! grVFile_Tell(F,&startpos) )
 		startpos = 0;
 
 	while( w->compLen > w->streamGot )
 	{
 		LockStreamingFile(w);
-		if ( jeVFile_EOF(F) )
+		if ( grVFile_EOF(F) )
 		{
-			KeepGoing = JE_FALSE;
+			KeepGoing = GR_FALSE;
 		}
 		else
 		{
-			KeepGoing = jeVFile_BytesAvailable(F,&qlen);
+			KeepGoing = grVFile_BytesAvailable(F,&qlen);
 			if ( KeepGoing )
 			{
-				if ( jeVFile_Size(F,&fsize) )
+				if ( grVFile_Size(F,&fsize) )
 				{
 					fsize -= startpos;
 				}
@@ -856,7 +856,7 @@ int32 startpos,fsize;
 		qlen = min(qlen, (int32)(w->compLen - w->streamGot));
 		if ( qlen > 2048 || ( qlen + w->streamGot >= w->compLen) || ( qlen + ((int32)w->streamGot) >= fsize ) )
 		{
-			KeepGoing = jeVFile_Read(F,w->comp + w->streamGot,qlen);
+			KeepGoing = grVFile_Read(F,w->comp + w->streamGot,qlen);
 			
 			w->streamGot += qlen;
 			
@@ -864,8 +864,8 @@ int32 startpos,fsize;
 
 			if ( ! KeepGoing )
 			{
-				assert( jeVFile_IsValid(F) );
-				jeErrorLog_AddString(-1,"jeWavelet_AddFromFile : VF_Read failed!",NULL);
+				assert( grVFile_IsValid(F) );
+				grErrorLog_AddString(-1,"grWavelet_AddFromFile : VF_Read failed!",NULL);
 				assert(0);
 				break;
 			}
@@ -877,107 +877,107 @@ int32 startpos,fsize;
 			UnLockStreamingFile(w);
 
 			millis = min(1024,millis<<1);
-			jeThreadQueue_Sleep(millis);
+			grThreadQueue_Sleep(millis);
 		}
 	}
 
 	// can't use LockStreamingFile here
 	if ( w->StreamingFile )
 	{
-		jeThreadQueue_Semaphore_Lock(w->StreamingLock);
-		jeVFile_Close(w->StreamingFile);
+		grThreadQueue_Semaphore_Lock(w->StreamingLock);
+		grVFile_Close(w->StreamingFile);
 		w->StreamingFile = NULL;
-		jeThreadQueue_Semaphore_UnLock(w->StreamingLock);
+		grThreadQueue_Semaphore_UnLock(w->StreamingLock);
 		ThreadLog_Printf("AddFromFile %08X done\n",(uint32)w);
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-void jeWavelet_CheckStreaming(const jeWavelet * w)
+void grWavelet_CheckStreaming(const grWavelet * w)
 {
-jeThreadQueue_JobStatus Status;
-jeThreadQueue_Job * Job;
+grThreadQueue_JobStatus Status;
+grThreadQueue_Job * Job;
 
 	Job = w->StreamingJob;
 	if ( ! Job )
 		return;
 
-	if ( ! jeThreadQueue_WaitOnJob(Job,JE_THREADQUEUE_STATUS_RUNNING) )
-		jeErrorLog_AddString(-1,"Wavelet Streaming : WaitOnJob failed! Continuing anyway!",NULL);
+	if ( ! grThreadQueue_WaitOnJob(Job,GR_THREADQUEUE_STATUS_RUNNING) )
+		grErrorLog_AddString(-1,"Wavelet Streaming : WaitOnJob failed! Continuing anyway!",NULL);
 
-	Status = jeThreadQueue_JobGetStatus(Job);
-	if ( Status == JE_THREADQUEUE_STATUS_COMPLETED )
+	Status = grThreadQueue_JobGetStatus(Job);
+	if ( Status == GR_THREADQUEUE_STATUS_COMPLETED )
 	{
 		assert( ! w->StreamingFile );
 		ThreadLog_Printf("Brando : Job Destroyed by CheckStreaming : %08X\n",(uint32)w);
-		jeThreadQueue_JobDestroy(&(Job));
-		((jeWavelet *)w)->StreamingJob = NULL;
+		grThreadQueue_JobDestroy(&(Job));
+		((grWavelet *)w)->StreamingJob = NULL;
 		return;
 	}
 	else if ( w->StreamingFile )
 	{
-		if ( LockStreamingFile((jeWavelet *)w) )
+		if ( LockStreamingFile((grWavelet *)w) )
 		{
 		int32 len;
 		
 			assert( w->StreamingFile );
-			if ( jeVFile_BytesAvailable(w->StreamingFile,&len) )
+			if ( grVFile_BytesAvailable(w->StreamingFile,&len) )
 			{
-				if ( (len > 0 ) && jeVFile_Read(w->StreamingFile,w->comp + w->streamGot,len) )
+				if ( (len > 0 ) && grVFile_Read(w->StreamingFile,w->comp + w->streamGot,len) )
 				{
-					((jeWavelet *)w)->streamGot += len;
+					((grWavelet *)w)->streamGot += len;
 				}
 			}
-			UnLockStreamingFile((jeWavelet *)w);
+			UnLockStreamingFile((grWavelet *)w);
 		}
 	}
 
 }
 
-void jeWavelet_WaitStreaming(const jeWavelet * w)
+void grWavelet_WaitStreaming(const grWavelet * w)
 {
 	assert(w);
 	
 	if ( ! w->StreamingJob )
 		return;
 
-	if ( ! jeThreadQueue_WaitOnJob(w->StreamingJob,JE_THREADQUEUE_STATUS_COMPLETED) )
-		jeErrorLog_AddString(-1,"Wavelet Streaming : WaitOnJob failed! Continuing anyway!",NULL);
+	if ( ! grThreadQueue_WaitOnJob(w->StreamingJob,GR_THREADQUEUE_STATUS_COMPLETED) )
+		grErrorLog_AddString(-1,"Wavelet Streaming : WaitOnJob failed! Continuing anyway!",NULL);
 
 	assert( ! w->StreamingFile );
 
 	ThreadLog_Printf("Brando : Job Destroyed by WaitStreaming : %08X\n",(uint32)w);
-	jeThreadQueue_JobDestroy(&(((jeWavelet *)w)->StreamingJob));
-	((jeWavelet *)w)->StreamingJob = NULL;
+	grThreadQueue_JobDestroy(&(((grWavelet *)w)->StreamingJob));
+	((grWavelet *)w)->StreamingJob = NULL;
 }
 
-void jeWavelet_Destroy(jeWavelet ** pW)
+void grWavelet_Destroy(grWavelet ** pW)
 {
 	assert(pW);
 	if ( *pW )
 	{
-	jeWavelet * w;
+	grWavelet * w;
 		w = *pW;
 		assert( w->RefCount > 0 );
 		w->RefCount --;
 		if ( w->RefCount == 0 )
 		{
-			jeWavelet_WaitStreaming(w);
+			grWavelet_WaitStreaming(w);
 			
 			assert( ! w->StreamingJob );
 
 			if ( w->StreamingFile )
 			{
-				jeThreadQueue_Semaphore_Lock(w->StreamingLock);
-				jeVFile_Close(w->StreamingFile);
+				grThreadQueue_Semaphore_Lock(w->StreamingLock);
+				grVFile_Close(w->StreamingFile);
 				w->StreamingFile = NULL;
-				jeThreadQueue_Semaphore_UnLock(w->StreamingLock);
+				grThreadQueue_Semaphore_UnLock(w->StreamingLock);
 			}
 
 			if ( w->StreamingLock )
 			{
-				jeThreadQueue_Semaphore_Destroy(&(w->StreamingLock));
+				grThreadQueue_Semaphore_Destroy(&(w->StreamingLock));
 				w->StreamingLock = NULL;
 			}
 
@@ -991,7 +991,7 @@ void jeWavelet_Destroy(jeWavelet ** pW)
 
 typedef struct HookContext
 {
-	const jeBitmap_Info ** InfoArray;
+	const grBitmap_Info ** InfoArray;
 	void ** BitsArray;
 	int MipLow,MipHigh;
 } HookContext;
@@ -1014,47 +1014,47 @@ int i;
 	}
 }
 
-jeBoolean jeWavelet_CanDecompressMips(const jeWavelet *w,const jeBitmap_Info * ToInfo )
+grBoolean grWavelet_CanDecompressMips(const grWavelet *w,const grBitmap_Info * ToInfo )
 {
 	assert( w );
 
 	if ( w->tblock )
-		return JE_FALSE;
+		return GR_FALSE;
 			
 	if ( ! transformMips[ w->transformN ] )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( w->width != w->height ) // really ?
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if ( jePixelFormat_IsRaw(ToInfo->Format) )
-		return JE_TRUE;
+	if ( grPixelFormat_IsRaw(ToInfo->Format) )
+		return GR_TRUE;
 
 	// if we have the palette, we can decompress mips from the wavelet,
 	//	if we must build the palette, we can't!
 	#pragma message("Wavelet : DecompressMips to Palettized broken")
 	#if 0
 	// @@ there's a bug ; presumably in BlitImageYUVtoBitmap
-	if ( jePixelFormat_HasPalette(ToInfo->Format) && ToInfo->Palette )
-		return JE_TRUE;
+	if ( grPixelFormat_HasPalette(ToInfo->Format) && ToInfo->Palette )
+		return GR_TRUE;
 	#endif
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-jeBoolean	jeWavelet_ShouldDecompressStreaming(const jeWavelet * w)
+grBoolean	grWavelet_ShouldDecompressStreaming(const grWavelet * w)
 {
 int len;
 tsc_type tsc;
 double hz;
 
-	jeWavelet_CheckStreaming(w);
+	grWavelet_CheckStreaming(w);
 
 	len = w->streamGot - w->streamDecoded;
 
 	assert( len >= 0 );
 	if ( len < 4 )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	readTSC(tsc);
 	hz = diffTSChz(w->DecompressTSC,tsc);
@@ -1062,7 +1062,7 @@ double hz;
 	if ( w->streamDecoded == 0 && w->streamGot >= w->compLenLL )
 	{
 		ThreadLog_Printf("ShouldDec : %08X : hz = %f , len = %d : Saw LL\n",(uint32)w,hz,len);
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	// don't ever decompress too frequently
 #ifdef USE_GLOBAL_TSC
@@ -1072,7 +1072,7 @@ double hz;
 #endif
 	{
 //		ThreadLog_Printf("ShouldDec : %08X : too recent\n",(uint32)w);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	if ( len >= 4096 || (len*100)/(w->compLen) > 10 || ((len/(w->streamDecoded+1)) > 5 ) )
@@ -1081,28 +1081,28 @@ double hz;
 		// (or saw more than 10% of the total)
 
 		ThreadLog_Printf("ShouldDec : %08X : hz = %f , len = %d : Got Data\n",(uint32)w,hz,len);
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	if ( len >= 1024 && hz > (DECOMPRESS_MAXIMUM_DELAY*1000000.0) )
 	{
 		// check a timer and return true if it's been a while
 		ThreadLog_Printf("ShouldDec : %08X : hz = %f , len = %d : Long Wait\n",(uint32)w,hz,len);
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	if ( w->streamGot == w->compLen && (len*100/w->compLen) > 5 )
 	{
 		// we're at the end, so go ahead and finish it off correctly..
 		ThreadLog_Printf("ShouldDec : %08X : hz = %f , len = %d : Finish Off \n",(uint32)w,hz,len);
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 //	ThreadLog_Printf("ShouldDec : %08X : not enough data : %d\n",(uint32)w,len);
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-jeBoolean	jeWavelet_DecompressMips(const jeWavelet * w,const jeBitmap_Info ** InfoArray,const void ** BitsArray,uint32 MipLow,uint32 MipHigh)
+grBoolean	grWavelet_DecompressMips(const grWavelet * w,const grBitmap_Info ** InfoArray,const void ** BitsArray,uint32 MipLow,uint32 MipHigh)
 {
 image * im = NULL;
 
@@ -1111,36 +1111,36 @@ image * im = NULL;
 
 	if ( MipLow == 0 && MipHigh == 0 )
 	{
-		return jeWavelet_Decompress(w,InfoArray[0],(void *)BitsArray[0]);
+		return grWavelet_Decompress(w,InfoArray[0],(void *)BitsArray[0]);
 	}
 
 	SetupUtility();
 
 	ThreadLog_Printf("Brando : PreDecompress %08X Mips : %d (now %d) -> %dx%d at %08X %08X\n",(uint32)w,w->streamDecoded,w->streamGot,w->width,w->height,w->DecompressTSC[0],w->DecompressTSC[1]);
 
-	jeWavelet_CheckStreaming(w);
+	grWavelet_CheckStreaming(w);
 
 	if ( w->streamGot < w->compLenLL )
-		return JE_FALSE; // {} return JE_TRUE ?
+		return GR_FALSE; // {} return GR_TRUE ?
 
-	if ( ! jeWavelet_CanDecompressMips(w,InfoArray[0]) )
+	if ( ! grWavelet_CanDecompressMips(w,InfoArray[0]) )
 	{
 		BrandoError("Wavelet_DecompressMips : This format can't do mips!");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	if ( w->alphaMask )
 	{
 		if ( (im = newImageAlpha(w->width,w->height,w->planes,Wavelet_AlphaIsTransparency(w))) == NULL )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 	else
 	{
 		if ( (im = newImage(w->width,w->height,w->planes)) == NULL )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
-	jeCPU_EnterMMX();
+	grCPU_EnterMMX();
 
 #ifdef WAVELET_DOZERO
 	zeroImage(im);
@@ -1148,14 +1148,14 @@ image * im = NULL;
 
 	// must fill this in *before* decodeWavelet 
 	// could underestimate length; better than overestimating
-	((jeWavelet *)w)->stopLen = w->streamGot;
-	((jeWavelet *)w)->streamDecoded = w->stopLen;
-	readTSC(((jeWavelet *)w)->DecompressTSC);
+	((grWavelet *)w)->stopLen = w->streamGot;
+	((grWavelet *)w)->streamDecoded = w->stopLen;
+	readTSC(((grWavelet *)w)->DecompressTSC);
 	readTSC(GlobalDecompressTSC);
 
 	ThreadLog_Printf("Brando : Decompressing %08X Mips : %d (now %d) -> %dx%d at %08X %08X\n",(uint32)w,w->streamDecoded,w->streamGot,w->width,w->height,w->DecompressTSC[0],w->DecompressTSC[1]);
 
-	if ( ! decodeWaveletImage((jeWavelet *)w,im) )
+	if ( ! decodeWaveletImage((grWavelet *)w,im) )
 	{
 		BrandoError("Decompress : decodeWavelet failed!");
 		goto fail;
@@ -1164,7 +1164,7 @@ image * im = NULL;
 	//{} if InfoArray is palettized, make the palette
 	// (the standard problem is that we make mips low -> high)
 
-	if ( InfoArray[0]->Format == JE_PIXELFORMAT_8BIT_PAL && ! InfoArray[0]->Palette )
+	if ( InfoArray[0]->Format == GR_PIXELFORMAT_8BIT_PAL && ! InfoArray[0]->Palette )
 	{
 		BrandoError("Decompress : palettized image with no palette!");
 		goto fail;
@@ -1182,23 +1182,23 @@ image * im = NULL;
 			pyramidHook_ImageToBitmap,(void *)&cntx,w->transposeLHs);
 	}
 
-	jeCPU_LeaveMMX();
+	grCPU_LeaveMMX();
 
 	freeImage(im); im = NULL;
 
 	ThreadLog_Printf("Brando : Decompressed %08X Mips : %d (now %d) -> %dx%d at %08X %08X\n",(uint32)w,w->streamDecoded,w->streamGot,w->width,w->height,w->DecompressTSC[0],w->DecompressTSC[1]);
 
-	return JE_TRUE;
+	return GR_TRUE;
 	
 fail:
 	assert( im );
 	freeImage(im);
-	jeCPU_LeaveMMX();
+	grCPU_LeaveMMX();
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-jeBoolean	jeWavelet_Decompress(const jeWavelet * w,const jeBitmap_Info * Info,void * Bits)
+grBoolean	grWavelet_Decompress(const grWavelet * w,const grBitmap_Info * Info,void * Bits)
 {
 image * im;
 
@@ -1209,10 +1209,10 @@ image * im;
 
 	ThreadLog_Printf("Brando : PreDecompress %08X : %d (now %d) -> %dx%d at %08X %08X\n",(uint32)w,w->streamDecoded,w->streamGot,w->width,w->height,w->DecompressTSC[0],w->DecompressTSC[1]);
 
-	jeWavelet_CheckStreaming(w);
+	grWavelet_CheckStreaming(w);
 
 	if ( w->streamGot < w->compLenLL )
-		return JE_TRUE; // {} return JE_TRUE ?
+		return GR_TRUE; // {} return GR_TRUE ?
 
 pushTSC();
 
@@ -1223,17 +1223,17 @@ pushTSC();
 	if ( w->alphaMask )
 	{
 		if ( (im = newImageAlpha(w->width,w->height,w->planes,Wavelet_AlphaIsTransparency(w))) == NULL )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 	else
 	{
 		if ( (im = newImage(w->width,w->height,w->planes)) == NULL )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
 	TIMER_Q(Wavelet_Ram);
 
-	jeCPU_EnterMMX();
+	grCPU_EnterMMX();
 
 	TIMER_P(Wavelet_DecAndZero);
 
@@ -1246,9 +1246,9 @@ pushTSC();
 	// must fill this in *before* decodeWavelet 
 	// could underestimate length; better than overestimating
 	
-	((jeWavelet *)w)->stopLen = w->streamGot;
-	((jeWavelet *)w)->streamDecoded = w->stopLen;
-	readTSC(((jeWavelet *)w)->DecompressTSC);
+	((grWavelet *)w)->stopLen = w->streamGot;
+	((grWavelet *)w)->streamDecoded = w->stopLen;
+	readTSC(((grWavelet *)w)->DecompressTSC);
 	readTSC(GlobalDecompressTSC);
 
 	ThreadLog_Printf("Brando : Decompressing %08X : %d (now %d) -> %dx%d at %08X %08X\n",(uint32)w,w->streamDecoded,w->streamGot,w->width,w->height,w->DecompressTSC[0],w->DecompressTSC[1]);
@@ -1257,33 +1257,33 @@ pushTSC();
 pushTSC();
 #endif
 
-	if ( ! decodeWaveletImage((jeWavelet *)w,im) )
+	if ( ! decodeWaveletImage((grWavelet *)w,im) )
 	{
-		jeCPU_LeaveMMX();
+		grCPU_LeaveMMX();
 		freeImage(im);
 		BrandoError("Decompress : decodeWavelet failed!");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	TIMER_Q(Wavelet_DecAndZero);
 
 #ifdef _LOG
-jeCPU_LeaveMMX();
+grCPU_LeaveMMX();
 showPopTSCper("Decode Image",w->width*w->height,"pixel");
-jeCPU_EnterMMX();
+grCPU_EnterMMX();
 #endif
 
 	TIMER_P(Wavelet_Transform);
 
-	transformImageInt(im,w->levels,JE_TRUE,w->transformN,w->transposeLHs,w->tblock);
+	transformImageInt(im,w->levels,GR_TRUE,w->transformN,w->transposeLHs,w->tblock);
 
 	TIMER_Q(Wavelet_Transform);
 
 #ifdef _LOG
-jeCPU_LeaveMMX();
+grCPU_LeaveMMX();
 showPopTSCper("Decode & Untransform Image",w->width*w->height,"pixel");
 pushTSC();
-jeCPU_EnterMMX();
+grCPU_EnterMMX();
 #endif
 
 	TIMER_P(Wavelet_Blit);
@@ -1299,7 +1299,7 @@ jeCPU_EnterMMX();
 showPopTSCper("Blit",w->width*w->height,"pixel");
 #endif
 
-	jeCPU_LeaveMMX();
+	grCPU_LeaveMMX();
 
 	TIMER_P(Wavelet_Ram);
 
@@ -1311,7 +1311,7 @@ showPopTSCper("Blit",w->width*w->height,"pixel");
 
 	ThreadLog_Printf("Brando : Decompressed %08X : %d (now %d) -> %dx%d at %08X %08X\n",(uint32)w,w->streamDecoded,w->streamGot,w->width,w->height,w->DecompressTSC[0],w->DecompressTSC[1]);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void Wavelet_DoReport(void)
@@ -1350,10 +1350,10 @@ return levels;
 
 //{} make sure they respect the fact that the 'im' and 'Info' may not have same width & height
 
-static jeBoolean BlitBitmapToImageYUV(const jeBitmap_Info * Info,const void * Bits,const jeBitmap * Bmp,image * im)
+static grBoolean BlitBitmapToImageYUV(const grBitmap_Info * Info,const void * Bits,const grBitmap * Bmp,image * im)
 {
-jePixelFormat Format;
-jeBitmap * AlphaBmp;
+grPixelFormat Format;
+grBitmap * AlphaBmp;
 const uint8 * ptr;
 uint32 Pixel,ColorKey;
 int stride_bytes;
@@ -1374,12 +1374,12 @@ int x,y,w,h,imw,imh,ims,imxtra;
 	imxtra = ims - w;
 
 	ColorKey = Info->ColorKey;
-	stride_bytes = (Info->Stride - w) * jePixelFormat_BytesPerPel(Format);
+	stride_bytes = (Info->Stride - w) * grPixelFormat_BytesPerPel(Format);
 
 	if ( im->planes == 1 )
 	{
 	int ** imrows,*imptr;
-		assert(Format == JE_PIXELFORMAT_8BIT_GRAY );
+		assert(Format == GR_PIXELFORMAT_8BIT_GRAY );
 
 		imrows = im->data[0];
 		imptr = imrows[0];
@@ -1395,7 +1395,7 @@ int x,y,w,h,imw,imh,ims,imxtra;
 			imptr += imxtra;
 			ptr += stride_bytes;
 		}
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	else
 	{
@@ -1419,10 +1419,10 @@ int x,y,w,h,imw,imh,ims,imxtra;
 			if ( Bmp )
 			{
 			int R,G,B;
-				if ( ! jeBitmap_GetAverageColor(Bmp,&R,&G,&B) )
+				if ( ! grBitmap_GetAverageColor(Bmp,&R,&G,&B) )
 				{
-					jeErrorLog_AddString(-1,"Wavelet : average color failed!",NULL);
-					return JE_FALSE;
+					grErrorLog_AddString(-1,"Wavelet : average color failed!",NULL);
+					return GR_FALSE;
 				}
 
 				RGBi_to_YUVi(R,G,B,&avgY,&avgU,&avgV);
@@ -1430,29 +1430,29 @@ int x,y,w,h,imw,imh,ims,imxtra;
 			else
 			{
 				// <> find something yourself !
-				jeErrorLog_AddString(-1,"Wavelet : Compressor needs Bmp for average color!",NULL);
+				grErrorLog_AddString(-1,"Wavelet : Compressor needs Bmp for average color!",NULL);
 				assert(0);
 			}
 		}
 
 		if ( Bmp )
-			AlphaBmp = jeBitmap_GetAlpha(Bmp);
+			AlphaBmp = grBitmap_GetAlpha(Bmp);
 		else
 			AlphaBmp = NULL;
 		if ( AlphaBmp )
 		{
 		void * AlphaBits;
-			AlphaBits = jeBitmap_GetBits(AlphaBmp);
+			AlphaBits = grBitmap_GetBits(AlphaBmp);
 			if ( AlphaBits )
 			{
-			jeBitmap_Info AlphaInfo;
+			grBitmap_Info AlphaInfo;
 			uint8 *sptr;
 			int *aptr;
 
-				jeBitmap_GetInfo(AlphaBmp,&AlphaInfo,NULL);
+				grBitmap_GetInfo(AlphaBmp,&AlphaInfo,NULL);
 
 				assert(im->planes == 4);
-				assert( AlphaInfo.Format == JE_PIXELFORMAT_8BIT_GRAY );
+				assert( AlphaInfo.Format == GR_PIXELFORMAT_8BIT_GRAY );
 
 				// fill out the plane-3 alpha
 
@@ -1468,30 +1468,30 @@ int x,y,w,h,imw,imh,ims,imxtra;
 					aptr += imxtra;
 				}
 
-				((jeBitmap_Info *)Info)->HasColorKey = JE_FALSE;
+				((grBitmap_Info *)Info)->HasColorKey = GR_FALSE;
 			}
 		}
 		
-		if ( jePixelFormat_HasPalette(Format) )
+		if ( grPixelFormat_HasPalette(Format) )
 		{
 		int Ypal[256],Upal[256],Vpal[256],Apal[256];
 		uint32 RGBApal[256];
-		jePixelFormat PalFormat;
-		jeBitmap_Info PalInfo;
+		grPixelFormat PalFormat;
+		grBitmap_Info PalInfo;
 		int Size,p;
-		jeBitmap_Palette * Pal;
+		grBitmap_Palette * Pal;
 			
 			Pal = Info->Palette;
 
 			// pal -> yuv int image
 
-			jeBitmap_Palette_GetInfo(Pal,&PalInfo);
+			grBitmap_Palette_GetInfo(Pal,&PalInfo);
 
 			PalFormat = PalInfo.Format;
 			Size = PalInfo.Width;
 
-			if ( ! jeBitmap_Palette_GetData(Pal,RGBApal,JE_PIXELFORMAT_32BIT_RGBA,256) )
-				return JE_FALSE;
+			if ( ! grBitmap_Palette_GetData(Pal,RGBApal,GR_PIXELFORMAT_32BIT_RGBA,256) )
+				return GR_FALSE;
 
 			for(p=0;p<Size;p++)
 			{
@@ -1553,7 +1553,7 @@ int x,y,w,h,imw,imh,ims,imxtra;
 					ptr += stride_bytes;
 				}
 			}
-			else if ( im->planes == 4 && jePixelFormat_HasAlpha(PalFormat) )
+			else if ( im->planes == 4 && grPixelFormat_HasAlpha(PalFormat) )
 			{
 			int * aptr;
 				assert( ! Info->HasColorKey ); // {} fuck you
@@ -1592,23 +1592,23 @@ int x,y,w,h,imw,imh,ims,imxtra;
 					Vptr += imxtra;
 					ptr += stride_bytes;
 				}
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 		else // not palettized source
 		{
-		const jePixelFormat_Operations * ops;
-		jePixelFormat_ColorGetter GetColor;
-		jePixelFormat_PixelGetter GetPixel;
-		jePixelFormat_Decomposer DecomposePixel;
+		const grPixelFormat_Operations * ops;
+		grPixelFormat_ColorGetter GetColor;
+		grPixelFormat_PixelGetter GetPixel;
+		grPixelFormat_Decomposer DecomposePixel;
 		int R,G,B,A;
 
-			ops = jePixelFormat_GetOperations(Format);
+			ops = grPixelFormat_GetOperations(Format);
 			GetColor = ops->GetColor;
 			GetPixel = ops->GetPixel;
 			DecomposePixel = ops->DecomposePixel;
 
-			if ( jePixelFormat_HasAlpha(Format) )
+			if ( grPixelFormat_HasAlpha(Format) )
 			{
 			int * aptr;
 				assert(im->planes == 4);
@@ -1630,7 +1630,7 @@ int x,y,w,h,imw,imh,ims,imxtra;
 					aptr += imxtra;
 					ptr += stride_bytes;
 				}
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 			else if ( Info->HasColorKey )
 			{
@@ -1688,7 +1688,7 @@ int x,y,w,h,imw,imh,ims,imxtra;
 					aptr += imxtra;
 					ptr += stride_bytes;
 				}
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 			else
 			{
@@ -1704,23 +1704,23 @@ int x,y,w,h,imw,imh,ims,imxtra;
 					Vptr += imxtra;
 					ptr += stride_bytes;
 				}
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-static jeBoolean BlitImageYUVToBitmap(const image * im,int imw,int imh, const jeBitmap_Info * Info, void *Bits)
+static grBoolean BlitImageYUVToBitmap(const image * im,int imw,int imh, const grBitmap_Info * Info, void *Bits)
 {
-jePixelFormat Format;
+grPixelFormat Format;
 uint8 * ptr;
 int x,y;
-const jePixelFormat_Operations * ops;
-jePixelFormat_Composer Composer;
-jePixelFormat_ColorPutter PutColor;
-jePixelFormat_PixelPutter PutPixel;
+const grPixelFormat_Operations * ops;
+grPixelFormat_Composer Composer;
+grPixelFormat_ColorPutter PutColor;
+grPixelFormat_PixelPutter PutPixel;
 int R,G,B,A,Y,U,V;
 int stride_bytes,astride,astep;
 uint32 Pixel,ColorKey;	
@@ -1736,9 +1736,9 @@ uint8 * aptr;
 	ptr = (uint8*)Bits;
 
 	ColorKey = Info->ColorKey;
-	stride_bytes = (Info->Stride - imw) * jePixelFormat_BytesPerPel(Format);
+	stride_bytes = (Info->Stride - imw) * grPixelFormat_BytesPerPel(Format);
 
-	ops = jePixelFormat_GetOperations(Format);
+	ops = grPixelFormat_GetOperations(Format);
 	assert(ops);
 	Composer = ops->ComposePixel;
 	PutColor = ops->PutColor;
@@ -1752,7 +1752,7 @@ uint8 * aptr;
 
 		imrows = im->data[0];
 		imptr = imrows[0];
-		if ( Format == JE_PIXELFORMAT_8BIT_GRAY )
+		if ( Format == GR_PIXELFORMAT_8BIT_GRAY )
 		{
 			for(y=0;y<imh;y++)
 			{
@@ -1780,7 +1780,7 @@ uint8 * aptr;
 				ptr += stride_bytes;
 			}
 		}
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	else
 	{
@@ -1804,9 +1804,9 @@ uint8 * aptr;
 		// Info is either raw or palettized
 		// no separates
 
-		if ( jePixelFormat_HasPalette(Format) )
+		if ( grPixelFormat_HasPalette(Format) )
 		{
-		jeBitmap_Palette *Pal;
+		grBitmap_Palette *Pal;
 		palInfo * pi;
 		uint8 paldata[768];
 		int palval;
@@ -1815,7 +1815,7 @@ uint8 * aptr;
 
 			if ( Info->Palette )
 			{			
-				jeBitmap_Palette_GetData(Info->Palette,paldata,JE_PIXELFORMAT_24BIT_RGB,256);
+				grBitmap_Palette_GetData(Info->Palette,paldata,GR_PIXELFORMAT_24BIT_RGB,256);
 				
 				RGBb_to_YUVb_line(paldata,paldata,256);
 
@@ -1831,7 +1831,7 @@ uint8 * aptr;
 				Pal = createPaletteFromImage(im);
 				assert(Pal);
 				
-				jeBitmap_Palette_GetData(Pal,paldata,JE_PIXELFORMAT_24BIT_RGB,256);
+				grBitmap_Palette_GetData(Pal,paldata,GR_PIXELFORMAT_24BIT_RGB,256);
 			}
 
 			// palettize!
@@ -1962,19 +1962,19 @@ uint8 * aptr;
 			{
 				assert( Info->Palette == NULL );
 				YUVb_to_RGBb_line(paldata,paldata,256);
-				jeBitmap_Palette_SetData(Pal,paldata,JE_PIXELFORMAT_24BIT_RGB,256);
-				((jeBitmap_Info *)Info)->Palette = Pal;
+				grBitmap_Palette_SetData(Pal,paldata,GR_PIXELFORMAT_24BIT_RGB,256);
+				((grBitmap_Info *)Info)->Palette = Pal;
 			}
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else // no palette ; im -> raw
 		{
-			if ( im->alpha && (Info->HasColorKey || jePixelFormat_HasAlpha(Format)) )
+			if ( im->alpha && (Info->HasColorKey || grPixelFormat_HasAlpha(Format)) )
 			{
 				if ( im->alphaIsBoolean )
 				{	
-					if ( jePixelFormat_HasAlpha(Format) )
+					if ( grPixelFormat_HasAlpha(Format) )
 					{
 						// ck -> alpha
 						for(y=0;y<imh;y++)
@@ -2015,7 +2015,7 @@ uint8 * aptr;
 							ptr += stride_bytes;
 							aptr += astride;
 						}
-						return JE_TRUE;
+						return GR_TRUE;
 					}
 					else
 					{
@@ -2043,12 +2043,12 @@ uint8 * aptr;
 							ptr += stride_bytes;
 							aptr += astride;
 						}
-						return JE_TRUE;
+						return GR_TRUE;
 					}
 				}
 				else // im has real alpha
 				{
-					if ( jePixelFormat_HasAlpha(Format) )
+					if ( grPixelFormat_HasAlpha(Format) )
 					{
 						// alpha -> alpha
 						for(y=0;y<imh;y++)
@@ -2080,7 +2080,7 @@ uint8 * aptr;
 							ptr += stride_bytes;
 							aptr += astride;
 						}
-						return JE_TRUE;
+						return GR_TRUE;
 					}
 					else
 					{
@@ -2110,15 +2110,15 @@ uint8 * aptr;
 							ptr += stride_bytes;
 							aptr += astride;
 						}
-						return JE_TRUE;
+						return GR_TRUE;
 					}
 				}
 			}
-			else if ( im->planes == 4 && (Info->HasColorKey || jePixelFormat_HasAlpha(Format)) )
+			else if ( im->planes == 4 && (Info->HasColorKey || grPixelFormat_HasAlpha(Format)) )
 			{
 			int ** Arows,*Aptr;
 				Arows = im->data[3];
-				if ( jePixelFormat_HasAlpha(Format) )
+				if ( grPixelFormat_HasAlpha(Format) )
 				{
 					// alpha -> alpha
 					for(y=0;y<imh;y++)
@@ -2148,7 +2148,7 @@ uint8 * aptr;
 						}
 						ptr += stride_bytes;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 				else
 				{
@@ -2177,7 +2177,7 @@ uint8 * aptr;
 						}
 						ptr += stride_bytes;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 			}
 			else	// no alpha : raw -> raw (maybe ck)
@@ -2199,11 +2199,11 @@ uint8 * aptr;
 						}
 						ptr += stride_bytes;
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 				else
 				{
-					if ( Info->Format == JE_PIXELFORMAT_24BIT_BGR )
+					if ( Info->Format == GR_PIXELFORMAT_24BIT_BGR )
 					{
 						YUVi_to_BGRb_lines(imw,imh,Yrows,Urows,Vrows,ptr,Info->Stride * 3);
 					}
@@ -2239,7 +2239,7 @@ uint8 * aptr;
 							ptr += stride_bytes;
 						}
 					}
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 			}
 		}

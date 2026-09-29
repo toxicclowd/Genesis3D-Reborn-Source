@@ -34,8 +34,8 @@
 #include "Brush.h"
 #include "ErrorLog.h"
 #include "Group.h"
-#include "jeWorld.h"
-#include "jeList.h"	// Linked List module
+#include "grWorld.h"
+#include "grList.h"	// Linked List module
 #include "MatrArray.h"
 #include "ObjectList.h"
 #include "Ram.h"
@@ -64,7 +64,7 @@
 
 typedef struct tagFaceInfo 
 {
-	jeFaceInfo				FaceInfo ;		//FaceInfo data used to init current FaceIndex
+	grFaceInfo				FaceInfo ;		//FaceInfo data used to init current FaceIndex
 } FaceInfo_Struct;
 
 typedef struct tagSelectKindInfo
@@ -86,17 +86,17 @@ typedef struct tagLevel
 	int						nSignature ;
 #endif
 
-	jeBoolean				bChanged;
+	grBoolean				bChanged;
 
 	ObjectList			*	pSelObjects ;
 	ObjectList			*   pSubSelObjects; //This is used by controler objects
-	jeExtBox				SelBounds ;
+	grExtBox				SelBounds ;
 	GroupList			*	pGroups ;
 	LEVEL_GROUPVIS			GroupVisibility ;
 	Group				*	CurrentGroup ;
 
-	jeFaceInfo_Array	*	pFaceInfoArray;
-	jeMaterial_Array	*	pMatrArray;
+	grFaceInfo_Array	*	pFaceInfoArray;
+	grMaterial_Array	*	pMatrArray;
 
     // Krouer: use the AfxGetApp() Material list pointer instead
 	//MaterialList_Struct	*	pGlobalMaterials; // List of materials available to all levels
@@ -104,8 +104,8 @@ typedef struct tagLevel
 
 	FaceInfo_Struct			DefaultFace;		// This is the default face info applied to new brushes
 
-	jeWorld				*	pWorld ;		// Don't delete this, Doc does
-	jeBoolean				bDirty ;
+	grWorld				*	pWorld ;		// Don't delete this, Doc does
+	grBoolean				bDirty ;
 
 	ObjectList			*	pClassList ;
 
@@ -115,15 +115,15 @@ typedef struct tagLevel
 
 	int32					nGridSnapSize ;
 	int32					nRotateSnapSize;
-	jeBSP_Options			Options; 
-	jeBSP_Logic				Logic; 
-	jeBSP_LogicBalance		LogicBalance;
+	grBSP_Options			Options; 
+	grBSP_Logic				Logic; 
+	grBSP_LogicBalance		LogicBalance;
 
-	jeBoolean				bSnapToGrid ;
-	jeVec3d					ConstructLines;	//The depth at witch new objects will be placed
+	grBoolean				bSnapToGrid ;
+	grVec3d					ConstructLines;	//The depth at witch new objects will be placed
 
 		// Added by cjp
-	jeBoolean				bSnapVertsToGrid;
+	grBoolean				bSnapVertsToGrid;
 	// end added by cjp
 
 	Undo				*	pUndo ;
@@ -137,7 +137,7 @@ typedef struct tagLevel
 	ObjectList			*	pUserObjList;
 
 	LEVEL_UPDATE			BrushUpdate;
-	jeBoolean				BrushLightIncremental;
+	grBoolean				BrushLightIncremental;
 	LEVEL_UPDATE			LightUpdate;
 
 } Level ;
@@ -159,44 +159,44 @@ static void Level_DestroyModelCB( void * p1 )
 	Object_Free( (Object**)&pModel ) ;
 }// Level_DestroyModelCB
 
-static jeBoolean Level_RestoreTransformCB( Object *pObject, void *Context )
+static grBoolean Level_RestoreTransformCB( Object *pObject, void *Context )
 {
-	return( Object_SetTransform( pObject, (jeXForm3d*)Context ) );
+	return( Object_SetTransform( pObject, (grXForm3d*)Context ) );
 }
 
 static void Level_DestroyTransformContextCB( void *Context )
 {
-	jeRam_Free( Context );
+	grRam_Free( Context );
 }
 /*
-static jeBoolean Level_DestroyBrushCB( Brush * pBrush, void *Context )
+static grBoolean Level_DestroyBrushCB( Brush * pBrush, void *Context )
 {
 	Object_Free( (Object**)&pBrush );
 	Context;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 */
-static jeBoolean Level_DestroyUserObjCb( Object * pObject, void * Context )
+static grBoolean Level_DestroyUserObjCb( Object * pObject, void * Context )
 {
 	//Royce
 	Level * pLevel = (Level*)Context ;
 	
 	
 	UserObj_RemoveFromWorld((UserObj*)pObject, pLevel->pWorld );
-	//jeObject_RemoveChild( Model_GetjeObject(pModel), UserObj_GetjeObject( (UserObj*)pObject ) );
+	//grObject_RemoveChild( Model_GetgrObject(pModel), UserObj_GetgrObject( (UserObj*)pObject ) );
 	//------
 
 	Object_Free( &pObject );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-static jeBoolean Level_RestoreCreateCB( Object *pObject, void *Context )
+static grBoolean Level_RestoreCreateCB( Object *pObject, void *Context )
 {
 	Level * pLevel = (Level*)Context ;
 
 	Level_SelectObject(  pLevel, pObject, LEVEL_DESELECT ) ;
 	Level_DeleteObject( pLevel, pObject );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 static void Level_DestroyCreateContextCB( void *Context )
@@ -204,19 +204,19 @@ static void Level_DestroyCreateContextCB( void *Context )
 	Context;
 }
 
-static jeBoolean Level_RestoreDeleteCB( Object *pObject, void *Context )
+static grBoolean Level_RestoreDeleteCB( Object *pObject, void *Context )
 {
 	Level * pLevel = (Level*)Context ;
 
 	if( !Level_AddObject( pLevel, pObject ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Level_RestoreDeleteCB:Level_AddObject");
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Level_RestoreDeleteCB:Level_AddObject");
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-static jeBoolean Level_SelectKindInfoCB( Object * pObject, void * Context )
+static grBoolean Level_SelectKindInfoCB( Object * pObject, void * Context )
 {
 	SelectKindInfo * pski = (SelectKindInfo*)Context ;
 
@@ -229,7 +229,7 @@ static jeBoolean Level_SelectKindInfoCB( Object * pObject, void * Context )
 		case KIND_USEROBJ :	pski->nUserObjects++ ;	break ;
 		case KIND_CLASS :   pski->nClass++ ; break ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// Level_SelectKindInfoCB
 
@@ -238,10 +238,10 @@ static void Level_DestroyDeleteContextCB( void *Context )
 	Context;
 }
 
-static jeBoolean Level_RestoreBrushShearCB( Object *pObject, void *Context )
+static grBoolean Level_RestoreBrushShearCB( Object *pObject, void *Context )
 {
 	Brush *pBrush;
-	jeBrush *OldBrush;
+	grBrush *OldBrush;
 	Model * pModel;
 
 
@@ -252,24 +252,24 @@ static jeBoolean Level_RestoreBrushShearCB( Object *pObject, void *Context )
 	pBrush = (Brush*)pObject;
 	pModel = Brush_GetModel( pBrush );
 	Model_RemoveBrushWorld( pModel, pBrush );
-	OldBrush = Brush_GetjeBrush( pBrush );
+	OldBrush = Brush_GetgrBrush( pBrush );
 	if( OldBrush )
 	{
-		jeBrush_Destroy( &OldBrush );
+		grBrush_Destroy( &OldBrush );
 	}
-	Brush_SetGeBrush( pBrush, Brush_GetKind( pBrush ),(jeBrush*)Context );
+	Brush_SetGeBrush( pBrush, Brush_GetKind( pBrush ),(grBrush*)Context );
 	Brush_SetModel( pBrush, nullptr );
-	Model_AddBrushWorld( pModel, pBrush, JE_TRUE, JE_TRUE );
-	jeBrush_CreateRef((jeBrush*)Context ); //The undo will release a ref on destroy undo
-	return( JE_TRUE );
+	Model_AddBrushWorld( pModel, pBrush, GR_TRUE, GR_TRUE );
+	grBrush_CreateRef((grBrush*)Context ); //The undo will release a ref on destroy undo
+	return( GR_TRUE );
 }
 
 static void Level_DestroyBrushShearCB( void *Context )
 {
-	jeBrush *pBrush = (jeBrush *)Context;
+	grBrush *pBrush = (grBrush *)Context;
 	
 	assert( Context );
-	jeBrush_Destroy( &pBrush );
+	grBrush_Destroy( &pBrush );
 }
 	
  
@@ -286,13 +286,13 @@ static void Level_InitUndoFunctions( Level * pLevel )
 	Undo_RegisterCallBack( pLevel->pUndo, UNDO_BRUSHSHEAR, Level_RestoreBrushShearCB, Level_DestroyBrushShearCB );
 } // Level_InitUndoFunctions
 
-static Object*  Level_NewCamera( Level * pLevel, jeVec3d *pWorldPt )
+static Object*  Level_NewCamera( Level * pLevel, grVec3d *pWorldPt )
 {
 	Camera *pCamera ;
 	char  * Name;
 	int32	nNumber;
-	jeXForm3d	XForm;
-	jeObject *pgeObject;
+	grXForm3d	XForm;
+	grObject *pgeObject;
 
 	assert( pLevel );
 	assert( pLevel->nSignature == SIGNATURE ) ;
@@ -304,28 +304,28 @@ static Object*  Level_NewCamera( Level * pLevel, jeVec3d *pWorldPt )
 	pCamera = Camera_Create( Name, pLevel->CurrentGroup, nNumber );
 
 	// [MLB-ICE]
-	jeRam_Free(Name);	// Icestorm: Don't forget to clean up your name ;=)
+	grRam_Free(Name);	// Icestorm: Don't forget to clean up your name ;=)
 	// [MLB-ICE]
 
 	if( pCamera == nullptr )
 	{
-		jeErrorLog_Add(JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add(GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		return( nullptr );
 	}
 	
-	jeXForm3d_SetTranslation( &XForm, pWorldPt->X, pWorldPt->Y, pWorldPt->Z );
+	grXForm3d_SetTranslation( &XForm, pWorldPt->X, pWorldPt->Y, pWorldPt->Z );
 	Camera_SetXForm( pCamera, &XForm );
 
 	if( CameraList_Append( pLevel->pCameraList, pCamera ) == nullptr ) 
 	{
-		jeErrorLog_Add(JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add(GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		return( nullptr );
 	}
-	pgeObject = Camera_GetjeObject( pCamera );
+	pgeObject = Camera_GetgrObject( pCamera );
 	assert( pgeObject );
 
 	// This was commented out (but why), added it again JH 25.4.2000
-	jeWorld_AddObject( pLevel->pWorld, pgeObject );
+	grWorld_AddObject( pLevel->pWorld, pgeObject );
 
 	Undo_Push( pLevel->pUndo, UNDO_CREATE );
 	Undo_AddSubTransaction( pLevel->pUndo, UNDO_CREATEOBJECT, (Object*)pCamera, pLevel );
@@ -335,14 +335,14 @@ static Object*  Level_NewCamera( Level * pLevel, jeVec3d *pWorldPt )
 
 
 
-static Object*  Level_NewLight( Level * pLevel, jeVec3d *pWorldPt )
+static Object*  Level_NewLight( Level * pLevel, grVec3d *pWorldPt )
 {
 	Light *pLight ;
 	char  * Name;
 	int32	nNumber;
 	Light *pLightTemplate;
-	jeXForm3d	XForm;
-	jeBoolean  bUpdate;
+	grXForm3d	XForm;
+	grBoolean  bUpdate;
 
 	assert( pLevel );
 	assert( pLevel->nSignature == SIGNATURE ) ;
@@ -354,7 +354,7 @@ static Object*  Level_NewLight( Level * pLevel, jeVec3d *pWorldPt )
 
 	pLightTemplate = Light_CreateTemplate(  pLevel->pWorld );
 	
-	jeXForm3d_SetTranslation( &XForm, pWorldPt->X, pWorldPt->Y, pWorldPt->Z );
+	grXForm3d_SetTranslation( &XForm, pWorldPt->X, pWorldPt->Y, pWorldPt->Z );
 	Light_SetXForm( pLightTemplate, &XForm );
 	bUpdate = (pLevel->LightUpdate == LEVEL_UPDATE_CHANGE) || (pLevel->LightUpdate == LEVEL_UPDATE_REALTIME );
 	pLight = Light_FromTemplate( Name, pLevel->CurrentGroup, pLightTemplate, nNumber, bUpdate );
@@ -365,12 +365,12 @@ static Object*  Level_NewLight( Level * pLevel, jeVec3d *pWorldPt )
 
 	if( pLight == nullptr )
 	{
-		jeErrorLog_Add(JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add(GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		return( nullptr );
 	}
 	if( LightList_Append( pLevel->pLightList, pLight ) == nullptr ) 
 	{
-		jeErrorLog_Add(JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add(GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		return( nullptr );
 	}
 	Undo_Push( pLevel->pUndo, UNDO_CREATE );
@@ -379,34 +379,34 @@ static Object*  Level_NewLight( Level * pLevel, jeVec3d *pWorldPt )
 	return( (Object*)pLight );
 } // Level_NewLight
 
-static jeBoolean Level_SearchMatrIdxByName( Level * pLevel, const char * Name, jeMaterial_ArrayIndex* Index )
+static grBoolean Level_SearchMatrIdxByName( Level * pLevel, const char * Name, grMaterial_ArrayIndex* Index )
 {
-	const jeMaterial		*pMaterial = nullptr;
+	const grMaterial		*pMaterial = nullptr;
 
 	assert( pLevel );
 	assert( pLevel->nSignature == SIGNATURE ) ;
 	assert( pLevel->pMatrArray );
 	assert( Name );
 
-	pMaterial = jeMaterial_ArrayGetNextMaterial(pLevel->pMatrArray, pMaterial);
+	pMaterial = grMaterial_ArrayGetNextMaterial(pLevel->pMatrArray, pMaterial);
 
 	while (pMaterial )
 	{
-		if( strcmp( jeMaterial_GetName(pMaterial), Name) == 0 )
+		if( strcmp( grMaterial_GetName(pMaterial), Name) == 0 )
 		{
-			*Index = jeMaterial_ArrayGetMaterialIndex(pLevel->pMatrArray, pMaterial);
-			return( JE_TRUE );
+			*Index = grMaterial_ArrayGetMaterialIndex(pLevel->pMatrArray, pMaterial);
+			return( GR_TRUE );
 		}
-		pMaterial = jeMaterial_ArrayGetNextMaterial(pLevel->pMatrArray, pMaterial);
+		pMaterial = grMaterial_ArrayGetNextMaterial(pLevel->pMatrArray, pMaterial);
 	}
 
-	return( JE_FALSE );
+	return( GR_FALSE );
 } // Level_SearchMatrIdxByName
 
 #ifdef _USE_BITMAPS
-static jeBoolean Level_GetMaterialIdx( Level * pLevel, const char * Name, jeBitmap *pBitmap, jeMaterial_ArrayIndex *MaterialIndex )
+static grBoolean Level_GetMaterialIdx( Level * pLevel, const char * Name, grBitmap *pBitmap, grMaterial_ArrayIndex *MaterialIndex )
 {
-	jeMaterial_ArrayIndex pMatrIdx;
+	grMaterial_ArrayIndex pMatrIdx;
 
 	assert( pLevel );
 	assert( Name );
@@ -416,12 +416,12 @@ static jeBoolean Level_GetMaterialIdx( Level * pLevel, const char * Name, jeBitm
 
 	if( !Level_SearchMatrIdxByName( pLevel, Name, &pMatrIdx ) )
 	{
-		pMatrIdx = jeMaterial_ArrayCreateMaterial( pLevel->pMatrArray, Name);
+		pMatrIdx = grMaterial_ArrayCreateMaterial( pLevel->pMatrArray, Name);
 
-		if (pMatrIdx == JE_MATERIAL_ARRAY_NULL_INDEX)
+		if (pMatrIdx == GR_MATERIAL_ARRAY_NULL_INDEX)
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+			return( GR_FALSE );
 		}
 
 		// Krouer : make BitmapName different from Name
@@ -431,19 +431,19 @@ static jeBoolean Level_GetMaterialIdx( Level * pLevel, const char * Name, jeBitm
 		//strcat(TotalName, Name);
 		// change back to something better, with suddir and pak files
 
-		if( !jeMaterial_ArraySetMaterialBitmap(pLevel->pMatrArray, pMatrIdx, pBitmap, Name) )
+		if( !grMaterial_ArraySetMaterialBitmap(pLevel->pMatrArray, pMatrIdx, pBitmap, Name) )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+			return( GR_FALSE );
 		}
 	}
 	*MaterialIndex = pMatrIdx;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }  //Level_GetMaterialIdx
 #else
-static jeBoolean Level_GetMaterialIdx( Level * pLevel, const char * Name, jeMaterialSpec *pMatSpec, jeMaterial_ArrayIndex *MaterialIndex )
+static grBoolean Level_GetMaterialIdx( Level * pLevel, const char * Name, grMaterialSpec *pMatSpec, grMaterial_ArrayIndex *MaterialIndex )
 {
-	jeMaterial_ArrayIndex pMatrIdx;
+	grMaterial_ArrayIndex pMatrIdx;
 
 	assert( pLevel );
 	assert( Name );
@@ -452,12 +452,12 @@ static jeBoolean Level_GetMaterialIdx( Level * pLevel, const char * Name, jeMate
 
 	if( !Level_SearchMatrIdxByName( pLevel, Name, &pMatrIdx ) )
 	{
-		pMatrIdx = jeMaterial_ArrayCreateMaterial( pLevel->pMatrArray, Name);
+		pMatrIdx = grMaterial_ArrayCreateMaterial( pLevel->pMatrArray, Name);
 
-		if (pMatrIdx == JE_MATERIAL_ARRAY_NULL_INDEX)
+		if (pMatrIdx == GR_MATERIAL_ARRAY_NULL_INDEX)
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+			return( GR_FALSE );
 		}
 
 		// Krouer : make BitmapName different from Name
@@ -467,21 +467,21 @@ static jeBoolean Level_GetMaterialIdx( Level * pLevel, const char * Name, jeMate
 		//strcat(TotalName, Name);
 		// change back to something better, with suddir and pak files
 
-		if( !jeMaterial_ArraySetMaterialSpec(pLevel->pMatrArray, pMatrIdx, pMatSpec, Name) )
+		if( !grMaterial_ArraySetMaterialSpec(pLevel->pMatrArray, pMatrIdx, pMatSpec, Name) )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+			return( GR_FALSE );
 		}
 	}
 	*MaterialIndex = pMatrIdx;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }  //Level_GetMaterialIdx
 #endif
 
 
-jeBoolean Level_SetFaceInfoToCurMaterial( Level * pLevel )
+grBoolean Level_SetFaceInfoToCurMaterial( Level * pLevel )
 {
-	jeMaterial_ArrayIndex MaterialIndex;
+	grMaterial_ArrayIndex MaterialIndex;
 	Material_Struct * Material = nullptr;
 	CJweApp* pApp = (CJweApp*)AfxGetApp();
 
@@ -490,78 +490,78 @@ jeBoolean Level_SetFaceInfoToCurMaterial( Level * pLevel )
 
 	Material = MaterialList_GetCurMaterial( pApp->GetMaterialList() );
 #ifdef _USE_BITMAPS
-	if( !Level_GetMaterialIdx( pLevel, Materials_GetName( Material ), (jeBitmap*) Materials_GetBitmap( Material ), &MaterialIndex  ) )
+	if( !Level_GetMaterialIdx( pLevel, Materials_GetName( Material ), (grBitmap*) Materials_GetBitmap( Material ), &MaterialIndex  ) )
 #else
-	if( !Level_GetMaterialIdx( pLevel, Materials_GetName( Material ), (jeMaterialSpec*) Materials_GetMaterialSpec( Material ), &MaterialIndex  ) )
+	if( !Level_GetMaterialIdx( pLevel, Materials_GetName( Material ), (grMaterialSpec*) Materials_GetMaterialSpec( Material ), &MaterialIndex  ) )
 #endif
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 	if( MaterialIndex != pLevel->DefaultFace.FaceInfo.MaterialIndex )
 	{
 		pLevel->DefaultFace.FaceInfo.MaterialIndex = MaterialIndex;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 } // Level_SetFaceInfoToCurMaterial
 	
 
-static jeBoolean Level_InitDefaultFace( Level * pLevel )
+static grBoolean Level_InitDefaultFace( Level * pLevel )
 {
-	jeFaceInfo*			pFaceInfo ;
+	grFaceInfo*			pFaceInfo ;
 
 	assert( pLevel );
 	assert( pLevel->nSignature == SIGNATURE ) ;
 
 	pFaceInfo = &pLevel->DefaultFace.FaceInfo;
-	memset(pFaceInfo, 0, sizeof(jeFaceInfo) ) ;
-	jeFaceInfo_SetDefaults( pFaceInfo );
+	memset(pFaceInfo, 0, sizeof(grFaceInfo) ) ;
+	grFaceInfo_SetDefaults( pFaceInfo );
 	Level_SetFaceInfoToCurMaterial( pLevel );
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 } // Level_InitDefaultFace
 
 
-static jeBoolean Level_InitWorldData( Level* pLevel, jeWorld * pWorld,MaterialList_Struct * pGlobalMaterials )
+static grBoolean Level_InitWorldData( Level* pLevel, grWorld * pWorld,MaterialList_Struct * pGlobalMaterials )
 {
 	assert( pLevel );
 	assert( pLevel->nSignature == SIGNATURE ) ;
 	assert( pWorld );
 	assert( pGlobalMaterials );
 
-	pLevel->bChanged = JE_FALSE;
+	pLevel->bChanged = GR_FALSE;
 	pLevel->pWorld = pWorld ;
     // Krouer: not use when use directly the CJweApp material list
 	//pLevel->pGlobalMaterials = pGlobalMaterials ;
-	pLevel->pFaceInfoArray = jeWorld_GetFaceInfoArray( pWorld ) ;
+	pLevel->pFaceInfoArray = grWorld_GetFaceInfoArray( pWorld ) ;
 	if( pLevel->pFaceInfoArray == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "pFaceInfoArray" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "pFaceInfoArray" );
+		return( GR_FALSE );
 	}
 
-	pLevel->pMatrArray = jeWorld_GetMaterialArray(pWorld);
+	pLevel->pMatrArray = grWorld_GetMaterialArray(pWorld);
 	if( pLevel->pMatrArray == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "jeWorld_GetMaterialArray" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "grWorld_GetMaterialArray" );
+		return( GR_FALSE );
 	}
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 } // Level_InitWorldData
 
-jeResourceMgr	* Level_CreateResourceMgr( jeEngine* pEngine )
+grResourceMgr	* Level_CreateResourceMgr( grEngine* pEngine )
 {
-//	jeVFile			*	pFS = nullptr ;	[MLB-ICE]
+//	grVFile			*	pFS = nullptr ;	[MLB-ICE]
 	char		AppPath[255];
 	char		SubPath[255];
-	jeResourceMgr* ResourceMgr{};
+	grResourceMgr* ResourceMgr{};
 
 
-	ResourceMgr =  jeResource_MgrCreate( pEngine);
+	ResourceMgr =  grResource_MgrCreate( pEngine);
 	if( ResourceMgr == nullptr )
 	{
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Level_CreateResourceMgr:jeResource_MgrCreate", nullptr);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Level_CreateResourceMgr:grResource_MgrCreate", nullptr);
 		return nullptr;
 	}
 	// [MLB-ICE]
@@ -569,100 +569,100 @@ jeResourceMgr	* Level_CreateResourceMgr( jeEngine* pEngine )
 	//I'm not sure where is the best place to store this
 	strcpy( SubPath, AppPath );
 	strcat( SubPath, "Sounds" );
-	if (!jeResource_OpenDirectory(ResourceMgr, SubPath, "Sounds"))
-		jeErrorLog_AddString(JE_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:jeResource_OpenDirectory", SubPath);
+	if (!grResource_OpenDirectory(ResourceMgr, SubPath, "Sounds"))
+		grErrorLog_AddString(GR_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:grResource_OpenDirectory", SubPath);
 
 	// save bitmap vfile
 	strcpy( SubPath, AppPath );
 	strcat( SubPath, "GlobalMaterials" );
-	if (!jeResource_OpenDirectory(ResourceMgr, SubPath, "GlobalMaterials"))
-		jeErrorLog_AddString( JE_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:jeResource_OpenDirectory", SubPath );
+	if (!grResource_OpenDirectory(ResourceMgr, SubPath, "GlobalMaterials"))
+		grErrorLog_AddString( GR_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:grResource_OpenDirectory", SubPath );
 
 	// save actors vfile
 	strcpy( SubPath, AppPath );
 	strcat( SubPath, "Actors" );
-	if (!jeResource_OpenDirectory(ResourceMgr, SubPath, "Actors"))
-		jeErrorLog_AddString( JE_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:jeResource_OpenDirectory", SubPath );
+	if (!grResource_OpenDirectory(ResourceMgr, SubPath, "Actors"))
+		grErrorLog_AddString( GR_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:grResource_OpenDirectory", SubPath );
 
 	//BEGIN CYRIUS
 	// save shader vfile
 	strcpy( SubPath, AppPath );
 	strcat( SubPath, "Shaders" );
-	if (!jeResource_OpenDirectory(ResourceMgr, SubPath, "Shaders"))
-		jeErrorLog_AddString( JE_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:jeResource_OpenDirectory", SubPath );
+	if (!grResource_OpenDirectory(ResourceMgr, SubPath, "Shaders"))
+		grErrorLog_AddString( GR_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:grResource_OpenDirectory", SubPath );
 
 	//END CYRIUS
 /*	Util_GetAppPath( AppPath, 255 );
 	//I'm not sure where is the best place to store this
 	strcpy( SubPath, AppPath );
 	strcat( SubPath, "Sounds" );
-	pFS = jeVFile_OpenNewSystem
+	pFS = grVFile_OpenNewSystem
 	(
 		nullptr, 
-		JE_VFILE_TYPE_DOS,
+		GR_VFILE_TYPE_DOS,
 		SubPath,
 		nullptr,
-		JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY
 	);
 	if( pFS == nullptr )
 	{
-		jeErrorLog_AddString(JE_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:jeVFile_OpenNewSystem", SubPath);
+		grErrorLog_AddString(GR_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:grVFile_OpenNewSystem", SubPath);
 	}
 	else
 	{
-		jeResource_AddVFile( ResourceMgr, "Sounds", pFS );
+		grResource_AddVFile( ResourceMgr, "Sounds", pFS );
 	}
 
 	// save bitmap vfile
 	strcpy( SubPath, AppPath );
 	strcat( SubPath, "GlobalMaterials" );
-	pFS = jeVFile_OpenNewSystem(	nullptr,
-									JE_VFILE_TYPE_DOS,
+	pFS = grVFile_OpenNewSystem(	nullptr,
+									GR_VFILE_TYPE_DOS,
 									SubPath,
 									nullptr,
-									JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY );
+									GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY );
 	if ( pFS == nullptr )
 	{
-		jeErrorLog_AddString( JE_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:jeVFile_OpenNewSystem", SubPath );
+		grErrorLog_AddString( GR_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:grVFile_OpenNewSystem", SubPath );
 	}
 	else
 	{
-		jeResource_AddVFile( ResourceMgr, "GlobalMaterials", pFS );
+		grResource_AddVFile( ResourceMgr, "GlobalMaterials", pFS );
 	}
 
 	// save actors vfile
 	strcpy( SubPath, AppPath );
 	strcat( SubPath, "Actors" );
-	pFS = jeVFile_OpenNewSystem(	nullptr,
-									JE_VFILE_TYPE_DOS,
+	pFS = grVFile_OpenNewSystem(	nullptr,
+									GR_VFILE_TYPE_DOS,
 									SubPath,
 									nullptr,
-									JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY );
+									GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY );
 	if ( pFS == nullptr )
 	{
-		jeErrorLog_AddString( JE_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:jeVFile_OpenNewSystem", SubPath );
+		grErrorLog_AddString( GR_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:grVFile_OpenNewSystem", SubPath );
 	}
 	else
 	{
-		jeResource_AddVFile( ResourceMgr, "Actors", pFS );
+		grResource_AddVFile( ResourceMgr, "Actors", pFS );
 	}
 
 	//BEGIN CYRIUS
 	// save shader vfile
 	strcpy( SubPath, AppPath );
 	strcat( SubPath, "Shaders" );
-	pFS = jeVFile_OpenNewSystem(	nullptr,
-									JE_VFILE_TYPE_DOS,
+	pFS = grVFile_OpenNewSystem(	nullptr,
+									GR_VFILE_TYPE_DOS,
 									SubPath,
 									nullptr,
-									JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY );
+									GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY );
 	if ( pFS == nullptr )
 	{
-		jeErrorLog_AddString( JE_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:jeVFile_OpenNewSystem", SubPath );
+		grErrorLog_AddString( GR_ERR_SYSTEM_RESOURCE, "Level_CreateResourceMgr:grVFile_OpenNewSystem", SubPath );
 	}
 	else
 	{
-		jeResource_AddVFile( ResourceMgr, "Shaders", pFS );
+		grResource_AddVFile( ResourceMgr, "Shaders", pFS );
 	}
 
 	//END CYRIUS
@@ -677,7 +677,7 @@ jeResourceMgr	* Level_CreateResourceMgr( jeEngine* pEngine )
 
 static void Level_InitDefaultPrefs( Level* pLevel )
 {
-	jeXForm3d			XForm ;
+	grXForm3d			XForm ;
 
 	assert( pLevel != nullptr ) ;
 	assert( pLevel->nSignature == SIGNATURE ) ;
@@ -686,13 +686,13 @@ static void Level_InitDefaultPrefs( Level* pLevel )
 	pLevel->bSnapVertsToGrid = LEVEL_DEFAULTSHOULDSNAPVERTS;
 	// end added by cjp
 
-	pLevel->bSnapToGrid = JE_TRUE ;
+	pLevel->bSnapToGrid = GR_TRUE ;
 	pLevel->nGridSnapSize = LEVEL_DEFAULTSNAPSIZE ;
 	pLevel->nRotateSnapSize = LEVEL_DEFAULROTATESIZE ;
 	pLevel->GroupVisibility = LEVEL_GROUPVIS_ALL ;
 	pLevel->BrushUpdate = LEVEL_UPDATE_DESELECT;
 	pLevel->LightUpdate = LEVEL_UPDATE_REALTIME;
-	pLevel->BrushLightIncremental = JE_TRUE;
+	pLevel->BrushLightIncremental = GR_TRUE;
 
 	//	tom morris feb 2005
 	pLevel->Options = BSP_OPTIONS_CSG_BRUSHES | BSP_OPTIONS_MAKE_VIS_AREAS; 
@@ -702,11 +702,11 @@ static void Level_InitDefaultPrefs( Level* pLevel )
 	pLevel->Logic = Logic_Normal; 
 	pLevel->LogicBalance = 2;
 
-	jeVec3d_Set( &pLevel->ConstructLines, 0.0f, 0.0f, 0.0f );
-	jeXForm3d_SetIdentity( &XForm ) ;
+	grVec3d_Set( &pLevel->ConstructLines, 0.0f, 0.0f, 0.0f );
+	grXForm3d_SetIdentity( &XForm ) ;
 }// Level_InitDefaultPrefs
 
-static jeBoolean Level_LoadPrefs( Level* pLevel, jeVFile *pF, float Version )
+static grBoolean Level_LoadPrefs( Level* pLevel, grVFile *pF, float Version )
 {
 	int32		SubKind;
 
@@ -714,10 +714,10 @@ static jeBoolean Level_LoadPrefs( Level* pLevel, jeVFile *pF, float Version )
 	assert( pLevel->nSignature == SIGNATURE ) ;
 	assert( pF );
 
-	if( !jeVFile_Read( pF, &pLevel->bSnapToGrid , sizeof pLevel->bSnapToGrid ) )
+	if( !grVFile_Read( pF, &pLevel->bSnapToGrid , sizeof pLevel->bSnapToGrid ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read bSnapToGrid" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read bSnapToGrid" );
+		return( GR_FALSE );
 	}
 #pragma message( "Need to make Rotate Snap size save also" )
 
@@ -729,59 +729,59 @@ static jeBoolean Level_LoadPrefs( Level* pLevel, jeVFile *pF, float Version )
 	pLevel->bSnapVertsToGrid = LEVEL_DEFAULTSHOULDSNAPVERTS;
 	// end added by cjp
 
-	if( !jeVFile_Read( pF, &pLevel->nGridSnapSize , sizeof pLevel->nGridSnapSize ) )
+	if( !grVFile_Read( pF, &pLevel->nGridSnapSize , sizeof pLevel->nGridSnapSize ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read nGridSnapSize" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read nGridSnapSize" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Read( pF, &pLevel->GroupVisibility , sizeof pLevel->GroupVisibility ) )
+	if( !grVFile_Read( pF, &pLevel->GroupVisibility , sizeof pLevel->GroupVisibility ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read GroupVisibility" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read GroupVisibility" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Read( pF, &SubKind , sizeof SubKind ) )
+	if( !grVFile_Read( pF, &SubKind , sizeof SubKind ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read SubKind" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read SubKind" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Read( pF, &pLevel->BrushUpdate , sizeof &pLevel->BrushUpdate ) )
+	if( !grVFile_Read( pF, &pLevel->BrushUpdate , sizeof &pLevel->BrushUpdate ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read BrushUpdate" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read BrushUpdate" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Read( pF, &pLevel->LightUpdate , sizeof &pLevel->LightUpdate ) )
+	if( !grVFile_Read( pF, &pLevel->LightUpdate , sizeof &pLevel->LightUpdate ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read LightUpdate" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read LightUpdate" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Read( pF, &pLevel->BrushLightIncremental , sizeof &pLevel->BrushLightIncremental ) )
+	if( !grVFile_Read( pF, &pLevel->BrushLightIncremental , sizeof &pLevel->BrushLightIncremental ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read BrushLightIncremental" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read BrushLightIncremental" );
+		return( GR_FALSE );
 	}
 
 	if( Version > 0.1f )
 	{
-		if( !jeVFile_Read( pF, &pLevel->Options , sizeof &pLevel->Options ) )
+		if( !grVFile_Read( pF, &pLevel->Options , sizeof &pLevel->Options ) )
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read Options" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read Options" );
+			return( GR_FALSE );
 		}
 
-		if( !jeVFile_Read( pF, &pLevel->Logic , sizeof &pLevel->Logic ) )
+		if( !grVFile_Read( pF, &pLevel->Logic , sizeof &pLevel->Logic ) )
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read Logic" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read Logic" );
+			return( GR_FALSE );
 		}
-		if( !jeVFile_Read( pF, &pLevel->LogicBalance , sizeof &pLevel->LogicBalance ) )
+		if( !grVFile_Read( pF, &pLevel->LogicBalance , sizeof &pLevel->LogicBalance ) )
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to read LogicBalance" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to read LogicBalance" );
+			return( GR_FALSE );
 		}
 	}
 	else
@@ -790,10 +790,10 @@ static jeBoolean Level_LoadPrefs( Level* pLevel, jeVFile *pF, float Version )
 		pLevel->Logic = Logic_Normal; 
 		pLevel->LogicBalance = 2;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 } // Level_LoadPrefs
 
-static jeBoolean Level_SavePrefs( Level* pLevel, jeVFile *pF  )
+static grBoolean Level_SavePrefs( Level* pLevel, grVFile *pF  )
 {
 
 	int32		SubKind;
@@ -803,71 +803,71 @@ static jeBoolean Level_SavePrefs( Level* pLevel, jeVFile *pF  )
 	assert( pF );
 
 
-	if( !jeVFile_Write( pF, &pLevel->bSnapToGrid , sizeof pLevel->bSnapToGrid ) )
+	if( !grVFile_Write( pF, &pLevel->bSnapToGrid , sizeof pLevel->bSnapToGrid ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write bSnapToGrid" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write bSnapToGrid" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write( pF, &pLevel->nGridSnapSize , sizeof pLevel->nGridSnapSize ) )
+	if( !grVFile_Write( pF, &pLevel->nGridSnapSize , sizeof pLevel->nGridSnapSize ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write nGridSnapSize" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write nGridSnapSize" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write( pF, &pLevel->GroupVisibility , sizeof pLevel->GroupVisibility ) )
+	if( !grVFile_Write( pF, &pLevel->GroupVisibility , sizeof pLevel->GroupVisibility ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write GroupVisibility" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write GroupVisibility" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write( pF, &SubKind , sizeof SubKind ) )
+	if( !grVFile_Write( pF, &SubKind , sizeof SubKind ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write SubKind" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write SubKind" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write( pF, &pLevel->BrushUpdate , sizeof &pLevel->BrushUpdate ) )
+	if( !grVFile_Write( pF, &pLevel->BrushUpdate , sizeof &pLevel->BrushUpdate ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write BrushUpdate" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write BrushUpdate" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write( pF, &pLevel->LightUpdate , sizeof &pLevel->LightUpdate ) )
+	if( !grVFile_Write( pF, &pLevel->LightUpdate , sizeof &pLevel->LightUpdate ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write LightUpdate" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write LightUpdate" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write( pF, &pLevel->BrushLightIncremental , sizeof &pLevel->BrushLightIncremental ) )
+	if( !grVFile_Write( pF, &pLevel->BrushLightIncremental , sizeof &pLevel->BrushLightIncremental ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write BrushLightIncremental" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write BrushLightIncremental" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write( pF, &pLevel->Options , sizeof &pLevel->Options ) )
+	if( !grVFile_Write( pF, &pLevel->Options , sizeof &pLevel->Options ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write Options" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write Options" );
+		return( GR_FALSE );
 	}
 
-	if( !jeVFile_Write( pF, &pLevel->Logic , sizeof &pLevel->Logic ) )
+	if( !grVFile_Write( pF, &pLevel->Logic , sizeof &pLevel->Logic ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write Logic" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write Logic" );
+		return( GR_FALSE );
 	}
-	if( !jeVFile_Write( pF, &pLevel->LogicBalance , sizeof &pLevel->LogicBalance ) )
+	if( !grVFile_Write( pF, &pLevel->LogicBalance , sizeof &pLevel->LogicBalance ) )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "Unable to write LogicBalance" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, "Unable to write LogicBalance" );
+		return( GR_FALSE );
 	}
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 } // Level_SavePrefs
 
 
 
-static jeBoolean Level_InitLists( Level* pLevel )
+static grBoolean Level_InitLists( Level* pLevel )
 {
 	char		szDefault[GROUP_MAXNAMELENGTH+1] ;
 	Group		* pGroup{};
@@ -879,70 +879,70 @@ static jeBoolean Level_InitLists( Level* pLevel )
 	pLevel->pModels		= ModelList_Create( ) ;
 	if( pLevel->pModels == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 	pLevel->pLightList = LightList_Create(  pLevel->pWorld  );
 	if( pLevel->pLightList == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 
 	pLevel->pCameraList = CameraList_Create();
 	if( pLevel->pCameraList == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 
 	pLevel->pClassList = ObjectList_Create( ) ;
 	if( pLevel->pClassList == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 
 	pLevel->pUserObjList = ObjectList_Create( ) ;
 	if( pLevel->pUserObjList == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 
 	pLevel->pSelObjects = ObjectList_Create( ) ;
 	if( pLevel->pSelObjects == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 
 	pLevel->pSubSelObjects = ObjectList_Create( ) ;
 	if( pLevel->pSubSelObjects == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 
 	pLevel->pGroups		= GroupList_Create( ) ;
 	if( pLevel->pGroups == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 	{   //Init default Group
 		Util_GetRcString( szDefault, IDS_DEFAULTGROUPNAME ) ;
 		pGroup = Group_Create( szDefault ) ;
 		if( pGroup == nullptr )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+			return( GR_FALSE );
 		}
 		if( GroupList_Append( pLevel->pGroups, pGroup ) == nullptr )
 		{
 			Group_Destroy( &pGroup ) ;
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+			return( GR_FALSE );
 		}
 
 		pLevel->CurrentGroup = pGroup ;
@@ -952,31 +952,31 @@ static jeBoolean Level_InitLists( Level* pLevel )
 		pLevel->pCurrentModel = Model_Create( pGroup, "Default", 0 ) ;
 		if( pLevel->pCurrentModel == nullptr )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+			return( GR_FALSE );
 		}
 		pLevel->ParentModel = pLevel->pCurrentModel;
-		if( jeWorld_AddObject( pLevel->pWorld, Model_GetjeObject( pLevel->pCurrentModel ) )== JE_FALSE )
+		if( grWorld_AddObject( pLevel->pWorld, Model_GetgrObject( pLevel->pCurrentModel ) )== GR_FALSE )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_InitLists:jeWorld_AddObject" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_InitLists:grWorld_AddObject" );
+			return( GR_FALSE );
 		}
 		if( ModelList_Append( pLevel->pModels, pLevel->pCurrentModel ) == nullptr )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+			return( GR_FALSE );
 		}
 		if( !Group_AddObject( pGroup, (Object *)pLevel->pCurrentModel ) )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_InitLists:Group_AddObject" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_InitLists:Group_AddObject" );
+			return( GR_FALSE );
 		}
-		Object_SetInLevel( (Object*)pLevel->pCurrentModel, JE_TRUE );
+		Object_SetInLevel( (Object*)pLevel->pCurrentModel, GR_TRUE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-static jeBoolean Level_ReattachGroupsCB( Object * pObject, void * lParam )
+static grBoolean Level_ReattachGroupsCB( Object * pObject, void * lParam )
 {
 	GroupList * pGroupList = (GroupList*)lParam;
 
@@ -987,7 +987,7 @@ static jeBoolean Level_ReattachGroupsCB( Object * pObject, void * lParam )
 }
 
 
-static jeBoolean Level_UserObjListCreateFromFile( Level *pLevel, jeVFile *pF, jePtrMgr * pPtrMgr )
+static grBoolean Level_UserObjListCreateFromFile( Level *pLevel, grVFile *pF, grPtrMgr * pPtrMgr )
 {
 	int nItems;
 	int i;
@@ -999,12 +999,12 @@ static jeBoolean Level_UserObjListCreateFromFile( Level *pLevel, jeVFile *pF, je
 
 	pLevel->pUserObjList = ObjectList_Create();
 	if( pLevel->pUserObjList == nullptr )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
-	if( jeVFile_Read( pF, &nItems, sizeof nItems ) == JE_FALSE )
+	if( grVFile_Read( pF, &nItems, sizeof nItems ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_UserObjListCreateFromFile.\n", nullptr);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_UserObjListCreateFromFile.\n", nullptr);
+		return GR_FALSE;
 	}
 
 	for( i = 0; i < nItems; i++ )
@@ -1012,17 +1012,17 @@ static jeBoolean Level_UserObjListCreateFromFile( Level *pLevel, jeVFile *pF, je
 		pUserObj = UserObj_CreateFromFile( pF, pPtrMgr );
 		if( pUserObj == nullptr )
 		{
-			jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_UserObjListCreateFromFile.\n", nullptr);
-			return JE_FALSE;
+			grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_UserObjListCreateFromFile.\n", nullptr);
+			return GR_FALSE;
 		}
 		ObjectList_Append( pLevel->pUserObjList, (Object*)pUserObj );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
 
-static jeBoolean Level_LoadLists( Level* pLevel, jeVFile *pF, jePtrMgr * pPtrMgr )
+static grBoolean Level_LoadLists( Level* pLevel, grVFile *pF, grPtrMgr * pPtrMgr )
 
 {
 	ModelIterator		pMI ;
@@ -1036,22 +1036,22 @@ static jeBoolean Level_LoadLists( Level* pLevel, jeVFile *pF, jePtrMgr * pPtrMgr
 	pLevel->pGroups		= GroupList_CreateFromFile( pF ) ;
 	if( pLevel->pGroups == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "GroupList_CreateFromFile" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "GroupList_CreateFromFile" );
+		return( GR_FALSE );
 	}
 
 	pLevel->pClassList = ObjectList_Create( ) ;
 	if( pLevel->pClassList == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 
 	pLevel->pModels		= ModelList_CreateFromFile( pF, pPtrMgr ) ;
 	if( pLevel->pModels == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_LoadLists" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_LoadLists" );
+		return( GR_FALSE );
 	}
 	ModelList_Reattach( pLevel->pModels, pLevel->pWorld ) ;
 	pLevel->pCurrentModel = ModelList_GetFirst( pLevel->pModels, &pMI ) ;
@@ -1062,51 +1062,51 @@ static jeBoolean Level_LoadLists( Level* pLevel, jeVFile *pF, jePtrMgr * pPtrMgr
 	pLevel->pLightList = LightList_CreateFromFile( pF, pLevel->pWorld, pPtrMgr  );
 	if( pLevel->pLightList == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_LoadLists" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_LoadLists" );
+		return( GR_FALSE );
 	}
 	
 	pLevel->pCameraList = CameraList_CreateFromFile( pF, pPtrMgr );
 	if( pLevel->pCameraList == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_LoadLists" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_LoadLists" );
+		return( GR_FALSE );
 	}
 
 	if( !Level_UserObjListCreateFromFile( pLevel, pF, pPtrMgr ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_LoadLists" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_LoadLists" );
+		return( GR_FALSE );
 	}
 
 	// @@ CB : Attach to the root model!
 	//Royce-3
-	//ObjectList_EnumObjects( pLevel->pUserObjList, Model_GetjeObject( pLevel->ParentModel), (ObjectListCB) UserObj_AddToObject );
+	//ObjectList_EnumObjects( pLevel->pUserObjList, Model_GetgrObject( pLevel->ParentModel), (ObjectListCB) UserObj_AddToObject );
 	//---
 
 #pragma message( "should the current selection be loaded" )
 	pLevel->pSelObjects = ObjectList_Create( ) ;
 	if( pLevel->pSelObjects == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 
 	pLevel->pSubSelObjects = ObjectList_Create( ) ;
 	if( pLevel->pSubSelObjects == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		return( GR_FALSE );
 	}
 
 	Level_EnumObjects( pLevel, pLevel->pGroups, Level_ReattachGroupsCB );
 	pLevel->CurrentGroup = GroupList_GetFirst( pLevel->pGroups, &GI ) ;
 	pLevel->pCurCamera = CameraList_GetFirst( pLevel->pCameraList, &GI );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Level_LoadLists
 
 
-static jeBoolean Level_UserObjWriteToFile( Level *pLevel, jeVFile *pF, jePtrMgr * pPtrMgr )
+static grBoolean Level_UserObjWriteToFile( Level *pLevel, grVFile *pF, grPtrMgr * pPtrMgr )
 {
 	int32	nItems ;
 	Object	* pObject;
@@ -1114,14 +1114,14 @@ static jeBoolean Level_UserObjWriteToFile( Level *pLevel, jeVFile *pF, jePtrMgr 
 
 	assert( pLevel != nullptr ) ;
 	assert( pLevel->pUserObjList != nullptr ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	
 	nItems = ObjectList_GetNumItems( pLevel->pUserObjList ) ;
-	if( jeVFile_Write( pF, &nItems, sizeof nItems ) == JE_FALSE )
+	if( grVFile_Write( pF, &nItems, sizeof nItems ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_UserObjWriteToFile.\n", nullptr);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_UserObjWriteToFile.\n", nullptr);
+		return GR_FALSE;
 	}
 	
 	pObject = ObjectList_GetFirst (pLevel->pUserObjList, &pli);
@@ -1129,18 +1129,18 @@ static jeBoolean Level_UserObjWriteToFile( Level *pLevel, jeVFile *pF, jePtrMgr 
 	{
 		if( !UserObj_WriteToFile( (UserObj*)pObject, pF,  pPtrMgr ) )
 		{
-			jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_UserObjWriteToFile.\n", nullptr);
-			return JE_FALSE;
+			grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_UserObjWriteToFile.\n", nullptr);
+			return GR_FALSE;
 		}
 
 		pObject = ObjectList_GetNext(pLevel->pUserObjList, &pli);
 	}
-	return  JE_TRUE;
+	return  GR_TRUE;
 
 }// Level_UserObj
 
 
-static jeBoolean Level_SaveLists( Level* pLevel, jeVFile *pF, jePtrMgr * pPtrMgr )
+static grBoolean Level_SaveLists( Level* pLevel, grVFile *pF, grPtrMgr * pPtrMgr )
 {
 
 	assert( pLevel );
@@ -1150,34 +1150,34 @@ static jeBoolean Level_SaveLists( Level* pLevel, jeVFile *pF, jePtrMgr * pPtrMgr
 
 	if( !GroupList_WriteToFile( pLevel->pGroups, pF ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_SaveLists:GroupList_WriteToFile" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_SaveLists:GroupList_WriteToFile" );
+		return( GR_FALSE );
 	}
 	if( !ModelList_WriteToFile( pLevel->pModels, pF, pPtrMgr ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_SaveLists:ModelList_WriteToFile" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_SaveLists:ModelList_WriteToFile" );
+		return( GR_FALSE );
 	}
 	if( !LightList_WriteToFile( pLevel->pLightList, pF, pPtrMgr) ) 
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_SaveLists:LightList_WriteToFile" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_SaveLists:LightList_WriteToFile" );
+		return( GR_FALSE );
 	}
 	if( !CameraList_WriteToFile( pLevel->pCameraList, pF, pPtrMgr) ) 
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_SaveLists:CameraList_WriteToFile" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_SaveLists:CameraList_WriteToFile" );
+		return( GR_FALSE );
 	}
 	
 	if( !Level_UserObjWriteToFile( pLevel, pF, pPtrMgr ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_SaveLists:Level_UserObjWriteToFile" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_SaveLists:Level_UserObjWriteToFile" );
+		return( GR_FALSE );
 	}
 
 #pragma message( "We need to save the groups!" )
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Level_SaveLists
 
 
@@ -1187,8 +1187,8 @@ static jeBoolean Level_SaveLists( Level* pLevel, jeVFile *pF, jePtrMgr * pPtrMgr
 
 static void Level_SetDefaultBoxFace( Brush * pBrush, int FaceIndex, float ShiftU, float ShiftV, float ScaleU, float ScaleV )
 {
-	jeProperty_Data Data;
-	jeBrush_Face	*	pFace;
+	grProperty_Data Data;
+	grBrush_Face	*	pFace;
 
 	pFace = Brush_GetFaceByIndex( pBrush, FaceIndex ) ;
 	if( pFace == nullptr )
@@ -1197,13 +1197,13 @@ static void Level_SetDefaultBoxFace( Brush * pBrush, int FaceIndex, float ShiftU
 	Brush_SelectFace( pBrush, pFace );
 
 	Data.Float = ShiftU;
-	Brush_SetProperty( pBrush, BRUSH_SHIFTU_FIELD, FLOAT_STRING_TYPE, &Data, JE_TRUE, JE_TRUE );
+	Brush_SetProperty( pBrush, BRUSH_SHIFTU_FIELD, FLOAT_STRING_TYPE, &Data, GR_TRUE, GR_TRUE );
 	Data.Float = ShiftV;
-	Brush_SetProperty( pBrush, BRUSH_SHIFTV_FIELD, FLOAT_STRING_TYPE, &Data, JE_TRUE, JE_TRUE );
+	Brush_SetProperty( pBrush, BRUSH_SHIFTV_FIELD, FLOAT_STRING_TYPE, &Data, GR_TRUE, GR_TRUE );
 	Data.Float = ScaleU;
-	Brush_SetProperty( pBrush, BRUSH_DRAWSCALEU_FIELD, FLOAT_STRING_TYPE, &Data, JE_TRUE, JE_TRUE );
+	Brush_SetProperty( pBrush, BRUSH_DRAWSCALEU_FIELD, FLOAT_STRING_TYPE, &Data, GR_TRUE, GR_TRUE );
 	Data.Float = ScaleV;
-	Brush_SetProperty( pBrush, BRUSH_DRAWSCALEV_FIELD, FLOAT_STRING_TYPE, &Data, JE_TRUE, JE_TRUE );
+	Brush_SetProperty( pBrush, BRUSH_DRAWSCALEV_FIELD, FLOAT_STRING_TYPE, &Data, GR_TRUE, GR_TRUE );
 }
 
 void Level_SetDefaultBoxTexture( Level * pLevel, Object	* pBoxObject )
@@ -1229,19 +1229,19 @@ void Level_SetDefaultBoxTexture( Level * pLevel, Object	* pBoxObject )
 	Brush_DeselectAllFaces( pBrush  );
 }
 
-Level * Level_Create( jeWorld * pWorld, MaterialList_Struct * pGlobalMaterials )
+Level * Level_Create( grWorld * pWorld, MaterialList_Struct * pGlobalMaterials )
 {
 	Level* pLevel{};
-	jeExtBox			TempBox{};
+	grExtBox			TempBox{};
 	Object* pLightObject{};
 	Object* pBoxObject{};
-	jeProperty_Data Data{};
+	grProperty_Data Data{};
 	LEVEL_UPDATE		TempBrushUpdate{};
 	LEVEL_UPDATE		TempLightUpdate{};
 
 	assert( pWorld != nullptr ) ;
 	assert( pGlobalMaterials != nullptr );
-	pLevel = JE_RAM_ALLOCATE_STRUCT( Level ) ;
+	pLevel = GR_RAM_ALLOCATE_STRUCT( Level ) ;
 	if( pLevel == nullptr )
 		goto LC_FAILURE ;
 
@@ -1273,16 +1273,16 @@ Level * Level_Create( jeWorld * pWorld, MaterialList_Struct * pGlobalMaterials )
 	pLevel->BrushUpdate = LEVEL_UPDATE_MANUEL;
 	pLevel->LightUpdate = LEVEL_UPDATE_MANUEL;
 
-	jeExtBox_Set( &TempBox, 0.0f, 64.0f, 128.0f, 0.0f, 64.0f, 0.0f);
+	grExtBox_Set( &TempBox, 0.0f, 64.0f, 128.0f, 0.0f, 64.0f, 0.0f);
 	pLevel->pCurCamera = (Camera*)Level_NewObject( pLevel, KIND_CAMERA, 0,  &TempBox );
 
-	jeExtBox_Set( &TempBox, -64.0f, 0.0f, -64.0f, 64.0f, 128.0f, 64.0f);
+	grExtBox_Set( &TempBox, -64.0f, 0.0f, -64.0f, 64.0f, 128.0f, 64.0f);
 	pBoxObject = Level_SubtractBrush( pLevel, BRUSH_BOX,  &TempBox );
 
-	jeExtBox_Set( &TempBox, 0.0f, 64.0f, 0.0f, 0.0f, 64.0f, 0.0f);
+	grExtBox_Set( &TempBox, 0.0f, 64.0f, 0.0f, 0.0f, 64.0f, 0.0f);
 	pLightObject = Level_NewObject( pLevel, KIND_LIGHT, 0,  &TempBox );
 	Data.Float = 2.0f;
-	Light_SetProperty( (Light*)pLightObject, LIGHT_BRIGHTNESS_FIELD, FLOAT_STRING_TYPE, &Data, JE_TRUE);
+	Light_SetProperty( (Light*)pLightObject, LIGHT_BRIGHTNESS_FIELD, FLOAT_STRING_TYPE, &Data, GR_TRUE);
 
 	Level_SetDefaultBoxTexture( pLevel, pBoxObject );
 
@@ -1368,7 +1368,7 @@ void Level_Destroy( Level ** ppLevel )
 
 	assert( ((*ppLevel)->nSignature = 0) == 0 ) ;	// CLEAR
 
-	jeRam_Free( *ppLevel ) ;
+	grRam_Free( *ppLevel ) ;
 }// Level_Destroy
 
 // ACCESSORS
@@ -1478,7 +1478,7 @@ int32 Level_SelXFormModFlags(  const Level * pLevel )
 {
 	Object * pObject;
 	ObjectIterator  Iterator;
-	int32 ModFlags = JE_OBJECT_XFORM_ALL;
+	int32 ModFlags = GR_OBJECT_XFORM_ALL;
 
 	assert( pLevel );
 	assert( SIGNATURE == pLevel->nSignature ) ;
@@ -1499,10 +1499,10 @@ int32 Level_SelXFormModFlags(  const Level * pLevel )
 	}
 
 	//If we can translate a multiple select we can rotate the objects about each other
-	if( ModFlags & JE_OBJECT_XFORM_TRANSLATE )
+	if( ModFlags & GR_OBJECT_XFORM_TRANSLATE )
 	{
-		ModFlags |= JE_OBJECT_XFORM_ROTATE;
-		ModFlags |= JE_OBJECT_XFORM_SCALE;
+		ModFlags |= GR_OBJECT_XFORM_ROTATE;
+		ModFlags |= GR_OBJECT_XFORM_SCALE;
 	}
 	return( ModFlags );
 
@@ -1541,7 +1541,7 @@ float Level_GetConstructorPlane( const Level * pLevel, int32 Index )
 	assert( pLevel );
 	assert( SIGNATURE == pLevel->nSignature ) ;
 
-	return( jeVec3d_GetElement( &pLevel->ConstructLines, Index) );
+	return( grVec3d_GetElement( &pLevel->ConstructLines, Index) );
 }
 
 LEVEL_UPDATE Level_GetBrushUpdate( const Level * pLevel )
@@ -1560,7 +1560,7 @@ LEVEL_UPDATE Level_GetLightUpdate( const Level * pLevel )
 	return( pLevel->LightUpdate );
 }
 
-void Level_GetBSPBuildOptions( const Level * pLevel, jeBSP_Options * Options, jeBSP_Logic * Logic, jeBSP_LogicBalance * LogicBalance )
+void Level_GetBSPBuildOptions( const Level * pLevel, grBSP_Options * Options, grBSP_Logic * Logic, grBSP_LogicBalance * LogicBalance )
 {
 	assert( pLevel );
 	assert( SIGNATURE == pLevel->nSignature ) ;
@@ -1571,7 +1571,7 @@ void Level_GetBSPBuildOptions( const Level * pLevel, jeBSP_Options * Options, je
 	*LogicBalance = pLevel->LogicBalance;
 }
 
-jeWorld	*	Level_GetjeWorld( const Level * pLevel )
+grWorld	*	Level_GetgrWorld( const Level * pLevel )
 {
 	assert( pLevel );
 	assert( SIGNATURE == pLevel->nSignature ) ;
@@ -1580,7 +1580,7 @@ jeWorld	*	Level_GetjeWorld( const Level * pLevel )
 }
 
 #ifdef _USE_BITMAPS
-jeBitmap *	Level_GetCurMaterialjeBitmap( const Level * pLevel )
+grBitmap *	Level_GetCurMaterialgrBitmap( const Level * pLevel )
 {
 	Material_Struct *	pCurMaterial;
 	assert( pLevel );
@@ -1591,23 +1591,23 @@ jeBitmap *	Level_GetCurMaterialjeBitmap( const Level * pLevel )
 
 	if( pCurMaterial == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Level_GetCurMaterialgeBitmap:MaterialList_GetCurMaterial");
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Level_GetCurMaterialgeBitmap:MaterialList_GetCurMaterial");
 		return( nullptr );
 	}
-	return ( (jeBitmap *) Materials_GetBitmap( pCurMaterial ) );
+	return ( (grBitmap *) Materials_GetBitmap( pCurMaterial ) );
 }
 
-jeBitmap * Level_GetMaterialBitmapByName( const Level * pLevel, char* szBitmapName )
+grBitmap * Level_GetMaterialBitmapByName( const Level * pLevel, char* szBitmapName )
 {
 	Material_Struct *	pMaterial;
 	MaterialIterator	MI;
 
 	pMaterial = MaterialList_SearchByName(pLevel->pGlobalMaterials, &MI, szBitmapName);
 
-	return ( (jeBitmap *) Materials_GetBitmap( pMaterial ) );
+	return ( (grBitmap *) Materials_GetBitmap( pMaterial ) );
 }
 #else
-jeMaterialSpec *	Level_GetCurMaterialSpec( const Level * pLevel )
+grMaterialSpec *	Level_GetCurMaterialSpec( const Level * pLevel )
 {
 	Material_Struct *	pCurMaterial;
 	assert( pLevel );
@@ -1619,13 +1619,13 @@ jeMaterialSpec *	Level_GetCurMaterialSpec( const Level * pLevel )
 
 	if( pCurMaterial == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Level_GetCurMaterialgeBitmap:MaterialList_GetCurMaterial");
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Level_GetCurMaterialgeBitmap:MaterialList_GetCurMaterial");
 		return( nullptr );
 	}
-	return ( (jeMaterialSpec *) Materials_GetMaterialSpec( pCurMaterial ) );
+	return ( (grMaterialSpec *) Materials_GetMaterialSpec( pCurMaterial ) );
 }
 
-jeMaterialSpec * Level_GetMaterialSpecByName( const Level * pLevel, char* szMatName )
+grMaterialSpec * Level_GetMaterialSpecByName( const Level * pLevel, char* szMatName )
 {
 	Material_Struct *	pMaterial;
 	MaterialIterator	MI;
@@ -1633,43 +1633,43 @@ jeMaterialSpec * Level_GetMaterialSpecByName( const Level * pLevel, char* szMatN
 
 	pMaterial = MaterialList_SearchByName(pApp->GetMaterialList(), &MI, szMatName);
 
-	return ( (jeMaterialSpec*) Materials_GetMaterialSpec( pMaterial ) );
+	return ( (grMaterialSpec*) Materials_GetMaterialSpec( pMaterial ) );
 }
 #endif
 
-jeBoolean Level_GetBrushLighting( const Level * pLevel )
+grBoolean Level_GetBrushLighting( const Level * pLevel )
 {
 	return( pLevel->BrushLightIncremental );
 }
 
-jeBoolean	Level_GetCurCamXForm( const Level * pLevel, jeXForm3d * pXForm )
+grBoolean	Level_GetCurCamXForm( const Level * pLevel, grXForm3d * pXForm )
 {
 	if( pLevel->pCurCamera == nullptr )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 	Camera_GetXForm( pLevel->pCurCamera, pXForm );
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	Level_GetCurCamFOV( const Level * pLevel, float *pFOV )
+grBoolean	Level_GetCurCamFOV( const Level * pLevel, float *pFOV )
 {
 	if( pLevel->pCurCamera == nullptr )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 	*pFOV = Camera_GetFOV( pLevel->pCurCamera );
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeObject *	Level_GetCurCamObject( const Level * pLevel )
+grObject *	Level_GetCurCamObject( const Level * pLevel )
 {
 	if( pLevel->pCurCamera == nullptr )
 		return( nullptr );
 
-	return( Camera_GetjeObject( pLevel->pCurCamera ) );
+	return( Camera_GetgrObject( pLevel->pCurCamera ) );
 }
 
 void Level_GetCurCamXYRot( const Level * pLevel, float *XRot, float *YRot )
@@ -1681,7 +1681,7 @@ void Level_GetCurCamXYRot( const Level * pLevel, float *XRot, float *YRot )
 	*YRot = Camera_GetCurCamY( pLevel->pCurCamera );
 }
 
-const jeExtBox *	Level_GetCurCamBounds( const Level * pLevel )
+const grExtBox *	Level_GetCurCamBounds( const Level * pLevel )
 {
 	assert( pLevel );
 	assert( pLevel->pCurCamera );
@@ -1689,71 +1689,71 @@ const jeExtBox *	Level_GetCurCamBounds( const Level * pLevel )
 	return( Camera_GetWorldAxialBounds( pLevel->pCurCamera ) );
 }
 
-jeBoolean Level_HasSelections( const Level * pLevel )
+grBoolean Level_HasSelections( const Level * pLevel )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 
-	return (ObjectList_GetNumItems( pLevel->pSelObjects )) ? JE_TRUE : JE_FALSE ;
+	return (ObjectList_GetNumItems( pLevel->pSelObjects )) ? GR_TRUE : GR_FALSE ;
 }// Level_HasSelections
 
-jeBoolean Level_HasSubSelections( const Level * pLevel )
+grBoolean Level_HasSubSelections( const Level * pLevel )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 
-	return (ObjectList_GetNumItems( pLevel->pSubSelObjects )) ? JE_TRUE : JE_FALSE ;
+	return (ObjectList_GetNumItems( pLevel->pSubSelObjects )) ? GR_TRUE : GR_FALSE ;
 }// Level_HasSubSelections
 
-const jeExtBox * Level_GetSelBounds( const Level * pLevel )
+const grExtBox * Level_GetSelBounds( const Level * pLevel )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 	
-	//if( JE_TRUE == pLevel->bDirty )
+	//if( GR_TRUE == pLevel->bDirty )
 	{
 		Level * pNCLevel = (Level*)pLevel ;	// Lazy eval forces this
 		Util_ExtBox_SetInvalid( &pNCLevel->SelBounds ) ;
 		ObjectList_GetListBounds( pNCLevel->pSelObjects, &pNCLevel->SelBounds ) ;
 
-		pNCLevel->bDirty = JE_FALSE ;
+		pNCLevel->bDirty = GR_FALSE ;
 	}
 	return &pLevel->SelBounds ;
 }// Level_GetSelBounds
 
-const jeExtBox * Level_GetSelDrawBounds( const Level * pLevel )
+const grExtBox * Level_GetSelDrawBounds( const Level * pLevel )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 	
-	//if( JE_TRUE == pLevel->bDirty )
+	//if( GR_TRUE == pLevel->bDirty )
 	{
 		Level * pNCLevel = (Level*)pLevel ;	// Lazy eval forces this
 		Util_ExtBox_SetInvalid( &pNCLevel->SelBounds ) ;
 		ObjectList_GetListDrawBounds( pNCLevel->pSelObjects, &pNCLevel->SelBounds ) ;
 
-		pNCLevel->bDirty = JE_FALSE ;
+		pNCLevel->bDirty = GR_FALSE ;
 	}
 	return &pLevel->SelBounds ;
 }// Level_GetSelDrawBounds
 
-const jeExtBox * Level_GetSubSelDrawBounds( const Level * pLevel )
+const grExtBox * Level_GetSubSelDrawBounds( const Level * pLevel )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 	
-	//if( JE_TRUE == pLevel->bDirty )
+	//if( GR_TRUE == pLevel->bDirty )
 	{
 		Level * pNCLevel = (Level*)pLevel ;	// Lazy eval forces this
 		Util_ExtBox_SetInvalid( &pNCLevel->SelBounds ) ;
 		ObjectList_GetListDrawBounds( pNCLevel->pSubSelObjects, &pNCLevel->SelBounds ) ;
 
-		pNCLevel->bDirty = JE_FALSE ;
+		pNCLevel->bDirty = GR_FALSE ;
 	}
 	return &pLevel->SelBounds ;
 }// Level_GetSelDrawBounds
 
-jeBoolean Level_GetSelBoundsCenter( const Level * pLevel, jeVec3d * const pCenter )
+grBoolean Level_GetSelBoundsCenter( const Level * pLevel, grVec3d * const pCenter )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
@@ -1761,10 +1761,10 @@ jeBoolean Level_GetSelBoundsCenter( const Level * pLevel, jeVec3d * const pCente
 
 	Level_GetSelBounds( pLevel ) ;	// Force lazy eval
 
-	if( !jeExtBox_IsValid( &pLevel->SelBounds ) )
-		return( JE_FALSE );
-	jeExtBox_GetTranslation( &pLevel->SelBounds, pCenter ) ; 
-	return( JE_TRUE );
+	if( !grExtBox_IsValid( &pLevel->SelBounds ) )
+		return( GR_FALSE );
+	grExtBox_GetTranslation( &pLevel->SelBounds, pCenter ) ; 
+	return( GR_TRUE );
 }// Level_GetSelBoundsCenter
 
 
@@ -1773,15 +1773,15 @@ typedef struct IdSearchContext {
 	int32 MaxId;
 } IdSearchContext;
 
-jeBoolean Level_GetMaxIdCB( Object* pObject, void * pVoid )
+grBoolean Level_GetMaxIdCB( Object* pObject, void * pVoid )
 {
 	IdSearchContext *pSearchContext = (IdSearchContext*)pVoid;
 
 	if( strcmp( Object_GetName( pObject ), pSearchContext->Name ) )
-		return( JE_TRUE );
+		return( GR_TRUE );
 	if( Object_GetNameTag( pObject ) > pSearchContext->MaxId )
 		pSearchContext->MaxId = Object_GetNameTag( pObject );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 int32 Level_GetNextObjectId( Level * pLevel, OBJECT_KIND Kind, const char* Name )
@@ -1822,7 +1822,7 @@ int32 Level_GetNextObjectId( Level * pLevel, OBJECT_KIND Kind, const char* Name 
 
 // IS
 
-jeBoolean Level_IsObjectVisible( const Level * pLevel, const Object * pObject )
+grBoolean Level_IsObjectVisible( const Level * pLevel, const Object * pObject )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
@@ -1831,30 +1831,30 @@ jeBoolean Level_IsObjectVisible( const Level * pLevel, const Object * pObject )
 	// Test group with this brush
 	pLevel;
 	pObject;
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Level_IsBrushVisible
 
-jeBoolean Level_IsSelected( Level * pLevel, Object * pObject )
+grBoolean Level_IsSelected( Level * pLevel, Object * pObject )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 	assert( pObject != nullptr ) ;
 	assert( pLevel->pSelObjects );
 	
-	return (ObjectList_Find( pLevel->pSelObjects, pObject ) == nullptr ) ? JE_FALSE : JE_TRUE ;
+	return (ObjectList_Find( pLevel->pSelObjects, pObject ) == nullptr ) ? GR_FALSE : GR_TRUE ;
 }// Level_IsSelected
 
-jeBoolean Level_IsSubSelected( Level * pLevel, Object * pObject )
+grBoolean Level_IsSubSelected( Level * pLevel, Object * pObject )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 	assert( pObject != nullptr ) ;
 	assert( pLevel->pSubSelObjects );
 	
-	return (ObjectList_Find( pLevel->pSubSelObjects, pObject ) == nullptr ) ? JE_FALSE : JE_TRUE ;
+	return (ObjectList_Find( pLevel->pSubSelObjects, pObject ) == nullptr ) ? GR_FALSE : GR_TRUE ;
 }// Level_IsSelected
 
-jeBoolean Level_IsSnapGrid( const Level * pLevel )
+grBoolean Level_IsSnapGrid( const Level * pLevel )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
@@ -1862,7 +1862,7 @@ jeBoolean Level_IsSnapGrid( const Level * pLevel )
 	return pLevel->bSnapToGrid ;
 }//Level_IsSnapGrid
 
-jeBoolean Level_HasChanged( const Level * pLevel )
+grBoolean Level_HasChanged( const Level * pLevel )
 {
 	assert( pLevel );
 
@@ -1874,7 +1874,7 @@ Undo *Level_GetUndo( const Level * pLevel )
 	return( pLevel->pUndo );
 }
 
-const jeFaceInfo * Level_GetCurFaceInfo( const Level * pLevel )
+const grFaceInfo * Level_GetCurFaceInfo( const Level * pLevel )
 {
 	return( &pLevel->DefaultFace.FaceInfo );
 }
@@ -1883,7 +1883,7 @@ const jeFaceInfo * Level_GetCurFaceInfo( const Level * pLevel )
 //
 // STATE CHANGES
 //
-void Level_SetChanged( Level * pLevel, jeBoolean bChanged )
+void Level_SetChanged( Level * pLevel, grBoolean bChanged )
 {
 	assert( pLevel );
 
@@ -1897,10 +1897,10 @@ void	Level_SetCurCamXYRot( const Level * pLevel, float XRot, float YRot )
 	Camera_SetCurCamY( pLevel->pCurCamera, YRot );
 	Camera_SetCurCamX( pLevel->pCurCamera, XRot );
 }
-static jeBoolean Level_ClearMiscFlagsCB( Object *pObject, void* lParam )
+static grBoolean Level_ClearMiscFlagsCB( Object *pObject, void* lParam )
 {
 	Object_ClearMiscFlags( pObject, (const uint32)lParam ) ;
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Level_ClearMiscFlagsCB
 
 
@@ -1913,21 +1913,21 @@ void Level_ClearMiscFlags( Level * pLevel, const uint32 nFlags )
 
 }// Level_ClearMiscFlags
 
-static jeBoolean Level_ResetSelFaceCB( Object * pObject, void * Context )
+static grBoolean Level_ResetSelFaceCB( Object * pObject, void * Context )
 {
 	Context;
 	if( Object_GetKind( pObject ) != KIND_BRUSH )
-		return( JE_TRUE );
+		return( GR_TRUE );
 
 	Brush_ResetSelFace( (Brush*)pObject );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 static void Level_ResetSelFace( Level * pLevel )
 {
 	Level_EnumSelected( pLevel, nullptr, Level_ResetSelFaceCB );
 }
-void Level_RebuildAll( Level * pLevel, jeBSP_Options Options, jeBSP_Logic Logic, jeBSP_LogicBalance LogicBalance )
+void Level_RebuildAll( Level * pLevel, grBSP_Options Options, grBSP_Logic Logic, grBSP_LogicBalance LogicBalance )
 {
 	ModelIterator MI;
 	Model * pModel;
@@ -1935,14 +1935,14 @@ void Level_RebuildAll( Level * pLevel, jeBSP_Options Options, jeBSP_Logic Logic,
 	pModel = ModelList_GetFirst( pLevel->pModels, &MI );
 	while( pModel )
 	{
-		jeModel_RebuildBSP
+		grModel_RebuildBSP
 		(
 			Model_GetguModel(pModel ), 
 			Options,  
 			Logic, 
 			LogicBalance
 		) ;
-		jeModel_RebuildLights( Model_GetguModel(pModel) );
+		grModel_RebuildLights( Model_GetguModel(pModel) );
 		pModel = ModelList_GetNext( pLevel->pModels, &MI );
 	}
 	Level_ResetSelFace( pLevel );
@@ -1956,12 +1956,12 @@ void Level_RebuildLights( Level * pLevel )
 	pModel = ModelList_GetFirst( pLevel->pModels, &MI );
 	while( pModel )
 	{
-		jeModel_RebuildLights(Model_GetguModel(pModel) );
+		grModel_RebuildLights(Model_GetguModel(pModel) );
 		pModel = ModelList_GetNext( pLevel->pModels, &MI );
 	}
 }
 
-void Level_RebuildBSP( Level * pLevel, jeBSP_Options Options, jeBSP_Logic Logic, jeBSP_LogicBalance LogicBalance )
+void Level_RebuildBSP( Level * pLevel, grBSP_Options Options, grBSP_Logic Logic, grBSP_LogicBalance LogicBalance )
 {
 	ModelIterator MI;
 	Model * pModel;
@@ -1969,7 +1969,7 @@ void Level_RebuildBSP( Level * pLevel, jeBSP_Options Options, jeBSP_Logic Logic,
 	pModel = ModelList_GetFirst( pLevel->pModels, &MI );
 	while( pModel )
 	{
-		jeModel_RebuildBSP
+		grModel_RebuildBSP
 		(
 			Model_GetguModel(pModel ), 
 			Options,  
@@ -1980,10 +1980,10 @@ void Level_RebuildBSP( Level * pLevel, jeBSP_Options Options, jeBSP_Logic Logic,
 	}
 	Level_ResetSelFace( pLevel );
 }
-static jeBoolean Levelt_SetMiscFlagsCB( Object *pObject, void* lParam )
+static grBoolean Levelt_SetMiscFlagsCB( Object *pObject, void* lParam )
 {
 	Object_SetMiscFlags( pObject, (const uint32)lParam ) ;
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Levelt_SetMiscFlagsCB
 
 void Level_SetMiscFlags( Level * pLevel, const uint32 nFlags )
@@ -2000,10 +2000,10 @@ void Level_SetModifiedSelection( Level * pLevel )
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 
-	pLevel->bDirty = JE_TRUE ;
+	pLevel->bDirty = GR_TRUE ;
 }// Level_SetModifiedSelection
 
-void Level_SetSnapGrid( Level * pLevel, jeBoolean bState )
+void Level_SetSnapGrid( Level * pLevel, grBoolean bState )
 {
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
@@ -2034,12 +2034,12 @@ Group * Level_AddGroup( Level * pLevel, const char * pszName )
 	pGroup = Group_Create( pszName );
 	if( pGroup == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_AddGroup:Group_Create");
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_AddGroup:Group_Create");
 		return( nullptr );
 	}
 	if( GroupList_Append( pLevel->pGroups, pGroup ) == LIST_INVALID_NODE )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_AddGroup:GroupList_Append");
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_AddGroup:GroupList_Append");
 		Group_Destroy( &pGroup );
 		return( nullptr );
 	}
@@ -2059,28 +2059,28 @@ Model *	Level_AddModel( Level * pLevel, const char * pszName )
 	if( pModel == nullptr)
 		return( nullptr );
 
-	jeModel_SetDefaultContents( Model_GetguModel(pModel ), JE_BSP_CONTENTS_AIR );
+	grModel_SetDefaultContents( Model_GetguModel(pModel ), GR_BSP_CONTENTS_AIR );
 
 	// This was commented out (but why), added it again JH 25.4.2000
-	if( jeWorld_AddObject( pLevel->pWorld, Model_GetjeObject( pModel ) )== JE_FALSE )
+	if( grWorld_AddObject( pLevel->pWorld, Model_GetgrObject( pModel ) )== GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_AddModel:jeWorld_AddObject" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_AddModel:grWorld_AddObject" );
 		return( nullptr );
 	}
 	// EOF JH
 
 	if( ModelList_Append( pLevel->pModels, pModel ) == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_AddModel:ModelList_Append" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_AddModel:ModelList_Append" );
 		return( nullptr );
 	}
 	if( !Group_AddObject( pLevel->CurrentGroup, (Object *)pModel ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_AddModel:Group_AddObject" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_AddModel:Group_AddObject" );
 		return( nullptr );
 	}
-	Object_SetInLevel( (Object*)pModel, JE_TRUE );
-	jeObject_AddChild( Model_GetjeObject( pLevel->ParentModel), Model_GetjeObject( pModel ) );
+	Object_SetInLevel( (Object*)pModel, GR_TRUE );
+	grObject_AddChild( Model_GetgrObject( pLevel->ParentModel), Model_GetgrObject( pModel ) );
 	return( pModel );
 }
 
@@ -2095,7 +2095,7 @@ Class * Level_AddClass( Level * pLevel, const char * pszName, int Kind )
 	pClass = Class_Create( pszName, Kind );
 	if( pClass == nullptr )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Level_AddClass:Class_Create" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Level_AddClass:Class_Create" );
 		return( nullptr );
 	}
 	
@@ -2103,12 +2103,12 @@ Class * Level_AddClass( Level * pLevel, const char * pszName, int Kind )
 	return( pClass );
 }
 
-void Level_ModelLock( Level * pLevel, Model * pModel, jeBoolean bLock )
+void Level_ModelLock( Level * pLevel, Model * pModel, grBoolean bLock )
 {
 	BrushList	*pBrushList;
 	BrushIterator  BI;
 	Brush *	pBrush;
-	jeBoolean bSelect = JE_FALSE;
+	grBoolean bSelect = GR_FALSE;
 
 	pBrushList = Model_GetBrushList( pModel );
 	assert( pBrushList );
@@ -2120,14 +2120,14 @@ void Level_ModelLock( Level * pLevel, Model * pModel, jeBoolean bLock )
 			if( Level_IsSelected( pLevel, (Object*)pBrush ) )
 			{
 				Level_SelectObject( pLevel, (Object*)pBrush, LEVEL_DESELECT );
-				bSelect = JE_TRUE;
+				bSelect = GR_TRUE;
 			}
 			pBrush = BrushList_GetNext( pBrushList, &BI );
 		}
-		Model_SetLocked( pModel, JE_TRUE );
+		Model_SetLocked( pModel, GR_TRUE );
 	}
 	else
-		Model_SetLocked( pModel, JE_FALSE );
+		Model_SetLocked( pModel, GR_FALSE );
 }
 		
 
@@ -2152,7 +2152,7 @@ void Level_SetCurrentModel( Level * pLevel, Model * pModel )
 
 void Level_SetConstructor( Level * pLevel, int Index, float Value  )
 {
-	jeVec3d_SetElement( &pLevel->ConstructLines, Index, Value );
+	grVec3d_SetElement( &pLevel->ConstructLines, Index, Value );
 }
 
 void Level_SetBrushUpdate( Level * pLevel, int Update )
@@ -2172,17 +2172,17 @@ void Level_SetBrushLighting( Level * pLevel, int BrushLighting )
 
 typedef struct UpdateObject_Struct
 {
-	jeBoolean bBrushLighting;
-	jeBoolean bDirtyOveride;
+	grBoolean bBrushLighting;
+	grBoolean bDirtyOveride;
 } UpdateObject_Struct;
 
-jeBoolean Level_UpdateObjectCB( Object * pObject , void * lParam )
+grBoolean Level_UpdateObjectCB( Object * pObject , void * lParam )
 {
 	UpdateObject_Struct *UpdateObjectInfo = (UpdateObject_Struct*)lParam;
 	assert( pObject );
 
 	Object_Update( pObject, OBJECT_UPDATE_MANUEL, UpdateObjectInfo->bDirtyOveride);
-	return( JE_TRUE);
+	return( GR_TRUE);
 
 }// Level_SelectObjectCB
 
@@ -2192,7 +2192,7 @@ void Level_UpdateAll( Level * pLevel )
 	UpdateObject_Struct UpdateObjectInfo;
 
 	UpdateObjectInfo.bBrushLighting = pLevel->BrushLightIncremental;
-	UpdateObjectInfo.bDirtyOveride = JE_FALSE;
+	UpdateObjectInfo.bDirtyOveride = GR_FALSE;
 	Level_EnumObjects( pLevel, (void*)&UpdateObjectInfo, Level_UpdateObjectCB);
 }
 
@@ -2201,46 +2201,46 @@ void Level_UpdateSelected( Level * pLevel )
 	UpdateObject_Struct UpdateObjectInfo;
 
 	UpdateObjectInfo.bBrushLighting = pLevel->BrushLightIncremental;
-	UpdateObjectInfo.bDirtyOveride = JE_TRUE;
+	UpdateObjectInfo.bDirtyOveride = GR_TRUE;
 	Level_EnumSelected( pLevel, (void*)&UpdateObjectInfo, Level_UpdateObjectCB);
 }
 
-jeBoolean Level_RotCurCamX( const Level * pLevel, float Radians )
+grBoolean Level_RotCurCamX( const Level * pLevel, float Radians )
 {
 	assert( pLevel != nullptr );
 	assert( pLevel->pCurCamera != nullptr );
 
 	Camera_RotCurCamX( pLevel->pCurCamera, Radians );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	Level_RotCurCamY( const Level * pLevel, float Radians )
+grBoolean	Level_RotCurCamY( const Level * pLevel, float Radians )
 {
 	assert( pLevel != nullptr );
 	assert( pLevel->pCurCamera != nullptr );
 
 	Camera_RotCurCamY( pLevel->pCurCamera, Radians );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Level_TranslateCurCam( const Level * pLevel, jeVec3d * Offset )
+grBoolean Level_TranslateCurCam( const Level * pLevel, grVec3d * Offset )
 {
 	assert( pLevel != nullptr );
 	assert( pLevel->pCurCamera != nullptr );
 
 	Camera_TranslateCurCam( pLevel->pCurCamera, Offset );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Level_SetRenderMode( Level * pLevel, int Mode )
+grBoolean Level_SetRenderMode( Level * pLevel, int Mode )
 {
 	assert( pLevel );
 	assert( pLevel->pWorld );
 
-	return( jeModel_SetRenderOptions( Model_GetguModel(pLevel->pCurrentModel), (jeBSP_RenderMode) Mode ) );
+	return( grModel_SetRenderOptions( Model_GetguModel(pLevel->pCurrentModel), (grBSP_RenderMode) Mode ) );
 }
 
-void Level_SetBSPBuildOptions( Level * pLevel, jeBSP_Options  Options, jeBSP_Logic  Logic, jeBSP_LogicBalance  LogicBalance )
+void Level_SetBSPBuildOptions( Level * pLevel, grBSP_Options  Options, grBSP_Logic  Logic, grBSP_LogicBalance  LogicBalance )
 {
 	pLevel->Options = Options;
 	pLevel->Logic = Logic;
@@ -2252,7 +2252,7 @@ void Level_RenameSelected( Level * pLevel, char * Name )
 	Object * pObject;
 	ObjectIterator Interator;
 	int ObjectId;
-	jeProperty_Data Data;
+	grProperty_Data Data;
 
 	Data.String = Name;
 
@@ -2263,7 +2263,7 @@ void Level_RenameSelected( Level * pLevel, char * Name )
 		{
 			ObjectId = Level_GetNextObjectId( pLevel, Object_GetKind( pObject ), Name );
 			Object_SetName( pObject, Name, ObjectId );
-			Object_SetProperty( pObject,  OBJECT_NAME_FIELD, PROPERTY_STRING_TYPE, &Data, LEVEL_UPDATE_MANUEL, LEVEL_UPDATE_MANUEL, JE_FALSE);
+			Object_SetProperty( pObject,  OBJECT_NAME_FIELD, PROPERTY_STRING_TYPE, &Data, LEVEL_UPDATE_MANUEL, LEVEL_UPDATE_MANUEL, GR_FALSE);
 		}
 		pObject = ObjectList_GetNext( pLevel->pSelObjects, &Interator );
 	}
@@ -2274,17 +2274,17 @@ void Level_RenameSelected( Level * pLevel, char * Name )
 // BRUSH MANIPULATION
 //
 
-Object* Level_NewBrush( Level * pLevel, BRUSH_KIND BrushKind, BRUSH_TYPE eAddType,  const jeExtBox * pBrushBounds ) 
+Object* Level_NewBrush( Level * pLevel, BRUSH_KIND BrushKind, BRUSH_TYPE eAddType,  const grExtBox * pBrushBounds ) 
 {
 	Brush * pBrush ;
 	char  * Name;
 	int32	nNumber;
 	BrushTemplate *  pTemplate; 
-	jeXForm3d		 XForm;
-	jeVec3d			 Scale;
-	jeVec3d			 Pos;
-	jeBoolean		 bUpdate;	
-	jeBoolean		 bLightUpDate;
+	grXForm3d		 XForm;
+	grVec3d			 Scale;
+	grVec3d			 Pos;
+	grBoolean		 bUpdate;	
+	grBoolean		 bLightUpDate;
 
 
 	assert( pLevel != nullptr ) ;
@@ -2297,7 +2297,7 @@ Object* Level_NewBrush( Level * pLevel, BRUSH_KIND BrushKind, BRUSH_TYPE eAddTyp
 	if( pTemplate == nullptr )
 	{
 		// [MLB-ICE]
-		jeRam_Free(Name);	// Icestorm: Someone doesn't like names?
+		grRam_Free(Name);	// Icestorm: Someone doesn't like names?
 		// [MLB-ICE] EOB
 
 		return( nullptr );
@@ -2305,34 +2305,34 @@ Object* Level_NewBrush( Level * pLevel, BRUSH_KIND BrushKind, BRUSH_TYPE eAddTyp
 	pBrush = Brush_FromTemplate( pTemplate, pLevel->CurrentGroup, Name, nNumber, &pLevel->DefaultFace.FaceInfo, eAddType ) ;
 
 	// [MLB-ICE]
-	jeRam_Free(Name);	// Icestorm: Someone doesn't like names?
+	grRam_Free(Name);	// Icestorm: Someone doesn't like names?
 	// [MLB-ICE] EOB
 
 	if( pBrush == nullptr )
 		return nullptr ;
 
-	jeExtBox_GetTranslation ( pBrushBounds, &Pos );
-	jeExtBox_GetScaling( pBrushBounds, &Scale );
-	jeXForm3d_SetScaling( &XForm, Scale.X, Scale.Y, Scale.Z);
-	jeXForm3d_Translate( &XForm, Pos.X, Pos.Y, Pos.Z );
+	grExtBox_GetTranslation ( pBrushBounds, &Pos );
+	grExtBox_GetScaling( pBrushBounds, &Scale );
+	grXForm3d_SetScaling( &XForm, Scale.X, Scale.Y, Scale.Z);
+	grXForm3d_Translate( &XForm, Pos.X, Pos.Y, Pos.Z );
 	Brush_SetXForm( pBrush, &XForm );
-	if( Model_AddBrush( pLevel->pCurrentModel, pBrush ) == JE_FALSE )
+	if( Model_AddBrush( pLevel->pCurrentModel, pBrush ) == GR_FALSE )
 	{
 		Object_Free( (Object**)&pBrush ) ;
 		return nullptr ;
 	}
 	if( pLevel->BrushUpdate == LEVEL_UPDATE_CHANGE )
 	{
-		bUpdate = JE_TRUE;
+		bUpdate = GR_TRUE;
 		bLightUpDate = pLevel->BrushLightIncremental;
 	}
 	else
 	{
-		bUpdate = JE_FALSE;
-		bLightUpDate = JE_FALSE;
+		bUpdate = GR_FALSE;
+		bLightUpDate = GR_FALSE;
 		Object_Dirty( (Object*)pBrush );
 	}
-	if( Model_AddBrushWorld( pLevel->pCurrentModel, pBrush, bUpdate, bLightUpDate ) == JE_FALSE )
+	if( Model_AddBrushWorld( pLevel->pCurrentModel, pBrush, bUpdate, bLightUpDate ) == GR_FALSE )
 	{
 		Object_Free( (Object**)&pBrush ) ;
 		return nullptr ;
@@ -2347,16 +2347,16 @@ Object* Level_NewBrush( Level * pLevel, BRUSH_KIND BrushKind, BRUSH_TYPE eAddTyp
 }// Level_NewBrush
 
 
-Object * Level_NewUserObject( Level * pLevel, const char * TypeName, const jeExtBox * pBrushBounds )
+Object * Level_NewUserObject( Level * pLevel, const char * TypeName, const grExtBox * pBrushBounds )
 {
-	jeObject * pgeObject;
+	grObject * pgeObject;
 	Object * pObject;
 	char * Name;
 	int nNumber;
-	jeXForm3d XF;
-	jeVec3d Center;
+	grXForm3d XF;
+	grVec3d Center;
 
-	pgeObject = jeObject_Create( TypeName );
+	pgeObject = grObject_Create( TypeName );
 	if( pgeObject == nullptr )
 		return( nullptr );
 
@@ -2365,33 +2365,33 @@ Object * Level_NewUserObject( Level * pLevel, const char * TypeName, const jeExt
 	pObject = (Object*)UserObj_Create( Name, pLevel->CurrentGroup, nNumber, pgeObject );
 	if( pObject == nullptr )
 	{
-		jeObject_Destroy( &pgeObject );
-		jeRam_Free( Name );
+		grObject_Destroy( &pgeObject );
+		grRam_Free( Name );
 	}
 	//Royce
-	jeWorld_AddObject(pLevel->pWorld, pgeObject);
+	grWorld_AddObject(pLevel->pWorld, pgeObject);
 
-	jeExtBox_GetTranslation( pBrushBounds, &Center );
-	jeXForm3d_SetTranslation( &XF, Center.X, Center.Y, Center.Z );
+	grExtBox_GetTranslation( pBrushBounds, &Center );
+	grXForm3d_SetTranslation( &XF, Center.X, Center.Y, Center.Z );
 	UserObj_SetXForm( (UserObj*)pObject, &XF );
 	ObjectList_Append( pLevel->pUserObjList, pObject );
 	if( pObject )
 	{
-		Object_SetInLevel( pObject, JE_TRUE );
+		Object_SetInLevel( pObject, GR_TRUE );
 		Group_AddObject( pLevel->CurrentGroup ,pObject );
 	}
 	Undo_Push( pLevel->pUndo, UNDO_CREATE );
 	Undo_AddSubTransaction( pLevel->pUndo, UNDO_CREATEOBJECT, (Object*)pObject, pLevel );
 
-	//jeObject_AddChild( Model_GetjeObject( pLevel->ParentModel), pgeObject);
+	//grObject_AddChild( Model_GetgrObject( pLevel->ParentModel), pgeObject);
 	//----
 	return( pObject );
 }
 
-Object * Level_NewObject( Level * pLevel, int Kind, int SubKind,  const jeExtBox * pBrushBounds )
+Object * Level_NewObject( Level * pLevel, int Kind, int SubKind,  const grExtBox * pBrushBounds )
 {
 	Object * pObject = nullptr;
-	jeVec3d	WorldPt;
+	grVec3d	WorldPt;
 
 
 	assert( pLevel != nullptr );
@@ -2404,14 +2404,14 @@ Object * Level_NewObject( Level * pLevel, int Kind, int SubKind,  const jeExtBox
 		break;
 
 	case KIND_LIGHT:
-		jeExtBox_GetTranslation ( pBrushBounds, &WorldPt );
+		grExtBox_GetTranslation ( pBrushBounds, &WorldPt );
 		pObject = Level_NewLight( pLevel, &WorldPt ) ;
 		break;
 
 	case KIND_CAMERA:
-		jeExtBox_GetTranslation ( pBrushBounds, &WorldPt );
+		grExtBox_GetTranslation ( pBrushBounds, &WorldPt );
 		pObject = Level_NewCamera( pLevel, &WorldPt );
-		jeObject_AddChild( Model_GetjeObject( pLevel->ParentModel), Camera_GetjeObject((Camera*)pObject));
+		grObject_AddChild( Model_GetgrObject( pLevel->ParentModel), Camera_GetgrObject((Camera*)pObject));
 		break;
 
 	default:
@@ -2419,13 +2419,13 @@ Object * Level_NewObject( Level * pLevel, int Kind, int SubKind,  const jeExtBox
 	}
 	if( pObject )
 	{
-		Object_SetInLevel( pObject, JE_TRUE );
+		Object_SetInLevel( pObject, GR_TRUE );
 		Group_AddObject( pLevel->CurrentGroup ,pObject );
 	}
 	return( pObject );
 }
 
-Object * Level_SubtractBrush( Level * pLevel, int SubKind,  const jeExtBox * pBrushBounds ) 
+Object * Level_SubtractBrush( Level * pLevel, int SubKind,  const grExtBox * pBrushBounds ) 
 {
 	Object * pObject;
 
@@ -2433,26 +2433,26 @@ Object * Level_SubtractBrush( Level * pLevel, int SubKind,  const jeExtBox * pBr
 	pObject = Level_NewBrush( pLevel, (BRUSH_KIND) SubKind, BRUSH_SUBTRACT, pBrushBounds );
 	if( pObject != nullptr )
 	{
-		Object_SetInLevel( pObject, JE_TRUE );
+		Object_SetInLevel( pObject, GR_TRUE );
 		Group_AddObject( pLevel->CurrentGroup,pObject );
 	}
 	return( pObject );
 }
 
-static jeBoolean Level_AddBrush( Level * pLevel, Brush * pBrush )
+static grBoolean Level_AddBrush( Level * pLevel, Brush * pBrush )
 {
 	assert( pLevel != nullptr ) ;
 	assert( pBrush != nullptr );
 
-	if( Model_AddBrush( pLevel->pCurrentModel, pBrush ) == JE_FALSE )
+	if( Model_AddBrush( pLevel->pCurrentModel, pBrush ) == GR_FALSE )
 	{
-		return JE_FALSE ;
+		return GR_FALSE ;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Level_AddBrush
 
 // Adds a version of the object that is not in the world to the world
-jeBoolean Level_AddObject( Level * pLevel, Object* pObject ) 
+grBoolean Level_AddObject( Level * pLevel, Object* pObject ) 
 {
 	assert( pLevel != nullptr ) ;
 	assert( pObject != nullptr );
@@ -2463,7 +2463,7 @@ jeBoolean Level_AddObject( Level * pLevel, Object* pObject )
 	{
 		case KIND_BRUSH:
 			if( !Level_AddBrush( pLevel, (Brush*)pObject ) )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			break;
 
 		case KIND_LIGHT:
@@ -2488,18 +2488,18 @@ jeBoolean Level_AddObject( Level * pLevel, Object* pObject )
 			break;
 	}
 	Group_AddObject( Object_GetGroup( pObject ), pObject );
-	Object_SetInLevel( pObject, JE_TRUE );
+	Object_SetInLevel( pObject, GR_TRUE );
 	if( !Level_AddToWorld( pLevel, pObject, LEVEL_UPDATE_CHANGE) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// Level_AddObject
 
 void Level_DeleteObject( Level * pLevel, Object* pObject )
 {
-	jeBoolean bDeleted = JE_FALSE;
+	grBoolean bDeleted = GR_FALSE;
 	Model * pModel;
 	Group * pGroup;
 	assert( pLevel != nullptr ) ;
@@ -2516,35 +2516,35 @@ void Level_DeleteObject( Level * pLevel, Object* pObject )
 			Brush_DeselectAllVert( (Brush*)pObject );
 			Brush_DeselectAllFaces( (Brush*)pObject );
 			//Object_Free( &pObject );
-			bDeleted = JE_TRUE;
+			bDeleted = GR_TRUE;
 			break;
 
 		case KIND_LIGHT:
 			Light_RemoveFromWorld( (Light*)pObject );
 			LightList_DeleteLight( pLevel->pLightList, (Light*)pObject );
-			bDeleted = JE_TRUE;
+			bDeleted = GR_TRUE;
 			break;
 
 		case KIND_CAMERA:
 			if( CameraList_GetNumItems( pLevel->pCameraList ) > 1 )
 			{
-				//jeWorld_RemoveObject( pLevel->pWorld, Camera_GetjeObject( (Camera*)pObject ) );
-				jeObject_RemoveChild( Model_GetjeObject(pLevel->ParentModel), Camera_GetjeObject( (Camera*)pObject ) );
+				//grWorld_RemoveObject( pLevel->pWorld, Camera_GetgrObject( (Camera*)pObject ) );
+				grObject_RemoveChild( Model_GetgrObject(pLevel->ParentModel), Camera_GetgrObject( (Camera*)pObject ) );
 				CameraList_DeleteCamera( pLevel->pCameraList, (Camera*)pObject );
-				bDeleted = JE_TRUE;
+				bDeleted = GR_TRUE;
 			}
 			else
-				jeErrorLog_AddString( JE_ERR_INTERNAL_RESOURCE, "Level_DeleteObject:KIND_CAMERA", "Must have one camera" );
+				grErrorLog_AddString( GR_ERR_INTERNAL_RESOURCE, "Level_DeleteObject:KIND_CAMERA", "Must have one camera" );
 			break;
 
 		case KIND_USEROBJ:
 			ObjectList_Remove( pLevel->pUserObjList, pObject ) ;
 			//Royce
-			//jeObject_RemoveChild( Model_GetjeObject(pLevel->ParentModel), UserObj_GetjeObject( (UserObj*)pObject ) );
+			//grObject_RemoveChild( Model_GetgrObject(pLevel->ParentModel), UserObj_GetgrObject( (UserObj*)pObject ) );
 			UserObj_RemoveFromWorld( (UserObj*)pObject, pLevel->pWorld );
 			Object_Free( &pObject ) ;
 			//-----
-			bDeleted = JE_TRUE;
+			bDeleted = GR_TRUE;
 			break;
 
 		case KIND_MODEL:
@@ -2561,13 +2561,13 @@ void Level_DeleteObject( Level * pLevel, Object* pObject )
 						Object_AddRef( (Object*)pLevel->pCurrentModel );
 				}
 				
-				//jeWorld_RemoveObject( pLevel->pWorld, Model_GetjeObject( (Model*)pObject ) );
-				jeObject_RemoveChild( Model_GetjeObject(pLevel->ParentModel), Model_GetjeObject( (Model*)pObject ) );
-				Object_SetInLevel( pObject, JE_FALSE );
-				bDeleted = JE_TRUE;
+				//grWorld_RemoveObject( pLevel->pWorld, Model_GetgrObject( (Model*)pObject ) );
+				grObject_RemoveChild( Model_GetgrObject(pLevel->ParentModel), Model_GetgrObject( (Model*)pObject ) );
+				Object_SetInLevel( pObject, GR_FALSE );
+				bDeleted = GR_TRUE;
 			}
 			else
-				jeErrorLog_AddString( JE_ERR_INTERNAL_RESOURCE, "Level_DeleteObject:KIND_MODEL", "Must have one model" );
+				grErrorLog_AddString( GR_ERR_INTERNAL_RESOURCE, "Level_DeleteObject:KIND_MODEL", "Must have one model" );
 			break;
 
 		default:
@@ -2579,13 +2579,13 @@ void Level_DeleteObject( Level * pLevel, Object* pObject )
 		pGroup = Object_GetGroup( pObject );
 		if( pGroup )
 			Group_RemoveObject( pGroup, pObject );
-		Object_SetInLevel( pObject, JE_FALSE );
+		Object_SetInLevel( pObject, GR_FALSE );
 	}
 
 	
 }// Level_DeleteObject
 
-jeBoolean Level_SelectObjectCB( Object * pObject , void * lParam )
+grBoolean Level_SelectObjectCB( Object * pObject , void * lParam )
 {
 	SelectObjectInfo *psoi = (SelectObjectInfo *)lParam;
 
@@ -2598,7 +2598,7 @@ jeBoolean Level_SelectObjectCB( Object * pObject , void * lParam )
 
 }// Level_SelectObjectCB
 
-jeBoolean Level_SelectGroup( Level * pLevel, Group * pGroup, LEVEL_STATE eState )
+grBoolean Level_SelectGroup( Level * pLevel, Group * pGroup, LEVEL_STATE eState )
 {
 	ObjectList * pObjectList;
 	SelectObjectInfo soi;
@@ -2616,15 +2616,15 @@ jeBoolean Level_SelectGroup( Level * pLevel, Group * pGroup, LEVEL_STATE eState 
 }
 
 
-jeBoolean Level_SelectObject( Level * pLevel, Object * pObject , LEVEL_STATE eState )
+grBoolean Level_SelectObject( Level * pLevel, Object * pObject , LEVEL_STATE eState )
 {
-	jeBoolean			bSuccess ;	// Means that no alloc err occurred
+	grBoolean			bSuccess ;	// Means that no alloc err occurred
 	Model * pModel;
 	
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 
-	bSuccess = JE_TRUE ;
+	bSuccess = GR_TRUE ;
 	
 	if( Object_GetKind( pObject )== KIND_BRUSH )
 	{
@@ -2682,15 +2682,15 @@ jeBoolean Level_SelectObject( Level * pLevel, Object * pObject , LEVEL_STATE eSt
 }// Level_SelectObject
 
 
-jeBoolean Level_SubSelectObject( Level * pLevel, Object * pObject , LEVEL_STATE eState )
+grBoolean Level_SubSelectObject( Level * pLevel, Object * pObject , LEVEL_STATE eState )
 {
-	jeBoolean			bSuccess ;	// Means that no alloc err occurred
+	grBoolean			bSuccess ;	// Means that no alloc err occurred
 
 	
 	assert( pLevel != nullptr ) ;
 	assert( SIGNATURE == pLevel->nSignature ) ;
 
-	bSuccess = JE_TRUE ;
+	bSuccess = GR_TRUE ;
 	
 	if( LEVEL_TOGGLE == eState )
 	{
@@ -2727,13 +2727,13 @@ jeBoolean Level_SubSelectObject( Level * pLevel, Object * pObject , LEVEL_STATE 
 	return bSuccess ;
 }// Level_SelectObject
 
-jeBoolean  Level_DeselectAllSub( Level * pLevel, jeExtBox * pWorldBounds )
+grBoolean  Level_DeselectAllSub( Level * pLevel, grExtBox * pWorldBounds )
 {
 	ObjectIterator  Iterator;
 	ObjectIterator  NextIterator;
 	Object * pObject = nullptr;
 	Object * pNextObject = nullptr;
-	jeExtBox	ObjExtBox;
+	grExtBox	ObjExtBox;
 
 	pObject = ObjectList_GetFirst( pLevel->pSubSelObjects, &Iterator ) ;
 	NextIterator = Iterator;
@@ -2747,28 +2747,28 @@ jeBoolean  Level_DeselectAllSub( Level * pLevel, jeExtBox * pWorldBounds )
 		pObject = pNextObject;
 		Iterator = NextIterator;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-static jeBoolean Level_UnMarkAllSubCB( Object * pObject, void * Context )
+static grBoolean Level_UnMarkAllSubCB( Object * pObject, void * Context )
 {
-	jeExtBox * pWorldBounds = (jeExtBox*)Context;
-	jeExtBox	ObjExtBox;
+	grExtBox * pWorldBounds = (grExtBox*)Context;
+	grExtBox	ObjExtBox;
 
 	Object_ClearMiscFlags( pObject, AllSubSelect );
 	if( Object_GetWorldDrawBounds( pObject, &ObjExtBox ) )
 		Util_ExtBox_Union( pWorldBounds, &ObjExtBox, pWorldBounds );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Level_UnMarkAllSub( Level * pLevel, jeExtBox * pWorldBounds )
+grBoolean Level_UnMarkAllSub( Level * pLevel, grExtBox * pWorldBounds )
 {
 	Level_EnumObjects( pLevel, pWorldBounds, Level_UnMarkAllSubCB );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-Object *Level_FindgeObject( Level * pLevel,  jeObject * pgeObject )
+Object *Level_FindgeObject( Level * pLevel,  grObject * pgeObject )
 {
 	ObjectIterator  Iterator;
 	ModelIterator	ModelIterator;
@@ -2780,49 +2780,49 @@ Object *Level_FindgeObject( Level * pLevel,  jeObject * pgeObject )
 	pObject = ObjectList_GetFirst( pLevel->pUserObjList, &Iterator ) ;
 	while( pObject != nullptr )
 	{
-		if( UserObj_GetjeObject( (UserObj *)pObject ) == pgeObject )
+		if( UserObj_GetgrObject( (UserObj *)pObject ) == pgeObject )
 			return( pObject );
 		pObject = ObjectList_GetNext( pLevel->pUserObjList, &Iterator ) ;
 	}
 	pModel =  ModelList_GetFirst( pLevel->pModels, &ModelIterator );
 	while( pModel )
 	{
-		if( pgeObject == Model_GetjeObject( pModel ) )
+		if( pgeObject == Model_GetgrObject( pModel ) )
 			return((Object*)pModel );
 		pModel =  ModelList_GetNext( pLevel->pModels, &ModelIterator );
 	}
 	pCamera = CameraList_GetFirst( pLevel->pCameraList, &CameraIterator );
 	while( pCamera )
 	{
-		if( pgeObject == Camera_GetjeObject( pCamera ) )
+		if( pgeObject == Camera_GetgrObject( pCamera ) )
 			return((Object*)pCamera );
 		pCamera = CameraList_GetNext( pLevel->pCameraList, &CameraIterator );
 	}
 	return( nullptr );
 }
 
-jeBoolean Level_SubSelectgeObject( Level * pLevel,  jeObject * pgeObject , LEVEL_STATE eState ) 
+grBoolean Level_SubSelectgeObject( Level * pLevel,  grObject * pgeObject , LEVEL_STATE eState ) 
 {
 	Object * pObject;
 	
 	pObject = Level_FindgeObject( pLevel, pgeObject );
 	if( pObject == nullptr )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
 	Level_SubSelectObject( pLevel, pObject, eState);
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Level_MarkSubSelect( Level * pLevel,  jeObject * pgeObject , int32 flag ) 
+grBoolean Level_MarkSubSelect( Level * pLevel,  grObject * pgeObject , int32 flag ) 
 {
 	Object * pObject;
 	
 	pObject = Level_FindgeObject( pLevel, pgeObject );
 	if( pObject == nullptr )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	
 	Object_SetMiscFlags( pObject, flag );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 void Level_SetSelType( Level * pLevel )
 {
@@ -2907,7 +2907,7 @@ void Level_SetSelType( Level * pLevel )
 }// Level_SetSelType
 
 
-jeBoolean Level_DragBegin( Level * pLevel, Object* pObject )
+grBoolean Level_DragBegin( Level * pLevel, Object* pObject )
 {
 	assert( pLevel != nullptr ) ;
 	assert( pObject != nullptr );
@@ -2936,13 +2936,13 @@ jeBoolean Level_DragBegin( Level * pLevel, Object* pObject )
 			assert( 0 );
 			break;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 }// Level_DragBegin
 
-jeBoolean Level_AddToWorld( Level * pLevel, Object* pObject, int Update )
+grBoolean Level_AddToWorld( Level * pLevel, Object* pObject, int Update )
 {
-	jeBoolean bUpdate;
+	grBoolean bUpdate;
 
 	assert( pLevel != nullptr ) ;
 	assert( pObject != nullptr );
@@ -2973,7 +2973,7 @@ jeBoolean Level_AddToWorld( Level * pLevel, Object* pObject, int Update )
 			break;
 
 		case KIND_MODEL:
-			//jeWorld_AddObject( pLevel->pWorld, Model_GetjeObject((Model*)pObject)  );
+			//grWorld_AddObject( pLevel->pWorld, Model_GetgrObject((Model*)pObject)  );
 			break;
 
 		default:
@@ -2981,7 +2981,7 @@ jeBoolean Level_AddToWorld( Level * pLevel, Object* pObject, int Update )
 			break;
 	}
 
-		return( JE_TRUE );
+		return( GR_TRUE );
 
 }// Level_DragEnd
 
@@ -3063,26 +3063,26 @@ int32 Level_EnumObjects( Level * pLevel, void * lParam, ObjectListCB Callback )
 	return  0;
 }// Level_EnumBrushes
 
-static jeBoolean Level_NumberLightCB( Light * pLight, void * lParam )
+static grBoolean Level_NumberLightCB( Light * pLight, void * lParam )
 {
 	int32 *Counter = (int32*)lParam;
 
 	Light_SetIndexTag( pLight, *Counter );
 	*Counter += 1;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Level_NumberLightCB
 
-static jeBoolean Level_NumberGroupsCB( Group * pGroup, void * lParam )
+static grBoolean Level_NumberGroupsCB( Group * pGroup, void * lParam )
 {
 	int32 *Counter = (int32*)lParam;
 
 	Group_SetIndexTag( pGroup, *Counter );
 	*Counter += 1;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Level_NumberGroupsCB
 
 
-jeBoolean Level_PrepareForSave( Level* pLevel )
+grBoolean Level_PrepareForSave( Level* pLevel )
 {
 	int32 Counter ;
 	assert( pLevel != nullptr );
@@ -3094,23 +3094,23 @@ jeBoolean Level_PrepareForSave( Level* pLevel )
 	LightList_EnumLights( pLevel->pLightList, &Counter, Level_NumberLightCB );
 	Counter = 0 ;
 	GroupList_EnumGroups( pLevel->pGroups, &Counter, Level_NumberGroupsCB );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Level_PrepareForSave
 
 
 //
 // FILE HANDLING
 //
-Level * Level_CreateFromFile( jeVFile * pF, jeWorld * pWorld, MaterialList_Struct * pGlobalMaterials, jePtrMgr * pPtrMgr, float Version )
+Level * Level_CreateFromFile( grVFile * pF, grWorld * pWorld, MaterialList_Struct * pGlobalMaterials, grPtrMgr * pPtrMgr, float Version )
 {
 	int32				nVersion ;
 	Level			*	pLevel ;
 
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 	assert( pWorld != nullptr ) ;
 	assert( pGlobalMaterials != nullptr ) ;
 
-	pLevel = JE_RAM_ALLOCATE_STRUCT( Level ) ;
+	pLevel = GR_RAM_ALLOCATE_STRUCT( Level ) ;
 	if( pLevel == nullptr )
 		goto LCFF_FAILURE ;
 
@@ -3119,11 +3119,11 @@ Level * Level_CreateFromFile( jeVFile * pF, jeWorld * pWorld, MaterialList_Struc
 
 	pLevel->SelType = LEVEL_SELNONE ;
 
-	if( !jeVFile_Read( pF, &nVersion, sizeof nVersion ) )
+	if( !grVFile_Read( pF, &nVersion, sizeof nVersion ) )
 		return nullptr;
 	if( nVersion != LEVEL_VERSION )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "Level_CreateFromFile Version.\n", nullptr);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "Level_CreateFromFile Version.\n", nullptr);
 		return nullptr;
 	}
 	
@@ -3150,50 +3150,50 @@ LCFF_FAILURE :
 	if( pLevel != nullptr )
 		Level_Destroy( &pLevel ) ;
 
-	jeErrorLog_AddString(JE_ERR_FILEIO_READ, "Level_CreateFromFile.\n", nullptr);
+	grErrorLog_AddString(GR_ERR_FILEIO_READ, "Level_CreateFromFile.\n", nullptr);
 	return nullptr ;
 }// Level_CreateFromFile
 
 
 
-jeBoolean Level_WriteToFile( Level * pLevel, jeVFile * pF, jePtrMgr * pPtrMgr )
+grBoolean Level_WriteToFile( Level * pLevel, grVFile * pF, grPtrMgr * pPtrMgr )
 {
 	int32	nVersion ;
 	assert( pLevel != nullptr );
 	assert( SIGNATURE == pLevel->nSignature ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	nVersion = LEVEL_VERSION ;
-	if( jeVFile_Write( pF, &nVersion, sizeof nVersion ) == JE_FALSE )
+	if( grVFile_Write( pF, &nVersion, sizeof nVersion ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", nullptr);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", nullptr);
+		return GR_FALSE;
 	}
 
 	if( !Level_SaveLists( pLevel, pF, pPtrMgr ) )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", nullptr);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", nullptr);
+		return GR_FALSE;
 	}
 
 	if( !Level_SavePrefs( pLevel, pF ) )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", nullptr);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", nullptr);
+		return GR_FALSE;
 	}
 
 //	if( !BrushList_WriteToFile( pLevel->pBrushes, pF ) )
 //	{
-//		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", nullptr);
-//		return JE_FALSE;
+//		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", nullptr);
+//		return GR_FALSE;
 //	}
 	
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// Level_WriteToFile
 
 // Added by cjp
-jeBoolean Level_GetShouldSnapVerts( const Level * pLevel )
+grBoolean Level_GetShouldSnapVerts( const Level * pLevel )
 {
 	assert( pLevel != nullptr );
 	assert( SIGNATURE == pLevel->nSignature ) ;
@@ -3201,7 +3201,7 @@ jeBoolean Level_GetShouldSnapVerts( const Level * pLevel )
 	return pLevel->bSnapVertsToGrid;
 }
 
-void Level_SetShouldSnapVerts( Level * pLevel, jeBoolean bShouldSnapVerts)
+void Level_SetShouldSnapVerts( Level * pLevel, grBoolean bShouldSnapVerts)
 {
 	assert( pLevel != nullptr );
 	assert( SIGNATURE == pLevel->nSignature ) ;
@@ -3218,12 +3218,12 @@ void Level_SetShouldSnapVerts( Level * pLevel, jeBoolean bShouldSnapVerts)
 typedef struct tagTestForObjectStruct
 {
 	OBJECT_KIND Kind;
-	jeBoolean   bFound;
+	grBoolean   bFound;
 } TestForObjectStruct;
 
 
 
-static jeBoolean Level_TestForObjectCB(Object * pObject, void * lParam)
+static grBoolean Level_TestForObjectCB(Object * pObject, void * lParam)
 {
 	TestForObjectStruct * pTest;
 
@@ -3232,22 +3232,22 @@ static jeBoolean Level_TestForObjectCB(Object * pObject, void * lParam)
 
 	pTest = (TestForObjectStruct*)lParam;
 	if (pTest->bFound)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if (Object_GetKind(pObject) == pTest->Kind)
 	{
-		pTest->bFound = JE_TRUE;
-		return JE_FALSE;
+		pTest->bFound = GR_TRUE;
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Level_TestForObject(Level * pLevel, OBJECT_KIND Kind)
+grBoolean Level_TestForObject(Level * pLevel, OBJECT_KIND Kind)
 {
 	TestForObjectStruct TestInfo;
 
-	TestInfo.bFound = JE_FALSE;
+	TestInfo.bFound = GR_FALSE;
 	TestInfo.Kind = Kind;
 
 	Level_EnumObjects(pLevel, (void *)&TestInfo, Level_TestForObjectCB);

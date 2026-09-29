@@ -19,13 +19,13 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include <windows.h>
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "AmbObject.h"
 #include "Object.h"
 #include "ObjectDef.h"
 
-jeObjectDef ObjectDef = {
-	JE_OBJECT_TYPE_UNKNOWN,
+grObjectDef ObjectDef = {
+	GR_OBJECT_TYPE_UNKNOWN,
 	"AmbObject",
 	0,
 	CreateInstance,
@@ -83,9 +83,9 @@ int WINAPI DllMain( HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved )
 }
 
 //Royce
-DLLExport jeBoolean Object_RegisterDef(float Major, float Minor)
+DLLExport grBoolean Object_RegisterDef(float Major, float Minor)
 //---
 {
-	return( jeObject_RegisterGlobalObjectDef(&ObjectDef) );
+	return( grObject_RegisterGlobalObjectDef(&ObjectDef) );
 }
 

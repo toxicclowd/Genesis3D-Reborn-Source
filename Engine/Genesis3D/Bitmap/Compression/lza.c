@@ -135,7 +135,7 @@ static const uint32 nonGreedy_ratioS10 = (((bitsPerMatch+bitsPerLiteral)<<10)/bi
 
 // encoder-only
 static long lookupHunkNext;
-static jeBoolean lookupFreeFlag;
+static grBoolean lookupFreeFlag;
 
 static struct lookupNode ** lookupTable;
 static struct lookupNode * lookupHunk;
@@ -152,7 +152,7 @@ static rung_t OffsetRung;
 
 uint32 Stats_OffsetBlockAlphaBet;
 
-#define CleanUp(str) do { jeErrorLog_AddString(-1,str,NULL); assert((str) == NULL); } while(0)
+#define CleanUp(str) do { grErrorLog_AddString(-1,str,NULL); assert((str) == NULL); } while(0)
 
 //protos:
 static void Encode(uint8 *rawArray,uint32 rawLen);
@@ -161,8 +161,8 @@ static void encodeMatchLen(uint32 gotMatchLen);
 static uint32 decodeMatchLen(void);
 
 static void codeMatchFlagInit(void);
-static void encodeMatchFlag(jeBoolean bit);
-static jeBoolean decodeMatchFlag(void);
+static void encodeMatchFlag(grBoolean bit);
+static grBoolean decodeMatchFlag(void);
 
 static void codeOffsetInit(void);
 static void encodeOffset(uint32 offset);
@@ -172,11 +172,11 @@ static void addLookupNode(uint8 *rawPtr);
 static uint32 tellMatchLen(uint8 *MatchVsPtr1,uint8 *MatchVsPtr2);
 static void findMatch(uint8 *rawPtr,uint32 * pgotMatchLen,uint8 **pgotMatchPtr);
 
-static void lzaInit(jeBoolean o1,uint32 rawLen);
+static void lzaInit(grBoolean o1,uint32 rawLen);
 static void lzaFree(void);
 
 void lzaEncodeSub(uint8 *rawArray,uint32 rawLen,uint8 **compArrayPtr,uint32 * compLenPtr,
-						jeBoolean Order1Lits);
+						grBoolean Order1Lits);
 
 /*}{**************/
 
@@ -196,23 +196,23 @@ uint32 len0,len1;
 	{
 		*compArrayPtr = comp0;
 		*compLenPtr = len0;
-		jeRam_Free(comp1);
+		grRam_Free(comp1);
 	}
 	else
 	{
 		*compArrayPtr = comp1;
 		*compLenPtr = len1;
-		jeRam_Free(comp0);
+		grRam_Free(comp0);
 	}
 }
 
 void lzaEncodeSub(uint8 *rawArray,uint32 rawLen,uint8 **compArrayPtr,uint32 * compLenPtr,
-						jeBoolean Order1Lits)
+						grBoolean Order1Lits)
 {
 uint8 *compArray;
 
 	lookupHunkNext = 0;
-	lookupFreeFlag = JE_FALSE;
+	lookupFreeFlag = GR_FALSE;
 
 	lookupTable = NULL;
 	lookupHunk = NULL;
@@ -225,7 +225,7 @@ uint8 *compArray;
 
 	assert( (((uint32)rawArray)&3) == 0 );
 
-	if ( (compArray = (uint8*)jeRam_Allocate(rawLen + 16384)) == NULL )
+	if ( (compArray = (uint8*)grRam_Allocate(rawLen + 16384)) == NULL )
 		CleanUp("AllocMem failed!");
 
 	*compArrayPtr = compArray;
@@ -240,7 +240,7 @@ uint8 *compArray;
 	if ( (lookupTable = (struct lookupNode **)newarray(void *,HASHSIZE)) == NULL )
 		CleanUp("AllocMem failed!");
 
-	if ( (lookupHunk = (struct lookupNode *)jeRam_Allocate(sizeof(struct lookupNode)*min(lookupHunkSize,rawLen+10))) == NULL )
+	if ( (lookupHunk = (struct lookupNode *)grRam_Allocate(sizeof(struct lookupNode)*min(lookupHunkSize,rawLen+10))) == NULL )
 		CleanUp("AllocMem failed!");
 
 	if ( (ari = arithInit()) == NULL )
@@ -262,8 +262,8 @@ uint8 *compArray;
 
 	lzaFree();
 
-	jeRam_Free(lookupTable);
-	jeRam_Free(lookupHunk);
+	grRam_Free(lookupTable);
+	grRam_Free(lookupHunk);
 	
 #ifdef DO_CRC
 	*compLenPtr += 4;
@@ -298,7 +298,7 @@ struct lzaDecoder
 lzaDecoder * lzaDecoder_Create(uint8 *compArray,uint32 TotCompLen,uint32 CurCompLen,uint8 * rawArray,int rawLen)
 {
 lzaDecoder * Stream;
-jeBoolean o1;
+grBoolean o1;
 
 	Stream = (lzaDecoder *)new(lzaDecoder);
 	assert(Stream);
@@ -381,7 +381,7 @@ jeBoolean o1;
 return Stream;
 }
 
-jeBoolean lzaDecoder_Extend(lzaDecoder * Stream,uint32 AddCompLen,uint32 * pCurAvailable)
+grBoolean lzaDecoder_Extend(lzaDecoder * Stream,uint32 AddCompLen,uint32 * pCurAvailable)
 {
 uint8 *rawPtr,*rawPtrDone;
 uint32 stopLen;
@@ -389,7 +389,7 @@ uint32 stopLen;
 	if ( ! Stream->ari )
 	{
 		*pCurAvailable = (uint32)(Stream->rawPtr - Stream->rawArray );
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	Stream->CompLen += AddCompLen;
@@ -510,10 +510,10 @@ uint32 stopLen;
 		assert( crc == Stream->crc );
 #endif
 	
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void lzaDecoder_Destroy(lzaDecoder ** pStream)
@@ -537,7 +537,7 @@ void lzaDecoder_Destroy(lzaDecoder ** pStream)
 
 /*}{**************/
 
-static void lzaInit(jeBoolean o1,uint32 rawLen)
+static void lzaInit(grBoolean o1,uint32 rawLen)
 {
 
 Stats_LitsO0 = NULL;
@@ -769,16 +769,16 @@ uint32 i;
 	}
 }
 
-static void inline encodeMatchFlag(jeBoolean bit)
+static void inline encodeMatchFlag(grBoolean bit)
 {
 	assert( (bit&1) == bit );
 	MatchFlagBitEnc(bit,MatchFlag_cntx);
 	MatchFlag_cntx = (MatchFlag_cntx + MatchFlag_cntx + bit)&MATCH_CONTEXT_MASK;
 }
 
-static jeBoolean inline decodeMatchFlag(void)
+static grBoolean inline decodeMatchFlag(void)
 {
-jeBoolean bit;
+grBoolean bit;
 	bit = MatchFlagBitDec(MatchFlag_cntx);
 	assert( (bit&1) == bit );
 	MatchFlag_cntx = (MatchFlag_cntx + MatchFlag_cntx + bit)&MATCH_CONTEXT_MASK;
@@ -950,7 +950,7 @@ uint32 curHead,hash;
 	if ( lookupHunkNext == lookupHunkSize ) 
 	{
 		lookupHunkNext = 0;
-		lookupFreeFlag = JE_TRUE;
+		lookupFreeFlag = GR_TRUE;
 	}
 	node->ptrPastHead = rawPtr + HeadLen;
 	node->Head = curHead = getHead(rawPtr);

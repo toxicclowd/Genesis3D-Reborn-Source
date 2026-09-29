@@ -999,9 +999,9 @@ void (*YUVi_to_BGRb_lines)(int w,int h,int **Ylines,int **Ulines,int **Vlines,ui
 
 void SetupYUV(void)
 {
-	jeCPU_GetInfo();
+	grCPU_GetInfo();
 
-	if ( jeCPU_Features & JE_CPU_HAS_MMX )
+	if ( grCPU_Features & GR_CPU_HAS_MMX )
 	{
 		// timed on hare512.bmp :
 	//	YUVi_to_BGRb_line = YUVi_to_BGRb_line_mmx1;	// blit : 0.025 seconds = 47.2 clocks / pixel

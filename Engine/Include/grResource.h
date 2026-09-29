@@ -132,10 +132,9 @@ extern "C" {
 /*! @typedef grResourceMgr
 	@brief The grResourceMgr struct
 */
-typedef struct jeResourceMgr grResourceMgr;
-typedef struct jeResourceMgr jeResourceMgr;
+typedef struct grResourceMgr grResourceMgr;
 
-typedef struct jeEngine grEngine;
+typedef struct grEngine grEngine;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //	Resource manager functions
@@ -313,36 +312,5 @@ GRAPI grBoolean GRCC grResource_ReleaseResource(grResourceMgr *ResourceMgr, int3
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define JE_RESOURCE_ACTOR                        GR_RESOURCE_ACTOR
-#define JE_RESOURCE_ANY                          GR_RESOURCE_ANY
-#define JE_RESOURCE_BITMAP                       GR_RESOURCE_BITMAP
-#define JE_RESOURCE_MATERIAL                     GR_RESOURCE_MATERIAL
-#define JE_RESOURCE_SHADER                       GR_RESOURCE_SHADER
-#define JE_RESOURCE_SOUND                        GR_RESOURCE_SOUND
-#define JE_RESOURCE_TEXTURE                      GR_RESOURCE_TEXTURE
-#define JE_RESOURCE_VFS                          GR_RESOURCE_VFS
-#define jeResourceMgr_GetEngine                  grResourceMgr_GetEngine
-#define jeResourceMgr_GetSingleton               grResourceMgr_GetSingleton
-#define jeResourceMgr_SetEngine                  grResourceMgr_SetEngine
-#define jeResource_Add                           grResource_Add
-#define jeResource_AddVFile                      grResource_AddVFile
-#define jeResource_Delete                        grResource_Delete
-#define jeResource_DeleteVFile                   grResource_DeleteVFile
-#define jeResource_ExportResource                grResource_ExportResource
-#define jeResource_Get                           grResource_Get
-#define jeResource_GetResource                   grResource_GetResource
-#define jeResource_GetVFile                      grResource_GetVFile
-#define jeResource_MgrCreate                     grResource_MgrCreate
-#define jeResource_MgrCreateDefault              grResource_MgrCreateDefault
-#define jeResource_MgrDestroy                    grResource_MgrDestroy
-#define jeResource_MgrIncRefcount                grResource_MgrIncRefcount
-#define jeResource_OpenDirectory                 grResource_OpenDirectory
-#define jeResource_Release                       grResource_Release
-#define jeResource_ReleaseResource               grResource_ReleaseResource
-#define jeVFile_OpenNewSystem                    grVFile_OpenNewSystem
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

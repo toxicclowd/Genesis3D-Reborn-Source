@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_BITMAP____H
-#define JE_BITMAP____H
+#ifndef GR_BITMAP____H
+#define GR_BITMAP____H
 
 #include "Bitmap.h"
 #include "Bitmap._h"
@@ -43,16 +43,16 @@
 
 #define	MAXMIPLEVELS			(8)
 
-#define PALETTE_FORMAT_DEFAULT	(JE_PIXELFORMAT_24BIT_RGB)
+#define PALETTE_FORMAT_DEFAULT	(GR_PIXELFORMAT_24BIT_RGB)
 
 #define ALPHA_TO_TRANSPARENCY_THRESHOLD		(80)
 
-struct jeBitmap_Palette
+struct grBitmap_Palette
 {
 	int32			LockCount,RefCount;
-	jePixelFormat	Format;
+	grPixelFormat	Format;
 	int32			Size;
-	jeBoolean		HasColorKey;
+	grBoolean		HasColorKey;
 	uint32			ColorKey;		// the color which is the colorkey
 	int32			ColorKeyIndex;	// the palette index which is the color;
 									// Bitmap->CK == Bitmap->Pal->CK_Index
@@ -60,107 +60,107 @@ struct jeBitmap_Palette
 	// we have EITHER Data or DriverHandle
 	void			*Data;		//Size * BytesPerPixel(Format)
 	DRV_Driver		*Driver;
-	jeTexture		*DriverHandle;
+	grTexture		*DriverHandle;
 	void			*DriverBits;	//only non-null inside a Lock/UnLock
 };
 
-typedef struct jeBitmap
+typedef struct grBitmap
 {
 	int32 				RefCount;
-	jeBitmap_Info		Info;
+	grBitmap_Info		Info;
 	void *				Data[MAXMIPLEVELS];
-	jeBoolean			Modified[MAXMIPLEVELS];
+	grBoolean			Modified[MAXMIPLEVELS];
 							// modified tells whether a mip != a scaledown of mip 0
 							// modified[0] is ignored
-	jeBitmap *			Alpha;
+	grBitmap *			Alpha;
 
 	int32				LockCount;	// -Nmips for 'write' , > 0 for 'read's
-	jeBitmap *			LockOwner;	// this points to our owner and doubles as boolean 'islocked'
-	jeBitmap *			DataOwner;	// if this is set, then my Data is not mine to free
+	grBitmap *			LockOwner;	// this points to our owner and doubles as boolean 'islocked'
+	grBitmap *			DataOwner;	// if this is set, then my Data is not mine to free
 
-	jePixelFormat		PreferredFormat;	// user's favorite
+	grPixelFormat		PreferredFormat;	// user's favorite
 	int32				SeekMipCount;		// when we attach to driver, ask for this many mips
 
 		// must support any number of locks for read
 		// a lock for read can be a pointer to my raw bits, or a whole different bitmap
 
-	jeBitmap_Info		DriverInfo;			// all the driver mess..
+	grBitmap_Info		DriverInfo;			// all the driver mess..
 	uint32				DriverFlags;
 	DRV_Driver *		Driver;
-	jeTexture *	DriverHandle;
+	grTexture *	DriverHandle;
 	int32				DriverMipBase;
 	int32				DriverMipLock;		// which mip to lock on GetBits
-	jeBoolean			DriverBitsLocked;
-	jeBoolean			DriverDataChanged;	// relative to system copy
-	jeFloat				DriverGamma;
-	jeFloat				DriverGammaLast;
-	jeBoolean			DriverGammaSet;
+	grBoolean			DriverBitsLocked;
+	grBoolean			DriverDataChanged;	// relative to system copy
+	grFloat				DriverGamma;
+	grFloat				DriverGammaLast;
+	grBoolean			DriverGammaSet;
 
-	jeWavelet *			Wavelet;
+	grWavelet *			Wavelet;
 	int32				WaveletMipLock;
 		// if Format == Wavelet, this is valid and Data & Alpha are NULL
 		//  otherwise it is NULL
-	jeBoolean			HasWaveletOptions;
-	jeWavelet_Options	WaveletOptions;
-	jeBitmap_StreamingStatus StreamingStatus;
-	jeBoolean			StreamingTHandle;
+	grBoolean			HasWaveletOptions;
+	grWavelet_Options	WaveletOptions;
+	grBitmap_StreamingStatus StreamingStatus;
+	grBoolean			StreamingTHandle;
 
-	jeBoolean			HasAverageColor;
+	grBoolean			HasAverageColor;
 	uint32				AverageR,AverageG,AverageB;
 
-	jeBoolean			Persistable;
-	const jeVFile *		PersistBaseFS;
+	grBoolean			Persistable;
+	const grVFile *		PersistBaseFS;
 	char				PersistName[1024];
-} jeBitmap;
+} grBitmap;
 
 
 /*}{ ************* internal protos *****************/
 
-//jeBitmap * jeBitmap_CreateXerox(jeBitmap *BmpSrc);
+//grBitmap * grBitmap_CreateXerox(grBitmap *BmpSrc);
 
-jeBoolean jeBitmap_IsValid(const jeBitmap *Bmp);
-jeBoolean jeBitmap_Info_IsValid(const jeBitmap_Info *Info);
-jeBoolean jeBitmap_Palette_IsValid(const jeBitmap_Palette *Pal);
+grBoolean grBitmap_IsValid(const grBitmap *Bmp);
+grBoolean grBitmap_Info_IsValid(const grBitmap_Info *Info);
+grBoolean grBitmap_Palette_IsValid(const grBitmap_Palette *Pal);
 
-jeBoolean jeBitmap_BlitMipRect(const jeBitmap * Src, int32 SrcMip, int32 SrcX,int32 SrcY,
-									 jeBitmap * Dst, int32 DstMip, int32 DstX,int32 DstY,
+grBoolean grBitmap_BlitMipRect(const grBitmap * Src, int32 SrcMip, int32 SrcX,int32 SrcY,
+									 grBitmap * Dst, int32 DstMip, int32 DstX,int32 DstY,
 							int32 SizeX,int32 SizeY);
 
-jeBitmap * jeBitmap_CreateLock_CopyInfo(jeBitmap *BmpSrc,int32 LockCnt,int32 mip);
-jeBitmap * jeBitmap_CreateLockFromMip(jeBitmap *Src,int32 mip,
-	jePixelFormat Format,jeBoolean HasColorKey,uint32 ColorKey,int32 LockCnt);
-jeBitmap * jeBitmap_CreateLockFromMipSystem(jeBitmap *Src,int32 mip,int32 LockCnt);
-jeBitmap * jeBitmap_CreateLockFromMipOnDriver(jeBitmap *Src,int32 mip,int32 LockCnt);
+grBitmap * grBitmap_CreateLock_CopyInfo(grBitmap *BmpSrc,int32 LockCnt,int32 mip);
+grBitmap * grBitmap_CreateLockFromMip(grBitmap *Src,int32 mip,
+	grPixelFormat Format,grBoolean HasColorKey,uint32 ColorKey,int32 LockCnt);
+grBitmap * grBitmap_CreateLockFromMipSystem(grBitmap *Src,int32 mip,int32 LockCnt);
+grBitmap * grBitmap_CreateLockFromMipOnDriver(grBitmap *Src,int32 mip,int32 LockCnt);
 
-jeBoolean jeBitmap_UnLock_NoChange(jeBitmap *Bmp);
-jeBoolean jeBitmap_UnLockArray_NoChange(jeBitmap **Locks,int32 Size);
+grBoolean grBitmap_UnLock_NoChange(grBitmap *Bmp);
+grBoolean grBitmap_UnLockArray_NoChange(grBitmap **Locks,int32 Size);
 
-jeBoolean jeBitmap_Update_SystemToDriver(jeBitmap *Bmp);
-jeBoolean jeBitmap_Update_DriverToSystem(jeBitmap *Bmp);
+grBoolean grBitmap_Update_SystemToDriver(grBitmap *Bmp);
+grBoolean grBitmap_Update_DriverToSystem(grBitmap *Bmp);
 
-jeBoolean jeBitmap_MakeSystemMips(jeBitmap *Bmp,int32 low,int32 high);
-jeBoolean jeBitmap_UpdateMips_Data(	jeBitmap_Info * FmInfo,void * FmBits,
-									jeBitmap_Info * ToInfo,void * ToBits);
-jeBoolean jeBitmap_UpdateMips_System(jeBitmap *Bmp,int32 fm,int32 to);
+grBoolean grBitmap_MakeSystemMips(grBitmap *Bmp,int32 low,int32 high);
+grBoolean grBitmap_UpdateMips_Data(	grBitmap_Info * FmInfo,void * FmBits,
+									grBitmap_Info * ToInfo,void * ToBits);
+grBoolean grBitmap_UpdateMips_System(grBitmap *Bmp,int32 fm,int32 to);
 
-jeBoolean jeBitmap_UsesColorKey(const jeBitmap * Bmp);
+grBoolean grBitmap_UsesColorKey(const grBitmap * Bmp);
 
-void	  jeBitmap_MakeMipInfo(  jeBitmap_Info *Src,int32 mip,jeBitmap_Info *Into);
-jeBoolean jeBitmap_MakeDriverLockInfo(jeBitmap *Bmp,int32 mip,jeBitmap_Info *Into);
+void	  grBitmap_MakeMipInfo(  grBitmap_Info *Src,int32 mip,grBitmap_Info *Into);
+grBoolean grBitmap_MakeDriverLockInfo(grBitmap *Bmp,int32 mip,grBitmap_Info *Into);
 					// MakeDriverLockInfo also doesn't full out the full info, so it must be a valid info first!
 					// Bmp also gets some crap written into him.
 
-jeBoolean jeBitmap_AllocSystemMip(jeBitmap *Bmp,int32 mip);
-jeBoolean jeBitmap_AllocPalette(jeBitmap *Bmp,jePixelFormat Format,DRV_Driver * Driver);
+grBoolean grBitmap_AllocSystemMip(grBitmap *Bmp,int32 mip);
+grBoolean grBitmap_AllocPalette(grBitmap *Bmp,grPixelFormat Format,DRV_Driver * Driver);
 
-jeBoolean jeBitmap_ReadInfo( jeBitmap *Bmp,jeVFile * F);
-jeBoolean jeBitmap_WriteInfo(const jeBitmap *Bmp,jeVFile * F);
+grBoolean grBitmap_ReadInfo( grBitmap *Bmp,grVFile * F);
+grBoolean grBitmap_WriteInfo(const grBitmap *Bmp,grVFile * F);
 
-jeBoolean jeBitmap_WaitForUnLock(const jeBitmap *Bmp);
-jeBoolean jeBitmap_WaitReady(const jeBitmap *Bmp);
-jeBoolean jeBitmap_PeekReady(const jeBitmap *Bmp);
+grBoolean grBitmap_WaitForUnLock(const grBitmap *Bmp);
+grBoolean grBitmap_WaitReady(const grBitmap *Bmp);
+grBoolean grBitmap_PeekReady(const grBitmap *Bmp);
 
-jeBoolean			jeBitmap_FixDriverFlags(uint32 *pFlags);
+grBoolean			grBitmap_FixDriverFlags(uint32 *pFlags);
 
 /*}{ ************* end *****************/
 

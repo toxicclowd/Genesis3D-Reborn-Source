@@ -27,7 +27,7 @@
 #pragma once
 
 //#include "JetView.h"
-#include "Jet.h"
+#include "Genesis3D.h"
 
 class CMainFrame : public CFrameWnd
 {
@@ -64,20 +64,20 @@ private:
 public:
 
 
-	bool	RenderView(jeFloat fElapsedTime);
+	bool	RenderView(grFloat fElapsedTime);
 	bool	InitializeJet3D();
 private:
 
 	bool	SetAppPreferences();
 	bool	ShutdownAll();
-	bool	InitFileSystem(jeEngine* pEngine);
+	bool	InitFileSystem(grEngine* pEngine);
 	CString BrowseForWorld(); 
 	bool	LoadWorld();
 	bool	InitEngine(HWND hWnd);
 	bool	LoadDriver();
 
 	void	GetMouseInput();
-	void	MoveCamera(float speed, jeVec3d *Direction);
+	void	MoveCamera(float speed, grVec3d *Direction);
 	void	ControlCamera(UINT nFlags, CPoint MouseDelta, short ZoomDelta);		
 
 	bool	ShowMainMenu(bool bShow);
@@ -87,15 +87,15 @@ private:
 //	member variables
 
 	//	Jet3D core
-	jeEngine		*m_pEngine;			//	engine
-	jeVFile         *m_pvFileSys;		//	main virtual file system
-	jeResourceMgr	*m_pResourceMgr;	//	resource manager
-	jePtrMgr		*m_pPtrMgr;			//	pointer manager
-	jeXForm3d		m_xfCamera;			//	camera transform
-	jeCamera		*m_pCamera;			//	camera object
-	jeSound_System  *m_pSoundSys;		//	Sound sys
-	jeWorld         *m_pWorld;			//	World
-	JE_Rect			m_Rect;				//	camera rect
+	grEngine		*m_pEngine;			//	engine
+	grVFile         *m_pvFileSys;		//	main virtual file system
+	grResourceMgr	*m_pResourceMgr;	//	resource manager
+	grPtrMgr		*m_pPtrMgr;			//	pointer manager
+	grXForm3d		m_xfCamera;			//	camera transform
+	grCamera		*m_pCamera;			//	camera object
+	grSound_System  *m_pSoundSys;		//	Sound sys
+	grWorld         *m_pWorld;			//	World
+	GR_Rect			m_Rect;				//	camera rect
 	CString			m_strGameName;		//	window title
 	CString			m_strDriverName;	//	driver string
 	CString			m_strDesiredMode;	//	driver res and bit depth
@@ -110,20 +110,20 @@ private:
 	CString			m_strLevel;			//	level to load
 
 	//	virtual file systems
-	jeVFile			*m_pvfMaterialFile;
-	jeVFile			*m_pvfActorFile;
-	jeVFile			*m_pvfSoundFile;
-	jeVFile			*m_pvfLevelFile;
+	grVFile			*m_pvfMaterialFile;
+	grVFile			*m_pvfActorFile;
+	grVFile			*m_pvfSoundFile;
+	grVFile			*m_pvfLevelFile;
 
 	//Driver objects
-	jeDriver_System *m_pDrvSys;
-	jeDriver		*m_pDriver;
-	jeDriver_Mode	*m_pMode;
+	grDriver_System *m_pDrvSys;
+	grDriver		*m_pDriver;
+	grDriver_Mode	*m_pMode;
 
 	
 	CPoint		m_ptOldMousePoint;		//	for frame-by-frame comparison
-	jeVec3d		m_vecCameraPos;			//	for tracking camera from frame-to-frame
-	jeFloat		m_fSpeedMultiplier;		//	for adjusting camera speed
+	grVec3d		m_vecCameraPos;			//	for tracking camera from frame-to-frame
+	grFloat		m_fSpeedMultiplier;		//	for adjusting camera speed
 
 	bool		m_bBrowseLevel;			//	to browse or not to browse
 

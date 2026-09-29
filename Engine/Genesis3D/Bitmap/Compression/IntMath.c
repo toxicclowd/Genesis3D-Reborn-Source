@@ -31,9 +31,9 @@ return ( val >= 0xFFFF ) ? (~(uint32)0) : val*val;
 int intlog2(uint32 x) // !!! // <> do this in assembly for awesome speed
 {
 float xf;
-	jeCPU_PauseMMX();
+	grCPU_PauseMMX();
 	xf = x;
-	jeCPU_ResumeMMX();
+	grCPU_ResumeMMX();
 return ((*(int*)&xf) >> 23) - 127;
 }
 

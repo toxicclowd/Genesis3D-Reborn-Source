@@ -27,41 +27,41 @@
 extern "C" {
 #endif
 
-typedef struct jeVec2d
+typedef struct grVec2d
 {
-	jeFloat	X;
-	jeFloat	Y;
-} jeVec2d;
+	grFloat	X;
+	grFloat	Y;
+} grVec2d;
 
-void	jeVec2d_Set( jeVec2d * V, jeFloat X, jeFloat Y ) ;
+void	grVec2d_Set( grVec2d * V, grFloat X, grFloat Y ) ;
 
-void	jeVec2d_Add( const jeVec2d * pV1, const jeVec2d * pV2, jeVec2d * pV1PlusV2 ) ;
-void	jeVec2d_Copy( const jeVec2d *VSrc, jeVec2d *VDst ) ;
-void	jeVec2d_Clear( jeVec2d *V ) ;
-jeFloat	jeVec2d_DistanceBetween( const jeVec2d *V1, const jeVec2d *V2 ) ;
-jeFloat	jeVec2d_DistBetweenSquared( const jeVec2d *V1, const jeVec2d *V2 );
-jeFloat	jeVec2d_DotProduct( const jeVec2d *V1, const jeVec2d *V2 ) ;
-jeFloat	jeVec2d_Length( const jeVec2d *V1 ) ;
-jeFloat	jeVec2d_Normalize( jeVec2d *V1 ) ;
-void	jeVec2d_Scale( const jeVec2d *VSrc, jeFloat fScale, jeVec2d *VDst) ;
-void	jeVec2d_Subtract( const jeVec2d *V1, const jeVec2d *V2, jeVec2d *V1MinusV2 ) ;
+void	grVec2d_Add( const grVec2d * pV1, const grVec2d * pV2, grVec2d * pV1PlusV2 ) ;
+void	grVec2d_Copy( const grVec2d *VSrc, grVec2d *VDst ) ;
+void	grVec2d_Clear( grVec2d *V ) ;
+grFloat	grVec2d_DistanceBetween( const grVec2d *V1, const grVec2d *V2 ) ;
+grFloat	grVec2d_DistBetweenSquared( const grVec2d *V1, const grVec2d *V2 );
+grFloat	grVec2d_DotProduct( const grVec2d *V1, const grVec2d *V2 ) ;
+grFloat	grVec2d_Length( const grVec2d *V1 ) ;
+grFloat	grVec2d_Normalize( grVec2d *V1 ) ;
+void	grVec2d_Scale( const grVec2d *VSrc, grFloat fScale, grVec2d *VDst) ;
+void	grVec2d_Subtract( const grVec2d *V1, const grVec2d *V2, grVec2d *V1MinusV2 ) ;
 
 			//(assuming positive X is along 3 o'clock and Y is along '12')
-void	jeVec2d_Perp_Clockwise( const jeVec2d *Src, jeVec2d *Dst);
-void	jeVec2d_Perp_CClockwise( const jeVec2d *Src, jeVec2d *Dst);
+void	grVec2d_Perp_Clockwise( const grVec2d *Src, grVec2d *Dst);
+void	grVec2d_Perp_CClockwise( const grVec2d *Src, grVec2d *Dst);
 			// makes a perpendicular vector (as close to cross product as you get in 2d)
-void	jeVec2d_Rotate( const jeVec2d *pVec, jeFloat Radians, jeVec2d *pDest);
+void	grVec2d_Rotate( const grVec2d *pVec, grFloat Radians, grVec2d *pDest);
 			// rotates clockwise (!?)
 
-int		jeVec2d_SideX(const jeVec2d *pSeg1,const jeVec2d *pSeg2,const jeVec2d *pPoint);
+int		grVec2d_SideX(const grVec2d *pSeg1,const grVec2d *pSeg2,const grVec2d *pPoint);
 			// -1 if point is to the left, +1 to the right, 0 is not in Y range
 			// this is not oriented, its absolte X-lower is left
 
-#define jeVec2d_LengthSquared(V)	jeVec2d_DotProduct(V,V)
+#define grVec2d_LengthSquared(V)	grVec2d_DotProduct(V,V)
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif // Prevent Multiple Inclusion
-/* EOF: jeVec2d.h */
+/* EOF: grVec2d.h */

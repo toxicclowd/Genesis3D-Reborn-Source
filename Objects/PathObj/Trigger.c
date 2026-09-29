@@ -26,7 +26,7 @@
 #include "Actor.h"
 #include "Errorlog.h"
 #include "Trigger.h"
-#include "jeWorld.h"
+#include "grWorld.h"
 
 #ifdef BUILD_BE
 #define stricmp strcasecmp
@@ -48,7 +48,7 @@ struct TriggerData
 }TriggerData;
 
 
-jeBoolean Trigger_Set()
+grBoolean Trigger_Set()
 {
 /*
 	TriggerData.OM = OM;
@@ -58,10 +58,10 @@ jeBoolean Trigger_Set()
 	TriggerData.EManager = EManager;
 */
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static void Trigger_GetContextXForm(TriggerContext ContextType, void *ContextData, jeXForm3d *XForm)
+static void Trigger_GetContextXForm(TriggerContext ContextType, void *ContextData, grXForm3d *XForm)
 	{
 	assert(ContextData);
 	assert(XForm);
@@ -76,16 +76,16 @@ static void Trigger_GetContextXForm(TriggerContext ContextType, void *ContextDat
 			break;
 			}
 		case TRIGGER_FROM_XFORM:	
-			*XForm = *((jeXForm3d*)ContextData);
+			*XForm = *((grXForm3d*)ContextData);
 			break;
 		case TRIGGER_FROM_MODEL:	
-			*XForm = *((jeXForm3d*)ContextData);
+			*XForm = *((grXForm3d*)ContextData);
 			break;
 		case TRIGGER_FROM_ENTITY:	
-			*XForm = *((jeXForm3d*)ContextData);
+			*XForm = *((grXForm3d*)ContextData);
 			break;
 		case TRIGGER_FROM_ACTOR:	
-			jeActor_GetBoneTransform((jeActor*)ContextData, NULL, XForm);
+			grActor_GetBoneTransform((grActor*)ContextData, NULL, XForm);
 			break;
 		}
 	}
@@ -93,10 +93,10 @@ static void Trigger_GetContextXForm(TriggerContext ContextType, void *ContextDat
 
 
 
-void Trigger_ParseEvent(jeWorld *World, TriggerContext ContextType, void *ContextData, char *EventString)
+void Trigger_ParseEvent(grWorld *World, TriggerContext ContextType, void *ContextData, char *EventString)
 {
 	char *ep;
-	//jeXForm3d XForm;
+	//grXForm3d XForm;
 	int32 *etype;
 	char *semi_ptr = NULL, *bone_ptr = NULL;
 
@@ -194,7 +194,7 @@ void Trigger_ParseEvent(jeWorld *World, TriggerContext ContextType, void *Contex
 	return;
 }
 
-void Trigger_ProcessEvents(jeWorld *World, TriggerContext ContextType, void *ContextData, jeMotion *Motion, float StartTime, float EndTime)
+void Trigger_ProcessEvents(grWorld *World, TriggerContext ContextType, void *ContextData, grMotion *Motion, float StartTime, float EndTime)
 {
 	float Time;
 	char *EventString;
@@ -203,9 +203,9 @@ void Trigger_ProcessEvents(jeWorld *World, TriggerContext ContextType, void *Con
 	assert(Motion);
 	assert(StartTime <= EndTime);
 
-	jeMotion_SetupEventIterator(Motion, StartTime, EndTime);
+	grMotion_SetupEventIterator(Motion, StartTime, EndTime);
 
-	while( jeMotion_GetNextEvent( Motion, &Time, (const char **)&EventString ) )
+	while( grMotion_GetNextEvent( Motion, &Time, (const char **)&EventString ) )
 		{
 		Trigger_ParseEvent(World, ContextType, ContextData, EventString);
 		}

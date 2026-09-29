@@ -36,7 +36,7 @@ typedef unsigned int uint;
 
 /****************************************/
 
-#define BrandoError(str)	jeErrorLog_AddString(-1,str,NULL)
+#define BrandoError(str)	grErrorLog_AddString(-1,str,NULL)
 
 #ifndef NULL
 #define NULL (0)
@@ -84,15 +84,15 @@ typedef unsigned int uint;
 #endif
 
 #ifndef new
-#define new(type)		jeRam_AllocateClear(sizeof(type))
+#define new(type)		grRam_AllocateClear(sizeof(type))
 #endif
 
 #ifndef destroy
-#define destroy(mem)	do { if ( mem ) { jeRam_Free(mem); (mem) = NULL; } } while(0)
+#define destroy(mem)	do { if ( mem ) { grRam_Free(mem); (mem) = NULL; } } while(0)
 #endif
 
 #ifndef newarray
-#define newarray(type,num)	jeRam_AllocateClear((num)*sizeof(type))
+#define newarray(type,num)	grRam_AllocateClear((num)*sizeof(type))
 #endif
 
 #ifndef memclear

@@ -33,7 +33,7 @@ typedef struct MkActor_Options
 	MK_Boolean ConcatenateActor;
 	char ActorFile[_MAX_PATH];
 	char BodyFile[_MAX_PATH];
-	jeStrBlock* pMotionFileBlock;
+	grStrBlock* pMotionFileBlock;
 } MkActor_Options;
 
 // Use this to initialize the default settings
@@ -45,15 +45,15 @@ const static MkActor_Options DefaultOptions =
 	NULL,
 };
 
-#define BAILOUT {MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);if (pActorDef!=NULL) {jeActor_DefDestroy(&pActorDef);} return retValue;}
+#define BAILOUT {MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);if (pActorDef!=NULL) {grActor_DefDestroy(&pActorDef);} return retValue;}
 
 
 ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 {
 	ReturnCode retValue = RETURN_SUCCESS;
-	jeVFile *VF;
-	//jeActor* pActor = NULL;
-	jeActor_Def* pActorDef = NULL;
+	grVFile *VF;
+	//grActor* pActor = NULL;
+	grActor_Def* pActorDef = NULL;
 
 	// Actor file must be specified
 	if(options->ActorFile[0] == 0)
@@ -65,14 +65,14 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 	// Create the Actor from file or from scratch
 	if(options->ConcatenateActor != MK_FALSE)
 		{
-			VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->ActorFile,NULL,JE_VFILE_OPEN_READONLY);
+			VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->ActorFile,NULL,GR_VFILE_OPEN_READONLY);
 			if(VF == NULL)
 				{
 					Printf("ERROR: Could not open '%s' to concatenate\n", options->ActorFile);
 					BAILOUT;
 				}
-			pActorDef = jeActor_DefCreateFromFile(VF);
-			jeVFile_Close(VF);
+			pActorDef = grActor_DefCreateFromFile(VF);
+			grVFile_Close(VF);
 			if(pActorDef == NULL)
 				{
 					Printf("ERROR: Could not create actor from file '%s'\n", options->ActorFile);
@@ -82,7 +82,7 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 
 	if(pActorDef == NULL)
 		{
-			pActorDef = jeActor_DefCreate();
+			pActorDef = grActor_DefCreate();
 		}
 	
 	if(pActorDef == NULL)
@@ -94,9 +94,9 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 	// Read the body file
 	if(options->BodyFile[0] != 0)
 		{
-			jeBody* pBody = NULL;
+			grBody* pBody = NULL;
 
-			VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->BodyFile,NULL,JE_VFILE_OPEN_READONLY);
+			VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->BodyFile,NULL,GR_VFILE_OPEN_READONLY);
 			if(VF == NULL)
 			{
 				Printf("ERROR: Could not open '%s' body file\n", options->BodyFile);
@@ -104,8 +104,8 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 			}
 			else
 			{
-				pBody = jeBody_CreateFromFile(VF);
-				jeVFile_Close(VF);
+				pBody = grBody_CreateFromFile(VF);
+				grVFile_Close(VF);
 				if(pBody == NULL)
 				{
 					Printf("ERROR: Could not create body from file '%s'\n", options->BodyFile);
@@ -113,23 +113,23 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 				}
 			}
 
-			if(jeActor_GetBody(pActorDef) != NULL)
+			if(grActor_GetBody(pActorDef) != NULL)
 			{
 				Printf("ERROR: An existing body is being replaced\n");
 				BAILOUT;
 			}
 
-			jeActor_SetBody(pActorDef, pBody);
+			grActor_SetBody(pActorDef, pBody);
 		}
 
 	// Read the motions
-	if(jeStrBlock_GetCount(options->pMotionFileBlock) > 0)
+	if(grStrBlock_GetCount(options->pMotionFileBlock) > 0)
 		{
 			int i, Count, Index;
 			const char* filename;
-			jeMotion* pMotion;
+			grMotion* pMotion;
 
-			Count = jeStrBlock_GetCount(options->pMotionFileBlock);
+			Count = grStrBlock_GetCount(options->pMotionFileBlock);
 			for(i=0;i<Count;i++)
 			{
 				if (MkUtil_Interrupt())
@@ -138,8 +138,8 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 						BAILOUT;
 					}
 		
-				filename = jeStrBlock_GetString(options->pMotionFileBlock, i);
-				VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,filename,NULL,JE_VFILE_OPEN_READONLY);
+				filename = grStrBlock_GetString(options->pMotionFileBlock, i);
+				VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,filename,NULL,GR_VFILE_OPEN_READONLY);
 				if(VF == NULL)
 				{
 					Printf("ERROR: Could not open '%s' motion file\n", filename);
@@ -147,8 +147,8 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 				}
 				else
 				{
-					pMotion = jeMotion_CreateFromFile(VF);
-					jeVFile_Close(VF);
+					pMotion = grMotion_CreateFromFile(VF);
+					grVFile_Close(VF);
 					if(pMotion == NULL)
 					{
 						Printf("ERROR: Could not create motion from file '%s'\n", filename);
@@ -156,10 +156,10 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 					}
 					else
 					{
-						if(jeActor_AddMotion(pActorDef, pMotion, &Index) == MK_FALSE)
+						if(grActor_AddMotion(pActorDef, pMotion, &Index) == MK_FALSE)
 							{
 								Printf("ERROR: Motion file '%s' was not added\n", filename);
-								jeMotion_Destroy(&pMotion);
+								grMotion_Destroy(&pMotion);
 								BAILOUT;
 							}
 					}
@@ -178,7 +178,7 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 	}
 
 	// Write the actor
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->ActorFile,NULL,JE_VFILE_OPEN_CREATE);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->ActorFile,NULL,GR_VFILE_OPEN_CREATE);
 	if(VF == NULL)
 	{
 		Printf("ERROR: Could not create '%s' actor file\n", options->ActorFile);
@@ -187,7 +187,7 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 	}
 	else
 	{
-		if(jeActor_DefWriteToFile(pActorDef, VF) == JE_FALSE)
+		if(grActor_DefWriteToFile(pActorDef, VF) == GR_FALSE)
 		{
 			Printf("ERROR: Actor file '%s' was not written correctly\n", options->ActorFile);
 			unlink(options->ActorFile);			
@@ -195,7 +195,7 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 		}
 		else
 		{
-			if (jeVFile_Close(VF) == JE_FALSE)
+			if (grVFile_Close(VF) == GR_FALSE)
 				{
 					Printf("ERROR: Actor file '%s' was not written correctly\n", options->ActorFile);
 					unlink(options->ActorFile);			
@@ -208,7 +208,7 @@ ReturnCode MkActor_DoMake(MkActor_Options* options,MkUtil_Printf Printf)
 		}
 	}
 
-	jeActor_DefDestroy(&pActorDef); // cleans up all motions and body
+	grActor_DefDestroy(&pActorDef); // cleans up all motions and body
 	
 	return retValue;
 }
@@ -234,15 +234,15 @@ MkActor_Options* MkActor_OptionsCreate()
 {
 	MkActor_Options* pOptions;
 
-	pOptions = JE_RAM_ALLOCATE_STRUCT(MkActor_Options);
+	pOptions = GR_RAM_ALLOCATE_STRUCT(MkActor_Options);
 	if(pOptions != NULL)
 	{
 		*pOptions = DefaultOptions;
 
-		pOptions->pMotionFileBlock = jeStrBlock_Create();
+		pOptions->pMotionFileBlock = grStrBlock_Create();
 		if(pOptions->pMotionFileBlock == NULL)
 		{
-			jeRam_Free(pOptions);
+			grRam_Free(pOptions);
 		}
 	}
 
@@ -258,9 +258,9 @@ void MkActor_OptionsDestroy(MkActor_Options** ppOptions)
 
 	p = *ppOptions;
 
-	jeStrBlock_Destroy(&p->pMotionFileBlock);
+	grStrBlock_Destroy(&p->pMotionFileBlock);
 
-	jeRam_Free(*ppOptions);
+	grRam_Free(*ppOptions);
 
 	*ppOptions = NULL;
 }
@@ -335,9 +335,9 @@ ReturnCode MkActor_ParseOptionString(MkActor_Options* options, const char* strin
 			}
 			else
 			{
-				if(jeStrBlock_FindString(options->pMotionFileBlock, string + 2, &Index) == MK_FALSE)
+				if(grStrBlock_FindString(options->pMotionFileBlock, string + 2, &Index) == MK_FALSE)
 				{
-					if(jeStrBlock_Append(&options->pMotionFileBlock, string + 2) == MK_FALSE)
+					if(grStrBlock_Append(&options->pMotionFileBlock, string + 2) == MK_FALSE)
 					{
 						Printf("ERROR: Could not add '%s' motion file to motion file string block\n", string + 2);
 						retValue = RETURN_ERROR;

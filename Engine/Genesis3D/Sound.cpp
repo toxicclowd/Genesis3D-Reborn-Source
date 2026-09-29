@@ -33,7 +33,7 @@
 
 // BEGIN - Ogg Streamer - paradoxnj 4/17/2005
 #include	"OGGStream.h"
-#include	"jeChain.h"
+#include	"grChain.h"
 
 #define STREAM_BUFFER_SECONDS				1.0f
 
@@ -47,20 +47,20 @@ typedef struct  Channel			Channel;
 #pragma comment(lib, "dsound.lib")
 // END - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
 
-typedef struct jeSound_System
+typedef struct grSound_System
 {
-	jeBoolean		Active;
+	grBoolean		Active;
 	SoundManager	*SoundM;
-	jeFloat			GlobalVolume;
-	jeMp3Mgr		*Mp3M;
-} jeSound_System;
+	grFloat			GlobalVolume;
+	grMp3Mgr		*Mp3M;
+} grSound_System;
 
-typedef struct jeSound_Cfg
+typedef struct grSound_Cfg
 {
-	jeFloat			Volume;
-	jeFloat			Pan;
-	jeFloat			Frequency;
-} jeSound_Cfg;
+	grFloat			Volume;
+	grFloat			Pan;
+	grFloat			Frequency;
+} grSound_Cfg;
 
 
 /*
@@ -80,45 +80,45 @@ typedef struct jeSound_Cfg
 static SoundManager *	CreateSoundManager(HWND hWnd);
 static void		DestroySoundManager(SoundManager *sm);
 
-static BOOL		jeSound_FillSoundChannel(SoundManager *sm, jeVFile *File, unsigned int* Handle );
-static BOOL		jeSound_StartSoundChannel( SoundManager *sm, unsigned int Handle, jeSound_Cfg *cfg, int loop, unsigned int* sfx);
-static BOOL		jeSound_StopSoundChannel(Channel *channel);
-static BOOL		jeSound_FreeAllChannels(SoundManager *sm);
-static BOOL		jeSound_FreeChannel(SoundManager *sm, Channel *channel);
-static BOOL		jeSound_ModifyChannel( Channel *channel, jeSound_Cfg *cfg );
-static int		jeSound_ChannelPlaying( Channel *channel );
+static BOOL		grSound_FillSoundChannel(SoundManager *sm, grVFile *File, unsigned int* Handle );
+static BOOL		grSound_StartSoundChannel( SoundManager *sm, unsigned int Handle, grSound_Cfg *cfg, int loop, unsigned int* sfx);
+static BOOL		grSound_StopSoundChannel(Channel *channel);
+static BOOL		grSound_FreeAllChannels(SoundManager *sm);
+static BOOL		grSound_FreeChannel(SoundManager *sm, Channel *channel);
+static BOOL		grSound_ModifyChannel( Channel *channel, grSound_Cfg *cfg );
+static int		grSound_ChannelPlaying( Channel *channel );
 //	added by tom morris May 2005
-static	DWORD	jeSound_ChannelGetBufferStatus( Channel *channel);
+static	DWORD	grSound_ChannelGetBufferStatus( Channel *channel);
 //	end add
-static Channel*	jeSound_GetChannel( SoundManager *sm, unsigned int ID );
+static Channel*	grSound_GetChannel( SoundManager *sm, unsigned int ID );
 
-jeBoolean		OpenMediaFile(LPSTR szFile );
+grBoolean		OpenMediaFile(LPSTR szFile );
 void			DeleteContentsMp3();
-void			PlayMp3(long volume, jeBoolean loop); 
+void			PlayMp3(long volume, grBoolean loop); 
 void			StopMp3();
-jeBoolean		Mp3Playing();
+grBoolean		Mp3Playing();
 
 // BEGIN - OGG Streamer - paradoxnj 4/17/2005
 typedef struct StreamChannel
 {
 	LPDIRECTSOUNDBUFFER8	buffer;
 
-	jeSound_Cfg				cfg;
+	grSound_Cfg				cfg;
 	DSBCAPS					Caps;
 
-	jeOGGStream				*OGG;
-	jeBoolean				Looping;
+	grOGGStream				*OGG;
+	grBoolean				Looping;
 
 	DWORD					LastReadPos;
 	DWORD					BytesPlayed;
 	DWORD					DataCursor;
 } StreamChannel;
 
-static StreamChannel		*CreateStreamChannel(jeVFile *FS, const char *filename);
+static StreamChannel		*CreateStreamChannel(grVFile *FS, const char *filename);
 static void					FreeStreamChannel(StreamChannel *ch);
 
-static jeBoolean			PlayStream(StreamChannel *ch);
-static jeBoolean			StopStream(StreamChannel *ch);
+static grBoolean			PlayStream(StreamChannel *ch);
+static grBoolean			StopStream(StreamChannel *ch);
 // END - OGG Streamer - paradoxnj 4/17/2005
 
 typedef struct Channel
@@ -126,7 +126,7 @@ typedef struct Channel
 	LPDIRECTSOUNDBUFFER8	buffer;
 	unsigned int			ID;
 	int						BaseFreq;
-	jeSound_Cfg				cfg;
+	grSound_Cfg				cfg;
 	void *					Data;
 	struct Channel			*next;
 	struct Channel			*nextDup;
@@ -143,14 +143,14 @@ typedef struct	SoundManager
 	// BEGIN - OGG Streamer - paradoxnj 4/17/2005
 	HANDLE					Stream_Update_Thread;
 
-	jeChain					*StreamList;
-	jeChain					*StreamPlayList;
+	grChain					*StreamList;
+	grChain					*StreamPlayList;
 
 	CRITICAL_SECTION		UpdateSection;
 	HANDLE					TermEvent;
 
 	//	by trilobite jan. 2011
-	//jeBoolean				IsInitialized;
+	//grBoolean				IsInitialized;
 	bool					IsInitialized;
 	// END - OGG Streamer - paradoxnj 4/17/2005
 }   SoundManager;
@@ -158,8 +158,8 @@ typedef struct	SoundManager
 
 // BEGIN - OGG Streamer - paradoxnj 4/17/2005
 static DWORD WINAPI StreamUpdateFunction(LPVOID Context);
-static jeBoolean UpdateSoundBuffer(StreamChannel *stream);
-static uint8 GetSilenceData(jeOGGStream *OGG);
+static grBoolean UpdateSoundBuffer(StreamChannel *stream);
+static uint8 GetSilenceData(grOGGStream *OGG);
 static void FillBuffer(StreamChannel *sc);
 // END - OGG Streamer - paradoxnj 4/17/2005
 
@@ -171,40 +171,40 @@ static	LPDIRECTSOUND8			lpDirectSound;
 // END - Upgrade to DirectSound 8 - paradoxnj 4/14/2005
 
 //=====================================================================================
-//	jeSound_SystemCreate
+//	grSound_SystemCreate
 //=====================================================================================
-JETAPI	jeSound_System * JETCC jeSound_CreateSoundSystem(HWND hWnd)
+GRAPI	grSound_System * GRCC grSound_CreateSoundSystem(HWND hWnd)
 {
 	//	by trilobite	Jan. 2011
-	//	jeSound_System		*SoundSystem;
-	jeSound_System		*SoundSystem = NULL;
+	//	grSound_System		*SoundSystem;
+	grSound_System		*SoundSystem = NULL;
 	//
 
-	SoundSystem = JE_RAM_ALLOCATE_STRUCT(jeSound_System);
+	SoundSystem = GR_RAM_ALLOCATE_STRUCT(grSound_System);
 	if (!SoundSystem)
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeSound_CreateSoundSystem.");
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grSound_CreateSoundSystem.");
 		return NULL;
 	}
 
-	memset(SoundSystem, 0, sizeof(jeSound_System));
+	memset(SoundSystem, 0, sizeof(grSound_System));
 	
 	// Initialize the sound system
 	SoundSystem->SoundM = CreateSoundManager(hWnd);
 	if (!SoundSystem->SoundM)
 	{
-		jeRam_Free(SoundSystem);
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeSound_CreateSoundSystem:  Failed to create sound system.");
+		grRam_Free(SoundSystem);
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grSound_CreateSoundSystem:  Failed to create sound system.");
 		return NULL;
 	}
 	
 	//Mp3Mgr integration (CyRiuS)
-	SoundSystem->Mp3M = jeMp3_CreateManager(hWnd);
+	SoundSystem->Mp3M = grMp3_CreateManager(hWnd);
 
 	if (!SoundSystem->Mp3M)
 	{
-		jeRam_Free(SoundSystem);
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeSound_CreateSoundSystem:  Failed to create mp3 manager.");
+		grRam_Free(SoundSystem);
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grSound_CreateSoundSystem:  Failed to create mp3 manager.");
 		return NULL;
 	}
 
@@ -214,9 +214,9 @@ JETAPI	jeSound_System * JETCC jeSound_CreateSoundSystem(HWND hWnd)
 }
 
 //=====================================================================================
-//	jeSound_SetHwnd
+//	grSound_SetHwnd
 //=====================================================================================
-JETAPI	jeBoolean JETCC jeSound_SetHwnd(HWND hWnd)
+GRAPI	grBoolean GRCC grSound_SetHwnd(HWND hWnd)
 {
 	HRESULT Res;
 	if (lpDirectSound)
@@ -226,52 +226,52 @@ JETAPI	jeBoolean JETCC jeSound_SetHwnd(HWND hWnd)
 			Res = IDirectSound_SetCooperativeLevel(lpDirectSound, hWnd,DSSCL_NORMAL);
 			if (Res != DS_OK)
 				{
-					jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"jeSound_SetHwnd:  IDirectSound_SetCooperativeLevel failed.");
-					return JE_FALSE;
+					grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"grSound_SetHwnd:  IDirectSound_SetCooperativeLevel failed.");
+					return GR_FALSE;
 				}
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeSound_SystemFree
+//	grSound_SystemFree
 //=====================================================================================
-JETAPI	void JETCC jeSound_DestroySoundSystem(jeSound_System *Sound)
+GRAPI	void GRCC grSound_DestroySoundSystem(grSound_System *Sound)
 {
 	assert(Sound != NULL);
 
 	// Shutdown the sound system
-	jeMp3_DestroyManager(&Sound->Mp3M); //cyrius
+	grMp3_DestroyManager(&Sound->Mp3M); //cyrius
 	DestroySoundManager(Sound->SoundM);
 
 	Sound->SoundM = NULL;
 
-	jeRam_Free(Sound);
+	grRam_Free(Sound);
 }
 
 //=====================================================================================
 //	Sound_LoadSound
 //=====================================================================================
-//JETAPI	jeSound_Def *jeSound_LoadSoundDef(jeSound_System *SoundS, const char *Path, const char *FileName)
-JETAPI	jeSound_Def * JETCC jeSound_LoadSoundDef(jeSound_System *SoundS, jeVFile *File)
+//GRAPI	grSound_Def *grSound_LoadSoundDef(grSound_System *SoundS, const char *Path, const char *FileName)
+GRAPI	grSound_Def * GRCC grSound_LoadSoundDef(grSound_System *SoundS, grVFile *File)
 {
 	unsigned int SoundDef = 0;
 
 	assert(SoundS != NULL);
 
-	if (!jeSound_FillSoundChannel(SoundS->SoundM, File, &SoundDef))
+	if (!grSound_FillSoundChannel(SoundS->SoundM, File, &SoundDef))
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_LoadSoundDef.");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_LoadSoundDef.");
 			return NULL;
 		}
 	
-	return (jeSound_Def *)SoundDef;
+	return (grSound_Def *)SoundDef;
 }
 
 //=====================================================================================
 //	Mp3_LoadSound
 //=====================================================================================
-JETAPI int JETCC jeMp3_LoadSound(jeSound_System *SoundS, char * filename, int ref)
+GRAPI int GRCC grMp3_LoadSound(grSound_System *SoundS, char * filename, int ref)
 {
 	assert(SoundS != NULL);
 
@@ -286,76 +286,76 @@ JETAPI int JETCC jeMp3_LoadSound(jeSound_System *SoundS, char * filename, int re
 //=====================================================================================
 //	Sound_FreeSound
 //=====================================================================================
-JETAPI	jeBoolean JETCC jeSound_FreeSoundDef(jeSound_System *SoundS, jeSound_Def *SoundDef)
+GRAPI	grBoolean GRCC grSound_FreeSoundDef(grSound_System *SoundS, grSound_Def *SoundDef)
 {
 	Channel*	Channel;
 
 	assert(SoundS != NULL);
 	assert(SoundDef != 0);
 
-	Channel = jeSound_GetChannel(SoundS->SoundM, (unsigned int)SoundDef);
+	Channel = grSound_GetChannel(SoundS->SoundM, (unsigned int)SoundDef);
 
 	if (!Channel)
 		{
-			jeErrorLog_Add(JE_ERR_SEARCH_FAILURE,"jeSound_FreeSoundDef:  Sound not found.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SEARCH_FAILURE,"grSound_FreeSoundDef:  Sound not found.");
+			return GR_FALSE;
 		}
 
-	if (!jeSound_FreeChannel(SoundS->SoundM, Channel))
+	if (!grSound_FreeChannel(SoundS->SoundM, Channel))
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_FreeSoundDef.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_FreeSoundDef.");
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
 //	Sound_SetGlobalVolume
 //=====================================================================================
-JETAPI	jeBoolean JETCC jeSound_SetMasterVolume( jeSound_System *SoundS, jeFloat Volume )
+GRAPI	grBoolean GRCC grSound_SetMasterVolume( grSound_System *SoundS, grFloat Volume )
 {
 	assert ( SoundS );
 	SoundS->GlobalVolume = Volume;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 	
 //=====================================================================================
 //	Sound_PlaySound
 //=====================================================================================
-JETAPI	jeSound * JETCC jeSound_PlaySoundDef(jeSound_System *SoundS, 
-							jeSound_Def *SoundDef, 
-							jeFloat Volume, 
-							jeFloat Pan, 
-							jeFloat Frequency, 
-							jeBoolean Loop)
+GRAPI	grSound * GRCC grSound_PlaySoundDef(grSound_System *SoundS, 
+							grSound_Def *SoundDef, 
+							grFloat Volume, 
+							grFloat Pan, 
+							grFloat Frequency, 
+							grBoolean Loop)
 {
 	unsigned int Sound;
-	jeSound_Cfg LocalCfg;
+	grSound_Cfg LocalCfg;
 
 	LocalCfg.Volume		= Volume;
 	LocalCfg.Pan		= Pan;
 	LocalCfg.Frequency  = Frequency;
 
 	LocalCfg.Volume *= SoundS->GlobalVolume;
-	if (!jeSound_StartSoundChannel(SoundS->SoundM, (unsigned int)SoundDef, &LocalCfg, (BOOL)Loop, &Sound))
+	if (!grSound_StartSoundChannel(SoundS->SoundM, (unsigned int)SoundDef, &LocalCfg, (BOOL)Loop, &Sound))
 	{
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_PlaySoundDef.");
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_PlaySoundDef.");
 		return NULL;
 	}
 
-	return (jeSound *)Sound;
+	return (grSound *)Sound;
 }
 
 //=====================================================================================
 //	Mp3_PlaySound
 //=====================================================================================
-JETAPI	int JETCC jeMp3_PlaySound(jeSound_System *SoundS, int song_number, long Volume, jeBoolean Loop)
+GRAPI	int GRCC grMp3_PlaySound(grSound_System *SoundS, int song_number, long Volume, grBoolean Loop)
 {
 	assert(SoundS != NULL);
 	
 	if(!OpenMediaFile(SoundS->Mp3M->files[song_number].szFileName))
 	{
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMp3_PlaySound: cant load sound from disk");
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMp3_PlaySound: cant load sound from disk");
 		return MP3_LOAD_FAIL;
 	}
 
@@ -367,104 +367,104 @@ JETAPI	int JETCC jeMp3_PlaySound(jeSound_System *SoundS, int song_number, long V
 //=====================================================================================
 //	Sound_StopSound
 //=====================================================================================
-JETAPI	jeBoolean JETCC jeSound_StopSound(jeSound_System *SoundS, jeSound *Sound)
+GRAPI	grBoolean GRCC grSound_StopSound(grSound_System *SoundS, grSound *Sound)
 {
 	Channel*	Channel;
 
 	assert(SoundS != NULL);
 	assert(Sound  != NULL);	
 
-	Channel = jeSound_GetChannel(SoundS->SoundM, (unsigned int)Sound);
+	Channel = grSound_GetChannel(SoundS->SoundM, (unsigned int)Sound);
 
 	if (!Channel)
 		{
-			jeErrorLog_Add(JE_ERR_SEARCH_FAILURE,"jeSound_StopSound:  Sound not playing.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SEARCH_FAILURE,"grSound_StopSound:  Sound not playing.");
+			return GR_FALSE;
 		}
 
-	if (jeSound_StopSoundChannel(Channel)==JE_FALSE)
+	if (grSound_StopSoundChannel(Channel)==GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_StopSound:  Sound failed to stop.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_StopSound:  Sound failed to stop.");
+			return GR_FALSE;
 		}
-	return JE_TRUE;	
+	return GR_TRUE;	
 }
 
 //=====================================================================================
 //	Sound_ModifySound
 //=====================================================================================
-JETAPI	jeBoolean JETCC jeSound_ModifySound(jeSound_System *SoundS, 
-								jeSound *Sound,jeFloat Volume, 
-								jeFloat Pan, 
-								jeFloat Frequency)
+GRAPI	grBoolean GRCC grSound_ModifySound(grSound_System *SoundS, 
+								grSound *Sound,grFloat Volume, 
+								grFloat Pan, 
+								grFloat Frequency)
 {
 	Channel*	Channel;
-	jeSound_Cfg	LocalCfg;
+	grSound_Cfg	LocalCfg;
 
 	assert(SoundS != NULL);
 	assert(Sound  != NULL);	
 
-	Channel = jeSound_GetChannel(SoundS->SoundM, (unsigned int)Sound);
+	Channel = grSound_GetChannel(SoundS->SoundM, (unsigned int)Sound);
 
 	if (!Channel)
 		{
-			jeErrorLog_Add(JE_ERR_SEARCH_FAILURE,"jeSound_ModifySound:  Sound not found.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SEARCH_FAILURE,"grSound_ModifySound:  Sound not found.");
+			return GR_FALSE;
 		}
 
 	LocalCfg.Volume    = Volume;
 	LocalCfg.Pan       = Pan;
 	LocalCfg.Frequency = Frequency;
 	LocalCfg.Volume *= SoundS->GlobalVolume;
-	if ( jeSound_ModifyChannel(Channel, &LocalCfg) == JE_FALSE)
+	if ( grSound_ModifyChannel(Channel, &LocalCfg) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_ModifySound:  Failed to modify channel.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_ModifySound:  Failed to modify channel.");
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //=====================================================================================
 //	Sound_SoundIsPlaying
 //=====================================================================================
-JETAPI	jeBoolean JETCC jeSound_SoundIsPlaying(jeSound_System *SoundS, jeSound *Sound)
+GRAPI	grBoolean GRCC grSound_SoundIsPlaying(grSound_System *SoundS, grSound *Sound)
 {
 	Channel*	Channel;
 
 	assert(SoundS != NULL);
 	assert(Sound  != NULL);	
 
-	Channel = jeSound_GetChannel(SoundS->SoundM, (unsigned int)Sound);
+	Channel = grSound_GetChannel(SoundS->SoundM, (unsigned int)Sound);
 
 	if (!Channel)
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
-	return jeSound_ChannelPlaying(Channel);
+	return grSound_ChannelPlaying(Channel);
 }
 
 
 //=====================================================================================
-//	jeSound_GetStatus
+//	grSound_GetStatus
 //	added by tom morris May 2005
 //	returns full DirectSound status flags
 //=====================================================================================
-JETAPI	int	JETCC jeSound_GetStatus(jeSound_System *pSoundSys, jeSound *pSound)
+GRAPI	int	GRCC grSound_GetStatus(grSound_System *pSoundSys, grSound *pSound)
 {
 	Channel*	pChannel = NULL;
 
 	assert(pSoundSys != NULL);
 	assert(pSound  != NULL);	
 
-	pChannel = jeSound_GetChannel(pSoundSys->SoundM, (unsigned int)pSound);
+	pChannel = grSound_GetChannel(pSoundSys->SoundM, (unsigned int)pSound);
 
 	if (!pChannel)
 		{
 			return 0;
 		}
 
-	return jeSound_ChannelGetBufferStatus(pChannel);
+	return grSound_ChannelGetBufferStatus(pChannel);
 	//	possible flags include:
 	//	DSBSTATUS_BUFFERLOST	The buffer is lost and must be restored before it can be played or locked. 
 	//	DSBSTATUS_LOOPING		The buffer is being looped. If this value is not set, the buffer will stop
@@ -506,13 +506,13 @@ static	BOOL DSParseWaveResource(const void *pvRes, WAVEFORMATEX **ppWaveHeader,
 
     if (dwRiff != mmioFOURCC('R', 'I', 'F', 'F'))
         {
-			jeErrorLog_Add(JE_ERR_BAD_PARAMETER,"DSParseWaveResource: not RIFF format.");
+			grErrorLog_Add(GR_ERR_BAD_PARAMETER,"DSParseWaveResource: not RIFF format.");
 			goto exit;      // not even RIFF
 		}
 
     if (dwType != mmioFOURCC('W', 'A', 'V', 'E'))
         {
-			jeErrorLog_Add(JE_ERR_BAD_PARAMETER,"DSParseWaveResource: not WAVE format.");
+			grErrorLog_Add(GR_ERR_BAD_PARAMETER,"DSParseWaveResource: not WAVE format.");
 			goto exit;      // not a WAV
 		}
 
@@ -530,7 +530,7 @@ static	BOOL DSParseWaveResource(const void *pvRes, WAVEFORMATEX **ppWaveHeader,
             {
                 if (dwLength < sizeof(WAVEFORMAT))
                     {
-						jeErrorLog_Add(JE_ERR_BAD_PARAMETER,"DSParseWaveResource: not proper WAV format.");
+						grErrorLog_Add(GR_ERR_BAD_PARAMETER,"DSParseWaveResource: not proper WAV format.");
 						goto exit;      // not a WAV
 					}
 
@@ -591,7 +591,7 @@ static	BOOL DSFillSoundBuffer(IDirectSoundBuffer8 *pDSB, BYTE *pbWaveData, DWORD
         }
 		else
 		{
-			jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"DSFillSoundBuffer: IDirectSoundBuffer_Lock failed.");
+			grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"DSFillSoundBuffer: IDirectSoundBuffer_Lock failed.");
 			return FALSE;
 		}
     }
@@ -617,7 +617,7 @@ static	SoundManager *	CreateSoundManager(HWND hWnd )
 	if	(hres != DS_OK)
 	{
 		// failed somehow
-		jeErrorLog_Add(JE_ERR_SOUND_RESOURCE,"CreateSoundManager: Could not initialize Direct Sound 8.");
+		grErrorLog_Add(GR_ERR_SOUND_RESOURCE,"CreateSoundManager: Could not initialize Direct Sound 8.");
 //		FreeLibrary (hmodDirectSound);
 		return NULL;
 	}
@@ -626,10 +626,10 @@ static	SoundManager *	CreateSoundManager(HWND hWnd )
 
 	// END - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
 
-	sm = (SoundManager*)jeRam_Allocate(sizeof(*sm));
+	sm = (SoundManager*)grRam_Allocate(sizeof(*sm));
 	if	(!sm)
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE,"CreateSoundManager.");
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE,"CreateSoundManager.");
 		IDirectSound8_Release(lpDirectSound);
 	//	FreeLibrary (hmodDirectSound);
 		return NULL;
@@ -642,8 +642,8 @@ static	SoundManager *	CreateSoundManager(HWND hWnd )
 	InitializeCriticalSection(&sm->UpdateSection);
 	sm->TermEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	
-	sm->StreamList = jeChain_Create();
-	sm->StreamPlayList = jeChain_Create();
+	sm->StreamList = grChain_Create();
+	sm->StreamPlayList = grChain_Create();
 
 	sm->Stream_Update_Thread = CreateThread(NULL, 4096, StreamUpdateFunction, (void*)sm, 0, &id);
 	// END - OGG Streamer - paradoxnj 4/17/2005
@@ -688,15 +688,15 @@ static	SoundManager *	CreateSoundManager(HWND hWnd )
 			return sm;
 		}
 		
-		jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"CreateSoundManager: IDirectSound_CreateSoundBuffer failed.");
+		grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"CreateSoundManager: IDirectSound_CreateSoundBuffer failed.");
 		IDirectSound8_Release(lpDirectSound);
 		//FreeLibrary (hmodDirectSound);
 	}
 	// END - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
 
-	jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"CreateSoundManager: IDirectSound_SetCooperativeLevel failed.");
+	grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"CreateSoundManager: IDirectSound_SetCooperativeLevel failed.");
 	
-	jeRam_Free(sm);
+	grRam_Free(sm);
 	return NULL;
 }
 
@@ -705,29 +705,29 @@ static	BOOL CreateChannel(DSBUFFERDESC *dsBD, Channel** chanelPtr)
 	Channel* channel;
 	LPDIRECTSOUNDBUFFER				lpBuff;
 
-	channel = (Channel*)jeRam_Allocate( sizeof( Channel ) );
+	channel = (Channel*)grRam_Allocate( sizeof( Channel ) );
 	if	( channel == NULL )
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "CreateChannel.");
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "CreateChannel.");
 		return( FALSE );
 	}
 
 	// BEGIN - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
 	if (FAILED(IDirectSound8_CreateSoundBuffer(lpDirectSound, dsBD, &lpBuff, NULL)))
 	{
-		jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE, "CreateChannel: IDirectSound_CreateSoundBuffer failed.");
+		grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE, "CreateChannel: IDirectSound_CreateSoundBuffer failed.");
 		return FALSE;
 	}
 
 	if (FAILED(IDirectSoundBuffer8_QueryInterface(lpBuff, IID_IDirectSoundBuffer8, (void**)&channel->buffer)))
 	{
-		jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE, "CreateChannel:  IDirectSoundBuffer8_QueryInterface failed.");
+		grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE, "CreateChannel:  IDirectSoundBuffer8_QueryInterface failed.");
 		return FALSE;
 	}
 
 	if (FAILED(IDirectSoundBuffer8_GetFrequency(channel->buffer, (DWORD*)&channel->BaseFreq)))
 	{
-		jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE, "CreateChannel: IDirectSound_GetFrequency failed.");
+		grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE, "CreateChannel: IDirectSound_GetFrequency failed.");
 		return FALSE;
 	}
 	// END - Upgrade to DirectSound 8 - paradoxnj
@@ -745,7 +745,7 @@ static	BOOL CreateChannel(DSBUFFERDESC *dsBD, Channel** chanelPtr)
 }
 
 //static	BOOL GetSoundData( char* Name, unsigned char** dataPtr)
-static	BOOL GetSoundData( jeVFile *File, unsigned char** dataPtr)
+static	BOOL GetSoundData( grVFile *File, unsigned char** dataPtr)
 {
 //	FILE * f;
 	int32 Size;
@@ -757,7 +757,7 @@ static	BOOL GetSoundData( jeVFile *File, unsigned char** dataPtr)
 	
 	if (!f)
 	{
-		jeErrorLog_Add(JE_ERR_FILEIO_OPEN, "GetSoundData.");
+		grErrorLog_Add(GR_ERR_FILEIO_OPEN, "GetSoundData.");
 		return FALSE;
 	}
 #endif
@@ -769,24 +769,24 @@ static	BOOL GetSoundData( jeVFile *File, unsigned char** dataPtr)
 	fseek (f, CurPos, SEEK_SET);	// Restore file position
 #endif
 
-	if	(jeVFile_Size(File, &Size) == JE_FALSE)
+	if	(grVFile_Size(File, &Size) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_FILEIO_READ,"GetSoundData: failed to get size of sound file.");
+			grErrorLog_Add(GR_ERR_FILEIO_READ,"GetSoundData: failed to get size of sound file.");
 			return FALSE;
 		}
 
-	data = (uint8*)jeRam_Allocate(Size);
+	data = (uint8*)grRam_Allocate(Size);
 
 	if (!data) 
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "GetSoundData.");
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "GetSoundData.");
 		return FALSE;
 	}
 	
-	if	(jeVFile_Read(File, data, Size) == JE_FALSE)
+	if	(grVFile_Read(File, data, Size) == GR_FALSE)
 	{
-		jeErrorLog_Add(JE_ERR_FILEIO_READ,"GetSoundData: failed to read sound data.");
-		jeRam_Free(data);
+		grErrorLog_Add(GR_ERR_FILEIO_READ,"GetSoundData: failed to read sound data.");
+		grRam_Free(data);
 		return FALSE;
 	}
 
@@ -808,7 +808,7 @@ static	BOOL ParseData( const uint8* data, DSBUFFERDESC* dsBD, BYTE ** pbWaveData
 	dsBD->dwFlags = DSBCAPS_STATIC | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLPAN | DSBCAPS_CTRLVOLUME ;// | DSBCAPS_CTRLDEFAULT;
 	if	(!DSParseWaveResource(data, &dsBD->lpwfxFormat, pbWaveData, &dsBD->dwBufferBytes))
 	{
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "ParseData.");
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "ParseData.");
 		return FALSE;
 	}
 
@@ -816,7 +816,7 @@ static	BOOL ParseData( const uint8* data, DSBUFFERDESC* dsBD, BYTE ** pbWaveData
 
 }
 
-static	BOOL jeSound_FillSoundChannel(SoundManager *sm, jeVFile *File, unsigned int* Handle )
+static	BOOL grSound_FillSoundChannel(SoundManager *sm, grVFile *File, unsigned int* Handle )
 {
 	DSBUFFERDESC	dsBD;
 	INT NumBytes;
@@ -831,14 +831,14 @@ static	BOOL jeSound_FillSoundChannel(SoundManager *sm, jeVFile *File, unsigned i
 	
 	if(!GetSoundData( File, &data ))
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_FillSoundChannel.");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_FillSoundChannel.");
 			return( FALSE );
 		}
 
 	if( !ParseData( data, &dsBD, &pbWaveData ) )
 	{
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_FillSoundChannel.");
-		jeRam_Free(data);
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_FillSoundChannel.");
+		grRam_Free(data);
 		return( FALSE );
 	}
 
@@ -847,8 +847,8 @@ static	BOOL jeSound_FillSoundChannel(SoundManager *sm, jeVFile *File, unsigned i
 	//Create the channel
 	if	(!CreateChannel(&dsBD, &channel))
 	{
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_FillSoundChannel.");
-		jeRam_Free(data);
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_FillSoundChannel.");
+		grRam_Free(data);
 		return FALSE;
 	}
 	channel->next = sm->smChannels;
@@ -861,7 +861,7 @@ static	BOOL jeSound_FillSoundChannel(SoundManager *sm, jeVFile *File, unsigned i
 	//Fill the channel
 	if (!DSFillSoundBuffer(channel->buffer, pbWaveData, NumBytes))
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_FillSoundChannel.");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_FillSoundChannel.");
 			return FALSE;
 		}
 	
@@ -894,12 +894,12 @@ static	void ClearDupBuffers( Channel* channel )
 	prevChannel = channel;
 	while( dupChannel )
 	{
-		if( !jeSound_ChannelPlaying( dupChannel ) )
+		if( !grSound_ChannelPlaying( dupChannel ) )
 		{
 			prevChannel->nextDup = dupChannel->nextDup;
 			IDirectSoundBuffer8_Release(dupChannel->buffer);
 //			free( dupChannel );
-			jeRam_Free(dupChannel);
+			grRam_Free(dupChannel);
 			dupChannel = prevChannel->nextDup;
 		}
 		else
@@ -910,7 +910,7 @@ static	void ClearDupBuffers( Channel* channel )
 	}
 }
 
-static	BOOL jeSound_FreeAllChannels(SoundManager *sm)
+static	BOOL grSound_FreeAllChannels(SoundManager *sm)
 {
 	int Error;
 	
@@ -928,21 +928,21 @@ static	BOOL jeSound_FreeAllChannels(SoundManager *sm)
 		Error = IDirectSoundBuffer_Stop(channel->buffer);
 		if (Error != DS_OK)
 		{
-			jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE, "jeSound_FreeAllChannels: IDirectSoundBuffer_Stop failed.");
+			grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE, "grSound_FreeAllChannels: IDirectSoundBuffer_Stop failed.");
 			return FALSE;
 		}
 		// BEGIN - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
 		Error = IDirectSoundBuffer8_Release(channel->buffer);
 		if (Error != DS_OK)
 		{
-			jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE, "jeSound_FreeAllChannels: IDirectSound_Release failed.");
+			grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE, "grSound_FreeAllChannels: IDirectSound_Release failed.");
 			return FALSE;
 		}
 		// END - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
 
 		if	(channel->Data)
-			jeRam_Free(channel->Data);
-		jeRam_Free(channel);
+			grRam_Free(channel->Data);
+		grRam_Free(channel);
 		channel = nextChannel;
 	}
 	sm->smChannels = NULL;
@@ -952,7 +952,7 @@ static	BOOL jeSound_FreeAllChannels(SoundManager *sm)
 }
 
 
-static	BOOL jeSound_FreeChannel(SoundManager *sm, Channel* channel)
+static	BOOL grSound_FreeChannel(SoundManager *sm, Channel* channel)
 {
 	int Error;
 	Channel*prevChannel = NULL, *curChannel;
@@ -966,7 +966,7 @@ static	BOOL jeSound_FreeChannel(SoundManager *sm, Channel* channel)
 		Error = IDirectSoundBuffer8_Stop(channel->buffer);
 		if (Error != DS_OK)
 		{
-			jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE, "jeSound_FreeChannel: IDirectSoundBuffer_Stop failed.");
+			grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE, "grSound_FreeChannel: IDirectSoundBuffer_Stop failed.");
 			return FALSE;
 		}
 
@@ -974,7 +974,7 @@ static	BOOL jeSound_FreeChannel(SoundManager *sm, Channel* channel)
 		/*Error = IDirectSoundBuffer8_Release(channel->buffer);
 		if (Error != DS_OK)
 		{
-			jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE, "jeSound_FreeChannel: IDirectSound_Release failed.");
+			grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE, "grSound_FreeChannel: IDirectSound_Release failed.");
 			return FALSE;
 		}*/
 		IDirectSoundBuffer8_Release(channel->buffer);
@@ -983,7 +983,7 @@ static	BOOL jeSound_FreeChannel(SoundManager *sm, Channel* channel)
 		// END - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
 
 		if( channel->Data )
-			jeRam_Free(channel->Data);
+			grRam_Free(channel->Data);
 
 		curChannel = sm->smChannels;
 		while( curChannel && curChannel != channel )
@@ -997,7 +997,7 @@ static	BOOL jeSound_FreeChannel(SoundManager *sm, Channel* channel)
 				prevChannel->next = curChannel->next;
 			else
 				sm->smChannels = curChannel->next;
-			jeRam_Free(curChannel);
+			grRam_Free(curChannel);
 		}
 	}
 
@@ -1013,7 +1013,7 @@ static	Channel* ReloadData(void *Data)
 
 	if( !ParseData( (const uint8*)Data, &dsBD, &pbWaveData ) )
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"ReloadData");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"ReloadData");
 			return( NULL );
 		}
 
@@ -1022,14 +1022,14 @@ static	Channel* ReloadData(void *Data)
 	//Create the channel
 	if( !CreateChannel(&dsBD, &channel ) )
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"ReloadData");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"ReloadData");
 			return NULL;
 		}
 
 	//Fill the channel
 	if ( !DSFillSoundBuffer(channel->buffer, pbWaveData, NumBytes))
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"ReloadData");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"ReloadData");
 			return NULL;
 		}
 	return( channel );
@@ -1046,10 +1046,10 @@ static	BOOL DupChannel( SoundManager *sm, Channel* channel, Channel** dupChannel
 	assert( dupChannelPtr );
 
 	*dupChannelPtr = NULL;
-	dupChannel =  (Channel*)jeRam_Allocate( sizeof(Channel ) );
+	dupChannel =  (Channel*)grRam_Allocate( sizeof(Channel ) );
 	if( dupChannel == NULL )
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "DupChannel" );
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "DupChannel" );
 		return FALSE;
 	}
 
@@ -1057,11 +1057,11 @@ static	BOOL DupChannel( SoundManager *sm, Channel* channel, Channel** dupChannel
 	Error = IDirectSound8_DuplicateSoundBuffer( lpDirectSound, (LPDIRECTSOUNDBUFFER)channel->buffer, &pBuffer);
 	if( Error != DS_OK )
 	{
-		jeRam_Free(dupChannel);
+		grRam_Free(dupChannel);
 		dupChannel = ReloadData( channel->Data );
 		if( dupChannel == NULL )
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "DupChannel");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "DupChannel");
 			return FALSE;
 		}
 	}
@@ -1079,7 +1079,7 @@ static	BOOL DupChannel( SoundManager *sm, Channel* channel, Channel** dupChannel
 	return( TRUE );
 }
 
-static	BOOL	jeSound_StartSoundChannel( SoundManager *sm, unsigned int Handle, jeSound_Cfg *cfg, int loop, unsigned int* sfx)
+static	BOOL	grSound_StartSoundChannel( SoundManager *sm, unsigned int Handle, grSound_Cfg *cfg, int loop, unsigned int* sfx)
 {
 	HRESULT	hres;
 	Channel* channel, *dupChannel;
@@ -1089,31 +1089,31 @@ static	BOOL	jeSound_StartSoundChannel( SoundManager *sm, unsigned int Handle, je
 
 	if( Handle == 0 )
 		{
-			jeErrorLog_Add(JE_ERR_BAD_PARAMETER,"jeSound_StartSoundChannel: bad handle (0).");
+			grErrorLog_Add(GR_ERR_BAD_PARAMETER,"grSound_StartSoundChannel: bad handle (0).");
 			return( FALSE );
 		}
-	channel = jeSound_GetChannel( sm, Handle );
+	channel = grSound_GetChannel( sm, Handle );
 	//Clear all non-playing duplicate buffers.
 	if (!channel)
 		{
-			jeErrorLog_Add(JE_ERR_INTERNAL_RESOURCE,"jeSound_StartSoundChannel: no channel available.");
+			grErrorLog_Add(GR_ERR_INTERNAL_RESOURCE,"grSound_StartSoundChannel: no channel available.");
 			return ( FALSE );
 		}
 	ClearDupBuffers(channel);
 	//If the main buffer is playing and all non-playing dups have been cleared
 	//we need a new duplicate.
-	if( jeSound_ChannelPlaying( channel ) )
+	if( grSound_ChannelPlaying( channel ) )
 	{
 		if(!DupChannel( sm,channel, &dupChannel ) )
 			{
-				jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_StartSoundChannel.");
+				grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_StartSoundChannel.");
 				return( FALSE );
 			}
 		channel = dupChannel;
 	}
-	if( !jeSound_ModifyChannel( channel, cfg ) )
+	if( !grSound_ModifyChannel( channel, cfg ) )
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeSound_StartSoundChannel.");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grSound_StartSoundChannel.");
 			return( FALSE );
 		}
 
@@ -1132,11 +1132,11 @@ static	BOOL	jeSound_StartSoundChannel( SoundManager *sm, unsigned int Handle, je
 	}
 	// END - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
 
-	jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"jeSound_StartSoundChannel: IDirectSoundBuffer_Play failed.");
+	grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"grSound_StartSoundChannel: IDirectSoundBuffer_Play failed.");
 	return FALSE;
 }
 
-static	BOOL jeSound_StopSoundChannel(Channel* channel)
+static	BOOL grSound_StopSoundChannel(Channel* channel)
 {
 	HRESULT	hres;
 
@@ -1148,7 +1148,7 @@ static	BOOL jeSound_StopSoundChannel(Channel* channel)
 	if	(hres == DS_OK)
 		return TRUE;
 
-	jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"jeSound_StopSoundChannel: IDirectSoundBuffer_Stop failed.");
+	grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"grSound_StopSoundChannel: IDirectSoundBuffer_Stop failed.");
 	return FALSE;
 }
 
@@ -1161,13 +1161,13 @@ static	void DestroySoundManager(SoundManager *sm)
 	//
 	assert( sm );
 
-	jeSound_FreeAllChannels( sm );
+	grSound_FreeAllChannels( sm );
 
 	// BEGIN - OGG Streamer - paradoxnj 4/28/2005
 	if (sm->Stream_Update_Thread)
 		CloseHandle(sm->Stream_Update_Thread);
 
-	for (snd = (StreamChannel*)jeChain_GetNextLinkData(sm->StreamPlayList, NULL); snd != NULL; snd = (StreamChannel*)jeChain_GetNextLinkData(sm->StreamPlayList, snd))
+	for (snd = (StreamChannel*)grChain_GetNextLinkData(sm->StreamPlayList, NULL); snd != NULL; snd = (StreamChannel*)grChain_GetNextLinkData(sm->StreamPlayList, snd))
 	{
 		DWORD				status;
 
@@ -1179,17 +1179,17 @@ static	void DestroySoundManager(SoundManager *sm)
 		snd->buffer = NULL;
 	}
 
-	for (snd = (StreamChannel*)jeChain_GetNextLinkData(sm->StreamList, NULL); snd != NULL; snd = (StreamChannel*)jeChain_GetNextLinkData(sm->StreamList, snd))
+	for (snd = (StreamChannel*)grChain_GetNextLinkData(sm->StreamList, NULL); snd != NULL; snd = (StreamChannel*)grChain_GetNextLinkData(sm->StreamList, snd))
 	{
 		IDirectSoundBuffer8_Release(snd->buffer);
 		snd->buffer = NULL;
 
-		jeRam_Free(snd->OGG);
-		jeRam_Free(snd);
+		grRam_Free(snd->OGG);
+		grRam_Free(snd);
 	}
 
-	jeChain_Destroy(&sm->StreamPlayList);
-	jeChain_Destroy(&sm->StreamList);
+	grChain_Destroy(&sm->StreamPlayList);
+	grChain_Destroy(&sm->StreamList);
 	// END - OGG Streamer - paradoxnj 4/28/2005
 
 	// BEGIN - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
@@ -1200,14 +1200,14 @@ static	void DestroySoundManager(SoundManager *sm)
 		IDirectSound8_Release(lpDirectSound);
 	// END - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
 
-	jeRam_Free(sm);
+	grRam_Free(sm);
 
 	//	by trilobite	Jan. 2011
 //	ZeroMemory(sm, sizeof(SoundManager));	//	don't do this...
-	(SoundManager*)jeRam_AllocateClear(sizeof(*sm));
+	(SoundManager*)grRam_AllocateClear(sizeof(*sm));
 }
 
-static	BOOL	jeSound_ModifyChannel( Channel *channel, jeSound_Cfg *cfg )
+static	BOOL	grSound_ModifyChannel( Channel *channel, grSound_Cfg *cfg )
 {
 	int Error, Vol, Pan, Freq;
 	assert( channel );
@@ -1222,7 +1222,7 @@ static	BOOL	jeSound_ModifyChannel( Channel *channel, jeSound_Cfg *cfg )
 		Error = IDirectSoundBuffer8_SetVolume(channel->buffer, Vol);
 		if (Error != DS_OK)
 		{
-			jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"jeSound_ModifyChannel: IDirectSoundBuffer_SetVolume failed.");
+			grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"grSound_ModifyChannel: IDirectSoundBuffer_SetVolume failed.");
 			return FALSE;
 		}
 		
@@ -1236,7 +1236,7 @@ static	BOOL	jeSound_ModifyChannel( Channel *channel, jeSound_Cfg *cfg )
 		Error = IDirectSoundBuffer8_SetPan(channel->buffer, Pan);
 		if (Error != DS_OK)
 		{
-			jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"jeSound_ModifyChannel: IDirectSoundBuffer_SetVolume failed.");
+			grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"grSound_ModifyChannel: IDirectSoundBuffer_SetVolume failed.");
 			return FALSE;
 		}
 		
@@ -1251,7 +1251,7 @@ static	BOOL	jeSound_ModifyChannel( Channel *channel, jeSound_Cfg *cfg )
 		Error = IDirectSoundBuffer8_SetFrequency(channel->buffer, Freq);
 		if (Error != DS_OK)
 		{
-			jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"jeSound_ModifyChannel: IDirectSoundBuffer_SetFrequency failed.");
+			grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"grSound_ModifyChannel: IDirectSoundBuffer_SetFrequency failed.");
 			return FALSE;
 		}
 		channel->cfg.Frequency = cfg->Frequency;
@@ -1261,7 +1261,7 @@ static	BOOL	jeSound_ModifyChannel( Channel *channel, jeSound_Cfg *cfg )
 	return TRUE;
 }
 
-static	int	jeSound_ChannelPlaying( Channel *channel )
+static	int	grSound_ChannelPlaying( Channel *channel )
 {
 	DWORD	dwStatus = 0;
 	DWORD	dwError = 0;
@@ -1272,7 +1272,7 @@ static	int	jeSound_ChannelPlaying( Channel *channel )
 	dwError = IDirectSoundBuffer8_GetStatus( channel->buffer, &dwStatus);
 	if( dwError != DS_OK)
 		{
-			//jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"jeSound_ModifyChannel: IDirectSoundBuffer_GetStatus failed.");
+			//grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"grSound_ModifyChannel: IDirectSoundBuffer_GetStatus failed.");
 			return 0;
 		}
 	// END - Upgrade to DirectSound 8 - paradoxnj 4/15/2005
@@ -1281,11 +1281,11 @@ static	int	jeSound_ChannelPlaying( Channel *channel )
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
-//	jeSound_ChannelGetBufferStatus
+//	grSound_ChannelGetBufferStatus
 //	added by tom morris May 2005
 //	returns full DirectSound status flags
 ///////////////////////////////////////////////////////////////////////////////////////
-static	DWORD	jeSound_ChannelGetBufferStatus( Channel *channel)
+static	DWORD	grSound_ChannelGetBufferStatus( Channel *channel)
 {
 	DWORD	dwStatus = 0;
 	DWORD	dwError = 0;
@@ -1312,7 +1312,7 @@ static	DWORD	jeSound_ChannelGetBufferStatus( Channel *channel)
 
 
 
-static	Channel* jeSound_GetChannel( SoundManager *sm, unsigned int ID )
+static	Channel* grSound_GetChannel( SoundManager *sm, unsigned int ID )
 {
 	Channel* dupChannel;
 	Channel* channel = sm->smChannels;
@@ -1338,21 +1338,21 @@ static	Channel* jeSound_GetChannel( SoundManager *sm, unsigned int ID )
 
 
 // BEGIN - OGG Streamer - paradoxnj 4/17/2005
-static StreamChannel *CreateStreamChannel(jeVFile *FS, const char *filename)
+static StreamChannel *CreateStreamChannel(grVFile *FS, const char *filename)
 {
 	StreamChannel				*sc = NULL;
 	IDirectSoundBuffer			*buf = NULL;
 	DSBUFFERDESC				desc;
 //	HRESULT						hres;
 
-	sc = JE_RAM_ALLOCATE_STRUCT(StreamChannel);
+	sc = GR_RAM_ALLOCATE_STRUCT(StreamChannel);
 	if (!sc)
 		return NULL;
 
-	sc->OGG = jeOGGStream_Create(FS, filename);
+	sc->OGG = grOGGStream_Create(FS, filename);
 	if (!sc->OGG)
 	{
-		jeRam_Free(sc);
+		grRam_Free(sc);
 		sc = NULL;
 
 		return NULL;
@@ -1365,7 +1365,7 @@ static StreamChannel *CreateStreamChannel(jeVFile *FS, const char *filename)
 	FillBuffer(sc);
 }
 
-static jeBoolean UpdateSoundBuffer(StreamChannel *stream)
+static grBoolean UpdateSoundBuffer(StreamChannel *stream)
 {
 	DWORD						read_cursor, write_cursor;
 	DWORD						data_to_copy;
@@ -1375,21 +1375,21 @@ static jeBoolean UpdateSoundBuffer(StreamChannel *stream)
 
 	hres = IDirectSoundBuffer8_GetCurrentPosition(stream->OGG->pBuffer, &read_cursor, &write_cursor);
 	if (FAILED(hres))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if (read_cursor > stream->LastReadPos)
 		stream->BytesPlayed += read_cursor - stream->LastReadPos;
 	else
 		stream->BytesPlayed += (stream->Caps.dwBufferBytes - stream->LastReadPos) + read_cursor;
 
-	if (stream->BytesPlayed >= jeOGGStream_GetSize(stream->OGG))
+	if (stream->BytesPlayed >= grOGGStream_GetSize(stream->OGG))
 	{
 		if (stream->Looping)
-			stream->BytesPlayed -= jeOGGStream_GetSize(stream->OGG);
+			stream->BytesPlayed -= grOGGStream_GetSize(stream->OGG);
 		else
 		{
 			IDirectSoundBuffer8_Stop(stream->buffer);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	}
 
@@ -1403,9 +1403,9 @@ static jeBoolean UpdateSoundBuffer(StreamChannel *stream)
 
 	hres = IDirectSoundBuffer8_Lock(stream->buffer, stream->DataCursor, data_to_copy, &data1, &size1, &data2, &size2, 0);
 	if (FAILED(hres))
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if (jeOGGStream_IsEOF(stream->OGG))
+	if (grOGGStream_IsEOF(stream->OGG))
 	{
 		memset(data1, GetSilenceData(stream->OGG), size1);
 		if (size2)
@@ -1417,16 +1417,16 @@ static jeBoolean UpdateSoundBuffer(StreamChannel *stream)
 	{
 		uint32						bytes_read = 0;
 
-		bytes_read = jeOGGStream_Read(stream->OGG, (char*)data1, size1);
+		bytes_read = grOGGStream_Read(stream->OGG, (char*)data1, size1);
 		if (bytes_read == 0)
-			return JE_FALSE;
+			return GR_FALSE;
 
 		stream->DataCursor += bytes_read;
 		if (data2 && (size1 == bytes_read))
 		{
-			bytes_read = jeOGGStream_Read(stream->OGG, (char*)data2, size2);
+			bytes_read = grOGGStream_Read(stream->OGG, (char*)data2, size2);
 			if (bytes_read == 0)
-				return JE_FALSE;
+				return GR_FALSE;
 
 			stream->DataCursor += bytes_read;
 		}
@@ -1434,15 +1434,15 @@ static jeBoolean UpdateSoundBuffer(StreamChannel *stream)
 
 	hres = IDirectSoundBuffer8_Unlock(stream->buffer, data1, size1, data2, size2);
 	if (FAILED(hres))
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if (stream->Looping && jeOGGStream_IsEOF(stream->OGG))
-		jeOGGStream_Reset(stream->OGG);
+	if (stream->Looping && grOGGStream_IsEOF(stream->OGG))
+		grOGGStream_Reset(stream->OGG);
 
 	stream->DataCursor %= stream->Caps.dwBufferBytes;
 	stream->LastReadPos = read_cursor;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 static DWORD WINAPI StreamUpdateFunction(LPVOID Context)
@@ -1461,9 +1461,9 @@ static DWORD WINAPI StreamUpdateFunction(LPVOID Context)
 		{
 			Sleep(50);
 
-			//	by trilobite jan. 2011	//	note. jeBoolean evaluates to TRUE after sm->IsInitialized is
-										//	set to JE_FALSE and sm destroyed
-										//	so using bool instead of jeBoolean or BOOL
+			//	by trilobite jan. 2011	//	note. grBoolean evaluates to TRUE after sm->IsInitialized is
+										//	set to GR_FALSE and sm destroyed
+										//	so using bool instead of grBoolean or BOOL
 			if (!sm->IsInitialized)	
 				return 1;
 
@@ -1471,11 +1471,11 @@ static DWORD WINAPI StreamUpdateFunction(LPVOID Context)
 
 				if ((ServiceStreams++) % 4 == 1)
 				{
-					jeChain_Link				*Link = NULL;
+					grChain_Link				*Link = NULL;
 
-					for (Link = jeChain_GetFirstLink(sm->StreamList); Link != NULL; Link = jeChain_LinkGetNext(Link))
+					for (Link = grChain_GetFirstLink(sm->StreamList); Link != NULL; Link = grChain_LinkGetNext(Link))
 					{
-						StreamChannel			*stream = (StreamChannel*)jeChain_LinkGetLinkData(Link);
+						StreamChannel			*stream = (StreamChannel*)grChain_LinkGetLinkData(Link);
 						if (!UpdateSoundBuffer(stream))
 							continue;
 					}
@@ -1488,7 +1488,7 @@ static DWORD WINAPI StreamUpdateFunction(LPVOID Context)
 	return 0;
 }
 
-static uint8 GetSilenceData(jeOGGStream *OGG)
+static uint8 GetSilenceData(grOGGStream *OGG)
 {
 	if (OGG->Format.wBitsPerSample == 8)
 		return 0x80;
@@ -1509,7 +1509,7 @@ static void FillBuffer(StreamChannel *sc)
 	if (FAILED(hres))
 		return;
 
-	bytes_read = jeOGGStream_Read(sc->OGG, (char*)data1, size1);
+	bytes_read = grOGGStream_Read(sc->OGG, (char*)data1, size1);
 	if (bytes_read == 0)
 		return;
 

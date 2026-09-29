@@ -38,9 +38,9 @@ void FaceList_Destroy( FaceList **ppList, FaceList_DestroyCallback DestroyFcn )
 
 // ACCESSORS
 
-jeBrush_Face * FaceList_GetFace( FaceIterator pMI )
+grBrush_Face * FaceList_GetFace( FaceIterator pMI )
 {
-	jeBrush_Face	*	pFace ;
+	grBrush_Face	*	pFace ;
 	assert( pMI != NULL ) ;
 
 	pFace = List_GetData( pMI ) ;
@@ -49,24 +49,24 @@ jeBrush_Face * FaceList_GetFace( FaceIterator pMI )
 }// FaceList_GetFace
 
 
-jeBrush_Face* FaceList_GetFirstFace( FaceList * pList, FaceIterator * pMI )
+grBrush_Face* FaceList_GetFirstFace( FaceList * pList, FaceIterator * pMI )
 {
-	jeBrush_Face	* pFace ;
+	grBrush_Face	* pFace ;
 
 	assert( pList != NULL ) ;
 	assert( pMI != NULL ) ;
 
-	pFace = (jeBrush_Face*)List_GetFirst( pList, pMI ) ;
+	pFace = (grBrush_Face*)List_GetFirst( pList, pMI ) ;
 	return pFace;
 }// FaceList_GetFirstID
 
-jeBrush_Face* FaceList_GetNextFace( FaceList * pList, FaceIterator * pMI )
+grBrush_Face* FaceList_GetNextFace( FaceList * pList, FaceIterator * pMI )
 {
-	jeBrush_Face	* pFace ;
+	grBrush_Face	* pFace ;
 	assert( pList != NULL ) ;
 	assert( pMI != NULL ) ;
 
-	pFace = (jeBrush_Face*)List_GetNext( pList, pMI ) ;
+	pFace = (grBrush_Face*)List_GetNext( pList, pMI ) ;
 	if( pFace == NULL )
 	{
 		return NULL ;
@@ -80,7 +80,7 @@ int32 FaceList_GetNumFace( FaceList * pList )
 }// FaceList_GetNumFace
 
 // MODIFIERS
-FaceIterator FaceList_Append( FaceList * pList, jeBrush_Face * pFace )
+FaceIterator FaceList_Append( FaceList * pList, grBrush_Face * pFace )
 {
 	assert( pList != NULL ) ;
 
@@ -88,7 +88,7 @@ FaceIterator FaceList_Append( FaceList * pList, jeBrush_Face * pFace )
 }// FaceList_Append
 
 
-void	FaceList_Remove( FaceList * pList, jeBrush_Face * pFace ) 
+void	FaceList_Remove( FaceList * pList, grBrush_Face * pFace ) 
 {
 	FaceIterator  fI;
 
@@ -99,13 +99,13 @@ void	FaceList_Remove( FaceList * pList, jeBrush_Face * pFace )
 }
 
 // SEARCH
-jeBoolean FaceList_SearchCB(void *pData, void *lParam)
+grBoolean FaceList_SearchCB(void *pData, void *lParam)
 {
 
 	return( pData == lParam );
 }
 
-jeBoolean FaceList_Search( FaceList * pList, jeBrush_Face*  pFace, FaceIterator * fI )
+grBoolean FaceList_Search( FaceList * pList, grBrush_Face*  pFace, FaceIterator * fI )
 {
 	void * FoundVoid;
 

@@ -23,7 +23,7 @@
 #include "ObjectList.h"
 #include "Util.h"
 
-static jeBoolean ObjectList_FindCB( void *p1, void *lParam )
+static grBoolean ObjectList_FindCB( void *p1, void *lParam )
 {
 	return ( p1 == lParam ) ;
 }// ObjectList_FindCB
@@ -91,20 +91,20 @@ ObjectIterator ObjectList_Append( ObjectList * pList, Object * pObject )
 	return List_Append( pList, pObject ) ;
 }// ObjectList_Append
 
-jeBoolean ObjectList_AppendNoDup( ObjectList * pList, Object * pObject )
+grBoolean ObjectList_AppendNoDup( ObjectList * pList, Object * pObject )
 {
 	ObjectIterator	pBI ;
-	jeBoolean		bFound ;
+	grBoolean		bFound ;
 	Object	*		pFoundObject ;
 	assert( pList != NULL ) ;
 
 	bFound = List_Search( pList, ObjectList_FindCB, pObject, &pFoundObject, &pBI ) ;
-	if( bFound == JE_FALSE )
+	if( bFound == GR_FALSE )
 	{
 		if( ObjectList_Append( pList, pObject ) == NULL )
-			return JE_FALSE ;
+			return GR_FALSE ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// ObjectList_AppendNoDup
 
 // Krouer: append to a sorted list
@@ -132,13 +132,13 @@ ObjectIterator ObjectList_AppendSort( ObjectList * pList, Object * pObject, Obje
 void ObjectList_Remove( ObjectList * pList, Object * pObject )
 {
 	ObjectIterator	pBI ;
-	jeBoolean		bFound ;
+	grBoolean		bFound ;
 	Object	*		pFoundObject ;
 
 	assert( pList != NULL ) ;
 
 	bFound = List_Search( pList, ObjectList_FindCB, pObject, &pFoundObject, &pBI ) ;
-	assert( JE_TRUE == bFound ) ;
+	assert( GR_TRUE == bFound ) ;
 
 	List_Remove( pList, pBI, NULL ) ;
 }// ObjectList_Remove
@@ -164,17 +164,17 @@ void ObjectList_DestroyCB( Object * pObject )
 	Object_Free( &pFreeObject ) ;
 }//ObjectList_DestroyCB
 
-static jeBoolean ObjectList_UnionObjectRectCB( Object * pObject, jeExtBox * pListBounds )
+static grBoolean ObjectList_UnionObjectRectCB( Object * pObject, grExtBox * pListBounds )
 {
 
-	jeExtBox  ObjectBounds;
+	grExtBox  ObjectBounds;
 
 	if( Object_GetWorldAxialBounds(pObject, &ObjectBounds) )
 		Util_ExtBox_Union( pListBounds, &ObjectBounds, pListBounds ) ;
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// ObjectList_UnionObjectRectCB
 
-void ObjectList_GetListBounds( ObjectList * pList, jeExtBox * pListBounds )
+void ObjectList_GetListBounds( ObjectList * pList, grExtBox * pListBounds )
 {
 	assert( pList != NULL ) ;
 	assert( pListBounds != NULL ) ;
@@ -184,17 +184,17 @@ void ObjectList_GetListBounds( ObjectList * pList, jeExtBox * pListBounds )
 
 }// ObjectList_GetListBounds
 
-static jeBoolean ObjectList_UnionObjectDrawRectCB( Object * pObject, jeExtBox * pListBounds )
+static grBoolean ObjectList_UnionObjectDrawRectCB( Object * pObject, grExtBox * pListBounds )
 {
 
-	jeExtBox  ObjectBounds;
+	grExtBox  ObjectBounds;
 
 	if( Object_GetWorldDrawBounds(pObject, &ObjectBounds) )
 		Util_ExtBox_Union( pListBounds, &ObjectBounds, pListBounds ) ;
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// ObjectList_UnionObjectDrawRectCB
 
-void ObjectList_GetListDrawBounds( ObjectList * pList, jeExtBox * pListBounds )
+void ObjectList_GetListDrawBounds( ObjectList * pList, grExtBox * pListBounds )
 {
 	assert( pList != NULL ) ;
 	assert( pListBounds != NULL ) ;

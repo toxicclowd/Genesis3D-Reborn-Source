@@ -31,12 +31,12 @@
 #include "vph.h"
 #include "mkbody.h"
 #include "bitmap.h"
-#include "jeResource.h"
-#include "jeMaterial.h"
+#include "grResource.h"
+#include "grMaterial.h"
 
 #include "maxmath.h"
 
-#include "jeEngine.h"
+#include "grEngine.h"
 
 float VERT_EQUALITY_TOLERANCE = 0.005f; // obtained empirically
 int fCount =0;		// face count for display
@@ -55,8 +55,8 @@ typedef struct MkBody_Options
 	MK_Boolean WriteTextVPH;
 	MK_Boolean RotationInBody;
 	char BodyFile[_MAX_PATH];
-	jeVec3d EulerAngles;
-	jeStrBlock *ExtraMaterials; 
+	grVec3d EulerAngles;
+	grStrBlock *ExtraMaterials; 
 	int nVersion; // [SLB 08-18-99] Easy way to pass along functions
 } MkBody_Options;
 
@@ -82,22 +82,22 @@ typedef struct
 	char Name[NAME_LENGTH];
 	int Index;
 	int ParentID;
-	jeXForm3d Matrix;
+	grXForm3d Matrix;
 } BoneDetail;
 
 typedef struct
 {
 	char Name[NAME_LENGTH];
-	jeXForm3d NodeTM;
-	jeQuaternion Q;
-	jeVec3d S;
-	jeVec3d T;
+	grXForm3d NodeTM;
+	grQuaternion Q;
+	grVec3d S;
+	grVec3d T;
 } NodeDetail;
 
 typedef struct
 {
-	jeVec3d v;
-	jeVec3d offsetv;
+	grVec3d v;
+	grVec3d offsetv;
 	float weight;
 	int bone;
 	int VertexGroup;
@@ -125,8 +125,8 @@ typedef struct
 
 typedef struct 
 {
-	jeVec3d v;						// location
-	jeVec3d n;						// normal
+	grVec3d v;						// location
+	grVec3d n;						// normal
 	float tu, tv;					// texture coords
 	int bone;						// bone index
 } VertexDetail;
@@ -140,13 +140,13 @@ typedef struct
 typedef struct 
 {
 	int bone;						// bone for this vertex
-	jeVec3d BSPoint;					// offset in bone space
-	jeVec3d WSPoint;					// location in world space
+	grVec3d BSPoint;					// offset in bone space
+	grVec3d WSPoint;					// location in world space
 } VPHVertex;
 
 typedef struct
 {
-	jeXForm3d Matrix;
+	grXForm3d Matrix;
 	char Name[NAME_LENGTH];
 } VPHLink;
 
@@ -155,7 +155,7 @@ typedef struct
 	int NumLinks;
 	VPHLink* pLinks;
 	int NumObjects;
-	jeStrBlock* pSBObjectNames;
+	grStrBlock* pSBObjectNames;
 	int* NumVerts;
 	VPHVertex** ppVerts;
 } VPHData;
@@ -202,16 +202,16 @@ void FreeVPHData(VPHData** ppVPHData)
 
 	if(pVPHData != NULL)
 	{
-		jeStrBlock_Destroy(&pVPHData->pSBObjectNames);
+		grStrBlock_Destroy(&pVPHData->pSBObjectNames);
 		for(j=0;j<pVPHData->NumObjects;j++)
 		{
-			jeRam_Free(pVPHData->ppVerts[j]);
+			grRam_Free(pVPHData->ppVerts[j]);
 		}
-		jeRam_Free(pVPHData->NumVerts);
-		jeRam_Free(pVPHData->ppVerts);
-		jeRam_Free(pVPHData->pLinks);
+		grRam_Free(pVPHData->NumVerts);
+		grRam_Free(pVPHData->ppVerts);
+		grRam_Free(pVPHData->pLinks);
 
-		jeRam_Free(*ppVPHData);
+		grRam_Free(*ppVPHData);
 	}
 }
 
@@ -223,7 +223,7 @@ ReturnCode ReadVPHData(MkBody_Options* options, FILE* fp, VPHData* pVPHData)
 	VPHLink* pVPHLinks = NULL;
 	char line[LINE_LENGTH];
 	int NumLinks, NumObjects;
-	jeStrBlock* pSBNames;
+	grStrBlock* pSBNames;
 	int* pNumVerts = NULL;
 	int i, j;
 	char* ptext;
@@ -246,7 +246,7 @@ ReturnCode ReadVPHData(MkBody_Options* options, FILE* fp, VPHData* pVPHData)
 			return retValue;
 		}
 		
-	pVPHLinks = JE_RAM_ALLOCATE_ARRAY(VPHLink, NumLinks);
+	pVPHLinks = GR_RAM_ALLOCATE_ARRAY(VPHLink, NumLinks);
 	if(pVPHLinks == NULL)
 	{
 		Printf("ERROR: Could not allocate VPH links\n");
@@ -314,7 +314,7 @@ ReturnCode ReadVPHData(MkBody_Options* options, FILE* fp, VPHData* pVPHData)
 	if(i != NumLinks)
 	{
 		// there must have been an error
-		jeRam_Free(pVPHLinks);
+		grRam_Free(pVPHLinks);
 		return retValue;
 	}
 
@@ -323,7 +323,7 @@ ReturnCode ReadVPHData(MkBody_Options* options, FILE* fp, VPHData* pVPHData)
 	{
 		Printf("ERROR: Could not find links in VPH file\n");
 		MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-		jeRam_Free(pVPHLinks);
+		grRam_Free(pVPHLinks);
 		return retValue;
 	}
 
@@ -332,36 +332,36 @@ ReturnCode ReadVPHData(MkBody_Options* options, FILE* fp, VPHData* pVPHData)
 		Printf("ERROR: Could not read number of objects in VPH file\n");
 		Printf("Line from VPH file:\n%s\n",line);
 		MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-		jeRam_Free(pVPHLinks);
+		grRam_Free(pVPHLinks);
 		return retValue;
 	}
 
 	// setup for object names
-	pSBNames = jeStrBlock_Create();
+	pSBNames = grStrBlock_Create();
 	if(pSBNames == NULL)
 	{
 		Printf("ERROR: Could not allocate VPH string block\n");
 		MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-		jeRam_Free(pVPHLinks);
+		grRam_Free(pVPHLinks);
 		return retValue;
 	}
 
 	// Setup for parent link indexes
-	pNumVerts = JE_RAM_ALLOCATE_ARRAY(int, NumObjects);
+	pNumVerts = GR_RAM_ALLOCATE_ARRAY(int, NumObjects);
 	if(pNumVerts == NULL)
 	{
 		Printf("ERROR: Could not allocate vert count data\n");
 		MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-		jeRam_Free(pVPHLinks);
+		grRam_Free(pVPHLinks);
 		return retValue;
 	}
-	ppVerts = JE_RAM_ALLOCATE_ARRAY(VPHVertex*, NumObjects);
+	ppVerts = GR_RAM_ALLOCATE_ARRAY(VPHVertex*, NumObjects);
 	if(ppVerts == NULL)
 	{
 		Printf("ERROR: Could not allocate vert list array\n");
 		MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-		jeRam_Free(pVPHLinks);
-		jeRam_Free(pNumVerts);
+		grRam_Free(pVPHLinks);
+		grRam_Free(pNumVerts);
 		return retValue;
 	}
 
@@ -377,7 +377,7 @@ ReturnCode ReadVPHData(MkBody_Options* options, FILE* fp, VPHData* pVPHData)
 		StripNewLine(line);
 		if(options->Capitalize != MK_FALSE)
 			strupr(line);
-		if(jeStrBlock_Append(&pSBNames, line + strlen("NAME = ")) == JE_FALSE)
+		if(grStrBlock_Append(&pSBNames, line + strlen("NAME = ")) == GR_FALSE)
 		{
 			Printf("ERROR: Could not append vph object %d string\n", i);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -399,7 +399,7 @@ ReturnCode ReadVPHData(MkBody_Options* options, FILE* fp, VPHData* pVPHData)
 			break;
 		}
 
-		pVPHVerts = JE_RAM_ALLOCATE_ARRAY(VPHVertex, pNumVerts[i]);
+		pVPHVerts = GR_RAM_ALLOCATE_ARRAY(VPHVertex, pNumVerts[i]);
 		if(pVPHVerts == NULL)
 		{
 			Printf("ERROR: Could not allocate vert data\n");
@@ -465,14 +465,14 @@ ReturnCode ReadVPHData(MkBody_Options* options, FILE* fp, VPHData* pVPHData)
 	if(i != NumObjects)
 	{
 		// there must have been an error
-		jeStrBlock_Destroy(&pSBNames);
+		grStrBlock_Destroy(&pSBNames);
 		for(j=0;j<i;j++)
 		{
-			jeRam_Free(ppVerts[j]);
+			grRam_Free(ppVerts[j]);
 		}
-		jeRam_Free(pNumVerts);
-		jeRam_Free(ppVerts);
-		jeRam_Free(pVPHLinks);
+		grRam_Free(pNumVerts);
+		grRam_Free(ppVerts);
+		grRam_Free(pVPHLinks);
 		return retValue;
 	}
 
@@ -486,12 +486,12 @@ ReturnCode ReadVPHData(MkBody_Options* options, FILE* fp, VPHData* pVPHData)
 	return retValue;
 }
 
-MK_Boolean AddBones(MkBody_Options* options, jeBody* pBody, const int NumBones, BoneDetail* pBoneIDs, const int NumNodes, const NodeDetail* pNodes)
+MK_Boolean AddBones(MkBody_Options* options, grBody* pBody, const int NumBones, BoneDetail* pBoneIDs, const int NumNodes, const NodeDetail* pNodes)
 {
 	int j, k;
-	jeXForm3d matrix, parentmatrix;
-	jeQuaternion gQ;
-	jeVec3d v;
+	grXForm3d matrix, parentmatrix;
+	grQuaternion gQ;
+	grVec3d v;
 
 	for(k=0;k<NumBones;k++)
 	{
@@ -507,7 +507,7 @@ MK_Boolean AddBones(MkBody_Options* options, jeBody* pBody, const int NumBones, 
 		}
 
 		// want to strip the scale component
-		jeQuaternion_ToMatrix(&pNodes[j].Q, &matrix);
+		grQuaternion_ToMatrix(&pNodes[j].Q, &matrix);
 		matrix.Translation = pNodes[j].T;
 
 		if(pBoneIDs[k].ParentID != -1)
@@ -526,16 +526,16 @@ MK_Boolean AddBones(MkBody_Options* options, jeBody* pBody, const int NumBones, 
 			}
 
 			// want to strip the scale component
-			jeQuaternion_ToMatrix(&pNodes[j].Q, &parentmatrix);
+			grQuaternion_ToMatrix(&pNodes[j].Q, &parentmatrix);
 			parentmatrix.Translation = pNodes[j].T;
 			*/
 		}
 		else
 		{
-			jeXForm3d_SetIdentity(&parentmatrix);
+			grXForm3d_SetIdentity(&parentmatrix);
 
 			// Root is identity by definition
-			//jeXForm3d_SetIdentity(&matrix);
+			//grXForm3d_SetIdentity(&matrix);
 		}
 
 		// store world space matrix for later use
@@ -545,28 +545,28 @@ MK_Boolean AddBones(MkBody_Options* options, jeBody* pBody, const int NumBones, 
 		MaxMath_InverseMultiply(&matrix, &parentmatrix, &matrix);
 
 		// flip the rotation
-		jeQuaternion_FromMatrix(&matrix, &gQ);
+		grQuaternion_FromMatrix(&matrix, &gQ);
 		gQ.W = -gQ.W;
 		v = matrix.Translation;
-		jeQuaternion_ToMatrix(&gQ, &matrix);
+		grQuaternion_ToMatrix(&gQ, &matrix);
 		matrix.Translation = v;
-		jeXForm3d_Orthonormalize(&matrix);
+		grXForm3d_Orthonormalize(&matrix);
 
 		// To support bvh format, the body must not have a rotational
 		// attachment.  This can be pushed into the motion.  Thus, the
 		// attachment is just the local-space translation.
 		if(options->RotationInBody == MK_FALSE)
-			jeXForm3d_SetTranslation(&matrix, v.X, v.Y, v.Z);
+			grXForm3d_SetTranslation(&matrix, v.X, v.Y, v.Z);
 
 		// get parent's index
 		j = pBoneIDs[k].ParentID;
 		if(j == -1)
-			j = JE_BODY_NO_PARENT_BONE;
+			j = GR_BODY_NO_PARENT_BONE;
 		else
 			j = pBoneIDs[j].Index;
 
 		// attach the bone
-		if(jeBody_AddBone(pBody, j, pBoneIDs[k].Name, &matrix, &pBoneIDs[k].Index) == JE_FALSE)
+		if(grBody_AddBone(pBody, j, pBoneIDs[k].Name, &matrix, &pBoneIDs[k].Index) == GR_FALSE)
 		{
 			Printf("ERROR: Bone '%s' not added\n", pBoneIDs[k].Name);
 			return MK_FALSE;
@@ -580,7 +580,7 @@ MK_Boolean CalculateWSVPHVerts(VPHData* pVPHData, const int NumNodes, const Node
 {
 	int i, j, k;
 	VPHVertex* pVerts;
-	jeXForm3d matrix, nodematrix;
+	grXForm3d matrix, nodematrix;
 
 	for(k=0;k<pVPHData->NumObjects;k++)
 	{
@@ -600,7 +600,7 @@ MK_Boolean CalculateWSVPHVerts(VPHData* pVPHData, const int NumNodes, const Node
 			{
 				if(strcmp(pNodes[i].Name, pVPHData->pLinks[pVerts[j].bone].Name) == 0)
 				{
-					jeQuaternion_ToMatrix(&pNodes[i].Q, &nodematrix);
+					grQuaternion_ToMatrix(&pNodes[i].Q, &nodematrix);
 					nodematrix.Translation = pNodes[i].T;
 					break;
 				}
@@ -611,9 +611,9 @@ MK_Boolean CalculateWSVPHVerts(VPHData* pVPHData, const int NumNodes, const Node
 				return MK_FALSE;
 			}
 
-			jeXForm3d_Multiply(&matrix, &nodematrix, &matrix);
+			grXForm3d_Multiply(&matrix, &nodematrix, &matrix);
 
-			jeXForm3d_Transform(&matrix, &pVerts[j].BSPoint, &pVerts[j].WSPoint);
+			grXForm3d_Transform(&matrix, &pVerts[j].BSPoint, &pVerts[j].WSPoint);
 		}
 	}
 
@@ -622,7 +622,7 @@ MK_Boolean CalculateWSVPHVerts(VPHData* pVPHData, const int NumNodes, const Node
 
 ReturnCode CalculateVertexNormal(int Index, int Group, int NumFaces, 
 		V2FaceDetail* pFaces, V2VertexDetail* pVerts, V2VertexGroupDetail* pVertGroups,
-		jeVec3d* pNormal)
+		grVec3d* pNormal)
 {
 	ReturnCode retCode = RETURN_SUCCESS;
 	int j;
@@ -632,15 +632,15 @@ ReturnCode CalculateVertexNormal(int Index, int Group, int NumFaces,
 	//-------------------------------------------------------------------
 	// Calculate Vertex normals
 
-	jeVec3d Normal;
-	jeVec3d A, B;
-	jeVec3d v={0.0f,0.0f,0.0f};
-	jeVec3d ThisNormal={0.0f,0.0f,0.0f};
+	grVec3d Normal;
+	grVec3d A, B;
+	grVec3d v={0.0f,0.0f,0.0f};
+	grVec3d ThisNormal={0.0f,0.0f,0.0f};
 
 	// Average the normals for all common faces in the same smoothing group
 	nNumNormals = 0;
 	
-	jeVec3d_Clear(&Normal);
+	grVec3d_Clear(&Normal);
 	Normal.X = 1.0f;
 	*pNormal = Normal;
 
@@ -664,22 +664,22 @@ ReturnCode CalculateVertexNormal(int Index, int Group, int NumFaces,
 				A = pVerts[ pVertGroups[ pFaces[j].v[2] ].FirstVertex ].v;
 				B = pVerts[ pVertGroups[ pFaces[j].v[0] ].FirstVertex ].v;
 				v = pVerts[ pVertGroups[ pFaces[j].v[1] ].FirstVertex ].v;
-				jeVec3d_Subtract(&A, &v, &A);
-				jeVec3d_Subtract(&B, &v, &B);
-				jeVec3d_CrossProduct(&A, &B, &ThisNormal);
+				grVec3d_Subtract(&A, &v, &A);
+				grVec3d_Subtract(&B, &v, &B);
+				grVec3d_CrossProduct(&A, &B, &ThisNormal);
 
 				#if 0
-				if(jeVec3d_Length(&ThisNormal) < VERT_EQUALITY_TOLERANCE)
+				if(grVec3d_Length(&ThisNormal) < VERT_EQUALITY_TOLERANCE)
 					{
 						MkUtil_AdjustReturnCode(&retCode, RETURN_WARNING);
 						Printf("WARNING: degenerate face: %f %f %f\n", v.X, v.Y, v.Z);
-						jeVec3d_Clear(&ThisNormal);
+						grVec3d_Clear(&ThisNormal);
 						ThisNormal.X = 1.0f;
 					}
 				else
 				#endif
 					{
-						jeVec3d_Add(&Normal, &ThisNormal, &Normal);
+						grVec3d_Add(&Normal, &ThisNormal, &Normal);
 						nNumNormals++;
 					}
 			}
@@ -693,7 +693,7 @@ ReturnCode CalculateVertexNormal(int Index, int Group, int NumFaces,
 		return(RETURN_ERROR);
 	}
 
-	if (jeVec3d_Normalize(&Normal)==0.0f)
+	if (grVec3d_Normalize(&Normal)==0.0f)
 		{
 			// It is possible for a sum of normals to be zero.  For example, the corner
 			// of a piece of paper.  Just pick the last found normal and spit out a
@@ -703,11 +703,11 @@ ReturnCode CalculateVertexNormal(int Index, int Group, int NumFaces,
 				Normal = ThisNormal;
 		}
 
-	if (jeVec3d_Normalize(&Normal)==0.0f)
+	if (grVec3d_Normalize(&Normal)==0.0f)
 		{
 			MkUtil_AdjustReturnCode(&retCode, RETURN_WARNING);
 			Printf("WARNING: Tried to find a non-zero normal from local geometry, but failed.\n");
-			jeVec3d_Clear(&Normal);
+			grVec3d_Clear(&Normal);
 			Normal.X = 1.0f;
 		}
 
@@ -716,19 +716,19 @@ ReturnCode CalculateVertexNormal(int Index, int Group, int NumFaces,
 	return(retCode);
 }
 
-ReturnCode V2ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, char* name, int NumVertices, V2VertexDetail* pVerts, VPHData* pvphdata, NodeDetail* pNodes, int NumNodes)
+ReturnCode V2ReadVertices(MkBody_Options* options, FILE* fp, grBody* pBody, char* name, int NumVertices, V2VertexDetail* pVerts, VPHData* pvphdata, NodeDetail* pNodes, int NumNodes)
 {
 	char line[LINE_LENGTH];
 	char* ptext;
 	int i, j, k;
 	int n;
-	jeXForm3d dummyMatrix;
-	jeXForm3d xmatrix;
-	jeXForm3d euler;
+	grXForm3d dummyMatrix;
+	grXForm3d xmatrix;
+	grXForm3d euler;
 
 	assert(pVerts != NULL);
 
-	jeXForm3d_SetEulerAngles(&euler, &options->EulerAngles);
+	grXForm3d_SetEulerAngles(&euler, &options->EulerAngles);
 
 	for(k=0;k<NumVertices;k++)
 	{
@@ -762,7 +762,7 @@ ReturnCode V2ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, char
 		}
 
 		// apply rotation to all data at read time
-		jeXForm3d_Transform(&euler, &pVerts[k].v, &pVerts[k].v);
+		grXForm3d_Transform(&euler, &pVerts[k].v, &pVerts[k].v);
 #pragma message ("vertex offsets not used now, but when they are used, they need to be rotated")
 
 		// to get to the bone name, search for the 6th space
@@ -792,7 +792,7 @@ ReturnCode V2ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, char
 					goto ReadVertexFailure;
 				}
 				
-			if(jeStrBlock_FindString(pvphdata->pSBObjectNames, name, &j) == JE_FALSE)
+			if(grStrBlock_FindString(pvphdata->pSBObjectNames, name, &j) == GR_FALSE)
 			{
 				Printf("ERROR: Could not find vph data for mesh '%s'\n", name);
 				goto ReadVertexFailure;
@@ -802,7 +802,7 @@ ReturnCode V2ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, char
 			j = pvphdata->NumVerts[j] - 1;
 			while(j >= 0)
 			{
-				if(jeVec3d_Compare(&pVPHVerts[j].WSPoint, &pVerts[k].v, VERT_EQUALITY_TOLERANCE) != JE_FALSE)
+				if(grVec3d_Compare(&pVPHVerts[j].WSPoint, &pVerts[k].v, VERT_EQUALITY_TOLERANCE) != GR_FALSE)
 					break; // found it!
 
 				j--;
@@ -847,7 +847,7 @@ ReturnCode V2ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, char
 		// gotta have a node at this point
 		assert( (n >= 0) && (n < NumNodes) );
 
-		if(jeBody_GetBoneByName(pBody, ptext, &i, &dummyMatrix, &j) == JE_FALSE)
+		if(grBody_GetBoneByName(pBody, ptext, &i, &dummyMatrix, &j) == GR_FALSE)
 		{
 			Printf("ERROR: Could not find bone '%s' for mesh '%s' in '%s' NFO file\n", ptext, name, options->NFOFile);
 			goto ReadVertexFailure;
@@ -855,7 +855,7 @@ ReturnCode V2ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, char
 		pVerts[k].bone = i;
 
 		// Need to do a NoScale
-		jeQuaternion_ToMatrix(&pNodes[n].Q, &xmatrix);
+		grQuaternion_ToMatrix(&pNodes[n].Q, &xmatrix);
 		xmatrix.Translation = pNodes[n].T;
 
 		MaxMath_GetInverse(&xmatrix, &xmatrix);
@@ -872,7 +872,7 @@ ReadVertexFailure:
 }
 
 // [SLB 08-18-99] Same as V2ReadVertices, but added support for weights.
-ReturnCode V21ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, char* name, int NumVertices, V2VertexDetail* pVerts, VPHData* pvphdata, NodeDetail* pNodes, int NumNodes)
+ReturnCode V21ReadVertices(MkBody_Options* options, FILE* fp, grBody* pBody, char* name, int NumVertices, V2VertexDetail* pVerts, VPHData* pvphdata, NodeDetail* pNodes, int NumNodes)
 {
 	char line[LINE_LENGTH];
 	char* ptext;
@@ -880,13 +880,13 @@ ReturnCode V21ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, cha
 	int n;
 	int VertexGroup;
 	int VertexGroupIndex;
-	jeXForm3d dummyMatrix;
-	jeXForm3d xmatrix;
-	jeXForm3d euler;
+	grXForm3d dummyMatrix;
+	grXForm3d xmatrix;
+	grXForm3d euler;
 
 	assert(pVerts != NULL);
 
-	jeXForm3d_SetEulerAngles(&euler, &options->EulerAngles);
+	grXForm3d_SetEulerAngles(&euler, &options->EulerAngles);
 
 	VertexGroup = -1; // initialize behind, first vertex will increment it to zero
 	for(k=0;k<NumVertices;k++)
@@ -926,7 +926,7 @@ ReturnCode V21ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, cha
 		pVerts[k].VertexGroup = VertexGroup;
 
 		// apply rotation to all data at read time
-		jeXForm3d_Transform(&euler, &pVerts[k].v, &pVerts[k].v);
+		grXForm3d_Transform(&euler, &pVerts[k].v, &pVerts[k].v);
 #pragma message ("vertex offsets not used now, but when they are used, they need to be rotated")
 
 		// to get to the bone name, search for the 8th space
@@ -956,7 +956,7 @@ ReturnCode V21ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, cha
 					goto V21ReadVertexFailure;
 				}
 				
-			if(jeStrBlock_FindString(pvphdata->pSBObjectNames, name, &j) == JE_FALSE)
+			if(grStrBlock_FindString(pvphdata->pSBObjectNames, name, &j) == GR_FALSE)
 			{
 				Printf("ERROR: Could not find vph data for mesh '%s'\n", name);
 				goto V21ReadVertexFailure;
@@ -966,7 +966,7 @@ ReturnCode V21ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, cha
 			j = pvphdata->NumVerts[j] - 1;
 			while(j >= 0)
 			{
-				if(jeVec3d_Compare(&pVPHVerts[j].WSPoint, &pVerts[k].v, VERT_EQUALITY_TOLERANCE) != JE_FALSE)
+				if(grVec3d_Compare(&pVPHVerts[j].WSPoint, &pVerts[k].v, VERT_EQUALITY_TOLERANCE) != GR_FALSE)
 					break; // found it!
 
 				j--;
@@ -1011,7 +1011,7 @@ ReturnCode V21ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, cha
 		// gotta have a node at this point
 		assert( (n >= 0) && (n < NumNodes) );
 
-		if(jeBody_GetBoneByName(pBody, ptext, &i, &dummyMatrix, &j) == JE_FALSE)
+		if(grBody_GetBoneByName(pBody, ptext, &i, &dummyMatrix, &j) == GR_FALSE)
 		{
 			Printf("ERROR: Could not find bone '%s' for mesh '%s' in '%s' NFO file\n", ptext, name, options->NFOFile);
 			goto V21ReadVertexFailure;
@@ -1019,7 +1019,7 @@ ReturnCode V21ReadVertices(MkBody_Options* options, FILE* fp, jeBody* pBody, cha
 		pVerts[k].bone = i;
 
 		// Need to do a NoScale
-		jeQuaternion_ToMatrix(&pNodes[n].Q, &xmatrix);
+		grQuaternion_ToMatrix(&pNodes[n].Q, &xmatrix);
 		xmatrix.Translation = pNodes[n].T;
 
 		MaxMath_GetInverse(&xmatrix, &xmatrix);
@@ -1052,13 +1052,13 @@ ReturnCode V2ReadTextureVertices(MkBody_Options* options, FILE* fp, char* name, 
 
 		i = sscanf(line, "%f %f",	&pTVerts[k].tu,
 									&pTVerts[k].tv);
-		pTVerts[k].NAN = JE_FALSE;
+		pTVerts[k].NAN = GR_FALSE;
 		if(i != 2)
 		{
 			if (strstr(line,"NAN") != NULL)
 				{
 					pTVerts[k].tu = pTVerts[k].tv = 0.0f;
-					pTVerts[k].NAN = JE_TRUE;
+					pTVerts[k].NAN = GR_TRUE;
 				}
 			else
 				{
@@ -1138,7 +1138,7 @@ ReadFacesFailure:
 	return(RETURN_ERROR);
 }
 
-ReturnCode V2ReadAndAddMesh(MkBody_Options* options, FILE* fp, jeBody* pBody, VPHData* pvphdata, NodeDetail* pNodes, int NumNodes)
+ReturnCode V2ReadAndAddMesh(MkBody_Options* options, FILE* fp, grBody* pBody, VPHData* pvphdata, NodeDetail* pNodes, int NumNodes)
 {
 	ReturnCode retValue = RETURN_SUCCESS;
 	ReturnCode thisRetValue;
@@ -1154,28 +1154,28 @@ ReturnCode V2ReadAndAddMesh(MkBody_Options* options, FILE* fp, jeBody* pBody, VP
 	V2VertexGroupDetail* pVertGroups = NULL;
 	V2TVertexDetail* pTVerts = NULL;
 	V2FaceDetail* pFaces = NULL;
-	const jeVec3d* vertices[3];
+	const grVec3d* vertices[3];
 	const V2TVertexDetail* tvertices[3];
 	int bones[3];
-	jeVec3d normals[3];
-	jeXForm3d dummyMatrix;
-	jeXForm3d xmatrix;
+	grVec3d normals[3];
+	grXForm3d dummyMatrix;
+	grXForm3d xmatrix;
 	// special allocations for weighted vertex faces
 	int AllocSize1 = 0;
-	jeVec3d* pVertices1 = NULL;
-	jeVec3d* pNormals1 = NULL;
+	grVec3d* pVertices1 = NULL;
+	grVec3d* pNormals1 = NULL;
 	int* pBones1 = NULL;
-	jeFloat* pWeights1 = NULL;
+	grFloat* pWeights1 = NULL;
 	int AllocSize2 = 0;
-	jeVec3d* pVertices2 = NULL;
-	jeVec3d* pNormals2 = NULL;
+	grVec3d* pVertices2 = NULL;
+	grVec3d* pNormals2 = NULL;
 	int* pBones2 = NULL;
-	jeFloat* pWeights2 = NULL;
+	grFloat* pWeights2 = NULL;
 	int AllocSize3 = 0;
-	jeVec3d* pVertices3 = NULL;
-	jeVec3d* pNormals3 = NULL;
+	grVec3d* pVertices3 = NULL;
+	grVec3d* pNormals3 = NULL;
 	int* pBones3 = NULL;
-	jeFloat* pWeights3 = NULL;
+	grFloat* pWeights3 = NULL;
 
 #define V2RAAM_SAFE_FGETS													\
 if(fgets(line, LINE_LENGTH, fp) == NULL)									\
@@ -1220,7 +1220,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 		goto ReadMeshClean;
 	}
 
-	pVerts = JE_RAM_ALLOCATE_ARRAY(V2VertexDetail, NumVertices);
+	pVerts = GR_RAM_ALLOCATE_ARRAY(V2VertexDetail, NumVertices);
 	if(pVerts == NULL)
 	{
 		Printf("ERROR: Could not allocate vertex array for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
@@ -1241,7 +1241,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 	// Create Vertex Group to Vertex Translation
 
 	k = pVerts[NumVertices - 1].VertexGroup; // last vertex should be in last group
-	pVertGroups = JE_RAM_ALLOCATE_ARRAY(V2VertexGroupDetail, k + 1);
+	pVertGroups = GR_RAM_ALLOCATE_ARRAY(V2VertexGroupDetail, k + 1);
 	if(pVertGroups == NULL)
 	{
 		Printf("ERROR: Could not allocate vertex group array for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
@@ -1290,7 +1290,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 		goto ReadMeshClean;
 	}
 
-	pTVerts = JE_RAM_ALLOCATE_ARRAY(V2TVertexDetail, NumTVertices);
+	pTVerts = GR_RAM_ALLOCATE_ARRAY(V2TVertexDetail, NumTVertices);
 	if(pTVerts == NULL)
 	{
 		Printf("ERROR: Could not allocate texture vertex array for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
@@ -1324,7 +1324,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 		goto ReadMeshClean;
 	}
 
-	pFaces = JE_RAM_ALLOCATE_ARRAY(V2FaceDetail, NumFaces);
+	pFaces = GR_RAM_ALLOCATE_ARRAY(V2FaceDetail, NumFaces);
 	if(pFaces == NULL)
 	{
 		Printf("ERROR: Could not allocate face array for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
@@ -1355,9 +1355,9 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 
 			tvertices[j] = &pTVerts[pFaces[i].tv[j]];
 
-			if (tvertices[j]->NAN == JE_TRUE)
+			if (tvertices[j]->NAN == GR_TRUE)
 				{	
-					jeVec3d v;
+					grVec3d v;
 					v = pVerts[ pVertGroups[ pFaces[i].v[j] ].FirstVertex ].v;
 					Printf("Error: Bad uv coordinates for mesh '%s' in '%s' NFO file\n", name,options->NFOFile);
 					Printf("       (uv coordinates used in vertex at coordinates (%f,%f,%f))\n",v.X,v.Y,v.Z);
@@ -1388,13 +1388,13 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 						i,name, options->NFOFile);
 				goto ReadMeshClean;
 			}		
-		if (pFaces[i].material >= jeBody_GetMaterialCount(pBody))
+		if (pFaces[i].material >= grBody_GetMaterialCount(pBody))
 			{
 				MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 				Printf("ERROR: bad material index for face %d, on mesh '%s' in '%s' NFO file\n",
 						i,name, options->NFOFile);
 				Printf("       (index was %d, and there are only %d materials)\n", 
-						pFaces[i].material,jeBody_GetMaterialCount(pBody));	
+						pFaces[i].material,grBody_GetMaterialCount(pBody));	
 				goto ReadMeshClean;
 			}
 
@@ -1410,7 +1410,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 				bones[j] = pVerts[ pVertGroups[ pFaces[i].v[j] ].FirstVertex ].bone;
 
 				// convert world space normals to bone space
-				jeBody_GetBone(	pBody, 
+				grBody_GetBone(	pBody, 
 								pVerts[ pVertGroups[ pFaces[i].v[j] ].FirstVertex ].bone, 
 								&bonename, 
 								&dummyMatrix, 
@@ -1432,17 +1432,17 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 				assert( (k >= 0) && (k < NumNodes) );
 
 				// Need to do a NoScale
-				jeQuaternion_ToMatrix(&pNodes[k].Q, &xmatrix);
+				grQuaternion_ToMatrix(&pNodes[k].Q, &xmatrix);
 				xmatrix.Translation = pNodes[k].T;
 
 				MaxMath_GetInverse(&xmatrix, &xmatrix);
 
 				// fixup the normal to bone space
-				jeVec3d_Clear(&xmatrix.Translation);
+				grVec3d_Clear(&xmatrix.Translation);
 				MaxMath_Transform(&xmatrix, &normals[j], &normals[j]);
 			}
 
-			if(jeBody_AddFace(pBody,	vertices[0], &normals[0],
+			if(grBody_AddFace(pBody,	vertices[0], &normals[0],
 											tvertices[0]->tu, tvertices[0]->tv, 
 											bones[0],
 										vertices[1], &normals[1],
@@ -1451,7 +1451,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 										vertices[2], &normals[2],
 											tvertices[2]->tu, tvertices[2]->tv, 
 											bones[2],
-										pFaces[i].material) == JE_FALSE)
+										pFaces[i].material) == GR_FALSE)
 			{
 				MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 				Printf("ERROR: Could not add face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
@@ -1466,25 +1466,25 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 			// index 0
 			if(AllocSize1 < pVertGroups[ pFaces[i].v[0] ].NumVerts)
 			{
-				pTemp = jeRam_Realloc(pVertices1, sizeof(*pVertices1) * pVertGroups[ pFaces[i].v[0] ].NumVerts);
+				pTemp = grRam_Realloc(pVertices1, sizeof(*pVertices1) * pVertGroups[ pFaces[i].v[0] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 					Printf("ERROR: Could not realloc vertex array for weighted face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
 					goto ReadMeshClean;
 				}
-				pVertices1 = (jeVec3d*)pTemp;
+				pVertices1 = (grVec3d*)pTemp;
 
-				pTemp = jeRam_Realloc(pNormals1, sizeof(*pNormals1) * pVertGroups[ pFaces[i].v[0] ].NumVerts);
+				pTemp = grRam_Realloc(pNormals1, sizeof(*pNormals1) * pVertGroups[ pFaces[i].v[0] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 					Printf("ERROR: Could not realloc vertex array for weighted face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
 					goto ReadMeshClean;
 				}
-				pNormals1 = (jeVec3d*)pTemp;
+				pNormals1 = (grVec3d*)pTemp;
 
-				pTemp = jeRam_Realloc(pBones1, sizeof(*pBones1) * pVertGroups[ pFaces[i].v[0] ].NumVerts);
+				pTemp = grRam_Realloc(pBones1, sizeof(*pBones1) * pVertGroups[ pFaces[i].v[0] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -1493,14 +1493,14 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 				}
 				pBones1 = (int*)pTemp;
 
-				pTemp = jeRam_Realloc(pWeights1, sizeof(*pWeights1) * pVertGroups[ pFaces[i].v[0] ].NumVerts);
+				pTemp = grRam_Realloc(pWeights1, sizeof(*pWeights1) * pVertGroups[ pFaces[i].v[0] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 					Printf("ERROR: Could not realloc weight array for weighted face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
 					goto ReadMeshClean;
 				}
-				pWeights1 = (jeFloat*)pTemp;
+				pWeights1 = (grFloat*)pTemp;
 
 				for(j=0;j<pVertGroups[ pFaces[i].v[0] ].NumVerts;j++)
 				{
@@ -1509,7 +1509,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 					pWeights1[j] = pVerts[ pVertGroups[ pFaces[i].v[0] ].FirstVertex + j ].weight;
 
 					// convert normal to each bone's space to fill array
-					jeBody_GetBone(	pBody, 
+					grBody_GetBone(	pBody, 
 									pBones1[j], 
 									&bonename, 
 									&dummyMatrix, 
@@ -1531,13 +1531,13 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 					assert( (k >= 0) && (k < NumNodes) );
 
 					// Need to do a NoScale
-					jeQuaternion_ToMatrix(&pNodes[k].Q, &xmatrix);
+					grQuaternion_ToMatrix(&pNodes[k].Q, &xmatrix);
 					xmatrix.Translation = pNodes[k].T;
 
 					MaxMath_GetInverse(&xmatrix, &xmatrix);
 
 					// fixup the normal to bone space
-					jeVec3d_Clear(&xmatrix.Translation);
+					grVec3d_Clear(&xmatrix.Translation);
 					MaxMath_Transform(&xmatrix, &normals[0], pNormals1 + j);
 				}
 			}
@@ -1545,25 +1545,25 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 			// index 1
 			if(AllocSize2 < pVertGroups[ pFaces[i].v[1] ].NumVerts)
 			{
-				pTemp = jeRam_Realloc(pVertices2, sizeof(*pVertices2) * pVertGroups[ pFaces[i].v[1] ].NumVerts);
+				pTemp = grRam_Realloc(pVertices2, sizeof(*pVertices2) * pVertGroups[ pFaces[i].v[1] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 					Printf("ERROR: Could not realloc vertex array for weighted face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
 					goto ReadMeshClean;
 				}
-				pVertices2 = (jeVec3d*)pTemp;
+				pVertices2 = (grVec3d*)pTemp;
 
-				pTemp = jeRam_Realloc(pNormals2, sizeof(*pNormals2) * pVertGroups[ pFaces[i].v[1] ].NumVerts);
+				pTemp = grRam_Realloc(pNormals2, sizeof(*pNormals2) * pVertGroups[ pFaces[i].v[1] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 					Printf("ERROR: Could not realloc vertex array for weighted face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
 					goto ReadMeshClean;
 				}
-				pNormals2 = (jeVec3d*)pTemp;
+				pNormals2 = (grVec3d*)pTemp;
 
-				pTemp = jeRam_Realloc(pBones2, sizeof(*pBones2) * pVertGroups[ pFaces[i].v[1] ].NumVerts);
+				pTemp = grRam_Realloc(pBones2, sizeof(*pBones2) * pVertGroups[ pFaces[i].v[1] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -1572,14 +1572,14 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 				}
 				pBones2 = (int*)pTemp;
 
-				pTemp = jeRam_Realloc(pWeights2, sizeof(*pWeights2) * pVertGroups[ pFaces[i].v[1] ].NumVerts);
+				pTemp = grRam_Realloc(pWeights2, sizeof(*pWeights2) * pVertGroups[ pFaces[i].v[1] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 					Printf("ERROR: Could not realloc weight array for weighted face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
 					goto ReadMeshClean;
 				}
-				pWeights2 = (jeFloat*)pTemp;
+				pWeights2 = (grFloat*)pTemp;
 
 				for(j=0;j<pVertGroups[ pFaces[i].v[1] ].NumVerts;j++)
 				{
@@ -1588,7 +1588,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 					pWeights2[j] = pVerts[ pVertGroups[ pFaces[i].v[1] ].FirstVertex + j ].weight;
 
 					// convert normal to each bone's space to fill array
-					jeBody_GetBone(	pBody, 
+					grBody_GetBone(	pBody, 
 									pBones2[j], 
 									&bonename, 
 									&dummyMatrix, 
@@ -1610,13 +1610,13 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 					assert( (k >= 0) && (k < NumNodes) );
 
 					// Need to do a NoScale
-					jeQuaternion_ToMatrix(&pNodes[k].Q, &xmatrix);
+					grQuaternion_ToMatrix(&pNodes[k].Q, &xmatrix);
 					xmatrix.Translation = pNodes[k].T;
 
 					MaxMath_GetInverse(&xmatrix, &xmatrix);
 
 					// fixup the normal to bone space
-					jeVec3d_Clear(&xmatrix.Translation);
+					grVec3d_Clear(&xmatrix.Translation);
 					MaxMath_Transform(&xmatrix, &normals[1], pNormals2 + j);
 				}
 			}
@@ -1624,25 +1624,25 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 			// index 2
 			if(AllocSize3 < pVertGroups[ pFaces[i].v[2] ].NumVerts)
 			{
-				pTemp = jeRam_Realloc(pVertices3, sizeof(*pVertices3) * pVertGroups[ pFaces[i].v[2] ].NumVerts);
+				pTemp = grRam_Realloc(pVertices3, sizeof(*pVertices3) * pVertGroups[ pFaces[i].v[2] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 					Printf("ERROR: Could not realloc vertex array for weighted face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
 					goto ReadMeshClean;
 				}
-				pVertices3 = (jeVec3d*)pTemp;
+				pVertices3 = (grVec3d*)pTemp;
 
-				pTemp = jeRam_Realloc(pNormals3, sizeof(*pNormals3) * pVertGroups[ pFaces[i].v[2] ].NumVerts);
+				pTemp = grRam_Realloc(pNormals3, sizeof(*pNormals3) * pVertGroups[ pFaces[i].v[2] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 					Printf("ERROR: Could not realloc vertex array for weighted face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
 					goto ReadMeshClean;
 				}
-				pNormals3 = (jeVec3d*)pTemp;
+				pNormals3 = (grVec3d*)pTemp;
 
-				pTemp = jeRam_Realloc(pBones3, sizeof(*pBones3) * pVertGroups[ pFaces[i].v[2] ].NumVerts);
+				pTemp = grRam_Realloc(pBones3, sizeof(*pBones3) * pVertGroups[ pFaces[i].v[2] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -1651,14 +1651,14 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 				}
 				pBones3 = (int*)pTemp;
 
-				pTemp = jeRam_Realloc(pWeights3, sizeof(*pWeights3) * pVertGroups[ pFaces[i].v[2] ].NumVerts);
+				pTemp = grRam_Realloc(pWeights3, sizeof(*pWeights3) * pVertGroups[ pFaces[i].v[2] ].NumVerts);
 				if(pTemp == NULL)
 				{
 					MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 					Printf("ERROR: Could not realloc weight array for weighted face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
 					goto ReadMeshClean;
 				}
-				pWeights3 = (jeFloat*)pTemp;
+				pWeights3 = (grFloat*)pTemp;
 
 				for(j=0;j<pVertGroups[ pFaces[i].v[2] ].NumVerts;j++)
 				{
@@ -1667,7 +1667,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 					pWeights3[j] = pVerts[ pVertGroups[ pFaces[i].v[2] ].FirstVertex + j ].weight;
 
 					// convert normal to each bone's space to fill array
-					jeBody_GetBone(	pBody, 
+					grBody_GetBone(	pBody, 
 									pBones3[j], 
 									&bonename, 
 									&dummyMatrix, 
@@ -1689,17 +1689,17 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 					assert( (k >= 0) && (k < NumNodes) );
 
 					// Need to do a NoScale
-					jeQuaternion_ToMatrix(&pNodes[k].Q, &xmatrix);
+					grQuaternion_ToMatrix(&pNodes[k].Q, &xmatrix);
 					xmatrix.Translation = pNodes[k].T;
 
 					MaxMath_GetInverse(&xmatrix, &xmatrix);
 
 					// fixup the normal to bone space
-					jeVec3d_Clear(&xmatrix.Translation);
+					grVec3d_Clear(&xmatrix.Translation);
 					MaxMath_Transform(&xmatrix, &normals[2], pNormals3 + j);
 				}
 			}
-			if(jeBody_AddFaceWeightedVerts(	pBody,	
+			if(grBody_AddFaceWeightedVerts(	pBody,	
 											pVertices1, pNormals1,
 												tvertices[0]->tu, tvertices[0]->tv, 
 												pBones1, pWeights1,
@@ -1712,7 +1712,7 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 												tvertices[2]->tu, tvertices[2]->tv, 
 												pBones3, pWeights3,
 												pVertGroups[ pFaces[i].v[2] ].NumVerts,
-											pFaces[i].material) == JE_FALSE)
+											pFaces[i].material) == GR_FALSE)
 			{
 				MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 				Printf("ERROR: Could not add face for mesh '%s' in '%s' NFO file\n", name, options->NFOFile);
@@ -1725,42 +1725,42 @@ if(fgets(line, LINE_LENGTH, fp) == NULL)									\
 			Printf("\t%d Faces Processed\n",fCount);
 	}
 
-	Printf("\t%d Blend Data Elements Processed\n", jeBody_GetBlendDataCount(pBody));
+	Printf("\t%d Blend Data Elements Processed\n", grBody_GetBlendDataCount(pBody));
 
 ReadMeshClean:
 	if(pFaces != NULL)
-		jeRam_Free(pFaces);
+		grRam_Free(pFaces);
 	if(pTVerts != NULL)
-		jeRam_Free(pTVerts);
+		grRam_Free(pTVerts);
 	if(pVerts != NULL)
-		jeRam_Free(pVerts);
+		grRam_Free(pVerts);
 	if(pVertGroups != NULL)
-		jeRam_Free(pVertGroups);
+		grRam_Free(pVertGroups);
 
 	if(pVertices1 != NULL)
-		jeRam_Free(pVertices1);
+		grRam_Free(pVertices1);
 	if(pNormals1 != NULL)
-		jeRam_Free(pNormals1);
+		grRam_Free(pNormals1);
 	if(pBones1 != NULL)
-		jeRam_Free(pBones1);
+		grRam_Free(pBones1);
 	if(pWeights1 != NULL)
-		jeRam_Free(pWeights1);
+		grRam_Free(pWeights1);
 	if(pVertices2 != NULL)
-		jeRam_Free(pVertices2);
+		grRam_Free(pVertices2);
 	if(pNormals2 != NULL)
-		jeRam_Free(pNormals2);
+		grRam_Free(pNormals2);
 	if(pBones2 != NULL)
-		jeRam_Free(pBones2);
+		grRam_Free(pBones2);
 	if(pWeights2 != NULL)
-		jeRam_Free(pWeights2);
+		grRam_Free(pWeights2);
 	if(pVertices3 != NULL)
-		jeRam_Free(pVertices3);
+		grRam_Free(pVertices3);
 	if(pNormals3 != NULL)
-		jeRam_Free(pNormals3);
+		grRam_Free(pNormals3);
 	if(pBones3 != NULL)
-		jeRam_Free(pBones3);
+		grRam_Free(pBones3);
 	if(pWeights3 != NULL)
-		jeRam_Free(pWeights3);
+		grRam_Free(pWeights3);
 
 	return(retValue);
 }
@@ -1776,7 +1776,7 @@ static	void	SetExtension(char *Dest, const char *Src, const char *NewExt)
 }
 
 
-jeBoolean	MkBody_Material(MkBody_Options *options, const char *line, jeBody *pBody, int i)
+grBoolean	MkBody_Material(MkBody_Options *options, const char *line, grBody *pBody, int i)
 {
 	//	by trilobite	Jan. 2011
 	//char* ptext;
@@ -1784,7 +1784,7 @@ jeBoolean	MkBody_Material(MkBody_Options *options, const char *line, jeBody *pBo
 
 	char name[NAME_LENGTH];
 	int Index;
-	jeMaterialSpec *MatSpec;
+	grMaterialSpec *MatSpec;
 	
 				
 	assert( line != NULL );
@@ -1793,7 +1793,7 @@ jeBoolean	MkBody_Material(MkBody_Options *options, const char *line, jeBody *pBo
 	if (strchr(line,':')==NULL)
 		{
 			Printf("ERROR: line not formatted as expected: '%s'\n",line);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	if(strncmp(line, "(MAP)", 5) == 0)
 	{
@@ -1804,7 +1804,7 @@ jeBoolean	MkBody_Material(MkBody_Options *options, const char *line, jeBody *pBo
 		{
 			// there should be some filename-like text
 			Printf("ERROR: Found no texture map: '%s'\n", line);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// prefix the texture path
@@ -1812,26 +1812,26 @@ jeBoolean	MkBody_Material(MkBody_Options *options, const char *line, jeBody *pBo
 		strcat(name, ptext);
 
 		{
-			jeVFile *VF;
-			jeBitmap *Bmp;
-			jeBitmap_Info Info;
+			grVFile *VF;
+			grBitmap *Bmp;
+			grBitmap_Info Info;
 
 			char BmpFileName[_MAX_PATH];
 			if (stricmp(name+strlen(name)-4,".BMP") != 0)
 				{
 					Printf("ERROR: Material %d does not reference a BMP.  '%s' \n",i,ptext);
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 			// Try compressed images first, then regular bitmaps
 			SetExtension(BmpFileName,name,".gbm");
-			VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,BmpFileName,NULL,JE_VFILE_OPEN_READONLY);
+			VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,BmpFileName,NULL,GR_VFILE_OPEN_READONLY);
 			if (VF == NULL)
 			{
-				VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,name,NULL,JE_VFILE_OPEN_READONLY);
+				VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,name,NULL,GR_VFILE_OPEN_READONLY);
 				if (VF == NULL)
 					{
 						Printf("ERROR: Material %d, unable to locate bitmap '%s'\n",i,name);
-						return JE_FALSE;
+						return GR_FALSE;
 					}
 			}
 			else
@@ -1839,32 +1839,32 @@ jeBoolean	MkBody_Material(MkBody_Options *options, const char *line, jeBody *pBo
 #pragma message("Take out message about using compressed bitmaps.")
 				Printf("WARNING: Using compressed bitmap '%s'\n", BmpFileName);
 			}
-			Bmp = jeBitmap_CreateFromFile(VF);
-			jeVFile_Close(VF);
+			Bmp = grBitmap_CreateFromFile(VF);
+			grVFile_Close(VF);
 			if (Bmp == NULL)
 			{
 				Printf("ERROR: Material %d, unable to read bitmap '%s'\n",i,name);
-				return JE_FALSE;
+				return GR_FALSE;
 			}
-			jeBitmap_GetInfo(Bmp, &Info, NULL);
-			if (Info.Format == JE_PIXELFORMAT_8BIT)
+			grBitmap_GetInfo(Bmp, &Info, NULL);
+			if (Info.Format == GR_PIXELFORMAT_8BIT)
 			{
-				if (jeBitmap_SetColorKey(Bmp,JE_TRUE,255,JE_TRUE)==JE_FALSE)
+				if (grBitmap_SetColorKey(Bmp,GR_TRUE,255,GR_TRUE)==GR_FALSE)
 				{
 					Printf("ERROR: Material %d, unable to set color keying (transparent color) to 255 for bitmap '%s'\n",i,name);
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 			}
 		
             {
 				int W,H; //,TwoPower;
-				W = jeBitmap_Width ( Bmp );
-				H = jeBitmap_Height( Bmp );
+				W = grBitmap_Width ( Bmp );
+				H = grBitmap_Height( Bmp );
 				if (W != H)
 				{
 				#pragma message ("change this so that we can 'treat warnings as errors'")
 					Printf("WARNING: bitmap for material %d is not square. '%s'\n",i,name);
-						//return JE_FALSE;
+						//return GR_FALSE;
 				}
 				// BEGIN - Remove texture size limitation from Actor Studio - By Jeff, added by paradoxnj - 2/08/2005
 				/*#pragma message ("remove this when these limitations are removed from engine")
@@ -1877,7 +1877,7 @@ jeBoolean	MkBody_Material(MkBody_Options *options, const char *line, jeBody *pBo
 					{
 						Printf("Error: bitmap for material must be a power of 2 width and height.\n");
 						Printf("       The size of material %d ('%s') is width=%d, height=%d\n",i,name,W,H);
-						return JE_FALSE;
+						return GR_FALSE;
 					}*/
 				// END - Remove texture size limitation from Actor Studio - By Jeff, added by paradoxnj - 2/08/2005
 			}
@@ -1885,14 +1885,14 @@ jeBoolean	MkBody_Material(MkBody_Options *options, const char *line, jeBody *pBo
 			strcpy(name,line+6);		// after the "(MAP) "
 			*strrchr(name, ':')=0;
 
-			MatSpec = jeMaterialSpec_Create(jeResourceMgr_GetEngine(jeResourceMgr_GetSingleton()), jeResourceMgr_GetSingleton());
+			MatSpec = grMaterialSpec_Create(grResourceMgr_GetEngine(grResourceMgr_GetSingleton()), grResourceMgr_GetSingleton());
 #pragma message ("Krouer: change NULL to something better next time")
-	        jeMaterialSpec_AddLayerFromBitmap(MatSpec, 0, Bmp, name);
+	        grMaterialSpec_AddLayerFromBitmap(MatSpec, 0, Bmp, name);
 	        
-			if(jeBody_AddMaterial(pBody, name, MatSpec, 255.0f, 255.0f, 255.0f, NULL, &Index) == JE_FALSE)
+			if(grBody_AddMaterial(pBody, name, MatSpec, 255.0f, 255.0f, 255.0f, NULL, &Index) == GR_FALSE)
 			{
 				Printf("ERROR: Could not add material %d ('%s') to body. \n",i, name);
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		}
 	}
@@ -1914,22 +1914,22 @@ jeBoolean	MkBody_Material(MkBody_Options *options, const char *line, jeBody *pBo
 		{
 			// there should be some rgb values
 			Printf("ERROR: Found no texture color: '%s'\n", line);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		strcpy(name,line+6);      //  after the "(RGB) "
 		*strrchr(name, ':')=0;
-		if(jeBody_AddMaterial(pBody, name, NULL, r, g, b, NULL, &Index) == JE_FALSE)
+		if(grBody_AddMaterial(pBody, name, NULL, r, g, b, NULL, &Index) == GR_FALSE)
 		{
 			Printf("ERROR: Could not add material to body: '%s'\n", line);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
 	else
 	{
 		Printf("ERROR: Could not identify material type: '%s'\n", line);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -1942,8 +1942,8 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 	ReturnCode retValue = RETURN_SUCCESS;
 	ReturnCode newValue;
 	FILE* fp;
-	jeVFile *VF;
-	jeBody* pBody = NULL;
+	grVFile *VF;
+	grBody* pBody = NULL;
 	char line[LINE_LENGTH];
 	char vlgfile[_MAX_PATH];
 	VPHData* pvphdata = NULL;
@@ -1959,8 +1959,8 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 	FaceDetail face;
 	int NumMeshes;
 	VPHVertex* pVPHVerts;
-	jeXForm3d euler;
-	jeQuaternion eulerq;
+	grXForm3d euler;
+	grQuaternion eulerq;
 
 	// body and NFO filenames must be specified
 	if(options->BodyFile[0] == 0)
@@ -2013,16 +2013,16 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 	}
 
 	// who knows how many times this will get used in here
-	jeXForm3d_SetEulerAngles(&euler, &options->EulerAngles);
-	jeQuaternion_FromMatrix(&euler, &eulerq);
+	grXForm3d_SetEulerAngles(&euler, &options->EulerAngles);
+	grQuaternion_FromMatrix(&euler, &eulerq);
 
-	pBody = jeBody_Create();
+	pBody = grBody_Create();
 
 	if(pBody != NULL)
 	{
 
-		jeBody_SetOptimizeFlags(pBody,	JE_BODY_OPTIMIZE_FLAGS_VERTS | 
-										JE_BODY_OPTIMIZE_FLAGS_NORMALS);
+		grBody_SetOptimizeFlags(pBody,	GR_BODY_OPTIMIZE_FLAGS_VERTS | 
+										GR_BODY_OPTIMIZE_FLAGS_NORMALS);
 
 
 		if(options->VPHFile[0] != 0)
@@ -2033,17 +2033,17 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			{
 				Printf("ERROR: Could not open '%s' NFO file\n", options->NFOFile);
 				MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-				jeBody_Destroy(&pBody);
+				grBody_Destroy(&pBody);
 				remove(vlgfile);
 				return retValue;
 			}
 
-			pvphdata = JE_RAM_ALLOCATE_STRUCT(VPHData);
+			pvphdata = GR_RAM_ALLOCATE_STRUCT(VPHData);
 			if(pvphdata == NULL)
 			{
 				Printf("ERROR: Could not allocate VPHData\n");
 				MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-				jeBody_Destroy(&pBody);
+				grBody_Destroy(&pBody);
 				remove(vlgfile);
 				return retValue;
 			}
@@ -2054,8 +2054,8 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			if(retValue == RETURN_ERROR)
 			{
 				Printf("ERROR: Could not read '%s' VPH data\n", options->VPHFile);
-				jeBody_Destroy(&pBody);
-				jeRam_Free(pvphdata);
+				grBody_Destroy(&pBody);
+				grRam_Free(pvphdata);
 				return retValue;
 			}
 		}
@@ -2066,7 +2066,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 		{
 			Printf("ERROR: Could not open '%s' NFO file\n", options->NFOFile);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-			jeBody_Destroy(&pBody);
+			grBody_Destroy(&pBody);
 			FreeVPHData(&pvphdata);
 			return retValue;
 		}
@@ -2075,7 +2075,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 	MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);	\
 	fclose(fp);									\
 	fp = NULL;									\
-	jeBody_Destroy(&pBody);						\
+	grBody_Destroy(&pBody);						\
 	FreeVPHData(&pvphdata);						\
 	return retValue
 
@@ -2142,7 +2142,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 				}
 			FGETS_LINE_OR_CLOSE_AND_RETURN(line);
 			StripNewLine(line);
-			if (MkBody_Material(options,line,pBody,i)==JE_FALSE)
+			if (MkBody_Material(options,line,pBody,i)==GR_FALSE)
 				{
 					Printf("ERROR: Unable to add material %d ('%s')\n",i,line);
 					SET_ERROR_CLOSE_RETURN;
@@ -2152,12 +2152,12 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 
 		// EXTRA materials
 		{
-			int Last = Count + jeStrBlock_GetCount(options->ExtraMaterials); 
+			int Last = Count + grStrBlock_GetCount(options->ExtraMaterials); 
 			int i;
 			for ( i=Count; i<Last; i++)	
 				{
 					const char* MatLine;
-					MatLine = jeStrBlock_GetString(options->ExtraMaterials,i-Count);
+					MatLine = grStrBlock_GetString(options->ExtraMaterials,i-Count);
 					if (MkBody_Material( options, MatLine, pBody,i)==0)
 						{
 							Printf("ERROR: Unable to add extra material %d ('%s')\n",i-Count,MatLine);
@@ -2182,7 +2182,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			SET_ERROR_CLOSE_RETURN;
 		}
 
-		pBoneIDs = JE_RAM_ALLOCATE_ARRAY(BoneDetail, NumBones);
+		pBoneIDs = GR_RAM_ALLOCATE_ARRAY(BoneDetail, NumBones);
 		if(pBoneIDs == NULL)
 		{
 			Printf("ERROR: Could not allocate bone array\n", options->NFOFile);
@@ -2197,9 +2197,9 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 	MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);	\
 	fclose(fp);									\
 	fp = NULL;									\
-	jeBody_Destroy(&pBody);						\
+	grBody_Destroy(&pBody);						\
 	FreeVPHData(&pvphdata);						\
-	jeRam_Free(pBoneIDs);						\
+	grRam_Free(pBoneIDs);						\
 	return retValue
 
 		for(i=0;i<NumBones;i++)
@@ -2269,7 +2269,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			SET_ERROR_CLOSE_RETURN;
 		}
 
-		pNodes = JE_RAM_ALLOCATE_ARRAY(NodeDetail, NumNodes);
+		pNodes = GR_RAM_ALLOCATE_ARRAY(NodeDetail, NumNodes);
 		if(pNodes == NULL)
 		{
 			Printf("ERROR: Could not allocate node array\n", options->NFOFile);
@@ -2284,10 +2284,10 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 	MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);	\
 	fclose(fp);									\
 	fp = NULL;									\
-	jeBody_Destroy(&pBody);						\
+	grBody_Destroy(&pBody);						\
 	FreeVPHData(&pvphdata);						\
-	jeRam_Free(pBoneIDs);						\
-	jeRam_Free(pNodes);							\
+	grRam_Free(pBoneIDs);						\
+	grRam_Free(pNodes);							\
 	return retValue
 
 		for(i=0;i<NumNodes;i++)
@@ -2351,7 +2351,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 				break;
 			}
 
-			// jeQuaternion
+			// grQuaternion
 			j = fscanf(fp, "Q(w,x,y,z): %f %f %f %f\n",	&pNodes[i].Q.W,
 														&pNodes[i].Q.X,
 														&pNodes[i].Q.Y,
@@ -2361,7 +2361,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 				Printf("ERROR: Could not read node %d's quaternion\n", i);
 				break;
 			}
-			jeQuaternion_Normalize(&pNodes[i].Q); // can't believe I have to do this!
+			grQuaternion_Normalize(&pNodes[i].Q); // can't believe I have to do this!
 
 			// Scale
 			j = fscanf(fp, "S(x,y,z): %f %f %f\n",	&pNodes[i].S.X,
@@ -2384,11 +2384,11 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			}
 
 			// apply rotation to all data at read time
-			jeXForm3d_Orthonormalize(&pNodes[i].NodeTM);
-			jeXForm3d_Multiply(&euler, &pNodes[i].NodeTM, &pNodes[i].NodeTM);
-			jeQuaternion_Multiply(&eulerq, &pNodes[i].Q, &pNodes[i].Q);
-			jeXForm3d_Transform(&euler, &pNodes[i].S, &pNodes[i].S);
-			jeXForm3d_Transform(&euler, &pNodes[i].T, &pNodes[i].T);
+			grXForm3d_Orthonormalize(&pNodes[i].NodeTM);
+			grXForm3d_Multiply(&euler, &pNodes[i].NodeTM, &pNodes[i].NodeTM);
+			grQuaternion_Multiply(&eulerq, &pNodes[i].Q, &pNodes[i].Q);
+			grXForm3d_Transform(&euler, &pNodes[i].S, &pNodes[i].S);
+			grXForm3d_Transform(&euler, &pNodes[i].T, &pNodes[i].T);
 		}
 		if(i != NumNodes)
 		{
@@ -2426,10 +2426,10 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			// s
 			// t
 #define NUM_CUBE_POINTS 8
-			jeVec3d points[NUM_CUBE_POINTS];
-			jeVec3d min, max, t;
-			jeXForm3d matrix, parentmatrix;
-			jeQuaternion q;
+			grVec3d points[NUM_CUBE_POINTS];
+			grVec3d min, max, t;
+			grXForm3d matrix, parentmatrix;
+			grQuaternion q;
 
 			// read bone
 			ptext = line + strlen(BBOX_STRING);
@@ -2447,12 +2447,12 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			if(j == NumBones)
 			{
 				// didn't find bone for this box, attach it to the root
-				Index = JE_BODY_ROOT;
-				jeXForm3d_SetIdentity(&parentmatrix);
+				Index = GR_BODY_ROOT;
+				grXForm3d_SetIdentity(&parentmatrix);
 			}
 			else
 			{
-				if(jeBody_GetBoneByName(pBody, ptext, &Index, &matrix, &i) == JE_FALSE)
+				if(grBody_GetBoneByName(pBody, ptext, &Index, &matrix, &i) == GR_FALSE)
 				{
 					Printf("ERROR: bone '%s' not in body\n", ptext);
 					SET_ERROR_CLOSE_RETURN;
@@ -2535,21 +2535,21 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			}
 
 			// compute matrix
-			jeQuaternion_Normalize(&q);
-			jeQuaternion_ToMatrix(&q, &matrix);
+			grQuaternion_Normalize(&q);
+			grQuaternion_ToMatrix(&q, &matrix);
 			matrix.Translation = t;
 
 			// apply rotation to all data at read time
-			jeXForm3d_Multiply(&euler, &matrix, &matrix);
+			grXForm3d_Multiply(&euler, &matrix, &matrix);
 
 			// move to bone's coord space
 			MaxMath_InverseMultiply(&matrix, &parentmatrix, &matrix);
 
 			// invert matrix to transform points into bone space
-			jeXForm3d_GetTranspose(&parentmatrix, &parentmatrix);
+			grXForm3d_GetTranspose(&parentmatrix, &parentmatrix);
 
 			// transform the points
-			jeXForm3d_TransformVecArray(&parentmatrix, points, points, NUM_CUBE_POINTS);
+			grXForm3d_TransformVecArray(&parentmatrix, points, points, NUM_CUBE_POINTS);
 
 			// find the min's and max's
 			min = points[0];
@@ -2571,7 +2571,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			}
 
 			// now set the bounding box
-			jeBody_SetBoundingBox(pBody, Index, &min, &max);
+			grBody_SetBoundingBox(pBody, Index, &min, &max);
 
 			// read next line for expectant mesh list or another bounding box
 			FGETS_LINE_OR_CLOSE_AND_RETURN(line);
@@ -2678,8 +2678,8 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 						}
 
 						// apply rotation to all data at read time
-						jeXForm3d_Transform(&euler, &pfacevert->v, &pfacevert->v);
-						jeXForm3d_Transform(&euler, &pfacevert->n, &pfacevert->n);
+						grXForm3d_Transform(&euler, &pfacevert->v, &pfacevert->v);
+						grXForm3d_Transform(&euler, &pfacevert->n, &pfacevert->n);
 
 						// Textures need to be flipped from 3dsmax
 						pfacevert->tv = 1 - pfacevert->tv;
@@ -2688,9 +2688,9 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 						if(pfacevert->bone == -1)
 						{
 							int n;
-							jeXForm3d dummyx, xmatrix;
+							grXForm3d dummyx, xmatrix;
 
-							if(jeStrBlock_FindString(pvphdata->pSBObjectNames, name, &j) == JE_FALSE)
+							if(grStrBlock_FindString(pvphdata->pSBObjectNames, name, &j) == GR_FALSE)
 							{
 								Printf("ERROR: Could not find vph data for mesh '%s'\n", name);
 								SET_ERROR_CLOSE_RETURN;
@@ -2700,7 +2700,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 							j = pvphdata->NumVerts[j] - 1;
 							while(j >= 0)
 							{
-								if(jeVec3d_Compare(&pVPHVerts[j].WSPoint, &pfacevert->v, VERT_EQUALITY_TOLERANCE) != JE_FALSE)
+								if(grVec3d_Compare(&pVPHVerts[j].WSPoint, &pfacevert->v, VERT_EQUALITY_TOLERANCE) != GR_FALSE)
 									break; // found it!
 
 								j--;
@@ -2725,7 +2725,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 							}
 
 							// Need to do a NoScale
-							jeQuaternion_ToMatrix(&pNodes[n].Q, &xmatrix);
+							grQuaternion_ToMatrix(&pNodes[n].Q, &xmatrix);
 							xmatrix.Translation = pNodes[n].T;
 
 							MaxMath_GetInverse(&xmatrix, &xmatrix);
@@ -2734,11 +2734,11 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 							MaxMath_Transform(&xmatrix, &pfacevert->v, &pfacevert->v);
 
 							// fixup the normal
-							jeVec3d_Clear(&xmatrix.Translation);
+							grVec3d_Clear(&xmatrix.Translation);
 							MaxMath_Transform(&xmatrix, &pfacevert->v, &pfacevert->v);
 
 							// find the vert's bone
-							if(jeBody_GetBoneByName(pBody, pNodes[n].Name, &pfacevert->bone, &dummyx, &n) == JE_FALSE)
+							if(grBody_GetBoneByName(pBody, pNodes[n].Name, &pfacevert->bone, &dummyx, &n) == GR_FALSE)
 							{
 								Printf("ERROR: Could not find bone '%s' for vertex\n", pNodes[n].Name);
 								SET_ERROR_CLOSE_RETURN;
@@ -2749,7 +2749,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 					if (fCount%25==0)
 						Printf("\t%d Faces Processed\n",fCount);
 
-					if(jeBody_AddFace(pBody,	&face.verts[0].v, &face.verts[0].n, 
+					if(grBody_AddFace(pBody,	&face.verts[0].v, &face.verts[0].n, 
 												face.verts[0].tu, face.verts[0].tv, 
 												face.verts[0].bone,
 											&face.verts[1].v, &face.verts[1].n, 
@@ -2758,7 +2758,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 											&face.verts[2].v, &face.verts[2].n, 
 												face.verts[2].tu, face.verts[2].tv, 
 												face.verts[2].bone,
-											face.material) == JE_FALSE)
+											face.material) == GR_FALSE)
 					{
 						Printf("ERROR: Could not add face for '%s'\n", line);
 						SET_ERROR_CLOSE_RETURN;
@@ -2772,7 +2772,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 		}
 
 		Printf("Optimizing body geometry of actor\n");
-		if (jeBody_Optimize(pBody)==JE_FALSE)
+		if (grBody_Optimize(pBody)==GR_FALSE)
 			{
 				Printf("Error:  Unable to optimize body geometry of actor\n");
 				SET_ERROR_CLOSE_RETURN;
@@ -2794,7 +2794,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 		}
 
 		// Write the body
-		VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->BodyFile,NULL,JE_VFILE_OPEN_CREATE);
+		VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->BodyFile,NULL,GR_VFILE_OPEN_CREATE);
 		if(VF == NULL)
 		{
 			Printf("ERROR: Could not open output file '%s'\n", options->BodyFile);
@@ -2803,7 +2803,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 		}
 		else
 		{
-			if(jeBody_WriteToFile(pBody, VF) == JE_FALSE)
+			if(grBody_WriteToFile(pBody, VF) == GR_FALSE)
 			{
 				Printf("ERROR: Body file '%s' was not written correctly\n", options->BodyFile);
 				unlink(options->BodyFile);
@@ -2811,7 +2811,7 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			}
 			else
 			{
-				if (jeVFile_Close(VF) == JE_FALSE)
+				if (grVFile_Close(VF) == GR_FALSE)
 					{
 						Printf("ERROR: Body file '%s' was not written correctly\n", options->BodyFile);
 						unlink(options->BodyFile);
@@ -2824,10 +2824,10 @@ ReturnCode MkBody_DoMake(MkBody_Options* options,MkUtil_Printf PrintfCallback)
 			}
 		}
 
-		jeBody_Destroy(&pBody);
+		grBody_Destroy(&pBody);
 		FreeVPHData(&pvphdata);
-		jeRam_Free(pBoneIDs);
-		jeRam_Free(pNodes);
+		grRam_Free(pBoneIDs);
+		grRam_Free(pNodes);
 	}
 	else
 	{
@@ -2874,15 +2874,15 @@ MkBody_Options* MkBody_OptionsCreate()
 {
 	MkBody_Options* pOptions;
 
-	pOptions = JE_RAM_ALLOCATE_STRUCT(MkBody_Options);
+	pOptions = GR_RAM_ALLOCATE_STRUCT(MkBody_Options);
 	if(pOptions != NULL)
 	{
 		*pOptions = DefaultOptions;
 	}
-	pOptions->ExtraMaterials = jeStrBlock_Create();
+	pOptions->ExtraMaterials = grStrBlock_Create();
 	if (pOptions->ExtraMaterials == NULL)
 		{
-			jeRam_Free(pOptions);
+			grRam_Free(pOptions);
 			pOptions = NULL;
 		}
 
@@ -2896,8 +2896,8 @@ void MkBody_OptionsDestroy(MkBody_Options** ppOptions)
 	assert(ppOptions != NULL);
 	assert(*ppOptions != NULL);
 
-	jeStrBlock_Destroy( &((*ppOptions)->ExtraMaterials) );
-	jeRam_Free(*ppOptions);
+	grStrBlock_Destroy( &((*ppOptions)->ExtraMaterials) );
+	grRam_Free(*ppOptions);
 
 	*ppOptions = NULL;
 }
@@ -3049,7 +3049,7 @@ EulerAngleError:
 			}
 			else
 			{
-				if (jeStrBlock_Append(&(options->ExtraMaterials),string+2)==JE_FALSE)
+				if (grStrBlock_Append(&(options->ExtraMaterials),string+2)==GR_FALSE)
 					{
 						Printf("ERROR: Unable to store extra material name '%s'\n",string+2);
 						retValue = RETURN_ERROR;

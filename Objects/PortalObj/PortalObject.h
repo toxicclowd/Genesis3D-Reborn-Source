@@ -20,11 +20,11 @@
 /****************************************************************************************/
 #include "Engine.h"
 #include "Camera.h"
-#include "jeFrustum.h"
-#include "jeProperty.h"
+#include "grFrustum.h"
+#include "grProperty.h"
 #include "Object.h"
-#include "jeWorld.h"
-#include "jePtrMgr.h"
+#include "grWorld.h"
+#include "grPtrMgr.h"
 
 #ifdef WIN32
 void Init_Class( HINSTANCE hInstance );
@@ -34,46 +34,46 @@ void Init_Class( HINSTANCE hInstance );
 void Init_Class( image_id hInstance );
 #endif
 
-void * JETCC CreateInstance(void);
-void * JETCC DuplicateInstance(void * Instance);
-void  JETCC CreateRef(void * Instance);
-jeBoolean JETCC Destroy(void **pInstance);
-jeBoolean	JETCC Render(const void * Instance, const jeWorld * pWorld, const jeEngine *Engine, const jeCamera *Camera, const jeFrustum *CameraSpaceFrustum, jeObject_RenderFlags RenderFlags);
-jeBoolean	JETCC AttachWorld( void * Instance, jeWorld * pWorld );
-jeBoolean	JETCC DettachWorld( void * Instance, jeWorld * pWorld );
-jeBoolean	JETCC AttachEngine ( void * Instance, jeEngine *Engine );
-jeBoolean	JETCC DettachEngine( void * Instance, jeEngine *Engine );
-jeBoolean	JETCC AttachSoundSystem( void * Instance, jeSound_System *SoundSystem );
-jeBoolean	JETCC DettachSoundSystem( void * Instance, jeSound_System *SoundSystem );
-jeBoolean	JETCC Collision(const void *Object, const jeExtBox *Box, const jeVec3d *Front, const jeVec3d *Back, jeVec3d *Impact, jePlane *Plane);
-jeBoolean JETCC GetExtBox(const void * Instance,jeExtBox *BBox);
+void * GRCC CreateInstance(void);
+void * GRCC DuplicateInstance(void * Instance);
+void  GRCC CreateRef(void * Instance);
+grBoolean GRCC Destroy(void **pInstance);
+grBoolean	GRCC Render(const void * Instance, const grWorld * pWorld, const grEngine *Engine, const grCamera *Camera, const grFrustum *CameraSpaceFrustum, grObject_RenderFlags RenderFlags);
+grBoolean	GRCC AttachWorld( void * Instance, grWorld * pWorld );
+grBoolean	GRCC DettachWorld( void * Instance, grWorld * pWorld );
+grBoolean	GRCC AttachEngine ( void * Instance, grEngine *Engine );
+grBoolean	GRCC DettachEngine( void * Instance, grEngine *Engine );
+grBoolean	GRCC AttachSoundSystem( void * Instance, grSound_System *SoundSystem );
+grBoolean	GRCC DettachSoundSystem( void * Instance, grSound_System *SoundSystem );
+grBoolean	GRCC Collision(const void *Object, const grExtBox *Box, const grVec3d *Front, const grVec3d *Back, grVec3d *Impact, grPlane *Plane);
+grBoolean GRCC GetExtBox(const void * Instance,grExtBox *BBox);
 
-void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *);
-jeBoolean	JETCC WriteToFile(const void * Instance,jeVFile * File, jePtrMgr *);
+void *	GRCC CreateFromFile(grVFile * File, grPtrMgr *);
+grBoolean	GRCC WriteToFile(const void * Instance,grVFile * File, grPtrMgr *);
 
-jeBoolean	JETCC GetPropertyList(void * Instance, jeProperty_List **List);
-jeBoolean	JETCC SetProperty(void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData );
-jeBoolean	JETCC GetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData );
-jeBoolean	JETCC SetXForm(void * Instance,const jeXForm3d *XF);
-jeBoolean JETCC JETCC GetXForm(const void * Instance,jeXForm3d *XF);
-int	JETCC GetXFormModFlags( const void * Instace );
-jeBoolean JETCC GetChildren(const void * Instance,jeObject * Children,int MaxNumChildren);
-jeBoolean JETCC AddChild(void * Instance,const jeObject * Child);
-jeBoolean JETCC RemoveChild(void * Instance,const jeObject * Child);
+grBoolean	GRCC GetPropertyList(void * Instance, grProperty_List **List);
+grBoolean	GRCC SetProperty(void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData );
+grBoolean	GRCC GetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData );
+grBoolean	GRCC SetXForm(void * Instance,const grXForm3d *XF);
+grBoolean GRCC GRCC GetXForm(const void * Instance,grXForm3d *XF);
+int	GRCC GetXFormModFlags( const void * Instace );
+grBoolean GRCC GetChildren(const void * Instance,grObject * Children,int MaxNumChildren);
+grBoolean GRCC AddChild(void * Instance,const grObject * Child);
+grBoolean GRCC RemoveChild(void * Instance,const grObject * Child);
 
 #ifdef WIN32
-jeBoolean JETCC EditDialog (void * Instance,HWND Parent);
+grBoolean GRCC EditDialog (void * Instance,HWND Parent);
 #endif
 
 #ifdef BUILD_BE
-jeBoolean JETCC EditDialog (void * Instance, class G3DView * Parent );
+grBoolean GRCC EditDialog (void * Instance, class G3DView * Parent );
 #endif
 
-jeBoolean JETCC SendMsg(void * Instance, int32 Msg, void * Data);
-jeBoolean JETCC PortalFrame( void * Instance, jeFloat Time);
+grBoolean GRCC SendMsg(void * Instance, int32 Msg, void * Data);
+grBoolean GRCC PortalFrame( void * Instance, grFloat Time);
 
 // Icestorm
-jeBoolean	JETCC ChangeBoxCollision(const void *Instance,const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane);
+grBoolean	GRCC ChangeBoxCollision(const void *Instance,const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane);
 
 // Krouer
-void JETCC SetRenderNextFlag(const void *Instance, jeBoolean NextFlag);
+void GRCC SetRenderNextFlag(const void *Instance, grBoolean NextFlag);

@@ -25,7 +25,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "../include/jeWorld.h"
+#include "../include/grWorld.h"
 
 class CJ3DView;
 
@@ -53,7 +53,7 @@ public:
 
 // Implementation
 public:
-	jeWorld* GetWorld(void) { return(m_pWorld); }
+	grWorld* GetWorld(void) { return(m_pWorld); }
 	virtual BOOL Render(CJ3DView* pView) = 0;
 	virtual ~CJ3DDoc();
 #ifdef _DEBUG
@@ -68,7 +68,7 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
-	jeWorld* m_pWorld;
+	grWorld* m_pWorld;
 };
 
 //{{AFX_INSERT_LOCATION}}

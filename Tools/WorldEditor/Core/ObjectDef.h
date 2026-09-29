@@ -43,7 +43,7 @@ typedef struct tagObject
 	uint32		miscFlags ; // Temporary flags set to mark an object
 } Object ;
 
-jeBoolean		Object_Init( Object * pObject, Group * pGroup, OBJECT_KIND ObjectKind, const char * const pszName, int32 nNumber );
+grBoolean		Object_Init( Object * pObject, Group * pGroup, OBJECT_KIND ObjectKind, const char * const pszName, int32 nNumber );
 #define OBJECT_DIRTY	0x10000000
 #define OBJECT_INLEVEL  0x20000000
 

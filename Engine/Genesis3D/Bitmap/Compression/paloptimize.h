@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_PALOPTIMIZE_H
-#define JE_PALOPTIMIZE_H
+#ifndef GR_PALOPTIMIZE_H
+#define GR_PALOPTIMIZE_H
 
 #include "BaseType.h"
 #include "Bitmap.h"
@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-extern void paletteOptimize(const jeBitmap_Info * Info,const void * Bits,
+extern void paletteOptimize(const grBitmap_Info * Info,const void * Bits,
 						uint8 *palette,int palEntries,int maxSamples);
 
 	// use maxIterations == 0 or -1 for infinity

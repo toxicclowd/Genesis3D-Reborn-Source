@@ -49,7 +49,7 @@ void Object_Free( Object ** ppObject )
 		return;
 
 	if( (*ppObject)->pszName != NULL )
-		jeRam_Free( (*ppObject)->pszName ) ;
+		grRam_Free( (*ppObject)->pszName ) ;
 
 	switch( (*ppObject)->ObjectKind )
 	{
@@ -92,7 +92,7 @@ char	*	Object_CreateDefaultName( OBJECT_KIND ObjectKind, int32 SubKind )
 			return( Camera_CreateDefaultName( ) );
 
 		case KIND_USEROBJ :
-			return( UserObj_CreateDefaultName( (jeObject*)SubKind ) );
+			return( UserObj_CreateDefaultName( (grObject*)SubKind ) );
 
 
 		case KIND_CLASS:
@@ -122,7 +122,7 @@ char	*	Object_CreateKindName( Object * pObject )
 			return( Camera_CreateDefaultName( ) );
 
 		case KIND_USEROBJ :
-			return( UserObj_CreateDefaultName( UserObj_GetjeObject( (UserObj*)pObject) ) );
+			return( UserObj_CreateDefaultName( UserObj_GetgrObject( (UserObj*)pObject) ) );
 
 		case KIND_MODEL:
 			return( Model_CreateDefaultName( ) );
@@ -134,13 +134,13 @@ char	*	Object_CreateKindName( Object * pObject )
 	}
 	return( NULL );
 }
-jeBoolean Object_Init( Object * pObject,  Group * pGroup, OBJECT_KIND ObjectKind, const char * const pszName, int32 nNumber )
+grBoolean Object_Init( Object * pObject,  Group * pGroup, OBJECT_KIND ObjectKind, const char * const pszName, int32 nNumber )
 {
 	pObject->pszName = Util_StrDup( pszName ) ;
 	if( pObject->pszName == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Object_Init:Util_StrDup" );		
-		return( JE_FALSE ) ;
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Object_Init:Util_StrDup" );		
+		return( GR_FALSE ) ;
 	}
 	pObject->pGroup =pGroup ;
 	pObject->nNumber = nNumber;
@@ -148,7 +148,7 @@ jeBoolean Object_Init( Object * pObject,  Group * pGroup, OBJECT_KIND ObjectKind
 	pObject->miscFlags = 0;
 	pObject->ObjectKind = ObjectKind;
 	pObject->GroupTag = BRUSH_REATTACH_GOOD;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Object_Init
 
 Object * Object_Copy( Object * pObject, const int32 nNumber )
@@ -170,7 +170,7 @@ Object * Object_Copy( Object * pObject, const int32 nNumber )
 			return (Object*)UserObj_Copy( (UserObj*)pObject, nNumber ) ;
 
 		case KIND_MODEL:
-			jeErrorLog_AddString( JE_ERR_INTERNAL_RESOURCE, "UserObj_Copy:jeObject_Duplicate", "Object does not support clone." );
+			grErrorLog_AddString( GR_ERR_INTERNAL_RESOURCE, "UserObj_Copy:grObject_Duplicate", "Object does not support clone." );
 			return( NULL );
 		
 		case KIND_CLASS:
@@ -182,7 +182,7 @@ Object * Object_Copy( Object * pObject, const int32 nNumber )
 
 
 
-jeBoolean	Object_IsInRect( const Object * pObject, jeExtBox *pSelRect, jeBoolean bSelEncompeses )
+grBoolean	Object_IsInRect( const Object * pObject, grExtBox *pSelRect, grBoolean bSelEncompeses )
 {
 	assert( pObject );
 	assert( pSelRect );
@@ -210,7 +210,7 @@ jeBoolean	Object_IsInRect( const Object * pObject, jeExtBox *pSelRect, jeBoolean
 		break ;
 	}
 
-	return JE_FALSE ;
+	return GR_FALSE ;
 
 }//Object_IsInRect
 
@@ -252,7 +252,7 @@ char * Object_GetNameAndTag( const Object * pObject )
 	assert( pObject->pszName );
 
 	sprintf( NumBuff, "%d", pObject->nNumber );
-	NameTag = jeRam_Allocate( strlen( pObject->pszName ) + strlen( NumBuff ) + 1 );
+	NameTag = grRam_Allocate( strlen( pObject->pszName ) + strlen( NumBuff ) + 1 );
 	if( NameTag == NULL )
 		return( NULL );
 	strcpy( NameTag, pObject->pszName );
@@ -262,9 +262,9 @@ char * Object_GetNameAndTag( const Object * pObject )
 }
 
 
-jeBoolean Object_GetTransform( Object * pObject, jeXForm3d * pXForm )
+grBoolean Object_GetTransform( Object * pObject, grXForm3d * pXForm )
 {
-	jeBoolean Result = JE_TRUE;
+	grBoolean Result = GR_TRUE;
 
 	assert( pObject != NULL ) ;
 
@@ -294,14 +294,14 @@ jeBoolean Object_GetTransform( Object * pObject, jeXForm3d * pXForm )
 		case KIND_CLASS:
 		default :
 			assert( 0 ) ;
-			return( JE_FALSE );
+			return( GR_FALSE );
 	}
 	return Result ;
 }// Object_GetTransform
 
-jeBoolean Object_GetWorldAxialBounds( Object * pObject, jeExtBox *ObjectBounds)
+grBoolean Object_GetWorldAxialBounds( Object * pObject, grExtBox *ObjectBounds)
 {
-	const jeExtBox *TempBounds;
+	const grExtBox *TempBounds;
 
 	assert( pObject != NULL ) ;
 	assert( ObjectBounds != NULL ) ;
@@ -311,17 +311,17 @@ jeBoolean Object_GetWorldAxialBounds( Object * pObject, jeExtBox *ObjectBounds)
 		case KIND_BRUSH :
 				TempBounds = Brush_GetWorldAxialBounds( (Brush *)pObject );
 				*ObjectBounds = *TempBounds;
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_LIGHT :
 				TempBounds = Light_GetWorldAxialBounds( (Light *)pObject );
 				*ObjectBounds = *TempBounds;
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_CAMERA :
 				TempBounds = Camera_GetWorldAxialBounds( (Camera *)pObject );
 				*ObjectBounds = *TempBounds;
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_USEROBJ :
 			return( UserObj_GetWorldAxialBounds( (UserObj *)pObject, ObjectBounds ) ) ;
@@ -335,12 +335,12 @@ jeBoolean Object_GetWorldAxialBounds( Object * pObject, jeExtBox *ObjectBounds)
 		default :
 			assert( 0 ) ;
 	}
-	return JE_FALSE ;
+	return GR_FALSE ;
 }
 
-jeBoolean Object_GetWorldDrawBounds( Object * pObject, jeExtBox *ObjectBounds)
+grBoolean Object_GetWorldDrawBounds( Object * pObject, grExtBox *ObjectBounds)
 {
-	const jeExtBox *TempBounds;
+	const grExtBox *TempBounds;
 
 	assert( pObject != NULL ) ;
 	assert( ObjectBounds != NULL ) ;
@@ -350,19 +350,19 @@ jeBoolean Object_GetWorldDrawBounds( Object * pObject, jeExtBox *ObjectBounds)
 		case KIND_BRUSH :
 				TempBounds = Brush_GetWorldAxialBounds( (Brush *)pObject );
 				*ObjectBounds = *TempBounds;
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_LIGHT :
 				Light_GetWorldDrawBounds( (Light *)pObject, ObjectBounds);
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_CAMERA :
 				Camera_GetWorldDrawBounds( (Camera *)pObject, ObjectBounds);
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_USEROBJ :
 				UserObj_GetWorldDrawBounds( (UserObj *)pObject, ObjectBounds);
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_MODEL:
 			return( Model_GetWorldAxialBounds( (Model *)pObject, ObjectBounds ) ) ;
@@ -373,7 +373,7 @@ jeBoolean Object_GetWorldDrawBounds( Object * pObject, jeExtBox *ObjectBounds)
 		default :
 			assert( 0 ) ;
 	}
-	return JE_FALSE ;
+	return GR_FALSE ;
 }
 uint32 Object_GetMiscFlags( const Object * pObject )
 {
@@ -394,13 +394,13 @@ uint32	Object_GetGroupTag( const Object * pObject )
 	return( pObject->GroupTag );
 }
 
-jeBoolean Object_IsInLevel( const Object * pObject )
+grBoolean Object_IsInLevel( const Object * pObject )
 {
 	assert( pObject != NULL ) ;
 	return( pObject->miscFlags &  OBJECT_INLEVEL );
 }
 
-jeBoolean Object_SelectClosest(  Object * pObject, FindInfo	*	pFindInfo )
+grBoolean Object_SelectClosest(  Object * pObject, FindInfo	*	pFindInfo )
 {
 	int32 Kind = Object_GetKind( pObject ) ;
 	if( Kind & pFindInfo->eSelKind )
@@ -431,7 +431,7 @@ jeBoolean Object_SelectClosest(  Object * pObject, FindInfo	*	pFindInfo )
 				assert(0 );
 		}
 	}//Selection kind matches mask
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }
 
@@ -444,15 +444,15 @@ int32 Object_GetXFormModFlags( Object * pObject )
 		switch( Kind )
 		{
 			case KIND_BRUSH :
-				ModFlag = JE_OBJECT_XFORM_ALL;
+				ModFlag = GR_OBJECT_XFORM_ALL;
 				break;
 
 			case KIND_LIGHT :
-				ModFlag = JE_OBJECT_XFORM_TRANSLATE;
+				ModFlag = GR_OBJECT_XFORM_TRANSLATE;
 				break;
 
 			case KIND_CAMERA :
-				ModFlag = JE_OBJECT_XFORM_TRANSLATE | JE_OBJECT_XFORM_ROTATE;
+				ModFlag = GR_OBJECT_XFORM_TRANSLATE | GR_OBJECT_XFORM_ROTATE;
 				break;
 
 			case KIND_USEROBJ :
@@ -460,7 +460,7 @@ int32 Object_GetXFormModFlags( Object * pObject )
 				break;
 
 			case KIND_MODEL:
-				ModFlag = JE_OBJECT_XFORM_TRANSLATE | JE_OBJECT_XFORM_ROTATE;
+				ModFlag = GR_OBJECT_XFORM_TRANSLATE | GR_OBJECT_XFORM_ROTATE;
 				break;
 
 			case KIND_CLASS:
@@ -473,10 +473,10 @@ int32 Object_GetXFormModFlags( Object * pObject )
 	}//Selection kind matches mask
 	return ModFlag ;
 }
-jeObject *	Object_GetjeObject( Object * pObject )
+grObject *	Object_GetgrObject( Object * pObject )
 {
 	int32 Kind = Object_GetKind( pObject ) ;
-	jeObject * pgeObject = NULL;
+	grObject * pgeObject = NULL;
 
 	if( Kind )
 	{
@@ -488,15 +488,15 @@ jeObject *	Object_GetjeObject( Object * pObject )
 				break;
 
 			case KIND_CAMERA :
-				pgeObject = Camera_GetjeObject( (Camera *)pObject );
+				pgeObject = Camera_GetgrObject( (Camera *)pObject );
 				break;
 
 			case KIND_MODEL:
-				pgeObject = Model_GetjeObject( (Model *)pObject );
+				pgeObject = Model_GetgrObject( (Model *)pObject );
 				break;
 
 			case KIND_USEROBJ :
-				pgeObject = UserObj_GetjeObject( (UserObj *)pObject );
+				pgeObject = UserObj_GetgrObject( (UserObj *)pObject );
 				break;
 
 			default:
@@ -520,7 +520,7 @@ void Object_SetMiscFlags( Object * pObject, uint32 nMiscFlags )
 	pObject->miscFlags |= nMiscFlags ;
 }// Object_SetMiscFlags
 
-jeBoolean Object_Move(  Object * pObject, const jeVec3d * pWorldDistance )
+grBoolean Object_Move(  Object * pObject, const grVec3d * pWorldDistance )
 {
 	assert( pObject != NULL ) ;
 	assert( pWorldDistance != NULL );
@@ -529,33 +529,33 @@ jeBoolean Object_Move(  Object * pObject, const jeVec3d * pWorldDistance )
 	{
 		case KIND_BRUSH :
 			Brush_Move( (Brush *)pObject,  pWorldDistance);
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_LIGHT :
 			Light_Move( (Light *)pObject,  pWorldDistance);
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_CAMERA :
 			Camera_Move( (Camera *)pObject,  pWorldDistance);
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_USEROBJ :
 			UserObj_Move( (UserObj *)pObject,  pWorldDistance);
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_MODEL :
 			Model_Move( (Model *)pObject,  pWorldDistance);
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_CLASS:
 		default :
 			assert( 0 ) ;
 	}
-	Object_Update( pObject, OBJECT_UPDATE_REALTIME, JE_FALSE );
-	return JE_FALSE ;
+	Object_Update( pObject, OBJECT_UPDATE_REALTIME, GR_FALSE );
+	return GR_FALSE ;
 }
 
-jeBoolean Object_Rotate( Object * pObject, ORTHO_AXIS RAxis, jeFloat RadianAngle, const jeVec3d * pRotationCenter )
+grBoolean Object_Rotate( Object * pObject, ORTHO_AXIS RAxis, grFloat RadianAngle, const grVec3d * pRotationCenter )
 {
 	assert( pObject != NULL ) ;
 	assert( pRotationCenter != NULL );
@@ -564,33 +564,33 @@ jeBoolean Object_Rotate( Object * pObject, ORTHO_AXIS RAxis, jeFloat RadianAngle
 	{
 		case KIND_BRUSH :
 			Brush_Rotate( (Brush *)pObject,  RAxis, RadianAngle, pRotationCenter  );
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_CAMERA :
 			Camera_Rotate( (Camera *)pObject,  RAxis, RadianAngle, pRotationCenter  );
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_USEROBJ :
 			UserObj_Rotate( (UserObj *)pObject,  RAxis, RadianAngle, pRotationCenter  );
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_MODEL :
 			Model_Rotate( (Model *)pObject,  RAxis, RadianAngle, pRotationCenter  );
-			return( JE_TRUE );
+			return( GR_TRUE );
 
 		case KIND_LIGHT :
-			return( JE_TRUE );
+			return( GR_TRUE );
 
 		case KIND_CLASS:
 		default :
 			assert( 0 ) ;
 	}
-	Object_Update( pObject, OBJECT_UPDATE_REALTIME, JE_FALSE );
-	return JE_FALSE ;
+	Object_Update( pObject, OBJECT_UPDATE_REALTIME, GR_FALSE );
+	return GR_FALSE ;
 }// Object_Rotate
 
 
-jeBoolean	Object_Size( Object * pObject, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
+grBoolean	Object_Size( Object * pObject, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
 {
 	assert( pObject != NULL ) ;
 	assert( pSelectedBounds != NULL );
@@ -599,33 +599,33 @@ jeBoolean	Object_Size( Object * pObject, const jeExtBox * pSelectedBounds, const
 	{
 		case KIND_BRUSH :
 			Brush_Size( (Brush *)pObject,  pSelectedBounds, hScale, vScale, eSizeType, HAxis, VAxis );
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_LIGHT :
 			Light_Size( (Light *)pObject,  pSelectedBounds, hScale, vScale, eSizeType, HAxis, VAxis );
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_CAMERA :
 			Camera_Size( (Camera *)pObject,  pSelectedBounds, hScale, vScale, eSizeType, HAxis, VAxis );
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_USEROBJ :
 			UserObj_Size( (UserObj *)pObject,  pSelectedBounds, hScale, vScale, eSizeType, HAxis, VAxis );
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 		case KIND_MODEL :
-			return( JE_TRUE ) ;
+			return( GR_TRUE ) ;
 
 
 		case KIND_CLASS:
 		default :
 			assert( 0 ) ;
 	}
-	Object_Update( pObject, OBJECT_UPDATE_REALTIME, JE_FALSE );
-	return JE_FALSE ;
+	Object_Update( pObject, OBJECT_UPDATE_REALTIME, GR_FALSE );
+	return GR_FALSE ;
 }
 
-jeBoolean Object_SetTransform( Object * pObject, jeXForm3d * pXForm )
+grBoolean Object_SetTransform( Object * pObject, grXForm3d * pXForm )
 {
 	assert( pObject != NULL ) ;
 
@@ -633,44 +633,44 @@ jeBoolean Object_SetTransform( Object * pObject, jeXForm3d * pXForm )
 	{
 		case KIND_BRUSH :
 			Brush_SetXForm( (Brush*)pObject, pXForm );
-			return JE_TRUE ;
+			return GR_TRUE ;
 
 		case KIND_LIGHT :
 			Light_SetXForm( (Light*)pObject, pXForm );
-			return( JE_TRUE );
+			return( GR_TRUE );
 
 		case KIND_CAMERA :
 			Camera_SetXForm( (Camera*)pObject, pXForm );
-			return( JE_TRUE );
+			return( GR_TRUE );
 
 		case KIND_USEROBJ :
 			UserObj_SetXForm( (UserObj*)pObject, pXForm );
-			return( JE_TRUE );
+			return( GR_TRUE );
 
 		case KIND_MODEL :
 			Model_SetXForm( (Model*)pObject, pXForm );
-			return( JE_TRUE );
+			return( GR_TRUE );
 
 		case KIND_CLASS:
 		default :
 			assert( 0 ) ;
 	}
-	Object_Update( pObject, OBJECT_UPDATE_REALTIME, JE_FALSE );
-	return JE_FALSE ;
+	Object_Update( pObject, OBJECT_UPDATE_REALTIME, GR_FALSE );
+	return GR_FALSE ;
 }// Object_SetTransform
 
-jeBoolean Object_SetName( Object * pObject, const char * Name, int32 nNumber )
+grBoolean Object_SetName( Object * pObject, const char * Name, int32 nNumber )
 {
 	pObject->nNumber = nNumber;
 	if( pObject->pszName )
-		jeRam_Free(pObject->pszName );
+		grRam_Free(pObject->pszName );
 	pObject->pszName = Util_StrDup( Name );
 	if( pObject->pszName == NULL )
-		return( JE_FALSE );
-	return( JE_TRUE );
+		return( GR_FALSE );
+	return( GR_TRUE );
 }//Object_SetName
 
-void Object_Shear( Object * pObject, const jeVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const jeExtBox * pSelectedBounds)
+void Object_Shear( Object * pObject, const grVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const grExtBox * pSelectedBounds)
 {
 	assert( pObject != NULL ) ;
 
@@ -690,7 +690,7 @@ void Object_Shear( Object * pObject, const jeVec3d * pWorldDistance, SELECT_HAND
 		default :
 			assert( 0 ) ;
 	}
-	Object_Update( pObject, OBJECT_UPDATE_REALTIME, JE_FALSE );
+	Object_Update( pObject, OBJECT_UPDATE_REALTIME, GR_FALSE );
 
 }//Object_Shear
 
@@ -712,73 +712,73 @@ void Object_SetGroup( Object * pObject, Group * pGroup )
 
 //File
 
-jeBoolean Object_WriteToFile( Object * pObject, jeVFile * pF )
+grBoolean Object_WriteToFile( Object * pObject, grVFile * pF )
 {
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	pObject->GroupTag = Group_GetIndexTag( pObject->pGroup );
 
-	if( jeVFile_Write( pF, pObject->pszName, strlen( pObject->pszName )+1 ) == JE_FALSE )
+	if( grVFile_Write( pF, pObject->pszName, strlen( pObject->pszName )+1 ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-	if( jeVFile_Write( pF, &pObject->ObjectKind, sizeof pObject->ObjectKind ) == JE_FALSE )
+	if( grVFile_Write( pF, &pObject->ObjectKind, sizeof pObject->ObjectKind ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pObject->nNumber, sizeof pObject->nNumber ) == JE_FALSE )
+	if( grVFile_Write( pF, &pObject->nNumber, sizeof pObject->nNumber ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pObject->GroupTag, sizeof pObject->GroupTag ) == JE_FALSE )
+	if( grVFile_Write( pF, &pObject->GroupTag, sizeof pObject->GroupTag ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean		Object_InitFromFile( jeVFile * pF , Object * pObject )
+grBoolean		Object_InitFromFile( grVFile * pF , Object * pObject )
 {
 
 	char		szName[ OBJECT_MAXNAMELENGTH ] ;
 
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	if( !Util_geVFile_ReadString( pF, szName, OBJECT_MAXNAMELENGTH ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
+		return GR_FALSE;
 	}
 	pObject->pszName = Util_StrDup(szName);
 	pObject->RefCnt = 1;
-	if( !jeVFile_Read( pF, &pObject->ObjectKind, sizeof pObject->ObjectKind ) )
+	if( !grVFile_Read( pF, &pObject->ObjectKind, sizeof pObject->ObjectKind ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-	if( !jeVFile_Read( pF, &pObject->nNumber, sizeof pObject->nNumber ) )
+	if( !grVFile_Read( pF, &pObject->nNumber, sizeof pObject->nNumber ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pObject->GroupTag, sizeof pObject->GroupTag ) == JE_FALSE )
+	if( grVFile_Read( pF, &pObject->GroupTag, sizeof pObject->GroupTag ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
+		return GR_FALSE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeProperty_List * Object_BuildDescriptor( Object * pObject )
+grProperty_List * Object_BuildDescriptor( Object * pObject )
 {
-	jeProperty_List *pArray = NULL;
+	grProperty_List *pArray = NULL;
 	switch( pObject->ObjectKind )
 	{
 		case KIND_BRUSH :
@@ -810,7 +810,7 @@ jeProperty_List * Object_BuildDescriptor( Object * pObject )
 	return( pArray );
 }
 
-void Object_SetProperty( Object * pObject, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bLightUpdate, jeBoolean bBrushUpdate, jeBoolean bBrushLighting )
+void Object_SetProperty( Object * pObject, int DataId, int DataType, grProperty_Data * pData, grBoolean bLightUpdate, grBoolean bBrushUpdate, grBoolean bBrushLighting )
 {
 	switch( pObject->ObjectKind )
 	{
@@ -839,7 +839,7 @@ void Object_SetProperty( Object * pObject, int DataId, int DataType, jeProperty_
 	}
 }
 
-void Object_Update( Object *pObject, int Update_Type, jeBoolean bOverideDirty )
+void Object_Update( Object *pObject, int Update_Type, grBoolean bOverideDirty )
 {
 
 	switch( pObject->ObjectKind )
@@ -874,7 +874,7 @@ void Object_Dirty( Object *pObject )
 	pObject->miscFlags |= OBJECT_DIRTY;
 }
 
-void Object_SetInLevel( Object *pObject, jeBoolean bInLevel )
+void Object_SetInLevel( Object *pObject, grBoolean bInLevel )
 {
 	pObject->miscFlags |= OBJECT_DIRTY;
 	if( bInLevel )
@@ -883,11 +883,11 @@ void Object_SetInLevel( Object *pObject, jeBoolean bInLevel )
 		pObject->miscFlags &= ~OBJECT_INLEVEL;
 }
 
-jeBoolean Object_SendMessage( Object *pObject, int32 message, void * data )
+grBoolean Object_SendMessage( Object *pObject, int32 message, void * data )
 {
 	//Later some editor objects might respond to generic messages.
 	if( pObject->ObjectKind != KIND_USEROBJ )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
 	return( UserObj_SendMessage( (UserObj*)pObject, message, data ) );
 }

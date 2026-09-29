@@ -29,7 +29,7 @@
 
 typedef struct tagTerrain Terrain ;
 #define TERRAIN_VERSION		(1)
-#include "jeWorld.h"
+#include "grWorld.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,33 +37,33 @@ extern "C" {
 
 
 // CREATORS
-Terrain *			Terrain_Create( jeWorld	* pWorld, Group * pGroup, const char * const pszName, int32 nNumber,  jeBitmap *HeightMap, jeBitmap * TerrainMap  ) ;
+Terrain *			Terrain_Create( grWorld	* pWorld, Group * pGroup, const char * const pszName, int32 nNumber,  grBitmap *HeightMap, grBitmap * TerrainMap  ) ;
 Terrain *			Terrain_Copy( Terrain *	pTerrain, int32 nNumber );
 void				Terrain_Destroy( Terrain ** ppTerrain ) ;
 Terrain *			Terrain_FromTemplate( char * pszName, Group * pGroup, Terrain *	pTerrain, int32 nNumber );
 char  *				Terrain_CreateDefaultName( void );
-Terrain *			Terrain_CreateTemplate( jeWorld	* pWorld );
+Terrain *			Terrain_CreateTemplate( grWorld	* pWorld );
 
 // MODIFIERS
-void				Terrain_Move( Terrain * pTerrain, const jeVec3d * pWorldDistance ) ;
+void				Terrain_Move( Terrain * pTerrain, const grVec3d * pWorldDistance ) ;
 void				Terrain_SetIndexTag( Terrain * pTerrain, const uint32 nIndex ) ;
 void				Terrain_SetModified( Terrain * pTerrain ) ;
-void				Terrain_Snap( Terrain * pTerrain, jeFloat fSnapSize ) ;
-void				Terrain_SetXForm( Terrain * pTerrain, const jeXForm3d * XForm );
+void				Terrain_Snap( Terrain * pTerrain, grFloat fSnapSize ) ;
+void				Terrain_SetXForm( Terrain * pTerrain, const grXForm3d * XForm );
 void				Terrain_UpdateBounds( Terrain * pTerrain ) ;
-void				Terrain_Size( Terrain * pTerrain, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
+void				Terrain_Size( Terrain * pTerrain, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
 // ACCESSORS
-void				Terrain_GetXForm( const Terrain * pTerrain, jeXForm3d * XForm );
-const jeExtBox *	Terrain_GetWorldAxialBounds( const Terrain * pTerrain ) ;
-jeTerrain *			Terrain_GetTerrain( const Terrain * pTerrain );
-jeBoolean			Terrain_SelectClosest( Terrain * pTerrain, FindInfo	*	pFindInfo );
+void				Terrain_GetXForm( const Terrain * pTerrain, grXForm3d * XForm );
+const grExtBox *	Terrain_GetWorldAxialBounds( const Terrain * pTerrain ) ;
+grTerrain *			Terrain_GetTerrain( const Terrain * pTerrain );
+grBoolean			Terrain_SelectClosest( Terrain * pTerrain, FindInfo	*	pFindInfo );
 
 // IS
-jeBoolean			Terrain_IsInRect( const Terrain * pTerrain, jeExtBox *pSelRect, jeBoolean bSelEncompeses );
+grBoolean			Terrain_IsInRect( const Terrain * pTerrain, grExtBox *pSelRect, grBoolean bSelEncompeses );
 
 // FILE
-Terrain *			Terrain_CreateFromFile( jeVFile * pF );
-jeBoolean			Terrain_WriteToFile( Terrain * pTerrain, jeVFile * pF );
+Terrain *			Terrain_CreateFromFile( grVFile * pF );
+grBoolean			Terrain_WriteToFile( Terrain * pTerrain, grVFile * pF );
 
 #ifdef __cplusplus
 }

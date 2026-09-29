@@ -28,11 +28,11 @@ typedef struct DirTree_Finder	DirTree_Finder;
 
 DirTree *DirTree_Create(void);
 
-DirTree *DirTree_CreateFromFile(jeVFile *File);
+DirTree *DirTree_CreateFromFile(grVFile *File);
 
-jeBoolean DirTree_WriteToFile(const DirTree *Tree, jeVFile *File);
+grBoolean DirTree_WriteToFile(const DirTree *Tree, grVFile *File);
 
-jeBoolean DirTree_GetSize(const DirTree *Tree, long *Size);
+grBoolean DirTree_GetSize(const DirTree *Tree, long *Size);
 	// Gets the size of data that will be written to disk to persist
 	// the tree.  This API is NOT efficient.
 
@@ -45,35 +45,35 @@ DirTree *DirTree_FindPartial(
 	const char **	LeftOvers);
 //DirTree *DirTree_Find(const DirTree *Tree, const char *Path);
 
-jeBoolean DirTree_OpenFile(DirTree * Tree,uint32 OpenFlags);
+grBoolean DirTree_OpenFile(DirTree * Tree,uint32 OpenFlags);
 
-DirTree * DirTree_AddFile(DirTree *Tree, const char *Path, jeBoolean IsDirectory);
+DirTree * DirTree_AddFile(DirTree *Tree, const char *Path, grBoolean IsDirectory);
 
-jeBoolean DirTree_Remove(DirTree *Tree, DirTree *SubTree);
+grBoolean DirTree_Remove(DirTree *Tree, DirTree *SubTree);
 
-void DirTree_SetFileAttributes(DirTree *Tree, jeVFile_Attributes Attributes);
+void DirTree_SetFileAttributes(DirTree *Tree, grVFile_Attributes Attributes);
 
-void DirTree_GetFileAttributes(DirTree *Tree, jeVFile_Attributes *Attributes);
+void DirTree_GetFileAttributes(DirTree *Tree, grVFile_Attributes *Attributes);
 
 void DirTree_SetFileOffset(DirTree *Tree, long Offset);
 
 void DirTree_GetFileOffset(DirTree *Tree, long *Offset);
 
-void DirTree_SetFileTime(DirTree *Tree, const jeVFile_Time *Time);
+void DirTree_SetFileTime(DirTree *Tree, const grVFile_Time *Time);
 
-void DirTree_GetFileTime(DirTree *Tree, jeVFile_Time *Time);
+void DirTree_GetFileTime(DirTree *Tree, grVFile_Time *Time);
 
 void DirTree_SetFileSize(DirTree *Tree, long Size);
 
 void DirTree_GetFileSize(DirTree *Tree, long *Size);
 
-jeBoolean DirTree_FileHasHints(DirTree *Tree);
-jeVFile * DirTree_GetHintsFile(DirTree *Tree);
+grBoolean DirTree_FileHasHints(DirTree *Tree);
+grVFile * DirTree_GetHintsFile(DirTree *Tree);
 
-jeBoolean DirTree_GetFullName(const DirTree *Tree, char *Buff, int MaxLen);
-jeBoolean DirTree_GetName(const DirTree *Tree, char *Buff, int MaxLen);
+grBoolean DirTree_GetFullName(const DirTree *Tree, char *Buff, int MaxLen);
+grBoolean DirTree_GetName(const DirTree *Tree, char *Buff, int MaxLen);
 
-jeBoolean DirTree_FileExists(const DirTree *Tree, const char *Path);
+grBoolean DirTree_FileExists(const DirTree *Tree, const char *Path);
 
 
 DirTree_Finder * DirTree_CreateFinder(DirTree *Tree, const char *Path);

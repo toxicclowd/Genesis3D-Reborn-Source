@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_COMPRESSION_O0CODER_H
-#define JE_COMPRESSION_O0CODER_H
+#ifndef GR_COMPRESSION_O0CODER_H
+#define GR_COMPRESSION_O0CODER_H
 
 #include "arithc.h"
 

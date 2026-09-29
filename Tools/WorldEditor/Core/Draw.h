@@ -45,11 +45,11 @@ void		Draw_Objects(  Level * pLevel, Ortho * pOrtho, HDC hDC );
 void		Draw_Selected( Level * pLevel, Ortho * pOrtho, HDC hDC, MODE eMode );
 void		Draw_SelectHandles( Level * pLevel, HDC hDC, MODE eMode, Rect*pSelBounds );
 void		Draw_OrthoName( Ortho * pOrtho, HDC hDC );
-void		Draw_GridAtSize( const Ortho * pOrtho, jeFloat fInterval, HDC hDC ) ;
+void		Draw_GridAtSize( const Ortho * pOrtho, grFloat fInterval, HDC hDC ) ;
 void		Draw_ConstructorLine( const Level * pLevel, const Ortho * pOrtho, HDC hDC);
-void		Draw_SelectBounds( const jeExtBox * pSelWorldBounds, Ortho * pOrtho, HDC hDC, 	Rect * pSelBounds, COLORREF co);
-void		Draw_SelectBoundElipse( const jeExtBox * pSelWorldBounds, Ortho * pOrtho, HDC hDC );
-void		Draw_SelectGetElipseBox( const jeExtBox * pSelWorldBounds, Ortho * pOrtho, Rect *pBox );
+void		Draw_SelectBounds( const grExtBox * pSelWorldBounds, Ortho * pOrtho, HDC hDC, 	Rect * pSelBounds, COLORREF co);
+void		Draw_SelectBoundElipse( const grExtBox * pSelWorldBounds, Ortho * pOrtho, HDC hDC );
+void		Draw_SelectGetElipseBox( const grExtBox * pSelWorldBounds, Ortho * pOrtho, Rect *pBox );
 void		Draw_SelectAxis( Level * pLevel, Ortho * pOrtho, HDC hDC );
 #ifdef __cplusplus
 }

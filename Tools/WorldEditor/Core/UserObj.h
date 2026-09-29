@@ -23,11 +23,11 @@
 #ifndef USEROBJ_H
 #define USEROBJ_H
 
-#include "jeWorld.h"
+#include "grWorld.h"
 #include "Object.h"
 #include "defs.h"
 #include "Group.h"
-#include "jePtrMgr.h"
+#include "grPtrMgr.h"
 
 typedef struct tagUserObj UserObj ;
 
@@ -36,57 +36,57 @@ extern "C" {
 #endif
 
 // CREATORS
-UserObj *			UserObj_Create( const char * const pszName, Group * pGroup, int32 nNumber, jeObject	* pgeObject) ;
+UserObj *			UserObj_Create( const char * const pszName, Group * pGroup, int32 nNumber, grObject	* pgeObject) ;
 UserObj *			UserObj_Copy( UserObj *	pUserObj, int32 nNumber );
 void				UserObj_Destroy( UserObj ** ppUserObj ) ;
-char  *				UserObj_CreateDefaultName( jeObject	* pgeObject );
+char  *				UserObj_CreateDefaultName( grObject	* pgeObject );
 char  *				UserObj_CreateKindName( );
 
 // MODIFIERS
-jeBoolean			UserObj_Move( UserObj * pUserObj, const jeVec3d * pWorldDistance ) ;
+grBoolean			UserObj_Move( UserObj * pUserObj, const grVec3d * pWorldDistance ) ;
 void				UserObj_SetModified( UserObj * pUserObj ) ;
-void				UserObj_Snap( UserObj * pUserObj, jeFloat fSnapSize ) ;
-jeBoolean			UserObj_SetXForm( UserObj * pUserObj, const jeXForm3d * XForm );
+void				UserObj_Snap( UserObj * pUserObj, grFloat fSnapSize ) ;
+grBoolean			UserObj_SetXForm( UserObj * pUserObj, const grXForm3d * XForm );
 void				UserObj_UpdateBounds( UserObj * pUserObj ) ;
-jeBoolean			UserObj_Size( UserObj * pUserObj, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
-jeBoolean			UserObj_RemoveFromWorld( UserObj * pUserObj, jeWorld * pWorld );
-jeBoolean			UserObj_AddToWorld( UserObj * pUserObj, jeWorld * pWorld );
-jeBoolean			UserObj_UpdateData( UserObj * pUserObj );
-jeProperty_List *	UserObj_BuildDescriptor( UserObj * pUserObj );
-void				UserObj_SetProperty( UserObj * pUserObj, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bUpdate );
-jeProperty_List *	UserObj_GlobalPropertyList( const char * TypeName );
-void				UserObj_SetGlobalProperty( const char * TypeName, int DataId, int DataType, jeProperty_Data * pData );
+grBoolean			UserObj_Size( UserObj * pUserObj, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
+grBoolean			UserObj_RemoveFromWorld( UserObj * pUserObj, grWorld * pWorld );
+grBoolean			UserObj_AddToWorld( UserObj * pUserObj, grWorld * pWorld );
+grBoolean			UserObj_UpdateData( UserObj * pUserObj );
+grProperty_List *	UserObj_BuildDescriptor( UserObj * pUserObj );
+void				UserObj_SetProperty( UserObj * pUserObj, int DataId, int DataType, grProperty_Data * pData, grBoolean bUpdate );
+grProperty_List *	UserObj_GlobalPropertyList( const char * TypeName );
+void				UserObj_SetGlobalProperty( const char * TypeName, int DataId, int DataType, grProperty_Data * pData );
 
 void				UserObj_Update( UserObj * pUserObj, int Update_Type );
-void				UserObj_Rotate( UserObj * pUserObj, ORTHO_AXIS RAxis, jeFloat RadianAngle, const jeVec3d * pRotationCenter );
-jeBoolean			UserObj_SendMessage( UserObj * pUserObj, int32 message, void * data );
+void				UserObj_Rotate( UserObj * pUserObj, ORTHO_AXIS RAxis, grFloat RadianAngle, const grVec3d * pRotationCenter );
+grBoolean			UserObj_SendMessage( UserObj * pUserObj, int32 message, void * data );
 int32				UserObj_GetXFormModFlag( UserObj * pUserObj );
-void				UserObj_Select3d( UserObj* pUserObj, jeVec3d * Front, jeVec3d * Back, jeVec3d * Impact );
+void				UserObj_Select3d( UserObj* pUserObj, grVec3d * Front, grVec3d * Back, grVec3d * Impact );
 #ifdef _USE_BITMAPS
-void				UserObj_ApplyMatr( UserObj* pUserObj, jeBitmap * pBitmap );
+void				UserObj_ApplyMatr( UserObj* pUserObj, grBitmap * pBitmap );
 #else
-void				UserObj_ApplyMatr( UserObj* pUserObj, jeMaterialSpec * pMatSpec );
+void				UserObj_ApplyMatr( UserObj* pUserObj, grMaterialSpec * pMatSpec );
 #endif
 
 // ACCESSORS
-jeBoolean			UserObj_GetXForm( const UserObj * pUserObj, jeXForm3d * XForm );
-jeBoolean			UserObj_GetWorldAxialBounds( const UserObj * pUserObj, jeExtBox * BBox);
-jeBoolean			UserObj_GetWorldDrawBounds( const UserObj * pUserObj, jeExtBox *DrawBounds );
-jeBoolean			UserObj_SelectClosest( UserObj * pUserObj, FindInfo	*	pFindInfo );
-jeObject *			UserObj_GetjeObject( UserObj * pUserObj );
+grBoolean			UserObj_GetXForm( const UserObj * pUserObj, grXForm3d * XForm );
+grBoolean			UserObj_GetWorldAxialBounds( const UserObj * pUserObj, grExtBox * BBox);
+grBoolean			UserObj_GetWorldDrawBounds( const UserObj * pUserObj, grExtBox *DrawBounds );
+grBoolean			UserObj_SelectClosest( UserObj * pUserObj, FindInfo	*	pFindInfo );
+grObject *			UserObj_GetgrObject( UserObj * pUserObj );
 
 // IS
-jeBoolean	UserObj_IsInRect( const UserObj * pUserObj, jeExtBox *pSelRect, jeBoolean bSelEncompeses );
+grBoolean	UserObj_IsInRect( const UserObj * pUserObj, grExtBox *pSelRect, grBoolean bSelEncompeses );
 
 // FILE
-UserObj * UserObj_CreateFromFile( jeVFile * pF, jePtrMgr * pPtrMgr );
-jeBoolean UserObj_WriteToFile( UserObj * pUserObj, jeVFile * pF, jePtrMgr * pPtrMgr );
+UserObj * UserObj_CreateFromFile( grVFile * pF, grPtrMgr * pPtrMgr );
+grBoolean UserObj_WriteToFile( UserObj * pUserObj, grVFile * pF, grPtrMgr * pPtrMgr );
 
 //PRESENTATION
-void UserObj_RenderOrtho( const Ortho * pOrtho, UserObj *pUserObj, int32 hDC, jeBoolean bColorOveride );
+void UserObj_RenderOrtho( const Ortho * pOrtho, UserObj *pUserObj, int32 hDC, grBoolean bColorOveride );
 
 
-jeBoolean UserObj_AddToObject( UserObj * pUserObj, jeObject * pParent );
+grBoolean UserObj_AddToObject( UserObj * pUserObj, grObject * pParent );
 
 #ifdef __cplusplus
 }

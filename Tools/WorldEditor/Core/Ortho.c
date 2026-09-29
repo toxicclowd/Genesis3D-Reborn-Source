@@ -27,7 +27,7 @@
 #pragma warning(default : 4201 4214 4115; disable : 4514)
 
 #include "ExtBox.h"
-#include "jet.h"
+#include "Genesis3D.h"
 #include "Ram.h"
 #include "../Resource.h"
 #include "Units.h"
@@ -45,8 +45,8 @@ typedef struct tagOrtho
 #ifdef _DEBUG
 	int					nSignature ;
 #endif
-	jeVec3d				Angles ;
-	jeVec3d				CamPos ;
+	grVec3d				Angles ;
+	grVec3d				CamPos ;
 	char				szName[ORTHO_MAX_NAME_LENGTH] ;
 	
 	struct
@@ -59,20 +59,20 @@ typedef struct tagOrtho
 	uint32			Flags;
 	uint8		*	pBits;
 	uint32			ViewType;
-	jeFloat			ZoomFactor;
+	grFloat			ZoomFactor;
 	int32			nPixelSelectThreshold ;
-	jeFloat			fWorldSelectThreshold ;
-	jeFloat			fWorldHandleSelectThreshold ;
-//	jeVec3d			Vpn, Vright, Vup ;
-//	jeFloat			roll, pitch, yaw;
-	jePlane			FrustPlanes[4];
-	jeFloat			FieldOfView;
-	jeFloat			XCenter, YCenter ;
-	jeFloat			YScreenScale, XScreenScale ;
-	jeFloat			MaxScale ;
-	jeFloat			MaxScaleInv ;
-	jeFloat			SpeedScale ;
-	jeExtBox		WorldBounds ;
+	grFloat			fWorldSelectThreshold ;
+	grFloat			fWorldHandleSelectThreshold ;
+//	grVec3d			Vpn, Vright, Vup ;
+//	grFloat			roll, pitch, yaw;
+	grPlane			FrustPlanes[4];
+	grFloat			FieldOfView;
+	grFloat			XCenter, YCenter ;
+	grFloat			YScreenScale, XScreenScale ;
+	grFloat			MaxScale ;
+	grFloat			MaxScaleInv ;
+	grFloat			SpeedScale ;
+	grExtBox		WorldBounds ;
 	long			Width ;
 	long			Height;
 } Ortho ;
@@ -83,7 +83,7 @@ Ortho * Ortho_Create( void )
 {
 	Ortho * pOrtho ;
 	
-	pOrtho = JE_RAM_ALLOCATE_STRUCT( Ortho ) ;
+	pOrtho = GR_RAM_ALLOCATE_STRUCT( Ortho ) ;
 	if( pOrtho != NULL )
 	{
 		memset( pOrtho, 0, sizeof *pOrtho ) ;	
@@ -109,16 +109,16 @@ void Ortho_Destroy( Ortho ** ppOrtho )
 	}
 	assert( ((*ppOrtho)->nSignature = 0) == 0 ) ;	// CLEAR
 
-	jeRam_Free( *ppOrtho ) ;
+	grRam_Free( *ppOrtho ) ;
 }// Ortho_Destroy
 
 //
 // ACCESSORS
 //
 
-jeFloat Ortho_GetGridDistance( const Ortho * pOrtho )
+grFloat Ortho_GetGridDistance( const Ortho * pOrtho )
 {
-	jeExtBox	Distance ;
+	grExtBox	Distance ;
 	ORTHO_AXIS	HAxis ;
 	float		Extent ;
 
@@ -166,38 +166,38 @@ ORTHO_AXIS Ortho_GetOrthogonalAxis( const Ortho * pOrtho )
 	return 0 ;
 }// Ortho_GetOrthoganalAxis
 
-jeFloat Ortho_GetRotationFromView( const Ortho * pOrtho, Point *pMousePt, Point *pAnchor, Point * pSelCenter )
+grFloat Ortho_GetRotationFromView( const Ortho * pOrtho, Point *pMousePt, Point *pAnchor, Point * pSelCenter )
 {
-	jeFloat	fRadians ;
-	jeVec3d CtoM;
-	jeVec3d CtoA;
-	jeVec3d Cross;
-	jeFloat	fCos;
+	grFloat	fRadians ;
+	grVec3d CtoM;
+	grVec3d CtoA;
+	grVec3d Cross;
+	grFloat	fCos;
 
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
 
-	jeVec3d_Set( &CtoM,
+	grVec3d_Set( &CtoM,
 		(float)(pSelCenter->X - pMousePt->X),
 		(float)(pSelCenter->Y - pMousePt->Y),
 		0.0f
 	);
-	jeVec3d_Normalize( &CtoM );
+	grVec3d_Normalize( &CtoM );
 
-	jeVec3d_Set( &CtoA,
+	grVec3d_Set( &CtoA,
 		(float)(pSelCenter->X - pAnchor->X),
 		(float)(pSelCenter->Y - pAnchor->Y),
 		0.0f
 	);
-	jeVec3d_Normalize( &CtoA );
-	if( jeVec3d_Compare( &CtoA, &CtoM, 0.001f) )
+	grVec3d_Normalize( &CtoA );
+	if( grVec3d_Compare( &CtoA, &CtoM, 0.001f) )
 		return( 0.0f );
-	fCos = jeVec3d_DotProduct( &CtoA, &CtoM );
+	fCos = grVec3d_DotProduct( &CtoA, &CtoM );
 	if( fCos == -1.0f )
 		fRadians =M_PI;	
 	else
 		fRadians = (float)acos( fCos );
-	jeVec3d_CrossProduct( &CtoA, &CtoM, &Cross);
+	grVec3d_CrossProduct( &CtoA, &CtoM, &Cross);
 	if( pOrtho->ViewType != Ortho_ViewSide  )
 	{
 		if( Cross.Z > 0 )
@@ -270,7 +270,7 @@ int32 Ortho_GetViewSelectThreshold( Ortho * pOrtho )
 	return pOrtho->nPixelSelectThreshold ;
 }// Ortho_GetViewSelectThreshold
 
-jeFloat Ortho_GetWorldSelectThreshold( const Ortho * pOrtho )
+grFloat Ortho_GetWorldSelectThreshold( const Ortho * pOrtho )
 {
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
@@ -278,7 +278,7 @@ jeFloat Ortho_GetWorldSelectThreshold( const Ortho * pOrtho )
 	return pOrtho->fWorldSelectThreshold ;
 }// Ortho_GetWorldSelectThreshold
 
-jeFloat Ortho_GetWorldHandleSelectThreshold( const Ortho * pOrtho )
+grFloat Ortho_GetWorldHandleSelectThreshold( const Ortho * pOrtho )
 {
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
@@ -289,10 +289,10 @@ jeFloat Ortho_GetWorldHandleSelectThreshold( const Ortho * pOrtho )
 //
 // IS
 //
-jeBoolean Ortho_IsViewPointInWorldBox( const Ortho * pOrtho, const int x, const int y, const jeExtBox * pWorldBox )
+grBoolean Ortho_IsViewPointInWorldBox( const Ortho * pOrtho, const int x, const int y, const grExtBox * pWorldBox )
 {
-	jeExtBox	Box ;
-	jeVec3d		World ;
+	grExtBox	Box ;
+	grVec3d		World ;
 	ORTHO_AXIS	OrthoAxis ;
 
 	assert( pOrtho != NULL ) ;
@@ -304,22 +304,22 @@ jeBoolean Ortho_IsViewPointInWorldBox( const Ortho * pOrtho, const int x, const 
 	
 	// The remaining axis is set to extremes
 	OrthoAxis = Ortho_GetOrthogonalAxis( pOrtho ) ;
-	jeVec3d_SetElement( &Box.Min, OrthoAxis, -FLT_MAX ) ;
-	jeVec3d_SetElement( &Box.Max, OrthoAxis, FLT_MAX ) ;
+	grVec3d_SetElement( &Box.Min, OrthoAxis, -FLT_MAX ) ;
+	grVec3d_SetElement( &Box.Max, OrthoAxis, FLT_MAX ) ;
 
-	return jeExtBox_ContainsPoint( &Box, &World ) ;
+	return grExtBox_ContainsPoint( &Box, &World ) ;
 
 }// Ortho_IsViewPointInWorldBox
 
 //
 // MODIFIERS
 //
-void Ortho_MoveCamera( Ortho * pOrtho, const jeVec3d * pDelta )
+void Ortho_MoveCamera( Ortho * pOrtho, const grVec3d * pDelta )
 {
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
 
-	jeVec3d_Add( &pOrtho->CamPos, pDelta, &pOrtho->CamPos ) ;
+	grVec3d_Add( &pOrtho->CamPos, pDelta, &pOrtho->CamPos ) ;
 	Ortho_UpdateWorldBounds( pOrtho );
 
 }// Ortho_MoveCamera
@@ -334,12 +334,12 @@ void Ortho_ResetSettings( Ortho * pOrtho, long vx, long vy )
 	// Compute and set zoom factor
 	Ortho_SetZoom( pOrtho, pOrtho->Width / 640.0f ) ;
 	Ortho_SetAnglesRPY( pOrtho, 0.0f, M_PI, 0.0f ) ;
-	jeVec3d_Clear( &pOrtho->CamPos ) ;
+	grVec3d_Clear( &pOrtho->CamPos ) ;
 
 #if 0
-	jeVec3d_Clear (&v->Vpn);
-	jeVec3d_Clear (&v->Vright);
-	jeVec3d_Clear (&v->Vup);
+	grVec3d_Clear (&v->Vpn);
+	grVec3d_Clear (&v->Vright);
+	grVec3d_Clear (&v->Vup);
 
 	v->roll = 0.0f;
 	v->pitch	=M_PI;
@@ -355,7 +355,7 @@ void Ortho_ResetSettings( Ortho * pOrtho, long vx, long vy )
 	mYaw[1][0]=0;	mYaw[1][1]=1;	mYaw[1][2]=0;
 	mYaw[2][0]=0;	mYaw[2][1]=0;	mYaw[2][2]=1;
 
-	jeVec3d_Clear (&v->CamPos);
+	grVec3d_Clear (&v->CamPos);
 #endif
 
 	Ortho_UpdateWorldBounds( pOrtho ) ;
@@ -406,33 +406,33 @@ void Ortho_ResizeView( Ortho * pOrtho, long vx, long vy )
 		DeleteDC( ViewDC ) ;
 
 //		//allocate a 32 bit zbuffer
-//		v->pZBuffer	=(uint32 *)	jeRam_Allocate(sizeof(uint32) * (vx*vy));
+//		v->pZBuffer	=(uint32 *)	grRam_Allocate(sizeof(uint32) * (vx*vy));
 	}
 
 	pOrtho->FieldOfView		= 2.0f;	//fixed for now?
-	pOrtho->XScreenScale	= ((jeFloat)vx) / pOrtho->FieldOfView ;
-	pOrtho->YScreenScale	= ((jeFloat)vy) / pOrtho->FieldOfView ;
+	pOrtho->XScreenScale	= ((grFloat)vx) / pOrtho->FieldOfView ;
+	pOrtho->YScreenScale	= ((grFloat)vy) / pOrtho->FieldOfView ;
 	pOrtho->MaxScale		= max( pOrtho->XScreenScale, pOrtho->YScreenScale ) ;
 	pOrtho->MaxScaleInv		= 1.0f / pOrtho->MaxScale ;
-	pOrtho->XCenter			= ((jeFloat)vx) / 2.0f - 0.5f ;
-	pOrtho->YCenter			= ((jeFloat)vy) / 2.0f - 0.5f ;
+	pOrtho->XCenter			= ((grFloat)vx) / 2.0f - 0.5f ;
+	pOrtho->YCenter			= ((grFloat)vy) / 2.0f - 0.5f ;
 	pOrtho->Width			= vx;
 	pOrtho->Height			= vy;
 #if 0
 	if(v->ViewType < VIEWTOP)
 	{
 		if(v->NewEdges)
-			jeRam_Free (v->NewEdges);
+			grRam_Free (v->NewEdges);
 		if(v->RemoveEdges)
-			jeRam_Free (v->RemoveEdges);
+			grRam_Free (v->RemoveEdges);
 
-		v->NewEdges			=(Edge *)jeRam_Allocate(vy*sizeof(Edge));
-		v->RemoveEdges		=(Edge **)jeRam_Allocate(vy*sizeof(Edge *));
+		v->NewEdges			=(Edge *)grRam_Allocate(vy*sizeof(Edge));
+		v->RemoveEdges		=(Edge **)grRam_Allocate(vy*sizeof(Edge *));
 	}
 #endif
 }// Ortho_ResizeView
 
-void Ortho_SetAngles( Ortho * pOrtho, const jeVec3d * pAngles )
+void Ortho_SetAngles( Ortho * pOrtho, const grVec3d * pAngles )
 {
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
@@ -440,7 +440,7 @@ void Ortho_SetAngles( Ortho * pOrtho, const jeVec3d * pAngles )
 	pOrtho->Angles = *pAngles ;
 }// Ortho_SetAngles
 
-void Ortho_SetAnglesRPY( Ortho * pOrtho, jeFloat roll, jeFloat pitch, jeFloat yaw )
+void Ortho_SetAnglesRPY( Ortho * pOrtho, grFloat roll, grFloat pitch, grFloat yaw )
 {
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
@@ -451,7 +451,7 @@ void Ortho_SetAnglesRPY( Ortho * pOrtho, jeFloat roll, jeFloat pitch, jeFloat ya
 
 }// Ortho_SetAnglesRPY
 
-void Ortho_SetBoxOrthogonalToMax( const Ortho * pOrtho, jeExtBox * pBox )
+void Ortho_SetBoxOrthogonalToMax( const Ortho * pOrtho, grExtBox * pBox )
 {
 	ORTHO_AXIS	OrthoAxis ;
 	assert( pOrtho != NULL ) ;
@@ -460,12 +460,12 @@ void Ortho_SetBoxOrthogonalToMax( const Ortho * pOrtho, jeExtBox * pBox )
 
 
 	OrthoAxis = Ortho_GetOrthogonalAxis( pOrtho ) ;
-	jeVec3d_SetElement( &pBox->Min, OrthoAxis, -FLT_MAX ) ;
-	jeVec3d_SetElement( &pBox->Max, OrthoAxis, FLT_MAX ) ;
+	grVec3d_SetElement( &pBox->Min, OrthoAxis, -FLT_MAX ) ;
+	grVec3d_SetElement( &pBox->Max, OrthoAxis, FLT_MAX ) ;
 
 }//Ortho_SetBoxOrthogonalToMax
 
-void Ortho_SetCameraPos( Ortho * pOrtho, const jeVec3d * pPos )
+void Ortho_SetCameraPos( Ortho * pOrtho, const grVec3d * pPos )
 {
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
@@ -500,7 +500,7 @@ void Ortho_SetViewType( Ortho * pOrtho, const Ortho_ViewType vt )
 
 }// Ortho_SetViewType
 
-void Ortho_SetZoom( Ortho * pOrtho, const jeFloat zf )
+void Ortho_SetZoom( Ortho * pOrtho, const grFloat zf )
 {
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
@@ -537,23 +537,23 @@ void Ortho_UpdateWorldBounds( Ortho * pOrtho )
 	}
 
 	OrthoAxis = Ortho_GetOrthogonalAxis( pOrtho ) ;		// Remaing access set to extremes
-	jeVec3d_SetElement( &pOrtho->WorldBounds.Min, OrthoAxis, -FLT_MAX ) ;
-	jeVec3d_SetElement( &pOrtho->WorldBounds.Max, OrthoAxis, FLT_MAX ) ;
+	grVec3d_SetElement( &pOrtho->WorldBounds.Min, OrthoAxis, -FLT_MAX ) ;
+	grVec3d_SetElement( &pOrtho->WorldBounds.Max, OrthoAxis, FLT_MAX ) ;
 
 }// Ortho_UpdateWorldBounds
 
 
-void Ortho_ZoomChange( Ortho * pOrtho, const jeFloat fFactor )
+void Ortho_ZoomChange( Ortho * pOrtho, const grFloat fFactor )
 {
-	jeFloat fNewZoom;
-	jeFloat fDist;
+	grFloat fNewZoom;
+	grFloat fDist;
 
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
 
 	fNewZoom = pOrtho->ZoomFactor * (1.0f + fFactor ) ;
 
-	fDist = fNewZoom * (jeFloat)pOrtho->Width ;
+	fDist = fNewZoom * (grFloat)pOrtho->Width ;
 	if( ((fDist < 1.0f) && (fNewZoom < pOrtho->ZoomFactor )) ||
 		((fDist > 100000.0f) && (fNewZoom > pOrtho->ZoomFactor )) )
 	{
@@ -572,22 +572,22 @@ void Ortho_ZoomChange( Ortho * pOrtho, const jeFloat fFactor )
 //
 
 // Return world position at center of view
-void Ortho_GetViewCenter( const Ortho * pOrtho, jeVec3d * pCenter )
+void Ortho_GetViewCenter( const Ortho * pOrtho, grVec3d * pCenter )
 {
-	jeVec3d TopLeft;
-	jeVec3d BottomRight;
+	grVec3d TopLeft;
+	grVec3d BottomRight;
 
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
 
 	Ortho_ViewToWorld( pOrtho, 0, 0, &TopLeft ) ;
 	Ortho_ViewToWorld( pOrtho, pOrtho->Width-1, pOrtho->Height-1, &BottomRight ) ;
-	jeVec3d_Add( &TopLeft, &BottomRight, pCenter );
-	jeVec3d_Scale( pCenter, 0.5f, pCenter ) ;
+	grVec3d_Add( &TopLeft, &BottomRight, pCenter );
+	grVec3d_Scale( pCenter, 0.5f, pCenter ) ;
 }// Ortho_GetViewCenter
 
 
-void Ortho_ViewToWorld( const Ortho * pOrtho, const int x, const int y, jeVec3d *pW )
+void Ortho_ViewToWorld( const Ortho * pOrtho, const int x, const int y, grVec3d *pW )
 /*
   XY view coordinate transformed to world coordinate, depending on view.
 
@@ -617,7 +617,7 @@ void Ortho_ViewToWorld( const Ortho * pOrtho, const int x, const int y, jeVec3d 
   		   +Z
 */
 {
-	jeFloat	ZoomInv= 1.0f / pOrtho->ZoomFactor ;
+	grFloat	ZoomInv= 1.0f / pOrtho->ZoomFactor ;
 
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
@@ -625,43 +625,43 @@ void Ortho_ViewToWorld( const Ortho * pOrtho, const int x, const int y, jeVec3d 
 	switch( pOrtho->ViewType )
 	{
 		case Ortho_ViewTop :
-			jeVec3d_Set( pW, (x - pOrtho->XCenter), 0.0f, (y - pOrtho->YCenter)) ;
-			jeVec3d_Scale( pW, ZoomInv, pW ) ;
-			jeVec3d_Add( pW, &pOrtho->CamPos, pW ) ;
+			grVec3d_Set( pW, (x - pOrtho->XCenter), 0.0f, (y - pOrtho->YCenter)) ;
+			grVec3d_Scale( pW, ZoomInv, pW ) ;
+			grVec3d_Add( pW, &pOrtho->CamPos, pW ) ;
 			break;
 
 		case Ortho_ViewFront :
-			jeVec3d_Set( pW, (x - pOrtho->XCenter), -(y - pOrtho->YCenter), 0.0f ) ;
-			jeVec3d_Scale( pW, ZoomInv, pW ) ;
-			jeVec3d_Add( pW, &pOrtho->CamPos, pW ) ;
+			grVec3d_Set( pW, (x - pOrtho->XCenter), -(y - pOrtho->YCenter), 0.0f ) ;
+			grVec3d_Scale( pW, ZoomInv, pW ) ;
+			grVec3d_Add( pW, &pOrtho->CamPos, pW ) ;
 			break;
 
 		case Ortho_ViewSide :
-			jeVec3d_Set( pW, 0.0f, -(y - pOrtho->YCenter), (x - pOrtho->XCenter) ) ;
-			jeVec3d_Scale( pW, ZoomInv, pW ) ;
-			jeVec3d_Add( pW, &pOrtho->CamPos, pW ) ;
+			grVec3d_Set( pW, 0.0f, -(y - pOrtho->YCenter), (x - pOrtho->XCenter) ) ;
+			grVec3d_Scale( pW, ZoomInv, pW ) ;
+			grVec3d_Add( pW, &pOrtho->CamPos, pW ) ;
 			break;
 #if 0
 		default :
 		{
-			jeVec3d_Set 
+			grVec3d_Set 
 			(
 				wp,
 				-(x -v->XCenter)*(v->MaxScreenScaleInv), 
 				-(y -v->YCenter)*(v->MaxScreenScaleInv), 
 				1.0f
 			);
-			jeVec3d_Normalize(wp);
+			grVec3d_Normalize(wp);
 			break;
 		}
 #endif // 3D
 	}
 }// Ortho_ViewToWorld
 
-void Ortho_ViewToWorldRect( const Ortho * pOrtho, const Point * pV1, const Point * pV2, jeExtBox * pWorldBox )
+void Ortho_ViewToWorldRect( const Ortho * pOrtho, const Point * pV1, const Point * pV2, grExtBox * pWorldBox )
 {
-	jeVec3d	Vec1 ;
-	jeVec3d Vec2 ;
+	grVec3d	Vec1 ;
+	grVec3d Vec2 ;
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
 	assert( pV1 != NULL ) ;
@@ -675,35 +675,35 @@ void Ortho_ViewToWorldRect( const Ortho * pOrtho, const Point * pV1, const Point
 
 }// Ortho_ViewToWorldRect
 
-void Ortho_ViewToWorldDistance( const Ortho * pOrtho, const int x, const int y, jeVec3d *pW )
+void Ortho_ViewToWorldDistance( const Ortho * pOrtho, const int x, const int y, grVec3d *pW )
 {
-	jeFloat	ZoomInv= 1.0f / pOrtho->ZoomFactor ;
+	grFloat	ZoomInv= 1.0f / pOrtho->ZoomFactor ;
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
 
 	switch( pOrtho->ViewType )
 	{
 		case Ortho_ViewTop :
-			jeVec3d_Set( pW, (jeFloat)x, 0.0f, (jeFloat)y ) ;
-			jeVec3d_Scale( pW, ZoomInv, pW ) ;
+			grVec3d_Set( pW, (grFloat)x, 0.0f, (grFloat)y ) ;
+			grVec3d_Scale( pW, ZoomInv, pW ) ;
 			break;
 
 		case Ortho_ViewFront :
-			jeVec3d_Set( pW, (jeFloat)x, (jeFloat)-y, 0.0f ) ;
-			jeVec3d_Scale( pW, ZoomInv, pW ) ;
+			grVec3d_Set( pW, (grFloat)x, (grFloat)-y, 0.0f ) ;
+			grVec3d_Scale( pW, ZoomInv, pW ) ;
 			break;
 
 		case Ortho_ViewSide :
-			jeVec3d_Set( pW, 0.0f, (jeFloat)-y, (jeFloat)x ) ;
-			jeVec3d_Scale( pW, ZoomInv, pW ) ;
+			grVec3d_Set( pW, 0.0f, (grFloat)-y, (grFloat)x ) ;
+			grVec3d_Scale( pW, ZoomInv, pW ) ;
 			break;
 	}
 }// Ortho_ViewToWorldDistance
 
 
-void Ortho_WorldToView( const Ortho * pOrtho, const jeVec3d * pW, Point * pPt )
+void Ortho_WorldToView( const Ortho * pOrtho, const grVec3d * pW, Point * pPt )
 {
-	jeVec3d ptView;
+	grVec3d ptView;
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
 	assert( pW != NULL ) ;
@@ -712,22 +712,22 @@ void Ortho_WorldToView( const Ortho * pOrtho, const jeVec3d * pW, Point * pPt )
 	switch( pOrtho->ViewType )
 	{
 		case Ortho_ViewTop :
-			jeVec3d_Subtract( pW, &pOrtho->CamPos, &ptView ) ;
-			jeVec3d_Scale( &ptView, pOrtho->ZoomFactor, &ptView ) ;
+			grVec3d_Subtract( pW, &pOrtho->CamPos, &ptView ) ;
+			grVec3d_Scale( &ptView, pOrtho->ZoomFactor, &ptView ) ;
 			pPt->X = (int32)(pOrtho->XCenter + ptView.X ) ;
 			pPt->Y = (int32)(pOrtho->YCenter + ptView.Z ) ;
 			break;
 
 		case Ortho_ViewFront :
-			jeVec3d_Subtract( pW, &pOrtho->CamPos, &ptView ) ;
-			jeVec3d_Scale( &ptView, pOrtho->ZoomFactor, &ptView ) ;
+			grVec3d_Subtract( pW, &pOrtho->CamPos, &ptView ) ;
+			grVec3d_Scale( &ptView, pOrtho->ZoomFactor, &ptView ) ;
 			pPt->X = (int32)(pOrtho->XCenter + ptView.X ) ;
 			pPt->Y = (int32)(pOrtho->YCenter - ptView.Y ) ;
 			break;
 
 		case Ortho_ViewSide :
-			jeVec3d_Subtract( pW, &pOrtho->CamPos, &ptView ) ;
-			jeVec3d_Scale( &ptView, pOrtho->ZoomFactor, &ptView ) ;
+			grVec3d_Subtract( pW, &pOrtho->CamPos, &ptView ) ;
+			grVec3d_Scale( &ptView, pOrtho->ZoomFactor, &ptView ) ;
 			pPt->X = (int32)(pOrtho->XCenter + ptView.Z ) ;
 			pPt->Y = (int32)(pOrtho->YCenter - ptView.Y ) ;
 			break;
@@ -735,7 +735,7 @@ void Ortho_WorldToView( const Ortho * pOrtho, const jeVec3d * pW, Point * pPt )
 }// Ortho_WorldToView
 
 
-void Ortho_WorldToViewRect( const Ortho * pOrtho, const jeExtBox * pWorldBox, Rect * pViewRect )
+void Ortho_WorldToViewRect( const Ortho * pOrtho, const grExtBox * pWorldBox, Rect * pViewRect )
 {
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
@@ -752,10 +752,10 @@ void Ortho_WorldToViewRect( const Ortho * pOrtho, const jeExtBox * pWorldBox, Re
 
 }// Ortho_WorldToViewRect
 
-jeBoolean Ortho_TestWorldToViewRect( const Ortho * pOrtho, const jeExtBox * pWorldBox, Rect * pViewRect )
+grBoolean Ortho_TestWorldToViewRect( const Ortho * pOrtho, const grExtBox * pWorldBox, Rect * pViewRect )
 {
-	jeBoolean	bIntersects ;
-	jeExtBox	IntersectBounds ;
+	grBoolean	bIntersects ;
+	grExtBox	IntersectBounds ;
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pOrtho->nSignature ) ;
 	assert( pWorldBox != NULL ) ;

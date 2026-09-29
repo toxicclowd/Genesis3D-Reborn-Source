@@ -39,8 +39,8 @@ extern "C" {
 /*******************************************/
 /** you must wrap any calls to this module with these: **/
 
-jeBoolean List_Start(void);
-jeBoolean List_Stop(void);
+grBoolean List_Start(void);
+grBoolean List_Stop(void);
 
 /*******************************************/
 /** basic list types ****/

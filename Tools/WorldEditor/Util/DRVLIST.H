@@ -31,20 +31,20 @@ extern "C" {
 #define DRVLIST_HARDWARE	( 1 << 3 )
 #define DRVLIST_ALL			( 1 << 4 )
 
-jeBoolean	DrvList_PickDriver(HANDLE hInstance, 
+grBoolean	DrvList_PickDriver(HANDLE hInstance, 
 							   HWND hwndParent, 
-							   jeEngine *Engine, 
-							   jeDriver **Driver, 
-							   jeDriver_Mode **Mode, 
-							   jeBoolean DisplayDialog,
+							   grEngine *Engine, 
+							   grDriver **Driver, 
+							   grDriver_Mode **Mode, 
+							   grBoolean DisplayDialog,
 							   int ModeFilter );
 
 // Added JH 7.3.2000
-jeBoolean DrvList_GetDriverByName(
-								jeEngine		*Engine,
+grBoolean DrvList_GetDriverByName(
+								grEngine		*Engine,
 								char			*sDriverMode,
-								jeDriver		**Driver,
-								jeDriver_Mode	**Mode);
+								grDriver		**Driver,
+								grDriver_Mode	**Mode);
 
 #ifdef __cplusplus
 }

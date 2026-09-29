@@ -30,7 +30,7 @@
 //#include "util.h"
 //#include "ram.h"
 
-jeBoolean FilePath_GetDrive
+grBoolean FilePath_GetDrive
 	(
 	  char const *pPath,
 	  char *pDrive
@@ -43,7 +43,7 @@ jeBoolean FilePath_GetDrive
 	return (*pDrive != '\0');
 }
 
-jeBoolean FilePath_GetDir
+grBoolean FilePath_GetDir
 	(
 	  char const *pPath,
 	  char *pDir
@@ -57,7 +57,7 @@ jeBoolean FilePath_GetDir
 
 }
 
-jeBoolean FilePath_GetName
+grBoolean FilePath_GetName
 	(
 	  char const *pPath,
 	  char *pName
@@ -70,7 +70,7 @@ jeBoolean FilePath_GetName
 	return (*pName != '\0'); 
 }
 
-jeBoolean FilePath_GetExt
+grBoolean FilePath_GetExt
 	(
 	  char const *pPath,
 	  char *pExt
@@ -84,7 +84,7 @@ jeBoolean FilePath_GetExt
 }
 
 
-jeBoolean FilePath_GetDriveAndDir
+grBoolean FilePath_GetDriveAndDir
 	(
 	  char const *pPath,
 	  char *pDriveDir
@@ -101,7 +101,7 @@ jeBoolean FilePath_GetDriveAndDir
 	return (*pDriveDir != '\0');
 }
 
-jeBoolean FilePath_GetNameAndExt
+grBoolean FilePath_GetNameAndExt
 	(
 	  char const *pPath,
 	  char *pNameExt
@@ -118,7 +118,7 @@ jeBoolean FilePath_GetNameAndExt
 	return (*pNameExt != '\0');
 }
 
-jeBoolean FilePath_SetExt
+grBoolean FilePath_SetExt
 	(
 	  char const *pSrcFile,
 	  char const *pExt,
@@ -136,11 +136,11 @@ jeBoolean FilePath_SetExt
 
 	_splitpath (pSrcFile, Drive, Dir, Name, NULL);
 	_makepath (pDestFile, Drive, Dir, Name, pExt);
-	return JE_TRUE;  // what's reasonable here???
+	return GR_TRUE;  // what's reasonable here???
 
 }
 
-jeBoolean FilePath_SlashTerminate
+grBoolean FilePath_SlashTerminate
 	(
 	  char const *pPath,
 	  char *pDest
@@ -162,11 +162,11 @@ jeBoolean FilePath_SlashTerminate
 		*c = '\\';
 		*(c+1) = '\0';
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean FilePath_AppendName
+grBoolean FilePath_AppendName
 	(
 	  char const *pPath,
 	  char const *pName,
@@ -187,13 +187,13 @@ jeBoolean FilePath_AppendName
 		strcat (pDest, pName);
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 // Search for a Filename in the semicolon-separated paths specified in SearchPath.
-// If found, returns JE_TRUE and the full path name of the file in FoundPath.
-// Returns JE_FALSE if unsuccessful.
-jeBoolean FilePath_SearchForFile (const char *Filename, const char *SearchPath, char *FoundPath)
+// If found, returns GR_TRUE and the full path name of the file in FoundPath.
+// Returns GR_FALSE if unsuccessful.
+grBoolean FilePath_SearchForFile (const char *Filename, const char *SearchPath, char *FoundPath)
 {
 	const char *c, *pPath;
 	char WorkPath[MAX_PATH];
@@ -220,14 +220,14 @@ jeBoolean FilePath_SearchForFile (const char *Filename, const char *SearchPath, 
 		if (_access (WorkPath, 0) == 0)
 		{
 			strcpy (FoundPath, WorkPath);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	} while ((c != NULL) && (*c != '\0'));
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-jeBoolean FilePath_AppendSearchDir (char *SearchList, const char *NewDir)
+grBoolean FilePath_AppendSearchDir (char *SearchList, const char *NewDir)
 {
 	if (*NewDir != '\0')
 	{
@@ -237,16 +237,16 @@ jeBoolean FilePath_AppendSearchDir (char *SearchList, const char *NewDir)
 		}
 		strcat (SearchList, NewDir);
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean FilePath_ResolveRelativePath (const char *Relative, char *Resolved)
+grBoolean FilePath_ResolveRelativePath (const char *Relative, char *Resolved)
 {
 	GetFullPathName (Relative, MAX_PATH, Resolved, NULL);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 /*
-jeBoolean FilePath_ResolveRelativePathList (const char *RelativeList, char *ResolvedList)
+grBoolean FilePath_ResolveRelativePathList (const char *RelativeList, char *ResolvedList)
 {
 	char *PathString = Util_Strdup (RelativeList);
 	char *c;
@@ -255,7 +255,7 @@ jeBoolean FilePath_ResolveRelativePathList (const char *RelativeList, char *Reso
 
 	if (PathString == NULL)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	c = strtok (PathString, ";");
@@ -268,8 +268,8 @@ jeBoolean FilePath_ResolveRelativePathList (const char *RelativeList, char *Reso
 		c = strtok (NULL, ";");
 	}
 
-	jeRam_Free (PathString);
+	grRam_Free (PathString);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 */

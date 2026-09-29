@@ -36,14 +36,12 @@ extern "C" {
 //========================================================================================
 //	Typedefs/#defines
 //========================================================================================
-typedef struct jeFaceInfo_Array grFaceInfo_Array;
-typedef struct jeFaceInfo_Array jeFaceInfo_Array;
+typedef struct grFaceInfo_Array grFaceInfo_Array;
 					
 typedef grGArray_Index					grFaceInfo_ArrayIndex;
-typedef grFaceInfo_ArrayIndex			jeFaceInfo_ArrayIndex;
+typedef grFaceInfo_ArrayIndex			grFaceInfo_ArrayIndex;
 
-typedef struct jeFaceInfo				grFaceInfo;
-typedef struct jeFaceInfo				jeFaceInfo;
+typedef struct grFaceInfo				grFaceInfo;
 
 #define GR_FACEINFO_ARRAY_MAX_INDEX		GR_GARRAY_MAX_ELEMENTS
 #define GR_FACEINFO_ARRAY_NULL_INDEX	GR_GARRAY_NULL_INDEX
@@ -62,7 +60,7 @@ typedef struct jeFaceInfo				jeFaceInfo;
 //========================================================================================
 //	Structure defs
 //========================================================================================
-struct jeFaceInfo
+struct grFaceInfo
 {
 	uint32					Flags;			// See flag definitions above
 	grFloat					Alpha;			// Alpha value (0...255)
@@ -111,27 +109,5 @@ GRAPI const		grFaceInfo * GRCC grFaceInfo_ArrayGetFaceInfoByIndex(const grFaceIn
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define JE_FACEINFO_ARRAY_MAX_INDEX              GR_FACEINFO_ARRAY_MAX_INDEX
-#define JE_FACEINFO_ARRAY_NULL_INDEX             GR_FACEINFO_ARRAY_NULL_INDEX
-#define jeFaceInfo_ArrayAddFaceInfo              grFaceInfo_ArrayAddFaceInfo
-#define jeFaceInfo_ArrayCreate                   grFaceInfo_ArrayCreate
-#define jeFaceInfo_ArrayCreateFromFile           grFaceInfo_ArrayCreateFromFile
-#define jeFaceInfo_ArrayCreateRef                grFaceInfo_ArrayCreateRef
-#define jeFaceInfo_ArrayDestroy                  grFaceInfo_ArrayDestroy
-#define jeFaceInfo_ArrayGetFaceInfoByIndex       grFaceInfo_ArrayGetFaceInfoByIndex
-#define jeFaceInfo_ArrayIndexIsValid             grFaceInfo_ArrayIndexIsValid
-#define jeFaceInfo_ArrayIsValid                  grFaceInfo_ArrayIsValid
-#define jeFaceInfo_ArrayRefFaceInfoIndex         grFaceInfo_ArrayRefFaceInfoIndex
-#define jeFaceInfo_ArrayRemoveFaceInfo           grFaceInfo_ArrayRemoveFaceInfo
-#define jeFaceInfo_ArraySetFaceInfoByIndex       grFaceInfo_ArraySetFaceInfoByIndex
-#define jeFaceInfo_ArrayShareFaceInfo            grFaceInfo_ArrayShareFaceInfo
-#define jeFaceInfo_ArrayWriteToFile              grFaceInfo_ArrayWriteToFile
-#define jeFaceInfo_Compare                       grFaceInfo_Compare
-#define jeFaceInfo_NeedsLightmap                 grFaceInfo_NeedsLightmap
-#define jeFaceInfo_SetDefaults                   grFaceInfo_SetDefaults
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

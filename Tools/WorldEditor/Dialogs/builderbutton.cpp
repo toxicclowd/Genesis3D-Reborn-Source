@@ -96,7 +96,7 @@ void CBuilderButton::OnClicked()
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
-	jeProperty_Data Data;
+	grProperty_Data Data;
 	CWnd* pWnd = GetParent();
 
 	switch( m_DataType )

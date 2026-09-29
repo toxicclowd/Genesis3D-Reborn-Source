@@ -45,12 +45,12 @@
 
 palNode * chooseStartPal(palNode *nodes,int size,int *usage);
 palNode * initPal(uint8 * rgb_colors,int size);
-jeBoolean readOutPal(palNode *start_node,int size,uint8 *rgb_colors,int *permutation);
+grBoolean readOutPal(palNode *start_node,int size,uint8 *rgb_colors,int *permutation);
 
 void greedySort(palNode *start_node,palNode *nodes,int size,int *usage);
 void lazySort(palNode *start_node,palNode *nodes,int size,int *usage);
 
-jeBoolean doOptimize(palNode *nodes,int size,int block,palNode **start_node_ptr,int *usage);
+grBoolean doOptimize(palNode *nodes,int size,int block,palNode **start_node_ptr,int *usage);
 
 int node_distance_sqr(palNode *x,palNode *y);
 void reportTotLen(palNode *start_node,int *usage);
@@ -59,13 +59,13 @@ int weighted_node_distance(palNode *x,palNode *y,int *usage);
 
 /********************************/
 
-jeBoolean sortPal(int size,uint8 *rgb_colors, int *permutation,int *usage,int flags)
+grBoolean sortPal(int size,uint8 *rgb_colors, int *permutation,int *usage,int flags)
 {
 int i;
 palNode *nodes,*start_node;
 
 	if ( (nodes = initPal(rgb_colors,size)) == NULL )
-		return JE_FALSE;
+		return GR_FALSE;
 	
 	start_node = chooseStartPal(nodes,size,usage);
 
@@ -103,37 +103,37 @@ palNode *nodes,*start_node;
 	if ( ! readOutPal(start_node,size,rgb_colors,permutation) ) {
 		BrandoError("bad linked list");
 		destroy(nodes);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	reportTotLen(start_node,usage);
 
 	destroy(nodes);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 
-jeBoolean inList(palNode *test,palNode *head,palNode *tail)
+grBoolean inList(palNode *test,palNode *head,palNode *tail)
 {
 palNode *cur;
 	cur =head;
 	while(cur != tail->next) {
-		if ( cur == test ) return JE_TRUE;
+		if ( cur == test ) return GR_TRUE;
 		assert(cur->next->prev == cur);
 		cur = cur->next;
 	}
-return JE_FALSE;
+return GR_FALSE;
 }
 
-jeBoolean doOptimize(palNode *nodes,int size,int block,palNode **start_node_ptr,int *usage)
+grBoolean doOptimize(palNode *nodes,int size,int block,palNode **start_node_ptr,int *usage)
 {
 int i,j,d,nd;
 palNode *head,*tail,*target,*start_node;
-jeBoolean didFiddle;
+grBoolean didFiddle;
 
 	start_node = *start_node_ptr;
-	didFiddle = JE_FALSE;
+	didFiddle = GR_FALSE;
 
 	for(i=0;i<size;i++) {
 		head = nodes+i;
@@ -161,7 +161,7 @@ jeBoolean didFiddle;
 							tail->next->prev = tail;
 							set_d_next(tail,usage);
 							set_d_next(head->prev,usage);
-							didFiddle = JE_TRUE;
+							didFiddle = GR_TRUE;
 							break; // do it just for speed
 						}
 					}				
@@ -186,7 +186,7 @@ jeBoolean didFiddle;
 						tail->next->prev = tail;
 						set_d_next(tail,usage);
 						set_d_next(head->prev,usage);
-						didFiddle = JE_TRUE;
+						didFiddle = GR_TRUE;
 						target = NULL;
 					} else {
 						target = target->next;
@@ -215,7 +215,7 @@ jeBoolean didFiddle;
 					tail->next->prev = tail;
 					set_d_next(tail,usage);
 					set_d_next(head->prev,usage);
-					didFiddle = JE_TRUE;
+					didFiddle = GR_TRUE;
 					target = NULL;
 				} else {
 					target = target->next;
@@ -252,7 +252,7 @@ palNode *cur;
 
 	cur = start_node;
 	while(cur) {
-		cur->visited = JE_TRUE;
+		cur->visited = GR_TRUE;
 
 		cur->d_next = nextBestD(cur,&(cur->next),nodes,size,usage);
 
@@ -268,20 +268,20 @@ palNode *cur,*vs,*vs2;
 
 	cur = start_node;
 	while(cur) {
-		cur->visited = JE_TRUE;
+		cur->visited = GR_TRUE;
 		best_d = INT_MAX;
 		for(j=0;j<size;j++) { vs = nodes+j;
 			if ( !(vs->visited) && !(vs->next) ) {
 				d = weighted_node_distance(cur,vs,usage);
 				
-				vs->visited = JE_TRUE;
+				vs->visited = GR_TRUE;
 				d += nextBestD(vs,&vs2,nodes,size,usage);
 				if ( vs2 ) {
-					vs2->visited = JE_TRUE;
+					vs2->visited = GR_TRUE;
 					d += nextBestD(vs2,NULL,nodes,size,usage);
-					vs2->visited = JE_FALSE;
+					vs2->visited = GR_FALSE;
 				}
-				vs->visited = JE_FALSE;
+				vs->visited = GR_FALSE;
 
 				if ( d < best_d ) {
 					best_d = d;
@@ -388,7 +388,7 @@ void restoreRGB(palNode *n)
 	undo_RGB_transform( (n->c1) , (n->c2) , (n->c3)  , (n->color));
 }
 
-jeBoolean readOutPal(palNode *start_node,int size,uint8 *rgb_colors,int *permutation)
+grBoolean readOutPal(palNode *start_node,int size,uint8 *rgb_colors,int *permutation)
 {
 int i;
 palNode *cur;
@@ -403,8 +403,8 @@ palNode *cur;
 		cur = cur->next;
 	}
 	if ( i != size )
-		return JE_FALSE;
-return JE_TRUE;
+		return GR_FALSE;
+return GR_TRUE;
 }
 
 void reportTotLen(palNode *start_node,int *usage)

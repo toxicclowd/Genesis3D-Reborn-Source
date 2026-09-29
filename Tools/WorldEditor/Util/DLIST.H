@@ -69,51 +69,51 @@ int32 DList_NodeN( DListP List );
 
 //Inerts a node before the given NodeHandle.
 // NodeHandle DLIST_HEAD will make the new node the head of the list
-jeBoolean DList_PreInsert( DListP List, DList_NodeHandle Node, void* Data );
+grBoolean DList_PreInsert( DListP List, DList_NodeHandle Node, void* Data );
 
 //Inerts a node after the given NodeHandle.
 // NodeHandle DLIST_TAIL will make the new node tail of the list
-jeBoolean DList_Insert( DListP List, DList_NodeHandle Node, void* Data );
+grBoolean DList_Insert( DListP List, DList_NodeHandle Node, void* Data );
 
 //	Gets the data of the specified NodeHandle
 // NodeHandle will be filled with a specific NodeHandle when
 // DLIST_HEAD and DLIST_TAIL are specified.  NULL can be passed
 // for the Data when not interseted in the Data and just want 
 // the NodeHandle
-jeBoolean DList_Get( DListP List, DList_NodeHandle *Node, void* Data );
+grBoolean DList_Get( DListP List, DList_NodeHandle *Node, void* Data );
 
 //	Sets the data of the specified NodeHandle
 // NodeHandle will be filled with a specific NodeHandle when
 // DLIST_HEAD and DLIST_TAIL are specified.  NULL can be passed
 // for the Data when not interseted in the Data and just want 
 // the NodeHandle
-jeBoolean DList_Set( DListP List, DList_NodeHandle *Node, void* Data );
+grBoolean DList_Set( DListP List, DList_NodeHandle *Node, void* Data );
 
 //	Gets the data of the Node following the specified NodeHandle.
 //  If *Node is NULL the List Head will be returned.
 // NodeHandle will be filled with a next NodeHandle.  NULL can be 
 // passed for the Data when not interseted in the Data and just want 
 // the NodeHandle.  The function will return FALSE if the Tail Node is passed in.
-jeBoolean DList_GetNext( DListP List, DList_NodeHandle* Node, void* Data );
+grBoolean DList_GetNext( DListP List, DList_NodeHandle* Node, void* Data );
 
 //	Gets the data of the Node before the specified NodeHandle
 //  If *Node is NULL the List Tail will be returned.
 // NodeHandle will be filled with a next NodeHandle when  NULL can be 
 // passed for the Data when not interseted in the Data and just want 
 // the NodeHandle. The function will return FALSE if the Head Node is passed in.
-jeBoolean DList_GetPrev( DListP List, DList_NodeHandle* Node, void* Data );
+grBoolean DList_GetPrev( DListP List, DList_NodeHandle* Node, void* Data );
 
 //  Unlinks and destroys the Node specified by NodeHandle.
 //	The Node Data is copied into Data before being destroying its copy.
 //  Pass a callback function if Node version of the Data needs to 
 //	be processed before being destroyed.  
 //	Pass NULL for call back if no added processing is needed.
-jeBoolean DList_Unlink( DListP List, DList_NodeHandle Node, void* Data, DList_DestroyCB CallBack, void* Context );
+grBoolean DList_Unlink( DListP List, DList_NodeHandle Node, void* Data, DList_DestroyCB CallBack, void* Context );
 
 // Parses through the List Calling the CallBack until it returns 0 meaning data is 
 // equal to. Returns TRUE and sets the NodeHandle.  The value of data is not changed
 // since if it returns TRUE it assumed the contents of Data are the same as the Node.
-jeBoolean DList_Search( DListP List, DList_NodeHandle* Node, void* Data, DList_SearchCB CallBack );
+grBoolean DList_Search( DListP List, DList_NodeHandle* Node, void* Data, DList_SearchCB CallBack );
 
 // Destroys entire list.  The Destroy Callback will be called for each 
 // Nodes Data.  Pass NULL for CallBack if no addtional processing is needed.

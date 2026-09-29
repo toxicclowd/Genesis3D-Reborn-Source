@@ -23,8 +23,8 @@
 
 #include "SortPal.h"
 
-extern jeBoolean reducePal(int *ncolors_ptr,uint8 *palette,int *permutation,int *usage);
-extern jeBoolean usePal(int *ncolors_ptr,int new_ncolors,uint8 * palette,int *permutation,int * usage);
+extern grBoolean reducePal(int *ncolors_ptr,uint8 *palette,int *permutation,int *usage);
+extern grBoolean usePal(int *ncolors_ptr,int new_ncolors,uint8 * palette,int *permutation,int * usage);
 
 /********
 *

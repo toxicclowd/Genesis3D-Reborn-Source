@@ -31,18 +31,18 @@ extern "C" {
 #endif
 
 
-jeBoolean Make_Body(AProject *Prj, AOptions *Options, MkUtil_Printf Printf);
+grBoolean Make_Body(AProject *Prj, AOptions *Options, MkUtil_Printf Printf);
 
-jeBoolean Make_Motion(AProject *Prj, AOptions *Options, 
+grBoolean Make_Motion(AProject *Prj, AOptions *Options, 
 					int Count, int *MotionIndexArray, MkUtil_Printf Printf);
 
-jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf);
+grBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf);
 
-jeBoolean Make_Clean(AProject *Prj, AOptions *Options, MkUtil_Printf Printf);
+grBoolean Make_Clean(AProject *Prj, AOptions *Options, MkUtil_Printf Printf);
 
-void Make_SetInterruptFlag (jeBoolean State);
+void Make_SetInterruptFlag (grBoolean State);
 
-jeBoolean Make_ActorSummary(AProject *Prj, MkUtil_Printf Printf);
+grBoolean Make_ActorSummary(AProject *Prj, MkUtil_Printf Printf);
 
 #ifdef __cplusplus
 }

@@ -26,7 +26,7 @@ CJet3DView::CJet3DView()
 	m_pActorDef = NULL;
 
 	m_pWorld = NULL;
-	m_bInitialized = JE_FALSE;
+	m_bInitialized = GR_FALSE;
 }
 
 CJet3DView::~CJet3DView()
@@ -34,26 +34,26 @@ CJet3DView::~CJet3DView()
 	if (m_pActorObject)
 	{
 		if (m_pActorDef)
-			jeActor_DefDestroy(&m_pActorDef);
+			grActor_DefDestroy(&m_pActorDef);
 
 		if (m_pActor)
 			m_pActor = NULL;
 
-		jeObject_DettachEngine(m_pActorObject, m_pEngine);
-		jeObject_Destroy(&m_pActorObject);
+		grObject_DettachEngine(m_pActorObject, m_pEngine);
+		grObject_Destroy(&m_pActorObject);
 	}
 
 	if (m_pWorld)
-		jeWorld_Destroy(&m_pWorld);
+		grWorld_Destroy(&m_pWorld);
 
 	if (m_pResMgr)
-		jeResource_MgrDestroy(&m_pResMgr);
+		grResource_MgrDestroy(&m_pResMgr);
 
 	if (m_pCamera)
-		jeCamera_Destroy(&m_pCamera);
+		grCamera_Destroy(&m_pCamera);
 
 	if (m_pEngine)
-		jeEngine_Destroy(&m_pEngine);
+		grEngine_Destroy(&m_pEngine);
 }
 
 BEGIN_MESSAGE_MAP(CJet3DView, CView)
@@ -69,22 +69,22 @@ void CJet3DView::OnDraw(CDC* pDC)
 	if (m_bInitialized)
 	{
 		// TODO: add draw code here
-		if (!jeEngine_BeginFrame(m_pEngine, m_pCamera, JE_TRUE))
+		if (!grEngine_BeginFrame(m_pEngine, m_pCamera, GR_TRUE))
 			return;
 
 		if (m_pActor)
 		{
-			jeXForm3d				temp;
+			grXForm3d				temp;
 
 			temp = m_ActorXForm;
-			jeXForm3d_PostRotateX(&temp, JE_HALFPI);
-			jeXForm3d_PostRotateY(&temp, -JE_PI);
+			grXForm3d_PostRotateX(&temp, GR_HALFPI);
+			grXForm3d_PostRotateY(&temp, -GR_PI);
 
-			jeActor_ClearPose(m_pActor, &temp);
-			jeActor_Render(m_pActor, m_pEngine, m_pWorld, m_pCamera);
+			grActor_ClearPose(m_pActor, &temp);
+			grActor_Render(m_pActor, m_pEngine, m_pWorld, m_pCamera);
 		}
 
-		if (!jeEngine_EndFrame(m_pEngine))
+		if (!grEngine_EndFrame(m_pEngine))
 			return;
 	}
 }
@@ -112,32 +112,32 @@ void CJet3DView::OnInitialUpdate()
 	CView::OnInitialUpdate();
 
 	// TODO: Add your specialized code here and/or call the base class
-	m_pEngine = jeEngine_Create(this->GetSafeHwnd(), "ActorWorkbench", ".");
+	m_pEngine = grEngine_Create(this->GetSafeHwnd(), "ActorWorkbench", ".");
 	if (!m_pEngine)
 	{
 		TRACE0("Could not create engine object!!");
 		return;
 	}
 
-	jeEngine_EnableFrameRateCounter(m_pEngine, JE_FALSE);
-	jeEngine_RegisterObjects("Objects");
-	//jeEngine_SetGamma(m_pEngine, 1.0f);	//trilobite orig
-	jeEngine_SetGamma(m_pEngine, 1.5f);	//trilobite revise
+	grEngine_EnableFrameRateCounter(m_pEngine, GR_FALSE);
+	grEngine_RegisterObjects("Objects");
+	//grEngine_SetGamma(m_pEngine, 1.0f);	//trilobite orig
+	grEngine_SetGamma(m_pEngine, 1.5f);	//trilobite revise
 
 
-	jeDriver_System *DrvSys = jeEngine_GetDriverSystem(m_pEngine);
+	grDriver_System *DrvSys = grEngine_GetDriverSystem(m_pEngine);
 	if (!DrvSys)
 	{
 		TRACE0("Could not get driver system!!");
 		return;
 	}
 
-	jeDriver *Driver = NULL;
-	for (Driver = jeDriver_SystemGetNextDriver(DrvSys, NULL); Driver != NULL; Driver = jeDriver_SystemGetNextDriver(DrvSys, Driver))
+	grDriver *Driver = NULL;
+	for (Driver = grDriver_SystemGetNextDriver(DrvSys, NULL); Driver != NULL; Driver = grDriver_SystemGetNextDriver(DrvSys, Driver))
 	{
 		const char					*drvname = NULL;
 
-		jeDriver_GetName(Driver, &drvname);
+		grDriver_GetName(Driver, &drvname);
 		if (drvname && !strcmp(drvname, "(D3D) DirectX 12"))
 			break;
 	}
@@ -149,14 +149,14 @@ void CJet3DView::OnInitialUpdate()
 	}
 
 	//	by trilobite	Jan. 2011
-	jeDriver_Mode *Mode = NULL;
-	//for (jeDriver_Mode *Mode = jeDriver_GetNextMode(Driver, NULL); Mode != NULL; Mode = jeDriver_GetNextMode(Driver, Mode))
-	for (Mode = jeDriver_GetNextMode(Driver, NULL); Mode != NULL; Mode = jeDriver_GetNextMode(Driver, Mode))
+	grDriver_Mode *Mode = NULL;
+	//for (grDriver_Mode *Mode = grDriver_GetNextMode(Driver, NULL); Mode != NULL; Mode = grDriver_GetNextMode(Driver, Mode))
+	for (Mode = grDriver_GetNextMode(Driver, NULL); Mode != NULL; Mode = grDriver_GetNextMode(Driver, Mode))
 	//	
 	{
 		int32					w, h, b;
 
-		jeDriver_ModeGetAttributes(Mode, &w, &h, &b);
+		grDriver_ModeGetAttributes(Mode, &w, &h, &b);
 		if (w == -1 && h == -1 && b == -1)
 			break;
 	}
@@ -167,15 +167,15 @@ void CJet3DView::OnInitialUpdate()
 		return;
 	}
 
-	if (!jeEngine_SetDriverAndMode(m_pEngine, this->GetSafeHwnd(), Driver, Mode))
+	if (!grEngine_SetDriverAndMode(m_pEngine, this->GetSafeHwnd(), Driver, Mode))
 	{
 		TRACE0("Could not start engine!!");
 		return;
 	}
 
-	jeEngine_SetRenderMode(m_pEngine, RenderMode_TexturedAndLit);
+	grEngine_SetRenderMode(m_pEngine, RenderMode_TexturedAndLit);
 
-	m_pResMgr = jeResource_MgrCreateDefault(m_pEngine);
+	m_pResMgr = grResource_MgrCreateDefault(m_pEngine);
 	if (!m_pResMgr)
 	{
 		TRACE0("Could not create resource manager!!");
@@ -186,7 +186,7 @@ void CJet3DView::OnInitialUpdate()
 		return;
     
 	this->SetTimer(TIMER_ID, TIMER_INTERVAL, NULL);
-	m_bInitialized = JE_TRUE;
+	m_bInitialized = GR_TRUE;
 }
 
 void CJet3DView::OnTimer(UINT_PTR nIDEvent)
@@ -200,92 +200,92 @@ void CJet3DView::OnTimer(UINT_PTR nIDEvent)
 	}
 }
 
-jeEngine * CJet3DView::GetEngine(void)
+grEngine * CJet3DView::GetEngine(void)
 {
 	return m_pEngine;
 }
 
-void CJet3DView::SetActiveActor(jeObject * Object)
+void CJet3DView::SetActiveActor(grObject * Object)
 {
 	if (m_pActorObject)
 	{
 		if (m_pActorDef)
-			jeActor_DefDestroy(&m_pActorDef);
+			grActor_DefDestroy(&m_pActorDef);
 
 		if (m_pActor)
 			m_pActor = NULL;
 
-		jeObject_DettachEngine(m_pActorObject, m_pEngine);
-		jeObject_Destroy(&m_pActorObject);
+		grObject_DettachEngine(m_pActorObject, m_pEngine);
+		grObject_Destroy(&m_pActorObject);
 
 		m_pActorDef = NULL;
 		m_pActorObject = NULL;
 	}
 
 	m_pActorObject = Object;
-	m_pActor = (jeActor*)jeObject_GetInstance(m_pActorObject);
-	m_pActorDef = jeActor_GetActorDef(m_pActor);
+	m_pActor = (grActor*)grObject_GetInstance(m_pActorObject);
+	m_pActorDef = grActor_GetActorDef(m_pActor);
 
-	//jeActor_SetScale(m_pActor, 0.5f, 0.5f, 0.5f);
+	//grActor_SetScale(m_pActor, 0.5f, 0.5f, 0.5f);
 
-	//jeXForm3d_SetIdentity(&m_ActorXForm);
-	jeVec3d					Pos;
+	//grXForm3d_SetIdentity(&m_ActorXForm);
+	grVec3d					Pos;
 
-	jeActor_GetXForm(m_pActor, &m_ActorXForm);
-	jeVec3d_Copy(&m_ActorXForm.Translation, &Pos);
-	jeVec3d_Set(&m_ActorXForm.Translation, 0.0f, 0.0f, 0.0f);
-	jeXForm3d_PostRotateX(&m_ActorXForm, JE_HALFPI);
-	jeXForm3d_PostRotateY(&m_ActorXForm, -JE_PI);
-	jeVec3d_Copy(&Pos, &m_ActorXForm.Translation);
-	jeActor_SetXForm(m_pActor, &m_ActorXForm);
+	grActor_GetXForm(m_pActor, &m_ActorXForm);
+	grVec3d_Copy(&m_ActorXForm.Translation, &Pos);
+	grVec3d_Set(&m_ActorXForm.Translation, 0.0f, 0.0f, 0.0f);
+	grXForm3d_PostRotateX(&m_ActorXForm, GR_HALFPI);
+	grXForm3d_PostRotateY(&m_ActorXForm, -GR_PI);
+	grVec3d_Copy(&Pos, &m_ActorXForm.Translation);
+	grActor_SetXForm(m_pActor, &m_ActorXForm);
 
-	jeVec3d					in;
+	grVec3d					in;
 
 	m_CameraXForm = m_ActorXForm;
-	jeXForm3d_GetIn(&m_CameraXForm, &in);
-	jeVec3d_MA(&m_CameraXForm.Translation, -50.0f, &in, &m_CameraXForm.Translation);
+	grXForm3d_GetIn(&m_CameraXForm, &in);
+	grVec3d_MA(&m_CameraXForm.Translation, -50.0f, &in, &m_CameraXForm.Translation);
 	
-	if (jeActor_GetMotionCount(m_pActorDef) > 0)
+	if (grActor_GetMotionCount(m_pActorDef) > 0)
 		m_CameraXForm.Translation.Y += 50.0f;
 
-	jeCamera_SetXForm(m_pCamera, &m_CameraXForm);
+	grCamera_SetXForm(m_pCamera, &m_CameraXForm);
 
-	jeActor_AttachEngine(m_pActor, m_pEngine);
-	//jeActor_ClearPose(m_pActor, &m_ActorXForm);
+	grActor_AttachEngine(m_pActor, m_pEngine);
+	//grActor_ClearPose(m_pActor, &m_ActorXForm);
 
-	jeVec3d FillLightNormal;
+	grVec3d FillLightNormal;
 
-	jeVec3d_Set( &FillLightNormal, -0.3f, 1.0f, 0.4f );
-	jeVec3d_Normalize( &FillLightNormal );
+	grVec3d_Set( &FillLightNormal, -0.3f, 1.0f, 0.4f );
+	grVec3d_Normalize( &FillLightNormal );
 
-	jeActor_SetLightingOptions( m_pActor, JE_TRUE, &FillLightNormal,
+	grActor_SetLightingOptions( m_pActor, GR_TRUE, &FillLightNormal,
 		512.0f, 512.0f, 512.0f,		// Fill light
 		512.0f, 512.0f, 512.0f,		// Ambient light
-		JE_TRUE,					// Ambient light from floor
+		GR_TRUE,					// Ambient light from floor
 		0,		// no dynamic lights,
 		0,
 		NULL, FALSE );
 
-	//jeWorld_AddObject(m_pWorld, m_pActorObject);
+	//grWorld_AddObject(m_pWorld, m_pActorObject);
 }
 
-jeBoolean CJet3DView::InitWorld(void)
+grBoolean CJet3DView::InitWorld(void)
 {
 	RECT							r;
 
 	if (!m_pResMgr || !m_pEngine)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	m_pWorld = jeWorld_Create(m_pResMgr);
+	m_pWorld = grWorld_Create(m_pResMgr);
 	if (!m_pWorld)
 	{
 		AfxMessageBox("Could not create world!!", 48, 0);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	jeWorld_SetEngine(m_pWorld, m_pEngine);
+	grWorld_SetEngine(m_pWorld, m_pEngine);
 
-	m_FOV = jeFloat_DegToRad(90.0f);
+	m_FOV = grFloat_DegToRad(90.0f);
 
 	this->GetClientRect(&r);
 	m_CameraRect.Top = r.top;
@@ -293,17 +293,17 @@ jeBoolean CJet3DView::InitWorld(void)
 	m_CameraRect.Left = r.left;
 	m_CameraRect.Right = r.right - 1;
 
-	m_pCamera = jeCamera_Create(m_FOV, &m_CameraRect);
+	m_pCamera = grCamera_Create(m_FOV, &m_CameraRect);
 	if (!m_pCamera)
 	{
 		AfxMessageBox("Could not create camera!!");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	jeXForm3d_SetIdentity(&m_CameraXForm);
-	jeXForm3d_SetTranslation(&m_CameraXForm, 0.0f, 25.0f, 50.0f);
+	grXForm3d_SetIdentity(&m_CameraXForm);
+	grXForm3d_SetTranslation(&m_CameraXForm, 0.0f, 25.0f, 50.0f);
 
-	jeCamera_SetXForm(m_pCamera, &m_CameraXForm);
+	grCamera_SetXForm(m_pCamera, &m_CameraXForm);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }

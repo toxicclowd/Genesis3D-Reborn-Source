@@ -1,9 +1,9 @@
-//jeMp3Mgr - CyRiuS
+//grMp3Mgr - CyRiuS
 
 #ifndef Mp3Mgr_H
 #define Mp3Mgr_H
 
-#include "jet.h"
+#include "Genesis3D.h"
 #include <windows.h>
 #include <string.h>
 
@@ -17,24 +17,24 @@ extern "C" {
 #define MP3_LOAD_FAIL	1
 	
 
-typedef struct jeMp3_Def_
+typedef struct grMp3_Def_
 {
 	LPSTR			szFileName;
-	jeBoolean		isCutList; //Not yet implemented
+	grBoolean		isCutList; //Not yet implemented
 	// add other stuff here later
-} jeMp3_Def;
+} grMp3_Def;
 	
-typedef struct //the jeMp3Mgr holds info about the vids you wanna play. files[] allows easy access
+typedef struct //the grMp3Mgr holds info about the vids you wanna play. files[] allows easy access
 {			   //to all of your vids
 	int				num_mp3s;
 	int				cur_mp3;
-	jeMp3_Def		files[MAX_MP3];
+	grMp3_Def		files[MAX_MP3];
 	HWND			mwh;
 
-} jeMp3Mgr;
+} grMp3Mgr;
 
-JETAPI jeMp3Mgr * JETCC jeMp3_CreateManager(HWND mainwindowhandle);
-JETAPI jeBoolean JETCC jeMp3_DestroyManager(jeMp3Mgr **Mp3Mgr);
+GRAPI grMp3Mgr * GRCC grMp3_CreateManager(HWND mainwindowhandle);
+GRAPI grBoolean GRCC grMp3_DestroyManager(grMp3Mgr **Mp3Mgr);
 
 #ifdef __cplusplus
 }

@@ -68,12 +68,12 @@
 #ifndef LN_SEARCHLIST
 typedef	struct	FSSearchList
 {
-	jeVFile *				FS;
+	grVFile *				FS;
 	struct FSSearchList *	Next;
 }	FSSearchList;
 #endif
 
-typedef	struct	jeVFile
+typedef	struct	grVFile
 {
 #ifdef LN_SEARCHLIST
 	LinkNode					LN;
@@ -82,18 +82,18 @@ typedef	struct	jeVFile
 	FSSearchList *				SearchList;
 #endif
 
-	jeVFile_TypeIdentifier		SystemType;
-	const jeVFile_SystemAPIs *	APIs;
+	grVFile_TypeIdentifier		SystemType;
+	const grVFile_SystemAPIs *	APIs;
 	void *						FSData;
-	jeVFile *					Context;
-	jeThreadQueue_Semaphore *	Semaphore;	
+	grVFile *					Context;
+	grThreadQueue_Semaphore *	Semaphore;	
 	int							RefCount;
-	jeBoolean					IsHintsFile;
-}	jeVFile;
+	grBoolean					IsHintsFile;
+}	grVFile;
 
-typedef struct	jeVFile_Finder
+typedef struct	grVFile_Finder
 {
-	const jeVFile_SystemAPIs *	APIs;
+	const grVFile_SystemAPIs *	APIs;
 	void *						Data;
 #ifdef WIN32
         CRITICAL_SECTION                        CriticalSection;
@@ -101,7 +101,7 @@ typedef struct	jeVFile_Finder
 #ifdef BUILD_BE
         sem_id                                  CriticalSection;
 #endif // BUILD_BE  
-}	jeVFile_Finder;
+}	grVFile_Finder;
 
 /*}{ ******* Statics *******/
 
@@ -109,19 +109,19 @@ typedef struct	jeVFile_Finder
 static uint32 VFiles_Open = 0;
 #endif
 
-static uint32 						jeVFile_RefCount = 0;
+static uint32 						grVFile_RefCount = 0;
 
-static	jeVFile_SystemAPIs  **RegisteredAPIs = NULL;
+static	grVFile_SystemAPIs  **RegisteredAPIs = NULL;
 static	int							SystemCount;
 
-#define jeVFile_Lock(File)		jeThreadQueue_Semaphore_Lock(	((jeVFile *)(File))->Semaphore)
-#define jeVFile_UnLock(File)	jeThreadQueue_Semaphore_UnLock(	((jeVFile *)(File))->Semaphore)
+#define grVFile_Lock(File)		grThreadQueue_Semaphore_Lock(	((grVFile *)(File))->Semaphore)
+#define grVFile_UnLock(File)	grThreadQueue_Semaphore_UnLock(	((grVFile *)(File))->Semaphore)
 
-static jeVFile* JETCC	jeVFile_New(void);
-static void		JETCC	jeVFile_Free(jeVFile * File);
+static grVFile* GRCC	grVFile_New(void);
+static void		GRCC	grVFile_Free(grVFile * File);
 
-static jeBoolean jeVFile_PathIsSane(const char * Path);
-static jeBoolean JETCC CheckOpenFlags(unsigned int OpenModeFlags);
+static grBoolean grVFile_PathIsSane(const char * Path);
+static grBoolean GRCC CheckOpenFlags(unsigned int OpenModeFlags);
 
 #ifdef WIN32
 #define LOCK_CRITICALSECTION(a) EnterCriticalSection(a);
@@ -137,90 +137,90 @@ static jeBoolean JETCC CheckOpenFlags(unsigned int OpenModeFlags);
 
 /*}{ ******* File System Functions *******/
 
-static	jeBoolean JETCC jeVFile_RegisterFileSystemInternal(const jeVFile_SystemAPIs *APIs, jeVFile_TypeIdentifier *Type)
+static	grBoolean GRCC grVFile_RegisterFileSystemInternal(const grVFile_SystemAPIs *APIs, grVFile_TypeIdentifier *Type)
 {
-	jeVFile_SystemAPIs **	NewList;
+	grVFile_SystemAPIs **	NewList;
 
-	NewList = (jeVFile_SystemAPIs **)jeRam_Realloc((void *)RegisteredAPIs, sizeof(*RegisteredAPIs) * (SystemCount + 1));
+	NewList = (grVFile_SystemAPIs **)grRam_Realloc((void *)RegisteredAPIs, sizeof(*RegisteredAPIs) * (SystemCount + 1));
 	if(!NewList)
-	 return JE_FALSE;
+	 return GR_FALSE;
 
 	RegisteredAPIs = NewList;
-	RegisteredAPIs[SystemCount++] = (jeVFile_SystemAPIs *)APIs;
-	*Type = (jeVFile_TypeIdentifier)SystemCount;
+	RegisteredAPIs[SystemCount++] = (grVFile_SystemAPIs *)APIs;
+	*Type = (grVFile_TypeIdentifier)SystemCount;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean jeVFile_Enter(void)
+static	grBoolean grVFile_Enter(void)
 {
-	jeVFile_TypeIdentifier 	Type;
+	grVFile_TypeIdentifier 	Type;
 
-	if ( jeVFile_RefCount > 0 )
+	if ( grVFile_RefCount > 0 )
 	{
-		jeVFile_RefCount ++;
-		return JE_TRUE;
+		grVFile_RefCount ++;
+		return GR_TRUE;
 	}
 
 #ifdef WIN32
-	if	(jeVFile_RegisterFileSystemInternal(FSDos_GetAPIs(), &Type) == JE_FALSE)
-		return JE_FALSE;
-	if	(Type != JE_VFILE_TYPE_DOS)
-		return JE_FALSE;
+	if	(grVFile_RegisterFileSystemInternal(FSDos_GetAPIs(), &Type) == GR_FALSE)
+		return GR_FALSE;
+	if	(Type != GR_VFILE_TYPE_DOS)
+		return GR_FALSE;
 #endif
 
 #ifdef BUILD_BE
-	if	(jeVFile_RegisterFileSystemInternal(FSBeOS_GetAPIs(), &Type) == JE_FALSE)
-		return JE_FALSE;
-	if	(Type != JE_VFILE_TYPE_DOS)
-		return JE_FALSE;
+	if	(grVFile_RegisterFileSystemInternal(FSBeOS_GetAPIs(), &Type) == GR_FALSE)
+		return GR_FALSE;
+	if	(Type != GR_VFILE_TYPE_DOS)
+		return GR_FALSE;
 #endif
 
-	if	(jeVFile_RegisterFileSystemInternal(FSMemory_GetAPIs(), &Type) == JE_FALSE)
-		return JE_FALSE;
-	if	(Type != JE_VFILE_TYPE_MEMORY)
-		return JE_FALSE;
+	if	(grVFile_RegisterFileSystemInternal(FSMemory_GetAPIs(), &Type) == GR_FALSE)
+		return GR_FALSE;
+	if	(Type != GR_VFILE_TYPE_MEMORY)
+		return GR_FALSE;
 
-	if	(jeVFile_RegisterFileSystemInternal(FSVFS_GetAPIs(), &Type) == JE_FALSE)
-		return JE_FALSE;
-	if	(Type != JE_VFILE_TYPE_VIRTUAL)
-		return JE_FALSE;
+	if	(grVFile_RegisterFileSystemInternal(FSVFS_GetAPIs(), &Type) == GR_FALSE)
+		return GR_FALSE;
+	if	(Type != GR_VFILE_TYPE_VIRTUAL)
+		return GR_FALSE;
 
-	if	(jeVFile_RegisterFileSystemInternal(FSLZ_GetAPIs(), &Type) == JE_FALSE)
-		return JE_FALSE;
-	if	(Type != JE_VFILE_TYPE_LZ)
-		return JE_FALSE;
+	if	(grVFile_RegisterFileSystemInternal(FSLZ_GetAPIs(), &Type) == GR_FALSE)
+		return GR_FALSE;
+	if	(Type != GR_VFILE_TYPE_LZ)
+		return GR_FALSE;
 
-	if	(jeVFile_RegisterFileSystemInternal(FSFakeNet_GetAPIs(), &Type) == JE_FALSE)
-		return JE_FALSE;
-	if	(Type != JE_VFILE_TYPE_FAKENET)
-		return JE_FALSE;
+	if	(grVFile_RegisterFileSystemInternal(FSFakeNet_GetAPIs(), &Type) == GR_FALSE)
+		return GR_FALSE;
+	if	(Type != GR_VFILE_TYPE_FAKENET)
+		return GR_FALSE;
 
 	// INET must be last
 
 #ifndef NO_INET
-	if	(jeVFile_RegisterFileSystemInternal(FSINet_GetAPIs(), &Type) == JE_FALSE)
-		return JE_FALSE;
-	if	(Type != JE_VFILE_TYPE_INTERNET)
-		return JE_FALSE;
+	if	(grVFile_RegisterFileSystemInternal(FSINet_GetAPIs(), &Type) == GR_FALSE)
+		return GR_FALSE;
+	if	(Type != GR_VFILE_TYPE_INTERNET)
+		return GR_FALSE;
 #endif
 
-	jeVFile_RefCount ++;
+	grVFile_RefCount ++;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static void jeVFile_Leave(void)
+static void grVFile_Leave(void)
 {
-	jeVFile_RefCount --;
-	if ( jeVFile_RefCount == 0 )
+	grVFile_RefCount --;
+	if ( grVFile_RefCount == 0 )
 	{
 		assert(RegisteredAPIs);
 		#ifdef WIN32 // hack....
-		jeRam_Free((void *)RegisteredAPIs);
+		grRam_Free((void *)RegisteredAPIs);
 		#endif
 		#ifdef BUILD_BE
-		jeRam_Free(RegisteredAPIs);
+		grRam_Free(RegisteredAPIs);
 		#endif
 		
 		RegisteredAPIs = NULL;
@@ -229,82 +229,82 @@ static void jeVFile_Leave(void)
 
 /*
 //CB : this function is neither exposed or used, so ignore it
-JETAPI jeBoolean JETCC jeVFile_RegisterFileSystem(const jeVFile_SystemAPIs *APIs, jeVFile_TypeIdentifier *Type)
+GRAPI grBoolean GRCC grVFile_RegisterFileSystem(const grVFile_SystemAPIs *APIs, grVFile_TypeIdentifier *Type)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
 	assert(APIs);
 	assert(Type);
 
 // @@ is this important ?
-//	if	(RegisterBuiltInAPIs() == JE_FALSE)
-//		return JE_FALSE;
+//	if	(RegisterBuiltInAPIs() == GR_FALSE)
+//		return GR_FALSE;
 
-	Result = jeVFile_RegisterFileSystemInternal(APIs, Type);
+	Result = grVFile_RegisterFileSystemInternal(APIs, Type);
 	return Result;
 }
 */
 
 /*}{ ******* Open Functions *******/
 
-JETAPI jeVFile * JETCC jeVFile_OpenNewSystem(
-	jeVFile *				FS,
-	jeVFile_TypeIdentifier 	FileSystemType,
+GRAPI grVFile * GRCC grVFile_OpenNewSystem(
+	grVFile *				FS,
+	grVFile_TypeIdentifier 	FileSystemType,
 	const char *			Name,
 	void *					Context,
 	unsigned int 			OpenModeFlags)
 {
-	const jeVFile_SystemAPIs *	APIs;
-	jeVFile *					File;
+	const grVFile_SystemAPIs *	APIs;
+	grVFile *					File;
 	void *						FSData;
 
-	assert( ! Name || jeVFile_PathIsSane(Name) );
+	assert( ! Name || grVFile_PathIsSane(Name) );
 
-	if ( ! jeVFile_Enter() )
+	if ( ! grVFile_Enter() )
 		return NULL;
 
 	if	((FileSystemType == 0) || (FileSystemType > SystemCount))
 		goto fail;
 
-	if	(CheckOpenFlags(OpenModeFlags) == JE_FALSE)
+	if	(CheckOpenFlags(OpenModeFlags) == GR_FALSE)
 		goto fail;
 
 	// Sugarcoating support for a taste test
-	if	(FS == NULL && FileSystemType == JE_VFILE_TYPE_VIRTUAL)
+	if	(FS == NULL && FileSystemType == GR_VFILE_TYPE_VIRTUAL)
 	{
 		assert(Name);
-		FS = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS, Name, NULL,
-									 OpenModeFlags & ~JE_VFILE_OPEN_DIRECTORY);
+		FS = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS, Name, NULL,
+									 OpenModeFlags & ~GR_VFILE_OPEN_DIRECTORY);
 		if	(! FS)
 			goto fail;
 		Name = NULL;
 	}
 	else if	(FS)
 	{
-		jeVFile_CreateRef(FS);
+		grVFile_CreateRef(FS);
 	}
 
 	if	(FS)
-		jeVFile_Lock(FS);
+		grVFile_Lock(FS);
 
 	APIs = RegisteredAPIs[FileSystemType - 1];
 	assert(APIs);
 	FSData = APIs->OpenNewSystem(FS, Name, Context, OpenModeFlags);
 	if	(FS)
-		jeVFile_UnLock(FS);
+		grVFile_UnLock(FS);
 
 	if	(!FSData)
 	{
 		if	(FS)
-			jeVFile_Close(FS);
+			grVFile_Close(FS);
 		goto fail;
 	}
 
-	File = jeVFile_New();
+	File = grVFile_New();
 	if	(!File)
 	{
 		if	(FS)
-			jeVFile_Close(FS);
+			grVFile_Close(FS);
 		APIs->Close(FSData);
 		goto fail;
 	}
@@ -314,7 +314,7 @@ JETAPI jeVFile * JETCC jeVFile_OpenNewSystem(
 	File->FSData = 		FSData;
 	
 #ifndef LN_SEARCHLIST
-	File->SearchList = 	jeRam_Allocate(sizeof(*File->SearchList));
+	File->SearchList = 	grRam_Allocate(sizeof(*File->SearchList));
 #endif
 
 	File->RefCount = 	0;
@@ -326,10 +326,10 @@ JETAPI jeVFile * JETCC jeVFile_OpenNewSystem(
 	File->LN_Children.Prev = (LinkNode *)File;
 #endif
 
-	File->Semaphore = jeThreadQueue_Semaphore_Create();
+	File->Semaphore = grThreadQueue_Semaphore_Create();
 	if ( ! File->Semaphore )
 	{
-		jeVFile_Close(File);
+		grVFile_Close(File);
 		goto fail;	
 	}
 
@@ -339,7 +339,7 @@ JETAPI jeVFile * JETCC jeVFile_OpenNewSystem(
 
 	if	(!File->SearchList)
 	{
-		jeVFile_Close(File);
+		grVFile_Close(File);
 		goto fail;
 	}
 
@@ -351,36 +351,36 @@ JETAPI jeVFile * JETCC jeVFile_OpenNewSystem(
 	VFiles_Open ++;
 #endif
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return File;
 
 fail:
 
-	jeVFile_Leave();
+	grVFile_Leave();
 
 	return NULL;
 }
 
-JETAPI jeVFile * JETCC jeVFile_Open(
-	jeVFile *		FS,
+GRAPI grVFile * GRCC grVFile_Open(
+	grVFile *		FS,
 	const char *	Name,
 	unsigned int 	OpenModeFlags)
 {
-	jeVFile *		StartContext;
-	jeVFile *		File;
+	grVFile *		StartContext;
+	grVFile *		File;
 	void *			FSData;
 #ifndef LN_SEARCHLIST
 	FSSearchList *	SearchList;
 #endif
 
-	assert( jeVFile_IsValid(FS) );
-	assert( jeVFile_PathIsSane(Name) );
+	assert( grVFile_IsValid(FS) );
+	assert( grVFile_PathIsSane(Name) );
 
 	if	(!FS)
 		return NULL;
 
-	if	(CheckOpenFlags(OpenModeFlags) == JE_FALSE)
+	if	(CheckOpenFlags(OpenModeFlags) == GR_FALSE)
 		return NULL;
 
 	StartContext = FS;
@@ -388,7 +388,7 @@ JETAPI jeVFile * JETCC jeVFile_Open(
 #ifdef KROUERDEBUG
 	{
 		char msg[80];
-		sprintf(msg, "jeVFile::Open %s\n", Name);
+		sprintf(msg, "grVFile::Open %s\n", Name);
 		OutputDebugString(msg);
 	}
 #endif
@@ -397,11 +397,11 @@ JETAPI jeVFile * JETCC jeVFile_Open(
 	//	about to change!
 
 #ifdef LN_SEARCHLIST
-	if	(!(OpenModeFlags & JE_VFILE_OPEN_CREATE))
+	if	(!(OpenModeFlags & GR_VFILE_OPEN_CREATE))
 	{
 	LinkNode * Head;	
 		Head = &(StartContext->LN_Children);
-		for( FS = (jeVFile *)(Head->Next); FS != StartContext ; FS = (jeVFile *)(FS->LN.Next) ) 
+		for( FS = (grVFile *)(Head->Next); FS != StartContext ; FS = (grVFile *)(FS->LN.Next) ) 
 		{
 			if	(FS->APIs->FileExists(FS, FS->FSData, Name))
 				break;
@@ -414,7 +414,7 @@ JETAPI jeVFile * JETCC jeVFile_Open(
 	SearchList = FS->SearchList;
 	assert(SearchList);
 	assert(SearchList->FS == FS);
-	if	(!(OpenModeFlags & JE_VFILE_OPEN_CREATE))
+	if	(!(OpenModeFlags & GR_VFILE_OPEN_CREATE))
 	{
 		while	(SearchList)
 		{
@@ -433,41 +433,41 @@ JETAPI jeVFile * JETCC jeVFile_Open(
 	{
 		if ( FS != StartContext )
 			Log_Printf("Chose FS != StartContext\n");
-		assert(jeVFile_IsValid(FS));
-		assert(jeVFile_IsValid(StartContext));
+		assert(grVFile_IsValid(FS));
+		assert(grVFile_IsValid(StartContext));
 	}
 #endif
 
-	jeVFile_Lock(FS);
+	grVFile_Lock(FS);
 
 	FSData = FS->APIs->Open(FS, FS->FSData, Name, NULL, OpenModeFlags);
 	if	(!FSData)
 	{
-		jeVFile_UnLock(FS);
+		grVFile_UnLock(FS);
 		return NULL;
 	}
 
-	File = jeVFile_New();
+	File = grVFile_New();
 	if	(!File)
 	{
 		FS->APIs->Close(FSData);
-		jeVFile_UnLock(FS);
+		grVFile_UnLock(FS);
 		return NULL;
 	}
 
-	File->SystemType =	JE_VFILE_TYPE_INVALID;
+	File->SystemType =	GR_VFILE_TYPE_INVALID;
 //	File->SystemType  = FS->SystemType;
 	File->APIs = 		FS->APIs;
 	File->FSData = 		FSData;	
 #ifndef LN_SEARCHLIST
-	File->SearchList = 	jeRam_Allocate(sizeof(*File->SearchList));
+	File->SearchList = 	grRam_Allocate(sizeof(*File->SearchList));
 #endif
 	File->Context =		FS;
 	File->RefCount = 	0;
 
-	jeVFile_CreateRef(FS); 
+	grVFile_CreateRef(FS); 
 
-	jeVFile_UnLock(FS);
+	grVFile_UnLock(FS);
 
 #ifdef _DEBUG
 	VFiles_Open ++;
@@ -480,17 +480,17 @@ JETAPI jeVFile * JETCC jeVFile_Open(
 	LN_AddTail(&(StartContext->LN_Children),File);
 #endif
 
-	File->Semaphore = jeThreadQueue_Semaphore_Create();
+	File->Semaphore = grThreadQueue_Semaphore_Create();
 	if ( ! File->Semaphore )
 	{
-		jeVFile_Close(File);
+		grVFile_Close(File);
 		return NULL;		
 	}
 
 #ifndef LN_SEARCHLIST
 	if	(!File->SearchList)
 	{
-		jeVFile_Close(File);
+		grVFile_Close(File);
 		return NULL;
 	}
 
@@ -501,23 +501,23 @@ JETAPI jeVFile * JETCC jeVFile_Open(
 #ifdef KROUERDEBUG
 	{
 		char msg[80];
-		sprintf(msg, "jeVFile::Open %s - open is ok %p\n", Name, File);
+		sprintf(msg, "grVFile::Open %s - open is ok %p\n", Name, File);
 		OutputDebugString(msg);
 	}
 #endif
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return File;
 }
 
-JETAPI jeBoolean JETCC jeVFile_Close(jeVFile *File)
+GRAPI grBoolean GRCC grVFile_Close(grVFile *File)
 {
-jeBoolean	Result = JE_TRUE;
-jeVFile * Context;
+grBoolean	Result = GR_TRUE;
+grVFile * Context;
 int RefCount;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 #ifdef _DEBUG
 	VFiles_Open --;
@@ -529,8 +529,8 @@ int RefCount;
 #ifdef KROUERDEBUG
 	{
 		char msg[80];
-		strcpy(msg, "jeVFile::Close      ");
-		jeVFile_GetName(File, msg+16, 60);
+		strcpy(msg, "grVFile::Close      ");
+		grVFile_GetName(File, msg+16, 60);
 		strcat(msg, "\n");
 		OutputDebugString(msg);
 	}
@@ -540,7 +540,7 @@ int RefCount;
 	{
 
 		if ( File->Semaphore )
-			jeVFile_Lock(File);
+			grVFile_Lock(File);
 
 #ifdef LN_SEARCHLIST
 		LN_Cut(File);
@@ -549,21 +549,21 @@ int RefCount;
 
 		if ( File->FSData )
 			if ( ! File->APIs->Close(File->FSData) )
-				Result = JE_FALSE;
+				Result = GR_FALSE;
 			
 		if ( File->Semaphore )
 		{
-			jeVFile_UnLock(File);
-			jeThreadQueue_Semaphore_Destroy(&(File->Semaphore));
+			grVFile_UnLock(File);
+			grThreadQueue_Semaphore_Destroy(&(File->Semaphore));
 		}
 
 #ifndef LN_SEARCHLIST
 		// <> never cuts self from parents' list !?
 		if ( File->SearchList )
-			jeRam_Free(File->SearchList);
+			grRam_Free(File->SearchList);
 #endif
 
-		jeVFile_Free(File);
+		grVFile_Free(File);
 		File = NULL;
 	}
 	else
@@ -574,38 +574,38 @@ int RefCount;
 	if	( Context)
 	{
 		assert(Context->RefCount >= RefCount);
-		if ( ! jeVFile_Close(Context) )
-			Result = JE_FALSE;
+		if ( ! grVFile_Close(Context) )
+			Result = GR_FALSE;
 	}
 
 return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_Destroy(jeVFile **pFile)
+GRAPI grBoolean GRCC grVFile_Destroy(grVFile **pFile)
 {
-jeVFile * File;
+grVFile * File;
 	assert(pFile);
 	File = *pFile;
 	if ( ! File )
-		return JE_TRUE;
+		return GR_TRUE;
 	*pFile = NULL;
-return jeVFile_Close(File);
+return grVFile_Close(File);
 }
 
 #ifdef _DEBUG
-JETAPI uint32 JETCC jeVFile_OpenCount(void)
+GRAPI uint32 GRCC grVFile_OpenCount(void)
 {
 return VFiles_Open;
 }
 #endif
 
-JETAPI void		 JETCC jeVFile_CreateRef(jeVFile *File)
+GRAPI void		 GRCC grVFile_CreateRef(grVFile *File)
 {
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	if	( File->Context)
 	{
-		jeVFile_CreateRef(File->Context);
+		grVFile_CreateRef(File->Context);
 	}
 
 #ifdef _DEBUG
@@ -615,23 +615,23 @@ JETAPI void		 JETCC jeVFile_CreateRef(jeVFile *File)
 	File->RefCount++;
 }
 
-JETAPI jeBoolean JETCC jeVFile_UpdateContext(jeVFile *FS, void *Context, int ContextSize)
+GRAPI grBoolean GRCC grVFile_UpdateContext(grVFile *FS, void *Context, int ContextSize)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
 	assert(Context);
 
-	assert( jeVFile_IsValid(FS) );
+	assert( grVFile_IsValid(FS) );
 
-	jeVFile_Lock(FS);
+	grVFile_Lock(FS);
 	Result = FS->APIs->UpdateContext(FS, FS->FSData, Context, ContextSize);
-	jeVFile_UnLock(FS);
+	grVFile_UnLock(FS);
 	return Result;
 }
 
-JETAPI jeVFile * JETCC jeVFile_GetContext(const jeVFile *File)
+GRAPI grVFile * GRCC grVFile_GetContext(const grVFile *File)
 {
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return File->Context;
 }
@@ -645,7 +645,7 @@ static	void			DestroySearchList(FSSearchList *SearchList)
 
 		Temp = SearchList;
 		SearchList = SearchList->Next;
-		jeRam_Free(Temp);
+		grRam_Free(Temp);
 	}
 }
 
@@ -659,7 +659,7 @@ static	FSSearchList *	CopySearchList(const FSSearchList *SearchList)
 	{
 		FSSearchList *	Temp;
 
-		Temp = jeRam_Allocate(sizeof(*Tail));
+		Temp = grRam_Allocate(sizeof(*Tail));
 		if	(!Temp)
 		{
 			DestroySearchList(NewList);
@@ -680,23 +680,23 @@ static	FSSearchList *	CopySearchList(const FSSearchList *SearchList)
 	return NewList;
 }
 
-JETAPI jeBoolean JETCC jeVFile_AddPath(jeVFile *FS1, const jeVFile *FS2, jeBoolean Append)
+GRAPI grBoolean GRCC grVFile_AddPath(grVFile *FS1, const grVFile *FS2, grBoolean Append)
 {
 	FSSearchList *	SearchList;
 
 	assert(FS1);
 	assert(FS2);
-	assert( jeVFile_IsValid(FS1) );
-	assert( jeVFile_IsValid(FS2) );
+	assert( grVFile_IsValid(FS1) );
+	assert( grVFile_IsValid(FS2) );
 
-	jeVFile_Lock(FS1);
-	jeVFile_Lock(FS2);
+	grVFile_Lock(FS1);
+	grVFile_Lock(FS2);
 
 	SearchList = CopySearchList(FS2->SearchList);
 	if	(!SearchList)
 		goto fail;
 
-	if	(Append == JE_FALSE)
+	if	(Append == GR_FALSE)
 	{
 		SearchList->Next = FS1->SearchList;
 		FS1->SearchList = SearchList;
@@ -717,352 +717,352 @@ JETAPI jeBoolean JETCC jeVFile_AddPath(jeVFile *FS1, const jeVFile *FS2, jeBoole
 //		SearchList->Next = NULL;
 	}
 
-	jeVFile_UnLock(FS2);
-	jeVFile_UnLock(FS1);
-	return JE_TRUE;
+	grVFile_UnLock(FS2);
+	grVFile_UnLock(FS1);
+	return GR_TRUE;
 
 fail:
-	jeVFile_UnLock(FS2);
-	jeVFile_UnLock(FS1);
-	return JE_FALSE;
+	grVFile_UnLock(FS2);
+	grVFile_UnLock(FS1);
+	return GR_FALSE;
 }
 #endif //}
 
-JETAPI jeBoolean JETCC jeVFile_DeleteFile(jeVFile *FS, const char *FileName)
+GRAPI grBoolean GRCC grVFile_DeleteFile(grVFile *FS, const char *FileName)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(FS) );
-	assert( jeVFile_PathIsSane(FileName) );
+	assert( grVFile_IsValid(FS) );
+	assert( grVFile_PathIsSane(FileName) );
 
-	jeVFile_Lock(FS);
+	grVFile_Lock(FS);
 	Result = FS->APIs->DeleteFile(FS, FS->FSData, FileName);
-	jeVFile_UnLock(FS);
+	grVFile_UnLock(FS);
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_RenameFile(jeVFile *FS, const char *FileName, const char *NewName)
+GRAPI grBoolean GRCC grVFile_RenameFile(grVFile *FS, const char *FileName, const char *NewName)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(FS) );
-	assert( jeVFile_PathIsSane(FileName) );
-	assert( jeVFile_PathIsSane(NewName) );
+	assert( grVFile_IsValid(FS) );
+	assert( grVFile_PathIsSane(FileName) );
+	assert( grVFile_PathIsSane(NewName) );
 
-	jeVFile_Lock(FS);
+	grVFile_Lock(FS);
 	Result = FS->APIs->RenameFile(FS, FS->FSData, FileName, NewName);
-	jeVFile_UnLock(FS);
+	grVFile_UnLock(FS);
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_FileExists(jeVFile *FS, const char *FileName)
+GRAPI grBoolean GRCC grVFile_FileExists(grVFile *FS, const char *FileName)
 {
-	assert( jeVFile_PathIsSane(FileName) );
-	assert( jeVFile_IsValid(FS) );
+	assert( grVFile_PathIsSane(FileName) );
+	assert( grVFile_IsValid(FS) );
 	return FS->APIs->FileExists(FS, FS->FSData, FileName);
 }
 
-JETAPI jeBoolean JETCC jeVFile_Disperse(jeVFile *FS, const char *Directory)
+GRAPI grBoolean GRCC grVFile_Disperse(grVFile *FS, const char *Directory)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
 	assert(Directory);
-	assert( jeVFile_IsValid(FS) );
-	assert( jeVFile_PathIsSane(Directory) );
+	assert( grVFile_IsValid(FS) );
+	assert( grVFile_PathIsSane(Directory) );
 
-	jeVFile_Lock(FS);
+	grVFile_Lock(FS);
 	Result = FS->APIs->Disperse(FS, FS->FSData, Directory);
-	jeVFile_UnLock(FS);
+	grVFile_UnLock(FS);
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_GetS(jeVFile *File, void *Buff, int MaxLen)
+GRAPI grBoolean GRCC grVFile_GetS(grVFile *File, void *Buff, int MaxLen)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
 	assert(Buff);
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	if	(MaxLen == 0)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->GetS(File->FSData, Buff, MaxLen);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_BytesAvailable(jeVFile *File, long *Count)
+GRAPI grBoolean GRCC grVFile_BytesAvailable(grVFile *File, long *Count)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->BytesAvailable(File->FSData, Count);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return Result;
 }
 
-jeVFile * Hack_File;
-jeBoolean Hack_Used = 0;
+grVFile * Hack_File;
+grBoolean Hack_Used = 0;
 
-JETAPI jeBoolean JETCC jeVFile_Read(jeVFile *File, void *Buff, uint32 Count)
+GRAPI grBoolean GRCC grVFile_Read(grVFile *File, void *Buff, uint32 Count)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	if	(Count == 0) // <> CB 2/10
-		return JE_TRUE;
+		return GR_TRUE;
 
 	assert(Buff);
 
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 //	assert( ! Hack_Used );
 	Hack_File = File;
 	Hack_Used ++;
 	Result = File->APIs->Read(File->FSData, Buff, Count);
 	Hack_Used --;
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_Write(jeVFile *File, const void *Buff, int Count)
+GRAPI grBoolean GRCC grVFile_Write(grVFile *File, const void *Buff, int Count)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	if	(Count == 0) // <> CB 2/10
-		return JE_TRUE;
+		return GR_TRUE;
 
 	assert(Buff);
 
 #ifdef KROUERDEBUG
 	{
 		char msg[80];
-		sprintf(msg, "jeVFile::Write %d bytes\n", Count);
+		sprintf(msg, "grVFile::Write %d bytes\n", Count);
 		OutputDebugString(msg);
 	}
 #endif
 
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->Write(File->FSData, Buff, Count);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	
 #ifdef KROUERDEBUG
 	{
 		char msg[80];
-		sprintf(msg, "jeVFile::Write result %d\n", Result);
+		sprintf(msg, "grVFile::Write result %d\n", Result);
 		OutputDebugString(msg);
 	}
 #endif
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_Rewind(jeVFile *File)
+GRAPI grBoolean GRCC grVFile_Rewind(grVFile *File)
 {
-jeVFile * HintsFile;
+grVFile * HintsFile;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
-	if ( ! jeVFile_Seek(File,0,JE_VFILE_SEEKSET) )
-		return JE_FALSE;
+	if ( ! grVFile_Seek(File,0,GR_VFILE_SEEKSET) )
+		return GR_FALSE;
 
-	HintsFile = jeVFile_GetHintsFile(File);
+	HintsFile = grVFile_GetHintsFile(File);
 	if ( HintsFile )
 	{
-		if ( ! jeVFile_Seek(HintsFile,0,JE_VFILE_SEEKSET) )
-			return JE_FALSE;
+		if ( ! grVFile_Seek(HintsFile,0,GR_VFILE_SEEKSET) )
+			return GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeVFile_Seek(jeVFile *File, int Where, jeVFile_Whence Whence)
+GRAPI grBoolean GRCC grVFile_Seek(grVFile *File, int Where, grVFile_Whence Whence)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->Seek(File->FSData, Where, Whence);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_Printf(jeVFile *File, const char *Format, ...)
+GRAPI grBoolean GRCC grVFile_Printf(grVFile *File, const char *Format, ...)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 	char		Temp[8096];
 	va_list		ArgPtr;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	assert(Format);
 
 	va_start(ArgPtr, Format);
 	vsprintf(Temp, Format, ArgPtr);
 	va_end(ArgPtr);
 
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->Write(File->FSData, &Temp[0], strlen(Temp));
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_EOF   (const jeVFile *File)
+GRAPI grBoolean GRCC grVFile_EOF   (const grVFile *File)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->Eof(File->FSData);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_Tell  (const jeVFile *File, long *Position)
+GRAPI grBoolean GRCC grVFile_Tell  (const grVFile *File, long *Position)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->Tell(File->FSData, Position);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_Size  (const jeVFile *File, long *Size)
+GRAPI grBoolean GRCC grVFile_Size  (const grVFile *File, long *Size)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->Size(File->FSData, Size);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_GetProperties(const jeVFile *File, jeVFile_Properties *Properties)
+GRAPI grBoolean GRCC grVFile_GetProperties(const grVFile *File, grVFile_Properties *Properties)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->GetProperties(File->FSData, Properties);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_GetName(const jeVFile *File, char *Buff, int MaxBuffLen)
+GRAPI grBoolean GRCC grVFile_GetName(const grVFile *File, char *Buff, int MaxBuffLen)
 {
-jeVFile_Properties Properties;
-	if ( ! jeVFile_GetProperties(File,&Properties) )
-		return JE_FALSE;
+grVFile_Properties Properties;
+	if ( ! grVFile_GetProperties(File,&Properties) )
+		return GR_FALSE;
 
 	strncpy(Buff,Properties.Name,MaxBuffLen);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeVFile_SetSize(jeVFile *File, long Size)
+GRAPI grBoolean GRCC grVFile_SetSize(grVFile *File, long Size)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->SetSize(File->FSData, Size);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_SetAttributes(jeVFile *File, jeVFile_Attributes Attributes)
+GRAPI grBoolean GRCC grVFile_SetAttributes(grVFile *File, grVFile_Attributes Attributes)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->SetAttributes(File->FSData, Attributes);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_SetTime(jeVFile *File, const jeVFile_Time *Time)
+GRAPI grBoolean GRCC grVFile_SetTime(grVFile *File, const grVFile_Time *Time)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 	
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->SetTime(File->FSData, Time);
-	jeVFile_UnLock(File);
+	grVFile_UnLock(File);
 	return Result;
 }
 
-JETAPI jeVFile * JETCC jeVFile_GetHintsFile(jeVFile *File)
+GRAPI grVFile * GRCC grVFile_GetHintsFile(grVFile *File)
 {
-	jeVFile *	Result;
+	grVFile *	Result;
 
-#pragma message("jeVFile_GetHintsFile : remove me for CreateHintsFile")
+#pragma message("grVFile_GetHintsFile : remove me for CreateHintsFile")
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
-	if	(File->IsHintsFile == JE_TRUE)
+	if	(File->IsHintsFile == GR_TRUE)
 		return NULL;
 
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->GetHintsFile(File->FSData);
 	if	(Result)
-		Result->IsHintsFile = JE_TRUE;
-	jeVFile_UnLock(File);
+		Result->IsHintsFile = GR_TRUE;
+	grVFile_UnLock(File);
 	
 	return Result;
 }
 
-JETAPI jeVFile * JETCC jeVFile_CreateHintsFile(jeVFile *File)
+GRAPI grVFile * GRCC grVFile_CreateHintsFile(grVFile *File)
 {
-	jeVFile *	Result;
+	grVFile *	Result;
 
-	assert( jeVFile_IsValid(File) );
+	assert( grVFile_IsValid(File) );
 
-	if	(File->IsHintsFile == JE_TRUE)
+	if	(File->IsHintsFile == GR_TRUE)
 		return NULL;
 
-	jeVFile_Lock(File);
+	grVFile_Lock(File);
 	Result = File->APIs->GetHintsFile(File->FSData);
 	if	(Result)
-		Result->IsHintsFile = JE_TRUE;
-	jeVFile_UnLock(File);
+		Result->IsHintsFile = GR_TRUE;
+	grVFile_UnLock(File);
 	
 	if ( Result )
 	{
@@ -1075,39 +1075,39 @@ JETAPI jeVFile * JETCC jeVFile_CreateHintsFile(jeVFile *File)
 		{
 		int r;
 			for(r = File->RefCount;r>=0;r--)
-				jeVFile_CreateRef(File);
+				grVFile_CreateRef(File);
 		}
 		Result->Context = File;
 	*/
-		jeVFile_CreateRef(Result);
+		grVFile_CreateRef(Result);
 	}
 
 	return Result;
 }
 
-JETAPI jeVFile_Finder * JETCC jeVFile_CreateFinder(
-	jeVFile *FileSystem,
+GRAPI grVFile_Finder * GRCC grVFile_CreateFinder(
+	grVFile *FileSystem,
 	const char *FileSpec)
 {
-	jeVFile_Finder *	Finder;
+	grVFile_Finder *	Finder;
 
 	assert(FileSystem);
 	assert(FileSpec);
-	assert( jeVFile_IsValid(FileSystem) );
-	assert( jeVFile_PathIsSane(FileSpec) );
+	assert( grVFile_IsValid(FileSystem) );
+	assert( grVFile_PathIsSane(FileSpec) );
 
 	// CB : I don't think we use Finders enough to justify a MemPool
 
-	Finder = (jeVFile_Finder *)jeRam_Allocate(sizeof(jeVFile_Finder));
+	Finder = (grVFile_Finder *)grRam_Allocate(sizeof(grVFile_Finder));
 	if	(!Finder)
 		return Finder;
 
-	jeVFile_Lock(FileSystem);
+	grVFile_Lock(FileSystem);
 	Finder->Data = FileSystem->APIs->FinderCreate(FileSystem, FileSystem->FSData, FileSpec);
-	jeVFile_UnLock(FileSystem);
+	grVFile_UnLock(FileSystem);
 	if	(!Finder->Data)
 	{
-		jeRam_Free(Finder);
+		grRam_Free(Finder);
 		return NULL;
 	}
 
@@ -1124,7 +1124,7 @@ JETAPI jeVFile_Finder * JETCC jeVFile_CreateFinder(
 	return Finder;
 }
 
-JETAPI void JETCC jeVFile_DestroyFinder(jeVFile_Finder *Finder)
+GRAPI void GRCC grVFile_DestroyFinder(grVFile_Finder *Finder)
 {
 	assert(Finder);
 	assert(Finder->APIs);
@@ -1133,12 +1133,12 @@ JETAPI void JETCC jeVFile_DestroyFinder(jeVFile_Finder *Finder)
 	Finder->APIs->FinderDestroy(Finder->Data);
 	UNLOCK_CRITICALSECTION(&Finder->CriticalSection);
 	DELETE_CRITICALSECTION(&Finder->CriticalSection);
-	jeRam_Free(Finder);
+	grRam_Free(Finder);
 }
 
-JETAPI jeBoolean JETCC jeVFile_FinderGetNextFile(jeVFile_Finder *Finder)
+GRAPI grBoolean GRCC grVFile_FinderGetNextFile(grVFile_Finder *Finder)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
 	assert(Finder);
 	assert(Finder->APIs);
@@ -1150,37 +1150,37 @@ JETAPI jeBoolean JETCC jeVFile_FinderGetNextFile(jeVFile_Finder *Finder)
 	return Result;
 }
 
-JETAPI jeBoolean JETCC jeVFile_FinderGetProperties(const jeVFile_Finder *Finder, jeVFile_Properties *Properties)
+GRAPI grBoolean GRCC grVFile_FinderGetProperties(const grVFile_Finder *Finder, grVFile_Properties *Properties)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
 	assert(Finder);
 	assert(Finder->APIs);
 	assert(Finder->Data);
 
-	LOCK_CRITICALSECTION(&((jeVFile_Finder *)Finder)->CriticalSection);
+	LOCK_CRITICALSECTION(&((grVFile_Finder *)Finder)->CriticalSection);
 	Result = Finder->APIs->FinderGetProperties(Finder->Data, Properties);
-	UNLOCK_CRITICALSECTION(&((jeVFile_Finder *)Finder)->CriticalSection);
+	UNLOCK_CRITICALSECTION(&((grVFile_Finder *)Finder)->CriticalSection);
 
 	return Result;
 }
 
 #ifdef WIN32
-JETAPI void JETCC jeVFile_TimeToWin32FileTime(const jeVFile_Time *Time, LPFILETIME Win32FileTime)
+GRAPI void GRCC grVFile_TimeToWin32FileTime(const grVFile_Time *Time, LPFILETIME Win32FileTime)
 {
         *Win32FileTime = *(LPFILETIME)Time;
 }
 #endif
 
 #ifdef BUILD_BE
-JETAPI void JETCC jeVFile_TimeToTime_TFileTime(const jeVFile_Time *Time, bigtime_t* fileTime)
+GRAPI void GRCC grVFile_TimeToTime_TFileTime(const grVFile_Time *Time, bigtime_t* fileTime)
 {
         // not sure how we do this yet..
         memcpy(fileTime,Time,sizeof(int64));
 }
 #endif
 
-static	jeBoolean	JETCC	CheckOpenFlags(unsigned int OpenModeFlags)
+static	grBoolean	GRCC	CheckOpenFlags(unsigned int OpenModeFlags)
 {
 	int 			FlagCount;
 	unsigned int	AccessFlags;
@@ -1188,21 +1188,21 @@ static	jeBoolean	JETCC	CheckOpenFlags(unsigned int OpenModeFlags)
 	// Test to see that the open mode for this thing is mutually exclusive in
 	// the proper flags.
 	FlagCount = 0;
-	AccessFlags = OpenModeFlags & (JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_UPDATE | JE_VFILE_OPEN_CREATE);
-	if	(AccessFlags & JE_VFILE_OPEN_READONLY)
+	AccessFlags = OpenModeFlags & (GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_UPDATE | GR_VFILE_OPEN_CREATE);
+	if	(AccessFlags & GR_VFILE_OPEN_READONLY)
 		FlagCount++;
-	if	(AccessFlags & JE_VFILE_OPEN_UPDATE)
+	if	(AccessFlags & GR_VFILE_OPEN_UPDATE)
 		FlagCount++;
-	if	(AccessFlags & JE_VFILE_OPEN_CREATE)
+	if	(AccessFlags & GR_VFILE_OPEN_CREATE)
 		FlagCount++;
 
-	if	(FlagCount != 1 && !(OpenModeFlags & JE_VFILE_OPEN_DIRECTORY))
-		return JE_FALSE;
+	if	(FlagCount != 1 && !(OpenModeFlags & GR_VFILE_OPEN_DIRECTORY))
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean jeVFile_PathIsSane(const char * Path)
+static grBoolean grVFile_PathIsSane(const char * Path)
 {
 char * SubStr; 
 
@@ -1214,43 +1214,43 @@ char * SubStr;
 	{
 		assert( SubStr[0] == '/' && SubStr[1] == '/' );
 		if ( SubStr[-1] != ':' )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 	if ( strstr(Path,"///") != NULL )
-		return JE_FALSE;
+		return GR_FALSE;
 	if ( (SubStr = strstr(Path,"\\\\")) != NULL )
 	{
 		if ( SubStr != Path )
-			return JE_FALSE;
+			return GR_FALSE;
 		if ( Path[2] == 0 )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
-return JE_TRUE;
+return GR_TRUE;
 }
 
 #ifndef NDEBUG
-JETAPI jeBoolean JETCC jeVFile_IsValid(const jeVFile * F)
+GRAPI grBoolean GRCC grVFile_IsValid(const grVFile * F)
 {
 	assert( F );
 	assert( F->RefCount >= 0 );
-//	assert( jeRam_IsValidPtr(F) );
+//	assert( grRam_IsValidPtr(F) );
 	
 #ifndef LN_SEARCHLIST
-	assert( jeRam_IsValidPtr(F->SearchList) );
+	assert( grRam_IsValidPtr(F->SearchList) );
 #else
 	assert( F->LN.Next );
 #endif
 	assert( F->Semaphore );
-	assert( F->IsHintsFile == JE_TRUE || F->IsHintsFile == JE_FALSE );
-//	assert( F->SystemType != JE_VFILE_TYPE_INVALID ); // why is this commented out?
-	assert( F->SystemType < JE_VFILE_TYPE_COUNT );
+	assert( F->IsHintsFile == GR_TRUE || F->IsHintsFile == GR_FALSE );
+//	assert( F->SystemType != GR_VFILE_TYPE_INVALID ); // why is this commented out?
+	assert( F->SystemType < GR_VFILE_TYPE_COUNT );
 	if ( F->Context )
 	{
 		assert(F->Context->RefCount >= F->RefCount);
-		if ( ! jeVFile_IsValid(F->Context) )
-			return JE_FALSE;
+		if ( ! grVFile_IsValid(F->Context) )
+			return GR_FALSE;
 	}
-return JE_TRUE;
+return GR_TRUE;
 }
 #endif
 
@@ -1261,26 +1261,26 @@ return JE_TRUE;
 static MemPool * VFilePool = NULL;
 static int VFilesAllocated = 0;
 
-static jeVFile * JETCC jeVFile_New(void)
+static grVFile * GRCC grVFile_New(void)
 {
-jeVFile * File;
+grVFile * File;
 
 	if ( ! VFilesAllocated )
 	{
 		assert( ! VFilePool );
-		VFilePool = MemPool_Create(sizeof(jeVFile),32,32);
+		VFilePool = MemPool_Create(sizeof(grVFile),32,32);
 		if ( ! VFilePool )
 			return NULL;
 	}
 
-	File = (jeVFile *)MemPool_GetHunk(VFilePool);
+	File = (grVFile *)MemPool_GetHunk(VFilePool);
 	assert(File);
 	VFilesAllocated++;
 
 return File;
 }
 
-static void JETCC jeVFile_Free(jeVFile * File)
+static void GRCC grVFile_Free(grVFile * File)
 {
 	assert(File);
 	assert(VFilePool);

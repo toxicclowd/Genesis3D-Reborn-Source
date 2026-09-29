@@ -51,7 +51,7 @@ typedef struct tag_ApjOutput
 
 typedef struct tag_ApjPaths
 {
-	jeBoolean ForceRelative;
+	grBoolean ForceRelative;
 	char *Materials;
 	char *TempFiles;
 } ApjSearchPaths;
@@ -68,7 +68,7 @@ typedef struct
 	char *Name;			// Material name
 	ApjMaterialFormat Fmt;  // type
 	char *Filename;		// texture filename (may be NULL)
-	JE_RGBA Color;		//
+	GR_RGBA Color;		//
 } ApjMaterialEntry;
 
 // materials section
@@ -85,7 +85,7 @@ typedef struct
 	char *Name;				// motion name
 	ApjMotionFormat Fmt;	// motion file format
 	char *Filename;			// file that contains the motion
-	jeBoolean OptFlag;		// optimization flag
+	grBoolean OptFlag;		// optimization flag
 	int OptLevel;			// motion optimization level
 	char *Bone;				// name of root bone to grab
 } ApjMotionEntry;
@@ -122,7 +122,7 @@ ApjBodyFormat AProject_GetBodyFormatFromFilename (const char *Name)
 	char Ext[MAX_PATH];
 	int x;
 
-	if (FilePath_GetExt (Name, Ext) != JE_FALSE)
+	if (FilePath_GetExt (Name, Ext) != GR_FALSE)
 	{
 		for (x = 0; x <= ApjBody_Act; ++x)
 		{
@@ -142,7 +142,7 @@ ApjMotionFormat AProject_GetMotionFormatFromFilename (const char *Filename)
 	char Ext[MAX_PATH];
 	int x;
 
-	if (FilePath_GetExt (Filename, Ext) != JE_FALSE)
+	if (FilePath_GetExt (Filename, Ext) != GR_FALSE)
 	{
 		for (x = 0; x < ApjMotion_TypeCount; ++x)
 		{
@@ -160,15 +160,15 @@ ApjMotionFormat AProject_GetMotionFormatFromFilename (const char *Filename)
 AProject *AProject_Create (const char *OutputName)
 {
 	AProject *pProject;
-	jeBoolean NoErrors;
+	grBoolean NoErrors;
 	char OutputNameAndExt[MAX_PATH];
 
 	assert (OutputName != NULL);
 
-	pProject = JE_RAM_ALLOCATE_STRUCT (AProject);
+	pProject = GR_RAM_ALLOCATE_STRUCT (AProject);
 	if (pProject == NULL)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Allocating project structure",NULL);
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Allocating project structure",NULL);
 		return NULL;
 	}
 
@@ -178,7 +178,7 @@ AProject *AProject_Create (const char *OutputName)
 	pProject->Output.Fmt = ApjOutput_Binary;
 
 	// Paths
-	pProject->Paths.ForceRelative = JE_TRUE;
+	pProject->Paths.ForceRelative = GR_TRUE;
 	pProject->Paths.Materials = NULL;
 
 	// Body
@@ -212,7 +212,7 @@ AProject *AProject_Create (const char *OutputName)
 	// if unsuccessful, destroy any allocated data
 	if (!NoErrors)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Initializing project structure",NULL);
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Initializing project structure",NULL);
 		if (pProject != NULL)
 		{
 			AProject_Destroy (&pProject);
@@ -241,15 +241,15 @@ void AProject_Destroy (AProject **ppProject)
 		AProject_RemoveMotion (pProject, pProject->Motions.Count-1);
 	}
 
-	if (pProject->Output.Filename != NULL)	jeRam_Free (pProject->Output.Filename);
-	if (pProject->Paths.Materials != NULL)	jeRam_Free (pProject->Paths.Materials);
-	if (pProject->Paths.TempFiles != NULL)	jeRam_Free (pProject->Paths.TempFiles);
-	if (pProject->Body.Filename != NULL)	jeRam_Free (pProject->Body.Filename);
+	if (pProject->Output.Filename != NULL)	grRam_Free (pProject->Output.Filename);
+	if (pProject->Paths.Materials != NULL)	grRam_Free (pProject->Paths.Materials);
+	if (pProject->Paths.TempFiles != NULL)	grRam_Free (pProject->Paths.TempFiles);
+	if (pProject->Body.Filename != NULL)	grRam_Free (pProject->Body.Filename);
 
 	if (pProject->Materials.Items != NULL)	Array_Destroy (&pProject->Materials.Items);
 	if (pProject->Motions.Items != NULL)	Array_Destroy (&pProject->Motions.Items);
 
-	jeRam_Free (*ppProject);
+	grRam_Free (*ppProject);
 }
 
 typedef enum
@@ -259,11 +259,11 @@ typedef enum
 	READ_EOF
 } ApjReadResult;
 
-static ApjReadResult AProject_GetNonBlankLine (jeVFile *FS, char *Buffer, int BufferSize)
+static ApjReadResult AProject_GetNonBlankLine (grVFile *FS, char *Buffer, int BufferSize)
 {
-	while (!jeVFile_EOF (FS))
+	while (!grVFile_EOF (FS))
 	{
-		if (jeVFile_GetS (FS, Buffer, BufferSize) == JE_FALSE)
+		if (grVFile_GetS (FS, Buffer, BufferSize) == GR_FALSE)
 		{
 			// some kind of error...
 			return READ_ERROR;
@@ -297,7 +297,7 @@ static ApjReadResult AProject_GetNonBlankLine (jeVFile *FS, char *Buffer, int Bu
 	return READ_EOF;
 }
 
-static jeBoolean AProject_CheckFileVersion (jeVFile *FS)
+static grBoolean AProject_CheckFileVersion (grVFile *FS)
 {
 	char VersionString[1024];
 	int VersionMajor, VersionMinor;
@@ -307,27 +307,27 @@ static jeBoolean AProject_CheckFileVersion (jeVFile *FS)
 	if (AProject_GetNonBlankLine (FS, VersionString, sizeof (VersionString)) != READ_SUCCESS)
 	{
 		// error...
-		jeErrorLog_AddString (JE_ERR_FILEIO_READ, "Reading project version string",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_FILEIO_READ, "Reading project version string",NULL);
+		return GR_FALSE;
 	}
 
 	// format must match project version string
 	rslt = sscanf (VersionString, AProject_VersionString, &VersionMajor, &VersionMinor);
 	if (rslt != 2)
 	{
-		jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Incompatible file type",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Incompatible file type",NULL);
+		return GR_FALSE;
 	}
 
 	// make sure we know how to read this version
 	if ((VersionMajor < APJ_VERSION_MAJOR) ||
 		((VersionMajor == APJ_VERSION_MAJOR) && (VersionMinor <= APJ_VERSION_MINOR)))
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
-	jeErrorLog_AddString (JE_ERR_FILEIO_VERSION, "Incompatible project file version",NULL);
-	return JE_FALSE;
+	grErrorLog_AddString (GR_ERR_FILEIO_VERSION, "Incompatible project file version",NULL);
+	return GR_FALSE;
 }
 
 // Section keys
@@ -356,7 +356,7 @@ static const char MotionsCount_Key[]	= "Count";
 static const char EndMotions_Key[]		= "[EndMotions]";
 
 // strip leading spaces from string before copying it
-static jeBoolean AProject_SetString (char **pString, const char *NewValue)
+static grBoolean AProject_SetString (char **pString, const char *NewValue)
 {
 	const char *c = NewValue;
 
@@ -369,7 +369,7 @@ static jeBoolean AProject_SetString (char **pString, const char *NewValue)
 }
 
 // Load [Paths] section
-static jeBoolean AProject_LoadPathsInfo (AProject *pProject, jeVFile *FS)
+static grBoolean AProject_LoadPathsInfo (AProject *pProject, grVFile *FS)
 {
 
 	for (;;)	// infinite loop
@@ -379,15 +379,15 @@ static jeBoolean AProject_LoadPathsInfo (AProject *pProject, jeVFile *FS)
 
 		if (AProject_GetNonBlankLine (FS, Buffer, sizeof (Buffer)) != READ_SUCCESS)
 		{
-			jeErrorLog_AddString (JE_ERR_FILEIO_READ, "Loading paths info",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_READ, "Loading paths info",NULL);
+			return GR_FALSE;
 		}
 
 		if (_strnicmp (Buffer, ForceRelative_Key, strlen (ForceRelative_Key)) == 0)
 		{
 			c = &Buffer[strlen (ForceRelative_Key)];
 			// Set force relative flag if not explicitly turned off
-			pProject->Paths.ForceRelative = ((*c == '\0') || (*(c+1) != '0')) ? JE_TRUE : JE_FALSE;
+			pProject->Paths.ForceRelative = ((*c == '\0') || (*(c+1) != '0')) ? GR_TRUE : GR_FALSE;
 		}
 		else if (_strnicmp (Buffer, MaterialsPath_Key, strlen (MaterialsPath_Key)) == 0)
 		{
@@ -401,33 +401,33 @@ static jeBoolean AProject_LoadPathsInfo (AProject *pProject, jeVFile *FS)
 		}
 		else if (_strnicmp (Buffer, EndPaths_Key, strlen (EndPaths_Key)) == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else
 		{
 			// bad entry...
-			jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Bad Paths section entry",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Bad Paths section entry",NULL);
+			return GR_FALSE;
 		}
 	}
 }
 
-static jeBoolean AProject_WritePathsInfo (const AProject *pProject, jeVFile *FS)
+static grBoolean AProject_WritePathsInfo (const AProject *pProject, grVFile *FS)
 {
-	if ((jeVFile_Printf (FS, "%s\r\n", Paths_Key) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s %c\r\n", ForceRelative_Key, (pProject->Paths.ForceRelative == JE_TRUE) ? '1' : '0') == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s %s\r\n", MaterialsPath_Key, pProject->Paths.Materials) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s %s\r\n", TempFilesPath_Key, pProject->Paths.TempFiles) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s\r\n", EndPaths_Key) == JE_FALSE))
+	if ((grVFile_Printf (FS, "%s\r\n", Paths_Key) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s %c\r\n", ForceRelative_Key, (pProject->Paths.ForceRelative == GR_TRUE) ? '1' : '0') == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s %s\r\n", MaterialsPath_Key, pProject->Paths.Materials) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s %s\r\n", TempFilesPath_Key, pProject->Paths.TempFiles) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s\r\n", EndPaths_Key) == GR_FALSE))
 	{
-		jeErrorLog_AddString (JE_ERR_FILEIO_WRITE, "Writing Paths section",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_FILEIO_WRITE, "Writing Paths section",NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean AProject_LoadOutputInfo (AProject *pProject, jeVFile *FS)
+static grBoolean AProject_LoadOutputInfo (AProject *pProject, grVFile *FS)
 {
 	for (;;)
 	{
@@ -436,8 +436,8 @@ static jeBoolean AProject_LoadOutputInfo (AProject *pProject, jeVFile *FS)
 
 		if (AProject_GetNonBlankLine (FS, Buffer, sizeof (Buffer)) != READ_SUCCESS)
 		{
-			jeErrorLog_AddString (JE_ERR_FILEIO_READ, "Loading output file info",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_READ, "Loading output file info",NULL);
+			return GR_FALSE;
 		}
 
 		if (_strnicmp (Buffer, OutputFilename_Key, strlen (OutputFilename_Key)) == 0)
@@ -453,32 +453,32 @@ static jeBoolean AProject_LoadOutputInfo (AProject *pProject, jeVFile *FS)
 		}
 		else if (_strnicmp (Buffer, EndOutput_Key, strlen (EndOutput_Key)) == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else
 		{
 			// bad entry
-			jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Bad Output section entry",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Bad Output section entry",NULL);
+			return GR_FALSE;
 		}
 	}
 }
 
-static jeBoolean AProject_WriteOutputInfo (const AProject *pProject, jeVFile *FS)
+static grBoolean AProject_WriteOutputInfo (const AProject *pProject, grVFile *FS)
 {
-	if ((jeVFile_Printf (FS, "%s\r\n", Output_Key) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s %s\r\n", OutputFilename_Key, pProject->Output.Filename) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s %c\r\n", OutputFormat_Key, (pProject->Output.Fmt == ApjOutput_Binary) ? '1' : '0') == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s\r\n", EndOutput_Key) == JE_FALSE))
+	if ((grVFile_Printf (FS, "%s\r\n", Output_Key) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s %s\r\n", OutputFilename_Key, pProject->Output.Filename) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s %c\r\n", OutputFormat_Key, (pProject->Output.Fmt == ApjOutput_Binary) ? '1' : '0') == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s\r\n", EndOutput_Key) == GR_FALSE))
 	{
-		jeErrorLog_AddString (JE_ERR_FILEIO_WRITE, "Writing Output section",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_FILEIO_WRITE, "Writing Output section",NULL);
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-static jeBoolean AProject_LoadBodyInfo (AProject *pProject, jeVFile *FS)
+static grBoolean AProject_LoadBodyInfo (AProject *pProject, grVFile *FS)
 {
 	for (;;)
 	{
@@ -487,8 +487,8 @@ static jeBoolean AProject_LoadBodyInfo (AProject *pProject, jeVFile *FS)
 
 		if (AProject_GetNonBlankLine (FS, Buffer, sizeof (Buffer)) != READ_SUCCESS)
 		{
-			jeErrorLog_AddString (JE_ERR_FILEIO_READ, "Loading Body info",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_READ, "Loading Body info",NULL);
+			return GR_FALSE;
 		}
 
 		if (_strnicmp (Buffer, BodyFilename_Key, strlen (BodyFilename_Key)) == 0)
@@ -524,24 +524,24 @@ static jeBoolean AProject_LoadBodyInfo (AProject *pProject, jeVFile *FS)
 
 			if (pProject->Body.Fmt == ApjBody_Invalid)
 			{
-				jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Unknown body file format",NULL);
-				return JE_FALSE;
+				grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Unknown body file format",NULL);
+				return GR_FALSE;
 			}
 		}
 		else if (_strnicmp (Buffer, EndBody_Key, strlen (EndBody_Key)) == 0)
 		{
 			if (pProject->Body.Fmt == ApjBody_Invalid)
 			{
-				jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Unknown body file format",NULL);
-				return JE_FALSE;
+				grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Unknown body file format",NULL);
+				return GR_FALSE;
 			}
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else
 		{
 			// bad entry
-			jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Bad Body section entry",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Bad Body section entry",NULL);
+			return GR_FALSE;
 		}
 	}
 }
@@ -552,62 +552,62 @@ static char AProject_BodyFormatToChar (ApjBodyFormat Fmt)
 	return (char)(((int)Fmt) + '0');
 }
 
-static jeBoolean AProject_WriteBodyInfo (const AProject *pProject, jeVFile *FS)
+static grBoolean AProject_WriteBodyInfo (const AProject *pProject, grVFile *FS)
 {
-	if ((jeVFile_Printf (FS, "%s\r\n", Body_Key) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s %s\r\n", BodyFilename_Key, pProject->Body.Filename) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s %c\r\n", BodyFormat_Key, AProject_BodyFormatToChar (pProject->Body.Fmt)) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s\r\n", EndBody_Key) == JE_FALSE))
+	if ((grVFile_Printf (FS, "%s\r\n", Body_Key) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s %s\r\n", BodyFilename_Key, pProject->Body.Filename) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s %c\r\n", BodyFormat_Key, AProject_BodyFormatToChar (pProject->Body.Fmt)) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s\r\n", EndBody_Key) == GR_FALSE))
 	{
-		jeErrorLog_AddString (JE_ERR_FILEIO_WRITE, "Writing Body section",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_FILEIO_WRITE, "Writing Body section",NULL);
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean AProject_UnquoteString (char *TheString)
+static grBoolean AProject_UnquoteString (char *TheString)
 {
 	char *c = &TheString[strlen (TheString)-1];
 	if (*c != '"')
 	{
-		return JE_FALSE;	// no ending quote
+		return GR_FALSE;	// no ending quote
 	}
 	*c = '\0';	// rip quote from the end
 
 	if (*TheString != '"')
 	{
-		return JE_FALSE;	// no beginning quote
+		return GR_FALSE;	// no beginning quote
 	}
 	strcpy (TheString, (TheString+1));
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean AProject_ParseMaterial 
+static grBoolean AProject_ParseMaterial 
 	(
 	  char *Buffer,
 	  char *Name,
 	  ApjMaterialFormat *Fmt,
 	  char *Filename,
-	  JE_RGBA *Color
+	  GR_RGBA *Color
 	)
 {
 	char *NameStr, *FmtStr, *FilenameStr;
 	char *rStr, *gStr, *bStr, *aStr;
 
 	// parse the items from the line
-	if ((NameStr	= strtok (Buffer, ",")) == NULL)return JE_FALSE;
-	if ((FmtStr		= strtok (NULL, ",")) == NULL)	return JE_FALSE;
-	if ((FilenameStr= strtok (NULL, ",")) == NULL)	return JE_FALSE;
-	if ((rStr		= strtok (NULL, ",")) == NULL)	return JE_FALSE;
-	if ((gStr		= strtok (NULL, ",")) == NULL)	return JE_FALSE;
-	if ((bStr		= strtok (NULL, ",")) == NULL)	return JE_FALSE;
-	if ((aStr		= strtok (NULL, ",")) == NULL)	return JE_FALSE;
+	if ((NameStr	= strtok (Buffer, ",")) == NULL)return GR_FALSE;
+	if ((FmtStr		= strtok (NULL, ",")) == NULL)	return GR_FALSE;
+	if ((FilenameStr= strtok (NULL, ",")) == NULL)	return GR_FALSE;
+	if ((rStr		= strtok (NULL, ",")) == NULL)	return GR_FALSE;
+	if ((gStr		= strtok (NULL, ",")) == NULL)	return GR_FALSE;
+	if ((bStr		= strtok (NULL, ",")) == NULL)	return GR_FALSE;
+	if ((aStr		= strtok (NULL, ",")) == NULL)	return GR_FALSE;
 
 	// set the items
 	*Fmt = (*FmtStr == '1') ? ApjMaterial_Texture : ApjMaterial_Color;
 
-	if (AProject_UnquoteString (NameStr)	 == JE_FALSE) return JE_FALSE;
-	if (AProject_UnquoteString (FilenameStr) == JE_FALSE) return JE_FALSE;
+	if (AProject_UnquoteString (NameStr)	 == GR_FALSE) return GR_FALSE;
+	if (AProject_UnquoteString (FilenameStr) == GR_FALSE) return GR_FALSE;
 
 	strcpy (Name, NameStr);
 	strcpy (Filename, FilenameStr);
@@ -617,10 +617,10 @@ static jeBoolean AProject_ParseMaterial
 	Color->b = (float)atof (bStr);
 	Color->a = (float)atof (aStr);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean AProject_LoadMaterialsInfo (AProject *pProject, jeVFile *FS)
+static grBoolean AProject_LoadMaterialsInfo (AProject *pProject, grVFile *FS)
 {
 	for (;;)
 	{
@@ -629,8 +629,8 @@ static jeBoolean AProject_LoadMaterialsInfo (AProject *pProject, jeVFile *FS)
 
 		if (AProject_GetNonBlankLine (FS, Buffer, sizeof (Buffer)) != READ_SUCCESS)
 		{
-			jeErrorLog_AddString (JE_ERR_FILEIO_READ, "Loading Materials info",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_READ, "Loading Materials info",NULL);
+			return GR_FALSE;
 		}
 
 		if (_strnicmp (Buffer, MaterialsCount_Key, strlen (MaterialsCount_Key)) == 0)
@@ -643,8 +643,8 @@ static jeBoolean AProject_LoadMaterialsInfo (AProject *pProject, jeVFile *FS)
 				Count = atoi (c+1);
 				if (Count < 0)
 				{
-					jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Negative materials count",NULL);
-					return JE_FALSE;
+					grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Negative materials count",NULL);
+					return GR_FALSE;
 				}
 			}
 			// load and add each material
@@ -653,47 +653,47 @@ static jeBoolean AProject_LoadMaterialsInfo (AProject *pProject, jeVFile *FS)
 				char Name[MAX_PATH];
 				ApjMaterialFormat Fmt;
 				char Filename[MAX_PATH];
-				JE_RGBA Color;
+				GR_RGBA Color;
 				int Index;
 
 				if (AProject_GetNonBlankLine (FS, Buffer, sizeof (Buffer)) != READ_SUCCESS)
 				{
-					jeErrorLog_AddString (JE_ERR_FILEIO_READ, "Loading Materials info",NULL);
-					return JE_FALSE;
+					grErrorLog_AddString (GR_ERR_FILEIO_READ, "Loading Materials info",NULL);
+					return GR_FALSE;
 				}
 
 				// parse the material's parts
-				if (AProject_ParseMaterial (Buffer, Name, &Fmt, Filename, &Color) == JE_FALSE)
+				if (AProject_ParseMaterial (Buffer, Name, &Fmt, Filename, &Color) == GR_FALSE)
 				{
-					jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Bad material",NULL);
-					return JE_FALSE;
+					grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Bad material",NULL);
+					return GR_FALSE;
 				}
 				// and then add the material.
-				if (AProject_AddMaterial (pProject, Name, Fmt, Filename, Color.r, Color.g, Color.b, Color.a, &Index) == JE_FALSE)
+				if (AProject_AddMaterial (pProject, Name, Fmt, Filename, Color.r, Color.g, Color.b, Color.a, &Index) == GR_FALSE)
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 			}
 		}
 		else if (_strnicmp (Buffer, EndMaterials_Key, strlen (EndMaterials_Key)) == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else
 		{
 			// bad entry
-			jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Bad Materials section entry",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Bad Materials section entry",NULL);
+			return GR_FALSE;
 		}
 	}
 }
 
-static jeBoolean AProject_WriteMaterialsInfo (const AProject *pProject, jeVFile *FS)
+static grBoolean AProject_WriteMaterialsInfo (const AProject *pProject, grVFile *FS)
 {
 	int i;
 
-	if ((jeVFile_Printf (FS, "%s\r\n", Materials_Key) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s %d\r\n", MaterialsCount_Key, pProject->Materials.Count) == JE_FALSE))
+	if ((grVFile_Printf (FS, "%s\r\n", Materials_Key) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s %d\r\n", MaterialsCount_Key, pProject->Materials.Count) == GR_FALSE))
 	{
 		goto Error;
 	}
@@ -710,31 +710,31 @@ static jeBoolean AProject_WriteMaterialsInfo (const AProject *pProject, jeVFile 
 		sprintf (Buffer, "\"%s\",%d,\"%s\",%f,%f,%f,%f", 
 			pEntry->Name, pEntry->Fmt, pEntry->Filename,
 			pEntry->Color.r, pEntry->Color.g, pEntry->Color.b, pEntry->Color.a);
-		if (jeVFile_Printf (FS, "%s\r\n", Buffer) == JE_FALSE)
+		if (grVFile_Printf (FS, "%s\r\n", Buffer) == GR_FALSE)
 		{
 			goto Error;
 
 		}
 	}
 
-	if (jeVFile_Printf (FS, "%s\r\n", EndMaterials_Key) == JE_FALSE)
+	if (grVFile_Printf (FS, "%s\r\n", EndMaterials_Key) == GR_FALSE)
 	{
 		goto Error;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 Error:
-	jeErrorLog_AddString (JE_ERR_FILEIO_WRITE, "Writing Materials section",NULL);
-	return JE_FALSE;
+	grErrorLog_AddString (GR_ERR_FILEIO_WRITE, "Writing Materials section",NULL);
+	return GR_FALSE;
 }
 
-static jeBoolean AProject_ParseMotion 
+static grBoolean AProject_ParseMotion 
 	(
 	  char *Buffer,
 	  char *Name,
 	  ApjMotionFormat *Fmt,
 	  char *Filename,
-	  jeBoolean *OptFlag,
+	  grBoolean *OptFlag,
 	  int *OptLevel,
 	  char *BoneName
 	)
@@ -742,27 +742,27 @@ static jeBoolean AProject_ParseMotion
 	char *NameStr, *FilenameStr, *FmtStr, *OptFlagStr, *OptLevelStr, *BoneNameStr;
 
 	// parse the items from the line
-	if ((NameStr		= strtok (Buffer, ",")) == NULL)return JE_FALSE;
-	if ((FmtStr			= strtok (NULL, ",")) == NULL)	return JE_FALSE;
-	if ((FilenameStr	= strtok (NULL, ",")) == NULL)	return JE_FALSE;
-	if ((OptFlagStr		= strtok (NULL, ",")) == NULL)	return JE_FALSE;
-	if ((OptLevelStr	= strtok (NULL, ",")) == NULL)	return JE_FALSE;
-	if ((BoneNameStr	= strtok (NULL, ",")) == NULL)	return JE_FALSE;
+	if ((NameStr		= strtok (Buffer, ",")) == NULL)return GR_FALSE;
+	if ((FmtStr			= strtok (NULL, ",")) == NULL)	return GR_FALSE;
+	if ((FilenameStr	= strtok (NULL, ",")) == NULL)	return GR_FALSE;
+	if ((OptFlagStr		= strtok (NULL, ",")) == NULL)	return GR_FALSE;
+	if ((OptLevelStr	= strtok (NULL, ",")) == NULL)	return GR_FALSE;
+	if ((BoneNameStr	= strtok (NULL, ",")) == NULL)	return GR_FALSE;
 
 	// set the items
 	strcpy (Name, NameStr);
 	if ((*FmtStr < '1') || (*FmtStr > '3'))
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	*Fmt = (ApjMotionFormat)(*FmtStr - '0');
 
-	if (AProject_UnquoteString (NameStr)	== JE_FALSE) return JE_FALSE;
-	if (AProject_UnquoteString (FilenameStr)== JE_FALSE) return JE_FALSE;
-	if (AProject_UnquoteString (BoneNameStr)== JE_FALSE) return JE_FALSE;
+	if (AProject_UnquoteString (NameStr)	== GR_FALSE) return GR_FALSE;
+	if (AProject_UnquoteString (FilenameStr)== GR_FALSE) return GR_FALSE;
+	if (AProject_UnquoteString (BoneNameStr)== GR_FALSE) return GR_FALSE;
 
-	*OptFlag = (*OptFlagStr == '0') ? JE_FALSE : JE_TRUE;
+	*OptFlag = (*OptFlagStr == '0') ? GR_FALSE : GR_TRUE;
 
 	if (isdigit (*OptLevelStr))
 	{
@@ -776,10 +776,10 @@ static jeBoolean AProject_ParseMotion
 	strcpy (Filename, FilenameStr);
 	strcpy (BoneName, BoneNameStr);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean AProject_LoadMotionsInfo (AProject *pProject, jeVFile *FS)
+static grBoolean AProject_LoadMotionsInfo (AProject *pProject, grVFile *FS)
 {
 	for (;;)
 	{
@@ -788,8 +788,8 @@ static jeBoolean AProject_LoadMotionsInfo (AProject *pProject, jeVFile *FS)
 
 		if (AProject_GetNonBlankLine (FS, Buffer, sizeof (Buffer)) != READ_SUCCESS)
 		{
-			jeErrorLog_AddString (JE_ERR_FILEIO_READ, "Loading Motions info",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_READ, "Loading Motions info",NULL);
+			return GR_FALSE;
 		}
 
 		if (_strnicmp (Buffer, MotionsCount_Key, strlen (MotionsCount_Key)) == 0)
@@ -802,8 +802,8 @@ static jeBoolean AProject_LoadMotionsInfo (AProject *pProject, jeVFile *FS)
 				Count = atoi (c+1);
 				if (Count < 0)
 				{
-					jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Negative Motions count",NULL);
-					return JE_FALSE;
+					grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Negative Motions count",NULL);
+					return GR_FALSE;
 				}
 			}
 			// load and add each motion
@@ -813,38 +813,38 @@ static jeBoolean AProject_LoadMotionsInfo (AProject *pProject, jeVFile *FS)
 				char Filename[MAX_PATH];
 				char BoneName[MAX_PATH];
 				int OptLevel;
-				jeBoolean OptFlag;
+				grBoolean OptFlag;
 				int Index;
 				ApjMotionFormat Fmt;
 
 				if (AProject_GetNonBlankLine (FS, Buffer, sizeof (Buffer)) != READ_SUCCESS)
 				{
-					jeErrorLog_AddString (JE_ERR_FILEIO_READ, "Loading Motions info",NULL);
-					return JE_FALSE;
+					grErrorLog_AddString (GR_ERR_FILEIO_READ, "Loading Motions info",NULL);
+					return GR_FALSE;
 				}
 
 				// parse the motion's parts
-				if (AProject_ParseMotion (Buffer, Name, &Fmt, Filename, &OptFlag, &OptLevel, BoneName) == JE_FALSE)
+				if (AProject_ParseMotion (Buffer, Name, &Fmt, Filename, &OptFlag, &OptLevel, BoneName) == GR_FALSE)
 				{
-					jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Bad motion",NULL);
-					return JE_FALSE;
+					grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Bad motion",NULL);
+					return GR_FALSE;
 				}
 				// and then add the motion
-				if (AProject_AddMotion (pProject, Name, Filename, Fmt, OptFlag, OptLevel, BoneName, &Index) == JE_FALSE)
+				if (AProject_AddMotion (pProject, Name, Filename, Fmt, OptFlag, OptLevel, BoneName, &Index) == GR_FALSE)
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 			}
 		}
 		else if (_strnicmp (Buffer, EndMotions_Key, strlen (EndMotions_Key)) == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else
 		{
 			// bad entry
-			jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Bad Motions section entry",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Bad Motions section entry",NULL);
+			return GR_FALSE;
 		}
 	}
 }
@@ -855,12 +855,12 @@ static char AProject_MotionFormatToChar (ApjMotionFormat Fmt)
 	return (char)(((int)Fmt) + '0');
 }
 
-static jeBoolean AProject_WriteMotionsInfo (const AProject *pProject, jeVFile *FS)
+static grBoolean AProject_WriteMotionsInfo (const AProject *pProject, grVFile *FS)
 {
 	int i;
 
-	if ((jeVFile_Printf (FS, "%s\r\n", Motions_Key) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "%s %d\r\n", MotionsCount_Key, pProject->Motions.Count) == JE_FALSE))
+	if ((grVFile_Printf (FS, "%s\r\n", Motions_Key) == GR_FALSE) ||
+		(grVFile_Printf (FS, "%s %d\r\n", MotionsCount_Key, pProject->Motions.Count) == GR_FALSE))
 	{
 		goto Error;
 	}
@@ -875,27 +875,27 @@ static jeBoolean AProject_WriteMotionsInfo (const AProject *pProject, jeVFile *F
 		sprintf (Buffer, "\"%s\",%c,\"%s\",%c,%d,\"%s\"", 
 			pEntry->Name, AProject_MotionFormatToChar (pEntry->Fmt), 
 			pEntry->Filename, (pEntry->OptFlag ? '1' : '0'), pEntry->OptLevel, pEntry->Bone);
-		if (jeVFile_Printf (FS, "%s\r\n", Buffer) == JE_FALSE)
+		if (grVFile_Printf (FS, "%s\r\n", Buffer) == GR_FALSE)
 		{
 			goto Error;
 
 		}
 	}
 
-	if (jeVFile_Printf (FS, "%s\r\n", EndMotions_Key) == JE_FALSE)
+	if (grVFile_Printf (FS, "%s\r\n", EndMotions_Key) == GR_FALSE)
 	{
 		goto Error;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 Error:
-	jeErrorLog_AddString (JE_ERR_FILEIO_WRITE, "Writing Motions section",NULL);
-	return JE_FALSE;
+	grErrorLog_AddString (GR_ERR_FILEIO_WRITE, "Writing Motions section",NULL);
+	return GR_FALSE;
 }
 
 
 // Project file section loader function type
-typedef jeBoolean (* ApjSectionLoader) (AProject *pProject, jeVFile *FS);
+typedef grBoolean (* ApjSectionLoader) (AProject *pProject, grVFile *FS);
 
 typedef struct
 {
@@ -918,11 +918,11 @@ static const ApjSectionDispatchEntry ApjSectionDispatchTable[] =
 static int ApjNumSections = sizeof (ApjSectionDispatchTable)/sizeof (ApjSectionDispatchEntry);
 
 // Read a project from a file.
-AProject *AProject_CreateFromFile (jeVFile *FS)
+AProject *AProject_CreateFromFile (grVFile *FS)
 {
 	AProject *pProject = NULL;
 	char Buffer[1024];		// any line longer than this is an error
-	jeBoolean NoErrors;
+	grBoolean NoErrors;
 
 	assert (FS != NULL);
 
@@ -930,10 +930,10 @@ AProject *AProject_CreateFromFile (jeVFile *FS)
 	NoErrors = ((pProject = AProject_Create ("")) != NULL);
 
 	// check file version information
-	NoErrors = NoErrors && (AProject_CheckFileVersion (FS) != JE_FALSE);
+	NoErrors = NoErrors && (AProject_CheckFileVersion (FS) != GR_FALSE);
 
 	// Sections can be in any order
-	while (NoErrors && (jeVFile_EOF (FS) == JE_FALSE))
+	while (NoErrors && (grVFile_EOF (FS) == GR_FALSE))
 	{
 		int Section;
 
@@ -942,8 +942,8 @@ AProject *AProject_CreateFromFile (jeVFile *FS)
 		switch (rslt)
 		{
 			case READ_ERROR :
-				jeErrorLog_AddString (JE_ERR_FILEIO_READ, "Loading project",NULL);
-				NoErrors = JE_FALSE;
+				grErrorLog_AddString (GR_ERR_FILEIO_READ, "Loading project",NULL);
+				NoErrors = GR_FALSE;
 				break;
 
 			case READ_EOF :
@@ -952,11 +952,11 @@ AProject *AProject_CreateFromFile (jeVFile *FS)
 			case READ_SUCCESS :
 			{
 				// get the section name and process that section
-				jeBoolean FoundIt;
+				grBoolean FoundIt;
 				const ApjSectionDispatchEntry *pEntry = NULL;
 
 				// determine which section, and go read that.
-				for (FoundIt = JE_FALSE, Section = 0; (FoundIt == JE_FALSE) && (Section < ApjNumSections); ++Section)
+				for (FoundIt = GR_FALSE, Section = 0; (FoundIt == GR_FALSE) && (Section < ApjNumSections); ++Section)
 				{
 					pEntry = &ApjSectionDispatchTable[Section];
 
@@ -970,8 +970,8 @@ AProject *AProject_CreateFromFile (jeVFile *FS)
 				else
 				{
 					// didn't find a good section name
-					NoErrors = JE_FALSE;
-					jeErrorLog_AddString (JE_ERR_FILEIO_FORMAT, "Expected section name",NULL);
+					NoErrors = GR_FALSE;
+					grErrorLog_AddString (GR_ERR_FILEIO_FORMAT, "Expected section name",NULL);
 				}
 				break;
 			}
@@ -993,10 +993,10 @@ AProject *AProject_CreateFromFile (jeVFile *FS)
 
 AProject *AProject_CreateFromFilename (const char *Filename)
 {
-	jeVFile *FS;
+	grVFile *FS;
 	AProject *Project;
 
-	FS = jeVFile_OpenNewSystem (NULL, JE_VFILE_TYPE_DOS, Filename, NULL, JE_VFILE_OPEN_READONLY);
+	FS = grVFile_OpenNewSystem (NULL, GR_VFILE_TYPE_DOS, Filename, NULL, GR_VFILE_OPEN_READONLY);
 	if (FS == NULL)
 	{
 		// unable to open file for reading
@@ -1004,66 +1004,66 @@ AProject *AProject_CreateFromFilename (const char *Filename)
 	}
 
 	Project = AProject_CreateFromFile (FS);
-	jeVFile_Close (FS);
+	grVFile_Close (FS);
 
 	return Project;
 }
 
 
-jeBoolean AProject_WriteToFile (const AProject *pProject, jeVFile *FS)
+grBoolean AProject_WriteToFile (const AProject *pProject, grVFile *FS)
 {
-	if ((jeVFile_Printf (FS, AProject_VersionString, APJ_VERSION_MAJOR, APJ_VERSION_MINOR) == JE_FALSE) ||
-		(jeVFile_Printf (FS, "\r\n\r\n") == JE_FALSE))
+	if ((grVFile_Printf (FS, AProject_VersionString, APJ_VERSION_MAJOR, APJ_VERSION_MINOR) == GR_FALSE) ||
+		(grVFile_Printf (FS, "\r\n\r\n") == GR_FALSE))
 	{
-		jeErrorLog_AddString (JE_ERR_FILEIO_WRITE, "Writing version string",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_FILEIO_WRITE, "Writing version string",NULL);
+		return GR_FALSE;
 	}
 
-	if ((AProject_WritePathsInfo (pProject, FS) != JE_FALSE) &&
-		(jeVFile_Printf (FS, "\r\n") != JE_FALSE) &&
-		(AProject_WriteOutputInfo (pProject, FS) != JE_FALSE) &&
-		(jeVFile_Printf (FS, "\r\n") != JE_FALSE) &&
-	    (AProject_WriteBodyInfo (pProject, FS) != JE_FALSE) &&
-		(jeVFile_Printf (FS, "\r\n") != JE_FALSE) &&
-		(AProject_WriteMaterialsInfo (pProject, FS) != JE_FALSE) &&
-		(jeVFile_Printf (FS, "\r\n") != JE_FALSE) &&
-		(AProject_WriteMotionsInfo (pProject, FS) != JE_FALSE))
+	if ((AProject_WritePathsInfo (pProject, FS) != GR_FALSE) &&
+		(grVFile_Printf (FS, "\r\n") != GR_FALSE) &&
+		(AProject_WriteOutputInfo (pProject, FS) != GR_FALSE) &&
+		(grVFile_Printf (FS, "\r\n") != GR_FALSE) &&
+	    (AProject_WriteBodyInfo (pProject, FS) != GR_FALSE) &&
+		(grVFile_Printf (FS, "\r\n") != GR_FALSE) &&
+		(AProject_WriteMaterialsInfo (pProject, FS) != GR_FALSE) &&
+		(grVFile_Printf (FS, "\r\n") != GR_FALSE) &&
+		(AProject_WriteMotionsInfo (pProject, FS) != GR_FALSE))
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-jeBoolean AProject_WriteToFilename (const AProject *pProject, const char *Filename)
+grBoolean AProject_WriteToFilename (const AProject *pProject, const char *Filename)
 {
-	jeVFile *FS;
-	jeBoolean rslt;
+	grVFile *FS;
+	grBoolean rslt;
 
-	FS = jeVFile_OpenNewSystem (NULL, JE_VFILE_TYPE_DOS, Filename, NULL, JE_VFILE_OPEN_CREATE);
+	FS = grVFile_OpenNewSystem (NULL, GR_VFILE_TYPE_DOS, Filename, NULL, GR_VFILE_OPEN_CREATE);
 	if (FS == NULL)
 	{
 		// unable to open file for writing
-		jeErrorLog_AddString (JE_ERR_FILEIO_WRITE, "Opening file",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_FILEIO_WRITE, "Opening file",NULL);
+		return GR_FALSE;
 	}
 
 	rslt = AProject_WriteToFile (pProject, FS);
 
-	jeVFile_Close (FS);
+	grVFile_Close (FS);
 
 	return rslt;
 }
 
 // Paths section
-jeBoolean AProject_GetForceRelativePaths (const AProject *pProject)
+grBoolean AProject_GetForceRelativePaths (const AProject *pProject)
 {
 	return pProject->Paths.ForceRelative;
 }
 
-jeBoolean AProject_SetForceRelativePaths (AProject *pProject, const jeBoolean Flag)
+grBoolean AProject_SetForceRelativePaths (AProject *pProject, const grBoolean Flag)
 {
 	pProject->Paths.ForceRelative = Flag;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -1072,14 +1072,14 @@ const char *AProject_GetMaterialsPath (const AProject *pProject)
 	return pProject->Paths.Materials;
 }
 
-jeBoolean AProject_SetMaterialsPath (AProject *pProject, const char *Path)
+grBoolean AProject_SetMaterialsPath (AProject *pProject, const char *Path)
 {
-	if (AProject_SetString (&pProject->Paths.Materials, Path) == JE_FALSE)
+	if (AProject_SetString (&pProject->Paths.Materials, Path) == GR_FALSE)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Setting materials path",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Setting materials path",NULL);
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 const char *AProject_GetObjPath (const AProject *pProject)
@@ -1087,14 +1087,14 @@ const char *AProject_GetObjPath (const AProject *pProject)
 	return pProject->Paths.TempFiles;
 }
 
-jeBoolean AProject_SetObjPath (AProject *pProject, const char *Path)
+grBoolean AProject_SetObjPath (AProject *pProject, const char *Path)
 {
-	if (AProject_SetString (&pProject->Paths.TempFiles, Path) == JE_FALSE)
+	if (AProject_SetString (&pProject->Paths.TempFiles, Path) == GR_FALSE)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Setting temp files path",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Setting temp files path",NULL);
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -1103,14 +1103,14 @@ const char *AProject_GetOutputFilename (const AProject *pProject)
 	return pProject->Output.Filename;
 }
 
-jeBoolean AProject_SetOutputFilename (AProject *pProject, const char *Filename)
+grBoolean AProject_SetOutputFilename (AProject *pProject, const char *Filename)
 {
-	if (AProject_SetString (&pProject->Output.Filename, Filename) == JE_FALSE)
+	if (AProject_SetString (&pProject->Output.Filename, Filename) == GR_FALSE)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Setting output filename",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Setting output filename",NULL);
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 ApjOutputFormat AProject_GetOutputFormat (const AProject *pProject)
@@ -1118,12 +1118,12 @@ ApjOutputFormat AProject_GetOutputFormat (const AProject *pProject)
 	return pProject->Output.Fmt;
 }
 
-jeBoolean AProject_SetOutputFormat (AProject *pProject, const ApjOutputFormat Fmt)
+grBoolean AProject_SetOutputFormat (AProject *pProject, const ApjOutputFormat Fmt)
 {
 	assert ((Fmt == ApjOutput_Text) || (Fmt == ApjOutput_Binary));
 
 	pProject->Output.Fmt = Fmt;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 const char *AProject_GetBodyFilename (const AProject *pProject)
@@ -1131,14 +1131,14 @@ const char *AProject_GetBodyFilename (const AProject *pProject)
 	return pProject->Body.Filename;
 }
 
-jeBoolean AProject_SetBodyFilename (AProject *pProject, const char *Filename)
+grBoolean AProject_SetBodyFilename (AProject *pProject, const char *Filename)
 {
-	if (AProject_SetString (&pProject->Body.Filename, Filename) == JE_FALSE)
+	if (AProject_SetString (&pProject->Body.Filename, Filename) == GR_FALSE)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Setting body filename",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Setting body filename",NULL);
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -1147,12 +1147,12 @@ ApjBodyFormat AProject_GetBodyFormat (const AProject *pProject)
 	return pProject->Body.Fmt;
 }
 
-jeBoolean AProject_SetBodyFormat (AProject *pProject, ApjBodyFormat Fmt)
+grBoolean AProject_SetBodyFormat (AProject *pProject, ApjBodyFormat Fmt)
 {
 	assert ((Fmt >= ApjBody_Invalid) && (Fmt <= ApjBody_Act));
 
 	pProject->Body.Fmt = Fmt;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 int AProject_GetMaterialsCount (const AProject *pProject)
@@ -1162,11 +1162,11 @@ int AProject_GetMaterialsCount (const AProject *pProject)
 
 static void AProject_FreeMaterialInfo (ApjMaterialEntry *pEntry)
 {
-	if (pEntry->Name != NULL) jeRam_Free (pEntry->Name);
-	if (pEntry->Filename != NULL) jeRam_Free (pEntry->Filename);
+	if (pEntry->Name != NULL) grRam_Free (pEntry->Name);
+	if (pEntry->Filename != NULL) grRam_Free (pEntry->Filename);
 }
 
-jeBoolean AProject_AddMaterial
+grBoolean AProject_AddMaterial
 	(
 	  AProject *pProject,
 	  const char *MaterialName,
@@ -1191,8 +1191,8 @@ jeBoolean AProject_AddMaterial
 		if (NewSize <= ArraySize)
 		{
 			// couldn't resize
-			jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Adding material",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Adding material",NULL);
+			return GR_FALSE;
 		}
 	}
 	pEntry = Array_ItemPtr (pProject->Materials.Items, pProject->Materials.Count);
@@ -1202,9 +1202,9 @@ jeBoolean AProject_AddMaterial
 	if (((pEntry->Name = Util_Strdup (MaterialName)) == NULL) ||
 		((pEntry->Filename = Util_Strdup (TextureFilename)) == NULL))
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Adding material",NULL);
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Adding material",NULL);
 		AProject_FreeMaterialInfo (pEntry);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	pEntry->Fmt = Fmt;
 	pEntry->Color.r = Red;
@@ -1213,10 +1213,10 @@ jeBoolean AProject_AddMaterial
 	pEntry->Color.a = Alpha;
 
 	*pIndex = (pProject->Materials.Count)++;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean AProject_RemoveMaterial (AProject *pProject, const int Index)
+grBoolean AProject_RemoveMaterial (AProject *pProject, const int Index)
 {
 	ApjMaterialEntry *pEntry;
 
@@ -1228,7 +1228,7 @@ jeBoolean AProject_RemoveMaterial (AProject *pProject, const int Index)
 	Array_DeleteAt (pProject->Materials.Items, Index);
 	--(pProject->Materials.Count);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 // returns -1 if not found
@@ -1259,7 +1259,7 @@ ApjMaterialFormat AProject_GetMaterialFormat (const AProject *pProject, const in
 	return pEntry->Fmt;
 }
 
-jeBoolean AProject_SetMaterialFormat (AProject *pProject, const int Index, const ApjMaterialFormat Fmt)
+grBoolean AProject_SetMaterialFormat (AProject *pProject, const int Index, const ApjMaterialFormat Fmt)
 {
 	ApjMaterialEntry *pEntry;
 
@@ -1269,7 +1269,7 @@ jeBoolean AProject_SetMaterialFormat (AProject *pProject, const int Index, const
 	pEntry = Array_ItemPtr (pProject->Materials.Items, Index);
 	pEntry->Fmt = Fmt;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 const char *AProject_GetMaterialName (const AProject *pProject, const int Index)
@@ -1282,20 +1282,20 @@ const char *AProject_GetMaterialName (const AProject *pProject, const int Index)
 	return pEntry->Name;
 }
 
-jeBoolean AProject_SetMaterialName (AProject *pProject, const int Index, const char *MaterialName)
+grBoolean AProject_SetMaterialName (AProject *pProject, const int Index, const char *MaterialName)
 {
 	ApjMaterialEntry *pEntry;
 
 	assert (Index < pProject->Materials.Count);
 
 	pEntry = Array_ItemPtr (pProject->Materials.Items, Index);
-	if (AProject_SetString (&pEntry->Name, MaterialName) == JE_FALSE)
+	if (AProject_SetString (&pEntry->Name, MaterialName) == GR_FALSE)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Setting material name",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Setting material name",NULL);
+		return GR_FALSE;
 	}
 	assert (pEntry->Name != NULL);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 const char *AProject_GetMaterialTextureFilename (const AProject *pProject, const int Index)
@@ -1308,7 +1308,7 @@ const char *AProject_GetMaterialTextureFilename (const AProject *pProject, const
 	return pEntry->Filename;
 }
 
-jeBoolean AProject_SetMaterialTextureFilename (AProject *pProject, const int Index, const char *TextureFilename)
+grBoolean AProject_SetMaterialTextureFilename (AProject *pProject, const int Index, const char *TextureFilename)
 {
 	ApjMaterialEntry *pEntry;
 
@@ -1316,17 +1316,17 @@ jeBoolean AProject_SetMaterialTextureFilename (AProject *pProject, const int Ind
 	assert (TextureFilename != NULL);
 
 	pEntry = Array_ItemPtr (pProject->Materials.Items, Index);
-	if (AProject_SetString (&pEntry->Filename, TextureFilename) == JE_FALSE)
+	if (AProject_SetString (&pEntry->Filename, TextureFilename) == GR_FALSE)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Setting material filename",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Setting material filename",NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-JE_RGBA AProject_GetMaterialTextureColor (const AProject *pProject, const int Index)
+GR_RGBA AProject_GetMaterialTextureColor (const AProject *pProject, const int Index)
 {
 	ApjMaterialEntry *pEntry;
 
@@ -1336,7 +1336,7 @@ JE_RGBA AProject_GetMaterialTextureColor (const AProject *pProject, const int In
 	return pEntry->Color;
 }
 
-jeBoolean AProject_SetMaterialTextureColor (AProject *pProject, const int Index, 
+grBoolean AProject_SetMaterialTextureColor (AProject *pProject, const int Index, 
 	const float Red, const float Green, const float Blue, const float Alpha)
 {
 	ApjMaterialEntry *pEntry;
@@ -1349,7 +1349,7 @@ jeBoolean AProject_SetMaterialTextureColor (AProject *pProject, const int Index,
 	pEntry->Color.b = Blue;
 	pEntry->Color.a = Alpha;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -1361,18 +1361,18 @@ int AProject_GetMotionsCount (const AProject *pProject)
 
 static void AProject_FreeMotionInfo (ApjMotionEntry *pEntry)
 {
-	if (pEntry->Name != NULL) jeRam_Free (pEntry->Name);
-	if (pEntry->Filename != NULL) jeRam_Free (pEntry->Filename);
-	if (pEntry->Bone != NULL) jeRam_Free (pEntry->Bone);
+	if (pEntry->Name != NULL) grRam_Free (pEntry->Name);
+	if (pEntry->Filename != NULL) grRam_Free (pEntry->Filename);
+	if (pEntry->Bone != NULL) grRam_Free (pEntry->Bone);
 }
 
-jeBoolean AProject_AddMotion
+grBoolean AProject_AddMotion
 	(
 	  AProject *pProject,
 	  const char *MotionName,
 	  const char *Filename,
 	  const ApjMotionFormat Fmt,
-	  const jeBoolean OptFlag,
+	  const grBoolean OptFlag,
 	  const int OptLevel,
 	  const char *BoneName,
 	  int *pIndex	// returned index
@@ -1394,8 +1394,8 @@ jeBoolean AProject_AddMotion
 		if (NewSize <= ArraySize)
 		{
 			// couldn't resize
-			jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Adding Motion",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Adding Motion",NULL);
+			return GR_FALSE;
 		}
 	}
 	pEntry = Array_ItemPtr (pProject->Motions.Items, pProject->Motions.Count);
@@ -1408,18 +1408,18 @@ jeBoolean AProject_AddMotion
 		((pEntry->Filename = Util_Strdup (Filename)) == NULL) ||
 		((pEntry->Bone = Util_Strdup (BoneName)) == NULL))
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Adding Motion",NULL);
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Adding Motion",NULL);
 		AProject_FreeMotionInfo (pEntry);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	pEntry->OptFlag = OptFlag;
 	pEntry->OptLevel = OptLevel;
 
 	*pIndex = (pProject->Motions.Count)++;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean AProject_RemoveMotion (AProject *pProject, const int Index)
+grBoolean AProject_RemoveMotion (AProject *pProject, const int Index)
 {
 	ApjMotionEntry *pEntry;
 
@@ -1431,7 +1431,7 @@ jeBoolean AProject_RemoveMotion (AProject *pProject, const int Index)
 	Array_DeleteAt (pProject->Motions.Items, Index);
 	--(pProject->Motions.Count);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 int AProject_GetMotionIndex (const AProject *pProject, const char *MotionName)
@@ -1461,7 +1461,7 @@ ApjMotionFormat AProject_GetMotionFormat (const AProject *pProject, const int In
 	return pEntry->Fmt;
 }
 
-jeBoolean AProject_SetMotionFormat (AProject *pProject, const int Index, const ApjMotionFormat Fmt)
+grBoolean AProject_SetMotionFormat (AProject *pProject, const int Index, const ApjMotionFormat Fmt)
 {
 	ApjMotionEntry *pEntry;
 
@@ -1471,7 +1471,7 @@ jeBoolean AProject_SetMotionFormat (AProject *pProject, const int Index, const A
 	pEntry = Array_ItemPtr (pProject->Motions.Items, Index);
 	pEntry->Fmt = Fmt;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 const char *AProject_GetMotionName (const AProject *pProject, const int Index)
@@ -1484,20 +1484,20 @@ const char *AProject_GetMotionName (const AProject *pProject, const int Index)
 	return pEntry->Name;
 }
 
-jeBoolean AProject_SetMotionName (AProject *pProject, const int Index, const char *MotionName)
+grBoolean AProject_SetMotionName (AProject *pProject, const int Index, const char *MotionName)
 {
 	ApjMotionEntry *pEntry;
 
 	assert (Index < pProject->Motions.Count);
 
 	pEntry = Array_ItemPtr (pProject->Motions.Items, Index);
-	if (AProject_SetString (&pEntry->Name, MotionName) == JE_FALSE)
+	if (AProject_SetString (&pEntry->Name, MotionName) == GR_FALSE)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Setting Motion name",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Setting Motion name",NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 const char *AProject_GetMotionFilename (const AProject *pProject, const int Index)
@@ -1510,23 +1510,23 @@ const char *AProject_GetMotionFilename (const AProject *pProject, const int Inde
 	return pEntry->Filename;
 }
 
-jeBoolean AProject_SetMotionFilename (AProject *pProject, const int Index, const char *Filename)
+grBoolean AProject_SetMotionFilename (AProject *pProject, const int Index, const char *Filename)
 {
 	ApjMotionEntry *pEntry;
 
 	assert (Index < pProject->Motions.Count);
 
 	pEntry = Array_ItemPtr (pProject->Motions.Items, Index);
-	if (AProject_SetString (&pEntry->Filename, Filename) == JE_FALSE)
+	if (AProject_SetString (&pEntry->Filename, Filename) == GR_FALSE)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Setting Motion filename",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Setting Motion filename",NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean AProject_GetMotionOptimizationFlag (const AProject *pProject, const int Index)
+grBoolean AProject_GetMotionOptimizationFlag (const AProject *pProject, const int Index)
 {
 	ApjMotionEntry *pEntry;
 
@@ -1536,7 +1536,7 @@ jeBoolean AProject_GetMotionOptimizationFlag (const AProject *pProject, const in
 	return pEntry->OptFlag;
 }
 
-jeBoolean AProject_SetMotionOptimizationFlag (AProject *pProject, const int Index, const jeBoolean Flag)
+grBoolean AProject_SetMotionOptimizationFlag (AProject *pProject, const int Index, const grBoolean Flag)
 {
 	ApjMotionEntry *pEntry;
 
@@ -1545,7 +1545,7 @@ jeBoolean AProject_SetMotionOptimizationFlag (AProject *pProject, const int Inde
 	pEntry = Array_ItemPtr (pProject->Motions.Items, Index);
 
 	pEntry->OptFlag = Flag;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 int AProject_GetMotionOptimizationLevel (const AProject *pProject, const int Index)
@@ -1558,7 +1558,7 @@ int AProject_GetMotionOptimizationLevel (const AProject *pProject, const int Ind
 	return pEntry->OptLevel;
 }
 
-jeBoolean AProject_SetMotionOptimizationLevel (AProject *pProject, const int Index, const int OptLevel)
+grBoolean AProject_SetMotionOptimizationLevel (AProject *pProject, const int Index, const int OptLevel)
 {
 	ApjMotionEntry *pEntry;
 
@@ -1568,7 +1568,7 @@ jeBoolean AProject_SetMotionOptimizationLevel (AProject *pProject, const int Ind
 	pEntry = Array_ItemPtr (pProject->Motions.Items, Index);
 	pEntry->OptLevel = OptLevel;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 const char *AProject_GetMotionBone (const AProject *pProject, const int Index)
@@ -1581,18 +1581,18 @@ const char *AProject_GetMotionBone (const AProject *pProject, const int Index)
 	return pEntry->Bone;
 }
 
-jeBoolean AProject_SetMotionBone (AProject *pProject, const int Index, const char *BoneName)
+grBoolean AProject_SetMotionBone (AProject *pProject, const int Index, const char *BoneName)
 {
 	ApjMotionEntry *pEntry;
 
 	assert (Index < pProject->Motions.Count);
 
 	pEntry = Array_ItemPtr (pProject->Motions.Items, Index);
-	if (AProject_SetString (&pEntry->Bone, BoneName) == JE_FALSE)
+	if (AProject_SetString (&pEntry->Bone, BoneName) == GR_FALSE)
 	{
-		jeErrorLog_AddString (JE_ERR_MEMORY_RESOURCE, "Setting Motion bone",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString (GR_ERR_MEMORY_RESOURCE, "Setting Motion bone",NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }

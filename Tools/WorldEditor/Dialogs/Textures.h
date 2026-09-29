@@ -74,8 +74,8 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
-	static jeBoolean UpdateNamesCB( Material_Struct * pMaterial, void * lParam );
-	static jeBoolean UpdateNamesTR( Material_Struct * pShader, void * lParam );
+	static grBoolean UpdateNamesCB( Material_Struct * pMaterial, void * lParam );
+	static grBoolean UpdateNamesTR( Material_Struct * pShader, void * lParam );
 	MaterialList_Struct * m_pMaterials;
 	MaterialList_Struct * m_pShaders;
 	void UpdateNames( void );

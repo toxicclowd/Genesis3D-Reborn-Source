@@ -31,33 +31,33 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-jeBoolean HasValidError( int32 CurErrorN )
+grBoolean HasValidError( int32 CurErrorN )
 {
-	jeErrorLog_ErrorClassType Error = JE_ERR_INTERNAL_RESOURCE;
+	grErrorLog_ErrorClassType Error = GR_ERR_INTERNAL_RESOURCE;
 	const char *UserString;
 	const char *Context = NULL;
 
 	for( ;CurErrorN > 0; CurErrorN-- )
 	{
-		if( jeErrorLog_Report(CurErrorN-1, &Error, &UserString, &Context) )
+		if( grErrorLog_Report(CurErrorN-1, &Error, &UserString, &Context) )
 		{
-			if( Error >= JE_ERR_MEMORY_RESOURCE && Error <= JE_ERR_SUBSYSTEM_FAILURE )
-				return( JE_TRUE );
+			if( Error >= GR_ERR_MEMORY_RESOURCE && Error <= GR_ERR_SUBSYSTEM_FAILURE )
+				return( GR_TRUE );
 		}
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
 
-jeBoolean ReportErrors( jeBoolean bWarning )
+grBoolean ReportErrors( grBoolean bWarning )
 {
 	CJetErr ErrorDialog;
 	int ErrorN;
 
 	ErrorDialog.bWarning = bWarning;
-	ErrorN = jeErrorLog_Count();
+	ErrorN = grErrorLog_Count();
 	if( ErrorN == 0 )
-		return( JE_TRUE );
+		return( GR_TRUE );
 
 	ErrorDialog.m_CurErrorN = ErrorN;
 	while( ErrorDialog.m_CurErrorN  )
@@ -66,8 +66,8 @@ jeBoolean ReportErrors( jeBoolean bWarning )
 			break;
 		ErrorDialog.DoModal();
 	}
-	jeErrorLog_Clear();
-	return( JE_TRUE );
+	grErrorLog_Clear();
+	return( GR_TRUE );
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -107,7 +107,7 @@ END_MESSAGE_MAP()
 
 BOOL CJetErr::OnInitDialog() 
 {
-	jeErrorLog_ErrorClassType Error = JE_ERR_INTERNAL_RESOURCE;
+	grErrorLog_ErrorClassType Error = GR_ERR_INTERNAL_RESOURCE;
 	const char *UserString;
 	const char *Context = NULL;
 	char *ErrString;
@@ -126,7 +126,7 @@ BOOL CJetErr::OnInitDialog()
 
 	for( ;m_CurErrorN > 0; m_CurErrorN-- )
 	{
-		if( jeErrorLog_Report(m_CurErrorN-1, &Error, &UserString, &Context) )
+		if( grErrorLog_Report(m_CurErrorN-1, &Error, &UserString, &Context) )
 		{
 			if( UserString )
 				m_Log += UserString;
@@ -140,33 +140,33 @@ BOOL CJetErr::OnInitDialog()
 						ErrString = Util_LoadLocalRcString( IDS_CONTEXT_OPEN );
 						m_Log += ErrString;
 						if ( ErrString )
-							jeRam_Free(ErrString);
+							grRam_Free(ErrString);
 
 						m_Log += Context;
 
 						ErrString = Util_LoadLocalRcString( IDS_CONTEXT_CLOSE );
 						m_Log += ErrString;
 						if ( ErrString )
-							jeRam_Free(ErrString);
+							grRam_Free(ErrString);
 						// [MLB-ICE]
 					}
 			m_Log += "\r\n";
-			if( Error != JE_ERR_SUBSYSTEM_FAILURE && Error != JE_ERR_INTERNAL_RESOURCE )
+			if( Error != GR_ERR_SUBSYSTEM_FAILURE && Error != GR_ERR_INTERNAL_RESOURCE )
 				break;
 		}
 	}
 	if( m_CurErrorN > 0 )
 	{
-		if( Error >= JE_ERR_MEMORY_RESOURCE && Error <= JE_ERR_SUBSYSTEM_FAILURE )
+		if( Error >= GR_ERR_MEMORY_RESOURCE && Error <= GR_ERR_SUBSYSTEM_FAILURE )
 		{
 			ErrString = Util_LoadLocalRcString( Error + IDS_MEMORY_ERR );
 			if( ErrString )
 			{
 				m_Error = ErrString;
 				m_Error += " ";
-				jeRam_Free( ErrString );
+				grRam_Free( ErrString );
 			}
-			if ( (Error >= JE_ERR_FILEIO_OPEN)  && (Error <= JE_ERR_FILEIO_VERSION) )
+			if ( (Error >= GR_ERR_FILEIO_OPEN)  && (Error <= GR_ERR_FILEIO_VERSION) )
 			{
 				if( Context )
 				{
@@ -181,18 +181,18 @@ BOOL CJetErr::OnInitDialog()
 			{
 				m_Error = ErrString;
 				m_Error += " ";
-				jeRam_Free( ErrString );
+				grRam_Free( ErrString );
 			}
 		}
 		m_CurErrorN--;
 	}
 	else
 	{
-		ErrString = Util_LoadLocalRcString( JE_ERR_SUBSYSTEM_FAILURE + IDS_MEMORY_ERR);
+		ErrString = Util_LoadLocalRcString( GR_ERR_SUBSYSTEM_FAILURE + IDS_MEMORY_ERR);
 		if( ErrString )
 		{
 			m_Error = ErrString;
-			jeRam_Free( ErrString );
+			grRam_Free( ErrString );
 		}
 		if( Context )
 			m_Error += Context;

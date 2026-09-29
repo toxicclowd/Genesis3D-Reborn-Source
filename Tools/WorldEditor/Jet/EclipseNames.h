@@ -29,13 +29,13 @@ extern "C" {
 
 typedef	enum
 {
-	JE_ECLIPSENAMES_STRUCTUREFIELDS,
-	JE_ECLIPSENAMES_FIELDDEFAULTVALUE,
-	JE_ECLIPSENAMES_TYPES,
-	JE_ECLIPSENAMES_TYPEDEFINITIONS,
-}	jeEclipseNames_Id;
+	GR_ECLIPSENAMES_STRUCTUREFIELDS,
+	GR_ECLIPSENAMES_FIELDDEFAULTVALUE,
+	GR_ECLIPSENAMES_TYPES,
+	GR_ECLIPSENAMES_TYPEDEFINITIONS,
+}	grEclipseNames_Id;
 
-jeSymbol *jeEclipseNames(jeSymbol_Table *ST, jeEclipseNames_Id Id);
+grSymbol *grEclipseNames(grSymbol_Table *ST, grEclipseNames_Id Id);
 
 #ifdef	__cplusplus
 }

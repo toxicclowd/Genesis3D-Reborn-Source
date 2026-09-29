@@ -28,45 +28,45 @@
 #include "Part.h"
 #include "Spring.h"
 
-typedef struct jeSpring
+typedef struct grSpring
 {
-	jeParticle* p1, *p2;
+	grParticle* p1, *p2;
 	float Ks, Kd; // spring and damping constants
 	float r0; // initial length
 
-	jeSpring_ForceFunc forceFunc;
+	grSpring_ForceFunc forceFunc;
 
-}jeSpring;
+}grSpring;
 
-static void jeSpring_ComputeR0(jeSpring* pSpring)
+static void grSpring_ComputeR0(grSpring* pSpring)
 {
-	jeVec3d pos1, pos2, diff;
+	grVec3d pos1, pos2, diff;
 
-	jeParticle_GetPos(pSpring->p1, &pos1);
-	jeParticle_GetPos(pSpring->p2, &pos2);
+	grParticle_GetPos(pSpring->p1, &pos1);
+	grParticle_GetPos(pSpring->p2, &pos2);
 
-	jeVec3d_Subtract(&pos2, &pos1, &diff);
-	pSpring->r0 = jeVec3d_Length(&diff);
+	grVec3d_Subtract(&pos2, &pos1, &diff);
+	pSpring->r0 = grVec3d_Length(&diff);
 
-	assert(pSpring->r0 > JE_EPSILON);
+	assert(pSpring->r0 > GR_EPSILON);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 // ctor / dtor
 
-jeSpring* jeSpring_Create(float Ks, float Kd, jeParticle* p1, jeParticle* p2,
-	jeSpring_ForceFunc forceFunc)
+grSpring* grSpring_Create(float Ks, float Kd, grParticle* p1, grParticle* p2,
+	grSpring_ForceFunc forceFunc)
 {
-	jeSpring* pSpring;
+	grSpring* pSpring;
 
 	assert(p1);
 	assert(p2);
 
-	assert(Ks > JE_EPSILON);
-	assert(Kd > JE_EPSILON && Kd <= 1.f);
+	assert(Ks > GR_EPSILON);
+	assert(Kd > GR_EPSILON && Kd <= 1.f);
 	assert(forceFunc);
 
-	pSpring = (jeSpring*)jeRam_Allocate(sizeof(jeSpring));
+	pSpring = (grSpring*)grRam_Allocate(sizeof(grSpring));
 
 	pSpring->Ks = Ks;
 	pSpring->Kd = Kd;
@@ -74,59 +74,59 @@ jeSpring* jeSpring_Create(float Ks, float Kd, jeParticle* p1, jeParticle* p2,
 	pSpring->p2 = p2;
 	pSpring->forceFunc = forceFunc;
 
-	jeSpring_ComputeR0(pSpring);
+	grSpring_ComputeR0(pSpring);
 
 	return pSpring;
 }
 
-void jeSpring_Destroy(jeSpring** ppSpring)
+void grSpring_Destroy(grSpring** ppSpring)
 {
 	assert(ppSpring);
 	assert(*ppSpring);
 
-	jeRam_Free(*ppSpring);
+	grRam_Free(*ppSpring);
 	*ppSpring = NULL;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 // accessors
 
-jeParticle* jeSpring_GetPart1(const jeSpring* pSpring)
+grParticle* grSpring_GetPart1(const grSpring* pSpring)
 {
 	assert(pSpring);
 
 	return pSpring->p1;
 }
 
-jeParticle* jeSpring_GetPart2(const jeSpring* pSpring)
+grParticle* grSpring_GetPart2(const grSpring* pSpring)
 {
 	assert(pSpring);
 
 	return pSpring->p2;
 }
 
-float jeSpring_GetKs(const jeSpring* pSpring)
+float grSpring_GetKs(const grSpring* pSpring)
 {
 	assert(pSpring);
 
 	return pSpring->Ks;
 }
 
-float jeSpring_GetKd(const jeSpring* pSpring)
+float grSpring_GetKd(const grSpring* pSpring)
 {
 	assert(pSpring);
 
 	return pSpring->Kd;
 }
 
-float jeSpring_GetR0(const jeSpring* pSpring)
+float grSpring_GetR0(const grSpring* pSpring)
 {
 	assert(pSpring);
 
 	return pSpring->r0;
 }
 
-jeSpring_ForceFunc jeSpring_GetForceFunc(const jeSpring* pSpring)
+grSpring_ForceFunc grSpring_GetForceFunc(const grSpring* pSpring)
 {
 	assert(pSpring);
 
@@ -135,58 +135,58 @@ jeSpring_ForceFunc jeSpring_GetForceFunc(const jeSpring* pSpring)
 
 /////////////////////////////////////////////////////////////////////////////////
 
-jeBoolean jeSpring_SetPart1(jeSpring* pSpring, const jeParticle* part1)
+grBoolean grSpring_SetPart1(grSpring* pSpring, const grParticle* part1)
 {
 	assert(pSpring);
 	assert(part1);
 
-	pSpring->p1 = (jeParticle*)part1;
+	pSpring->p1 = (grParticle*)part1;
 
-	jeSpring_ComputeR0(pSpring);
+	grSpring_ComputeR0(pSpring);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeSpring_SetPart2(jeSpring* pSpring, const jeParticle* part2)
+grBoolean grSpring_SetPart2(grSpring* pSpring, const grParticle* part2)
 {
 	assert(pSpring);
 	assert(part2);
 
-	pSpring->p2 = (jeParticle*)part2;
+	pSpring->p2 = (grParticle*)part2;
 
-	jeSpring_ComputeR0(pSpring);
+	grSpring_ComputeR0(pSpring);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeSpring_SetKs(jeSpring* pSpring, float Ks)
+grBoolean grSpring_SetKs(grSpring* pSpring, float Ks)
 {
 	assert(pSpring);
-	assert(Ks > JE_EPSILON);
+	assert(Ks > GR_EPSILON);
 
 	pSpring->Ks = Ks;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeSpring_SetKd(jeSpring* pSpring, float Kd)
+grBoolean grSpring_SetKd(grSpring* pSpring, float Kd)
 {
 	assert(pSpring);
-	assert(Kd > JE_EPSILON && Kd <= 1.f);
+	assert(Kd > GR_EPSILON && Kd <= 1.f);
 
 	pSpring->Kd = Kd;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeSpring_SetForceFunc(jeSpring* pSpring, jeSpring_ForceFunc forceFunc)
+grBoolean grSpring_SetForceFunc(grSpring* pSpring, grSpring_ForceFunc forceFunc)
 {
 	assert(pSpring);
 	assert(forceFunc);
 
 	pSpring->forceFunc = forceFunc;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -196,30 +196,30 @@ jeBoolean jeSpring_SetForceFunc(jeSpring* pSpring, jeSpring_ForceFunc forceFunc)
 
 // compute forces for particles attached to damped spring.
 // our constraint function reads C = |x1 - x2| - r0 = 0.
-jeBoolean jeSpring_ForceFunc_ComputeDamped(jeSpring* pSpring)
+grBoolean grSpring_ForceFunc_ComputeDamped(grSpring* pSpring)
 {
-	jeVec3d pos1, pos2, dpos;
-	jeVec3d v1, v2, dv;
-	jeVec3d force;
+	grVec3d pos1, pos2, dpos;
+	grVec3d v1, v2, dv;
+	grVec3d force;
 
 	float len, C, Cdot, F;
 
 	assert(pSpring);
 
-	jeParticle_GetPos(pSpring->p1, &pos1);
-	jeParticle_GetPos(pSpring->p2, &pos2);
-	jeVec3d_Subtract(&pos1, &pos2, &dpos);
-	len = jeVec3d_Normalize(&dpos);
+	grParticle_GetPos(pSpring->p1, &pos1);
+	grParticle_GetPos(pSpring->p2, &pos2);
+	grVec3d_Subtract(&pos1, &pos2, &dpos);
+	len = grVec3d_Normalize(&dpos);
 
 	C = len - pSpring->r0;
 
-	jeParticle_GetVel(pSpring->p1, &v1);
-	jeParticle_GetVel(pSpring->p2, &v2);
-	jeVec3d_Subtract(&v1, &v2, &dv);
+	grParticle_GetVel(pSpring->p1, &v1);
+	grParticle_GetVel(pSpring->p2, &v2);
+	grVec3d_Subtract(&v1, &v2, &dv);
 
 	// Cdot = dC / dt = (dC / dx) * (dx / dt) =
 	// ((x1 - x2) / |l|, (dx1 / dt - dx2 / dt))
-	Cdot = jeVec3d_DotProduct(&dpos, &dv);
+	Cdot = grVec3d_DotProduct(&dpos, &dv);
 
 	// F = -(Ks * C + Kd * dC / Dt)
 	F = -(pSpring->Ks * C + pSpring->Kd * Cdot);
@@ -228,17 +228,17 @@ jeBoolean jeSpring_ForceFunc_ComputeDamped(jeSpring* pSpring)
 	force.Y = F * dpos.Y;
 	force.Z = F * dpos.Z;
 
-	jeParticle_AddForce(pSpring->p1, &force);
+	grParticle_AddForce(pSpring->p1, &force);
 
-	jeVec3d_Inverse(&force);
-	jeParticle_AddForce(pSpring->p2, &force);
+	grVec3d_Inverse(&force);
+	grParticle_AddForce(pSpring->p2, &force);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeSpring_ForceFunc_ComputeCriticallyDamped(jeSpring* pSpring)
+grBoolean grSpring_ForceFunc_ComputeCriticallyDamped(grSpring* pSpring)
 {
 	assert(pSpring);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }

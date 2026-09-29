@@ -24,7 +24,7 @@
 #include "Ram.h"
 #include "errorlog.h"
 #include "Undo.h"
-#include "jeList.h"
+#include "grList.h"
 
 #define SIGNATURE (0x01233210)
 #define INVALID_TRANSACTION -1
@@ -60,7 +60,7 @@ typedef struct tagUndo
 	int32 StackTop;
 	int32 StackBottom;
 	UndoCallbacks CallbackArray[ UNDO_LAST_CALLBACK ];
-	jeBoolean bBrushLighting;  //Temporary holder for callback
+	grBoolean bBrushLighting;  //Temporary holder for callback
 } Undo ;
 
 // Undo transactions:
@@ -74,18 +74,18 @@ Undo * Undo_Create( const int32 nLevels )
 {
 	Undo * pUndo ;
 	
-	pUndo = JE_RAM_ALLOCATE_STRUCT( Undo ) ;
+	pUndo = GR_RAM_ALLOCATE_STRUCT( Undo ) ;
 	if( pUndo == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Uanble to create undo" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Uanble to create undo" );
 		goto UC_FAILURE ;
 	}
 	memset( pUndo, 0, sizeof *pUndo ) ;
 	assert( (pUndo->nSignature = SIGNATURE) == SIGNATURE ) ;	// ASSIGN
-	pUndo->pUndoStack = JE_RAM_ALLOCATE_ARRAY( UndoTransaction*, nLevels );
+	pUndo->pUndoStack = GR_RAM_ALLOCATE_ARRAY( UndoTransaction*, nLevels );
 	if( pUndo == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Uanble to create undo stac" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Uanble to create undo stac" );
 		goto UC_FAILURE ;
 	}
 	memset( pUndo->pUndoStack, 0, nLevels * sizeof(UndoTransaction*) ) ;
@@ -107,10 +107,10 @@ static void Undo_DeleteSubTransactionCB( void* Data )
 	UndoSubTransaction *pSubTransaction = (UndoSubTransaction*)Data;
 
 	Object_Free( &pSubTransaction->pObject );
-	jeRam_Free( pSubTransaction );
+	grRam_Free( pSubTransaction );
 }
 
-static jeBoolean Undo_DestroyContext(void *pData, void *lParam)
+static grBoolean Undo_DestroyContext(void *pData, void *lParam)
 {
 	UndoSubTransaction	*	pSubTransaction = (UndoSubTransaction*)pData;
 	Undo				*	pUndo			= (Undo*)lParam;
@@ -123,7 +123,7 @@ static jeBoolean Undo_DestroyContext(void *pData, void *lParam)
 	DestroyContextCB = pUndo->CallbackArray[ pSubTransaction->Function ].DestroyContextCB;
 	(*DestroyContextCB)( pSubTransaction->Context );
 	pSubTransaction->Context = NULL;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 void Undo_DeleteTransaction( Undo* pUndo, int32 TransIdx )
@@ -133,14 +133,14 @@ void Undo_DeleteTransaction( Undo* pUndo, int32 TransIdx )
 	pTransaction = pUndo->pUndoStack[TransIdx ];
 	List_ForEach( pTransaction->SubTransactions, Undo_DestroyContext, pUndo );
 	List_Destroy (&pTransaction->SubTransactions, Undo_DeleteSubTransactionCB );
-	jeRam_Free( pTransaction );
+	grRam_Free( pTransaction );
 	pUndo->pUndoStack[TransIdx ] = NULL;
 
 }
 
 // Creates a new Transaction and puts it on the top of the stack
 // If list is full the  bottom transaction is deleted to make room.
-jeBoolean Undo_Push( Undo *pUndo, UNDO_TYPES Type )
+grBoolean Undo_Push( Undo *pUndo, UNDO_TYPES Type )
 {
 
 	UndoTransaction *pTransaction;
@@ -148,18 +148,18 @@ jeBoolean Undo_Push( Undo *pUndo, UNDO_TYPES Type )
 	assert( pUndo );
 
 
-	pTransaction = JE_RAM_ALLOCATE_STRUCT( UndoTransaction ) ;
+	pTransaction = GR_RAM_ALLOCATE_STRUCT( UndoTransaction ) ;
 	if( pUndo == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Uanble to create UndoTransaction" );
-		return( JE_FALSE ) ;
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Uanble to create UndoTransaction" );
+		return( GR_FALSE ) ;
 	}
 	pTransaction->Type = Type;
 	pTransaction->SubTransactions = List_Create();
 	if( pTransaction->SubTransactions == NULL )
 	{
-		jeRam_Free( pTransaction );
-		return( JE_FALSE ) ;
+		grRam_Free( pTransaction );
+		return( GR_FALSE ) ;
 	}
 	if( pUndo->StackTop == INVALID_TRANSACTION )
 		pUndo->StackTop = pUndo->StackBottom;
@@ -179,10 +179,10 @@ jeBoolean Undo_Push( Undo *pUndo, UNDO_TYPES Type )
 	}
 
 	pUndo->pUndoStack[pUndo->StackTop] = pTransaction;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-static jeBoolean Undo_RestoreListCB(void *pData, void *lParam)
+static grBoolean Undo_RestoreListCB(void *pData, void *lParam)
 {
 	UndoSubTransaction* pSubTransaction;
 	Undo	* pUndo;
@@ -194,14 +194,14 @@ static jeBoolean Undo_RestoreListCB(void *pData, void *lParam)
 	assert( pUndo->CallbackArray[pSubTransaction->Function].Function == pSubTransaction->Function );
 	RestoreCB = pUndo->CallbackArray[pSubTransaction->Function].RestoreCB;
 	if( !(*RestoreCB)( pSubTransaction->pObject, pSubTransaction->Context ) )
-		return( JE_FALSE );
-	Object_Update( pSubTransaction->pObject, pUndo->bBrushLighting, JE_FALSE );
-	return( JE_TRUE );
+		return( GR_FALSE );
+	Object_Update( pSubTransaction->pObject, pUndo->bBrushLighting, GR_FALSE );
+	return( GR_TRUE );
 }
 
 // Undo_Pop
 //Removes top Transaction and calls restore routine for all of its sub-transactions
-jeBoolean	Undo_Pop( Undo *pUndo, jeBoolean bBrushLighting )
+grBoolean	Undo_Pop( Undo *pUndo, grBoolean bBrushLighting )
 {
 	UndoTransaction *pTransaction;
 
@@ -211,7 +211,7 @@ jeBoolean	Undo_Pop( Undo *pUndo, jeBoolean bBrushLighting )
 
 
 	if( pUndo->StackTop == INVALID_TRANSACTION )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	pTransaction = pUndo->pUndoStack[pUndo->StackTop];
 	assert( pTransaction ); 
 
@@ -230,7 +230,7 @@ jeBoolean	Undo_Pop( Undo *pUndo, jeBoolean bBrushLighting )
 	}
 
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 UNDO_TYPES	Undo_GetTopType( Undo *pUndo )
@@ -243,7 +243,7 @@ UNDO_TYPES	Undo_GetTopType( Undo *pUndo )
 
 
 	if( pUndo->StackTop == INVALID_TRANSACTION )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	pTransaction = pUndo->pUndoStack[pUndo->StackTop];
 	assert( pTransaction ); 
 	return( pTransaction->Type );
@@ -254,7 +254,7 @@ UNDO_TYPES	Undo_GetTopType( Undo *pUndo )
 //Context is assumed to be an allocated block of memory owned by the sub-transaction
 //this block will be freed when the sub-transaction is deleted.  Context may be NULL
 //in which case it will be ignored.
-jeBoolean Undo_AddSubTransaction( Undo *pUndo, UNDO_FUNCTIONS Function, Object * pObject, void *Context )
+grBoolean Undo_AddSubTransaction( Undo *pUndo, UNDO_FUNCTIONS Function, Object * pObject, void *Context )
 {
 	UndoTransaction *pTransaction;
 	UndoSubTransaction* pSubTransaction;
@@ -263,23 +263,23 @@ jeBoolean Undo_AddSubTransaction( Undo *pUndo, UNDO_FUNCTIONS Function, Object *
 	assert( pObject );
 
 	if( pUndo->StackTop == INVALID_TRANSACTION )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	pTransaction = pUndo->pUndoStack[pUndo->StackTop];
 	assert( pTransaction ); 
 
-	pSubTransaction = JE_RAM_ALLOCATE_STRUCT( UndoSubTransaction ) ;
+	pSubTransaction = GR_RAM_ALLOCATE_STRUCT( UndoSubTransaction ) ;
 	if( pSubTransaction == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Object_AddRef( pObject );
 	pSubTransaction->Function = Function;
 	pSubTransaction->pObject = pObject;
 	pSubTransaction->Context = Context;
 	List_Append (pTransaction->SubTransactions, pSubTransaction);
-	return( JE_TRUE );
+	return( GR_TRUE );
 	
 }
 
-jeBoolean	Undo_CanUndo( Undo *pUndo, int32* UndoStringID )
+grBoolean	Undo_CanUndo( Undo *pUndo, int32* UndoStringID )
 {
 	UndoTransaction *pTransaction;
 
@@ -288,13 +288,13 @@ jeBoolean	Undo_CanUndo( Undo *pUndo, int32* UndoStringID )
 	if( pUndo->StackTop == INVALID_TRANSACTION )
 	{
 			*UndoStringID = UNDO_NONE + UNDO_STRING_START;
-			return(JE_FALSE );
+			return(GR_FALSE );
 	}
 	
 	assert( pUndo->pUndoStack[pUndo->StackTop] );
 	pTransaction = pUndo->pUndoStack[pUndo->StackTop];
 	*UndoStringID = pTransaction->Type + UNDO_STRING_START;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 // Undo_RegisterCallBack
@@ -340,8 +340,8 @@ void Undo_Destroy( Undo ** ppUndo )
 			if( pUndo->pUndoStack[i] != NULL )
 				Undo_DeleteTransaction( pUndo, i );
 		}
-		jeRam_Free( pUndo->pUndoStack );
+		grRam_Free( pUndo->pUndoStack );
 	}
 
-	jeRam_Free( pUndo ) ;
+	grRam_Free( pUndo ) ;
 }// Undo_Destroy

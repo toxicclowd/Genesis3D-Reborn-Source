@@ -26,7 +26,7 @@
 #include "ObjectDef.h"	// Should be a private header file!
 #include "Ram.h"
 #include "Util.h"
-#include "jet.h"
+#include "Genesis3D.h"
 
 #include "Entity.h"
 #include "EntityTable.h"
@@ -46,11 +46,11 @@ typedef struct tagEntity
 #ifdef _DEBUG
 	int				nSignature ;
 #endif
-	jeSymbol_Table * pSymbolTable ;
+	grSymbol_Table * pSymbolTable ;
 	int32			Flags;
-	jeExtBox		WorldBounds ;
-	jeVec3d			Origin	;
-	jeSymbol	*	pSymbol ;
+	grExtBox		WorldBounds ;
+	grVec3d			Origin	;
+	grSymbol	*	pSymbol ;
 	char		*	pszType;
 } Entity ;
 
@@ -59,7 +59,7 @@ typedef struct tagEntity
 
 static void Entity_GetOrigin( Entity * pEntity )
 {
-	jeSymbol *FieldSymbol;
+	grSymbol *FieldSymbol;
 
 	if( pEntity->pSymbol == NULL )
 		return;
@@ -68,13 +68,13 @@ static void Entity_GetOrigin( Entity * pEntity )
 	if( FieldSymbol  == NULL )
 		return;
 
-	jeSymbol_GetProperty( pEntity->pSymbol, FieldSymbol, &pEntity->Origin, 
-		sizeof( pEntity->Origin ), JE_SYMBOL_TYPE_VEC3D );
+	grSymbol_GetProperty( pEntity->pSymbol, FieldSymbol, &pEntity->Origin, 
+		sizeof( pEntity->Origin ), GR_SYMBOL_TYPE_VEC3D );
 }
 
 static void Entity_SetOrigin( Entity * pEntity )
 {
-	jeSymbol *FieldSymbol;
+	grSymbol *FieldSymbol;
 
 	if( pEntity->pSymbol == NULL )
 		return;
@@ -83,19 +83,19 @@ static void Entity_SetOrigin( Entity * pEntity )
 	if( FieldSymbol  == NULL )
 		return;
 
-	jeSymbol_SetProperty( pEntity->pSymbol, FieldSymbol, &pEntity->Origin, 
-		sizeof( pEntity->Origin ), JE_SYMBOL_TYPE_VEC3D );
+	grSymbol_SetProperty( pEntity->pSymbol, FieldSymbol, &pEntity->Origin, 
+		sizeof( pEntity->Origin ), GR_SYMBOL_TYPE_VEC3D );
 }
 
-static void Entity_SizeEdge( Entity * pEntity, const jeVec3d * pStillEdge, const jeFloat fScale, ORTHO_AXIS Axis )
+static void Entity_SizeEdge( Entity * pEntity, const grVec3d * pStillEdge, const grFloat fScale, ORTHO_AXIS Axis )
 {
 	float	fTemp;
 
 
-	fTemp = jeVec3d_GetElement( &pEntity->Origin, Axis ) - jeVec3d_GetElement( pStillEdge, Axis ) ;
+	fTemp = grVec3d_GetElement( &pEntity->Origin, Axis ) - grVec3d_GetElement( pStillEdge, Axis ) ;
 	fTemp = fTemp * fScale ;
-	fTemp = fTemp + jeVec3d_GetElement( pStillEdge, Axis ) ;
-	jeVec3d_SetElement( &pEntity->Origin, Axis, fTemp ) ;
+	fTemp = fTemp + grVec3d_GetElement( pStillEdge, Axis ) ;
+	grVec3d_SetElement( &pEntity->Origin, Axis, fTemp ) ;
 	Entity_SetOrigin( pEntity );
 }
 
@@ -103,7 +103,7 @@ static char * Entity_AllocateNameWithNumber( const Entity * pEntity )
 {
 	char	*	pszNameAndNumber ;
 
-	pszNameAndNumber = jeRam_Allocate( strlen( pEntity->ObjectData.pszName ) + ENTITY_MAXNUMBERLENGTH ) ;
+	pszNameAndNumber = grRam_Allocate( strlen( pEntity->ObjectData.pszName ) + ENTITY_MAXNUMBERLENGTH ) ;
 	if( pszNameAndNumber != NULL )
 	{
 		sprintf( pszNameAndNumber, "%s %d", pEntity->ObjectData.pszName, pEntity->ObjectData.nNumber ) ;
@@ -113,14 +113,14 @@ static char * Entity_AllocateNameWithNumber( const Entity * pEntity )
 }// Entity_AllocateNameWithNumber
 
 
-Entity * Entity_Create( jeSymbol_Table * pSymbols, Group * pGroup, const char * pszType, const char * pszName, const int32 nNumber )
+Entity * Entity_Create( grSymbol_Table * pSymbols, Group * pGroup, const char * pszType, const char * pszName, const int32 nNumber )
 {
 	Entity	*	pEntity ;
 	char	*	pszNameAndNumber ;
 	assert( pszName != NULL ) ;
 	assert( strlen( pszName ) < ENTITY_MAXNAMELENGTH ) ;
 
-	pEntity = JE_RAM_ALLOCATE_STRUCT( Entity ) ;
+	pEntity = GR_RAM_ALLOCATE_STRUCT( Entity ) ;
 	if( pEntity == NULL )
 		return NULL ;
 
@@ -129,7 +129,7 @@ Entity * Entity_Create( jeSymbol_Table * pSymbols, Group * pGroup, const char * 
 
 	if( !Object_Init( &pEntity->ObjectData, pGroup, KIND_ENTITY, pszName, nNumber )  )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Entity_Create:Object_Init" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Entity_Create:Object_Init" );
 		goto EC_FAILURE ;
 	}
 
@@ -137,25 +137,25 @@ Entity * Entity_Create( jeSymbol_Table * pSymbols, Group * pGroup, const char * 
 	pEntity->pszType = Util_StrDup( pszType );
 	if( pEntity->pszType == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Entity_Create:Util_StrDup" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Entity_Create:Util_StrDup" );
 		goto EC_FAILURE ;
 	}
 
 	pszNameAndNumber = Entity_AllocateNameWithNumber( pEntity ) ;
 	if( pszNameAndNumber == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Entity_Create:Entity_AllocateNameWithNumber" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Entity_Create:Entity_AllocateNameWithNumber" );
 		goto EC_FAILURE ;
 	}
 	
 	pEntity->pSymbol = EntityTable_AddEntity( pSymbols, pszType, pszNameAndNumber ) ;
-	jeRam_Free( pszNameAndNumber ) ;
+	grRam_Free( pszNameAndNumber ) ;
 	if( pEntity->pSymbol == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Entity_Create Object_Init" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Entity_Create Object_Init" );
 		goto EC_FAILURE ;
 	}
-	jeExtBox_Set( &pEntity->WorldBounds, ENTITY_BOX_MIN, ENTITY_BOX_MIN, ENTITY_BOX_MIN,
+	grExtBox_Set( &pEntity->WorldBounds, ENTITY_BOX_MIN, ENTITY_BOX_MIN, ENTITY_BOX_MIN,
 										ENTITY_BOX_MAX, ENTITY_BOX_MAX, ENTITY_BOX_MAX );
 	Entity_GetOrigin( pEntity );
 
@@ -175,18 +175,18 @@ Entity * Entity_Copy(  Entity *	pEntity, int32 nNumber )
 	pNewEntity = Entity_Create( pEntity->pSymbolTable, pEntity->ObjectData.pGroup, pEntity->pszType, pEntity->ObjectData.pszName, nNumber );
 	if( pNewEntity == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Entity_Copy:Entity_Create" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Entity_Copy:Entity_Create" );
 		return( NULL );
 	}
 	
 	//Detroy the default symbol
 	if( pNewEntity->pSymbol != NULL )
-		jeSymbol_TableRemoveSymbol( pNewEntity->pSymbolTable, pNewEntity->pSymbol ) ;
+		grSymbol_TableRemoveSymbol( pNewEntity->pSymbolTable, pNewEntity->pSymbol ) ;
 
-	pszNameAndNumber = jeRam_Allocate( strlen( pEntity->ObjectData.pszName ) + ENTITY_MAXNUMBERLENGTH ) ;
+	pszNameAndNumber = grRam_Allocate( strlen( pEntity->ObjectData.pszName ) + ENTITY_MAXNUMBERLENGTH ) ;
 	if( pszNameAndNumber == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Entity_Copy:pszNameAndNumber" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Entity_Copy:pszNameAndNumber" );
 		goto ECP_FAILURE ;
 	}
 	sprintf( pszNameAndNumber, "%s %d", pEntity->ObjectData.pszName, nNumber ) ;
@@ -194,7 +194,7 @@ Entity * Entity_Copy(  Entity *	pEntity, int32 nNumber )
 	//Create a copy of the old symbol
 	pNewEntity->pSymbol = EntityTable_CopyEntity( pEntity->pSymbolTable, pEntity->pSymbol, pszNameAndNumber ) ;
 
-	jeRam_Free( pszNameAndNumber ) ;
+	grRam_Free( pszNameAndNumber ) ;
 
 	
 	pNewEntity->Origin = pEntity->Origin;
@@ -214,22 +214,22 @@ void Entity_Destroy( Entity ** ppEntity )
 	assert( (*ppEntity)->nSignature == SIGNATURE ) ;
 
 	if( (*ppEntity)->pSymbol != NULL )
-		jeSymbol_TableRemoveSymbol( (*ppEntity)->pSymbolTable, (*ppEntity)->pSymbol ) ;
+		grSymbol_TableRemoveSymbol( (*ppEntity)->pSymbolTable, (*ppEntity)->pSymbol ) ;
 
 	assert( ((*ppEntity)->nSignature = 0) == 0 ) ;	// CLEAR
 	(*ppEntity)->ObjectData.ObjectKind = KIND_INVALID ;
 
-	jeRam_Free( *ppEntity ) ;
+	grRam_Free( *ppEntity ) ;
 }// Entity_Destroy
 
-Entity * Entity_CreateTemplate( const char * const pszType, jeSymbol_Table * pSymbols )
+Entity * Entity_CreateTemplate( const char * const pszType, grSymbol_Table * pSymbols )
 {
 	Entity  * pEntity;
 
 	assert( pszType != NULL ) ;
 	assert( strlen( pszType ) < ENTITY_MAXNAMELENGTH ) ;
 
-	pEntity = JE_RAM_ALLOCATE_STRUCT( Entity ) ;
+	pEntity = GR_RAM_ALLOCATE_STRUCT( Entity ) ;
 	if( pEntity == NULL )
 		return NULL ;
 
@@ -238,7 +238,7 @@ Entity * Entity_CreateTemplate( const char * const pszType, jeSymbol_Table * pSy
 
 	if( !Object_Init( &pEntity->ObjectData, NULL, KIND_ENTITY, pszType, 0 )  )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Entity_CreateTemplate:Object_Init" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Entity_CreateTemplate:Object_Init" );
 		goto EC_FAILURE ;
 	}
 
@@ -246,10 +246,10 @@ Entity * Entity_CreateTemplate( const char * const pszType, jeSymbol_Table * pSy
 	pEntity->pszType = Util_StrDup( pszType );
 	if( pEntity->pszType == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Entity_CreateTemplate:pszType" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Entity_CreateTemplate:pszType" );
 		goto EC_FAILURE ;
 	}
-	jeExtBox_Set( &pEntity->WorldBounds, ENTITY_BOX_MIN, ENTITY_BOX_MIN, ENTITY_BOX_MIN,
+	grExtBox_Set( &pEntity->WorldBounds, ENTITY_BOX_MIN, ENTITY_BOX_MIN, ENTITY_BOX_MIN,
 										ENTITY_BOX_MAX, ENTITY_BOX_MAX, ENTITY_BOX_MAX );
 	return( pEntity );
 
@@ -265,7 +265,7 @@ Entity * Entity_FromTemplate( const char * pszName, Group * pGroup, const Entity
 	pNewEntity = Entity_Create( pEntity->pSymbolTable, pGroup, pEntity->pszType, pszName, nNumber );
 	if( pNewEntity == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Entity_FromTemplate:Entity_Create" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Entity_FromTemplate:Entity_Create" );
 		return( NULL );
 	}
 	pNewEntity->Origin = pEntity->Origin;
@@ -275,18 +275,18 @@ Entity * Entity_FromTemplate( const char * pszName, Group * pGroup, const Entity
 	return( pNewEntity );
 }
 // MODIFIERS
-void Entity_Move( Entity * pEntity, const jeVec3d * pWorldDistance )
+void Entity_Move( Entity * pEntity, const grVec3d * pWorldDistance )
 {
 	assert( pEntity != NULL ) ;
 	assert( SIGNATURE == pEntity->nSignature ) ;
 
 	Entity_SetModified( pEntity );
-	jeVec3d_Add( &pEntity->Origin, pWorldDistance, &pEntity->Origin );
+	grVec3d_Add( &pEntity->Origin, pWorldDistance, &pEntity->Origin );
 	Entity_SetOrigin( pEntity );
 
 }// Entity_Move
 
-void Entity_Size( Entity * pEntity, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
+void Entity_Size( Entity * pEntity, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
 {
 	assert( pEntity != NULL ) ;
 	assert( SIGNATURE == pEntity->nSignature ) ;
@@ -354,22 +354,22 @@ void Entity_Size( Entity * pEntity, const jeExtBox * pSelectedBounds, const jeFl
 
 }// Entity_Size
 
-void Enity_SetField( const Entity * pEntity , jeSymbol *FieldSymbol, void *pData, int32 DataSize )
+void Enity_SetField( const Entity * pEntity , grSymbol *FieldSymbol, void *pData, int32 DataSize )
 {
-	jeSymbol_Type Type;
+	grSymbol_Type Type;
 	
 	assert( pEntity );
 	assert( FieldSymbol );
 	assert( pData );
 
 
-	Type = jeSymbol_GetType( FieldSymbol );
+	Type = grSymbol_GetType( FieldSymbol );
 
-	jeSymbol_SetProperty( pEntity->pSymbol, FieldSymbol, pData, 
+	grSymbol_SetProperty( pEntity->pSymbol, FieldSymbol, pData, 
 		DataSize, Type );
 }
 
-void Entity_SetXForm( Entity * pEntity, const jeXForm3d * XForm )
+void Entity_SetXForm( Entity * pEntity, const grXForm3d * XForm )
 {
 	assert( pEntity );
 	assert( SIGNATURE == pEntity->nSignature ) ;
@@ -386,7 +386,7 @@ void Entity_UpdateBounds( Entity * pEntity )
 {
 	assert( pEntity );
 
-	jeExtBox_SetTranslation ( &pEntity->WorldBounds, &pEntity->Origin );
+	grExtBox_SetTranslation ( &pEntity->WorldBounds, &pEntity->Origin );
 
 }
 
@@ -400,16 +400,16 @@ void Entity_SetModified( Entity * pEntity )
 
 
 // ACCESSORS
-void Entity_GetXForm( const Entity * pEntity, jeXForm3d * XForm )
+void Entity_GetXForm( const Entity * pEntity, grXForm3d * XForm )
 {
 	assert( pEntity != NULL ) ;
 	assert( SIGNATURE == pEntity->nSignature ) ;
 	
-	jeXForm3d_SetIdentity( XForm );
+	grXForm3d_SetIdentity( XForm );
 	XForm->Translation = pEntity->Origin;
 }
 
-const jeExtBox * Entity_GetWorldAxialBounds( const Entity * pEntity )
+const grExtBox * Entity_GetWorldAxialBounds( const Entity * pEntity )
 {
 	assert( pEntity != NULL ) ;
 	assert( SIGNATURE == pEntity->nSignature ) ;
@@ -424,9 +424,9 @@ const jeExtBox * Entity_GetWorldAxialBounds( const Entity * pEntity )
 
 }// Entity_GetWorldAxialBounds
 
-void Entity_GetWorldDrawBounds( const Entity * pEntity, jeExtBox *DrawBounds )
+void Entity_GetWorldDrawBounds( const Entity * pEntity, grExtBox *DrawBounds )
 {
-	jeVec3d Center;
+	grVec3d Center;
 	assert( pEntity != NULL ) ;
 	assert( SIGNATURE == pEntity->nSignature ) ;
 	
@@ -435,11 +435,11 @@ void Entity_GetWorldDrawBounds( const Entity * pEntity, jeExtBox *DrawBounds )
 		Entity * pEvalEntity = (Entity*)pEntity ;			// Lazy Evaluation requires removing the const
 		Entity_UpdateBounds( pEvalEntity ) ;
 	}
-	jeExtBox_GetTranslation ( &pEntity->WorldBounds, &Center );
-	jeExtBox_Set (  DrawBounds,
+	grExtBox_GetTranslation ( &pEntity->WorldBounds, &Center );
+	grExtBox_Set (  DrawBounds,
 				  ENTITY_DRAW_MIN,	  ENTITY_DRAW_MIN,	  ENTITY_DRAW_MIN,
 				  ENTITY_DRAW_MAX,	  ENTITY_DRAW_MAX,	  ENTITY_DRAW_MAX );
-	jeExtBox_SetTranslation ( DrawBounds, &Center );
+	grExtBox_SetTranslation ( DrawBounds, &Center );
 
 }// Entity_GetWorldDrawBounds
 
@@ -453,10 +453,10 @@ const char * Entity_GetType( const Entity * pEntity )
 } //Entity_GetType
 
 //IS
-jeBoolean	Entity_IsInRect( const Entity * pEntity, jeExtBox *pSelRect, jeBoolean bSelEncompeses )
+grBoolean	Entity_IsInRect( const Entity * pEntity, grExtBox *pSelRect, grBoolean bSelEncompeses )
 {
-	const jeExtBox *pWorldBounds;
-	jeExtBox		Result;
+	const grExtBox *pWorldBounds;
+	grExtBox		Result;
 
 	assert( pEntity != NULL ) ;
 	assert( SIGNATURE == pEntity->nSignature ) ;
@@ -471,18 +471,18 @@ jeBoolean	Entity_IsInRect( const Entity * pEntity, jeExtBox *pSelRect, jeBoolean
 			pSelRect->Min.X <= pWorldBounds->Min.X &&
 			pSelRect->Min.Y <= pWorldBounds->Min.Y &&
 			pSelRect->Min.Z <= pWorldBounds->Min.Z )
-			 return( JE_TRUE );
+			 return( GR_TRUE );
 	}
 	else
 	{
 		return( Util_geExtBox_Intersection ( pSelRect, pWorldBounds, &Result	) );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }//Entity_IsInRect
 
-jeBoolean	Entity_GetField( const Entity * pEntity , jeSymbol *FieldSymbol, void *pData, int32 DataSize, jeBoolean *pDataInited )
+grBoolean	Entity_GetField( const Entity * pEntity , grSymbol *FieldSymbol, void *pData, int32 DataSize, grBoolean *pDataInited )
 {
-	jeSymbol_Type Type;
+	grSymbol_Type Type;
 	
 	assert( pEntity );
 	assert( FieldSymbol );
@@ -490,98 +490,98 @@ jeBoolean	Entity_GetField( const Entity * pEntity , jeSymbol *FieldSymbol, void 
 	assert( pDataInited );
 
 	if( pEntity->pSymbol == NULL )
-		return JE_TRUE ;
+		return GR_TRUE ;
 
-	Type = jeSymbol_GetType( FieldSymbol );
+	Type = grSymbol_GetType( FieldSymbol );
 
 	if( !(*pDataInited) )
 	{
-		jeSymbol_GetProperty( pEntity->pSymbol, FieldSymbol, pData, 
+		grSymbol_GetProperty( pEntity->pSymbol, FieldSymbol, pData, 
 			DataSize, Type );
-		*pDataInited = JE_TRUE;
-		return( JE_TRUE );
+		*pDataInited = GR_TRUE;
+		return( GR_TRUE );
 	}
 	switch( Type )
 	{
 		int		Integer;
 		int		*OldInteger;
-		jeFloat	Float;
-		jeFloat	*OldFloat;
-		jeVec3d	Vector;
-		jeVec3d	*OldVector;
-		JE_RGBA	Color;
-		JE_RGBA	*OldColor;
+		grFloat	Float;
+		grFloat	*OldFloat;
+		grVec3d	Vector;
+		grVec3d	*OldVector;
+		GR_RGBA	Color;
+		GR_RGBA	*OldColor;
 		char	*String;
 		char	*OldString;
 
-	case JE_SYMBOL_TYPE_INT:
+	case GR_SYMBOL_TYPE_INT:
 		assert( DataSize == sizeof(Integer) );
 		OldInteger = (int*)pData;
-		jeSymbol_GetProperty(pEntity->pSymbol,
+		grSymbol_GetProperty(pEntity->pSymbol,
 								  FieldSymbol,
 								  &Integer,
 								  sizeof(Integer),
-								  JE_SYMBOL_TYPE_INT);
+								  GR_SYMBOL_TYPE_INT);
 		return( Integer == *OldInteger );
 
-	case JE_SYMBOL_TYPE_FLOAT:
-		assert( DataSize == sizeof(jeFloat) );
-		OldFloat = (jeFloat*)pData;
-		jeSymbol_GetProperty(pEntity->pSymbol,
+	case GR_SYMBOL_TYPE_FLOAT:
+		assert( DataSize == sizeof(grFloat) );
+		OldFloat = (grFloat*)pData;
+		grSymbol_GetProperty(pEntity->pSymbol,
 								  FieldSymbol,
 								  &Float,
-								  sizeof(jeFloat),
-								  JE_SYMBOL_TYPE_FLOAT);
+								  sizeof(grFloat),
+								  GR_SYMBOL_TYPE_FLOAT);
 		return( Float == *OldFloat );
 
-	case JE_SYMBOL_TYPE_COLOR:
-		assert( DataSize == sizeof(JE_RGBA) );
-		OldColor = (JE_RGBA*)pData;
-		jeSymbol_GetProperty(pEntity->pSymbol,
+	case GR_SYMBOL_TYPE_COLOR:
+		assert( DataSize == sizeof(GR_RGBA) );
+		OldColor = (GR_RGBA*)pData;
+		grSymbol_GetProperty(pEntity->pSymbol,
 								  FieldSymbol,
 								  &Color,
-								  sizeof(JE_RGBA),
-								  JE_SYMBOL_TYPE_COLOR);
+								  sizeof(GR_RGBA),
+								  GR_SYMBOL_TYPE_COLOR);
 		return( Color.r == OldColor->r &&
 				Color.g	== OldColor->g &&
 				Color.b	== OldColor->b &&
 				Color.a	== OldColor->a 	);
 
-	case JE_SYMBOL_TYPE_VEC3D:
-		assert( DataSize == sizeof(jeVec3d) );
-		OldVector = (jeVec3d*)pData;
-		jeSymbol_GetProperty(pEntity->pSymbol,
+	case GR_SYMBOL_TYPE_VEC3D:
+		assert( DataSize == sizeof(grVec3d) );
+		OldVector = (grVec3d*)pData;
+		grSymbol_GetProperty(pEntity->pSymbol,
 								  FieldSymbol,
 								  &Vector,
-								  sizeof(jeVec3d),
-								  JE_SYMBOL_TYPE_VEC3D);
-		return( jeVec3d_Compare( &Vector, OldVector, 0.0f ) );
+								  sizeof(grVec3d),
+								  GR_SYMBOL_TYPE_VEC3D);
+		return( grVec3d_Compare( &Vector, OldVector, 0.0f ) );
 
-	case JE_SYMBOL_TYPE_STRING:
+	case GR_SYMBOL_TYPE_STRING:
 		assert( DataSize == sizeof(char	*) );
 		OldString = (char	*)pData;
-		jeSymbol_GetProperty(pEntity->pSymbol,
+		grSymbol_GetProperty(pEntity->pSymbol,
 								  FieldSymbol,
 								  &String,
 								  sizeof(char	*),
-								  JE_SYMBOL_TYPE_STRING);
+								  GR_SYMBOL_TYPE_STRING);
 		return( !strcmp( String, OldString ) );
 
 	default:
 		assert(!"Not finished here");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 
-jeBoolean Enity_SelectClosest(  Entity * pEntity, FindInfo	*	pFindInfo )
+grBoolean Enity_SelectClosest(  Entity * pEntity, FindInfo	*	pFindInfo )
 {
 	Point				pt;
-	jeVec3d				wpt ;
-	jeFloat				DistSq ;
-	jeXForm3d			wXForm;
+	grVec3d				wpt ;
+	grFloat				DistSq ;
+	grXForm3d			wXForm;
 
 	assert( pEntity != NULL );
 	assert( pFindInfo != NULL );
@@ -599,21 +599,21 @@ jeBoolean Enity_SelectClosest(  Entity * pEntity, FindInfo	*	pFindInfo )
 		pFindInfo->nFace = 0 ;
 		pFindInfo->nFaceEdge = 0;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 // FILE HANDLING
 
-Entity * Entity_CreateFromFile( jeVFile * pF, const int32 nVersion, jeSymbol_Table * pEntities )
+Entity * Entity_CreateFromFile( grVFile * pF, const int32 nVersion, grSymbol_Table * pEntities )
 {
 	Entity	*	pEntity = NULL ;
 	char		szType[ ENTITY_MAXNAMELENGTH ] ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 	assert( nVersion <= ENTITY_VERSION ) ;
 	
 	if( ENTITY_VERSION != nVersion )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "Entity_CreateFromFile.\n", NULL);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "Entity_CreateFromFile.\n", NULL);
 		return NULL ;
 	}
 
@@ -624,19 +624,19 @@ Entity * Entity_CreateFromFile( jeVFile * pF, const int32 nVersion, jeSymbol_Tab
 	if( pEntity == NULL )
 		goto ECFF_FAILURE ;
 
-	jeRam_Free( pEntity->ObjectData.pszName ) ;
+	grRam_Free( pEntity->ObjectData.pszName ) ;
 	if( !Object_InitFromFile( pF , &pEntity->ObjectData ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
 		goto ECFF_FAILURE ;
 	}
-	if( !jeVFile_Read( pF, &pEntity->Flags, sizeof pEntity->Flags ) )
+	if( !grVFile_Read( pF, &pEntity->Flags, sizeof pEntity->Flags ) )
 		goto ECFF_FAILURE ;
 
-	if( !jeVFile_Read( pF, &pEntity->WorldBounds, sizeof pEntity->WorldBounds ) )
+	if( !grVFile_Read( pF, &pEntity->WorldBounds, sizeof pEntity->WorldBounds ) )
 		goto ECFF_FAILURE ;
 
-	if( !jeVFile_Read( pF, &pEntity->Origin, sizeof pEntity->Origin ) )
+	if( !grVFile_Read( pF, &pEntity->Origin, sizeof pEntity->Origin ) )
 		goto ECFF_FAILURE ;
 
 	return pEntity ;
@@ -645,52 +645,52 @@ ECFF_FAILURE :
 	if( pEntity != NULL )
 		Object_Free( (Object**)pEntity ) ;
 
-	jeErrorLog_AddString(JE_ERR_FILEIO_READ, "Entity_CreateFromFile.\n", NULL);
+	grErrorLog_AddString(GR_ERR_FILEIO_READ, "Entity_CreateFromFile.\n", NULL);
 	return NULL ;
 
 }// Entity_CreateFromFile
 
 
-jeBoolean Entity_WriteToFile( Entity * pEntity, jeVFile * pF )
+grBoolean Entity_WriteToFile( Entity * pEntity, grVFile * pF )
 {
 	assert( pEntity != NULL ) ;
 	assert( SIGNATURE == pEntity->nSignature ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
-	if( jeVFile_Write( pF, pEntity->pszType, strlen( pEntity->pszType )+1 ) == JE_FALSE )
+	if( grVFile_Write( pF, pEntity->pszType, strlen( pEntity->pszType )+1 ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Entity_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Entity_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 	if( !Object_WriteToFile( &pEntity->ObjectData, pF ) )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-	if( jeVFile_Write( pF, &pEntity->Flags, sizeof pEntity->Flags ) == JE_FALSE )
+	if( grVFile_Write( pF, &pEntity->Flags, sizeof pEntity->Flags ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Entity_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Entity_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-	if( jeVFile_Write( pF, &pEntity->WorldBounds, sizeof pEntity->WorldBounds ) == JE_FALSE )
+	if( grVFile_Write( pF, &pEntity->WorldBounds, sizeof pEntity->WorldBounds ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Entity_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Entity_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-	if( jeVFile_Write( pF, &pEntity->Origin, sizeof pEntity->Origin ) == JE_FALSE )
+	if( grVFile_Write( pF, &pEntity->Origin, sizeof pEntity->Origin ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Entity_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Entity_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// Entity_WriteToFile
 
-jeBoolean Entity_Reattach( Entity * pEntity )
+grBoolean Entity_Reattach( Entity * pEntity )
 {
 	char * pszNameAndNumber ;
 	assert( pEntity != NULL ) ;
@@ -700,11 +700,11 @@ jeBoolean Entity_Reattach( Entity * pEntity )
 
 	pszNameAndNumber = Entity_AllocateNameWithNumber( pEntity ) ;
 	if( pszNameAndNumber == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
 	pEntity->pSymbol = EntityTable_FindSymbol( pEntity->pSymbolTable, pEntity->pszType, pszNameAndNumber ) ;
-	jeRam_Free( pszNameAndNumber ) ;
-	return ( pEntity->pSymbol == NULL ) ? JE_FALSE : JE_TRUE ;
+	grRam_Free( pszNameAndNumber ) ;
+	return ( pEntity->pSymbol == NULL ) ? GR_FALSE : GR_TRUE ;
 
 }// Entity_Reattach
 

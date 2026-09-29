@@ -27,7 +27,7 @@
 #define ACTOROBJECT_VERSION 1
 
 
-JETAPI jeActor *JETCC jeActor_Create();
+GRAPI grActor *GRCC grActor_Create();
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -35,13 +35,13 @@ JETAPI jeActor *JETCC jeActor_Create();
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 
-jeBoolean JETCC AttachWorld(
+grBoolean GRCC AttachWorld(
 	void	*Instance,	// object instance data
-	jeWorld	*World )	// world
+	grWorld	*World )	// world
 {
 
 	// locals	
-	jeActor	*Actor;
+	grActor	*Actor;
 	ActorObj *Object;
 
 	// ensure valid data
@@ -49,18 +49,18 @@ jeBoolean JETCC AttachWorld(
 	assert( World != NULL );
 
 	// get object
-	Actor = (jeActor *)Instance;
+	Actor = (grActor *)Instance;
 	Object = Actor->Object;
 
 	if (Object->World == World)
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	// save world pointer
 	Object->World = World;
 
 	// save an instance of the resource manager
-	Object->ResourceMgr = jeWorld_GetResourceMgr( World );
+	Object->ResourceMgr = grWorld_GetResourceMgr( World );
 	assert( Object->ResourceMgr != NULL );
 
 	// build mapper name list
@@ -71,11 +71,11 @@ jeBoolean JETCC AttachWorld(
 		int	i;
 
 		// allocate list
-		MaterialMapperNameList = (char **)jeRam_AllocateClear( sizeof ( char * ) * MaterialMapperTableSize );
+		MaterialMapperNameList = (char **)grRam_AllocateClear( sizeof ( char * ) * MaterialMapperTableSize );
 		if ( MaterialMapperNameList == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+			return GR_FALSE;
 		}
 
 		// init list
@@ -94,8 +94,8 @@ jeBoolean JETCC AttachWorld(
 		Bitmaps = Util_CreateBitmapList( Object->ResourceMgr, "GlobalMaterials", "*.bmp" );
 		if ( Bitmaps == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+			return GR_FALSE;
 		}
 	}
 
@@ -109,10 +109,10 @@ jeBoolean JETCC AttachWorld(
 	{
 		Object->World = NULL;
 		Object->ResourceMgr = NULL;
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+		return GR_FALSE;
 	}
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_LIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_LIST_INDEX] ),
 							IDS_ACTORLIST,
 							ActorDefList[0],
 							ACTOROBJ_LIST_ID,
@@ -121,7 +121,7 @@ jeBoolean JETCC AttachWorld(
 
 	// all done		
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // AttachWorld()
 
@@ -132,13 +132,13 @@ jeBoolean JETCC AttachWorld(
 //	DettachWorld()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachWorld(
+grBoolean GRCC DettachWorld(
 	void	*Instance,	// object instance data
-	jeWorld	*World )	// world
+	grWorld	*World )	// world
 {
 
 	// locals
-	jeActor *Actor;
+	grActor *Actor;
 	ActorObj *Object;
 
 	// ensure valid data
@@ -146,20 +146,20 @@ jeBoolean JETCC DettachWorld(
 	assert( World != NULL );
 
 	// get object
-	Actor = (jeActor *)Instance;
+	Actor = (grActor *)Instance;
 	Object = Actor->Object;
 
 	//assert( Object->World == World );
 
 	if (Object->ResourceMgr) { // destroy our instance of the resource manager
-		jeResource_MgrDestroy( &( Object->ResourceMgr ) );
+		grResource_MgrDestroy( &( Object->ResourceMgr ) );
 	}
 
 	// zap world pointer
 	Object->World = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	World;
@@ -173,13 +173,13 @@ jeBoolean JETCC DettachWorld(
 //	AttachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachEngine(
+grBoolean GRCC AttachEngine(
 	void		*Instance,	// object instance data
-	jeEngine	*Engine )	// engine
+	grEngine	*Engine )	// engine
 {
 
 	// locals
-	jeActor	*Actor;
+	grActor	*Actor;
 	ActorObj *Object;
 
 	// ensure valid data
@@ -187,31 +187,31 @@ jeBoolean JETCC AttachEngine(
 	assert( Engine != NULL );
 
 	// get object data
-	Actor = (jeActor *)Instance;
+	Actor = (grActor *)Instance;
 	Object = Actor->Object;
 
 	// save engine pointer
 	Actor->Object->Engine = Engine;
 
 	// set properties
-	if ( Object->LoadedFromDisk == JE_TRUE )
+	if ( Object->LoadedFromDisk == GR_TRUE )
 	{
 
 		// locals
-		jeProperty_Data	Data;
+		grProperty_Data	Data;
 		char *RememberMotionName;
-		jeBoolean ret;
+		grBoolean ret;
 
 		// reset loaded from disk flag
-		//Object->LoadedFromDisk = JE_FALSE;  // Krouer: move this line later
+		//Object->LoadedFromDisk = GR_FALSE;  // Krouer: move this line later
 
 		// compensate for hack rotation that will occur
 		{
-			jeVec3d	Pos;
-			jeVec3d_Copy( &( Actor->Xf.Translation ), &Pos );
-			jeVec3d_Set( &( Actor->Xf.Translation ), 0.0f, 0.0f, 0.0f );
-			jeXForm3d_RotateX( &( Actor->Xf ), JE_HALFPI );
-			jeVec3d_Copy( &Pos, &( Actor->Xf.Translation ) );
+			grVec3d	Pos;
+			grVec3d_Copy( &( Actor->Xf.Translation ), &Pos );
+			grVec3d_Set( &( Actor->Xf.Translation ), 0.0f, 0.0f, 0.0f );
+			grXForm3d_RotateX( &( Actor->Xf ), GR_HALFPI );
+			grVec3d_Copy( &Pos, &( Actor->Xf.Translation ) );
 		}
 
 		RememberMotionName = Util_StrDup( Object->MotionName );
@@ -219,58 +219,58 @@ jeBoolean JETCC AttachEngine(
 		// set actor def
 		Data.String = Util_StrDup( Object->ActorDefName );
 		ret = SetProperty( Actor, ACTOROBJ_LIST_ID, PROPERTY_COMBO_TYPE, &Data );
-		jeRam_Free( Data.String );
+		grRam_Free( Data.String );
 
 		if (!ret)
 		{
             // Krouer: restore the previous commented line
-    	    Object->LoadedFromDisk = JE_FALSE;
-			jeRam_Free(Object->ActorDefName);
-			jeRam_Free(Object->MotionName);
-			jeRam_Free(Object->LightReferenceBoneName);
+    	    Object->LoadedFromDisk = GR_FALSE;
+			grRam_Free(Object->ActorDefName);
+			grRam_Free(Object->MotionName);
+			grRam_Free(Object->LightReferenceBoneName);
 			Object->ActorDefName = Util_StrDup( NoSelection );
 			Object->MotionName = Util_StrDup( NoSelection );
 			Object->LightReferenceBoneName = Util_StrDup( NoSelection );
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
 		// set motion name
 		Data.String = Util_StrDup( RememberMotionName );
 		ret = SetProperty( Actor, ACTOROBJ_MOTIONLIST_ID, PROPERTY_COMBO_TYPE, &Data );
-		jeRam_Free( Data.String );
-		jeRam_Free( RememberMotionName );
+		grRam_Free( Data.String );
+		grRam_Free( RememberMotionName );
 
 		if (!ret)
 		{
             // Krouer: restore the previous commented line
-    	    Object->LoadedFromDisk = JE_FALSE;
-			jeRam_Free(Object->MotionName);
+    	    Object->LoadedFromDisk = GR_FALSE;
+			grRam_Free(Object->MotionName);
 			Object->MotionName = Util_StrDup( NoSelection );
 		}
 
 		// set light reference bone name
 		Data.String = Util_StrDup( Object->LightReferenceBoneName );
 		ret = SetProperty( Actor, ACTOROBJ_LIGHTREFERENCEBONENAMELIST_ID, PROPERTY_COMBO_TYPE, &Data );
-		jeRam_Free( Data.String );
+		grRam_Free( Data.String );
 
 		if (!ret)
 		{
-			jeRam_Free(Object->LightReferenceBoneName);
+			grRam_Free(Object->LightReferenceBoneName);
 			Object->LightReferenceBoneName = Util_StrDup( NoSelection );
 		}
 
         // Krouer: restore the previous commented line
-    	Object->LoadedFromDisk = JE_FALSE;
+    	Object->LoadedFromDisk = GR_FALSE;
 	}
 	else
 	{
 		if(Actor->ActorDefinition != NULL)
-			jeActor_AttachEngine( Actor, Object->Engine );		
+			grActor_AttachEngine( Actor, Object->Engine );		
 	}
 
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // AttachEngine()
 
@@ -281,13 +281,13 @@ jeBoolean JETCC AttachEngine(
 //	DettachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachEngine(
+grBoolean GRCC DettachEngine(
 	void		*Instance,	// object instance data
-	jeEngine	*Engine )	// engine
+	grEngine	*Engine )	// engine
 {
 
 	// locals
-	jeActor *Actor;
+	grActor *Actor;
 	ActorObj* Object;
 
 	// ensure valid data
@@ -295,7 +295,7 @@ jeBoolean JETCC DettachEngine(
 	assert( Engine != NULL );
 
 	// get object data
-	Actor = (jeActor *)Instance;
+	Actor = (grActor *)Instance;
 	Object = Actor->Object;
 #ifdef _DEBUG
 	if (Object->Engine) assert( Object->Engine == Engine );
@@ -310,25 +310,25 @@ jeBoolean JETCC DettachEngine(
 	// free actor def name
 	if ( Object->ActorDefName != NULL )
 	{
-		jeRam_Free( Object->ActorDefName );
+		grRam_Free( Object->ActorDefName );
 		Object->ActorDefName = NULL;
 	}
 		
 	// zap engine pointer	
 	if(Object->Engine && Actor->ActorDefinition)
 	{
-		jeActor_DetachEngine(Actor,Engine);
+		grActor_DetachEngine(Actor,Engine);
 		Object->Engine = NULL;
 	}
 
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 } // DettachEngine()
 
-void JETCC CreateRef(void *Actor)
+void GRCC CreateRef(void *Actor)
 {
-	jeActor_CreateRef((jeActor*)Actor);
+	grActor_CreateRef((grActor*)Actor);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -336,22 +336,22 @@ void JETCC CreateRef(void *Actor)
 //	Render()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Render(
+grBoolean GRCC Render(
 	const void				*ActorPtr,				// object instance data
-	const jeWorld			*World,					// world
-	const jeEngine			*Engine,				// engine
-	const jeCamera			*Camera,				// camera
-	const jeFrustum			*CameraSpaceFrustum,	// frustum 	
-	jeObject_RenderFlags	RenderFlags )			// render flags
+	const grWorld			*World,					// world
+	const grEngine			*Engine,				// engine
+	const grCamera			*Camera,				// camera
+	const grFrustum			*CameraSpaceFrustum,	// frustum 	
+	grObject_RenderFlags	RenderFlags )			// render flags
 {
 
 	// locals
 	//ActorObj	*Object;
-	jeActor *Actor = (jeActor *)ActorPtr;
+	grActor *Actor = (grActor *)ActorPtr;
 	
-	jeBody		*Body;
-	jeFloat		floate;
-	jeCamera	*Cam2;
+	grBody		*Body;
+	grFloat		floate;
+	grCamera	*Cam2;
 	ActorObj *Object;
 
 	// ensure valid data
@@ -364,23 +364,23 @@ jeBoolean JETCC Render(
 	Object = Actor->Object;
 
 	// peform rendering if an actor exists
-	if ( jeActor_IsValid(Actor) == JE_TRUE && jeActor_DefIsValid(Actor->ActorDefinition) == JE_TRUE)
+	if ( grActor_IsValid(Actor) == GR_TRUE && grActor_DefIsValid(Actor->ActorDefinition) == GR_TRUE)
 	{
-		jeVec3d	Pos;
-		jeVec3d Vector;
-		const jeVec3d * POV;
+		grVec3d	Pos;
+		grVec3d Vector;
+		const grVec3d * POV;
 		int lod=0;
-		jeXForm3d Xf;
-		jeActor_GetXForm(Actor,&Xf);
+		grXForm3d Xf;
+		grActor_GetXForm(Actor,&Xf);
 				
 		//Calculate LOD
 		// get actor def body
-		Body = jeActor_GetBody( Actor->ActorDefinition );
-		jeVec3d_Copy( &( Xf.Translation ), &Pos );
-		Cam2 = (jeCamera*)Camera;
-		POV = jeCamera_GetPov2(Cam2);
-		jeVec3d_Copy(POV, &Vector);
-		floate = jeVec3d_Length(&Vector);
+		Body = grActor_GetBody( Actor->ActorDefinition );
+		grVec3d_Copy( &( Xf.Translation ), &Pos );
+		Cam2 = (grCamera*)Camera;
+		POV = grCamera_GetPov2(Cam2);
+		grVec3d_Copy(POV, &Vector);
+		floate = grVec3d_Length(&Vector);
 		
 		if(floate >=0.0f)
 			lod = 0;
@@ -399,65 +399,65 @@ jeBoolean JETCC Render(
 			lod = 6;
 #endif
 
-		jeBody_ComputeLevelsOfDetail(Body, lod);
+		grBody_ComputeLevelsOfDetail(Body, lod);
 		
 		
 		// render the actor
-		if ( RenderFlags & JE_OBJECT_RENDER_FLAG_CAMERA_FRUSTUM )
+		if ( RenderFlags & GR_OBJECT_RENDER_FLAG_CAMERA_FRUSTUM )
 		{
-			jeActor_Render( Actor, (jeEngine *)Engine, (jeWorld *)World, Camera );
+			grActor_Render( Actor, (grEngine *)Engine, (grWorld *)World, Camera );
 		}
 		else
 		{
-			jeActor_RenderThroughFrustum( Actor, (jeEngine *)Engine, (jeWorld *)World, (jeCamera*)Camera , CameraSpaceFrustum );
+			grActor_RenderThroughFrustum( Actor, (grEngine *)Engine, (grWorld *)World, (grCamera*)Camera , CameraSpaceFrustum );
 		}
 
 		// display collision ext box
-		if ( Object->CollisionExtBoxDisplay == JE_TRUE )
+		if ( Object->CollisionExtBoxDisplay == GR_TRUE )
 		{
 
 			// locals
-			JE_RGBA		Color = { 0.0f, 255.0f, 0.0f, 64.0f };
-			jeExtBox	ExtBox;
-			jeVec3d Translation;
+			GR_RGBA		Color = { 0.0f, 255.0f, 0.0f, 64.0f };
+			grExtBox	ExtBox;
+			grVec3d Translation;
 
 			// copy ext box
 			ExtBox = Object->CollisionExtBox;
 
 			// adjust extent box
 			GetBoxTranslation(&ExtBox, Actor, &Translation);
-			jeExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
-			jeExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );
+			grExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
+			grExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );
 
 			// draw it
-			Util_DrawExtBox( (jeWorld *)World, &Color, &ExtBox );
+			Util_DrawExtBox( (grWorld *)World, &Color, &ExtBox );
 		}
 
 		// display render ext box
-		if ( Object->RenderExtBoxDisplay == JE_TRUE )
+		if ( Object->RenderExtBoxDisplay == GR_TRUE )
 		{
 
 			// locals
-			JE_RGBA		Color = { 255.0f, 0.0f, 0.0f, 64.0f };
-			jeExtBox	ExtBox;
-			jeVec3d Translation;
+			GR_RGBA		Color = { 255.0f, 0.0f, 0.0f, 64.0f };
+			grExtBox	ExtBox;
+			grVec3d Translation;
 
 			// copy ext box
 			ExtBox = Object->RenderHintExtBox;
 
 			// adjust extent box
 			GetBoxTranslation(&ExtBox, Actor, &Translation);
-			jeExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
-			jeExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );
+			grExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
+			grExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );
 
 			// draw it
-			Util_DrawExtBox( (jeWorld *)World, &Color, &ExtBox );
+			Util_DrawExtBox( (grWorld *)World, &Color, &ExtBox );
 		}
 	}
 
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Render()
 
@@ -466,16 +466,16 @@ jeBoolean JETCC Render(
 //	Collision()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Collision(
+grBoolean GRCC Collision(
 	const void* ActorPtr,
-	const jeExtBox	*Box,
-	const jeVec3d	*Front,
-	const jeVec3d	*Back,	
-	jeVec3d			*Impact,
-	jePlane			*Plane )
+	const grExtBox	*Box,
+	const grVec3d	*Front,
+	const grVec3d	*Back,	
+	grVec3d			*Impact,
+	grPlane			*Plane )
 {
-	jeActor* Actor = (jeActor *)ActorPtr;
-	jeCollisionInfo CollisionInfo;
+	grActor* Actor = (grActor *)ActorPtr;
+	grCollisionInfo CollisionInfo;
 	ActorObj	*Object;
 
 	// ensure valid data
@@ -487,15 +487,15 @@ jeBoolean JETCC Collision(
 	//assert( Plane != NULL );
 	
 	Object = Actor->Object;
-	if(!Actor->ActorDefinition) return JE_FALSE;
+	if(!Actor->ActorDefinition) return GR_FALSE;
 
-	if(jeActor_Collision((jeActor*)Actor,Object->World,Box,Front,Back,&CollisionInfo))
+	if(grActor_Collision((grActor*)Actor,Object->World,Box,Front,Back,&CollisionInfo))
 	{
 		if(Impact != NULL)	*Impact = CollisionInfo.Impact;
 		if(Plane != NULL) *Plane = CollisionInfo.Plane;
-		return JE_TRUE;
+		return GR_TRUE;
 	}
-	return JE_FALSE;
+	return GR_FALSE;
 } // Collision()
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -503,13 +503,13 @@ jeBoolean JETCC Collision(
 //	Frame()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Frame(
+grBoolean GRCC Frame(
 	void	*Instance,
 	float	TimeDelta )
 {
 
 	// locals
-	jeActor	*Actor;
+	grActor	*Actor;
 	ActorObj *Object;
 		
 	// ensure valid data
@@ -518,25 +518,25 @@ jeBoolean JETCC Frame(
 	// dp nothing if no time has elapsed
 	if ( TimeDelta == 0.0f )
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	// get object
-	Actor = (jeActor *)Instance;
+	Actor = (grActor *)Instance;
 	assert( Actor != NULL );
 	Object = Actor->Object;
 
 	// get actor def body
 	/* MOVED TO RENDER()
-	Body = jeActor_GetBody( Object->ActorDef );
-	jeBody_ComputeLevelsOfDetail(Body, 1); //TODO replace 1*/
+	Body = grActor_GetBody( Object->ActorDef );
+	grBody_ComputeLevelsOfDetail(Body, 1); //TODO replace 1*/
 
 	// adjust actors motion
 	if ( Object->Motion != NULL )
 	{
 
 		// locals
-		jeBoolean	Result;
+		grBoolean	Result;
 		float		TimeScale;
 		float		MotionTime;
 		float		Start, End, Total;
@@ -548,8 +548,8 @@ jeBoolean JETCC Frame(
 		Object->MotionTime += ( TimeDelta * TimeScale );
 
 		// get total motion time
-		Result = jeMotion_GetTimeExtents( Object->Motion, &Start, &End );
-		assert( Result == JE_TRUE );
+		Result = grMotion_GetTimeExtents( Object->Motion, &Start, &End );
+		assert( Result == GR_TRUE );
 		Total = End - Start;
 
 		// adjust motion time if required
@@ -569,71 +569,71 @@ jeBoolean JETCC Frame(
 		}
 
 		// set new pose
-		jeActor_SetPose( Actor, Object->Motion, Object->MotionTime, &Actor->Xf );
+		grActor_SetPose( Actor, Object->Motion, Object->MotionTime, &Actor->Xf );
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Frame()
 
-jeBoolean JETCC GetExtBox(
+grBoolean GRCC GetExtBox(
 	const void	*Instance,	// object instance data
-	jeExtBox	*BBox )		// where to store extent box
+	grExtBox	*BBox )		// where to store extent box
 {
 		// locals
-		jeVec3d Pos;
+		grVec3d Pos;
 		ActorObj *Object;
-		jeExtBox	ExtBox;
-		jeActor *Actor = (jeActor*)Instance;
+		grExtBox	ExtBox;
+		grActor *Actor = (grActor*)Instance;
 		Object = Actor->Object;
 		
 
 		// now update the collision boxes
 		// copy ext box
 		ExtBox = Object->CollisionExtBox;
-		if(!jeExtBox_IsValid(&ExtBox))
+		if(!grExtBox_IsValid(&ExtBox))
 		{
 			// save extent box
 			Pos = Actor->Xf.Translation;
-			jeExtBox_Set (  BBox, 
+			grExtBox_Set (  BBox, 
 						Pos.X - 5.0f, Pos.Y - 5.0f, Pos.Z - 5.0f,
 						Pos.X + 5.0f, Pos.Y + 5.0f, Pos.Z + 5.0f );
 		}
 		else
 		{
-			jeVec3d Translation;
+			grVec3d Translation;
 
 			// Dist from box actor pos to box center
 			GetBoxTranslation(&ExtBox, Actor, &Translation);
-			jeExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
-			jeExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );
+			grExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
+			grExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );
 			*BBox = ExtBox;
 		}
 
-		return JE_TRUE;
+		return GR_TRUE;
 }
 
-int	JETCC GetXFormModFlags( const void * Instance )
+int	GRCC GetXFormModFlags( const void * Instance )
 {
 	Instance;
-	return( JE_OBJECT_XFORM_TRANSLATE | JE_OBJECT_XFORM_ROTATE);
+	return( GR_OBJECT_XFORM_TRANSLATE | GR_OBJECT_XFORM_ROTATE);
 }
 
 #ifdef WIN32
-jeBoolean JETCC EditDialog (void * Instance,HWND Parent)
+grBoolean GRCC EditDialog (void * Instance,HWND Parent)
 #endif
 #ifdef BUILD_BE
-jeBoolean JETCC EditDialog (void * Instance,class G3DView* Parent)
+grBoolean GRCC EditDialog (void * Instance,class G3DView* Parent)
 #endif
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC SendObjMessage(void * Instance, int32 Msg, void * Data)
+grBoolean GRCC SendObjMessage(void * Instance, int32 Msg, void * Data)
 {
 	// locals
-	jeActor *Actor;
+	grActor *Actor;
 	ActorObj	*Object;
 
 	// ensure valid data
@@ -641,7 +641,7 @@ jeBoolean JETCC SendObjMessage(void * Instance, int32 Msg, void * Data)
 	assert( Data != NULL );
 
 	// get object
-	Actor = (jeActor *)Instance;
+	Actor = (grActor *)Instance;
 	Object = Actor->Object;
 	assert( Object != NULL );
 
@@ -649,17 +649,17 @@ jeBoolean JETCC SendObjMessage(void * Instance, int32 Msg, void * Data)
 	switch ( Msg )
 	{
 	case 1:
-/*		case JETEDITOR_GET_JEBRUSH:
+/*		case G3DEDITOR_GET_GRBRUSH:
 		{
-			jeBrush **hBrush = (jeBrush**)Data;
+			grBrush **hBrush = (grBrush**)Data;
 			if( pBrush == NULL )
 			{
 				if( !CreateGlobalBrush() )
-					return(JE_FALSE);
+					return(GR_FALSE);
 			}
 			UpdateGlobalBrush( Object );
 			*hBrush = pBrush;
-			return( JE_TRUE );
+			return( GR_TRUE );
 		}
 		break;
 
@@ -679,7 +679,7 @@ jeBoolean JETCC SendObjMessage(void * Instance, int32 Msg, void * Data)
 				{
 
 					// locals
-					jeProperty_Data	Data;
+					grProperty_Data	Data;
 
 					// get motion name
 					assert( ed->Args != NULL );
@@ -689,7 +689,7 @@ jeBoolean JETCC SendObjMessage(void * Instance, int32 Msg, void * Data)
 					SetProperty( Actor, ACTOROBJ_MOTIONLIST_ID, PROPERTY_COMBO_TYPE, &Data );
 
 					// free temporary string
-					jeRam_Free( Data.String );
+					grRam_Free( Data.String );
 					break;
 				}
 			}
@@ -699,33 +699,33 @@ jeBoolean JETCC SendObjMessage(void * Instance, int32 Msg, void * Data)
 		// unsupported message
 		default:
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 			break;
 		}
 	}
 
 	// all done
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-void* JETCC CreateInstance(void)
+void* GRCC CreateInstance(void)
 {
-	jeActor* A;
-	A = jeActor_Create();
-	A->Object = JE_RAM_ALLOCATE_STRUCT_CLEAR( ActorObj );	
+	grActor* A;
+	A = grActor_Create();
+	A->Object = GR_RAM_ALLOCATE_STRUCT_CLEAR( ActorObj );	
 	A->Object->Engine = NULL;
 	InitObjectProperties(A);
 	FillProperties();	
 	return A;
 }
 
-JETAPI jeBoolean JETCC Destroy(void **pActor) //jeActor **pA)
+GRAPI grBoolean GRCC Destroy(void **pActor) //grActor **pA)
 {
-	jeActor** pA = (jeActor **)pActor;
-	jeRam_Free((*pA)->Object);
+	grActor** pA = (grActor **)pActor;
+	grRam_Free((*pA)->Object);
 	(*pA)->Object = NULL;
-	jeActor_Destroy(pA);	
-	return JE_TRUE;
+	grActor_Destroy(pA);	
+	return GR_TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -733,16 +733,16 @@ JETAPI jeBoolean JETCC Destroy(void **pActor) //jeActor **pA)
 //	CreateFromFile()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-void * JETCC CreateFromFile(
-	jeVFile		*File,		// vfile to use
-	jePtrMgr	*PtrMgr )	// pointer manager
+void * GRCC CreateFromFile(
+	grVFile		*File,		// vfile to use
+	grPtrMgr	*PtrMgr )	// pointer manager
 {
 
 	// locals
-	jeActor *Actor;
+	grActor *Actor;
 	ActorObj		*Object;
 	int				Size;
-	jeBoolean		Result = JE_TRUE;
+	grBoolean		Result = GR_TRUE;
 	BYTE Version;
 	uint32 Tag;
 
@@ -753,7 +753,7 @@ void * JETCC CreateFromFile(
 	assert( PtrMgr != NULL );
 
 	// create new object
-	Actor = (jeActor *)CreateInstance();
+	Actor = (grActor *)CreateInstance();
 	if( Actor == NULL ) return NULL;
 
 	Object = Actor->Object;
@@ -763,17 +763,17 @@ void * JETCC CreateFromFile(
 	}
 
 	//read version 
- 	if(!jeVFile_Read(File, &Tag, sizeof(Tag)))
+ 	if(!grVFile_Read(File, &Tag, sizeof(Tag)))
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "ActorObject_CreateFromFile:Tag" );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "ActorObject_CreateFromFile:Tag" );
 		goto ERROR_CreateFromFile;
 	}
 
 	if (Tag == FILE_UNIQUE_ID)
 	{
-		if (!jeVFile_Read(File, &Version, sizeof(Version)))
+		if (!grVFile_Read(File, &Version, sizeof(Version)))
 		{
-    		jeErrorLog_Add( JE_ERR_FILEIO_READ, "ActorObject_CreateFromFile:Version" );
+    		grErrorLog_Add( GR_ERR_FILEIO_READ, "ActorObject_CreateFromFile:Version" );
 	       	goto ERROR_CreateFromFile;
 		}
 	}
@@ -781,106 +781,106 @@ void * JETCC CreateFromFile(
 	{
 		//for backwards compatibility with old object format
 		Version = 1;
-		jeVFile_Seek(File,-((int)sizeof(Tag)),JE_VFILE_SEEKCUR);
+		grVFile_Seek(File,-((int)sizeof(Tag)),GR_VFILE_SEEKCUR);
 	}
 
 
 	if (Version >= 1)
 	{
 	    // read actor def name
-	    Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	    if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	    Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	    if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 		{
-		    Object->ActorDefName = (char *)jeRam_Allocate( Size );
+		    Object->ActorDefName = (char *)grRam_Allocate( Size );
 		    if ( Object->ActorDefName == NULL )
 			{
-			    jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			    grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			    goto ERROR_CreateFromFile;
 			}
-		    Result &= jeVFile_Read( File, Object->ActorDefName, Size );
+		    Result &= grVFile_Read( File, Object->ActorDefName, Size );
 		}
 
 	    // read motion name
-	    Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	    if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	    Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	    if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 		{
-		    Object->MotionName = (char *)jeRam_Allocate( Size );
+		    Object->MotionName = (char *)grRam_Allocate( Size );
 		    if ( Object->MotionName == NULL )
 			{
-			    jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			    grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			    goto ERROR_CreateFromFile;
 			}
-		    Result &= jeVFile_Read( File, Object->MotionName, Size );
+		    Result &= grVFile_Read( File, Object->MotionName, Size );
 		}
 
 	    // read light reference bone name
-	    Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	    if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	    Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	    if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 		{
-		    Object->LightReferenceBoneName = (char *)jeRam_Allocate( Size );
+		    Object->LightReferenceBoneName = (char *)grRam_Allocate( Size );
 		    if ( Object->LightReferenceBoneName == NULL )
 			{
-			    jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			    grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			    goto ERROR_CreateFromFile;
 			}
-		    Result &= jeVFile_Read( File, Object->LightReferenceBoneName, Size );
+		    Result &= grVFile_Read( File, Object->LightReferenceBoneName, Size );
 		}
 
 	    // read xform
-	    Result &= jeVFile_Read( File, &( Actor->Xf ), sizeof( Actor->Xf ) );
+	    Result &= grVFile_Read( File, &( Actor->Xf ), sizeof( Actor->Xf ) );
 
 	    // read scales
-	    Result &= jeVFile_Read( File, &( Object->ScaleX ), sizeof( Object->ScaleX ) );
-	    Result &= jeVFile_Read( File, &( Object->ScaleY ), sizeof( Object->ScaleY ) );
-	    Result &= jeVFile_Read( File, &( Object->ScaleZ ), sizeof( Object->ScaleZ ) );
+	    Result &= grVFile_Read( File, &( Object->ScaleX ), sizeof( Object->ScaleX ) );
+	    Result &= grVFile_Read( File, &( Object->ScaleY ), sizeof( Object->ScaleY ) );
+	    Result &= grVFile_Read( File, &( Object->ScaleZ ), sizeof( Object->ScaleZ ) );
 
 	    // read fill light color
-	    Result &= jeVFile_Read( File, &( Object->FillLightRed ), sizeof( Object->FillLightRed ) );
-	    Result &= jeVFile_Read( File, &( Object->FillLightGreen ), sizeof( Object->FillLightGreen ) );
-	    Result &= jeVFile_Read( File, &( Object->FillLightBlue ), sizeof( Object->FillLightBlue ) );
+	    Result &= grVFile_Read( File, &( Object->FillLightRed ), sizeof( Object->FillLightRed ) );
+	    Result &= grVFile_Read( File, &( Object->FillLightGreen ), sizeof( Object->FillLightGreen ) );
+	    Result &= grVFile_Read( File, &( Object->FillLightBlue ), sizeof( Object->FillLightBlue ) );
 
 	    // read ambient light color
-	    Result &= jeVFile_Read( File, &( Object->AmbientLightRed ), sizeof( Object->AmbientLightRed ) );
-	    Result &= jeVFile_Read( File, &( Object->AmbientLightGreen ), sizeof( Object->AmbientLightGreen ) );
-	    Result &= jeVFile_Read( File, &( Object->AmbientLightBlue ), sizeof( Object->AmbientLightBlue ) );
+	    Result &= grVFile_Read( File, &( Object->AmbientLightRed ), sizeof( Object->AmbientLightRed ) );
+	    Result &= grVFile_Read( File, &( Object->AmbientLightGreen ), sizeof( Object->AmbientLightGreen ) );
+	    Result &= grVFile_Read( File, &( Object->AmbientLightBlue ), sizeof( Object->AmbientLightBlue ) );
 
 	    // read per bone lighting flag
-	    Result &= jeVFile_Read( File, &( Object->PerBoneLighting ), sizeof( Object->PerBoneLighting ) );
+	    Result &= grVFile_Read( File, &( Object->PerBoneLighting ), sizeof( Object->PerBoneLighting ) );
 
 	    // read fill light normal
-	    Result &= jeVFile_Read( File, &( Object->FillLightNormal ), sizeof( Object->FillLightNormal ) );
+	    Result &= grVFile_Read( File, &( Object->FillLightNormal ), sizeof( Object->FillLightNormal ) );
 
 	    // read use fill light flag
-	    Result &= jeVFile_Read( File, &( Object->UseFillLight ), sizeof( Object->UseFillLight ) );
+	    Result &= grVFile_Read( File, &( Object->UseFillLight ), sizeof( Object->UseFillLight ) );
 
 	    // read use ambient light from floor flag
-	    Result &= jeVFile_Read( File, &( Object->UseAmbientLightFromFloor ), sizeof( Object->UseAmbientLightFromFloor ) );
+	    Result &= grVFile_Read( File, &( Object->UseAmbientLightFromFloor ), sizeof( Object->UseAmbientLightFromFloor ) );
 
 	    // read max dynamic lights amount
-	    Result &= jeVFile_Read( File, &( Object->MaximumDynamicLightsToUse ), sizeof( Object->MaximumDynamicLightsToUse ) );
+	    Result &= grVFile_Read( File, &( Object->MaximumDynamicLightsToUse ), sizeof( Object->MaximumDynamicLightsToUse ) );
 
 	    // read collision ext box info
-	    Result &= jeVFile_Read( File, &( Object->CollisionExtBox ), sizeof( Object->CollisionExtBox ) );
+	    Result &= grVFile_Read( File, &( Object->CollisionExtBox ), sizeof( Object->CollisionExtBox ) );
 
 	    // read draw ext box adjust info
-	    Result &= jeVFile_Read( File, &( Object->RenderHintExtBox ), sizeof( Object->RenderHintExtBox ) );
+	    Result &= grVFile_Read( File, &( Object->RenderHintExtBox ), sizeof( Object->RenderHintExtBox ) );
 
 	    // read fill normal actor relative flag
-	    Result &= jeVFile_Read( File, &( Object->FillNormalActorRelative ), sizeof( Object->FillNormalActorRelative ) );
+	    Result &= grVFile_Read( File, &( Object->FillNormalActorRelative ), sizeof( Object->FillNormalActorRelative ) );
 
 	    // read motion time scale
-	    Result &= jeVFile_Read( File, &( Object->MotionTimeScale ), sizeof( Object->MotionTimeScale ) );
+	    Result &= grVFile_Read( File, &( Object->MotionTimeScale ), sizeof( Object->MotionTimeScale ) );
 	}
 
 	// fail if there was an error
-	if ( Result == JE_FALSE )
+	if ( Result == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, NULL );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, NULL );
 		goto ERROR_CreateFromFile;
 	}
 
 	// all done
-	Object->LoadedFromDisk = JE_TRUE;
+	Object->LoadedFromDisk = GR_TRUE;
 	return Actor;
 
 	// handle errors
@@ -889,19 +889,19 @@ void * JETCC CreateFromFile(
 	// free all strings
 	if ( Object->ActorDefName != NULL )
 	{
-		jeRam_Free( Object->ActorDefName );
+		grRam_Free( Object->ActorDefName );
 	}
 	if ( Object->MotionName != NULL )
 	{
-		jeRam_Free( Object->MotionName );
+		grRam_Free( Object->MotionName );
 	}
 	if ( Object->LightReferenceBoneName != NULL )
 	{
-		jeRam_Free( Object->LightReferenceBoneName );
+		grRam_Free( Object->LightReferenceBoneName );
 	}
 
 	// free object
-	jeRam_Free( Object );
+	grRam_Free( Object );
 
 	// return error
 	return NULL;
@@ -918,17 +918,17 @@ void * JETCC CreateFromFile(
 //	WriteToFile()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC WriteToFile(
+grBoolean GRCC WriteToFile(
 	const void	*Instance,
-	jeVFile		*File,
-	jePtrMgr	*PtrMgr )
+	grVFile		*File,
+	grPtrMgr	*PtrMgr )
 {
 
 	// locals
-	jeActor *Actor;
+	grActor *Actor;
 	BYTE Version = ACTOROBJECT_VERSION;
 	ActorObj	*Object;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 	int			Size;
 	uint32 Tag = FILE_UNIQUE_ID;
 
@@ -938,19 +938,19 @@ jeBoolean JETCC WriteToFile(
 	assert( PtrMgr != NULL );
 
 	// get object data
-	Actor = (jeActor *)Instance;
+	Actor = (grActor *)Instance;
 	Object = Actor->Object;
 
-	if( !jeVFile_Write(	File, &Tag, sizeof(Tag)))
+	if( !grVFile_Write(	File, &Tag, sizeof(Tag)))
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "ActorObject_WriteToFile:Tag");
-	    return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "ActorObject_WriteToFile:Tag");
+	    return( GR_FALSE );
 	}
 	
-	if( !jeVFile_Write(	File, &Version, sizeof(Version) ) )
+	if( !grVFile_Write(	File, &Version, sizeof(Version) ) )
 	{
-    	jeErrorLog_Add(JE_ERR_FILEIO_WRITE, "ActorObject_WriteToFile:Version");
-	    return( JE_FALSE );
+    	grErrorLog_Add(GR_ERR_FILEIO_WRITE, "ActorObject_WriteToFile:Version");
+	    return( GR_FALSE );
 	}
 
 	// write actor def name
@@ -961,7 +961,7 @@ jeBoolean JETCC WriteToFile(
 	else
 	{
 		Size = 0;
-		Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
+		Result &= grVFile_Write( File, &Size, sizeof( Size ) );
 	}
 
 	// write motion name
@@ -972,7 +972,7 @@ jeBoolean JETCC WriteToFile(
 	else
 	{
 		Size = 0;
-		Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
+		Result &= grVFile_Write( File, &Size, sizeof( Size ) );
 	}
 
 	// write light reference bone name
@@ -983,58 +983,58 @@ jeBoolean JETCC WriteToFile(
 	else
 	{
 		Size = 0;
-		Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
+		Result &= grVFile_Write( File, &Size, sizeof( Size ) );
 	}
 
 	// write xform
-	Result &= jeVFile_Write( File, &( Actor->Xf ), sizeof( Actor->Xf ) );
+	Result &= grVFile_Write( File, &( Actor->Xf ), sizeof( Actor->Xf ) );
 
 	// write scales
-	Result &= jeVFile_Write( File, &( Object->ScaleX ), sizeof( Object->ScaleX ) );
-	Result &= jeVFile_Write( File, &( Object->ScaleY ), sizeof( Object->ScaleY ) );
-	Result &= jeVFile_Write( File, &( Object->ScaleZ ), sizeof( Object->ScaleZ ) );
+	Result &= grVFile_Write( File, &( Object->ScaleX ), sizeof( Object->ScaleX ) );
+	Result &= grVFile_Write( File, &( Object->ScaleY ), sizeof( Object->ScaleY ) );
+	Result &= grVFile_Write( File, &( Object->ScaleZ ), sizeof( Object->ScaleZ ) );
 
 	// write fill light color
-	Result &= jeVFile_Write( File, &( Object->FillLightRed ), sizeof( Object->FillLightRed ) );
-	Result &= jeVFile_Write( File, &( Object->FillLightGreen ), sizeof( Object->FillLightGreen ) );
-	Result &= jeVFile_Write( File, &( Object->FillLightBlue ), sizeof( Object->FillLightBlue ) );
+	Result &= grVFile_Write( File, &( Object->FillLightRed ), sizeof( Object->FillLightRed ) );
+	Result &= grVFile_Write( File, &( Object->FillLightGreen ), sizeof( Object->FillLightGreen ) );
+	Result &= grVFile_Write( File, &( Object->FillLightBlue ), sizeof( Object->FillLightBlue ) );
 
 	// write ambient light color
-	Result &= jeVFile_Write( File, &( Object->AmbientLightRed ), sizeof( Object->AmbientLightRed ) );
-	Result &= jeVFile_Write( File, &( Object->AmbientLightGreen ), sizeof( Object->AmbientLightGreen ) );
-	Result &= jeVFile_Write( File, &( Object->AmbientLightBlue ), sizeof( Object->AmbientLightBlue ) );
+	Result &= grVFile_Write( File, &( Object->AmbientLightRed ), sizeof( Object->AmbientLightRed ) );
+	Result &= grVFile_Write( File, &( Object->AmbientLightGreen ), sizeof( Object->AmbientLightGreen ) );
+	Result &= grVFile_Write( File, &( Object->AmbientLightBlue ), sizeof( Object->AmbientLightBlue ) );
 
 	// write per bone lighting flag
-	Result &= jeVFile_Write( File, &( Object->PerBoneLighting ), sizeof( Object->PerBoneLighting ) );
+	Result &= grVFile_Write( File, &( Object->PerBoneLighting ), sizeof( Object->PerBoneLighting ) );
 
 	// write fill light normal
-	Result &= jeVFile_Write( File, &( Object->FillLightNormal ), sizeof( Object->FillLightNormal ) );
+	Result &= grVFile_Write( File, &( Object->FillLightNormal ), sizeof( Object->FillLightNormal ) );
 
 	// write use fill light flag
-	Result &= jeVFile_Write( File, &( Object->UseFillLight ), sizeof( Object->UseFillLight ) );
+	Result &= grVFile_Write( File, &( Object->UseFillLight ), sizeof( Object->UseFillLight ) );
 
 	// write use ambient light from floor flag
-	Result &= jeVFile_Write( File, &( Object->UseAmbientLightFromFloor ), sizeof( Object->UseAmbientLightFromFloor ) );
+	Result &= grVFile_Write( File, &( Object->UseAmbientLightFromFloor ), sizeof( Object->UseAmbientLightFromFloor ) );
 
 	// write max dynamic lights amount
-	Result &= jeVFile_Write( File, &( Object->MaximumDynamicLightsToUse ), sizeof( Object->MaximumDynamicLightsToUse ) );
+	Result &= grVFile_Write( File, &( Object->MaximumDynamicLightsToUse ), sizeof( Object->MaximumDynamicLightsToUse ) );
 
 	// write collision ext box adjust info
-	Result &= jeVFile_Write( File, &( Object->CollisionExtBox ), sizeof( Object->CollisionExtBox ) );
+	Result &= grVFile_Write( File, &( Object->CollisionExtBox ), sizeof( Object->CollisionExtBox ) );
 
 	// write draw ext box adjust info
-	Result &= jeVFile_Write( File, &( Object->RenderHintExtBox ), sizeof( Object->RenderHintExtBox ) );
+	Result &= grVFile_Write( File, &( Object->RenderHintExtBox ), sizeof( Object->RenderHintExtBox ) );
 
 	// write fill normal actor relative flag
-	Result &= jeVFile_Write( File, &( Object->FillNormalActorRelative ), sizeof( Object->FillNormalActorRelative ) );
+	Result &= grVFile_Write( File, &( Object->FillNormalActorRelative ), sizeof( Object->FillNormalActorRelative ) );
 
 	// write motion time scale
-	Result &= jeVFile_Write( File, &( Object->MotionTimeScale ), sizeof( Object->MotionTimeScale ) );
+	Result &= grVFile_Write( File, &( Object->MotionTimeScale ), sizeof( Object->MotionTimeScale ) );
 
 	// log errors
-	if ( Result != JE_TRUE )
+	if ( Result != GR_TRUE )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_WRITE, NULL );
+		grErrorLog_Add( GR_ERR_FILEIO_WRITE, NULL );
 	}
 
 	// all done
@@ -1051,110 +1051,110 @@ jeBoolean JETCC WriteToFile(
 //	DuplicateInstance()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-void * JETCC DuplicateInstance(void * Instance)
+void * GRCC DuplicateInstance(void * Instance)
 {
-	jeVFile *ramdisk, *ramfile;
-	jeVFile_MemoryContext vfsmemctx;
-	jeObject* newActor = NULL;
-	jePtrMgr *ptrMgr = NULL;
+	grVFile *ramdisk, *ramfile;
+	grVFile_MemoryContext vfsmemctx;
+	grObject* newActor = NULL;
+	grPtrMgr *ptrMgr = NULL;
 
-	vfsmemctx.Data = jeRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
+	vfsmemctx.Data = grRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
 	vfsmemctx.DataLength = OBJ_PERSIST_SIZE;
 
 	if (!vfsmemctx.Data) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
 		return NULL;
 	}
 
-	ramdisk = jeVFile_OpenNewSystem
+	ramdisk = grVFile_OpenNewSystem
 	(
 		NULL, 
-		(jeVFile_TypeIdentifier)(JE_VFILE_TYPE_MEMORY|JE_VFILE_TYPE_VIRTUAL),
+		(grVFile_TypeIdentifier)(GR_VFILE_TYPE_MEMORY|GR_VFILE_TYPE_VIRTUAL),
 		"Memory",
 		NULL,
-		JE_VFILE_OPEN_CREATE|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_CREATE|GR_VFILE_OPEN_DIRECTORY
 	);
 
 	if (!ramdisk) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	ramfile = jeVFile_Open(ramdisk, "tempObject", JE_VFILE_OPEN_CREATE);
+	ramfile = grVFile_Open(ramdisk, "tempObject", GR_VFILE_OPEN_CREATE);
 
 	if (!ramfile) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
-	ptrMgr = jePtrMgr_Create();
+	ptrMgr = grPtrMgr_Create();
 
 	if (!ptrMgr) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!WriteToFile(Instance, ramfile, jePtrMgr_Create())) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!WriteToFile(Instance, ramfile, grPtrMgr_Create())) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!jeVFile_Rewind(ramfile)) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!grVFile_Rewind(ramfile)) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	newActor = (jeObject *)CreateFromFile(ramfile, ptrMgr);
+	newActor = (grObject *)CreateFromFile(ramfile, ptrMgr);
 	if (!newActor) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	jeVFile_Close(ramfile);
-	jeVFile_Close(ramdisk);
+	grVFile_Close(ramfile);
+	grVFile_Close(ramdisk);
 
-	jeRam_Free(vfsmemctx.Data);
+	grRam_Free(vfsmemctx.Data);
 
 	return( newActor );
 }
 
-void JETCC SetRenderNextTime(void * Instance, jeBoolean RenderNextTime)
+void GRCC SetRenderNextTime(void * Instance, grBoolean RenderNextTime)
 {
-	jeActor_SetRenderNextTime((jeActor*)Instance, RenderNextTime);
+	grActor_SetRenderNextTime((grActor*)Instance, RenderNextTime);
 }
 
-jeBoolean JETCC SetXForm(void *Actor, const jeXForm3d *XF)
+grBoolean GRCC SetXForm(void *Actor, const grXForm3d *XF)
 {
-	jeActor_SetXForm((jeActor*)Actor, XF);
-	return JE_TRUE;
+	grActor_SetXForm((grActor*)Actor, XF);
+	return GR_TRUE;
 }
 
-jeBoolean JETCC GetXForm(const void *Actor, jeXForm3d *XF)
+grBoolean GRCC GetXForm(const void *Actor, grXForm3d *XF)
 {
-	jeActor_GetXForm((jeActor*)Actor, XF);
-	return JE_TRUE;
+	grActor_GetXForm((grActor*)Actor, XF);
+	return GR_TRUE;
 }
 
 //#pragma warning(disable : 4028 4090)
-jeObjectDef jeActor_ObjectDef =
+grObjectDef grActor_ObjectDef =
 {
-	JE_OBJECT_TYPE_ACTOR,
+	GR_OBJECT_TYPE_ACTOR,
 	"Actor",
-	JE_OBJECT_VISRENDER,
+	GR_OBJECT_VISRENDER,
 	CreateInstance,
 	CreateRef,
 	Destroy,
@@ -1166,8 +1166,8 @@ jeObjectDef jeActor_ObjectDef =
 
 	NULL, // Soundsystem
 	NULL, // Soundsystem
-	Render,//jeActor_Render,
-	Collision,//jeActor_Collision,
+	Render,//grActor_Render,
+	Collision,//grActor_Collision,
 	GetExtBox,
 	CreateFromFile,
 	WriteToFile,
@@ -1179,9 +1179,9 @@ jeObjectDef jeActor_ObjectDef =
 	GetXForm,
 
 	GetXFormModFlags,
-	NULL,//jeActor_GetChildren,
-	NULL,//jeActor_AddChild,
-	NULL,//jeActor_RemoveChild,
+	NULL,//grActor_GetChildren,
+	NULL,//grActor_AddChild,
+	NULL,//grActor_RemoveChild,
 	EditDialog,
 	SendObjMessage,
 	Frame,

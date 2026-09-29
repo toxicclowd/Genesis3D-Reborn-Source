@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef	JE_LZH_H
-#define JE_LZH_H
+#ifndef	GR_LZH_H
+#define GR_LZH_H
 
 #ifdef __cplusplus
 extern "C" {

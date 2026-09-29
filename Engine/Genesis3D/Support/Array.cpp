@@ -25,8 +25,8 @@
  *
  * by cbloom , January-February, 1999
  * fixed by jpollard, Feb 1999.
- * jpollard - jeArray_Create was not setting Signature1/2 - 03/05/1999
- * jpollard - Fixed NumFreedElements check in jeArray_IsValid - 03/05/1999
+ * jpollard - grArray_Create was not setting Signature1/2 - 03/05/1999
+ * jpollard - Fixed NumFreedElements check in grArray_IsValid - 03/05/1999
  *
  */
 
@@ -38,14 +38,14 @@
 #include "log.h"
 
 /*
- *  jeArray
+ *  grArray
  *		variable length array system
  *		with defragmenter
  *    does auto-extending of memory space in case you use more space than
  *     expected or if you don't know how much you will need
  *	HunkLength is forced to be a multiple of 4
  *
- *	jeArray is slightly above a 'root' level object.  
+ *	grArray is slightly above a 'root' level object.  
  *		We sit only above 'Ram', 'list', and 'mempool' in the heirarchy
  *
  */
@@ -54,9 +54,9 @@
 
 #if 0	// in jet
 #include "ram.h"
-#define RamCalloc(size)			jeRam_AllocateClear(size)
-#define RamFree(mem)			jeRam_Free(mem)
-#define RamRealloc(mem,size)	jeRam_Realloc(mem,size)
+#define RamCalloc(size)			grRam_AllocateClear(size)
+#define RamFree(mem)			grRam_Free(mem)
+#define RamRealloc(mem,size)	grRam_Realloc(mem,size)
 #else
 #include <stdlib.h>
 #define RamCalloc(size)			calloc(1,size)
@@ -68,20 +68,20 @@
 #define memclear(mem,size)		memset(mem,0,size)
 #endif
 
-jeBoolean jeArray_IsValid(const jeArray * Array);
+grBoolean grArray_IsValid(const grArray * Array);
 
 #ifndef max
 #define max(a,b) (((a)>(b))?(a):(b))  
 #endif
 /*}{************ Structs ************/
 
-#pragma message("jeArray element structure is bloated")
+#pragma message("grArray element structure is bloated")
 
 typedef struct Element Element;
 struct Element
 {
-	jeArray_Index	Index;		// @@ could compute this with one subtract & one divide
-	jeBoolean		IsInUse;	// @@ this is redundant; look in the IndexTable[] for null
+	grArray_Index	Index;		// @@ could compute this with one subtract & one divide
+	grBoolean		IsInUse;	// @@ this is redundant; look in the IndexTable[] for null
 	uint8			Data[1];
 };
 
@@ -96,18 +96,18 @@ struct MemBlock
 	MemBlock * Next;
 	char * Memory;
 	int CurItem,NumItems;
-	jeArray_Index BaseIndex;
+	grArray_Index BaseIndex;
 };
 
-#define jeArray_Signature	((uint32)0xABADF00D)
-#define JE_ARRAY_VERSION	0x0000
+#define grArray_Signature	((uint32)0xABADF00D)
+#define GR_ARRAY_VERSION	0x0000
 
-struct jeArray
+struct grArray
 {
 	uint32 Signature1;
 	int RefCount;
 	int HunkLength,ElementLength;
-	jeArray_Index NextBaseIndex;
+	grArray_Index NextBaseIndex;
 	MemBlock * CurMemBlock; // jump into the list
 	MemBlock * MemList; // list of memblocks
 	int AutoExtendNumItems;
@@ -115,17 +115,17 @@ struct jeArray
 	void ** FreedElements;
 	uint32 Signature2;
 	void ** IndexTable;	// points to *Data*
-	jeArray_Index MaxIndex;	// the actual max index could be smaller than this!
-	jeArray_Index IndexTableLen;
+	grArray_Index MaxIndex;	// the actual max index could be smaller than this!
+	grArray_Index IndexTableLen;
 };
 
 /*}{************* Structs ***********/
 
-JETAPI jeArray * JETCC jeArray_Create (int32 HunkLength, int32 NumHunks, int32 AutoExtendNumItems)
+GRAPI grArray * GRCC grArray_Create (int32 HunkLength, int32 NumHunks, int32 AutoExtendNumItems)
 {
-	jeArray * Array;
+	grArray * Array;
 
-	if ( (Array = (jeArray *)RamCalloc(sizeof(jeArray))) == NULL )
+	if ( (Array = (grArray *)RamCalloc(sizeof(grArray))) == NULL )
 	  return(NULL);
 
 	Array->HunkLength = (HunkLength + 3)&(~3);
@@ -139,8 +139,8 @@ JETAPI jeArray * JETCC jeArray_Create (int32 HunkLength, int32 NumHunks, int32 A
 	Array->NextBaseIndex = 0;
 	Array->IndexTableLen = ((Array->ElementLength * NumHunks + AutoExtendNumItems)>>2) + 16;
 
-	Array->Signature1 = jeArray_Signature;
-	Array->Signature2 = jeArray_Signature;
+	Array->Signature1 = grArray_Signature;
+	Array->Signature2 = grArray_Signature;
 
 	Array->MaxIndex = 0;
 
@@ -157,7 +157,7 @@ JETAPI jeArray * JETCC jeArray_Create (int32 HunkLength, int32 NumHunks, int32 A
 		return(NULL);
 	}
 
-	if ( ! jeArray_Extend(Array,NumHunks) )
+	if ( ! grArray_Extend(Array,NumHunks) )
 	{
 		RamFree(Array->FreedElements);
 		RamFree(Array->IndexTable);
@@ -168,7 +168,7 @@ JETAPI jeArray * JETCC jeArray_Create (int32 HunkLength, int32 NumHunks, int32 A
 	return Array;
 }
 
-JETAPI void JETCC jeArray_Destroy(jeArray ** pArray)
+GRAPI void GRCC grArray_Destroy(grArray ** pArray)
 {
 	MemBlock	*CurMemBlock;
 	MemBlock	*NextMemBlock;
@@ -200,12 +200,12 @@ JETAPI void JETCC jeArray_Destroy(jeArray ** pArray)
 	*pArray = NULL;
 }
 
-JETAPI void JETCC jeArray_CreateRef(jeArray * Array)
+GRAPI void GRCC grArray_CreateRef(grArray * Array)
 {
 	Array->RefCount ++;
 }
 
-JETAPI void JETCC jeArray_Reset(jeArray * Array)
+GRAPI void GRCC grArray_Reset(grArray * Array)
 {
 	MemBlock * MB;
 
@@ -219,7 +219,7 @@ JETAPI void JETCC jeArray_Reset(jeArray * Array)
 	}
 }
 
-JETAPI jeBoolean JETCC jeArray_Extend(jeArray * Array, int32 NumHunks)
+GRAPI grBoolean GRCC grArray_Extend(grArray * Array, int32 NumHunks)
 {
 	MemBlock * MB;
 
@@ -229,13 +229,13 @@ JETAPI jeBoolean JETCC jeArray_Extend(jeArray * Array, int32 NumHunks)
 		if ( MB->CurItem < MB->NumItems )
 		{
 			Array->CurMemBlock = MB;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		MB = MB->Next;
 	}
 
 	if ( (MB = (MemBlock *)RamCalloc(sizeof(MemBlock))) == NULL )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	MB->CurItem = 0;
 	MB->NumItems = NumHunks;
@@ -243,7 +243,7 @@ JETAPI jeBoolean JETCC jeArray_Extend(jeArray * Array, int32 NumHunks)
 	if ( (MB->Memory = (char *)RamCalloc(NumHunks * Array->ElementLength)) == NULL )
 	{
 		RamFree(MB);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	MB->BaseIndex = Array->NextBaseIndex;
@@ -254,7 +254,7 @@ JETAPI jeBoolean JETCC jeArray_Extend(jeArray * Array, int32 NumHunks)
 
 	Array->CurMemBlock = MB;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*}{************************/
@@ -262,9 +262,9 @@ JETAPI jeBoolean JETCC jeArray_Extend(jeArray * Array, int32 NumHunks)
 // GetNewElement and FreeElement should be SIGNIFICANTLY
 // faster than malloc() & free() .  We currently have that.
 
-JETAPI void * JETCC jeArray_GetNewElement(jeArray * Array)
+GRAPI void * GRCC grArray_GetNewElement(grArray * Array)
 {
-	jeArray_Index I;
+	grArray_Index I;
 	MemBlock * MB;
 	Element * E;
 
@@ -274,7 +274,7 @@ JETAPI void * JETCC jeArray_GetNewElement(jeArray * Array)
 		E = (Element *)Array->FreedElements[Array->NumFreedElements];
 		assert(E);
 		// E->Index should already be set up
-		E->IsInUse = JE_TRUE;
+		E->IsInUse = GR_TRUE;
 		Array->IndexTable[E->Index] = E->Data;
 		Array->MaxIndex = max(Array->MaxIndex,E->Index);
 		return E->Data;
@@ -285,7 +285,7 @@ JETAPI void * JETCC jeArray_GetNewElement(jeArray * Array)
 
 	if ( MB->CurItem == MB->NumItems )
 	{
-		if ( ! jeArray_Extend(Array,Array->AutoExtendNumItems) )
+		if ( ! grArray_Extend(Array,Array->AutoExtendNumItems) )
 			return NULL;
 		MB = Array->CurMemBlock;
 		assert( MB->CurItem < MB->NumItems );
@@ -295,7 +295,7 @@ JETAPI void * JETCC jeArray_GetNewElement(jeArray * Array)
 
 	E = (Element *)(MB->Memory + MB->CurItem * Array->ElementLength);
 	E->Index = I;
-	E->IsInUse = JE_TRUE;
+	E->IsInUse = GR_TRUE;
 
 	MB->CurItem ++;
 
@@ -317,11 +317,11 @@ JETAPI void * JETCC jeArray_GetNewElement(jeArray * Array)
 	return E->Data;
 }
 
-JETAPI jeBoolean JETCC jeArray_FreeElement(jeArray * Array,void * Hunk)
+GRAPI grBoolean GRCC grArray_FreeElement(grArray * Array,void * Hunk)
 {
 	Element * E;
 
-	assert( jeArray_IsValid(Array) );
+	assert( grArray_IsValid(Array) );
 	assert( Hunk );
 
 	E = Hunk2Element(Hunk);
@@ -329,7 +329,7 @@ JETAPI jeBoolean JETCC jeArray_FreeElement(jeArray * Array,void * Hunk)
 	assert( E->IsInUse );
 	assert( E->Index >= 0 && E->Index < Array->NextBaseIndex );
 
-	E->IsInUse = JE_FALSE;
+	E->IsInUse = GR_FALSE;
 
 	// we could use a link list of freed hunks, with the list mempool :^)
 
@@ -338,7 +338,7 @@ JETAPI jeBoolean JETCC jeArray_FreeElement(jeArray * Array,void * Hunk)
 	void * New;
 		New = RamRealloc(Array->FreedElements,(Array->MaxNumFreedElements<<1)*sizeof(void *));
 		if ( ! New )
-			return JE_FALSE;
+			return GR_FALSE;
 		Array->MaxNumFreedElements <<= 1;
 		Array->FreedElements = (void **)New;
 	}
@@ -349,7 +349,7 @@ JETAPI jeBoolean JETCC jeArray_FreeElement(jeArray * Array,void * Hunk)
 	Array->FreedElements[Array->NumFreedElements] = E;
 	Array->NumFreedElements++;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /*}{************************/
@@ -357,7 +357,7 @@ return JE_TRUE;
 // _GetElement() and _GetElementIndex() are the work-horses
 // these should be as lean as possible !
 
-JETAPI jeArray_Index JETCC jeArray_GetElementIndex(void * H)
+GRAPI grArray_Index GRCC grArray_GetElementIndex(void * H)
 {
 Element * E;
 	assert(H);
@@ -365,10 +365,10 @@ Element * E;
 return E->Index;
 }
 
-JETAPI void * JETCC jeArray_GetElement(jeArray * Array,jeArray_Index Index)	// == Array[Index]
+GRAPI void * GRCC grArray_GetElement(grArray * Array,grArray_Index Index)	// == Array[Index]
 {
 void * H;
-	assert(jeArray_IsValid(Array));
+	assert(grArray_IsValid(Array));
 	if ( Index > Array->MaxIndex )
 		return NULL;
 	H = Array->IndexTable[Index];
@@ -376,10 +376,10 @@ void * H;
 return H;
 }
 
-JETAPI void * JETCC jeArray_GetNextElement(jeArray * Array,void * H)
+GRAPI void * GRCC grArray_GetNextElement(grArray * Array,void * H)
 {
 Element * E;
-jeArray_Index i;
+grArray_Index i;
 	if ( H )
 	{
 		E = Hunk2Element(H);
@@ -407,9 +407,9 @@ jeArray_Index i;
 return H;
 }
 
-JETAPI jeArray_Index JETCC jeArray_GetNextIndex(jeArray * Array, jeArray_Index Index)
+GRAPI grArray_Index GRCC grArray_GetNextIndex(grArray * Array, grArray_Index Index)
 {
-	if (Index == JE_ARRAY_NULL_INDEX)
+	if (Index == GR_ARRAY_NULL_INDEX)
 		Index = 0;
 	else
 		Index++;
@@ -419,7 +419,7 @@ JETAPI jeArray_Index JETCC jeArray_GetNextIndex(jeArray * Array, jeArray_Index I
 	{
 		Index++;
 		if ( Index > Array->MaxIndex)
-			return JE_ARRAY_NULL_INDEX;
+			return GR_ARRAY_NULL_INDEX;
 	}
 	
 	return Index;
@@ -451,36 +451,36 @@ return NULL;
 
 /*}{************************/
 
-JETAPI jeArray * JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSizeOffset, jeArray_IOFunc ElementReader,void *ReaderContext)
+GRAPI grArray * GRCC grArray_CreateFromFile(grVFile * File, uint16 lVersionSizeOffset, grArray_IOFunc ElementReader,void *ReaderContext)
 {
-	jeArray			*Array;
-	jeArray_Index	Index;
+	grArray			*Array;
+	grArray_Index	Index;
 	MemBlock		*MB;
 	Element			*E;
 	uint16			Version;
 
-	if ( (Array = (jeArray *)RamCalloc(sizeof(jeArray))) == NULL )
+	if ( (Array = (grArray *)RamCalloc(sizeof(grArray))) == NULL )
 	  return(NULL);
 
-	if ( ! jeVFile_Read(File,&(Array->Signature1),sizeof(Array->Signature1)) )
+	if ( ! grVFile_Read(File,&(Array->Signature1),sizeof(Array->Signature1)) )
 		return NULL;
 
-	if ( Array->Signature1 != jeArray_Signature )
+	if ( Array->Signature1 != grArray_Signature )
 	{
-		jeErrorLog_AddString(-1,"jeArray_CreateFromFile : Signatures don't match!",NULL);
+		grErrorLog_AddString(-1,"grArray_CreateFromFile : Signatures don't match!",NULL);
 		return NULL;
 	}
 
-	if ( ! jeVFile_Read(File,&Version,sizeof(Version)) )
+	if ( ! grVFile_Read(File,&Version,sizeof(Version)) )
 		return NULL;
 
-	if (Version != JE_ARRAY_VERSION)
+	if (Version != GR_ARRAY_VERSION)
 		return NULL;
 
-	if ( ! jeVFile_Read(File,&(Array->HunkLength),sizeof(Array->HunkLength)) )
+	if ( ! grVFile_Read(File,&(Array->HunkLength),sizeof(Array->HunkLength)) )
 		return NULL;
 
-	if ( ! jeVFile_Read(File,&(Array->MaxIndex),sizeof(Array->MaxIndex)) )
+	if ( ! grVFile_Read(File,&(Array->MaxIndex),sizeof(Array->MaxIndex)) )
 		return NULL;
 
 	// add to the HunkLength the difference due to version change
@@ -498,8 +498,8 @@ JETAPI jeArray * JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSiz
 	
 	Log_Printf("Array count %d : Elt size %d (Header %d - Total %d)\n", Array->MaxIndex, Array->HunkLength, ElementHeaderSize, Array->ElementLength);
 
-	Array->Signature1 = jeArray_Signature;
-	Array->Signature2 = jeArray_Signature;
+	Array->Signature1 = grArray_Signature;
+	Array->Signature2 = grArray_Signature;
 
 	if ( (Array->FreedElements = (void **)RamCalloc(Array->MaxNumFreedElements*sizeof(void *))) == NULL )
 		goto fail;
@@ -507,7 +507,7 @@ JETAPI jeArray * JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSiz
 	if ( (Array->IndexTable = (void **)RamCalloc(Array->IndexTableLen*sizeof(void *))) == NULL )
 		goto fail;
 
-	if ( ! jeArray_Extend(Array,Array->IndexTableLen) )
+	if ( ! grArray_Extend(Array,Array->IndexTableLen) )
 		goto fail;
 
 	MB = Array->MemList;
@@ -521,7 +521,7 @@ JETAPI jeArray * JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSiz
 	{
 		uint8 UseFlag;
 
-		if ( ! jeVFile_Read(File,&UseFlag,sizeof(UseFlag)) )
+		if ( ! grVFile_Read(File,&UseFlag,sizeof(UseFlag)) )
 			return NULL;
 
 		E = (Element *)(MB->Memory + Index * Array->ElementLength);
@@ -530,7 +530,7 @@ JETAPI jeArray * JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSiz
 
 		if ( UseFlag )
 		{
-			E->IsInUse = JE_TRUE;
+			E->IsInUse = GR_TRUE;
 
 			ElementReader(File,E->Data,ReaderContext);
 
@@ -539,7 +539,7 @@ JETAPI jeArray * JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSiz
 		}
 		else
 		{
-			E->IsInUse = JE_FALSE;
+			E->IsInUse = GR_FALSE;
 
 			if ( Array->NumFreedElements >= Array->MaxNumFreedElements )
 			{
@@ -565,7 +565,7 @@ JETAPI jeArray * JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSiz
 
 	if ( Array->MemList )
 	{
-		jeArray_Destroy(&Array);
+		grArray_Destroy(&Array);
 	}
 	else
 	{
@@ -577,7 +577,7 @@ JETAPI jeArray * JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSiz
 	return NULL;
 }
 
-void jeArray_AddMemBlocks(jeArray *Array,MemBlock *MB)
+void grArray_AddMemBlocks(grArray *Array,MemBlock *MB)
 {
 	MemBlock * Next;
 	Next = MB->Next;
@@ -588,39 +588,39 @@ void jeArray_AddMemBlocks(jeArray *Array,MemBlock *MB)
 	Array->MemList = MB;
 	
 	if ( Next )
-		jeArray_AddMemBlocks(Array,Next);
+		grArray_AddMemBlocks(Array,Next);
 }
 
-void jeArray_SortMemBlocks(jeArray *Array)
+void grArray_SortMemBlocks(grArray *Array)
 {
 	MemBlock *MB;
 	MB = Array->MemList;
 	Array->MemList = NULL;
-	jeArray_AddMemBlocks(Array,MB);
+	grArray_AddMemBlocks(Array,MB);
 }
 
-JETAPI jeBoolean JETCC jeArray_WriteToFile(const jeArray * Array,jeVFile * File, jeArray_IOFunc ElementWriter,void *WriterContext)
+GRAPI grBoolean GRCC grArray_WriteToFile(const grArray * Array,grVFile * File, grArray_IOFunc ElementWriter,void *WriterContext)
 {
 	MemBlock		*MB;
-	jeArray_Index	Index;
+	grArray_Index	Index;
 	uint16			Version;
 
-	assert( jeArray_IsValid(Array) );
+	assert( grArray_IsValid(Array) );
 	assert( File && ElementWriter );
 
-	if ( ! jeVFile_Write(File,&(Array->Signature1),sizeof(Array->Signature1)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(File,&(Array->Signature1),sizeof(Array->Signature1)) )
+		return GR_FALSE;
 
-	Version = JE_ARRAY_VERSION;
+	Version = GR_ARRAY_VERSION;
 
-	if ( ! jeVFile_Write(File,&Version,sizeof(Version)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(File,&Version,sizeof(Version)) )
+		return GR_FALSE;
 
-	if ( ! jeVFile_Write(File,&(Array->HunkLength),sizeof(Array->HunkLength)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(File,&(Array->HunkLength),sizeof(Array->HunkLength)) )
+		return GR_FALSE;
 
-	if ( ! jeVFile_Write(File,&(Array->MaxIndex),sizeof(Array->MaxIndex)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(File,&(Array->MaxIndex),sizeof(Array->MaxIndex)) )
+		return GR_FALSE;
 
 	Log_Printf("Array count %d : Elt size %d\n", Array->MaxIndex, Array->HunkLength);
 
@@ -628,7 +628,7 @@ JETAPI jeBoolean JETCC jeArray_WriteToFile(const jeArray * Array,jeVFile * File,
 	//	after the sort it stays sorted
 
 	// Since memblocs are put on the front of the list, reverse them so indexs will be right
-	jeArray_SortMemBlocks((jeArray *)Array);
+	grArray_SortMemBlocks((grArray *)Array);
 
 	Index = 0;
 
@@ -646,13 +646,13 @@ JETAPI jeBoolean JETCC jeArray_WriteToFile(const jeArray * Array,jeVFile * File,
 
 			UseFlag = E->IsInUse ? 0xFF : 0;
 
-			if ( ! jeVFile_Write(File,&UseFlag,sizeof(UseFlag)) )
-				return JE_FALSE;
+			if ( ! grVFile_Write(File,&UseFlag,sizeof(UseFlag)) )
+				return GR_FALSE;
 
 			if ( UseFlag )
 			{
 				if ( ! ElementWriter(File,E->Data,WriterContext) )
-					return JE_FALSE;
+					return GR_FALSE;
 			}
 
 			Index ++;
@@ -665,39 +665,39 @@ JETAPI jeBoolean JETCC jeArray_WriteToFile(const jeArray * Array,jeVFile * File,
 	{
 		uint8 UseFlag = 0;
 
-		if ( ! jeVFile_Write(File,&UseFlag,sizeof(UseFlag)) )
-			return JE_FALSE;
+		if ( ! grVFile_Write(File,&UseFlag,sizeof(UseFlag)) )
+			return GR_FALSE;
 	}
 
 	// Put them back into original order
-	jeArray_SortMemBlocks((jeArray *)Array);
+	grArray_SortMemBlocks((grArray *)Array);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*}{************************/
 
 // this is the do-nothing implementation of defragmenting :^)
 
-struct jeArray_Defragmenter
+struct grArray_Defragmenter
 {
 	int nada;
 };
 
-JETAPI jeArray_Defragmenter * JETCC jeArray_DefragmentStart(jeArray * Array)
+GRAPI grArray_Defragmenter * GRCC grArray_DefragmentStart(grArray * Array)
 {
-	static jeArray_Defragmenter Hack;
+	static grArray_Defragmenter Hack;
 	// <>
 	return &Hack;
 }
 
-JETAPI jeArray_Index JETCC jeArray_Defragment(jeArray_Defragmenter * D, jeArray_Index I)
+GRAPI grArray_Index GRCC grArray_Defragment(grArray_Defragmenter * D, grArray_Index I)
 {
 	// <>
 	return I;
 }
 
-JETAPI void JETCC jeArray_DefragmentEnd(jeArray_Defragmenter * D)
+GRAPI void GRCC grArray_DefragmentEnd(grArray_Defragmenter * D)
 {
 	// <>
 	return;
@@ -705,19 +705,19 @@ JETAPI void JETCC jeArray_DefragmentEnd(jeArray_Defragmenter * D)
 
 /*}{************************/
 
-jeBoolean jeArray_IsValid(const jeArray * Array)
+grBoolean grArray_IsValid(const grArray * Array)
 {
-	if ( ! Array ) return JE_FALSE;
-	if ( Array->Signature1 != jeArray_Signature ) return JE_FALSE;
-	if ( Array->Signature2 != jeArray_Signature ) return JE_FALSE;
+	if ( ! Array ) return GR_FALSE;
+	if ( Array->Signature1 != grArray_Signature ) return GR_FALSE;
+	if ( Array->Signature2 != grArray_Signature ) return GR_FALSE;
 	if ( Array->NumFreedElements < 0 || Array->AutoExtendNumItems < 0
 		|| Array->MaxNumFreedElements < 0 || Array->HunkLength < 0 )
-		return JE_FALSE;
-	if ( Array->NumFreedElements > Array->MaxNumFreedElements ) return JE_FALSE;
+		return GR_FALSE;
+	if ( Array->NumFreedElements > Array->MaxNumFreedElements ) return GR_FALSE;
 
-	if ( Array->MaxIndex > Array->IndexTableLen ) return JE_FALSE;
+	if ( Array->MaxIndex > Array->IndexTableLen ) return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*}{************************/

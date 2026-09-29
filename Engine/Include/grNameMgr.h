@@ -30,11 +30,10 @@
 extern "C" {
 #endif
 
-typedef struct jeChain			grChain;
-typedef struct jeChain_Link		grChain_Link;
+typedef struct grChain			grChain;
+typedef struct grChain_Link		grChain_Link;
 
-typedef struct jeNameMgr grNameMgr;
-typedef struct jeNameMgr jeNameMgr;
+typedef struct grNameMgr grNameMgr;
 typedef void *  (GRCC *grNameMgr_CreateFromFileCallback)(grVFile *VFile, grNameMgr *NM);
 typedef grBoolean (GRCC *grNameMgr_WriteToFileCallback)(void *DataPtr, grVFile *VFile, grNameMgr *NM);
 
@@ -58,17 +57,5 @@ GRAPI grBoolean GRCC grNameMgr_WriteFlush(grNameMgr *NM);
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define JE_NAME_MGR_CREATE_FOR_READ              GR_NAME_MGR_CREATE_FOR_READ
-#define JE_NAME_MGR_CREATE_FOR_WRITE             GR_NAME_MGR_CREATE_FOR_WRITE
-#define jeNameMgr_Create                         grNameMgr_Create
-#define jeNameMgr_CreateRef                      grNameMgr_CreateRef
-#define jeNameMgr_Destroy                        grNameMgr_Destroy
-#define jeNameMgr_Read                           grNameMgr_Read
-#define jeNameMgr_Write                          grNameMgr_Write
-#define jeNameMgr_WriteFlush                     grNameMgr_WriteFlush
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

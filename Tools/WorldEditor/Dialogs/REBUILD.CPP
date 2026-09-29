@@ -91,7 +91,7 @@ BOOL  CRebuild::GetVis()
 	return( m_Vis );
 }
 
-jeBSP_Logic	  CRebuild::GetLogic()
+grBSP_Logic	  CRebuild::GetLogic()
 {
 	switch( m_Logic )
 	{

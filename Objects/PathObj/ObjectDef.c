@@ -49,13 +49,13 @@ int WINAPI DllMain(image_id	hInstance,DWORD		fdwReason, PVOID		pvReserved );
 
 #endif
 
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "PathObj.h"
 #include "Object.h"
 #include "ObjectDef.h"
 
-jeObjectDef ObjectDef = {
-	JE_OBJECT_TYPE_UNKNOWN,
+grObjectDef ObjectDef = {
+	GR_OBJECT_TYPE_UNKNOWN,
 	"PathObject",
 	0,
 	CreateInstance,
@@ -117,8 +117,8 @@ int WINAPI DllMain(
 	return( TRUE );
 }
 
-DLLExport jeBoolean Object_RegisterDef(float Major, float Minor)
+DLLExport grBoolean Object_RegisterDef(float Major, float Minor)
 {
-	return( jeObject_RegisterGlobalObjectDef(&ObjectDef) );
+	return( grObject_RegisterGlobalObjectDef(&ObjectDef) );
 }
 

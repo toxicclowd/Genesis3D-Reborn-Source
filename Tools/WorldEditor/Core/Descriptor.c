@@ -31,20 +31,20 @@ DescriptorArray * DescriptorArray_Create( int FieldN )
 	DescriptorArray * pArray = NULL;
 	Descriptor *pDescriptor = NULL;
 
-	pArray = JE_RAM_ALLOCATE_STRUCT( DescriptorArray );
+	pArray = GR_RAM_ALLOCATE_STRUCT( DescriptorArray );
 	if( pArray == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "DescriptorArray" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "DescriptorArray" );
 		return( NULL );
 	}
 
 	pArray->DescriptorN =  FieldN;
 
-	pDescriptor = JE_RAM_ALLOCATE_ARRAY_CLEAR( Descriptor, FieldN );
+	pDescriptor = GR_RAM_ALLOCATE_ARRAY_CLEAR( Descriptor, FieldN );
 	if( pDescriptor == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Descriptor" );
-		jeRam_Free( pArray );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Descriptor" );
+		grRam_Free( pArray );
 		return( NULL );
 	}
 	pArray->pDescriptor = pDescriptor;
@@ -70,21 +70,21 @@ void Descriptor_FillRaido( Descriptor *pDescriptor, int NameId, int Value, int F
 	pDescriptor->DataId = FieldId;
 }
 
-void Descriptor_FillVec3dGroup( Descriptor *pDescriptor, int NameId, const jeVec3d *Vector, int FieldId )
+void Descriptor_FillVec3dGroup( Descriptor *pDescriptor, int NameId, const grVec3d *Vector, int FieldId )
 {
 	pDescriptor->FieldName = Util_LoadLocalRcString( NameId );
 	pDescriptor->Type = VEC3D_GROUP_TYPE;
 	pDescriptor->Data.Vector = *Vector;
-	pDescriptor->DataSize = sizeof( jeVec3d );
+	pDescriptor->DataSize = sizeof( grVec3d );
 	pDescriptor->DataId = FieldId;
 }
 
-void Descriptor_FillColorGroup( Descriptor *pDescriptor, int NameId, const jeVec3d *Vector, int FieldId )
+void Descriptor_FillColorGroup( Descriptor *pDescriptor, int NameId, const grVec3d *Vector, int FieldId )
 {
 	pDescriptor->FieldName = Util_LoadLocalRcString( NameId );
 	pDescriptor->Type = COLOR_GROUP_TYPE;
 	pDescriptor->Data.Vector = *Vector;
-	pDescriptor->DataSize = sizeof( jeVec3d );
+	pDescriptor->DataSize = sizeof( grVec3d );
 	pDescriptor->DataId = FieldId;
 }
 
@@ -129,12 +129,12 @@ void Descriptor_FillGroupEnd( Descriptor *pDescriptor, int FieldId )
 	pDescriptor->DataId = FieldId;
 }
 
-void Descriptor_FillColorPicker( Descriptor *pDescriptor, int NameId,  jeVec3d *Vector, int FieldId )
+void Descriptor_FillColorPicker( Descriptor *pDescriptor, int NameId,  grVec3d *Vector, int FieldId )
 {
 	pDescriptor->FieldName = Util_LoadLocalRcString( NameId );
 	pDescriptor->Type = COLOR_PICKER_TYPE;
 	pDescriptor->Data.Vector = *Vector;
-	pDescriptor->DataSize = sizeof( jeVec3d );
+	pDescriptor->DataSize = sizeof( grVec3d );
 	pDescriptor->DataId = FieldId;
 }
 
@@ -146,18 +146,18 @@ void Descriptor_FillGroup( Descriptor *pDescriptor, int NameId, int FieldId )
 	pDescriptor->DataId = FieldId;
 }
 
-static jeBoolean Descriptor_DataEqual( Descriptor *pDescriptor, Descriptor *pDescriptor2 )
+static grBoolean Descriptor_DataEqual( Descriptor *pDescriptor, Descriptor *pDescriptor2 )
 {
-	jeBoolean Result = JE_FALSE;
+	grBoolean Result = GR_FALSE;
 
 	if( pDescriptor->Type != pDescriptor2->Type )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
 	if( pDescriptor->DataSize == DESCRIPTOR_DATA_INVALID )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
 	if( pDescriptor2->DataSize == DESCRIPTOR_DATA_INVALID )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
 	switch( pDescriptor->Type )
 	{
@@ -180,13 +180,13 @@ static jeBoolean Descriptor_DataEqual( Descriptor *pDescriptor, Descriptor *pDes
 
 	case VEC3D_GROUP_TYPE:
 	case COLOR_GROUP_TYPE:
-		Result = jeVec3d_Compare( &pDescriptor->Data.Vector, &pDescriptor->Data.Vector, 0.0);
+		Result = grVec3d_Compare( &pDescriptor->Data.Vector, &pDescriptor->Data.Vector, 0.0);
 		break;
 
 	case GROUP_TYPE:
 	case GROUP_END_TYPE:
 	case COLOR_PICKER_TYPE:
-		Result = JE_FALSE;
+		Result = GR_FALSE;
 		break;
 
 	default:
@@ -203,11 +203,11 @@ void DescriptorArray_Destroy( DescriptorArray *pArray )
 		for( i = 0; i < pArray->DescriptorN; i++ )
 		{
 			if( pArray->pDescriptor[i].FieldName != NULL )
-				jeRam_Free( pArray->pDescriptor[i].FieldName );
+				grRam_Free( pArray->pDescriptor[i].FieldName );
 		}
-		jeRam_Free( pArray->pDescriptor );
+		grRam_Free( pArray->pDescriptor );
 	}
-	jeRam_Free( pArray );
+	grRam_Free( pArray );
 }
 
 DescriptorArray *DescriptorArray_Merge( DescriptorArray *pArray, DescriptorArray *pArray2, int bSameType )
@@ -274,7 +274,7 @@ void Descriptor_SetDataInvalid( Descriptor *pDescriptor )
 	pDescriptor->DataSize = DESCRIPTOR_DATA_INVALID;
 }
 
-void Descriptor_SetDisabled( Descriptor *pDescriptor, jeBoolean bDisable )
+void Descriptor_SetDisabled( Descriptor *pDescriptor, grBoolean bDisable )
 {
 	pDescriptor->bDisabled = bDisable;
 }

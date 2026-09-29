@@ -29,7 +29,7 @@ typedef struct {
 } RGB;
 #pragma pack()
 
-extern jeBoolean sortPal(int size,uint8 *rgb_colors, int *permutation,int *usage,int flags);
+extern grBoolean sortPal(int size,uint8 *rgb_colors, int *permutation,int *usage,int flags);
 
 #define SORTPAL_FAST  		0
 #define SORTPAL_LAZY  		1
@@ -44,16 +44,16 @@ typedef struct _palNode {
 	int index;
 	int c1,c2,c3;
 	palNode *next,*prev; // NULL if not yet decided
-	jeBoolean visited;
+	grBoolean visited;
 	int d_next;
 };
 
 extern palNode * initPal(uint8 * rgb_colors,int size);
-extern jeBoolean readOutPal(palNode *start_node,int size,uint8 *rgb_colors,int *permutation);
+extern grBoolean readOutPal(palNode *start_node,int size,uint8 *rgb_colors,int *permutation);
 
 extern void greedySort(palNode *start_node,palNode *nodes,int size,int *usage);
 extern void lazySort(palNode *start_node,palNode *nodes,int size,int *usage);
-extern jeBoolean doOptimize(palNode *nodes,int size,int block,palNode **start_node_ptr,int *usage);
+extern grBoolean doOptimize(palNode *nodes,int size,int block,palNode **start_node_ptr,int *usage);
 
 #if 1	// kills weights
 #define weighted_node_distance(x,y,z) node_distance(x,y)

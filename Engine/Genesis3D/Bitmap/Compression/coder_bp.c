@@ -48,7 +48,7 @@ static int bp_unmap[] = {0,1,2,4,8,3,6,10,12,5,9,7,11,13,14,15};
 #define ORDER1_TOTMAX		15000
 #define ORDER1_INC			30
 
-jeBoolean coderBPInit(coder *c);
+grBoolean coderBPInit(coder *c);
 void coderBPFree(coder *c);
 void coderBP_flush(coder *c);
 void coderBPEncodeBandBP(coderParams *p);
@@ -70,20 +70,20 @@ typedef struct
 	soz ** o1;
 } bpInfo;
 
-jeBoolean coderBPInit(coder *c)
+grBoolean coderBPInit(coder *c)
 {
 bpInfo *d;
 int i;
 
 	if ( !(d = (bpInfo *)new(bpInfo)) )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	c->data = d;
 
 	if ( (d->o1 = (soz **)newarray(void *,ORDER1_CONTEXTS)) == NULL )
 	{
 		coderBPFree(c);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	for(i=0;i<ORDER1_CONTEXTS;i++)
@@ -91,11 +91,11 @@ int i;
 		if ( (d->o1[i] = sozCreate(c->arith,ORDER1_ALPHABET,ORDER1_TOTMAX,ORDER1_INC)) == NULL )
 		{
 			coderBPFree(c);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 void coderBPFree(coder *c)

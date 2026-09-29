@@ -32,22 +32,22 @@
 extern "C" {
 #endif
 
-void		Transform_GetHandlePoint( SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const jeExtBox * pBounds, jeVec3d * pPoint ) ;
-void		Transform_PlaceSnap( Level * pLevel, jeVec3d *placePt, jeVec3d * pSnapDelta );
-void		Transform_MoveSelected( Level * pLevel, const jeVec3d * pWorldDistance, jeExtBox * pWorldBounds ) ;
-void		Transform_MoveSelectedSub( Level * pLevel, const jeVec3d * pWorldDistance, jeExtBox * pWorldBounds );
-void		Transform_MoveSnapSelected( Level * pLevel, SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, jeExtBox * pWorldBounds, jeVec3d * pSnapDelta ) ;
-void		Transform_PointToGrid( Level * pLevel, const jeVec3d * pPoint, jeVec3d * pGridPoint ) ;
-void		Transform_RotateSelected( Level * pLevel, jeFloat fRadianAngle, ORTHO_AXIS RAxis, jeVec3d *pCenter3d, jeExtBox * pWorldBounds ) ;
-void		Transform_RotateSubSelected( Level * pLevel, jeFloat fRadianAngle, ORTHO_AXIS RAxis, jeExtBox * pWorldBounds ) ;
-void		Transform_SizeSelected( Level * pLevel, const jeVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, jeExtBox * pWorldBounds ) ;
-void		Transform_SizeSnapSelected( Level *	pLevel, SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, jeExtBox * pWorldBounds, jeVec3d * pSnapDelta ) ;
-void		Transform_SnapBounds( const jeExtBox * pBox, const jeFloat fSnapSize, jeVec3d * pDelta ) ;
-void		Transform_SnapPoint( const jeVec3d * pPoint, const jeFloat fSnapSize, jeVec3d * pDelta ) ;
-void		Transform_SnapPointLR( const jeVec3d * pPoint, const jeFloat fSnapSize, jeVec3d * pDelta ) ;
-jeBoolean	Transform_AddSelectedUndo( Level * pLevel, UNDO_TYPES Type  );
-jeBoolean	Transform_AddShearSelectedUndo( Level * pLevel );
-void Transform_ShearSelected( Level * pLevel, const jeVec3d * pWorldDistance,  SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, jeExtBox * pWorldBounds );
+void		Transform_GetHandlePoint( SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const grExtBox * pBounds, grVec3d * pPoint ) ;
+void		Transform_PlaceSnap( Level * pLevel, grVec3d *placePt, grVec3d * pSnapDelta );
+void		Transform_MoveSelected( Level * pLevel, const grVec3d * pWorldDistance, grExtBox * pWorldBounds ) ;
+void		Transform_MoveSelectedSub( Level * pLevel, const grVec3d * pWorldDistance, grExtBox * pWorldBounds );
+void		Transform_MoveSnapSelected( Level * pLevel, SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, grExtBox * pWorldBounds, grVec3d * pSnapDelta ) ;
+void		Transform_PointToGrid( Level * pLevel, const grVec3d * pPoint, grVec3d * pGridPoint ) ;
+void		Transform_RotateSelected( Level * pLevel, grFloat fRadianAngle, ORTHO_AXIS RAxis, grVec3d *pCenter3d, grExtBox * pWorldBounds ) ;
+void		Transform_RotateSubSelected( Level * pLevel, grFloat fRadianAngle, ORTHO_AXIS RAxis, grExtBox * pWorldBounds ) ;
+void		Transform_SizeSelected( Level * pLevel, const grVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, grExtBox * pWorldBounds ) ;
+void		Transform_SizeSnapSelected( Level *	pLevel, SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, grExtBox * pWorldBounds, grVec3d * pSnapDelta ) ;
+void		Transform_SnapBounds( const grExtBox * pBox, const grFloat fSnapSize, grVec3d * pDelta ) ;
+void		Transform_SnapPoint( const grVec3d * pPoint, const grFloat fSnapSize, grVec3d * pDelta ) ;
+void		Transform_SnapPointLR( const grVec3d * pPoint, const grFloat fSnapSize, grVec3d * pDelta ) ;
+grBoolean	Transform_AddSelectedUndo( Level * pLevel, UNDO_TYPES Type  );
+grBoolean	Transform_AddShearSelectedUndo( Level * pLevel );
+void Transform_ShearSelected( Level * pLevel, const grVec3d * pWorldDistance,  SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, grExtBox * pWorldBounds );
 #ifdef __cplusplus
 }
 #endif

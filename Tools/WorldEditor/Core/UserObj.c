@@ -24,7 +24,7 @@
 #include <float.h>
 
 #include "ErrorLog.h"
-#include "jet.h"
+#include "Genesis3D.h"
 #include "Ram.h"
 #include "Transform.h"
 #include "Util.h"
@@ -57,90 +57,90 @@ typedef struct tagUserObj
 #ifdef _DEBUG
 	int					nSignature ;
 #endif
-	jeObject			*	pgeObject;
+	grObject			*	pgeObject;
 	Brush				*   pDrawBrush;
 } UserObj ;
 
 //STATIC FUNCTIONS
 
-jeBoolean UserObj_AddToObject( UserObj * pUserObj, jeObject * pParent )
+grBoolean UserObj_AddToObject( UserObj * pUserObj, grObject * pParent )
 {
 	assert( pUserObj );
 	assert( pUserObj->pgeObject );
 	assert( pParent );
 
-	return( jeObject_AddChild( pParent, pUserObj->pgeObject) );
+	return( grObject_AddChild( pParent, pUserObj->pgeObject) );
 }
 
-static jeBoolean UserObj_SizeEdge( UserObj * pUserObj, const jeVec3d * pStillEdge, const jeFloat fScale, ORTHO_AXIS Axis )
+static grBoolean UserObj_SizeEdge( UserObj * pUserObj, const grVec3d * pStillEdge, const grFloat fScale, ORTHO_AXIS Axis )
 {
 	float	fTemp;
-	jeXForm3d	XForm;
+	grXForm3d	XForm;
 
-	jeVec3d		Scale ;
-	jeVec3d		Temp ;
+	grVec3d		Scale ;
+	grVec3d		Temp ;
 	int			ModFlags;
 
 
 	if( !UserObj_GetXForm( pUserObj, &XForm ) )
-		return( JE_TRUE );
+		return( GR_TRUE );
 
-	ModFlags = jeObject_GetXFormModFlags( pUserObj->pgeObject );
+	ModFlags = grObject_GetXFormModFlags( pUserObj->pgeObject );
 
-	if( ModFlags & JE_OBJECT_XFORM_SCALE )
+	if( ModFlags & GR_OBJECT_XFORM_SCALE )
 	{
-		jeVec3d_Set( &Scale, 1.0f, 1.0f, 1.0f ) ;
-		jeVec3d_SetElement( &Scale, Axis, fScale ) ;
+		grVec3d_Set( &Scale, 1.0f, 1.0f, 1.0f ) ;
+		grVec3d_SetElement( &Scale, Axis, fScale ) ;
 		Temp = XForm.Translation ;	
-		jeVec3d_Clear( &XForm.Translation ) ;
-		jeXForm3d_Scale( &XForm, Scale.X, Scale.Y, Scale.Z ) ;
+		grVec3d_Clear( &XForm.Translation ) ;
+		grXForm3d_Scale( &XForm, Scale.X, Scale.Y, Scale.Z ) ;
 		XForm.Translation = Temp ;
 	}
 
 	
-	if( ModFlags & JE_OBJECT_XFORM_TRANSLATE )
+	if( ModFlags & GR_OBJECT_XFORM_TRANSLATE )
 	{
-		fTemp = jeVec3d_GetElement( &XForm.Translation, Axis ) - jeVec3d_GetElement( pStillEdge, Axis ) ;
+		fTemp = grVec3d_GetElement( &XForm.Translation, Axis ) - grVec3d_GetElement( pStillEdge, Axis ) ;
 		fTemp = fTemp * fScale ;
-		fTemp = fTemp + jeVec3d_GetElement( pStillEdge, Axis ) ;
-		jeVec3d_SetElement( &XForm.Translation, Axis, fTemp ) ;
+		fTemp = fTemp + grVec3d_GetElement( pStillEdge, Axis ) ;
+		grVec3d_SetElement( &XForm.Translation, Axis, fTemp ) ;
 	}
 	UserObj_SetXForm( pUserObj, &XForm );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 // CREATORS
-UserObj *	UserObj_Create( const char * const pszName, Group * pGroup, int32 nNumber, jeObject	* pgeObject )
+UserObj *	UserObj_Create( const char * const pszName, Group * pGroup, int32 nNumber, grObject	* pgeObject )
 {
 	UserObj	*	pUserObj;
 	char * CombName;
-	jeBrush * pgeBrush;
+	grBrush * pgeBrush;
 
 	assert( pszName );
-	pUserObj = JE_RAM_ALLOCATE_STRUCT_CLEAR( UserObj );
+	pUserObj = GR_RAM_ALLOCATE_STRUCT_CLEAR( UserObj );
 	if( pUserObj == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate UserObj" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate UserObj" );
 		return( NULL );
 	}
 	assert( (pUserObj->nSignature = SIGNATURE) == SIGNATURE ) ;	// ASSIGN
 	if( !Object_Init( &pUserObj->ObjectData, pGroup, KIND_USEROBJ, pszName, nNumber ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeRam_Free( pUserObj );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grRam_Free( pUserObj );
 		return( NULL );
 	}
 
 	pUserObj->pgeObject = pgeObject;
 	if( pUserObj->pgeObject == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "UserObj_Create:jeUserObj_Create" );
-		jeRam_Free( pUserObj );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "UserObj_Create:grUserObj_Create" );
+		grRam_Free( pUserObj );
 		return( NULL );
 	}
 
 
-	if( jeObject_SendMessage( pUserObj->pgeObject, JETEDITOR_GET_JEBRUSH, &pgeBrush ) )
+	if( grObject_SendMessage( pUserObj->pgeObject, G3DEDITOR_GET_GRBRUSH, &pgeBrush ) )
 	{
 		pUserObj->pDrawBrush = Brush_Create( pszName, NULL, 0 );
 	}
@@ -148,8 +148,8 @@ UserObj *	UserObj_Create( const char * const pszName, Group * pGroup, int32 nNum
 		pUserObj->pDrawBrush = NULL;
 	CombName = Object_GetNameAndTag( &pUserObj->ObjectData );
 
-	jeObject_SetName( pgeObject, CombName );
-	jeRam_Free( CombName );
+	grObject_SetName( pgeObject, CombName );
+	grRam_Free( CombName );
 
 	return( pUserObj );
 }// UserObj_Create
@@ -165,17 +165,17 @@ char  *	 UserObj_CreateKindName( )
 UserObj *	UserObj_Copy( UserObj *	pUserObj, int32 nNumber )
 {
 	UserObj *pNewUserObj;
-	jeObject *pgeObject;
+	grObject *pgeObject;
 
 
 	
 	assert( pUserObj );
 	assert( SIGNATURE == pUserObj->nSignature ) ;
 
-	pgeObject = jeObject_Duplicate( pUserObj->pgeObject );
+	pgeObject = grObject_Duplicate( pUserObj->pgeObject );
 	if( pgeObject == NULL )
 	{
-		jeErrorLog_AddString( JE_ERR_INTERNAL_RESOURCE, "UserObj_Copy:jeObject_Duplicate", "Object does not support clone." );
+		grErrorLog_AddString( GR_ERR_INTERNAL_RESOURCE, "UserObj_Copy:grObject_Duplicate", "Object does not support clone." );
 		return( NULL );
 	}
 
@@ -183,7 +183,7 @@ UserObj *	UserObj_Copy( UserObj *	pUserObj, int32 nNumber )
 	pNewUserObj = UserObj_Create( pUserObj->ObjectData.pszName, pUserObj->ObjectData.pGroup, nNumber, pgeObject );
 	if( pNewUserObj == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		return( NULL );
 	}
 
@@ -192,9 +192,9 @@ UserObj *	UserObj_Copy( UserObj *	pUserObj, int32 nNumber )
 
 
 
-char *	UserObj_CreateDefaultName( jeObject	* pgeObject )
+char *	UserObj_CreateDefaultName( grObject	* pgeObject )
 {
-	return( Util_StrDup( jeObject_GetTypeName(pgeObject)));
+	return( Util_StrDup( grObject_GetTypeName(pgeObject)));
 }
 
 void UserObj_Destroy( UserObj ** ppUserObj ) 
@@ -205,35 +205,35 @@ void UserObj_Destroy( UserObj ** ppUserObj )
 
 	if( (*ppUserObj)->pgeObject  != NULL )
 	{
-		jeObject_Destroy( &(*ppUserObj)->pgeObject );
+		grObject_Destroy( &(*ppUserObj)->pgeObject );
 	}
 	if( (*ppUserObj)->pDrawBrush )
 	{
 		Brush_SetGeBrush( (*ppUserObj)->pDrawBrush, KIND_BRUSH, NULL );
 		Brush_Destroy( &(*ppUserObj)->pDrawBrush );
 	}
-	jeRam_Free( (*ppUserObj) );
+	grRam_Free( (*ppUserObj) );
 }// UserObj_Destroy
 
 
 // MODIFIERS
-jeBoolean UserObj_Move( UserObj * pUserObj, const jeVec3d * pWorldDistance )
+grBoolean UserObj_Move( UserObj * pUserObj, const grVec3d * pWorldDistance )
 {
-	jeXForm3d XF;
+	grXForm3d XF;
 	assert( pUserObj != NULL ) ;
 	assert( SIGNATURE == pUserObj->nSignature ) ;
 
 	UserObj_SetModified( pUserObj );
-	jeObject_GetXForm(pUserObj->pgeObject,&XF);
-	jeVec3d_Add( &XF.Translation, pWorldDistance, &XF.Translation );
-	jeObject_SetXForm(pUserObj->pgeObject,&XF);
-	return( JE_TRUE );
+	grObject_GetXForm(pUserObj->pgeObject,&XF);
+	grVec3d_Add( &XF.Translation, pWorldDistance, &XF.Translation );
+	grObject_SetXForm(pUserObj->pgeObject,&XF);
+	return( GR_TRUE );
 
 }// UserObj_Move
 
-jeBoolean UserObj_Size( UserObj * pUserObj, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
+grBoolean UserObj_Size( UserObj * pUserObj, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
 {
-	jeBoolean bResult = JE_TRUE;
+	grBoolean bResult = GR_TRUE;
 
 	assert( pUserObj != NULL ) ;
 	assert( SIGNATURE == pUserObj->nSignature ) ;
@@ -298,16 +298,16 @@ jeBoolean UserObj_Size( UserObj * pUserObj, const jeExtBox * pSelectedBounds, co
 		break ;
 	}
 	UserObj_SetModified( pUserObj ) ;
-	if( bResult == JE_FALSE )
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "UserObj_Size:UserObj_SizeEdge" );
+	if( bResult == GR_FALSE )
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "UserObj_Size:UserObj_SizeEdge" );
 
 	return( bResult );
 }// UserObj_Size
 
-void UserObj_Rotate( UserObj * pUserObj, ORTHO_AXIS RAxis, jeFloat RadianAngle, const jeVec3d * pRotationCenter )
+void UserObj_Rotate( UserObj * pUserObj, ORTHO_AXIS RAxis, grFloat RadianAngle, const grVec3d * pRotationCenter )
 {
-	jeXForm3d	XForm ;
-	jeXForm3d	OrgXForm;
+	grXForm3d	XForm ;
+	grXForm3d	OrgXForm;
 	int			ModFlags;
 	assert( pUserObj != NULL ) ;
 	assert( SIGNATURE == pUserObj->nSignature ) ;
@@ -316,25 +316,25 @@ void UserObj_Rotate( UserObj * pUserObj, ORTHO_AXIS RAxis, jeFloat RadianAngle, 
 		return;
 
 	XForm = OrgXForm;
-	ModFlags = jeObject_GetXFormModFlags( pUserObj->pgeObject );
+	ModFlags = grObject_GetXFormModFlags( pUserObj->pgeObject );
 
 	//If it cant be translated or rotated return.
-	if( (ModFlags & ( JE_OBJECT_XFORM_TRANSLATE | JE_OBJECT_XFORM_ROTATE)) == 0 )
+	if( (ModFlags & ( GR_OBJECT_XFORM_TRANSLATE | GR_OBJECT_XFORM_ROTATE)) == 0 )
 		return;
-	jeXForm3d_Translate( &XForm, -pRotationCenter->X, -pRotationCenter->Y, -pRotationCenter->Z ) ;
+	grXForm3d_Translate( &XForm, -pRotationCenter->X, -pRotationCenter->Y, -pRotationCenter->Z ) ;
 	switch( RAxis )
 	{
 	case Ortho_Axis_X :
-		jeXForm3d_RotateX( &XForm, RadianAngle ) ;	break ;
+		grXForm3d_RotateX( &XForm, RadianAngle ) ;	break ;
 	case Ortho_Axis_Y :
-		jeXForm3d_RotateY( &XForm, RadianAngle ) ;	break ;
+		grXForm3d_RotateY( &XForm, RadianAngle ) ;	break ;
 	case Ortho_Axis_Z :
-		jeXForm3d_RotateZ( &XForm, RadianAngle ) ;	break ;
+		grXForm3d_RotateZ( &XForm, RadianAngle ) ;	break ;
 	}
-	jeXForm3d_Translate( &XForm, pRotationCenter->X, pRotationCenter->Y, pRotationCenter->Z ) ; 
+	grXForm3d_Translate( &XForm, pRotationCenter->X, pRotationCenter->Y, pRotationCenter->Z ) ; 
 
 	// If cant be rotated then just translate it.
-	if( !(ModFlags & JE_OBJECT_XFORM_ROTATE ) )
+	if( !(ModFlags & GR_OBJECT_XFORM_ROTATE ) )
 	{
 		OrgXForm.Translation = XForm.Translation;
 		XForm = OrgXForm;
@@ -345,13 +345,13 @@ void UserObj_Rotate( UserObj * pUserObj, ORTHO_AXIS RAxis, jeFloat RadianAngle, 
 
 }// UserObj_Rotate
 
-jeBoolean UserObj_SendMessage( UserObj * pUserObj, int32 message, void * data )
+grBoolean UserObj_SendMessage( UserObj * pUserObj, int32 message, void * data )
 {
 	assert( pUserObj );
 	assert( SIGNATURE == pUserObj->nSignature ) ;
 	assert( pUserObj->pgeObject );
 
-	return( jeObject_SendMessage(pUserObj->pgeObject, message, data ) );
+	return( grObject_SendMessage(pUserObj->pgeObject, message, data ) );
 }
 
 int32 UserObj_GetXFormModFlag( UserObj * pUserObj )
@@ -360,10 +360,10 @@ int32 UserObj_GetXFormModFlag( UserObj * pUserObj )
 	assert( SIGNATURE == pUserObj->nSignature ) ;
 	assert( pUserObj->pgeObject );
 
-	return( jeObject_GetXFormModFlags(pUserObj->pgeObject ) );
+	return( grObject_GetXFormModFlags(pUserObj->pgeObject ) );
 }
 
-void UserObj_Select3d( UserObj* pUserObj, jeVec3d * Front, jeVec3d * Back, jeVec3d * Impact )
+void UserObj_Select3d( UserObj* pUserObj, grVec3d * Front, grVec3d * Back, grVec3d * Impact )
 {
 	Select3dContextDef Context;
 
@@ -377,32 +377,32 @@ void UserObj_Select3d( UserObj* pUserObj, jeVec3d * Front, jeVec3d * Back, jeVec
 	Context.Back = *Back;
 	Context.Impact = *Impact;
 
-	jeObject_SendMessage( pUserObj->pgeObject, JETEDITOR_SELECT3D,	&Context );
+	grObject_SendMessage( pUserObj->pgeObject, JETEDITOR_SELECT3D,	&Context );
 }
 
 #ifdef _USE_BITMAPS
-void UserObj_ApplyMatr( UserObj* pUserObj, jeBitmap * pBitmap )
+void UserObj_ApplyMatr( UserObj* pUserObj, grBitmap * pBitmap )
 {
 	assert( pUserObj );
 	assert( pBitmap );
 	assert( pUserObj->pgeObject );
 
 
-	jeObject_SendMessage( pUserObj->pgeObject, JETEDITOR_APPLYMATERIAL,	pBitmap );
+	grObject_SendMessage( pUserObj->pgeObject, JETEDITOR_APPLYMATERIAL,	pBitmap );
 }
 #else
-void UserObj_ApplyMatr( UserObj* pUserObj, jeMaterialSpec * pMatSpec )
+void UserObj_ApplyMatr( UserObj* pUserObj, grMaterialSpec * pMatSpec )
 {
 	assert( pUserObj );
 	assert( pMatSpec );
 	assert( pUserObj->pgeObject );
 
-	jeObject_SendMessage( pUserObj->pgeObject, JETEDITOR_APPLYMATERIALSPEC,	pMatSpec );
+	grObject_SendMessage( pUserObj->pgeObject, JETEDITOR_APPLYMATERIALSPEC,	pMatSpec );
 }
 #endif
 
 
-jeBoolean UserObj_SetXForm( UserObj * pUserObj, const jeXForm3d * XForm )
+grBoolean UserObj_SetXForm( UserObj * pUserObj, const grXForm3d * XForm )
 {
 
 	assert( pUserObj );
@@ -410,28 +410,28 @@ jeBoolean UserObj_SetXForm( UserObj * pUserObj, const jeXForm3d * XForm )
 	assert( pUserObj->pgeObject );
 	assert( XForm );
 
-	jeObject_SetXForm(pUserObj->pgeObject, XForm);
+	grObject_SetXForm(pUserObj->pgeObject, XForm);
 	UserObj_SetModified( pUserObj );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// UserObj_SetXForm
 
  
-jeBoolean UserObj_RemoveFromWorld( UserObj * pUserObj, jeWorld * pWorld)
+grBoolean UserObj_RemoveFromWorld( UserObj * pUserObj, grWorld * pWorld)
 {
 	assert( pUserObj );
 	assert( pUserObj->pgeObject );
 	assert( pWorld );
 
-	return( jeWorld_RemoveObject( pWorld, pUserObj->pgeObject) );
+	return( grWorld_RemoveObject( pWorld, pUserObj->pgeObject) );
 }
 
-jeBoolean UserObj_AddToWorld( UserObj * pUserObj, jeWorld * pWorld )
+grBoolean UserObj_AddToWorld( UserObj * pUserObj, grWorld * pWorld )
 {
 	assert( pUserObj );
 	assert( pUserObj->pgeObject );
 	assert( pWorld );
 
-	return( jeWorld_AddObject( pWorld, pUserObj->pgeObject) );
+	return( grWorld_AddObject( pWorld, pUserObj->pgeObject) );
 }
 
 void UserObj_SetModified( UserObj * pUserObj )
@@ -444,50 +444,50 @@ void UserObj_SetModified( UserObj * pUserObj )
 
 
 // ACCESSORS
-jeBoolean UserObj_GetXForm( const UserObj * pUserObj, jeXForm3d * XForm )
+grBoolean UserObj_GetXForm( const UserObj * pUserObj, grXForm3d * XForm )
 {
-	return( jeObject_GetXForm(pUserObj->pgeObject,XForm) );
+	return( grObject_GetXForm(pUserObj->pgeObject,XForm) );
 
 }
 
-jeBoolean UserObj_GetWorldAxialBounds( const UserObj * pUserObj, jeExtBox * BBox)
+grBoolean UserObj_GetWorldAxialBounds( const UserObj * pUserObj, grExtBox * BBox)
 {
 	assert( pUserObj != NULL ) ;
 	assert( SIGNATURE == pUserObj->nSignature ) ;
 	
-	return( jeObject_GetExtBox	( pUserObj->pgeObject, BBox) );
+	return( grObject_GetExtBox	( pUserObj->pgeObject, BBox) );
 
 }// UserObj_GetWorldAxialBounds
 
-jeBoolean UserObj_GetWorldDrawBounds( const UserObj * pUserObj, jeExtBox *DrawBounds )
+grBoolean UserObj_GetWorldDrawBounds( const UserObj * pUserObj, grExtBox *DrawBounds )
 {
-	jeBrush *pgeBrush;
+	grBrush *pgeBrush;
 	assert( pUserObj != NULL ) ;
 	assert( SIGNATURE == pUserObj->nSignature ) ;
 	
 	if( pUserObj->pDrawBrush )
 	{
-		if( !jeObject_SendMessage( pUserObj->pgeObject, JETEDITOR_GET_JEBRUSH, &pgeBrush ) )
-			return( JE_FALSE );
+		if( !grObject_SendMessage( pUserObj->pgeObject, G3DEDITOR_GET_GRBRUSH, &pgeBrush ) )
+			return( GR_FALSE );
 		Brush_SetGeBrush( pUserObj->pDrawBrush, 0, pgeBrush );
 		*DrawBounds = *Brush_GetWorldAxialBounds( pUserObj->pDrawBrush );
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
-	return( jeObject_GetExtBox	( pUserObj->pgeObject, DrawBounds) );
+	return( grObject_GetExtBox	( pUserObj->pgeObject, DrawBounds) );
 
 }// UserObj_GetWorldDrawBounds
 
 
-jeBoolean UserObj_SelectClosest( UserObj * pUserObj, FindInfo	*	pFindInfo )
+grBoolean UserObj_SelectClosest( UserObj * pUserObj, FindInfo	*	pFindInfo )
 {
 	Point				pt1;
 	Point				pt2;
-	jeFloat				DistSq ;
-	jeVec3d			Vert1 ;
-	jeVec3d			Vert2 ;
-	jeExtBox		Bounds;
+	grFloat				DistSq ;
+	grVec3d			Vert1 ;
+	grVec3d			Vert2 ;
+	grExtBox		Bounds;
 	int32			y ;
-	jeBrush		*	pgeBrush;
+	grBrush		*	pgeBrush;
 
 	assert( pUserObj != NULL );
 	assert( pFindInfo != NULL );
@@ -496,19 +496,19 @@ jeBoolean UserObj_SelectClosest( UserObj * pUserObj, FindInfo	*	pFindInfo )
 	
 	if( pUserObj->pDrawBrush )
 	{
-		if( !jeObject_SendMessage( pUserObj->pgeObject, JETEDITOR_GET_JEBRUSH, &pgeBrush ) )
-			return( JE_FALSE );
+		if( !grObject_SendMessage( pUserObj->pgeObject, G3DEDITOR_GET_GRBRUSH, &pgeBrush ) )
+			return( GR_FALSE );
 		Brush_SetGeBrush( pUserObj->pDrawBrush, 0, pgeBrush );
 		Brush_SelectClosest( pUserObj->pDrawBrush, pFindInfo );
 		if( pFindInfo->pObject == (Object*)pUserObj->pDrawBrush )
 			pFindInfo->pObject = (Object*)pUserObj;
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
 
 
 
 	if( !UserObj_GetWorldDrawBounds( pUserObj, &Bounds )  )
-		return( JE_TRUE );
+		return( GR_TRUE );
 	Vert1 = Bounds.Min ;
 	Vert2 = Bounds.Max ;
 	Ortho_WorldToView( pFindInfo->pOrtho, &Vert1, &pt1 ) ;
@@ -534,10 +534,10 @@ jeBoolean UserObj_SelectClosest( UserObj * pUserObj, FindInfo	*	pFindInfo )
 		pFindInfo->nFace = 0 ;
 		pFindInfo->nFaceEdge = 0;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeObject * UserObj_GetjeObject( UserObj * pUserObj )
+grObject * UserObj_GetgrObject( UserObj * pUserObj )
 {
 	assert( pUserObj != NULL );
 	assert( SIGNATURE == pUserObj->nSignature ) ;
@@ -545,135 +545,135 @@ jeObject * UserObj_GetjeObject( UserObj * pUserObj )
 	return( pUserObj->pgeObject );
 }
 
-jeBoolean UserObj_FillPositionDescriptor( UserObj * pUserObj, jeProperty_List * pArray )
+grBoolean UserObj_FillPositionDescriptor( UserObj * pUserObj, grProperty_List * pArray )
 {
-	jeXForm3d XForm;
+	grXForm3d XForm;
 	char * Name;
 
-	jeProperty Property;
+	grProperty Property;
 	if( !UserObj_GetXForm( pUserObj, &XForm ) )
-		return( JE_TRUE );
+		return( GR_TRUE );
 
 	Name = Util_LoadLocalRcString( IDS_POSITION_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillVec3dGroup( &Property, Name, &XForm.Translation,	OBJECT_POSITION_FIELD  );
-	if( !jeProperty_Append( pArray,  &Property ) )
+		return( GR_FALSE );
+	grProperty_FillVec3dGroup( &Property, Name, &XForm.Translation,	OBJECT_POSITION_FIELD  );
+	if( !grProperty_Append( pArray,  &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONX_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat(  &Property, Name, XForm.Translation.X, OBJECT_POSITION_FIELDX, -FLT_MAX, FLT_MAX, 1.0f );
-	if( !jeProperty_Append( pArray,  &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat(  &Property, Name, XForm.Translation.X, OBJECT_POSITION_FIELDX, -FLT_MAX, FLT_MAX, 1.0f );
+	if( !grProperty_Append( pArray,  &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONY_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat(  &Property, Name, XForm.Translation.Y,	OBJECT_POSITION_FIELDY, -FLT_MAX, FLT_MAX, 1.0f );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat(  &Property, Name, XForm.Translation.Y,	OBJECT_POSITION_FIELDY, -FLT_MAX, FLT_MAX, 1.0f );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONZ_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, XForm.Translation.Z, OBJECT_POSITION_FIELDZ, -FLT_MAX, FLT_MAX, 1.0f );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, XForm.Translation.Z, OBJECT_POSITION_FIELDZ, -FLT_MAX, FLT_MAX, 1.0f );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
-	jeProperty_FillGroupEnd( &Property, OBJECT_POSITION_FIELD_END );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillGroupEnd( &Property, OBJECT_POSITION_FIELD_END );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeProperty_List *	UserObj_BuildDescriptor( UserObj * pUserObj )
+grProperty_List *	UserObj_BuildDescriptor( UserObj * pUserObj )
 {
-	jeProperty_List * pPropertyArray = NULL;
-	jeProperty_List * pObjectArray;
-	jeProperty_List * pArray = NULL;
-	jeProperty		  Property;
+	grProperty_List * pPropertyArray = NULL;
+	grProperty_List * pObjectArray;
+	grProperty_List * pArray = NULL;
+	grProperty		  Property;
 	char		*	  Name;
 
 
-	pObjectArray = jeProperty_ListCreateEmpty();
+	pObjectArray = grProperty_ListCreateEmpty();
 
 	Name = Util_LoadLocalRcString( IDS_NAME_FIELD );
 	if( Name == NULL )
 		goto UOBD_ERROR;
-	jeProperty_FillString( &Property, Name, pUserObj->ObjectData.pszName, OBJECT_NAME_FIELD );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pObjectArray,  &Property ) )
+	grProperty_FillString( &Property, Name, pUserObj->ObjectData.pszName, OBJECT_NAME_FIELD );
+	grRam_Free( Name );
+	if( !grProperty_Append( pObjectArray,  &Property ) )
 	{
-		jeRam_Free( Name );
+		grRam_Free( Name );
 		return( NULL );
 	}
 	
 	if( !UserObj_FillPositionDescriptor( pUserObj, pObjectArray ) )
 		goto UOBD_ERROR;
 
-	if( !jeObject_GetPropertyList(pUserObj->pgeObject, &pPropertyArray) )
+	if( !grObject_GetPropertyList(pUserObj->pgeObject, &pPropertyArray) )
 		goto UOBD_ERROR;
 
 
-	 pArray = jeProperty_ListConCat( pObjectArray, pPropertyArray );
+	 pArray = grProperty_ListConCat( pObjectArray, pPropertyArray );
 	 if( pArray == NULL )
 		 goto UOBD_ERROR;
 
-	jeProperty_ListDestroy( &pObjectArray );
-	jeProperty_ListDestroy( &pPropertyArray );
+	grProperty_ListDestroy( &pObjectArray );
+	grProperty_ListDestroy( &pPropertyArray );
 
 	 return( pArray );
 UOBD_ERROR:
 	 if( pObjectArray )
-		 jeProperty_ListDestroy( &pObjectArray );
+		 grProperty_ListDestroy( &pObjectArray );
 
 	 if( pPropertyArray )
-		 jeProperty_ListDestroy( &pPropertyArray );
+		 grProperty_ListDestroy( &pPropertyArray );
 
 	 if( pArray )
-		 jeProperty_ListDestroy( &pArray );
+		 grProperty_ListDestroy( &pArray );
 	 return( NULL );
 }
 
-jeProperty_List *	UserObj_GlobalPropertyList( const char * TypeName )
+grProperty_List *	UserObj_GlobalPropertyList( const char * TypeName )
 {
-	jeProperty_List * pPropertyArray = NULL;
+	grProperty_List * pPropertyArray = NULL;
 
 	assert( TypeName );
 
-	if( ! jeObject_GetRegisteredPropertyList( TypeName, &pPropertyArray ) )
+	if( ! grObject_GetRegisteredPropertyList( TypeName, &pPropertyArray ) )
 		return( NULL );
 
 	return( pPropertyArray );
 }
 
-void UserObj_SetGlobalProperty( const char * TypeName, int DataId, int DataType, jeProperty_Data * pData )
+void UserObj_SetGlobalProperty( const char * TypeName, int DataId, int DataType, grProperty_Data * pData )
 {
-	jeObject_SetRegisteredProperty( TypeName, DataId, DataType, pData );
+	grObject_SetRegisteredProperty( TypeName, DataId, DataType, pData );
 }
 
 
-void UserObj_SetProperty( UserObj * pUserObj, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bUpdate )
+void UserObj_SetProperty( UserObj * pUserObj, int DataId, int DataType, grProperty_Data * pData, grBoolean bUpdate )
 {
 	char * CombName;
 
@@ -684,12 +684,12 @@ void UserObj_SetProperty( UserObj * pUserObj, int DataId, int DataType, jeProper
 	{
 		CombName = Object_GetNameAndTag( &pUserObj->ObjectData );
 
-		jeObject_SetName( pUserObj->pgeObject, CombName );
-		jeRam_Free( CombName );
+		grObject_SetName( pUserObj->pgeObject, CombName );
+		grRam_Free( CombName );
 		return;
 	}
 
-	jeObject_SetProperty( pUserObj->pgeObject, DataId, DataType, (jeProperty_Data*)pData );
+	grObject_SetProperty( pUserObj->pgeObject, DataId, DataType, (grProperty_Data*)pData );
 	bUpdate;
 }
 
@@ -701,16 +701,16 @@ void UserObj_Update( UserObj * pUserObj, int Update_Type )
 }
 
 //IS
-jeBoolean	UserObj_IsInRect( const UserObj * pUserObj, jeExtBox *pSelRect, jeBoolean bSelEncompeses )
+grBoolean	UserObj_IsInRect( const UserObj * pUserObj, grExtBox *pSelRect, grBoolean bSelEncompeses )
 {
-	jeExtBox WorldBounds;
-	jeExtBox		Result;
+	grExtBox WorldBounds;
+	grExtBox		Result;
 
 	assert( pUserObj );
 	assert( pSelRect );
 	
 	if( !UserObj_GetWorldDrawBounds( pUserObj, &WorldBounds)  )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	if( bSelEncompeses )
 	{
 		if( pSelRect->Max.X >= WorldBounds.Max.X &&
@@ -719,28 +719,28 @@ jeBoolean	UserObj_IsInRect( const UserObj * pUserObj, jeExtBox *pSelRect, jeBool
 			pSelRect->Min.X <= WorldBounds.Min.X &&
 			pSelRect->Min.Y <= WorldBounds.Min.Y &&
 			pSelRect->Min.Z <= WorldBounds.Min.Z )
-			 return( JE_TRUE );
+			 return( GR_TRUE );
 	}
 	else
 	{
 		return( Util_geExtBox_Intersection ( pSelRect, &WorldBounds, &Result	) );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }//UserObj_IsInRect
 
 
 //FILE
-UserObj * UserObj_CreateFromFile( jeVFile * pF, jePtrMgr * pPtrMgr )
+UserObj * UserObj_CreateFromFile( grVFile * pF, grPtrMgr * pPtrMgr )
 {
 	UserObj	*	pUserObj = NULL ;
-	jeBrush	*	pgeBrush;
+	grBrush	*	pgeBrush;
 
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
-	pUserObj = JE_RAM_ALLOCATE_STRUCT( UserObj );
+	pUserObj = GR_RAM_ALLOCATE_STRUCT( UserObj );
 	if( pUserObj == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate UserObj" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate UserObj" );
 		return( NULL );
 	}
 	memset( pUserObj, 0, sizeof( UserObj ) );
@@ -748,63 +748,63 @@ UserObj * UserObj_CreateFromFile( jeVFile * pF, jePtrMgr * pPtrMgr )
 
 	if( !Object_InitFromFile( pF , &pUserObj->ObjectData ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Object_InitFromFile.", NULL);
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Object_InitFromFile.", NULL);
 		return NULL;
 	}
 
-	pUserObj->pgeObject = jeObject_CreateFromFile( pF, pPtrMgr );
+	pUserObj->pgeObject = grObject_CreateFromFile( pF, pPtrMgr );
 	if( pUserObj->pgeObject == NULL )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "jeObject_CreateFromFile.", NULL);
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "grObject_CreateFromFile.", NULL);
 		return NULL;
 	}
-	if( jeObject_SendMessage( pUserObj->pgeObject, JETEDITOR_GET_JEBRUSH, &pgeBrush ) )
+	if( grObject_SendMessage( pUserObj->pgeObject, G3DEDITOR_GET_GRBRUSH, &pgeBrush ) )
 	{
 		pUserObj->pDrawBrush = Brush_Create( pUserObj->ObjectData.pszName, NULL, 0 );
 	}
 	else
 		pUserObj->pDrawBrush = NULL;
-	Object_SetInLevel( (Object*)pUserObj, JE_TRUE );
+	Object_SetInLevel( (Object*)pUserObj, GR_TRUE );
 	return( pUserObj );
 }
 
 
 
 
-jeBoolean UserObj_WriteToFile( UserObj * pUserObj, jeVFile * pF, jePtrMgr * pPtrMgr )
+grBoolean UserObj_WriteToFile( UserObj * pUserObj, grVFile * pF, grPtrMgr * pPtrMgr )
 {
 	assert( pUserObj != NULL ) ;
 	assert( SIGNATURE == pUserObj->nSignature ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	if( !Object_WriteToFile( &pUserObj->ObjectData, pF ) )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Object_WriteToFile.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Object_WriteToFile.", NULL);
+		return GR_FALSE;
 	}
-	if( jeObject_WriteToFile( pUserObj->pgeObject, pF, pPtrMgr ) == JE_FALSE )
+	if( grObject_WriteToFile( pUserObj->pgeObject, pF, pPtrMgr ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "jeUserObj_WriteToFile.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "grUserObj_WriteToFile.", NULL);
+		return GR_FALSE;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// UserObj_WriteToFile
 
 
 //DISPLAY
 #define USEROBJ_MAXPOINTSPERFACE (64)
-void UserObj_RenderOrtho( const Ortho * pOrtho, UserObj *pUserObj, int32 hDC, jeBoolean bColorOveride )
+void UserObj_RenderOrtho( const Ortho * pOrtho, UserObj *pUserObj, int32 hDC, grBoolean bColorOveride )
 {
 	Point			points[USEROBJ_MAXPOINTSPERFACE];
-	jeVec3d			Vert1 ;
-	jeVec3d			Vert2 ;
-	jeExtBox  Bounds;
+	grVec3d			Vert1 ;
+	grVec3d			Vert2 ;
+	grExtBox  Bounds;
 	int32			y ;
-	jeXForm3d		XF;
+	grXForm3d		XF;
 	HPEN				hOldPen = NULL ;
 	HPEN				hPen ;
-	jeBrush *			pgeBrush;
+	grBrush *			pgeBrush;
 
 	assert( pOrtho != NULL ) ;
 	assert( SIGNATURE == pUserObj->nSignature ) ;
@@ -817,10 +817,10 @@ void UserObj_RenderOrtho( const Ortho * pOrtho, UserObj *pUserObj, int32 hDC, je
 			hPen = CreatePen( PS_SOLID, 1, RGB( 255, 0, 128 ) ) ;		// Selected objects
 			hOldPen = SelectPen( (HDC)hDC, hPen ) ;
 		}
-		if( !jeObject_SendMessage( pUserObj->pgeObject, JETEDITOR_GET_JEBRUSH, &pgeBrush ) )
+		if( !grObject_SendMessage( pUserObj->pgeObject, G3DEDITOR_GET_GRBRUSH, &pgeBrush ) )
 			return;
 		Brush_SetGeBrush( pUserObj->pDrawBrush, 0, pgeBrush );
-		Brush_RenderOrthoFaces(  pUserObj->pDrawBrush, pOrtho, hDC, JE_FALSE, JE_FALSE, JE_TRUE );
+		Brush_RenderOrthoFaces(  pUserObj->pDrawBrush, pOrtho, hDC, GR_FALSE, GR_FALSE, GR_TRUE );
 		if( !bColorOveride )
 		{
 			hPen = SelectPen( (HDC)hDC, hOldPen ) ;
@@ -838,9 +838,9 @@ void UserObj_RenderOrtho( const Ortho * pOrtho, UserObj *pUserObj, int32 hDC, je
 	hPen = CreatePen( PS_SOLID, 1, RGB( 255, 255, 255 ) ) ;		// Selected objects
 	hOldPen = SelectPen( (HDC)hDC, hPen ) ;
 	Vert1 = XF.Translation ;
-	jeXForm3d_GetIn( &XF, &Vert2 );
-	jeVec3d_Scale( &Vert2, 8.0f, &Vert2 );
-	jeVec3d_Add( &Vert2, &Vert1, &Vert2 );
+	grXForm3d_GetIn( &XF, &Vert2 );
+	grVec3d_Scale( &Vert2, 8.0f, &Vert2 );
+	grVec3d_Add( &Vert2, &Vert1, &Vert2 );
 	Ortho_WorldToView( pOrtho, &Vert1, &points[0] ) ;
 	Ortho_WorldToView( pOrtho, &Vert2, &points[1] ) ;
 	Pen_Polyline( hDC, points, 2 ) ;
@@ -851,9 +851,9 @@ void UserObj_RenderOrtho( const Ortho * pOrtho, UserObj *pUserObj, int32 hDC, je
 	hPen = CreatePen( PS_SOLID, 1, RGB( 255, 0, 0 ) ) ;		// Selected objects
 	hOldPen = SelectPen( (HDC)hDC, hPen ) ;
 	Vert1 = XF.Translation ;
-	jeXForm3d_GetUp( &XF, &Vert2 );
-	jeVec3d_Scale( &Vert2, 8.0f, &Vert2 );
-	jeVec3d_Add( &Vert2, &Vert1, &Vert2 );
+	grXForm3d_GetUp( &XF, &Vert2 );
+	grVec3d_Scale( &Vert2, 8.0f, &Vert2 );
+	grVec3d_Add( &Vert2, &Vert1, &Vert2 );
 	Ortho_WorldToView( pOrtho, &Vert1, &points[0] ) ;
 	Ortho_WorldToView( pOrtho, &Vert2, &points[1] ) ;
 	Pen_Polyline( hDC, points, 2 ) ;
@@ -864,9 +864,9 @@ void UserObj_RenderOrtho( const Ortho * pOrtho, UserObj *pUserObj, int32 hDC, je
 	hPen = CreatePen( PS_SOLID, 1, RGB( 0, 255, 0 ) ) ;		// Selected objects
 	hOldPen = SelectPen( (HDC)hDC, hPen ) ;
 	Vert1 = XF.Translation ;
-	jeXForm3d_GetLeft( &XF, &Vert2 );
-	jeVec3d_Scale( &Vert2, 8.0f, &Vert2 );
-	jeVec3d_Add( &Vert2, &Vert1, &Vert2 );
+	grXForm3d_GetLeft( &XF, &Vert2 );
+	grVec3d_Scale( &Vert2, 8.0f, &Vert2 );
+	grVec3d_Add( &Vert2, &Vert1, &Vert2 );
 	Ortho_WorldToView( pOrtho, &Vert1, &points[0] ) ;
 	Ortho_WorldToView( pOrtho, &Vert2, &points[1] ) ;
 	Pen_Polyline( hDC, points, 2 ) ;

@@ -26,36 +26,36 @@
 
 #include "Part.h"
 
-typedef struct jeParticle
+typedef struct grParticle
 {
-	jeVec3d p, v, a; // pos, vel, acc
+	grVec3d p, v, a; // pos, vel, acc
 	float mass, oneOverMass;
 
-	jeParticle_Flags flags;
+	grParticle_Flags flags;
 
-	jeParticle_IntegratorFunc integratorFunc;
+	grParticle_IntegratorFunc integratorFunc;
 
 	float t; // time particle has been alive
 
-}jeParticle;
+}grParticle;
 
 
 /////////////////////////////////////////////////////////////////////////////////
 // ctor / dtor
 
-jeParticle* jeParticle_Create(float mass, jeVec3d* p, jeVec3d* v, jeParticle_Flags flags,
-	jeParticle_IntegratorFunc integratorFunc)
+grParticle* grParticle_Create(float mass, grVec3d* p, grVec3d* v, grParticle_Flags flags,
+	grParticle_IntegratorFunc integratorFunc)
 {
-	jeParticle* part;
+	grParticle* part;
 
 	assert(p);
 	assert(v);
 
-	part = (jeParticle*)jeRam_Allocate(sizeof(jeParticle));
+	part = (grParticle*)grRam_Allocate(sizeof(grParticle));
 	if (! part) return NULL;
 
 	part->mass = mass;
-	if (part->mass < JE_EPSILON)
+	if (part->mass < GR_EPSILON)
 		part->oneOverMass = 0.f;
 	else
 		part->oneOverMass = 1 / mass;
@@ -70,77 +70,77 @@ jeParticle* jeParticle_Create(float mass, jeVec3d* p, jeVec3d* v, jeParticle_Fla
 	return part;
 }
 
-void jeParticle_Destroy(jeParticle** part)
+void grParticle_Destroy(grParticle** part)
 {
 	assert(part);
 	assert(*part);
 
-	jeRam_Free(*part);
+	grRam_Free(*part);
 	*part = NULL;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 // accessors
 
-float jeParticle_GetMass(const jeParticle* part)
+float grParticle_GetMass(const grParticle* part)
 {
 	assert(part);
 
 	return part->mass;
 }
 
-float jeParticle_GetOneOverMass(const jeParticle* part)
+float grParticle_GetOneOverMass(const grParticle* part)
 {
 	assert(part);
 
 	return part->oneOverMass;
 }
 
-jeBoolean jeParticle_GetPos(const jeParticle* part, jeVec3d* pos)
+grBoolean grParticle_GetPos(const grParticle* part, grVec3d* pos)
 {
 	assert(part);
 	assert(pos);
 
 	*pos = part->p;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeParticle_GetVel(const jeParticle* part, jeVec3d* vel)
+grBoolean grParticle_GetVel(const grParticle* part, grVec3d* vel)
 {
 	assert(part);
 	assert(vel);
 
 	*vel = part->v;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeParticle_GetAcc(const jeParticle* part, jeVec3d* acc)
+grBoolean grParticle_GetAcc(const grParticle* part, grVec3d* acc)
 {
 	assert(part);
 	assert(acc);
 
 	*acc = part->a;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeParticle_IntegratorFunc jeParticle_GetIntegratorFunc(const jeParticle* part)
+grParticle_IntegratorFunc grParticle_GetIntegratorFunc(const grParticle* part)
 {
 	assert(part);
 
 	return part->integratorFunc;
 }
 
-float jeParticle_GetTime(const jeParticle* part)
+float grParticle_GetTime(const grParticle* part)
 {
 	assert(part);
 
 	return part->t;
 }
 
-jeParticle_Flags jeParticle_GetFlags(const jeParticle* part)
+grParticle_Flags grParticle_GetFlags(const grParticle* part)
 {
 	assert(part);
 
@@ -149,70 +149,70 @@ jeParticle_Flags jeParticle_GetFlags(const jeParticle* part)
 
 /////////////////////////////////////////////////////////////////////////////////
 
-jeBoolean jeParticle_SetMass(jeParticle* part, float mass)
+grBoolean grParticle_SetMass(grParticle* part, float mass)
 {
 	assert(part);
 
 	part->mass = mass;
-	if (part->mass < JE_EPSILON)
+	if (part->mass < GR_EPSILON)
 		part->oneOverMass = 0.f;
 	else
 		part->oneOverMass = 1 / mass;
 	
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeParticle_SetPos(jeParticle* part, const jeVec3d* pos)
+grBoolean grParticle_SetPos(grParticle* part, const grVec3d* pos)
 {
 	assert(part);
 	assert(pos);
 
 	part->p = *pos;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeParticle_SetVel(jeParticle* part, const jeVec3d* vel)
+grBoolean grParticle_SetVel(grParticle* part, const grVec3d* vel)
 {
 	assert(part);
 	assert(vel);
 
 	part->v = *vel;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeParticle_SetIntegratorFunc(jeParticle* part, jeParticle_IntegratorFunc func)
+grBoolean grParticle_SetIntegratorFunc(grParticle* part, grParticle_IntegratorFunc func)
 {
 	assert(part);
 
 	part->integratorFunc = func;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeParticle_SetFlags(jeParticle* part, jeParticle_Flags flags)
+grBoolean grParticle_SetFlags(grParticle* part, grParticle_Flags flags)
 {
 	assert(part);
 
 	part->flags = flags;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 // fns
 
-jeBoolean jeParticle_ClearAcc(jeParticle* part)
+grBoolean grParticle_ClearAcc(grParticle* part)
 {
 	assert(part);
 
-	jeVec3d_Clear(&part->a);
+	grVec3d_Clear(&part->a);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeParticle_AddForce(jeParticle* part, const jeVec3d* pForce)
+grBoolean grParticle_AddForce(grParticle* part, const grVec3d* pForce)
 {
 	assert(part);
 	assert(pForce);
@@ -221,10 +221,10 @@ jeBoolean jeParticle_AddForce(jeParticle* part, const jeVec3d* pForce)
 	part->a.Y += part->oneOverMass * pForce->Y;
 	part->a.Z += part->oneOverMass * pForce->Z;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeParticle_AddAcc(jeParticle* part, const jeVec3d* pAcc)
+grBoolean grParticle_AddAcc(grParticle* part, const grVec3d* pAcc)
 {
 	assert(part);
 	assert(pAcc);
@@ -233,28 +233,28 @@ jeBoolean jeParticle_AddAcc(jeParticle* part, const jeVec3d* pAcc)
 	part->a.Y += pAcc->Y;
 	part->a.Z += pAcc->Z;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeParticle_UpdateTime(jeParticle* part, float dt)
+grBoolean grParticle_UpdateTime(grParticle* part, float dt)
 {
 	assert(part);
-	assert(dt > JE_EPSILON);
+	assert(dt > GR_EPSILON);
 
 	part->t += dt;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 // integrator functions
 
-jeBoolean jeParticle_IntegratorFunc_EulerStep(jeParticle* part, float dt)
+grBoolean grParticle_IntegratorFunc_EulerStep(grParticle* part, float dt)
 {
-	jeVec3d dp, dv;
+	grVec3d dp, dv;
 
 	assert(part);
-	assert(dt > JE_EPSILON);
+	assert(dt > GR_EPSILON);
 
 	dv.X = dt * part->a.X;
 	dv.Y = dt * part->a.Y;
@@ -272,22 +272,22 @@ jeBoolean jeParticle_IntegratorFunc_EulerStep(jeParticle* part, float dt)
 	part->v.Y += dv.Y;
 	part->v.Z += dv.Z;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 // takes 2 Euler steps, but is more accurate
-jeBoolean jeParticle_IntegratorFunc_EulerMidPoint1(jeParticle* part, float dt)
+grBoolean grParticle_IntegratorFunc_EulerMidPoint1(grParticle* part, float dt)
 {
-	jeParticle midPart, tmpPart;
+	grParticle midPart, tmpPart;
 
 	assert(part);
-	assert(dt > JE_EPSILON);
+	assert(dt > GR_EPSILON);
 
 	tmpPart.a = part->a;
 	tmpPart.v = part->v;
 	tmpPart.p = part->v;
 
-	jeParticle_IntegratorFunc_EulerStep(&tmpPart, dt);
+	grParticle_IntegratorFunc_EulerStep(&tmpPart, dt);
 	
 	midPart.a = tmpPart.a;
 
@@ -299,10 +299,10 @@ jeBoolean jeParticle_IntegratorFunc_EulerMidPoint1(jeParticle* part, float dt)
 	midPart.p.Y = 0.5f * (part->p.Y + tmpPart.p.Y);
 	midPart.p.Z = 0.5f * (part->p.Z + tmpPart.p.Z);
 
-	jeParticle_IntegratorFunc_EulerStep(&midPart, 0.5f * dt);
+	grParticle_IntegratorFunc_EulerStep(&midPart, 0.5f * dt);
 
 	part->v = midPart.v;
 	part->p = midPart.p;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }

@@ -27,12 +27,12 @@
 #include "Sound3d.h"
 
 // Sound
-typedef struct jeSound3d_Cfg
+typedef struct grSound3d_Cfg
 {
-	jeFloat			Volume;
-	jeFloat			Pan;
-	jeFloat			Frequency;
-} jeSound3d_Cfg;
+	grFloat			Volume;
+	grFloat			Pan;
+	grFloat			Frequency;
+} grSound3d_Cfg;
 
 
 //=====================================================================================
@@ -41,9 +41,9 @@ typedef struct jeSound3d_Cfg
 //  A 10 db reduction means half the intensity.
 //  In our volume routine 0.01 represents a decible
 //=====================================================================================
-static void jeSound3D_RollOut(jeSound3d_Cfg *Cfg, float Dist, float Min, float Max)
+static void grSound3D_RollOut(grSound3d_Cfg *Cfg, float Dist, float Min, float Max)
 {
-	jeFloat Volume;
+	grFloat Volume;
 	assert( Cfg != NULL );
 
 	if( Dist > Max )
@@ -62,7 +62,7 @@ static void jeSound3D_RollOut(jeSound3d_Cfg *Cfg, float Dist, float Min, float M
 //=====================================================================================
 //	Snd3D_Pan
 //=====================================================================================
-static void jeSound3D_Pan(jeSound3d_Cfg *Cfg, float FaceOffset )
+static void grSound3D_Pan(grSound3d_Cfg *Cfg, float FaceOffset )
 {
 	assert(Cfg != NULL);
 	Cfg->Pan = (float)sin((double)FaceOffset )*0.1f;
@@ -71,7 +71,7 @@ static void jeSound3D_Pan(jeSound3d_Cfg *Cfg, float FaceOffset )
 //=====================================================================================
 //	Mps is the reletive velocity in  meters per second 
 //=====================================================================================
-static void jeSound3D_Doppler(jeSound3d_Cfg *Cfg, float Mps ) //Modified by CyRiuS
+static void grSound3D_Doppler(grSound3d_Cfg *Cfg, float Mps ) //Modified by CyRiuS
 {
 	float emitted;
 	float Vair;
@@ -115,21 +115,21 @@ static void jeSound3D_Doppler(jeSound3d_Cfg *Cfg, float Mps ) //Modified by CyRi
 //	This is the position of the sound translated to your view
 //	coordinate system
 //=====================================================================================
-JETAPI	void JETCC jeSound3D_GetConfig(
-		const jeWorld *World, 
-		const jeXForm3d *MXForm, 
-		const jeVec3d *SndPos, 
-		jeFloat Min, 
-		jeFloat Ds,
-		jeFloat *Volume,
-		jeFloat *Pan,
-		jeFloat *Frequency)
+GRAPI	void GRCC grSound3D_GetConfig(
+		const grWorld *World, 
+		const grXForm3d *MXForm, 
+		const grVec3d *SndPos, 
+		grFloat Min, 
+		grFloat Ds,
+		grFloat *Volume,
+		grFloat *Pan,
+		grFloat *Frequency)
 {
-	jeVec3d			ViewPos, LocalPos, Dist;
-	jeSound3d_Cfg	Cfg;
+	grVec3d			ViewPos, LocalPos, Dist;
+	grSound3d_Cfg	Cfg;
 	float			Magnitude;
-	jeVec3d			Origin = {0.0f, 0.0f, 0.0f};
-	jeXForm3d		CXForm;
+	grVec3d			Origin = {0.0f, 0.0f, 0.0f};
+	grXForm3d		CXForm;
 	//int32			Leaf1, Leaf2;
 
 	assert( World     != NULL );
@@ -142,15 +142,15 @@ JETAPI	void JETCC jeSound3D_GetConfig(
 	
 	LocalPos = MXForm->Translation;
 	// Transform the sound to view space
-	jeXForm3d_GetTranspose(MXForm, &CXForm);
-	jeXForm3d_Transform( &CXForm, SndPos, &ViewPos);
+	grXForm3d_GetTranspose(MXForm, &CXForm);
+	grXForm3d_Transform( &CXForm, SndPos, &ViewPos);
 
 #if 0
 	// FIXME: Need to check these and return TRUE or FALSE
-	jeWorld_GetLeaf((jeWorld*)World, &LocalPos, &Leaf1);
-	jeWorld_GetLeaf((jeWorld*)World, SndPos, &Leaf2);
+	grWorld_GetLeaf((grWorld*)World, &LocalPos, &Leaf1);
+	grWorld_GetLeaf((grWorld*)World, SndPos, &Leaf2);
 	
-	if (!jeWorld_LeafMightSeeLeaf((jeWorld*)World, Leaf1, Leaf2, 0))
+	if (!grWorld_LeafMightSeeLeaf((grWorld*)World, Leaf1, Leaf2, 0))
 	{
 		Magnitude = 0.0f;
 		Dist.X = 0.0f;				// Shut up compiler warning
@@ -160,15 +160,15 @@ JETAPI	void JETCC jeSound3D_GetConfig(
 #endif
 	{
 		// Find the distance from the camera to the original light pos
-		jeVec3d_Subtract(&LocalPos, SndPos, &Dist);
+		grVec3d_Subtract(&LocalPos, SndPos, &Dist);
 
-		Magnitude = jeVec3d_Length(&Dist);
+		Magnitude = grVec3d_Length(&Dist);
 		
-		jeSound3D_RollOut(&Cfg, Magnitude, Min, Min*10);
+		grSound3D_RollOut(&Cfg, Magnitude, Min, Min*10);
 	}
 
-	jeSound3D_Pan(&Cfg, (float)atan2( (double)ViewPos.X, (double)ViewPos.Z ) );
-	jeSound3D_Doppler(&Cfg, Ds);
+	grSound3D_Pan(&Cfg, (float)atan2( (double)ViewPos.X, (double)ViewPos.Z ) );
+	grSound3D_Doppler(&Cfg, Ds);
 
 	*Volume    = Cfg.Volume;
 	*Pan       = Cfg.Pan;

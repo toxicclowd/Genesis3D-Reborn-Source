@@ -39,20 +39,20 @@ static void EntityList_DestroyEntityCB( void *p1 )
 	Entity_Destroy( &pEntity ) ;
 }// EntityList_DestroyEntityCB
 
-static jeBoolean EntityList_FindCB( void *p1, void *lParam )
+static grBoolean EntityList_FindCB( void *p1, void *lParam )
 {
 	return ( p1 == lParam ) ;
 }// EntityList_FindCB
 
-static jeBoolean EntityList_ReattachCB( Entity *pEntity, void* lParam )
+static grBoolean EntityList_ReattachCB( Entity *pEntity, void* lParam )
 {
 	return Entity_Reattach( pEntity ) ;
 	lParam;
 }// EntityList_ReattachCB
 
-static jeBoolean EntityList_WriteCB( Entity *pEntity, void* lParam )
+static grBoolean EntityList_WriteCB( Entity *pEntity, void* lParam )
 {
-	return Entity_WriteToFile( pEntity, (jeVFile*)lParam ) ;
+	return Entity_WriteToFile( pEntity, (grVFile*)lParam ) ;
 }// EntityList_WriteCB
 
 
@@ -87,13 +87,13 @@ EntityIterator EntityList_Append( EntityList * pList, Entity * pEntity )
 void EntityList_Remove( EntityList * pEntityList, Entity * pEntity )
 {
 	EntityIterator	pBI ;
-	jeBoolean		bFound ;
+	grBoolean		bFound ;
 	Entity	*		pFoundEntity ;
 
 	assert( pEntityList != NULL ) ;
 
 	bFound = List_Search( pEntityList, EntityList_FindCB, pEntity, &pFoundEntity, &pBI ) ;
-	assert( JE_TRUE == bFound ) ;
+	assert( GR_TRUE == bFound ) ;
 
 	List_Remove( pEntityList, pBI, NULL ) ;
 }// LightList_Remove
@@ -117,7 +117,7 @@ int32 EntityList_Enum( EntityList * pEntityList, void * pVoid, EntityListCB Call
 
 // FILE HANDLING
 
-EntityList * EntityList_CreateFromFile( jeVFile * pF, jeSymbol_Table * pEntities )
+EntityList * EntityList_CreateFromFile( grVFile * pF, grSymbol_Table * pEntities )
 {
 	EntityList	*	pList = NULL ;
 	Entity		*	pEntity ;
@@ -125,17 +125,17 @@ EntityList * EntityList_CreateFromFile( jeVFile * pF, jeSymbol_Table * pEntities
 	int32			nItems ;
 	int32			nVersion ;
 
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
-	if( !jeVFile_Read( pF, &nVersion, sizeof nVersion ) )
+	if( !grVFile_Read( pF, &nVersion, sizeof nVersion ) )
 		return NULL ;
 	if( nVersion != ENTITY_VERSION )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "EntityList_CreateFromFile.\n", NULL);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "EntityList_CreateFromFile.\n", NULL);
 		return NULL ;
 	}
 
-	if( !jeVFile_Read( pF, &nItems, sizeof nItems ) )
+	if( !grVFile_Read( pF, &nItems, sizeof nItems ) )
 		return NULL ;
 
 	pList = EntityList_Create( ) ;
@@ -163,32 +163,32 @@ ELCFF_FAILURE :
 }// EntityList_CreateFromFile
 
 
-jeBoolean EntityList_WriteToFile( EntityList * pList, jeVFile * pF )
+grBoolean EntityList_WriteToFile( EntityList * pList, grVFile * pF )
 {
 	int32	nVersion ;
 	int32	nItems ;
 	assert( pList != NULL ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	nVersion = ENTITY_VERSION ;
-	if( jeVFile_Write( pF, &nVersion, sizeof nVersion ) == JE_FALSE )
+	if( grVFile_Write( pF, &nVersion, sizeof nVersion ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "EntityList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "EntityList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 	
 	nItems = EntityList_GetNumItems( pList ) ;
-	if( jeVFile_Write( pF, &nItems, sizeof nItems ) == JE_FALSE )
+	if( grVFile_Write( pF, &nItems, sizeof nItems ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "EntityList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "EntityList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
 	return EntityList_Enum( pList, pF, EntityList_WriteCB ) ;
 
 }// EntityList_WriteToFile
 
-jeBoolean EntityList_Reattach( EntityList * pList )
+grBoolean EntityList_Reattach( EntityList * pList )
 {
 	assert( pList != NULL ) ;
 

@@ -25,7 +25,7 @@
 #include "../Resource.h"
 
 #include "ErrorLog.h"
-#include "jet.h"
+#include "Genesis3D.h"
 #include "Ram.h"
 #include "Transform.h"
 #include "Util.h"
@@ -40,7 +40,7 @@
 #define BRUSH_MAXNAMELENGTH	(31)
 
 #define BRUSH_FLAG_BOUNDSDIRTY	(2)
-#define BRUSH_DRAW_MASK			(JE_BSP_CONTENTS_AIR | JE_BSP_CONTENTS_EMPTY | JE_BSP_CONTENTS_SOLID)
+#define BRUSH_DRAW_MASK			(GR_BSP_CONTENTS_AIR | GR_BSP_CONTENTS_EMPTY | GR_BSP_CONTENTS_SOLID)
 
 typedef enum
 {
@@ -53,7 +53,7 @@ typedef enum
 };
 
 static int gBrush_Update = OBJECT_UPDATE_MANUEL;
-static int gBrush_Lighting = JE_TRUE;
+static int gBrush_Lighting = GR_TRUE;
 
 char  **VisPortalArray = NULL;
 int32 VisPortalN;
@@ -72,68 +72,68 @@ typedef struct tagBrush
 	BRUSH_KIND	Kind ;
 	FaceList *  pSelFaces ;		//List of selected faces of this brush
 	VertList *  pSelVert ;		//List of selected verts of this brush
-	jeExtBox	WorldBounds ;
-	jeBrush	*	pBrush ;
+	grExtBox	WorldBounds ;
+	grBrush	*	pBrush ;
 	Model	*	pModel ;
-	jeWorld *	pWorld;
-	jeBoolean	bLockTextures;
+	grWorld *	pWorld;
+	grBoolean	bLockTextures;
 	BrushTemplate *pTemplate;
-	jeBoolean	bShow;
+	grBoolean	bShow;
 //  BRUSH ID
 } Brush ;
 
 typedef struct tagMaterialUndoContext
 {
-	jeBrush_Face	* pFace;
-	jeModel * pgeModel;
-	jeMaterial_ArrayIndex MaterialIndex;
+	grBrush_Face	* pFace;
+	grModel * pgeModel;
+	grMaterial_ArrayIndex MaterialIndex;
 } MaterialUndoContext;
 
-jeBrush * Brush_CopygeBrush( const Brush * pBrush )
+grBrush * Brush_CopygeBrush( const Brush * pBrush )
 {
 	int32				i ;
-	jeBrush			*	pgeBrush ;
+	grBrush			*	pgeBrush ;
 	int32				nFaces ;
 	int32				nVerts ;
-	jeBrush_Face	*	pFace = NULL ;
-	jeBrush_Face	*	pOrgFace ;
-	jeXForm3d			XForm ;
-	const jeVec3d	*	pVert ;
-	jeFaceInfo			FaceInfo;
+	grBrush_Face	*	pFace = NULL ;
+	grBrush_Face	*	pOrgFace ;
+	grXForm3d			XForm ;
+	const grVec3d	*	pVert ;
+	grFaceInfo			FaceInfo;
 
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	assert( pBrush->pBrush != NULL ) ;
 	
 	nFaces = Brush_GetFaceCount( pBrush ) ;
-	pgeBrush = jeBrush_Create( nFaces ) ;
+	pgeBrush = grBrush_Create( nFaces ) ;
 	if( pgeBrush == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Brush_CopygeBrush:jeBrush_Create");
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Brush_CopygeBrush:grBrush_Create");
 		goto BCB_FAILURE ;
 	}
 
 	pOrgFace = Brush_GetNextFace( pBrush, NULL ) ;
 	while( pOrgFace != NULL )
 	{
-		pFace = jeBrush_CreateFace( pgeBrush, Brush_FaceGetVertCount( pOrgFace ) ) ;
+		pFace = grBrush_CreateFace( pgeBrush, Brush_FaceGetVertCount( pOrgFace ) ) ;
 		if( pFace == NULL )
 			goto BCB_FAILURE ;
 		
 		nVerts = Brush_FaceGetVertCount( pOrgFace ) ;
 		for( i=0; i<nVerts; i++ )
 		{
-			pVert = jeBrush_FaceGetVertByIndex( pOrgFace, i ) ;
-			jeBrush_FaceSetVertByIndex( pFace, i, pVert ) ;
+			pVert = grBrush_FaceGetVertByIndex( pOrgFace, i ) ;
+			grBrush_FaceSetVertByIndex( pFace, i, pVert ) ;
 		}
-		if( !jeBrush_FaceGetFaceInfo( pOrgFace, &FaceInfo ) )
+		if( !grBrush_FaceGetFaceInfo( pOrgFace, &FaceInfo ) )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Brush_CopygeBrush:jeBrush_FaceGetFaceInfo");
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Brush_CopygeBrush:grBrush_FaceGetFaceInfo");
 			goto BCB_FAILURE ;
 		}
-		if( !jeBrush_FaceSetFaceInfo( pFace, &FaceInfo ) )
+		if( !grBrush_FaceSetFaceInfo( pFace, &FaceInfo ) )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Brush_CopygeBrush:jeBrush_FaceGetFaceInfo");
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Brush_CopygeBrush:grBrush_FaceGetFaceInfo");
 			goto BCB_FAILURE ;
 		}
 
@@ -141,13 +141,13 @@ jeBrush * Brush_CopygeBrush( const Brush * pBrush )
 	} 
 
 	Brush_GetXForm( pBrush, &XForm );
-	jeBrush_SetXForm( pgeBrush, &XForm, pBrush->bLockTextures ) ;
+	grBrush_SetXForm( pgeBrush, &XForm, pBrush->bLockTextures ) ;
 
 	return pgeBrush ;
 
 BCB_FAILURE :
 	if( pgeBrush != NULL )
-		jeBrush_Destroy( &pgeBrush ) ;
+		grBrush_Destroy( &pgeBrush ) ;
 
 	return NULL ;
 
@@ -156,9 +156,9 @@ BCB_FAILURE :
 
 static void Brush_RebuildBounds( FaceVertInfo * pfvi, void * lParam )
 {
-	const jeVec3d * pVert ;
-	jeVec3d			Vert ;
-	jeXForm3d		XForm ;
+	const grVec3d * pVert ;
+	grVec3d			Vert ;
+	grXForm3d		XForm ;
 	Brush	*	pBrush = (Brush*) lParam ;
 
 	assert( pfvi );
@@ -168,7 +168,7 @@ static void Brush_RebuildBounds( FaceVertInfo * pfvi, void * lParam )
 
 	pVert = Brush_FaceGetVertByIndex( pfvi->pFace, pfvi->nVert ) ;
 	Brush_GetXForm( pBrush, &XForm ) ;
-	jeXForm3d_Transform( &XForm, pVert, &Vert ) ;
+	grXForm3d_Transform( &XForm, pVert, &Vert ) ;
 	Util_geExtBox_ExtendToEnclose( &pBrush->WorldBounds, &Vert ) ;
 }// Brush_TransformFaceVerts
 
@@ -176,37 +176,37 @@ static void Brush_RebuildBounds( FaceVertInfo * pfvi, void * lParam )
 
 static void Brush_SetContents( Brush * pBrush, BRUSH_TYPE eAddType )
 {
-	jeBrush_Contents	Contents ;
+	grBrush_Contents	Contents ;
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 
-	Contents = jeBrush_GetContents( Brush_GetjeBrush( pBrush ) ) ;
+	Contents = grBrush_GetContents( Brush_GetgrBrush( pBrush ) ) ;
 
 	switch( eAddType )
 	{
 	case BRUSH_ADD :
-		Contents &= ~JE_BSP_CONTENTS_AIR;
-		Contents |= JE_BSP_CONTENTS_SOLID;
+		Contents &= ~GR_BSP_CONTENTS_AIR;
+		Contents |= GR_BSP_CONTENTS_SOLID;
 		break ;
 	case BRUSH_SUBTRACT :
-		Contents &= ~JE_BSP_CONTENTS_SOLID;
-		Contents |= JE_BSP_CONTENTS_AIR;
+		Contents &= ~GR_BSP_CONTENTS_SOLID;
+		Contents |= GR_BSP_CONTENTS_AIR;
 		break ;
 
 	default:
 		assert( 0 );
 	}
-	jeBrush_SetContents( Brush_GetjeBrush( pBrush ), Contents ) ;
+	grBrush_SetContents( Brush_GetgrBrush( pBrush ), Contents ) ;
 
 }// Brush_SetContents 
 
-static void Brush_SizeEdge( Brush * pBrush, const jeVec3d * pStillEdge, const jeFloat fScale, ORTHO_AXIS Axis )
+static void Brush_SizeEdge( Brush * pBrush, const grVec3d * pStillEdge, const grFloat fScale, ORTHO_AXIS Axis )
 {
-	jeVec3d		Scale ;
-	jeVec3d		Temp ;
-	jeVec3d		BrushWorldCenter ;
-	jeXForm3d	XForm ;
-	jeFloat		fTemp ;
+	grVec3d		Scale ;
+	grVec3d		Temp ;
+	grVec3d		BrushWorldCenter ;
+	grXForm3d	XForm ;
+	grFloat		fTemp ;
 
 	assert( pBrush );
 	assert( pStillEdge );
@@ -217,19 +217,19 @@ static void Brush_SizeEdge( Brush * pBrush, const jeVec3d * pStillEdge, const je
 
 	Brush_GetXForm( pBrush, &XForm ) ;
 
-	jeVec3d_Set( &Scale, 1.0f, 1.0f, 1.0f ) ;
-	jeVec3d_SetElement( &Scale, Axis, fScale ) ;
+	grVec3d_Set( &Scale, 1.0f, 1.0f, 1.0f ) ;
+	grVec3d_SetElement( &Scale, Axis, fScale ) ;
 	Temp = XForm.Translation ;	
-	jeVec3d_Clear( &XForm.Translation ) ;
-	jeXForm3d_Scale( &XForm, Scale.X, Scale.Y, Scale.Z ) ;
+	grVec3d_Clear( &XForm.Translation ) ;
+	grXForm3d_Scale( &XForm, Scale.X, Scale.Y, Scale.Z ) ;
 	XForm.Translation = Temp ;
 
 	Brush_GetWorldCenter( pBrush, &BrushWorldCenter ) ;
 
-	fTemp = jeVec3d_GetElement( &BrushWorldCenter, Axis ) - jeVec3d_GetElement( pStillEdge, Axis ) ;
+	fTemp = grVec3d_GetElement( &BrushWorldCenter, Axis ) - grVec3d_GetElement( pStillEdge, Axis ) ;
 	fTemp = fTemp * fScale ;
-	fTemp = fTemp + jeVec3d_GetElement( pStillEdge, Axis ) ;
-	jeVec3d_SetElement( &BrushWorldCenter, Axis, fTemp ) ;
+	fTemp = fTemp + grVec3d_GetElement( pStillEdge, Axis ) ;
+	grVec3d_SetElement( &BrushWorldCenter, Axis, fTemp ) ;
 	XForm.Translation = BrushWorldCenter ;
 
 	Brush_SetXForm( pBrush, &XForm) ;
@@ -252,10 +252,10 @@ Brush * Brush_Create( const char * const pszName, Group * pGroup,  int32 nNumber
 	assert( pszName != NULL ) ;
 	assert( strlen( pszName ) < BRUSH_MAXNAMELENGTH ) ;
 
-	pBrush = JE_RAM_ALLOCATE_STRUCT_CLEAR( Brush ) ;
+	pBrush = GR_RAM_ALLOCATE_STRUCT_CLEAR( Brush ) ;
 	if( pBrush == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Brush_Create" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Brush_Create" );
 		goto BC_FAILURE ;
 	}
 
@@ -263,27 +263,27 @@ Brush * Brush_Create( const char * const pszName, Group * pGroup,  int32 nNumber
 	
 	if( !Object_Init( &pBrush->ObjectData, pGroup, KIND_BRUSH, pszName, nNumber )  )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Brush_Create:Object_Init" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Brush_Create:Object_Init" );
 		goto BC_FAILURE ;
 	}
 	pBrush->pTemplate = NULL;
 	pBrush->Kind = BRUSH_INVALID ;
 	pBrush->Flags = BRUSH_FLAG_BOUNDSDIRTY ;
 	// Krouer: change default lock behavior -- cannot be changed
-	pBrush->bLockTextures = JE_TRUE; //JE_FALSE;
+	pBrush->bLockTextures = GR_TRUE; //GR_FALSE;
 	pBrush->pWorld = NULL;
-	pBrush->bShow = JE_TRUE;
+	pBrush->bShow = GR_TRUE;
 	pBrush->pSelFaces = FaceList_Create();
 	if( pBrush->pSelFaces == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Brush_Create:FaceList_Create" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Brush_Create:FaceList_Create" );
 		goto BC_FAILURE ;
 	}
 
 	pBrush->pSelVert = VertList_Create();
 	if( pBrush->pSelVert == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Brush_Create:VertList_Create" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Brush_Create:VertList_Create" );
 		goto BC_FAILURE ;
 	}
 
@@ -308,7 +308,7 @@ void Brush_Destroy( Brush ** ppBrush )
 		Model_RemoveBrush( pBrush->pModel, pBrush );
 	
 	if( pBrush->pBrush != NULL )
-		jeBrush_Destroy( &pBrush->pBrush ) ;
+		grBrush_Destroy( &pBrush->pBrush ) ;
 	if( pBrush->pSelFaces )
 		FaceList_Destroy( &pBrush->pSelFaces, NULL );
 
@@ -320,12 +320,12 @@ void Brush_Destroy( Brush ** ppBrush )
 	if( pBrush->pTemplate )
 		BrushTemplate_Destroy( &(pBrush->pTemplate) );
 	if( pBrush->ObjectData.pszName )
-		jeRam_Free( pBrush->ObjectData.pszName );
+		grRam_Free( pBrush->ObjectData.pszName );
 	// [MLB-ICE] EOB
 
 	assert( ((*ppBrush)->nSignature = 0) == 0 ) ;	// CLEAR
 	pBrush->ObjectData.ObjectKind = KIND_INVALID ;
-	jeRam_Free( *ppBrush ) ;
+	grRam_Free( *ppBrush ) ;
 
 }// Brush_Destroy
 
@@ -333,8 +333,8 @@ void Brush_Destroy( Brush ** ppBrush )
 Brush * Brush_Copy( const Brush * pBrush, const int32 nNumber )
 {
 	Brush			*	pNewBrush ;
-	jeBrush_Contents	Contents ;
-	jeBrush			*	pgeBrush ;
+	grBrush_Contents	Contents ;
+	grBrush			*	pgeBrush ;
 
 	// Brush_Copy does not add the brush to the model
 
@@ -348,14 +348,14 @@ Brush * Brush_Copy( const Brush * pBrush, const int32 nNumber )
 	pNewBrush = Brush_Create( Object_GetName( &pBrush->ObjectData ), pBrush->ObjectData.pGroup, nNumber ) ;
 	if( pNewBrush == NULL )
 	{
-		jeBrush_Destroy( &pgeBrush ) ;
+		grBrush_Destroy( &pgeBrush ) ;
 		return NULL ;
 	}
 
 	pNewBrush->pBrush = pgeBrush ;
 	pNewBrush->Flags = pBrush->Flags ;
-	Contents = jeBrush_GetContents( Brush_GetjeBrush( pBrush ) ) ;
-	jeBrush_SetContents( Brush_GetjeBrush( pNewBrush ), Contents ) ;
+	Contents = grBrush_GetContents( Brush_GetgrBrush( pBrush ) ) ;
+	grBrush_SetContents( Brush_GetgrBrush( pNewBrush ), Contents ) ;
 	pNewBrush->pTemplate = BrushTemplate_Copy( pBrush->pTemplate );
 	
 	pNewBrush->pModel		= NULL ;
@@ -399,7 +399,7 @@ char * Brush_CreateKindName( )
 }
 
 
-Brush * Brush_FromTemplate( BrushTemplate *pTemplate,  Group * pGroup, char * Name, int32 nNumber, jeFaceInfo * pFaceInfo, BRUSH_TYPE eAddType )
+Brush * Brush_FromTemplate( BrushTemplate *pTemplate,  Group * pGroup, char * Name, int32 nNumber, grFaceInfo * pFaceInfo, BRUSH_TYPE eAddType )
 {
 	Brush			*	pNewBrush ;
 
@@ -429,25 +429,25 @@ int32 Brush_GetFaceCount( const Brush * pBrush )
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	assert( pBrush->pBrush != NULL ) ;
 
-	return jeBrush_GetFaceCount( pBrush->pBrush ) ;
+	return grBrush_GetFaceCount( pBrush->pBrush ) ;
 	
 }// Brush_GetFaceCount
 
-jeBrush * Brush_GetjeBrush( const Brush * pBrush )
+grBrush * Brush_GetgrBrush( const Brush * pBrush )
 {
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	
 	return pBrush->pBrush ;
 
-}// Brush_GetjeBrush
+}// Brush_GetgrBrush
 
-jeBrush_Face * Brush_GetFaceByIndex( const Brush * pBrush, int32 Index )
+grBrush_Face * Brush_GetFaceByIndex( const Brush * pBrush, int32 Index )
 {
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	
-	return jeBrush_GetFaceByIndex( pBrush->pBrush, Index ) ;
+	return grBrush_GetFaceByIndex( pBrush->pBrush, Index ) ;
 
 }// Brush_GetFaceByIndex
 
@@ -456,7 +456,7 @@ int32 Brush_GetLargestFaceVertexCount( const Brush * pBrush )
 {
 	int32			nCount ;
 	int32			nVerts ;
-	jeBrush_Face *	pFace ;
+	grBrush_Face *	pFace ;
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 
@@ -464,7 +464,7 @@ int32 Brush_GetLargestFaceVertexCount( const Brush * pBrush )
 	nCount = 0 ;
 	do
 	{
-		nVerts = jeBrush_FaceGetVertCount( pFace ) ;
+		nVerts = grBrush_FaceGetVertCount( pFace ) ;
 		if( nVerts > nCount )
 			nCount = nVerts ;
 		pFace = Brush_GetNextFace( pBrush, pFace ) ;
@@ -478,11 +478,11 @@ int32 Brush_GetLargestFaceVertexCount( const Brush * pBrush )
 //	When more then one face is selected on a brush the first in selection.
 //	When one face is slected it returns next face.
 //	Returns curently selected face is last in list.
-jeBrush_Face *	Brush_GetNextSelFace( Brush * pBrush )
+grBrush_Face *	Brush_GetNextSelFace( Brush * pBrush )
 {
 	int32 FaceCnt;
 	FaceIterator  pMI;
-	jeBrush_Face *pSelFace = NULL;
+	grBrush_Face *pSelFace = NULL;
 	assert( pBrush );
 	assert( pBrush->pSelFaces );
 
@@ -490,14 +490,14 @@ jeBrush_Face *	Brush_GetNextSelFace( Brush * pBrush )
 
 	if( FaceCnt == 0 )
 	{
-		return( jeBrush_GetNextFace( pBrush->pBrush, NULL ) );
+		return( grBrush_GetNextFace( pBrush->pBrush, NULL ) );
 	}
 	if( FaceCnt > 1 )
 	{
 		return( FaceList_GetFirstFace( pBrush->pSelFaces, &pMI ) );
 	}
 	pSelFace = FaceList_GetFirstFace( pBrush->pSelFaces, &pMI );
-	return( jeBrush_GetNextFace( pBrush->pBrush, pSelFace )  );
+	return( grBrush_GetNextFace( pBrush->pBrush, pSelFace )  );
 }// Brush_GetNextSelFace
 
 //	Brush_GetPrevSelFace
@@ -505,11 +505,11 @@ jeBrush_Face *	Brush_GetNextSelFace( Brush * pBrush )
 //	When more then one face is selected on a brush the last in selection.
 //	When one face is slected it returns prev face.
 //	Returns curently selected face is firt in list.
-jeBrush_Face *	Brush_GetPrevSelFace( Brush * pBrush )
+grBrush_Face *	Brush_GetPrevSelFace( Brush * pBrush )
 {
 	int32 FaceCnt;
-	jeBrush_Face *pLastFound = NULL;
-	jeBrush_Face *Cur = NULL;
+	grBrush_Face *pLastFound = NULL;
+	grBrush_Face *Cur = NULL;
 	FaceIterator  pMI = NULL;
 	assert( pBrush );
 	assert( pBrush->pSelFaces );
@@ -518,11 +518,11 @@ jeBrush_Face *	Brush_GetPrevSelFace( Brush * pBrush )
 
 	if( FaceCnt == 0 )
 	{
-		Cur = jeBrush_GetNextFace( pBrush->pBrush, pLastFound );
+		Cur = grBrush_GetNextFace( pBrush->pBrush, pLastFound );
 		while( Cur != NULL )
 		{
 			pLastFound = Cur;
-			Cur = jeBrush_GetNextFace( pBrush->pBrush, pLastFound );
+			Cur = grBrush_GetNextFace( pBrush->pBrush, pLastFound );
 		}
 		return( pLastFound );
 	}
@@ -537,7 +537,7 @@ jeBrush_Face *	Brush_GetPrevSelFace( Brush * pBrush )
 		return( pLastFound );
 	}
 	Cur = FaceList_GetFirstFace( pBrush->pSelFaces, &pMI );
-	return( jeBrush_GetPrevFace( pBrush->pBrush, Cur) );
+	return( grBrush_GetPrevFace( pBrush->pBrush, Cur) );
 }// Brush_GetPrevSelFace
 
 Model * Brush_GetModel( Brush * pBrush )
@@ -549,24 +549,24 @@ Model * Brush_GetModel( Brush * pBrush )
 }// Brush_GetModel
 
 
-void Brush_GetVertexPoint( Brush * pBrush, jeVertArray_Index Index, jeVec3d * pVert )
+void Brush_GetVertexPoint( Brush * pBrush, grVertArray_Index Index, grVec3d * pVert )
 {
-	jeXForm3d			XForm ;
+	grXForm3d			XForm ;
 
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	assert( pVert != NULL ) ;
 
-	*pVert = *jeVertArray_GetVertByIndex( jeBrush_GetVertArray( pBrush->pBrush ), Index ) ;
+	*pVert = *grVertArray_GetVertByIndex( grBrush_GetVertArray( pBrush->pBrush ), Index ) ;
 	Brush_GetXForm( pBrush, &XForm ) ;
-	jeXForm3d_Transform( &XForm, pVert, pVert ) ;
+	grXForm3d_Transform( &XForm, pVert, pVert ) ;
 }// Brush_GetVertexPoint
 
 
 void Brush_Update( Brush * pBrush, int Update_Type )
 {
 	Model *	pModel;	
-	jeBrush_Face * pFace;
+	grBrush_Face * pFace;
 	FaceIterator MI;
 	assert( pBrush != NULL );
 	assert( pBrush->pBrush );
@@ -582,12 +582,12 @@ void Brush_Update( Brush * pBrush, int Update_Type )
 	pModel = Brush_GetModel( pBrush ) ;
 	if( pModel != NULL )
 	{
-		jeModel_UpdateBrush(Model_GetguModel(pModel ), pBrush->pBrush, gBrush_Lighting);
+		grModel_UpdateBrush(Model_GetguModel(pModel ), pBrush->pBrush, gBrush_Lighting);
 	}
 	pFace = FaceList_GetFirstFace( pBrush->pSelFaces,  &MI) ;
 	while( pFace != NULL )
 	{
-		jeModel_SetBrushFaceCBOnOff( Model_GetguModel(pModel ), pFace, JE_TRUE );
+		grModel_SetBrushFaceCBOnOff( Model_GetguModel(pModel ), pFace, GR_TRUE );
 		pFace = FaceList_GetNextFace( pBrush->pSelFaces,  &MI) ;
 	}
 	pBrush->ObjectData.miscFlags &= ~OBJECT_DIRTY;
@@ -595,7 +595,7 @@ void Brush_Update( Brush * pBrush, int Update_Type )
 	
 }
 
-const jeExtBox * Brush_GetWorldAxialBounds( const Brush * pBrush )
+const grExtBox * Brush_GetWorldAxialBounds( const Brush * pBrush )
 {
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
@@ -610,31 +610,31 @@ const jeExtBox * Brush_GetWorldAxialBounds( const Brush * pBrush )
 
 }// Brush_GetWorldAxialBounds
 
-void Brush_GetWorldCenter( const Brush * pBrush, jeVec3d * pCenter )
+void Brush_GetWorldCenter( const Brush * pBrush, grVec3d * pCenter )
 {
-	jeXForm3d	XForm ;
+	grXForm3d	XForm ;
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	assert( pCenter != NULL ) ;
 	
-	jeVec3d_Clear( pCenter ) ;
+	grVec3d_Clear( pCenter ) ;
 	Brush_GetXForm( pBrush , &XForm ) ;
-	jeXForm3d_Transform( &XForm, pCenter, pCenter ) ;
+	grXForm3d_Transform( &XForm, pCenter, pCenter ) ;
 
 }// Brush_GetWorldCenter
 
-void	Brush_GetXForm( const Brush * pBrush, jeXForm3d *pXF )
+void	Brush_GetXForm( const Brush * pBrush, grXForm3d *pXF )
 {
-	jeXForm3d ModelXForm;
+	grXForm3d ModelXForm;
 
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 
-	jeXForm3d_Copy( jeBrush_GetXForm( pBrush->pBrush ), pXF ) ;
+	grXForm3d_Copy( grBrush_GetXForm( pBrush->pBrush ), pXF ) ;
 	if( pBrush->pModel )
 	{
 		Model_GetXForm(pBrush->pModel,&ModelXForm );
-		jeXForm3d_Multiply( &ModelXForm, pXF, pXF );
+		grXForm3d_Multiply( &ModelXForm, pXF, pXF );
 	}
 
 }// Brush_GetXForm
@@ -655,19 +655,19 @@ VertList *	Brush_GetSelVert( const Brush * pBrush )
 
 
 // IS
-jeBoolean Brush_IsInModel( const Brush * pBrush )
+grBoolean Brush_IsInModel( const Brush * pBrush )
 {
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 
-	return ( pBrush->pModel != NULL ) ? JE_TRUE : JE_FALSE ;
+	return ( pBrush->pModel != NULL ) ? GR_TRUE : GR_FALSE ;
 
 }// Brush_IsInModel
 
-jeBoolean Brush_IsPointOverVertex( const Brush * pBrush, const jeVec3d * pWorldPt, ORTHO_AXIS OAxis, const jeFloat fThreshold, uint32 * pnVertex )
+grBoolean Brush_IsPointOverVertex( const Brush * pBrush, const grVec3d * pWorldPt, ORTHO_AXIS OAxis, const grFloat fThreshold, uint32 * pnVertex )
 {
-	jeExtBox	WorldBounds ;
-	jeVec3d		Threshold ;
+	grExtBox	WorldBounds ;
+	grVec3d		Threshold ;
 
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
@@ -675,47 +675,47 @@ jeBoolean Brush_IsPointOverVertex( const Brush * pBrush, const jeVec3d * pWorldP
 	assert( pWorldPt != NULL ) ;
 	assert( pnVertex != NULL ) ;
 
-	jeVec3d_Set( &Threshold, fThreshold, fThreshold, fThreshold ) ;
+	grVec3d_Set( &Threshold, fThreshold, fThreshold, fThreshold ) ;
 	WorldBounds = *Brush_GetWorldAxialBounds( pBrush ) ;
-	jeVec3d_Subtract( &WorldBounds.Min, &Threshold, &WorldBounds.Min ) ;
-	jeVec3d_Add( &WorldBounds.Max, &Threshold, &WorldBounds.Max ) ;
-	jeVec3d_SetElement( &WorldBounds.Min, OAxis, 0.0f ) ;
-	jeVec3d_SetElement( &WorldBounds.Max, OAxis, 0.0f ) ;
+	grVec3d_Subtract( &WorldBounds.Min, &Threshold, &WorldBounds.Min ) ;
+	grVec3d_Add( &WorldBounds.Max, &Threshold, &WorldBounds.Max ) ;
+	grVec3d_SetElement( &WorldBounds.Min, OAxis, 0.0f ) ;
+	grVec3d_SetElement( &WorldBounds.Max, OAxis, 0.0f ) ;
 
 	// Quick test of bounding box
-	if( jeExtBox_ContainsPoint( &WorldBounds, pWorldPt ) )
+	if( grExtBox_ContainsPoint( &WorldBounds, pWorldPt ) )
 	{
-		jeVertArray		*	pVerts ;
+		grVertArray		*	pVerts ;
 		int32				nVerts ;
-		jeVec3d				Vert ;
-		jeXForm3d			XForm ;
-		jeVertArray_Index	i ;
+		grVec3d				Vert ;
+		grXForm3d			XForm ;
+		grVertArray_Index	i ;
 
 		Brush_GetXForm( pBrush, &XForm ) ;
-		pVerts = jeBrush_GetVertArray( pBrush->pBrush ) ;
-		nVerts = jeVertArray_GetMaxIndex( pVerts );
+		pVerts = grBrush_GetVertArray( pBrush->pBrush ) ;
+		nVerts = grVertArray_GetMaxIndex( pVerts );
 
 		for( i=0; i<nVerts; i++ )
 		{
-			Vert = *jeVertArray_GetVertByIndex( pVerts, i ) ;
-			jeXForm3d_Transform( &XForm, &Vert, &Vert ) ;
-			jeVec3d_SetElement( &Vert, OAxis, 0.0f ) ;
-			if( jeVec3d_Compare( pWorldPt, &Vert, fThreshold ) )
+			Vert = *grVertArray_GetVertByIndex( pVerts, i ) ;
+			grXForm3d_Transform( &XForm, &Vert, &Vert ) ;
+			grVec3d_SetElement( &Vert, OAxis, 0.0f ) ;
+			if( grVec3d_Compare( pWorldPt, &Vert, fThreshold ) )
 			{
 				*pnVertex = i ;
-				return JE_TRUE ;
+				return GR_TRUE ;
 			}
 		}
 	}
-	return JE_FALSE ;
+	return GR_FALSE ;
 }// Brush_IsPointOverVertex
 
 
-jeBoolean Brush_IsPointOverNearVertex( const Brush * pBrush, const jeVec3d * pWorldPt, ORTHO_AXIS OAxis, const jeFloat fThreshold, uint32 * pnVertex )
+grBoolean Brush_IsPointOverNearVertex( const Brush * pBrush, const grVec3d * pWorldPt, ORTHO_AXIS OAxis, const grFloat fThreshold, uint32 * pnVertex )
 {
-	jeExtBox	WorldBounds ;
-	jeVec3d		Threshold ;
-	jeBoolean	bFoundVert = JE_FALSE ;
+	grExtBox	WorldBounds ;
+	grVec3d		Threshold ;
+	grBoolean	bFoundVert = GR_FALSE ;
 
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
@@ -724,47 +724,47 @@ jeBoolean Brush_IsPointOverNearVertex( const Brush * pBrush, const jeVec3d * pWo
 	assert( pnVertex != NULL ) ;
 
 	// Tests for point closest in ortho view
-	jeVec3d_Set( &Threshold, fThreshold, fThreshold, fThreshold ) ;
+	grVec3d_Set( &Threshold, fThreshold, fThreshold, fThreshold ) ;
 	WorldBounds = *Brush_GetWorldAxialBounds( pBrush ) ;
-	jeVec3d_Subtract( &WorldBounds.Min, &Threshold, &WorldBounds.Min ) ;
-	jeVec3d_Add( &WorldBounds.Max, &Threshold, &WorldBounds.Max ) ;
-	jeVec3d_SetElement( &WorldBounds.Min, OAxis, 0.0f ) ;
-	jeVec3d_SetElement( &WorldBounds.Max, OAxis, 0.0f ) ;
+	grVec3d_Subtract( &WorldBounds.Min, &Threshold, &WorldBounds.Min ) ;
+	grVec3d_Add( &WorldBounds.Max, &Threshold, &WorldBounds.Max ) ;
+	grVec3d_SetElement( &WorldBounds.Min, OAxis, 0.0f ) ;
+	grVec3d_SetElement( &WorldBounds.Max, OAxis, 0.0f ) ;
 
 	// Quick test of bounding box
-	if( jeExtBox_ContainsPoint( &WorldBounds, pWorldPt ) )
+	if( grExtBox_ContainsPoint( &WorldBounds, pWorldPt ) )
 	{
-		jeVertArray		*	pVerts ;
+		grVertArray		*	pVerts ;
 		int32				nVerts ;
-		jeVec3d				Vert ;
-		jeVec3d				Dif ;
-		jeXForm3d			XForm ;
-		jeVertArray_Index	i ;
-		jeFloat				fNear = -FLT_MAX ;
-		jeFloat				fNearAxis ;
-		jeFloat				fDistSqared;
-		jeFloat				fFoundDist;
+		grVec3d				Vert ;
+		grVec3d				Dif ;
+		grXForm3d			XForm ;
+		grVertArray_Index	i ;
+		grFloat				fNear = -FLT_MAX ;
+		grFloat				fNearAxis ;
+		grFloat				fDistSqared;
+		grFloat				fFoundDist;
 
 		Brush_GetXForm( pBrush, &XForm );
-		pVerts = jeBrush_GetVertArray( pBrush->pBrush ) ;
-		nVerts = jeVertArray_GetMaxIndex( pVerts );
+		pVerts = grBrush_GetVertArray( pBrush->pBrush ) ;
+		nVerts = grVertArray_GetMaxIndex( pVerts );
 
 		fFoundDist = FLT_MAX;
 		for( i=0; i<nVerts; i++ )
 		{
-			Vert = *jeVertArray_GetVertByIndex( pVerts, i ) ;
-			jeXForm3d_Transform( &XForm, &Vert, &Vert ) ;
-			jeVec3d_SetElement( &Vert, OAxis, 0.0f ) ;
-			jeVec3d_Subtract( pWorldPt, &Vert, &Dif);
-			fDistSqared = jeVec3d_LengthSquared( &Dif );
+			Vert = *grVertArray_GetVertByIndex( pVerts, i ) ;
+			grXForm3d_Transform( &XForm, &Vert, &Vert ) ;
+			grVec3d_SetElement( &Vert, OAxis, 0.0f ) ;
+			grVec3d_Subtract( pWorldPt, &Vert, &Dif);
+			fDistSqared = grVec3d_LengthSquared( &Dif );
 			if( fDistSqared < fThreshold && fDistSqared <= fFoundDist )
 			{
-				Vert = *jeVertArray_GetVertByIndex( pVerts, i ) ;
-				fNearAxis = jeVec3d_GetElement( &Vert, OAxis ) ;
+				Vert = *grVertArray_GetVertByIndex( pVerts, i ) ;
+				fNearAxis = grVec3d_GetElement( &Vert, OAxis ) ;
 				if( fNearAxis > fNear )
 				{
 					*pnVertex = i ;
-					bFoundVert = JE_TRUE ;
+					bFoundVert = GR_TRUE ;
 					fNear = fNearAxis ;
 					fFoundDist = fDistSqared;
 				}
@@ -775,7 +775,7 @@ jeBoolean Brush_IsPointOverNearVertex( const Brush * pBrush, const jeVec3d * pWo
 }// Brush_IsPointOverNearVertex
 
 
-jeBoolean Brush_HasSelectedVert( const Brush * pBrush )
+grBoolean Brush_HasSelectedVert( const Brush * pBrush )
 {
 	assert( pBrush );
 	assert( pBrush->pSelVert );
@@ -783,7 +783,7 @@ jeBoolean Brush_HasSelectedVert( const Brush * pBrush )
 	return( VertList_GetNumVert( pBrush->pSelVert ) != 0 );
 }// Brush_HasSelectedVert
 
-jeBoolean Brush_HasSelectedFace( const Brush * pBrush )
+grBoolean Brush_HasSelectedFace( const Brush * pBrush )
 {
 	assert( pBrush );
 	assert( pBrush->pSelFaces );
@@ -792,7 +792,7 @@ jeBoolean Brush_HasSelectedFace( const Brush * pBrush )
 }// Brush_HasSelectedFace
 
 
-jeBoolean	Brush_IsFaceSelected( const Brush * pBrush, jeBrush_Face * pFace )
+grBoolean	Brush_IsFaceSelected( const Brush * pBrush, grBrush_Face * pFace )
 {
 	FaceIterator  fI;
 
@@ -802,10 +802,10 @@ jeBoolean	Brush_IsFaceSelected( const Brush * pBrush, jeBrush_Face * pFace )
 	return( FaceList_Search( pBrush->pSelFaces,pFace, &fI ) );
 }// Brush_IsFaceSelected
 
-jeBoolean	Brush_IsInRect( const Brush * pBrush, jeExtBox *pSelRect, jeBoolean bSelEncompeses )
+grBoolean	Brush_IsInRect( const Brush * pBrush, grExtBox *pSelRect, grBoolean bSelEncompeses )
 {
-	const jeExtBox *pWorldBounds;
-	jeExtBox		Result;
+	const grExtBox *pWorldBounds;
+	grExtBox		Result;
 
 	assert( pBrush );
 	assert( pSelRect );
@@ -819,40 +819,40 @@ jeBoolean	Brush_IsInRect( const Brush * pBrush, jeExtBox *pSelRect, jeBoolean bS
 			pSelRect->Min.X <= pWorldBounds->Min.X &&
 			pSelRect->Min.Y <= pWorldBounds->Min.Y &&
 			pSelRect->Min.Z <= pWorldBounds->Min.Z )
-			 return( JE_TRUE );
+			 return( GR_TRUE );
 	}
 	else
 	{
 		return( Util_geExtBox_Intersection ( pSelRect, pWorldBounds, &Result	) );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }//Brush_IsInRect
 
-jeBoolean Brush_IsCutBrush( const Brush * pBrush )
+grBoolean Brush_IsCutBrush( const Brush * pBrush )
 {
-	jeBrush_Contents Contents;
+	grBrush_Contents Contents;
 
 	assert( pBrush );
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	assert( pBrush->pBrush );
 
-	Contents = jeBrush_GetContents( pBrush->pBrush );
+	Contents = grBrush_GetContents( pBrush->pBrush );
 
-	return( Contents & JE_BSP_CONTENTS_AIR );
+	return( Contents & GR_BSP_CONTENTS_AIR );
 }
 
 //
 // MODIFIERS
 //
-void Brush_Move( Brush * pBrush, const jeVec3d * pWorldDistance )
+void Brush_Move( Brush * pBrush, const grVec3d * pWorldDistance )
 {
-	jeXForm3d	XForm ;
+	grXForm3d	XForm ;
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	assert( pWorldDistance );
 
 	Brush_GetXForm( pBrush, &XForm ) ;
-	jeXForm3d_Translate( &XForm, pWorldDistance->X, pWorldDistance->Y, pWorldDistance->Z ) ;
+	grXForm3d_Translate( &XForm, pWorldDistance->X, pWorldDistance->Y, pWorldDistance->Z ) ;
 
 	Brush_SetXForm( pBrush, &XForm ) ;
 	Brush_SetModified( pBrush ) ;
@@ -861,24 +861,24 @@ void Brush_Move( Brush * pBrush, const jeVec3d * pWorldDistance )
 
 }// Brush_Move
 
-void Brush_Rotate( Brush * pBrush, ORTHO_AXIS RAxis, jeFloat RadianAngle, const jeVec3d * pRotationCenter )
+void Brush_Rotate( Brush * pBrush, ORTHO_AXIS RAxis, grFloat RadianAngle, const grVec3d * pRotationCenter )
 {
-	jeXForm3d	XForm ;
+	grXForm3d	XForm ;
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	
 	Brush_GetXForm( pBrush, &XForm ) ;
-	jeXForm3d_Translate( &XForm, -pRotationCenter->X, -pRotationCenter->Y, -pRotationCenter->Z ) ;
+	grXForm3d_Translate( &XForm, -pRotationCenter->X, -pRotationCenter->Y, -pRotationCenter->Z ) ;
 	switch( RAxis )
 	{
 	case Ortho_Axis_X :
-		jeXForm3d_RotateX( &XForm, RadianAngle ) ;	break ;
+		grXForm3d_RotateX( &XForm, RadianAngle ) ;	break ;
 	case Ortho_Axis_Y :
-		jeXForm3d_RotateY( &XForm, RadianAngle ) ;	break ;
+		grXForm3d_RotateY( &XForm, RadianAngle ) ;	break ;
 	case Ortho_Axis_Z :
-		jeXForm3d_RotateZ( &XForm, RadianAngle ) ;	break ;
+		grXForm3d_RotateZ( &XForm, RadianAngle ) ;	break ;
 	}
-	jeXForm3d_Translate( &XForm, pRotationCenter->X, pRotationCenter->Y, pRotationCenter->Z ) ; 
+	grXForm3d_Translate( &XForm, pRotationCenter->X, pRotationCenter->Y, pRotationCenter->Z ) ; 
 
 	Brush_SetXForm( pBrush, &XForm) ;
 	Brush_SetModified( pBrush ) ;
@@ -908,7 +908,7 @@ void Brush_SetModified( Brush * pBrush )
 }// Brush_SetModified
 
 
-void Brush_Size( Brush * pBrush, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
+void Brush_Size( Brush * pBrush, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
 {
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
@@ -977,11 +977,11 @@ void Brush_Size( Brush * pBrush, const jeExtBox * pSelectedBounds, const jeFloat
 }// Brush_Size
 
 
-void Brush_SetXForm( Brush * pBrush, const jeXForm3d * XForm )
+void Brush_SetXForm( Brush * pBrush, const grXForm3d * XForm )
 {
-	jeXForm3d TempXForm;
-	jeXForm3d ModelXForm;
-	jeXForm3d IModelXForm;
+	grXForm3d TempXForm;
+	grXForm3d ModelXForm;
+	grXForm3d IModelXForm;
 	assert( pBrush != NULL ) ;
 	assert( XForm != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
@@ -991,10 +991,10 @@ void Brush_SetXForm( Brush * pBrush, const jeXForm3d * XForm )
 	if( pBrush->pModel )
 	{
 		Model_GetXForm( pBrush->pModel, &ModelXForm );
-		jeXForm3d_GetTranspose( &ModelXForm, &IModelXForm);
-		jeXForm3d_Multiply( &IModelXForm, &TempXForm, &TempXForm );
+		grXForm3d_GetTranspose( &ModelXForm, &IModelXForm);
+		grXForm3d_Multiply( &IModelXForm, &TempXForm, &TempXForm );
 	}
-	jeBrush_SetXForm( pBrush->pBrush, &TempXForm, pBrush->bLockTextures) ;
+	grBrush_SetXForm( pBrush->pBrush, &TempXForm, pBrush->bLockTextures) ;
 	Brush_SetModified( pBrush ) ;
 	assert( Brush_IsBoundsValid( pBrush ) ) ;
 
@@ -1012,7 +1012,7 @@ void Brush_UpdateBounds( const Brush * pBrush )
 	}
 }// Brush_UpdateBounds
 
-void Brush_SetGeBrush( Brush* pBrush, BRUSH_KIND Kind, jeBrush * pgeBrush )
+void Brush_SetGeBrush( Brush* pBrush, BRUSH_KIND Kind, grBrush * pgeBrush )
 {
 
 	pBrush->pBrush = pgeBrush;
@@ -1027,70 +1027,70 @@ void Brush_SetGeBrush( Brush* pBrush, BRUSH_KIND Kind, jeBrush * pgeBrush )
 //Since shiffting just the verts could cause them to shift beyond the brushs transform,
 //it is best to shift the brush transform first and then shift the verts basded on the 
 //distance between the transform and the vert.
-void Brush_Shear( Brush* pBrush, const jeVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const jeExtBox * pSelectedBounds)
+void Brush_Shear( Brush* pBrush, const grVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const grExtBox * pSelectedBounds)
 {
 	short		i;
-	jeVertArray		*	pVerts ;
+	grVertArray		*	pVerts ;
 	int32				nVerts ;
-	jeVec3d				Vert ;
-	jeVec3d				VertTransformed ;
-	jeVec3d				Translation;
+	grVec3d				Vert ;
+	grVec3d				VertTransformed ;
+	grVec3d				Translation;
 	ORTHO_AXIS			ScaleAxis = 0;
-	jeFloat				ScaleLength = 0.0f;
-	jeFloat				FixedHandle = 0.0f;
-	jeXForm3d			BrushXForm;
-	jeXForm3d			InverseBrushXForm;
-	jeFloat				Scale;
+	grFloat				ScaleLength = 0.0f;
+	grFloat				FixedHandle = 0.0f;
+	grXForm3d			BrushXForm;
+	grXForm3d			InverseBrushXForm;
+	grFloat				Scale;
 
 	assert(pBrush);
 	assert(pWorldDistance);
 	assert(pSelectedBounds);
 
-	jeVec3d_Set( &Translation, 0.0f, 0.0f, 0.0f );
+	grVec3d_Set( &Translation, 0.0f, 0.0f, 0.0f );
 	switch( eSizeType )
 	{
 	case Select_Left:
 		ScaleAxis = HAxis;
-		FixedHandle = jeVec3d_GetElement( &pSelectedBounds->Max, HAxis );
-		jeVec3d_SetElement( &Translation, VAxis, -jeVec3d_GetElement( pWorldDistance, VAxis ) );
-		ScaleLength = jeVec3d_GetElement( &pSelectedBounds->Max, HAxis ) - jeVec3d_GetElement( &pSelectedBounds->Min, HAxis );
+		FixedHandle = grVec3d_GetElement( &pSelectedBounds->Max, HAxis );
+		grVec3d_SetElement( &Translation, VAxis, -grVec3d_GetElement( pWorldDistance, VAxis ) );
+		ScaleLength = grVec3d_GetElement( &pSelectedBounds->Max, HAxis ) - grVec3d_GetElement( &pSelectedBounds->Min, HAxis );
 		break;
 
 	case Select_Right:
 		ScaleAxis = HAxis;
-		FixedHandle = jeVec3d_GetElement( &pSelectedBounds->Min, HAxis );
-		jeVec3d_SetElement( &Translation, VAxis, jeVec3d_GetElement( pWorldDistance, VAxis ) );
-		ScaleLength = jeVec3d_GetElement( &pSelectedBounds->Max, HAxis ) - jeVec3d_GetElement( &pSelectedBounds->Min, HAxis );
+		FixedHandle = grVec3d_GetElement( &pSelectedBounds->Min, HAxis );
+		grVec3d_SetElement( &Translation, VAxis, grVec3d_GetElement( pWorldDistance, VAxis ) );
+		ScaleLength = grVec3d_GetElement( &pSelectedBounds->Max, HAxis ) - grVec3d_GetElement( &pSelectedBounds->Min, HAxis );
 		break;
 
 	case Select_Top:
 		ScaleAxis = VAxis;
 		if( VAxis == Ortho_Axis_Z ) //I'm told that this is because in is negative Z
 		{
-			FixedHandle = jeVec3d_GetElement( &pSelectedBounds->Max, VAxis );
-			jeVec3d_SetElement( &Translation, HAxis, -jeVec3d_GetElement( pWorldDistance, HAxis ) );
+			FixedHandle = grVec3d_GetElement( &pSelectedBounds->Max, VAxis );
+			grVec3d_SetElement( &Translation, HAxis, -grVec3d_GetElement( pWorldDistance, HAxis ) );
 		}
 		else
 		{
-			FixedHandle = jeVec3d_GetElement( &pSelectedBounds->Min, VAxis );
-			jeVec3d_SetElement( &Translation, HAxis, jeVec3d_GetElement( pWorldDistance, HAxis ) );
+			FixedHandle = grVec3d_GetElement( &pSelectedBounds->Min, VAxis );
+			grVec3d_SetElement( &Translation, HAxis, grVec3d_GetElement( pWorldDistance, HAxis ) );
 		}
-		ScaleLength = jeVec3d_GetElement( &pSelectedBounds->Max, VAxis ) - jeVec3d_GetElement( &pSelectedBounds->Min, VAxis );
+		ScaleLength = grVec3d_GetElement( &pSelectedBounds->Max, VAxis ) - grVec3d_GetElement( &pSelectedBounds->Min, VAxis );
 		break;
 
 	case Select_Bottom:
 		ScaleAxis = VAxis;
 		if( VAxis == Ortho_Axis_Z ) //I'm told that this is because in is negative Z
 		{
-			FixedHandle = jeVec3d_GetElement( &pSelectedBounds->Min, VAxis );
-			jeVec3d_SetElement( &Translation, HAxis, jeVec3d_GetElement( pWorldDistance, HAxis ) );
+			FixedHandle = grVec3d_GetElement( &pSelectedBounds->Min, VAxis );
+			grVec3d_SetElement( &Translation, HAxis, grVec3d_GetElement( pWorldDistance, HAxis ) );
 		}
 		else
 		{
-			FixedHandle = jeVec3d_GetElement( &pSelectedBounds->Max, VAxis );
-			jeVec3d_SetElement( &Translation, HAxis, -jeVec3d_GetElement( pWorldDistance, HAxis ) );
+			FixedHandle = grVec3d_GetElement( &pSelectedBounds->Max, VAxis );
+			grVec3d_SetElement( &Translation, HAxis, -grVec3d_GetElement( pWorldDistance, HAxis ) );
 		}
-		ScaleLength = jeVec3d_GetElement( &pSelectedBounds->Max, VAxis ) - jeVec3d_GetElement( &pSelectedBounds->Min, VAxis );
+		ScaleLength = grVec3d_GetElement( &pSelectedBounds->Max, VAxis ) - grVec3d_GetElement( &pSelectedBounds->Min, VAxis );
 		break;
 
 	default:
@@ -1099,32 +1099,32 @@ void Brush_Shear( Brush* pBrush, const jeVec3d * pWorldDistance, SELECT_HANDLE e
 
 	//First transform the brush
 	Brush_GetXForm( pBrush, &BrushXForm ) ;
-	Scale = (jeVec3d_GetElement( &BrushXForm.Translation, ScaleAxis ) - FixedHandle )/ScaleLength;
-	jeVec3d_MA(&BrushXForm.Translation,  Scale, &Translation,  &BrushXForm.Translation );
+	Scale = (grVec3d_GetElement( &BrushXForm.Translation, ScaleAxis ) - FixedHandle )/ScaleLength;
+	grVec3d_MA(&BrushXForm.Translation,  Scale, &Translation,  &BrushXForm.Translation );
 	Brush_SetXForm(pBrush, &BrushXForm);
 
-	pVerts = jeBrush_GetVertArray( pBrush->pBrush ) ;
-	nVerts = jeVertArray_GetMaxIndex( pVerts );
+	pVerts = grBrush_GetVertArray( pBrush->pBrush ) ;
+	nVerts = grVertArray_GetMaxIndex( pVerts );
 
 	for( i=0; i<nVerts; i++ )
 	{
 
-		Vert = *jeVertArray_GetVertByIndex( pVerts, i ) ;
-		jeXForm3d_Transform( &BrushXForm, &Vert, &VertTransformed );
-		Scale = (jeVec3d_GetElement( &VertTransformed, ScaleAxis ) - jeVec3d_GetElement( &BrushXForm.Translation, ScaleAxis ) )/ScaleLength;
+		Vert = *grVertArray_GetVertByIndex( pVerts, i ) ;
+		grXForm3d_Transform( &BrushXForm, &Vert, &VertTransformed );
+		Scale = (grVec3d_GetElement( &VertTransformed, ScaleAxis ) - grVec3d_GetElement( &BrushXForm.Translation, ScaleAxis ) )/ScaleLength;
 
-		jeVec3d_MA(&VertTransformed,  Scale, &Translation,  &VertTransformed );
+		grVec3d_MA(&VertTransformed,  Scale, &Translation,  &VertTransformed );
 		Brush_GetXForm( pBrush, &BrushXForm ) ;
-		jeXForm3d_GetInverse(&BrushXForm, &InverseBrushXForm);
+		grXForm3d_GetInverse(&BrushXForm, &InverseBrushXForm);
 		InverseBrushXForm.Flags = XFORM3D_NONORTHOGONALISOK;
-		jeXForm3d_Transform( &InverseBrushXForm, &VertTransformed, &Vert );
-		jeVertArray_SetVertByIndex( pVerts, i, &Vert );
+		grXForm3d_Transform( &InverseBrushXForm, &VertTransformed, &Vert );
+		grVertArray_SetVertByIndex( pVerts, i, &Vert );
 	}
 	pBrush->Flags |= BRUSH_FLAG_BOUNDSDIRTY;
 }
 
 //  FACE MODIFIERS
-void Brush_SelectFace( Brush * pBrush, jeBrush_Face * pFace )
+void Brush_SelectFace( Brush * pBrush, grBrush_Face * pFace )
 {
 	FaceIterator	fI;
 
@@ -1135,10 +1135,10 @@ void Brush_SelectFace( Brush * pBrush, jeBrush_Face * pFace )
 		return;
 	FaceList_Append( pBrush->pSelFaces, pFace );
 	if( pBrush->pModel )
-		jeModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, JE_TRUE );
+		grModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, GR_TRUE );
 }
 
-void Brush_DeselectFace( Brush * pBrush, jeBrush_Face * pFace, jeBoolean *FaceListEmpty )
+void Brush_DeselectFace( Brush * pBrush, grBrush_Face * pFace, grBoolean *FaceListEmpty )
 {
 
 	assert( pBrush );
@@ -1147,13 +1147,13 @@ void Brush_DeselectFace( Brush * pBrush, jeBrush_Face * pFace, jeBoolean *FaceLi
 	FaceList_Remove( pBrush->pSelFaces, pFace );
 	*FaceListEmpty = ( FaceList_GetNumFace( pBrush->pSelFaces ) == 0 );
 	if( pBrush->pModel )
-		jeModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, JE_FALSE );
+		grModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, GR_FALSE );
 }
 
 void Brush_DeselectAllFaces( Brush * pBrush )
 {
 	FaceIterator	fI;
-	jeBrush_Face	*	pFace;
+	grBrush_Face	*	pFace;
 
 	assert( pBrush );
 
@@ -1161,63 +1161,63 @@ void Brush_DeselectAllFaces( Brush * pBrush )
 	{
 			pFace = FaceList_GetFirstFace(pBrush->pSelFaces, &fI );
 			if( pBrush->pModel )
-				jeModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, JE_FALSE );
+				grModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, GR_FALSE );
 			FaceList_Remove( pBrush->pSelFaces, pFace );
 	}
 }
 
 void Brush_SelectAllFaces( Brush * pBrush )
 {
-	jeBrush_Face	*	pFace = NULL;
+	grBrush_Face	*	pFace = NULL;
 
 	assert( pBrush );
 	assert( pBrush->pSelFaces );
 
 	Brush_DeselectAllFaces( pBrush );
 	
-	pFace = jeBrush_GetNextFace( pBrush->pBrush, pFace);
+	pFace = grBrush_GetNextFace( pBrush->pBrush, pFace);
 	while( pFace != NULL )
 	{
 		FaceList_Append( pBrush->pSelFaces, pFace );
 		if( pBrush->pModel )
-			jeModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, JE_TRUE );
-		pFace = jeBrush_GetNextFace( pBrush->pBrush, pFace);
+			grModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, GR_TRUE );
+		pFace = grBrush_GetNextFace( pBrush->pBrush, pFace);
 	}
 }
 
 void Brush_SelectFirstFace( Brush * pBrush )
 {
-	jeBrush_Face	*	pFace = NULL;
+	grBrush_Face	*	pFace = NULL;
 
-	pFace = jeBrush_GetNextFace( pBrush->pBrush, pFace);
+	pFace = grBrush_GetNextFace( pBrush->pBrush, pFace);
 	FaceList_Append( pBrush->pSelFaces, pFace );
 	if( pBrush->pModel )
-		jeModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, JE_TRUE );
+		grModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, GR_TRUE );
 }
 
 void Brush_SelectLastFace( Brush * pBrush )
 {
-	jeBrush_Face	*	pFace = NULL;
-	jeBrush_Face	*	pPrevFace = NULL;
+	grBrush_Face	*	pFace = NULL;
+	grBrush_Face	*	pPrevFace = NULL;
 
 	do 
 	{
 		pPrevFace = pFace;
-		pFace = jeBrush_GetNextFace( pBrush->pBrush, pPrevFace);
+		pFace = grBrush_GetNextFace( pBrush->pBrush, pPrevFace);
 	}while( pFace );
 	if( pPrevFace !=NULL )
 	{
 		FaceList_Append( pBrush->pSelFaces, pPrevFace );
 		if( pBrush->pModel )
-			jeModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, JE_TRUE );
+			grModel_SetBrushFaceCBOnOff(Model_GetguModel( pBrush->pModel), pFace, GR_TRUE );
 	}
 }// Brush_SelectLastFace
 
-static void * Brush_BuildMatrUndoContext( jeBrush_Face *pFace, jeModel * pModel, jeMaterial_ArrayIndex MaterialIndex )
+static void * Brush_BuildMatrUndoContext( grBrush_Face *pFace, grModel * pModel, grMaterial_ArrayIndex MaterialIndex )
 {
 	MaterialUndoContext *pUndoContext;
 
-	pUndoContext = JE_RAM_ALLOCATE_STRUCT( MaterialUndoContext );
+	pUndoContext = GR_RAM_ALLOCATE_STRUCT( MaterialUndoContext );
 	if( pUndoContext == NULL )
 		return( NULL );
 	pUndoContext->MaterialIndex = MaterialIndex;
@@ -1227,35 +1227,35 @@ static void * Brush_BuildMatrUndoContext( jeBrush_Face *pFace, jeModel * pModel,
 	return( pUndoContext );
 }
 
-static jeBoolean Brush_ApplyMatrCB( jeBrush_Face *pFace, void * pVoid )
+static grBoolean Brush_ApplyMatrCB( grBrush_Face *pFace, void * pVoid )
 {
 	FaceInfoCB_Struct * pFaceInfoData = (FaceInfoCB_Struct*)pVoid;
-	jeFaceInfo FaceInfo;
+	grFaceInfo FaceInfo;
 	void * UndoContext;
 
 	assert( pFace );
 	assert( pVoid );
 
-	jeBrush_FaceGetFaceInfo( pFace, &FaceInfo );
+	grBrush_FaceGetFaceInfo( pFace, &FaceInfo );
 	UndoContext = Brush_BuildMatrUndoContext( pFace, pFaceInfoData->pgeModel, FaceInfo.MaterialIndex );
 	if( UndoContext != NULL )
 		Undo_AddSubTransaction( pFaceInfoData->pUndo, UNDO_APPLYMATERIAL, (Object*)pFaceInfoData->pBrush, UndoContext );
 
 	FaceInfo.MaterialIndex = pFaceInfoData->pFaceInfo->MaterialIndex;
-	jeBrush_FaceSetFaceInfo( pFace, &FaceInfo);
+	grBrush_FaceSetFaceInfo( pFace, &FaceInfo);
 	if( pFaceInfoData->pgeModel != NULL )
-		jeModel_UpdateBrushFace( pFaceInfoData->pgeModel, pFace, JE_TRUE );
-	return( JE_TRUE );
+		grModel_UpdateBrushFace( pFaceInfoData->pgeModel, pFace, GR_TRUE );
+	return( GR_TRUE );
 }
 
-void Brush_ApplyMatrToFaces( Brush * pBrush, const jeFaceInfo *pFaceInfo, Undo *pUndo )
+void Brush_ApplyMatrToFaces( Brush * pBrush, const grFaceInfo *pFaceInfo, Undo *pUndo )
 {
 	FaceInfoCB_Struct FaceInfoData;
 
 	assert( pBrush );
 	assert( pFaceInfo );
 
-	FaceInfoData.pFaceInfo = (jeFaceInfo *)pFaceInfo;
+	FaceInfoData.pFaceInfo = (grFaceInfo *)pFaceInfo;
 	FaceInfoData.pBrush = pBrush;
 	FaceInfoData.pUndo = pUndo;
 	if(  pBrush->pModel != NULL )
@@ -1265,10 +1265,10 @@ void Brush_ApplyMatrToFaces( Brush * pBrush, const jeFaceInfo *pFaceInfo, Undo *
 	FaceList_Enum(pBrush->pSelFaces, Brush_ApplyMatrCB, (void*)&FaceInfoData);
 }//Brush_ApplyMatrToFaces
 
-static jeBoolean Brush_SetFaceInfoCB( jeBrush_Face *pFace, void * pVoid )
+static grBoolean Brush_SetFaceInfoCB( grBrush_Face *pFace, void * pVoid )
 {
 	FaceInfoCB_Struct* pFaceInfoData = (FaceInfoCB_Struct*)pVoid;
-	jeFaceInfo FaceInfo;
+	grFaceInfo FaceInfo;
 	int32		Flags;
 
 	assert( pFace );
@@ -1277,7 +1277,7 @@ static jeBoolean Brush_SetFaceInfoCB( jeBrush_Face *pFace, void * pVoid )
 	assert( pFace );
 	assert( pVoid );
 
-	jeBrush_FaceGetFaceInfo(pFace, &FaceInfo);
+	grBrush_FaceGetFaceInfo(pFace, &FaceInfo);
 
 	if( pFaceInfoData->FieldFlag & FACE_FIELD_DRAWSCALEU )
 	{
@@ -1403,10 +1403,10 @@ static jeBoolean Brush_SetFaceInfoCB( jeBrush_Face *pFace, void * pVoid )
 	if( pFaceInfoData->FieldFlag & FACE_FIELD_ALPHA )
 		FaceInfo.Alpha = pFaceInfoData->pFaceInfo->Alpha;
 
-	jeBrush_FaceSetFaceInfo( pFace, &FaceInfo);
+	grBrush_FaceSetFaceInfo( pFace, &FaceInfo);
 	if( pFaceInfoData->pgeModel != NULL )
-		jeModel_UpdateBrushFace( pFaceInfoData->pgeModel, pFace, JE_TRUE );
-	return( JE_TRUE );
+		grModel_UpdateBrushFace( pFaceInfoData->pgeModel, pFace, GR_TRUE );
+	return( GR_TRUE );
 }
 
 void Brush_SetFaceInfo( Brush * pBrush, FaceInfoCB_Struct* FaceInfoData)
@@ -1421,84 +1421,84 @@ void Brush_SetFaceInfo( Brush * pBrush, FaceInfoCB_Struct* FaceInfoData)
 
 
 
-jeBoolean Brush_FillPositionDescriptor( Brush *pBrush, jeProperty_List * pArray )
+grBoolean Brush_FillPositionDescriptor( Brush *pBrush, grProperty_List * pArray )
 {
-	jeXForm3d XForm;
+	grXForm3d XForm;
 	char * Name;
 
-	jeProperty Property;
+	grProperty Property;
 	Brush_GetXForm( pBrush, &XForm );
 
 	Name = Util_LoadLocalRcString( IDS_POSITION_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillVec3dGroup( &Property, Name, &XForm.Translation,	OBJECT_POSITION_FIELD  );
-	if( !jeProperty_Append( pArray,  &Property ) )
+		return( GR_FALSE );
+	grProperty_FillVec3dGroup( &Property, Name, &XForm.Translation,	OBJECT_POSITION_FIELD  );
+	if( !grProperty_Append( pArray,  &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONX_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat(  &Property, Name, XForm.Translation.X, OBJECT_POSITION_FIELDX, -FLT_MAX, FLT_MAX, 1.0f );
-	if( !jeProperty_Append( pArray,  &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat(  &Property, Name, XForm.Translation.X, OBJECT_POSITION_FIELDX, -FLT_MAX, FLT_MAX, 1.0f );
+	if( !grProperty_Append( pArray,  &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONY_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat(  &Property, Name, XForm.Translation.Y,	OBJECT_POSITION_FIELDY, -FLT_MAX, FLT_MAX, 1.0f );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat(  &Property, Name, XForm.Translation.Y,	OBJECT_POSITION_FIELDY, -FLT_MAX, FLT_MAX, 1.0f );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONZ_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, XForm.Translation.Z, OBJECT_POSITION_FIELDZ, -FLT_MAX, FLT_MAX, 1.0f );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, XForm.Translation.Z, OBJECT_POSITION_FIELDZ, -FLT_MAX, FLT_MAX, 1.0f );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
-	jeProperty_FillGroupEnd( &Property, OBJECT_POSITION_FIELD_END );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillGroupEnd( &Property, OBJECT_POSITION_FIELD_END );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-static jeBoolean Brush_GetFaceInfoCB( jeBrush_Face *pFace, void * pVoid )
+static grBoolean Brush_GetFaceInfoCB( grBrush_Face *pFace, void * pVoid )
 {
 	FaceInfoCB_Struct* pFaceInfoData = (FaceInfoCB_Struct*)pVoid;
-	jeBoolean bInitAll;
-	jeFaceInfo FaceInfo;
+	grBoolean bInitAll;
+	grFaceInfo FaceInfo;
 	int32		Flags;
 	int32		OldFlags;
 	assert( pFace );
 	assert( pVoid );
 	bInitAll = (pFaceInfoData->FieldFlag == FACE_INIT_ALL );
 
-	jeBrush_FaceGetFaceInfo( pFace, &FaceInfo );
+	grBrush_FaceGetFaceInfo( pFace, &FaceInfo );
 
 	if( bInitAll )
 	{
 		(*pFaceInfoData->pFaceInfo) = FaceInfo;
 		pFaceInfoData->FieldFlag = 0;
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
 
 	if(FaceInfo.DrawScaleU != pFaceInfoData->pFaceInfo->DrawScaleU )
@@ -1550,7 +1550,7 @@ static jeBoolean Brush_GetFaceInfoCB( jeBrush_Face *pFace, void * pVoid )
 	if(FaceInfo.Alpha != pFaceInfoData->pFaceInfo->Alpha )
 		pFaceInfoData->FieldFlag |= FACE_FIELD_ALPHA;
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 void Brush_GetFaceInfo( Brush * pBrush, FaceInfoCB_Struct* pFaceInfoData )
@@ -1561,11 +1561,11 @@ void Brush_GetFaceInfo( Brush * pBrush, FaceInfoCB_Struct* pFaceInfoData )
 }
 
 
-jeBoolean Brush_FillFaceInfoDescriptor( Brush *pBrush, jeProperty_List * pArray )
+grBoolean Brush_FillFaceInfoDescriptor( Brush *pBrush, grProperty_List * pArray )
 {
-	jeProperty Property;
+	grProperty Property;
 	FaceInfoCB_Struct FaceInfoData;
-	jeFaceInfo  FaceInfo;
+	grFaceInfo  FaceInfo;
 	int	Bool;
 	char * Name;
 	const char * PortalName = NULL;
@@ -1579,42 +1579,42 @@ jeBoolean Brush_FillFaceInfoDescriptor( Brush *pBrush, jeProperty_List * pArray 
 	//Face Info Group Begin
 	Name = Util_LoadLocalRcString( IDS_FACE_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillGroup( &Property, Name,	BRUSH_FACEINFO_FIELD  );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property  ) )
+		return( GR_FALSE );
+	grProperty_FillGroup( &Property, Name,	BRUSH_FACEINFO_FIELD  );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property  ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	//Gouraud check box
 	Bool = (( FaceInfo.Flags & FACEINFO_GOURAUD ) != 0 );
 	Name = Util_LoadLocalRcString( IDS_GOURAND_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillCheck( &Property, Name, Bool, BRUSH_GOURAND_FIELD );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillCheck( &Property, Name, Bool, BRUSH_GOURAND_FIELD );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_GOURAUD )
-		jeProperty_SetDataInvalid( &Property  );
-	jeProperty_SetDisabled( &Property, JE_TRUE );
-	if( !jeProperty_Append( pArray, &Property  ) )
+		grProperty_SetDataInvalid( &Property  );
+	grProperty_SetDisabled( &Property, GR_TRUE );
+	if( !grProperty_Append( pArray, &Property  ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	//Flat shade check box
 	Bool = (( FaceInfo.Flags & FACEINFO_FLAT ) != 0 );
 	Name = Util_LoadLocalRcString( IDS_FLAT_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillCheck( &Property, Name, Bool, BRUSH_FLAT_FIELD );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillCheck( &Property, Name, Bool, BRUSH_FLAT_FIELD );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_FLAT )
-		jeProperty_SetDataInvalid( &Property );
-	jeProperty_SetDisabled(&Property, JE_TRUE );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	grProperty_SetDisabled(&Property, GR_TRUE );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
@@ -1622,28 +1622,28 @@ jeBoolean Brush_FillFaceInfoDescriptor( Brush *pBrush, jeProperty_List * pArray 
 	Bool = (( FaceInfo.Flags & FACEINFO_TRANSPARENT ) != 0 );
 	Name = Util_LoadLocalRcString( IDS_TRANSPARENT_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillCheck( &Property, Name, Bool, BRUSH_TRANSPARENT_FIELD );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillCheck( &Property, Name, Bool, BRUSH_TRANSPARENT_FIELD );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_INVISIBLE )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 	//Aplha blending float field
 	Name = Util_LoadLocalRcString( IDS_ALPHA_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, FaceInfo.Alpha, BRUSH_ALPHA_FIELD, 0, 255, 1.0f );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, FaceInfo.Alpha, BRUSH_ALPHA_FIELD, 0, 255, 1.0f );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_ALPHA )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
@@ -1651,14 +1651,14 @@ jeBoolean Brush_FillFaceInfoDescriptor( Brush *pBrush, jeProperty_List * pArray 
 	Bool = (( FaceInfo.Flags & FACEINFO_FULLBRIGHT ) != 0 );
 	Name = Util_LoadLocalRcString( IDS_FULLBRIGHT_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillCheck( &Property, Name, Bool, BRUSH_FULLBRIGHT_FIELD );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillCheck( &Property, Name, Bool, BRUSH_FULLBRIGHT_FIELD );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag &  FACE_FIELD_FULLBRIGHT )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
@@ -1666,14 +1666,14 @@ jeBoolean Brush_FillFaceInfoDescriptor( Brush *pBrush, jeProperty_List * pArray 
 	Bool = (( FaceInfo.Flags & FACEINFO_VIS_PORTAL ) != 0 );
 	Name = Util_LoadLocalRcString( IDS_VIS_PORTAL_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillCheck( &Property, Name, Bool, BRUSH_VIS_PORTAL_FIELD );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillCheck( &Property, Name, Bool, BRUSH_VIS_PORTAL_FIELD );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_VIS_PORTAL )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
@@ -1681,184 +1681,184 @@ jeBoolean Brush_FillFaceInfoDescriptor( Brush *pBrush, jeProperty_List * pArray 
 	Bool = (( FaceInfo.Flags & FACEINFO_RENDER_PORTAL_ONLY ) != 0 );
 	Name = Util_LoadLocalRcString( IDS_PORTAL_ONLY_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillCheck( &Property, Name, Bool, BRUSH_RENDER_PORTAL_ONLY );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillCheck( &Property, Name, Bool, BRUSH_RENDER_PORTAL_ONLY );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_ONLYPORTAL )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	//Vis Portal combo box
 	Name = Util_LoadLocalRcString( IDS_VIS_PORTAL_COMBO );
 	if( Name == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	if( !(FaceInfoData.FieldFlag & FACE_FIELD_PORTALCAMERA) && FaceInfo.PortalCamera )
-		PortalName = jeObject_GetName( FaceInfo.PortalCamera );
+		PortalName = grObject_GetName( FaceInfo.PortalCamera );
 	else
 		PortalName = VisPortalNone;
-	jeProperty_FillCombo( &Property, Name, (char*)PortalName, BRUSH_VIS_PORTAL_COMBO, VisPortalN, VisPortalArray  );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillCombo( &Property, Name, (char*)PortalName, BRUSH_VIS_PORTAL_COMBO, VisPortalN, VisPortalArray  );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_ROTATE_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, FaceInfo.Rotate,	BRUSH_ROTATE_FIELD, -1, 360, 1.0f );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, FaceInfo.Rotate,	BRUSH_ROTATE_FIELD, -1, 360, 1.0f );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_ROTATE )
-		jeProperty_SetDataInvalid( &Property );
-	//jeProperty_SetDisabled( &Property, JE_TRUE );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	//grProperty_SetDisabled( &Property, GR_TRUE );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 	Name = Util_LoadLocalRcString( IDS_SHIFT_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillGroup( &Property, Name,	BRUSH_SHIFT_GROUP  );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillGroup( &Property, Name,	BRUSH_SHIFT_GROUP  );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_SHIFTU_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, FaceInfo.ShiftU,	BRUSH_SHIFTU_FIELD, -FLT_MAX, FLT_MAX, 1.0f );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, FaceInfo.ShiftU,	BRUSH_SHIFTU_FIELD, -FLT_MAX, FLT_MAX, 1.0f );
+	grRam_Free( Name );
 
 	if( FaceInfoData.FieldFlag & FACE_FIELD_SHIFTU )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 	Name = Util_LoadLocalRcString( IDS_SHIFTV_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, FaceInfo.ShiftV, BRUSH_SHIFTV_FIELD, -FLT_MAX, FLT_MAX, 1.0f );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, FaceInfo.ShiftV, BRUSH_SHIFTV_FIELD, -FLT_MAX, FLT_MAX, 1.0f );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_SHIFTV )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
-	jeProperty_FillGroupEnd( &Property, BRUSH_SHIFT_GROUP_END );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillGroupEnd( &Property, BRUSH_SHIFT_GROUP_END );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 
 	Name = Util_LoadLocalRcString( IDS_DRAWSCALE_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillGroup( &Property, Name,	BRUSH_DRAWSCALE_GROUP  );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillGroup( &Property, Name,	BRUSH_DRAWSCALE_GROUP  );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 	Name = Util_LoadLocalRcString( IDS_DRAWSCALEU_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, FaceInfo.DrawScaleU,	BRUSH_DRAWSCALEU_FIELD, -64.0f, 64.0f, 0.1f );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, FaceInfo.DrawScaleU,	BRUSH_DRAWSCALEU_FIELD, -64.0f, 64.0f, 0.1f );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_DRAWSCALEU )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 	Name = Util_LoadLocalRcString( IDS_DRAWSCALEV_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, FaceInfo.DrawScaleV,	BRUSH_DRAWSCALEV_FIELD, -64.0f, 64.0f, 0.1f );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, FaceInfo.DrawScaleV,	BRUSH_DRAWSCALEV_FIELD, -64.0f, 64.0f, 0.1f );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_DRAWSCALEV )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
-	jeProperty_FillGroupEnd( &Property, BRUSH_DRAWSCALE_GROUP_END );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillGroupEnd( &Property, BRUSH_DRAWSCALE_GROUP_END );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 	Name = Util_LoadLocalRcString( IDS_LIGHTMAP_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillGroup( &Property, Name,	BRUSH_LIGHTMAP_GROUP  );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillGroup( &Property, Name,	BRUSH_LIGHTMAP_GROUP  );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 	Name = Util_LoadLocalRcString( IDS_LMAPSCALEU_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, FaceInfo.LMapScaleU,	BRUSH_LMAPSCALEU_FIELD, -FLT_MAX, FLT_MAX, 0.5f );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, FaceInfo.LMapScaleU,	BRUSH_LMAPSCALEU_FIELD, -FLT_MAX, FLT_MAX, 0.5f );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_LMAPSCALEU )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 	Name = Util_LoadLocalRcString( IDS_LMAPSCALEV_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, FaceInfo.LMapScaleV,	BRUSH_LMAPSCALEV_FIELD, -FLT_MAX, FLT_MAX, 0.5f );
-	jeRam_Free( Name );
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, FaceInfo.LMapScaleV,	BRUSH_LMAPSCALEV_FIELD, -FLT_MAX, FLT_MAX, 0.5f );
+	grRam_Free( Name );
 	if( FaceInfoData.FieldFlag & FACE_FIELD_LMAPSCALEV )
-		jeProperty_SetDataInvalid( &Property );
-	if( !jeProperty_Append( pArray, &Property ) )
+		grProperty_SetDataInvalid( &Property );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
-	jeProperty_FillGroupEnd( &Property, BRUSH_LIGHTMAP_GROUP_END );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillGroupEnd( &Property, BRUSH_LIGHTMAP_GROUP_END );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
-	jeProperty_FillGroupEnd( &Property, BRUSH_FACEINFO_FIELD_END );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillGroupEnd( &Property, BRUSH_FACEINFO_FIELD_END );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 static void Brush_AddToPortalList( char * Name )
@@ -1867,12 +1867,12 @@ static void Brush_AddToPortalList( char * Name )
 	{
 		VisPortalAllocateN += VISPORTALBLOCK;
 		if( VisPortalArray == NULL )
-			VisPortalArray = jeRam_Allocate( sizeof( char*) * VisPortalAllocateN );
+			VisPortalArray = grRam_Allocate( sizeof( char*) * VisPortalAllocateN );
 		else
-			VisPortalArray = jeRam_Realloc( VisPortalArray, VisPortalAllocateN );
+			VisPortalArray = grRam_Realloc( VisPortalArray, VisPortalAllocateN );
 		if( VisPortalArray == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE,"Level_AddToPortalList:jeRam_Realloc");
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE,"Level_AddToPortalList:grRam_Realloc");
 			return;
 		}
 
@@ -1882,67 +1882,67 @@ static void Brush_AddToPortalList( char * Name )
 	VisPortalN++;
 }
 
-static void Brush_UpdateVisPortalListChild( jeObject * pObject )
+static void Brush_UpdateVisPortalListChild( grObject * pObject )
 {
-	jeObject * pChildObject;
+	grObject * pChildObject;
 
-	pChildObject = jeObject_GetNextChild( pObject, NULL );
+	pChildObject = grObject_GetNextChild( pObject, NULL );
 	while( pChildObject )
 	{
-		if( jeObject_GetType(pChildObject) == JE_OBJECT_TYPE_PORTAL )
+		if( grObject_GetType(pChildObject) == GR_OBJECT_TYPE_PORTAL )
 		{
-			Brush_AddToPortalList( (char*)jeObject_GetName( pChildObject ) );
+			Brush_AddToPortalList( (char*)grObject_GetName( pChildObject ) );
 		}
 		Brush_UpdateVisPortalListChild( pChildObject );
-		pChildObject = jeObject_GetNextChild( pObject, pChildObject );
+		pChildObject = grObject_GetNextChild( pObject, pChildObject );
 	}
 }
 
 static void Brush_UpdateVisPortalList(Brush * pBrush)
 {
-	jeObject *pObject;
+	grObject *pObject;
 	
 	VisPortalN = 0;
 	Brush_AddToPortalList( VisPortalNone );
-	pObject = jeWorld_GetNextObject(pBrush->pWorld,NULL );
+	pObject = grWorld_GetNextObject(pBrush->pWorld,NULL );
 	while( pObject )
 	{
-		if( jeObject_GetType(pObject) == JE_OBJECT_TYPE_PORTAL )
+		if( grObject_GetType(pObject) == GR_OBJECT_TYPE_PORTAL )
 		{
-			Brush_AddToPortalList( (char*)jeObject_GetName( pObject ) );
+			Brush_AddToPortalList( (char*)grObject_GetName( pObject ) );
 		}
 		Brush_UpdateVisPortalListChild( pObject );
-		pObject = jeWorld_GetNextObject(pBrush->pWorld,pObject );
+		pObject = grWorld_GetNextObject(pBrush->pWorld,pObject );
 	}
 }
 
-jeProperty_List *	Brush_BuildDescriptor( Brush * pBrush )
+grProperty_List *	Brush_BuildDescriptor( Brush * pBrush )
 {
-	jeProperty_List * pArray = NULL;
-	jeProperty Property;
+	grProperty_List * pArray = NULL;
+	grProperty Property;
 	int	Bool;
 	char * Name;
 
-	jeBrush_Contents Contents;
+	grBrush_Contents Contents;
 #define BRUSH_BASE_FIELDN 33
 
 	assert( pBrush );
 
 	Brush_UpdateVisPortalList( pBrush);
-	Contents = jeBrush_GetContents( pBrush->pBrush);
-	pArray = jeProperty_ListCreateEmpty();
+	Contents = grBrush_GetContents( pBrush->pBrush);
+	pArray = grProperty_ListCreateEmpty();
 	if( pArray == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "DescriptorArray" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "DescriptorArray" );
 		return NULL;
 	}
 
 	Name = Util_LoadLocalRcString( IDS_NAME_FIELD );
 	if( Name == NULL )
 		goto BBD_ERROR;
-	jeProperty_FillString( &Property, Name, pBrush->ObjectData.pszName, OBJECT_NAME_FIELD );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillString( &Property, Name, pBrush->ObjectData.pszName, OBJECT_NAME_FIELD );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
 		goto BBD_ERROR;
 	}
@@ -1952,44 +1952,44 @@ jeProperty_List *	Brush_BuildDescriptor( Brush * pBrush )
 
 
 	
-	Bool = (( Contents & JE_BSP_CONTENTS_SOLID ) != 0 );
+	Bool = (( Contents & GR_BSP_CONTENTS_SOLID ) != 0 );
 	Name = Util_LoadLocalRcString( IDS_SOLID_FIELD );
 	if( Name == NULL )
 		goto BBD_ERROR;
-	jeProperty_FillRadio( &Property, Name, Bool, BRUSH_SOLID_FIELD );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillRadio( &Property, Name, Bool, BRUSH_SOLID_FIELD );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
 		goto BBD_ERROR;
 	}
 
 
-	Bool = (( Contents & JE_BSP_CONTENTS_EMPTY ) != 0 );
+	Bool = (( Contents & GR_BSP_CONTENTS_EMPTY ) != 0 );
 	Name = Util_LoadLocalRcString( IDS_EMPTY_FIELD );
 	if( Name == NULL )
 		goto BBD_ERROR;
-	jeProperty_FillRadio( &Property, Name, Bool, BRUSH_EMPTY_FIELD );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillRadio( &Property, Name, Bool, BRUSH_EMPTY_FIELD );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
 		goto BBD_ERROR;
 	}
 
 
-	Bool = (( Contents & JE_BSP_CONTENTS_AIR ) != 0 );
+	Bool = (( Contents & GR_BSP_CONTENTS_AIR ) != 0 );
 	Name = Util_LoadLocalRcString( IDS_AIR_FIELD );
 	if( Name == NULL )
 		goto BBD_ERROR;
-	jeProperty_FillRadio( &Property, Name, Bool, BRUSH_AIR_FIELD );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillRadio( &Property, Name, Bool, BRUSH_AIR_FIELD );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
 		goto BBD_ERROR;
 	}
 
 
-	jeProperty_FillGroupEnd( &Property, BRUSH_CONTENT_FIELD_END );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillGroupEnd( &Property, BRUSH_CONTENT_FIELD_END );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
 		goto BBD_ERROR;
 	}
@@ -2000,26 +2000,26 @@ jeProperty_List *	Brush_BuildDescriptor( Brush * pBrush )
 	return( pArray );
 
 BBD_ERROR:
-	jeProperty_ListDestroy( &pArray );
+	grProperty_ListDestroy( &pArray );
 	return( NULL );
 }
 
-void Brush_ModifyTemplate( 	Brush * pBrush, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bBrushUpdate, jeBoolean bLightUpdate  )
+void Brush_ModifyTemplate( 	Brush * pBrush, int DataId, int DataType, grProperty_Data * pData, grBoolean bBrushUpdate, grBoolean bLightUpdate  )
 {
-	jeXForm3d XForm;
-	jeBrush_Face *pFace;
-	jeFaceInfo  FaceInfo;
-	jeBrush_Contents Contents;
+	grXForm3d XForm;
+	grBrush_Face *pFace;
+	grFaceInfo  FaceInfo;
+	grBrush_Contents Contents;
 	Model * pModel;
 
 	Brush_DeselectAllFaces( pBrush  );
 	BrushTemplate_SetProperty( pBrush->pTemplate,  DataId, DataType, pData );
-	Contents = jeBrush_GetContents( pBrush->pBrush );
+	Contents = grBrush_GetContents( pBrush->pBrush );
 	Brush_GetXForm( pBrush, &XForm);
-	pFace = jeBrush_GetNextFace(pBrush->pBrush, NULL);
+	pFace = grBrush_GetNextFace(pBrush->pBrush, NULL);
 	if( pFace == NULL )
 		return;
-	if( !jeBrush_FaceGetFaceInfo(pFace, &FaceInfo) )
+	if( !grBrush_FaceGetFaceInfo(pFace, &FaceInfo) )
 		return;
 
 
@@ -2028,65 +2028,65 @@ void Brush_ModifyTemplate( 	Brush * pBrush, int DataId, int DataType, jeProperty
 	{
 		Model_RemoveBrushWorld( pModel, pBrush );
 		pBrush->pModel = NULL;
-		jeBrush_Destroy( &pBrush->pBrush ) ;
+		grBrush_Destroy( &pBrush->pBrush ) ;
 	}
 
 	pBrush->pBrush = BrushTemplate_CreateBrush( pBrush->pTemplate,&FaceInfo);
-	jeBrush_SetContents(pBrush->pBrush, Contents);
+	grBrush_SetContents(pBrush->pBrush, Contents);
 	Brush_SetXForm( pBrush, &XForm );
 	Brush_SetModified( pBrush );
 	Model_AddBrushWorld( pModel, pBrush, bBrushUpdate, bLightUpdate );
 	Brush_SelectAllFaces( pBrush );
 }
 
-static jeObject *Brush_FindPortalChild( jeObject * pObject, const char *PortalName )
+static grObject *Brush_FindPortalChild( grObject * pObject, const char *PortalName )
 {
-	jeObject * pChildObject;
-	jeObject * pChildChildObject;
+	grObject * pChildObject;
+	grObject * pChildChildObject;
 	const char *ObjectName;
 
-	pChildObject = jeObject_GetNextChild( pObject, NULL );
+	pChildObject = grObject_GetNextChild( pObject, NULL );
 	while( pChildObject )
 	{
-		ObjectName = jeObject_GetName(pChildObject );
+		ObjectName = grObject_GetName(pChildObject );
 		if( ObjectName != NULL )
 			if( strcmp( ObjectName, PortalName ) == 0 )
 				return( pChildObject );
 		pChildChildObject = Brush_FindPortalChild( pChildObject, PortalName );
 		if( pChildChildObject != NULL )
 			return( pChildChildObject );
-		pChildObject = jeObject_GetNextChild( pObject, pChildObject );
+		pChildObject = grObject_GetNextChild( pObject, pChildObject );
 	}
 	return( NULL );
 }
 
-static jeObject *Brush_FindPortal( jeWorld * pWorld, const char *PortalName )
+static grObject *Brush_FindPortal( grWorld * pWorld, const char *PortalName )
 {
-	jeObject * pObject;
-	jeObject * pChildObject;
+	grObject * pObject;
+	grObject * pChildObject;
 	const char *ObjectName;
 
-	pObject = jeWorld_GetNextObject( pWorld, NULL );
+	pObject = grWorld_GetNextObject( pWorld, NULL );
 	while( pObject )
 	{
-		ObjectName = jeObject_GetName(pObject );
+		ObjectName = grObject_GetName(pObject );
 		if( ObjectName != NULL )
 			if( strcmp( ObjectName, PortalName ) == 0 )
 				return( pObject );
 		pChildObject = Brush_FindPortalChild( pObject, PortalName );
 		if( pChildObject != NULL )
 			return( pChildObject );
-		pObject = jeWorld_GetNextObject( pWorld, pObject );
+		pObject = grWorld_GetNextObject( pWorld, pObject );
 	}
 	return( NULL );
 }
 
-void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bBrushUpdate, jeBoolean bLightUpdate  )
+void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, grProperty_Data * pData, grBoolean bBrushUpdate, grBoolean bLightUpdate  )
 {
-	int Contents = jeBrush_GetContents( pBrush->pBrush);
+	int Contents = grBrush_GetContents( pBrush->pBrush);
 	FaceInfoCB_Struct FaceInfoData;
-	jeFaceInfo  FaceInfo;
-	jeBoolean	bFaceData = JE_FALSE;
+	grFaceInfo  FaceInfo;
+	grBoolean	bFaceData = GR_FALSE;
 
 	if( DataId >= TEMPLATE_FIELD_START )
 	{
@@ -2102,27 +2102,27 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	case BRUSH_SOLID_FIELD:
 		if( pData->Bool )
 		{
-			Contents |= JE_BSP_CONTENTS_SOLID;
-			Contents &= ~JE_BSP_CONTENTS_EMPTY;
-			Contents &= ~JE_BSP_CONTENTS_AIR;
+			Contents |= GR_BSP_CONTENTS_SOLID;
+			Contents &= ~GR_BSP_CONTENTS_EMPTY;
+			Contents &= ~GR_BSP_CONTENTS_AIR;
 		}
 		break;
 
 	case BRUSH_EMPTY_FIELD:
 		if( pData->Bool )
 		{
-			Contents &= ~JE_BSP_CONTENTS_SOLID;
-			Contents |= JE_BSP_CONTENTS_EMPTY;
-			Contents &= ~JE_BSP_CONTENTS_AIR;
+			Contents &= ~GR_BSP_CONTENTS_SOLID;
+			Contents |= GR_BSP_CONTENTS_EMPTY;
+			Contents &= ~GR_BSP_CONTENTS_AIR;
 		}
 		break;
 
 	case BRUSH_AIR_FIELD:
 		if( pData->Bool )
 		{
-			Contents &= ~JE_BSP_CONTENTS_SOLID;
-			Contents &= ~JE_BSP_CONTENTS_EMPTY;
-			Contents |= JE_BSP_CONTENTS_AIR;
+			Contents &= ~GR_BSP_CONTENTS_SOLID;
+			Contents &= ~GR_BSP_CONTENTS_EMPTY;
+			Contents |= GR_BSP_CONTENTS_AIR;
 		}
 		break;
 		
@@ -2130,7 +2130,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.Flags = pData->Bool ? FACEINFO_GOURAUD:0;
 		FaceInfoData.FieldFlag = FACE_FIELD_GOURAUD;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 		
@@ -2138,7 +2138,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.Flags = pData->Bool ? FACEINFO_FLAT:0;
 		FaceInfoData.FieldFlag = FACE_FIELD_FLAT;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 		
@@ -2146,7 +2146,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.Flags = pData->Bool ? FACEINFO_TRANSPARENT:0;
 		FaceInfoData.FieldFlag = FACE_FIELD_INVISIBLE;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2155,7 +2155,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.Flags = pData->Bool ? FACEINFO_FULLBRIGHT:0;
 		FaceInfoData.FieldFlag = FACE_FIELD_FULLBRIGHT;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2164,7 +2164,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.Flags = pData->Bool ? FACEINFO_VIS_PORTAL:0;
 		FaceInfoData.FieldFlag = FACE_FIELD_VIS_PORTAL;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 	
@@ -2172,13 +2172,13 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.Flags = pData->Bool ? FACEINFO_RENDER_PORTAL_ONLY:0;
 		FaceInfoData.FieldFlag = FACE_FIELD_ONLYPORTAL;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
 	case BRUSH_VIS_PORTAL_COMBO:
 	{
-		jeObject * pPortalCamera;
+		grObject * pPortalCamera;
 
 		assert( pBrush->pWorld );
 		pPortalCamera = Brush_FindPortal( pBrush->pWorld, pData->String );
@@ -2189,7 +2189,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 			FaceInfo.Flags = FACEINFO_TRANSPARENT;
 			FaceInfoData.FieldFlag |= FACE_FIELD_INVISIBLE;
 		}
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2197,7 +2197,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.Alpha = pData->Float;
 		FaceInfoData.FieldFlag = FACE_FIELD_ALPHA;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2205,7 +2205,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.Rotate = pData->Float;
 		FaceInfoData.FieldFlag = FACE_FIELD_ROTATE;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2213,7 +2213,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.ShiftU = pData->Float;
 		FaceInfoData.FieldFlag = FACE_FIELD_SHIFTU;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2221,7 +2221,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.ShiftV = pData->Float;
 		FaceInfoData.FieldFlag = FACE_FIELD_SHIFTV;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2229,7 +2229,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.DrawScaleU = pData->Float;
 		FaceInfoData.FieldFlag = FACE_FIELD_DRAWSCALEU;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2237,7 +2237,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.DrawScaleV = pData->Float;
 		FaceInfoData.FieldFlag = FACE_FIELD_DRAWSCALEV;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2245,7 +2245,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.LMapScaleU = pData->Float;
 		FaceInfoData.FieldFlag = FACE_FIELD_LMAPSCALEU;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2253,7 +2253,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	{
 		FaceInfo.LMapScaleV = pData->Float;
 		FaceInfoData.FieldFlag = FACE_FIELD_LMAPSCALEV;
-		bFaceData = JE_TRUE;
+		bFaceData = GR_TRUE;
 	}
 	break;
 
@@ -2265,7 +2265,7 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	else
 	{
 		Model* pModel;
-		jeBrush_SetContents( pBrush->pBrush, Contents );
+		grBrush_SetContents( pBrush->pBrush, Contents );
 		pModel = pBrush->pModel;
 		Brush_SetModified( pBrush );
 		if( bBrushUpdate )
@@ -2273,13 +2273,13 @@ void Brush_SetProperty( Brush* pBrush, int DataId, int DataType, jeProperty_Data
 	}
 }
 
-static jeBoolean Brush_ResetSelFacerCB( jeBrush_Face *pFace, void * Context )
+static grBoolean Brush_ResetSelFacerCB( grBrush_Face *pFace, void * Context )
 {
 	Model * pModel = (Model*)Context;
 
 	if( pModel )
-		jeModel_SetBrushFaceCBOnOff(Model_GetguModel( pModel ), pFace, JE_TRUE );
-	return( JE_TRUE );
+		grModel_SetBrushFaceCBOnOff(Model_GetguModel( pModel ), pFace, GR_TRUE );
+	return( GR_TRUE );
 }
 
 void Brush_ResetSelFace( Brush * pBrush )
@@ -2287,48 +2287,48 @@ void Brush_ResetSelFace( Brush * pBrush )
 	FaceList_Enum(pBrush->pSelFaces, Brush_ResetSelFacerCB, pBrush->pModel);
 }
 
-jeBoolean Brush_AttachWorld( Brush * pBrush, jeWorld * pWorld )
+grBoolean Brush_AttachWorld( Brush * pBrush, grWorld * pWorld )
 {
 	pBrush->pWorld = pWorld;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Brush_DettachWorld( Brush * pBrush, jeWorld * pWorld )
+grBoolean Brush_DettachWorld( Brush * pBrush, grWorld * pWorld )
 {
 	pBrush->pWorld = NULL;
 	pWorld;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Brush_SelectVert( Brush * pBrush, jeVertArray_Index  Index )
+grBoolean Brush_SelectVert( Brush * pBrush, grVertArray_Index  Index )
 {
 	VertIterator	vI;
 	Vert_Struct	*	pVert;
-	jeVertArray *	pArray;
+	grVertArray *	pArray;
 
 	assert( pBrush );
 
 	if( VertList_SearchByIndex( pBrush->pSelVert, &Index, &vI ) )
-		return( JE_TRUE );
-	pVert = JE_RAM_ALLOCATE_STRUCT( Vert_Struct );
+		return( GR_TRUE );
+	pVert = GR_RAM_ALLOCATE_STRUCT( Vert_Struct );
 	if( pVert == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Brush_SelectVert" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Brush_SelectVert" );
+		return( GR_FALSE );
 	}
 	pVert->Index = Index;
-	pArray = jeBrush_GetVertArray( pBrush->pBrush );
-	pVert->LastPos = *jeVertArray_GetVertByIndex( pArray, Index );
+	pArray = grBrush_GetVertArray( pBrush->pBrush );
+	pVert->LastPos = *grVertArray_GetVertByIndex( pArray, Index );
 	VertList_Append( pBrush->pSelVert, pVert );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Brush_SelectVert
 
 void Brush_DestroyVertCB(void *pData)
 {
-	jeRam_Free( pData );
+	grRam_Free( pData );
 }
 
-void Brush_DeselectVert( Brush * pBrush, jeVertArray_Index  Index )
+void Brush_DeselectVert( Brush * pBrush, grVertArray_Index  Index )
 {
 
 	assert( pBrush );
@@ -2337,7 +2337,7 @@ void Brush_DeselectVert( Brush * pBrush, jeVertArray_Index  Index )
 	VertList_Remove( pBrush->pSelVert, Index, Brush_DestroyVertCB );
 }// Brush_DeselectVert
 
-void Brush_ToggleVert( Brush * pBrush, jeVertArray_Index Index)
+void Brush_ToggleVert( Brush * pBrush, grVertArray_Index Index)
 {
 	VertIterator	vI;
 
@@ -2366,26 +2366,26 @@ void Brush_DeselectAllVert( Brush * pBrush )
 
 typedef struct BrushMoveInfo {
 	Brush * pBrush;
-	jeVec3d * dWorldDist;
+	grVec3d * dWorldDist;
 } BrushMoveInfo;
 
 // Modified by CJP : 1/9/00
 
-static jeBoolean Brush_MoveVertCB(void *pData, void *lParam)
+static grBoolean Brush_MoveVertCB(void *pData, void *lParam)
 {
 	Vert_Struct	*	pVert =  (Vert_Struct*)pData;
 	BrushMoveInfo	*bmI  = (BrushMoveInfo*)lParam;
-	jeVec3d			NewPos;
-	jeVec3d			dBrushDist;
-	jeVertArray *	pArray;
-	jeXForm3d 		BrushXForm;
-	jeXForm3d		IBrushXForm; //Inverse of BrushXForm
+	grVec3d			NewPos;
+	grVec3d			dBrushDist;
+	grVertArray *	pArray;
+	grXForm3d 		BrushXForm;
+	grXForm3d		IBrushXForm; //Inverse of BrushXForm
 
 	assert( pVert );
 	assert( lParam );
 
-	pArray = jeBrush_GetVertArray( bmI->pBrush->pBrush );
-	pVert->LastPos = *jeVertArray_GetVertByIndex( pArray, pVert->Index );
+	pArray = grBrush_GetVertArray( bmI->pBrush->pBrush );
+	pVert->LastPos = *grVertArray_GetVertByIndex( pArray, pVert->Index );
 	// CJP : shouldn't be neccesary.. 
 	// NewPos = pVert->LastPos;
 
@@ -2393,23 +2393,23 @@ static jeBoolean Brush_MoveVertCB(void *pData, void *lParam)
 
 	//Apply the inverse Transform to the vector to get it into brush space
 	// CJP : I believe the inverse here is correct, not the transpose
-	// jeXForm3d_GetTranspose( &BrushXForm, &IBrushXForm );
-	jeXForm3d_GetInverse(&BrushXForm, &IBrushXForm);
+	// grXForm3d_GetTranspose( &BrushXForm, &IBrushXForm );
+	grXForm3d_GetInverse(&BrushXForm, &IBrushXForm);
 
 	//The vector does not need to be translated only rotated and scaled
-	//jeVec3d_Set( &IBrushXForm.Translation, pVert->LastPos.X, pVert->LastPos.Y, pVert->LastPos.Z );
-	jeVec3d_Set( &IBrushXForm.Translation, 0.0f, 0.0f , 0.0f );
-	jeXForm3d_Transform( &IBrushXForm, bmI->dWorldDist, &dBrushDist );
+	//grVec3d_Set( &IBrushXForm.Translation, pVert->LastPos.X, pVert->LastPos.Y, pVert->LastPos.Z );
+	grVec3d_Set( &IBrushXForm.Translation, 0.0f, 0.0f , 0.0f );
+	grXForm3d_Transform( &IBrushXForm, bmI->dWorldDist, &dBrushDist );
 
-	jeVec3d_Add( &pVert->LastPos, &dBrushDist, &NewPos );
+	grVec3d_Add( &pVert->LastPos, &dBrushDist, &NewPos );
 
-	jeVertArray_SetVertByIndex( pArray, pVert->Index, &NewPos );
-	return( JE_TRUE );
+	grVertArray_SetVertByIndex( pArray, pVert->Index, &NewPos );
+	return( GR_TRUE );
 }// Brush_MoveVertCB
 
 // End modification.
 
-void Brush_MoveSelectedVert( Brush * pBrush, jeVec3d *dWorldDist)
+void Brush_MoveSelectedVert( Brush * pBrush, grVec3d *dWorldDist)
 {
 	BrushMoveInfo bmI;
 
@@ -2427,17 +2427,17 @@ void Brush_MoveSelectedVert( Brush * pBrush, jeVec3d *dWorldDist)
 
 // end cjp modification
 
-static jeBoolean Brush_RestoreVertCB(void *pData, void *lParam)
+static grBoolean Brush_RestoreVertCB(void *pData, void *lParam)
 {
 	Vert_Struct	*	pVert =  (Vert_Struct*)pData;
 	Brush		*	pBrush = ( Brush* )lParam;
-	jeVertArray *	pArray;
+	grVertArray *	pArray;
 
 	assert( pData );
 	assert( lParam );
-	pArray = jeBrush_GetVertArray( pBrush->pBrush );
-	jeVertArray_SetVertByIndex( pArray, pVert->Index, &pVert->LastPos );
-	return( JE_TRUE );
+	pArray = grBrush_GetVertArray( pBrush->pBrush );
+	grVertArray_SetVertByIndex( pArray, pVert->Index, &pVert->LastPos );
+	return( GR_TRUE );
 }// Brush_RestoreVertCB
 
 void Brush_RestoreSelVert( Brush * pBrush )
@@ -2446,27 +2446,27 @@ void Brush_RestoreSelVert( Brush * pBrush )
 	VertList_Enum( pBrush->pSelVert, pBrush, Brush_RestoreVertCB );
 } // Brush_RestoreSelVert
 
-jeBoolean Brush_SelectVertInRect( Brush * pBrush, jeExtBox *pSelBox )
+grBoolean Brush_SelectVertInRect( Brush * pBrush, grExtBox *pSelBox )
 {
-	jeVertArray		*	pVerts ;
+	grVertArray		*	pVerts ;
 	int32				nVerts ;
-	jeVec3d				Vert ;
-	jeXForm3d			XForm ;
-	jeVertArray_Index	i ;
-	jeBoolean			bSelChanged = JE_FALSE;
+	grVec3d				Vert ;
+	grXForm3d			XForm ;
+	grVertArray_Index	i ;
+	grBoolean			bSelChanged = GR_FALSE;
 
 	Brush_GetXForm( pBrush, &XForm ) ;
-	pVerts = jeBrush_GetVertArray( pBrush->pBrush ) ;
-		nVerts = jeVertArray_GetMaxIndex( pVerts );
+	pVerts = grBrush_GetVertArray( pBrush->pBrush ) ;
+		nVerts = grVertArray_GetMaxIndex( pVerts );
 
 	for( i=0; i<nVerts; i++ )
 	{
-		Vert = *jeVertArray_GetVertByIndex( pVerts, i ) ;
-		jeXForm3d_Transform( &XForm, &Vert, &Vert ) ;
-		if( jeExtBox_ContainsPoint ( pSelBox, &Vert ) )
+		Vert = *grVertArray_GetVertByIndex( pVerts, i ) ;
+		grXForm3d_Transform( &XForm, &Vert, &Vert ) ;
+		if( grExtBox_ContainsPoint ( pSelBox, &Vert ) )
 		{
 			Brush_SelectVert(  pBrush, i );
-			bSelChanged =  JE_TRUE ;
+			bSelChanged =  GR_TRUE ;
 		}
 	}
 	return( bSelChanged );
@@ -2474,42 +2474,42 @@ jeBoolean Brush_SelectVertInRect( Brush * pBrush, jeExtBox *pSelBox )
 //
 // TODO: Move to face module?
 //
-int32 Brush_FaceGetVertCount( jeBrush_Face * pFace )
+int32 Brush_FaceGetVertCount( grBrush_Face * pFace )
 {
 	assert( pFace != NULL ) ;
 
-	return jeBrush_FaceGetVertCount( pFace ) ;
+	return grBrush_FaceGetVertCount( pFace ) ;
 }// Brush_FaceGetVertCount
 
-const jeVec3d * Brush_FaceGetVertByIndex( jeBrush_Face * pFace, int32 Index )
+const grVec3d * Brush_FaceGetVertByIndex( grBrush_Face * pFace, int32 Index )
 {
 	assert( pFace != NULL ) ;
 	
-	return jeBrush_FaceGetVertByIndex( pFace, Index ) ;
+	return grBrush_FaceGetVertByIndex( pFace, Index ) ;
 }// Brush_FaceGetVertByIndex
 
-jeVec3d Brush_FaceGetWorldSpaceVertByIndex(const Brush * pBrush, const jeBrush_Face * pFace, int32 Index )
+grVec3d Brush_FaceGetWorldSpaceVertByIndex(const Brush * pBrush, const grBrush_Face * pFace, int32 Index )
 {
-	jeVec3d Vert;
-	jeXForm3d ModelXF;
+	grVec3d Vert;
+	grXForm3d ModelXF;
 	assert( pFace != NULL ) ;
 
-	Vert = jeBrush_FaceGetWorldSpaceVertByIndex( pFace, Index );
+	Vert = grBrush_FaceGetWorldSpaceVertByIndex( pFace, Index );
 	if( pBrush->pModel )
 	{
 		Model_GetXForm( pBrush->pModel, &ModelXF );
-		jeXForm3d_Transform( &ModelXF, &Vert, &Vert );
+		grXForm3d_Transform( &ModelXF, &Vert, &Vert );
 	}
 	return  Vert;
 }// Brush_FaceGetWorldSpaceVertByIndex
 
-jeBrush_Face * Brush_GetNextFace( const Brush * pBrush, jeBrush_Face * pStart )
+grBrush_Face * Brush_GetNextFace( const Brush * pBrush, grBrush_Face * pStart )
 {
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
 	assert( pBrush->pBrush != NULL ) ;
 
-	return jeBrush_GetNextFace( pBrush->pBrush, pStart ) ;
+	return grBrush_GetNextFace( pBrush->pBrush, pStart ) ;
 }// Brush_GetNextFace
 
 //
@@ -2517,7 +2517,7 @@ jeBrush_Face * Brush_GetNextFace( const Brush * pBrush, jeBrush_Face * pStart )
 //
 void Brush_EnumFaceVerts( Brush * pBrush, void * pParam, BrushFaceVertCB Callback )
 {
-	jeBrush_Face *	pFace ;
+	grBrush_Face *	pFace ;
 	int				nVerts ;
 	int				i ;
 	FaceVertInfo	fvi ;
@@ -2542,7 +2542,7 @@ void Brush_EnumFaceVerts( Brush * pBrush, void * pParam, BrushFaceVertCB Callbac
 
 // CALLBACK
 
-jeBoolean Brush_ReattachCB( Brush *pBrush, void* lParam )
+grBoolean Brush_ReattachCB( Brush *pBrush, void* lParam )
 {
 	BrushReattachInfo	* pbri = (BrushReattachInfo*)lParam ;
 	
@@ -2551,21 +2551,21 @@ jeBoolean Brush_ReattachCB( Brush *pBrush, void* lParam )
 	pBrush->pWorld =  pbri->pWorld;
 	//pBrush->pBrush	= pbri->pgeBrush ;
 	pbri->nIndexTag	= BRUSH_REATTACH_GOOD ;
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// Brush_ReattachCB
 
 
 // FILE HANDLING
-Brush * Brush_CreateFromFile( jeVFile * pF, const int32 nVersion, jePtrMgr * pPtrMgr )
+Brush * Brush_CreateFromFile( grVFile * pF, const int32 nVersion, grPtrMgr * pPtrMgr )
 {
 	Brush	*	pBrush = NULL ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 	assert( nVersion <= BRUSH_VERSION ) ;
 	
 	if( BRUSH_VERSION != nVersion )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "Brush_CreateFromFile Version.\n", NULL);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "Brush_CreateFromFile Version.\n", NULL);
 		return NULL ;
 	}
 	
@@ -2576,10 +2576,10 @@ Brush * Brush_CreateFromFile( jeVFile * pF, const int32 nVersion, jePtrMgr * pPt
 	if( !Object_InitFromFile( pF, &pBrush->ObjectData ) )
 		goto BCFF_FAILURE ;
 
-	if( !jeVFile_Read( pF, &pBrush->Kind, sizeof pBrush->Kind ) )
+	if( !grVFile_Read( pF, &pBrush->Kind, sizeof pBrush->Kind ) )
 		goto BCFF_FAILURE ;
 
-	pBrush->pBrush = jeBrush_CreateFromFile( pF, pPtrMgr );
+	pBrush->pBrush = grBrush_CreateFromFile( pF, pPtrMgr );
 	pBrush->pTemplate = BrushTemplate_CreateFromFile( pF );
 	return pBrush ;
 
@@ -2587,57 +2587,57 @@ BCFF_FAILURE :
 	if( pBrush != NULL )
 		Object_Free( (Object**)pBrush ) ;
 
-	jeErrorLog_AddString(JE_ERR_FILEIO_READ, "Brush_CreateFromFile.\n", NULL);
+	grErrorLog_AddString(GR_ERR_FILEIO_READ, "Brush_CreateFromFile.\n", NULL);
 	return NULL ;
 
 }// Brush_CreateFromFile
 
 
-jeBoolean Brush_WriteToFile( Brush * pBrush, Brush_WriteInfo * pWriteInfo)
+grBoolean Brush_WriteToFile( Brush * pBrush, Brush_WriteInfo * pWriteInfo)
 {
-	jeVFile * pF = pWriteInfo->pF;
+	grVFile * pF = pWriteInfo->pF;
 
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	if( !Object_WriteToFile( &pBrush->ObjectData, pF  ) )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Object_InitFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Object_InitFromFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-	if( jeVFile_Write( pF, &pBrush->Kind, sizeof pBrush->Kind ) == JE_FALSE )
+	if( grVFile_Write( pF, &pBrush->Kind, sizeof pBrush->Kind ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Brush_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Brush_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
 
-	if( jeBrush_WriteToFile( pBrush->pBrush, pF, pWriteInfo->pPtrMgr ) == JE_FALSE )
+	if( grBrush_WriteToFile( pBrush->pBrush, pF, pWriteInfo->pPtrMgr ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Brush_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Brush_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
 	BrushTemplate_WriteToFile( pBrush->pTemplate, pF );
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// Brush_WriteToFile
 
 
 // DEBUGGING
 #ifdef _DEBUG
-jeBoolean Brush_IsValid( const Brush * pBrush )
+grBoolean Brush_IsValid( const Brush * pBrush )
 {
 	assert( pBrush != NULL ) ;
 	return SIGNATURE == pBrush->nSignature ;
 }
-jeBoolean Brush_IsBoundsValid( Brush * pBrush )
+grBoolean Brush_IsBoundsValid( Brush * pBrush )
 {
 	assert( pBrush != NULL ) ;
 	assert( SIGNATURE == pBrush->nSignature ) ;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }//Brush_IsBoundsValid
 
 #endif //_DEBUG
@@ -2651,10 +2651,10 @@ typedef struct tagVertDrawInfo
 } VertDrawInfo ;
 
 
-static jeBoolean Brush_DrawSelectedVertsCB( Vert_Struct *pVert, void * pVoid )
+static grBoolean Brush_DrawSelectedVertsCB( Vert_Struct *pVert, void * pVoid )
 {
 	VertDrawInfo *	pvdi = (VertDrawInfo*)pVoid ;
-	jeVec3d			Vert ;
+	grVec3d			Vert ;
 	Point			point ;
 	HDC     		hVertexBitmap;
 
@@ -2667,19 +2667,19 @@ static jeBoolean Brush_DrawSelectedVertsCB( Vert_Struct *pVert, void * pVoid )
 	BitBlt((HDC)pvdi->hDC, point.X-3, point.Y-3, 6, 6,hVertexBitmap, 0, 0, SRCCOPY) ;
 	DeleteDC(hVertexBitmap);
 	
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Ortho_DrawSelectedVertsCB
 
 #define BRUSH_MAXPOINTSPERFACE			(64)
 
-void Brush_RenderOrthoFaces( Brush *pBrush, const Ortho * pOrtho,  int32 hDC, jeBoolean bDrawVertex, jeBoolean bDrawSelFaces, jeBoolean bColorOveride )
+void Brush_RenderOrthoFaces( Brush *pBrush, const Ortho * pOrtho,  int32 hDC, grBoolean bDrawVertex, grBoolean bDrawSelFaces, grBoolean bColorOveride )
 {
 	int				i, j ;
-	jeBrush_Face *	pFace ;
+	grBrush_Face *	pFace ;
 	Point			points[BRUSH_MAXPOINTSPERFACE];
-	jeVec3d			Vert ;
+	grVec3d			Vert ;
 	int				nVertices ;
-	jeBoolean		bFaceSelected ;
+	grBoolean		bFaceSelected ;
 	HDC         	hVertexBitmap;
 	jwePen	*		pPen = NULL;
 
@@ -2791,35 +2791,35 @@ void Brush_RenderOrthoFaces( Brush *pBrush, const Ortho * pOrtho,  int32 hDC, je
 }// Brush_RenderOrthoFaces
 
 //UNDO
-jeBoolean Brush_RestoreMaterialCB( Object *pObject, void *Context )
+grBoolean Brush_RestoreMaterialCB( Object *pObject, void *Context )
 {
 	MaterialUndoContext *pUndoContext = (MaterialUndoContext*)Context;
-	jeFaceInfo FaceInfo;
+	grFaceInfo FaceInfo;
 
-	jeBrush_FaceGetFaceInfo( pUndoContext->pFace, &FaceInfo );
+	grBrush_FaceGetFaceInfo( pUndoContext->pFace, &FaceInfo );
 
 	FaceInfo.MaterialIndex = pUndoContext->MaterialIndex;
-	jeBrush_FaceSetFaceInfo( pUndoContext->pFace, &FaceInfo);
+	grBrush_FaceSetFaceInfo( pUndoContext->pFace, &FaceInfo);
 	if( pUndoContext->pgeModel != NULL )
-		jeModel_UpdateBrushFace( pUndoContext->pgeModel,  pUndoContext->pFace, JE_TRUE );
-	return( JE_TRUE );
+		grModel_UpdateBrushFace( pUndoContext->pgeModel,  pUndoContext->pFace, GR_TRUE );
+	return( GR_TRUE );
 	pObject;
 }
 
 void Brush_DestroyMaterialContextCB( void *Context )
 {
-	jeRam_Free( Context );
+	grRam_Free( Context );
 }
 
-jeBoolean Brush_SelectClosest( Brush * pBrush, FindInfo	*	pFindInfo )
+grBoolean Brush_SelectClosest( Brush * pBrush, FindInfo	*	pFindInfo )
 {
 	int					i, j ; 
 	int					nFaces ;
 	int					nVerts ;
-	jeBrush_Face	*	pFace ; 
+	grBrush_Face	*	pFace ; 
 	Point				pt1, pt2 ;
-	jeVec3d				wpt1, wpt2 ;
-	jeFloat				DistSq ;
+	grVec3d				wpt1, wpt2 ;
+	grFloat				DistSq ;
 	Model			*	pModel;
 
 	assert( pBrush != NULL );
@@ -2866,81 +2866,81 @@ jeBoolean Brush_SelectClosest( Brush * pBrush, FindInfo	*	pFindInfo )
 			pFindInfo->nFaceEdge = j-1;
 		}
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeProperty_List *	Brush_GlobalPropertyList()
+grProperty_List *	Brush_GlobalPropertyList()
 {
-	jeProperty_List * pList;
-	jeProperty	Property;
+	grProperty_List * pList;
+	grProperty	Property;
 	char *	Name;
-	jeBoolean bCheck;
+	grBoolean bCheck;
 
-	pList  =  jeProperty_ListCreate(0);
+	pList  =  grProperty_ListCreate(0);
 	if( pList == NULL )
 		return( NULL );
 	
 	Name = Util_LoadLocalRcString( IDS_UPDATE ) ;
-	jeProperty_FillGroup( &Property, Name, BRUSH_GLOBAL_UPDATEGROUP_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillGroup( &Property, Name, BRUSH_GLOBAL_UPDATEGROUP_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_UPDATE_MANUEL ) ;
 	bCheck = (gBrush_Update == OBJECT_UPDATE_MANUEL );
-	jeProperty_FillRadio( &Property, Name, bCheck, BRUSH_GLOBAL_UPDATE_MANUEL_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillRadio( &Property, Name, bCheck, BRUSH_GLOBAL_UPDATE_MANUEL_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 	
 	Name = Util_LoadLocalRcString( IDS_UPDATE_CHANGE ) ;
 	bCheck = (gBrush_Update == OBJECT_UPDATE_CHANGE );
-	jeProperty_FillRadio( &Property, Name, bCheck, BRUSH_GLOBAL_UPDATE_CHANGE_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillRadio( &Property, Name, bCheck, BRUSH_GLOBAL_UPDATE_CHANGE_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_UPDATE_REALTIME ) ;
 	bCheck = (gBrush_Update == OBJECT_UPDATE_REALTIME );
-	jeProperty_FillRadio( &Property, Name, bCheck, BRUSH_GLOBAL_UPDATE_REALTIME_ID );
-	jeProperty_SetDisabled( &Property, JE_TRUE );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillRadio( &Property, Name, bCheck, BRUSH_GLOBAL_UPDATE_REALTIME_ID );
+	grProperty_SetDisabled( &Property, GR_TRUE );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 
-	jeProperty_FillGroupEnd( &Property, BRUSH_GLOBAL_UPDATEGROUP_END_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillGroupEnd( &Property, BRUSH_GLOBAL_UPDATEGROUP_END_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_MAINTAIN_LIGHTING ) ;
-	jeProperty_FillCheck( &Property, Name, gBrush_Lighting, BRUSH_GLOBAL_MAINTAIN_LIGHING_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillCheck( &Property, Name, gBrush_Lighting, BRUSH_GLOBAL_MAINTAIN_LIGHING_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Brush_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 	
 	return( pList );
 }
 
-void Brush_SetGlobalProperty( int DataId, int DataType, jeProperty_Data * pData )
+void Brush_SetGlobalProperty( int DataId, int DataType, grProperty_Data * pData )
 {
 	switch( DataId )
 	{
@@ -2972,13 +2972,13 @@ void Brush_SetGlobalProperty( int DataId, int DataType, jeProperty_Data * pData 
 	DataType;
 }
 
-jeBoolean Brush_IsVisible( const Brush* pBrush )
+grBoolean Brush_IsVisible( const Brush* pBrush )
 {
     assert(pBrush);
     return pBrush->bShow;
 }
 
-void Brush_Show( Brush* pBrush, jeBoolean Visible )
+void Brush_Show( Brush* pBrush, grBoolean Visible )
 {
     assert(pBrush);
     pBrush->bShow = Visible;

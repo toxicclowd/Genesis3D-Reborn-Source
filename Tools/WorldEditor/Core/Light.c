@@ -25,7 +25,7 @@
 #include <float.h>
 
 #include "ErrorLog.h"
-#include "jet.h"
+#include "Genesis3D.h"
 #include "Ram.h"
 #include "Transform.h"
 #include "Util.h"
@@ -66,105 +66,105 @@ typedef struct tagLight
 	int					nSignature ;
 #endif
 	int32				Flags;
-	jeExtBox			WorldBounds ;
+	grExtBox			WorldBounds ;
 	LightInfo			LightData ;
-	jeLight			*	pgeLight;
-	jeWorld			*	pWorld; //Array that owns this light
-	jeBoolean			bInWorld;
-	jeBoolean			bDLight;
+	grLight			*	pgeLight;
+	grWorld			*	pWorld; //Array that owns this light
+	grBoolean			bInWorld;
+	grBoolean			bDLight;
 } Light ;
 
 //STATIC FUNCTIONS
 
-static jeBoolean Light_SetData( Light * pLight )
+static grBoolean Light_SetData( Light * pLight )
 {
 	if( pLight->pgeLight != NULL )
 	{
-		if( !jeLight_SetAttributes(	pLight->pgeLight,
+		if( !grLight_SetAttributes(	pLight->pgeLight,
 									&pLight->LightData.Pos, 
 									&pLight->LightData.Color, 
 									pLight->LightData.Radius, 
 									pLight->LightData.Brightness, 
 									pLight->LightData.Flags) )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_SetData:jeLight_SetAttributes" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_SetData:grLight_SetAttributes" );
+			return( GR_FALSE );
 		}
 		Object_Dirty( &pLight->ObjectData );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Light_UpdateData( Light * pLight )
+grBoolean Light_UpdateData( Light * pLight )
 {
 	if( pLight->pgeLight != NULL )
 	{
-		if( !jeLight_SetAttributes(	pLight->pgeLight,
+		if( !grLight_SetAttributes(	pLight->pgeLight,
 									&pLight->LightData.Pos, 
 									&pLight->LightData.Color, 
 									pLight->LightData.Radius, 
 									pLight->LightData.Brightness, 
 									pLight->LightData.Flags) )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_SetData:jeLight_SetAttributes" );
-			return( JE_FALSE );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_SetData:grLight_SetAttributes" );
+			return( GR_FALSE );
 		}
 
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-static jeBoolean Light_SizeEdge( Light * pLight, const jeVec3d * pStillEdge, const jeFloat fScale, ORTHO_AXIS Axis )
+static grBoolean Light_SizeEdge( Light * pLight, const grVec3d * pStillEdge, const grFloat fScale, ORTHO_AXIS Axis )
 {
 	float	fTemp;
 
 
-	fTemp = jeVec3d_GetElement( &pLight->LightData.Pos, Axis ) - jeVec3d_GetElement( pStillEdge, Axis ) ;
+	fTemp = grVec3d_GetElement( &pLight->LightData.Pos, Axis ) - grVec3d_GetElement( pStillEdge, Axis ) ;
 	fTemp = fTemp * fScale ;
-	fTemp = fTemp + jeVec3d_GetElement( pStillEdge, Axis ) ;
-	jeVec3d_SetElement( &pLight->LightData.Pos, Axis, fTemp ) ;
+	fTemp = fTemp + grVec3d_GetElement( pStillEdge, Axis ) ;
+	grVec3d_SetElement( &pLight->LightData.Pos, Axis, fTemp ) ;
 	if( !Light_SetData( pLight ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_SizeEdge:Light_SetData" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_SizeEdge:Light_SetData" );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 // CREATORS
-Light *	Light_Create( const char * const pszName, Group * pGroup, int32 nNumber,jeWorld	* pWorld )
+Light *	Light_Create( const char * const pszName, Group * pGroup, int32 nNumber,grWorld	* pWorld )
 {
 	Light	*	pLight;
 	assert( pszName );
 	assert( pWorld );
 
-	pLight = JE_RAM_ALLOCATE_STRUCT( Light );
+	pLight = GR_RAM_ALLOCATE_STRUCT( Light );
 	if( pLight == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate Light" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate Light" );
 		return( NULL );
 	}
 	memset( pLight, 0, sizeof( Light ) );
 	assert( (pLight->nSignature = SIGNATURE) == SIGNATURE ) ;	// ASSIGN
 	if( !Object_Init( &pLight->ObjectData, pGroup, KIND_LIGHT, pszName, nNumber ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeRam_Free( pLight );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grRam_Free( pLight );
 		return( NULL );
 	}
 
-	pLight->pgeLight = jeLight_Create();
+	pLight->pgeLight = grLight_Create();
 	if( pLight->pgeLight == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_Create:jeLight_Create" );
-		jeRam_Free( pLight );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_Create:grLight_Create" );
+		grRam_Free( pLight );
 		return( NULL );
 	}
 	pLight->pWorld = pWorld;
-	pLight->bInWorld = JE_FALSE;
-	pLight->bDLight = JE_FALSE;
+	pLight->bInWorld = GR_FALSE;
+	pLight->bDLight = GR_FALSE;
 
-	if( !jeLight_GetAttributes(	pLight->pgeLight, 
+	if( !grLight_GetAttributes(	pLight->pgeLight, 
 									&pLight->LightData.Pos, 
 									&pLight->LightData.Color, 
 									&pLight->LightData.Radius, 
@@ -172,11 +172,11 @@ Light *	Light_Create( const char * const pszName, Group * pGroup, int32 nNumber,
 									&pLight->LightData.Flags ) 
 	  )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_Create:jeLight_GetAttributes" );
-		jeRam_Free( pLight );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_Create:grLight_GetAttributes" );
+		grRam_Free( pLight );
 		return( NULL );
 	}
-	jeExtBox_Set( &pLight->WorldBounds, LIGHT_BOX_MIN, LIGHT_BOX_MIN, LIGHT_BOX_MIN,
+	grExtBox_Set( &pLight->WorldBounds, LIGHT_BOX_MIN, LIGHT_BOX_MIN, LIGHT_BOX_MIN,
 										LIGHT_BOX_MAX, LIGHT_BOX_MAX, LIGHT_BOX_MAX );
 	return( pLight );
 }// Light_Create
@@ -193,20 +193,20 @@ Light *	Light_Copy( Light *	pLight, int32 nNumber )
 	pNewLight = Light_Create( pLight->ObjectData.pszName, pLight->ObjectData.pGroup, nNumber,pLight->pWorld );
 	if( pNewLight == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		return( NULL );
 	}
 	pNewLight->LightData = pLight->LightData;
 	if( !Light_UpdateData( pNewLight ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_Copy::Light_SetData" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_Copy::Light_SetData" );
 		return( NULL );
 	}
 
 	return( pNewLight );
 }
 
-Light *	Light_FromTemplate( char * pszName, Group * pGroup, Light *	pLight, int32 nNumber, jeBoolean bUpdate )
+Light *	Light_FromTemplate( char * pszName, Group * pGroup, Light *	pLight, int32 nNumber, grBoolean bUpdate )
 {
 	Light *pNewLight;
 
@@ -218,23 +218,23 @@ Light *	Light_FromTemplate( char * pszName, Group * pGroup, Light *	pLight, int3
 	pNewLight = Light_Copy( pLight, nNumber );
 	if( pNewLight == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		return( NULL );
 	}
 	if( pNewLight->ObjectData.pszName != NULL )
 	{
-		jeRam_Free( pNewLight->ObjectData.pszName );
+		grRam_Free( pNewLight->ObjectData.pszName );
 	}
 	 pNewLight->ObjectData.pszName = pszName;
 	 pNewLight->ObjectData.pGroup = pGroup ;
 
 	Light_UpdateBounds( pNewLight );
-	if( !jeWorld_AddLight(pNewLight->pWorld, pNewLight->pgeLight, bUpdate ) )
+	if( !grWorld_AddLight(pNewLight->pWorld, pNewLight->pgeLight, bUpdate ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_SetData:jeWorld_AddLight" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_SetData:grWorld_AddLight" );
 		return NULL;
 	}
-	pNewLight->bInWorld = JE_TRUE;
+	pNewLight->bInWorld = GR_TRUE;
 	return( pNewLight );
 }// Light_FromTemplate
 
@@ -255,29 +255,29 @@ void Light_Destroy( Light ** ppLight )
 	{
 		if( (*ppLight)->bInWorld )
 		{
-			jeWorld_RemoveLight((*ppLight)->pWorld, (*ppLight)->pgeLight, JE_TRUE );
-			(*ppLight)->bInWorld = JE_FALSE;
+			grWorld_RemoveLight((*ppLight)->pWorld, (*ppLight)->pgeLight, GR_TRUE );
+			(*ppLight)->bInWorld = GR_FALSE;
 		}
-		jeLight_Destroy( &(*ppLight)->pgeLight );
+		grLight_Destroy( &(*ppLight)->pgeLight );
 	}
 
 	// [MLB-ICE] Comment: Same as in Brush/Level/... ;)
 	if( (*ppLight)->ObjectData.pszName != NULL )
-		jeRam_Free( (*ppLight)->ObjectData.pszName );
+		grRam_Free( (*ppLight)->ObjectData.pszName );
 	// [MLB-ICE] EOB
 
-	jeRam_Free( (*ppLight) );
+	grRam_Free( (*ppLight) );
 }// Light_Destroy
 
-Light *	Light_CreateTemplate(  jeWorld * pWorld )
+Light *	Light_CreateTemplate(  grWorld * pWorld )
 {
 	Light * pLight;
 	assert( pWorld );
 
-	pLight = JE_RAM_ALLOCATE_STRUCT( Light );
+	pLight = GR_RAM_ALLOCATE_STRUCT( Light );
 	if( pLight == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate Light" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate Light" );
 		return( NULL );
 	}
 	memset( pLight, 0, sizeof( Light) );
@@ -285,32 +285,32 @@ Light *	Light_CreateTemplate(  jeWorld * pWorld )
 	Object_Init( (Object*)pLight, NULL, KIND_LIGHT, "Template", 0 );
 	pLight->pWorld = pWorld;
 	pLight->LightData.Brightness = 3.0f;
-	jeVec3d_Set( &pLight->LightData.Color, 255.0f, 255.0f, 255.0f );
-	jeVec3d_Set( &pLight->LightData.Pos, 0.0f, 0.0f, 0.0f );
+	grVec3d_Set( &pLight->LightData.Color, 255.0f, 255.0f, 255.0f );
+	grVec3d_Set( &pLight->LightData.Pos, 0.0f, 0.0f, 0.0f );
 	pLight->LightData.Radius = 200.0f;
 	Light_UpdateBounds( pLight );
 	pLight->pgeLight = NULL;
-	jeExtBox_Set( &pLight->WorldBounds, LIGHT_BOX_MIN, LIGHT_BOX_MIN, LIGHT_BOX_MIN,
+	grExtBox_Set( &pLight->WorldBounds, LIGHT_BOX_MIN, LIGHT_BOX_MIN, LIGHT_BOX_MIN,
 										LIGHT_BOX_MAX, LIGHT_BOX_MAX, LIGHT_BOX_MAX );
 	return( pLight );
 }
 
 // MODIFIERS
-jeBoolean Light_Move( Light * pLight, const jeVec3d * pWorldDistance )
+grBoolean Light_Move( Light * pLight, const grVec3d * pWorldDistance )
 {
 	assert( pLight != NULL ) ;
 	assert( SIGNATURE == pLight->nSignature ) ;
 
 	Light_SetModified( pLight );
-	jeVec3d_Add( &pLight->LightData.Pos, pWorldDistance, &pLight->LightData.Pos );
+	grVec3d_Add( &pLight->LightData.Pos, pWorldDistance, &pLight->LightData.Pos );
 	Light_SetData( pLight );
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 }// Light_Move
 
-jeBoolean Light_Size( Light * pLight, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
+grBoolean Light_Size( Light * pLight, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
 {
-	jeBoolean bResult = JE_TRUE;
+	grBoolean bResult = GR_TRUE;
 
 	assert( pLight != NULL ) ;
 	assert( SIGNATURE == pLight->nSignature ) ;
@@ -375,14 +375,14 @@ jeBoolean Light_Size( Light * pLight, const jeExtBox * pSelectedBounds, const je
 		break ;
 	}
 	Light_SetModified( pLight ) ;
-	if( bResult == JE_FALSE )
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_Size:Light_SizeEdge" );
+	if( bResult == GR_FALSE )
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_Size:Light_SizeEdge" );
 
 	Light_SetData( pLight );
 	return( bResult );
 }// Light_Size
 
-jeBoolean Light_SetXForm( Light * pLight, const jeXForm3d * XForm )
+grBoolean Light_SetXForm( Light * pLight, const grXForm3d * XForm )
 {
 
 	assert( pLight );
@@ -400,7 +400,7 @@ void Light_UpdateBounds( Light * pLight )
 
 	assert( pLight );
 
-	jeExtBox_SetTranslation ( &pLight->WorldBounds, &pLight->LightData.Pos );
+	grExtBox_SetTranslation ( &pLight->WorldBounds, &pLight->LightData.Pos );
 
 }
 
@@ -412,7 +412,7 @@ void Light_SetModified( Light * pLight )
 	pLight->Flags |= LIGHT_FLAG_DIRTYALL ;	
 }// Light_SetModified
 
-jeBoolean Light_SetInfo( Light * pLight, LightInfo *pLightInfo, int32 BlankFieldFlag )
+grBoolean Light_SetInfo( Light * pLight, LightInfo *pLightInfo, int32 BlankFieldFlag )
 {
 	assert( pLight );
 	assert( pLightInfo );
@@ -434,29 +434,29 @@ jeBoolean Light_SetInfo( Light * pLight, LightInfo *pLightInfo, int32 BlankField
 void Light_SetIndexTag( Light * pLight, const uint32 nIndex ) 
 {
 	pLight->nIndexTag = nIndex;
-	//jeLight_SetIndexTAG( pLight->pgeLight, nIndex );
+	//grLight_SetIndexTAG( pLight->pgeLight, nIndex );
 }//Light_SetIndexTag
 
 void Light_RemoveFromWorld( Light * pLight )
 {
-	jeWorld_RemoveLight( pLight->pWorld, pLight->pgeLight, JE_TRUE );
-	pLight->bInWorld = JE_FALSE;
+	grWorld_RemoveLight( pLight->pWorld, pLight->pgeLight, GR_TRUE );
+	pLight->bInWorld = GR_FALSE;
 }
 
 void Light_AddToWorld( Light * pLight )
 {
-	jeWorld_AddLight(pLight->pWorld, pLight->pgeLight, JE_TRUE);
-	pLight->bInWorld = JE_TRUE;
+	grWorld_AddLight(pLight->pWorld, pLight->pgeLight, GR_TRUE);
+	pLight->bInWorld = GR_TRUE;
 }
 
 // ACCESSORS
-void Light_GetXForm( const Light * pLight, jeXForm3d * XForm )
+void Light_GetXForm( const Light * pLight, grXForm3d * XForm )
 {
-	jeXForm3d_SetIdentity( XForm );
+	grXForm3d_SetIdentity( XForm );
 	XForm->Translation = pLight->LightData.Pos;
 }
 
-const jeExtBox * Light_GetWorldAxialBounds( const Light * pLight )
+const grExtBox * Light_GetWorldAxialBounds( const Light * pLight )
 {
 	assert( pLight != NULL ) ;
 	assert( SIGNATURE == pLight->nSignature ) ;
@@ -471,9 +471,9 @@ const jeExtBox * Light_GetWorldAxialBounds( const Light * pLight )
 
 }// Light_GetWorldAxialBounds
 
-void Light_GetWorldDrawBounds( const Light * pLight, jeExtBox *DrawBounds )
+void Light_GetWorldDrawBounds( const Light * pLight, grExtBox *DrawBounds )
 {
-	jeVec3d Center;
+	grVec3d Center;
 	assert( pLight != NULL ) ;
 	assert( SIGNATURE == pLight->nSignature ) ;
 	
@@ -482,11 +482,11 @@ void Light_GetWorldDrawBounds( const Light * pLight, jeExtBox *DrawBounds )
 		Light * pEvalLight = (Light*)pLight ;			// Lazy Evaluation requires removing the const
 		Light_UpdateBounds( pEvalLight ) ;
 	}
-	jeExtBox_GetTranslation ( &pLight->WorldBounds, &Center );
-	jeExtBox_Set (  DrawBounds,
+	grExtBox_GetTranslation ( &pLight->WorldBounds, &Center );
+	grExtBox_Set (  DrawBounds,
 				  LIGHT_DRAW_MIN,	  LIGHT_DRAW_MIN,	  LIGHT_DRAW_MIN,
 				  LIGHT_DRAW_MAX,	  LIGHT_DRAW_MAX,	  LIGHT_DRAW_MAX );
-	jeExtBox_SetTranslation ( DrawBounds, &Center );
+	grExtBox_SetTranslation ( DrawBounds, &Center );
 
 }// Light_GetWorldDrawBounds
 
@@ -502,7 +502,7 @@ void Light_GetInfo( const Light * pLight, LightInfo *pLightInfo, int32 *BlankFie
 		*BlankFieldFlag = 0;
 		return;
 	}
-	if( !jeVec3d_Compare( &pLightInfo->Pos,&pLight->LightData.Pos, 0.0f) )
+	if( !grVec3d_Compare( &pLightInfo->Pos,&pLight->LightData.Pos, 0.0f) )
 		*BlankFieldFlag |= LIGHT_FIELD_POS;
 
 	if( pLightInfo->Brightness != pLight->LightData.Brightness )
@@ -511,19 +511,19 @@ void Light_GetInfo( const Light * pLight, LightInfo *pLightInfo, int32 *BlankFie
 	if( pLightInfo->Radius != pLight->LightData.Radius )
 		*BlankFieldFlag |= LIGHT_FIELD_RADIUS;
 
-	if( !jeVec3d_Compare( &pLightInfo->Color,&pLight->LightData.Color, 0.0f) )
+	if( !grVec3d_Compare( &pLightInfo->Color,&pLight->LightData.Color, 0.0f) )
 		*BlankFieldFlag |= LIGHT_FIELD_COLOR;
 	return;
 }//Light_GetInfo
 
-jeBoolean Light_SelectClosest( Light * pLight, FindInfo	*	pFindInfo )
+grBoolean Light_SelectClosest( Light * pLight, FindInfo	*	pFindInfo )
 {
 	Point				pt1;
 	Point				pt2;
-	jeFloat				DistSq ;
-	jeVec3d			Vert1 ;
-	jeVec3d			Vert2 ;
-	jeExtBox		Bounds;
+	grFloat				DistSq ;
+	grVec3d			Vert1 ;
+	grVec3d			Vert2 ;
+	grExtBox		Bounds;
 	int32			y ;
 
 	assert( pLight != NULL );
@@ -559,152 +559,152 @@ jeBoolean Light_SelectClosest( Light * pLight, FindInfo	*	pFindInfo )
 		pFindInfo->nFace = 0 ;
 		pFindInfo->nFaceEdge = 0;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-jeBoolean Light_FillPositionDescriptor( Light * pLight, jeProperty_List * pArray )
+grBoolean Light_FillPositionDescriptor( Light * pLight, grProperty_List * pArray )
 {
 	char * Name;
-	jeProperty Property;
+	grProperty Property;
 
 	Name = Util_LoadLocalRcString( IDS_POSITION_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillVec3dGroup( &Property, Name, &pLight->LightData.Pos,	OBJECT_POSITION_FIELD  );
-	if( !jeProperty_Append( pArray,  &Property ) )
+		return( GR_FALSE );
+	grProperty_FillVec3dGroup( &Property, Name, &pLight->LightData.Pos,	OBJECT_POSITION_FIELD  );
+	if( !grProperty_Append( pArray,  &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONX_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat(  &Property, Name, pLight->LightData.Pos.X, OBJECT_POSITION_FIELDX, -FLT_MAX, FLT_MAX, 1.0f );
-	if( !jeProperty_Append( pArray,  &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat(  &Property, Name, pLight->LightData.Pos.X, OBJECT_POSITION_FIELDX, -FLT_MAX, FLT_MAX, 1.0f );
+	if( !grProperty_Append( pArray,  &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONY_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat(  &Property, Name, pLight->LightData.Pos.Y,	OBJECT_POSITION_FIELDY, -FLT_MAX, FLT_MAX, 1.0f );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat(  &Property, Name, pLight->LightData.Pos.Y,	OBJECT_POSITION_FIELDY, -FLT_MAX, FLT_MAX, 1.0f );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		jeRam_Free( Name );
-		return( JE_FALSE );
+		grRam_Free( Name );
+		return( GR_FALSE );
 	}
-	jeRam_Free( Name );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONZ_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, pLight->LightData.Pos.Z, OBJECT_POSITION_FIELDZ, -FLT_MAX, FLT_MAX, 1.0f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, pLight->LightData.Pos.Z, OBJECT_POSITION_FIELDZ, -FLT_MAX, FLT_MAX, 1.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
-	jeProperty_FillGroupEnd( &Property, OBJECT_POSITION_FIELD_END );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillGroupEnd( &Property, OBJECT_POSITION_FIELD_END );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Light_FillRGBDescriptor( Light * pLight, jeProperty_List * pArray )
+grBoolean Light_FillRGBDescriptor( Light * pLight, grProperty_List * pArray )
 {
 	char * Name;
-	jeProperty Property;
+	grProperty Property;
 
 	Name = Util_LoadLocalRcString( IDS_COLOR_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillColorGroup( &Property, Name, &pLight->LightData.Color,	LIGHT_COLOR_FIELD  );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillColorGroup( &Property, Name, &pLight->LightData.Color,	LIGHT_COLOR_FIELD  );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_RED_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, pLight->LightData.Color.X,	LIGHT_RED_FIELD, 0, 255.0f, 2.0f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, pLight->LightData.Color.X,	LIGHT_RED_FIELD, 0, 255.0f, 2.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_GREEN_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, pLight->LightData.Color.Y,	LIGHT_GREEN_FIELD, 0, 255.0f, 1.0f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, pLight->LightData.Color.Y,	LIGHT_GREEN_FIELD, 0, 255.0f, 1.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_BLUE_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, pLight->LightData.Color.Z,	LIGHT_BLUE_FIELD, 0, 255.0, 1.0f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, pLight->LightData.Color.Z,	LIGHT_BLUE_FIELD, 0, 255.0, 1.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 
 	Name = Util_LoadLocalRcString( IDS_PICKER_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillColorPicker( &Property, Name, &pLight->LightData.Color,	LIGHT_PICKER_FIELD );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillColorPicker( &Property, Name, &pLight->LightData.Color,	LIGHT_PICKER_FIELD );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
-	jeProperty_FillGroupEnd( &Property, LIGHT_COLOR_FIELD_END );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillGroupEnd( &Property, LIGHT_COLOR_FIELD_END );
+	if( !grProperty_Append( pArray, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeProperty_List *	Light_BuildDescriptor( Light * pLight )
+grProperty_List *	Light_BuildDescriptor( Light * pLight )
 {
-	jeProperty_List * pArray = NULL;
+	grProperty_List * pArray = NULL;
 	char * Name;
-	jeProperty Property;
+	grProperty Property;
 
 
 	assert( pLight );
 
-	pArray = jeProperty_ListCreateEmpty();
+	pArray = grProperty_ListCreateEmpty();
 	if( pArray == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "DescriptorArray" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "DescriptorArray" );
 		return NULL;
 	}
 
 	Name = Util_LoadLocalRcString( IDS_NAME_FIELD );
 	if( Name == NULL )
 		goto LBD_ERROR;
-	jeProperty_FillString( &Property, Name, pLight->ObjectData.pszName, OBJECT_NAME_FIELD );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillString( &Property, Name, pLight->ObjectData.pszName, OBJECT_NAME_FIELD );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 		goto LBD_ERROR;
 
 	Light_FillPositionDescriptor( pLight, pArray );
@@ -712,28 +712,28 @@ jeProperty_List *	Light_BuildDescriptor( Light * pLight )
 	Name = Util_LoadLocalRcString( IDS_BRIGHTNESS_FIELD );
 	if( Name == NULL )
 		goto LBD_ERROR;
-	jeProperty_FillFloat( &Property, Name, pLight->LightData.Brightness,	LIGHT_BRIGHTNESS_FIELD, 0, FLT_MAX, 1.0f);
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grProperty_FillFloat( &Property, Name, pLight->LightData.Brightness,	LIGHT_BRIGHTNESS_FIELD, 0, FLT_MAX, 1.0f);
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 		goto LBD_ERROR;
 
 	Name = Util_LoadLocalRcString( IDS_RADIUS_FIELD );
 	if( Name == NULL )
 		goto LBD_ERROR;
-	jeProperty_FillFloat( &Property, Name, pLight->LightData.Radius, LIGHT_RADIUS_FIELD, 1, FLT_MAX, 1.0f );
+	grProperty_FillFloat( &Property, Name, pLight->LightData.Radius, LIGHT_RADIUS_FIELD, 1, FLT_MAX, 1.0f );
 	Light_FillRGBDescriptor( pLight, pArray );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pArray, &Property ) )
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
 		goto LBD_ERROR;
 	
 	return( pArray );
 
 LBD_ERROR:
-	jeProperty_ListDestroy( &pArray );
+	grProperty_ListDestroy( &pArray );
 	return( NULL );
 }
 
-void Light_SetProperty( Light * pLight, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bUpdate )
+void Light_SetProperty( Light * pLight, int DataId, int DataType, grProperty_Data * pData, grBoolean bUpdate )
 {
 	DataType;
 	switch( DataId )
@@ -769,15 +769,15 @@ void Light_SetProperty( Light * pLight, int DataId, int DataType, jeProperty_Dat
 void Light_ChangeToDLight( Light * pLight )
 {
 	Light_RemoveFromWorld( pLight );
-	jeWorld_AddDLight(pLight->pWorld, pLight->pgeLight );
-	pLight->bDLight = JE_TRUE;
+	grWorld_AddDLight(pLight->pWorld, pLight->pgeLight );
+	pLight->bDLight = GR_TRUE;
 }
 
 void Light_ChangeFromDLight( Light * pLight )
 {
-	jeWorld_RemoveDLight( pLight->pWorld, pLight->pgeLight);
+	grWorld_RemoveDLight( pLight->pWorld, pLight->pgeLight);
 	Light_AddToWorld( pLight );
-	pLight->bDLight = JE_FALSE;
+	pLight->bDLight = GR_FALSE;
 }
 
 void Light_Update( Light * pLight, int Update_Type )
@@ -792,7 +792,7 @@ void Light_Update( Light * pLight, int Update_Type )
 	if( !(pLight->ObjectData.miscFlags & OBJECT_DIRTY  ) )
 		return;
 
-	if( Update_Type == OBJECT_UPDATE_REALTIME && pLight->bDLight == JE_FALSE )
+	if( Update_Type == OBJECT_UPDATE_REALTIME && pLight->bDLight == GR_FALSE )
 	{
 		Light_ChangeToDLight( pLight );
 	}
@@ -804,23 +804,23 @@ void Light_Update( Light * pLight, int Update_Type )
 
 	if( pLight->bInWorld )
 	{
-		jeWorld_RemoveLight(pLight->pWorld, pLight->pgeLight, JE_TRUE );
-		pLight->bInWorld = JE_FALSE;
-		if( !jeWorld_AddLight(pLight->pWorld, pLight->pgeLight, JE_TRUE ) )
+		grWorld_RemoveLight(pLight->pWorld, pLight->pgeLight, GR_TRUE );
+		pLight->bInWorld = GR_FALSE;
+		if( !grWorld_AddLight(pLight->pWorld, pLight->pgeLight, GR_TRUE ) )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_SetData:jeWorld_AddLight" );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_SetData:grWorld_AddLight" );
 			return;
 		}
-		pLight->bInWorld = JE_TRUE;
+		pLight->bInWorld = GR_TRUE;
 	}
 	pLight->ObjectData.miscFlags &= ~OBJECT_DIRTY;
 }
 
 //IS
-jeBoolean	Light_IsInRect( const Light * pLight, jeExtBox *pSelRect, jeBoolean bSelEncompeses )
+grBoolean	Light_IsInRect( const Light * pLight, grExtBox *pSelRect, grBoolean bSelEncompeses )
 {
-	const jeExtBox *pWorldBounds;
-	jeExtBox		Result;
+	const grExtBox *pWorldBounds;
+	grExtBox		Result;
 
 	assert( pLight );
 	assert( pSelRect );
@@ -834,27 +834,27 @@ jeBoolean	Light_IsInRect( const Light * pLight, jeExtBox *pSelRect, jeBoolean bS
 			pSelRect->Min.X <= pWorldBounds->Min.X &&
 			pSelRect->Min.Y <= pWorldBounds->Min.Y &&
 			pSelRect->Min.Z <= pWorldBounds->Min.Z )
-			 return( JE_TRUE );
+			 return( GR_TRUE );
 	}
 	else
 	{
 		return( Util_geExtBox_Intersection ( pSelRect, pWorldBounds, &Result	) );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }//Light_IsInRect
 
 
 //FILE
-Light * Light_CreateFromFile( jeVFile * pF, jeWorld * pWorld, jePtrMgr * pPtrMgr )
+Light * Light_CreateFromFile( grVFile * pF, grWorld * pWorld, grPtrMgr * pPtrMgr )
 {
 	Light	*	pLight = NULL ;
 
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
-	pLight = JE_RAM_ALLOCATE_STRUCT( Light );
+	pLight = GR_RAM_ALLOCATE_STRUCT( Light );
 	if( pLight == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate Light" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate Light" );
 		return( NULL );
 	}
 	memset( pLight, 0, sizeof( Light ) );
@@ -862,22 +862,22 @@ Light * Light_CreateFromFile( jeVFile * pF, jeWorld * pWorld, jePtrMgr * pPtrMgr
 
 	if( !Object_InitFromFile( pF , &pLight->ObjectData ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
 		return NULL;
 	}
 
-	if( !jeVFile_Read(  pF, &pLight->nIndexTag, sizeof pLight->nIndexTag ) )
+	if( !grVFile_Read(  pF, &pLight->nIndexTag, sizeof pLight->nIndexTag ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Light_ReadFromFile.\n", NULL);
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Light_ReadFromFile.\n", NULL);
 		return NULL;
 	}
-	pLight->pgeLight = jeLight_CreateFromFile(pF, pPtrMgr);
+	pLight->pgeLight = grLight_CreateFromFile(pF, pPtrMgr);
 	if( pLight->pgeLight == NULL )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "jeLight_CreateFromFile.\n", NULL);
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "grLight_CreateFromFile.\n", NULL);
 		return NULL;
 	}
-	if( !jeLight_GetAttributes(	pLight->pgeLight, 
+	if( !grLight_GetAttributes(	pLight->pgeLight, 
 									&pLight->LightData.Pos, 
 									&pLight->LightData.Color, 
 									&pLight->LightData.Radius, 
@@ -885,56 +885,56 @@ Light * Light_CreateFromFile( jeVFile * pF, jeWorld * pWorld, jePtrMgr * pPtrMgr
 									&pLight->LightData.Flags ) 
 	  )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Light_ReattachCB:jeLight_GetAttributes" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_ReattachCB:grLight_GetAttributes" );
 		return NULL;
 	}
 
 	pLight->pWorld = pWorld;
-	jeExtBox_Set( &pLight->WorldBounds, LIGHT_BOX_MIN, LIGHT_BOX_MIN, LIGHT_BOX_MIN,
+	grExtBox_Set( &pLight->WorldBounds, LIGHT_BOX_MIN, LIGHT_BOX_MIN, LIGHT_BOX_MIN,
 											LIGHT_BOX_MAX, LIGHT_BOX_MAX, LIGHT_BOX_MAX );
 	Light_UpdateBounds( pLight );
 
 	pLight->Flags |= LIGHT_FLAG_DIRTYALL ;	
-	Object_SetInLevel( (Object*)pLight, JE_TRUE );
-	pLight->bInWorld = JE_TRUE;
+	Object_SetInLevel( (Object*)pLight, GR_TRUE );
+	pLight->bInWorld = GR_TRUE;
 
 	return( pLight );
 }
 
 
-jeBoolean Light_WriteToFile( Light * pLight, jeVFile * pF, jePtrMgr * pPtrMgr )
+grBoolean Light_WriteToFile( Light * pLight, grVFile * pF, grPtrMgr * pPtrMgr )
 {
 	assert( pLight != NULL ) ;
 	assert( SIGNATURE == pLight->nSignature ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	if( !Object_WriteToFile( &pLight->ObjectData, pF ) )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Object_WriteToFile.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Object_WriteToFile.", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pLight->nIndexTag, sizeof pLight->nIndexTag ) == JE_FALSE )
+	if( grVFile_Write( pF, &pLight->nIndexTag, sizeof pLight->nIndexTag ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Light_WriteToFile.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Light_WriteToFile.", NULL);
+		return GR_FALSE;
 	}
-	if( jeLight_WriteToFile( pLight->pgeLight, pF, pPtrMgr) == JE_FALSE )
+	if( grLight_WriteToFile( pLight->pgeLight, pF, pPtrMgr) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "jeLight_WriteToFile.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "grLight_WriteToFile.", NULL);
+		return GR_FALSE;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// Light_WriteToFile
 
 //DISPLAY
 #define LIGHT_MAXPOINTSPERFACE (64)
-void Light_RenderOrtho( const Ortho * pOrtho, Light *pLight, int32 hDC, jeBoolean bColorOveride )
+void Light_RenderOrtho( const Ortho * pOrtho, Light *pLight, int32 hDC, grBoolean bColorOveride )
 {
 	Point			points[LIGHT_MAXPOINTSPERFACE];
-	jeVec3d			Vert1 ;
-	jeVec3d			Vert2 ;
-	jeExtBox  Bounds;
+	grVec3d			Vert1 ;
+	grVec3d			Vert2 ;
+	grExtBox  Bounds;
 	int32			y ;
 
 	assert( pOrtho != NULL ) ;
@@ -959,61 +959,61 @@ void Light_RenderOrtho( const Ortho * pOrtho, Light *pLight, int32 hDC, jeBoolea
 }// Light_RenderOrtho
 
 
-jeProperty_List *	Light_GlobalPropertyList()
+grProperty_List *	Light_GlobalPropertyList()
 {
-	jeProperty_List * pList;
-	jeProperty	Property;
+	grProperty_List * pList;
+	grProperty	Property;
 	char *	Name;
-	jeBoolean bCheck;
+	grBoolean bCheck;
 
-	pList  =  jeProperty_ListCreate(0);
+	pList  =  grProperty_ListCreate(0);
 	if( pList == NULL )
 		return( NULL );
 	
 	Name = Util_LoadLocalRcString( IDS_UPDATE ) ;
-	jeProperty_FillGroup( &Property, Name, LIGHT_GLOBAL_UPDATEGROUP_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillGroup( &Property, Name, LIGHT_GLOBAL_UPDATEGROUP_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_UPDATE_MANUEL ) ;
 	bCheck = (gLight_Update == OBJECT_UPDATE_MANUEL );
-	jeProperty_FillRadio( &Property, Name, bCheck, LIGHT_GLOBAL_UPDATE_MANUEL_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillRadio( &Property, Name, bCheck, LIGHT_GLOBAL_UPDATE_MANUEL_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 	
 	Name = Util_LoadLocalRcString( IDS_UPDATE_CHANGE ) ;
 	bCheck = (gLight_Update == OBJECT_UPDATE_CHANGE );
-	jeProperty_FillRadio( &Property, Name, bCheck, LIGHT_GLOBAL_UPDATE_CHANGE_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillRadio( &Property, Name, bCheck, LIGHT_GLOBAL_UPDATE_CHANGE_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_UPDATE_REALTIME ) ;
 	bCheck = (gLight_Update == OBJECT_UPDATE_REALTIME );
-	jeProperty_FillRadio( &Property, Name, bCheck, LIGHT_GLOBAL_UPDATE_REALTIME_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillRadio( &Property, Name, bCheck, LIGHT_GLOBAL_UPDATE_REALTIME_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 
-	jeProperty_FillGroupEnd( &Property, LIGHT_GLOBAL_UPDATEGROUP_END_ID );
-	if( !jeProperty_Append( pList, &Property ) )
+	grProperty_FillGroupEnd( &Property, LIGHT_GLOBAL_UPDATEGROUP_END_ID );
+	if( !grProperty_Append( pList, &Property ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:jeProperty_Append");
-		jeProperty_ListDestroy( &pList );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Light_GlobalPropertyList:grProperty_Append");
+		grProperty_ListDestroy( &pList );
 		return( NULL );
 	}
 
@@ -1021,7 +1021,7 @@ jeProperty_List *	Light_GlobalPropertyList()
 	return( pList );
 }
 
-void Light_SetGlobalProperty( int DataId, int DataType, jeProperty_Data * pData )
+void Light_SetGlobalProperty( int DataId, int DataType, grProperty_Data * pData )
 {
 	switch( DataId )
 	{

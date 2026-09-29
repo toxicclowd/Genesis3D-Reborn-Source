@@ -35,7 +35,7 @@ typedef struct PolyCacheEntry
 {
 	int32 StartVertex;
 	int32 NumVertices;
-	jeTexture* Layers[MAX_LAYERS];
+	grTexture* Layers[MAX_LAYERS];
 	int32 NumLayers;
 	uint32 Flags;
 } PolyCacheEntry;
@@ -43,11 +43,11 @@ typedef struct PolyCacheEntry
 // Static mesh buffer
 typedef struct StaticBuffer
 {
-	jeBoolean Active;
+	grBoolean Active;
 	ComPtr<ID3D12Resource> pVertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
 	int32 NumVerts;
-	jeRDriver_Layer* Layers;
+	grRDriver_Layer* Layers;
 	int32 NumLayers;
 	uint32 Flags;
 } StaticBuffer;
@@ -72,27 +72,27 @@ private:
 
 public:
 	// Initialization
-	jeBoolean Initialize(int32 maxVerts = 10000);
+	grBoolean Initialize(int32 maxVerts = 10000);
 	void Shutdown();
 	void BeginFrame(UINT frameIndex);
 
 	// Static mesh management
-	uint32 AddStaticBuffer(jeHWVertex* Points, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags);
-	jeBoolean RemoveStaticBuffer(uint32 id);
-	jeBoolean RenderStaticBuffer(uint32 id, int32 StartVertex, int32 NumPolys, jeXForm3d* XForm);
+	uint32 AddStaticBuffer(grHWVertex* Points, int32 NumPoints, grRDriver_Layer* Layers, int32 NumLayers, uint32 Flags);
+	grBoolean RemoveStaticBuffer(uint32 id);
+	grBoolean RenderStaticBuffer(uint32 id, int32 StartVertex, int32 NumPolys, grXForm3d* XForm);
 
 	// Dynamic polygon batching
-	jeBoolean AddGouraudPoly(jeTLVertex* Pnts, int32 NumPoints, uint32 Flags);
-	jeBoolean AddMiscTexturePoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags);
-	jeBoolean AddWorldPoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, void* LMapCBContext, uint32 Flags);
+	grBoolean AddGouraudPoly(grTLVertex* Pnts, int32 NumPoints, uint32 Flags);
+	grBoolean AddMiscTexturePoly(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers, int32 NumLayers, uint32 Flags);
+	grBoolean AddWorldPoly(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers, int32 NumLayers, void* LMapCBContext, uint32 Flags);
 
 	// Flush cached geometry
-	jeBoolean Flush();
+	grBoolean Flush();
 
 private:
-	jeBoolean AddPolygon(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers,
-		int32 NumLayers, uint32 Flags, jeBoolean WorldCoordinates);
-	jeBoolean UploadVertices(ComPtr<ID3D12Resource>& VertexBuffer,
+	grBoolean AddPolygon(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers,
+		int32 NumLayers, uint32 Flags, grBoolean WorldCoordinates);
+	grBoolean UploadVertices(ComPtr<ID3D12Resource>& VertexBuffer,
 		D3D12_VERTEX_BUFFER_VIEW& VertexBufferView);
 };
 

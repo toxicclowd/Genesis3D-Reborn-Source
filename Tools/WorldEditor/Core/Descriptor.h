@@ -27,7 +27,7 @@ typedef union FieldData {
 	int   Bool;
 	float Float;
 	int	  Int;
-	jeVec3d Vector;
+	grVec3d Vector;
 } FieldData;
 
 typedef enum {
@@ -52,7 +52,7 @@ typedef struct Descriptor {
 	float	  Min;
 	float	  Max;
 	float	  Increment;
-	jeBoolean bDisabled;
+	grBoolean bDisabled;
 } Descriptor;
 
 typedef struct DescriptorArray {
@@ -67,12 +67,12 @@ void DescriptorArray_Destroy( DescriptorArray *pArray );
 void Descriptor_FillGroup( Descriptor *pDescriptor, int NameId, int FieldId );
 void Descriptor_FillCheck( Descriptor *pDescriptor, int NameId, int Value, int FieldId );
 void Descriptor_FillRaido( Descriptor *pDescriptor, int NameId, int Value, int FieldId );
-void Descriptor_FillVec3dGroup( Descriptor *pDescriptor, int NameId, const jeVec3d *Vector, int FieldId );
-void Descriptor_FillColorGroup( Descriptor *pDescriptor, int NameId, const jeVec3d *Vector, int FieldId );
+void Descriptor_FillVec3dGroup( Descriptor *pDescriptor, int NameId, const grVec3d *Vector, int FieldId );
+void Descriptor_FillColorGroup( Descriptor *pDescriptor, int NameId, const grVec3d *Vector, int FieldId );
 void Descriptor_FillFloat( Descriptor *pDescriptor, int NameId, float Float, int FieldId, float Min, float Max, float Increment );
 void Descriptor_FillInt( Descriptor *pDescriptor, int NameId, int Int, int FieldId, float Min, float Max, float Increment );
 void Descriptor_FillString( Descriptor *pDescriptor, int NameId, char *String, int FieldId );
 void Descriptor_FillGroupEnd( Descriptor *pDescriptor, int FieldId);
-void Descriptor_FillColorPicker( Descriptor *pDescriptor, int NameId,  jeVec3d *Vector, int FieldId );
+void Descriptor_FillColorPicker( Descriptor *pDescriptor, int NameId,  grVec3d *Vector, int FieldId );
 void Descriptor_SetDataInvalid( Descriptor *pDescriptor );
-void Descriptor_SetDisabled( Descriptor *pDescriptor, jeBoolean bDisable );
+void Descriptor_SetDisabled( Descriptor *pDescriptor, grBoolean bDisable );

@@ -61,11 +61,11 @@ D3D12PolyCache*							g_pPolyCache = nullptr;
 D3D12PSOManager*						g_pPSOManager = nullptr;
 
 // Global camera pointer for simple storage
-static jeCamera* g_pCurrentCamera = nullptr;
+static grCamera* g_pCurrentCamera = nullptr;
 // Stored transforms
-static jeXForm3d g_WorldMatrix{};
-static jeXForm3d g_ViewMatrix{};
-static jeXForm3d g_ProjectionMatrix{};
+static grXForm3d g_WorldMatrix{};
+static grXForm3d g_ViewMatrix{};
+static grXForm3d g_ProjectionMatrix{};
 static bool g_HasWorld = false;
 static bool g_HasView = false;
 static bool g_HasProjection = false;
@@ -109,7 +109,7 @@ static std::unordered_map<uint32,uint32> g_RenderStates;
 //	Utility Functions
 //================================================================================
 
-void D3D12Matrix_ToXForm3d(const D3D12Matrix* mat, jeXForm3d* XForm)
+void D3D12Matrix_ToXForm3d(const D3D12Matrix* mat, grXForm3d* XForm)
 {
 	XForm->AX = mat->m[0][0];
 	XForm->AY = mat->m[0][1];
@@ -128,7 +128,7 @@ void D3D12Matrix_ToXForm3d(const D3D12Matrix* mat, jeXForm3d* XForm)
 	XForm->Translation.Z = mat->m[3][2];
 }
 
-void jeXForm3d_ToD3D12Matrix(const jeXForm3d* XForm, D3D12Matrix* mat)
+void grXForm3d_ToD3D12Matrix(const grXForm3d* XForm, D3D12Matrix* mat)
 {
 	mat->m[0][0] = XForm->AX;
 	mat->m[0][1] = XForm->AY;
@@ -188,14 +188,14 @@ static void MoveToNextFrame()
 //	Enumeration Functions
 //================================================================================
 
-jeBoolean DRIVERCC D3D12Drv_EnumSubDrivers(DRV_ENUM_DRV_CB* Cb, void* Context)
+grBoolean DRIVERCC D3D12Drv_EnumSubDrivers(DRV_ENUM_DRV_CB* Cb, void* Context)
 {
 	D3D12Log::GetPtr()->Printf("=== D3D12Drv_EnumSubDrivers START ===");
 
 	if (!Cb)
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: NULL callback");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	D3D12Log::GetPtr()->Printf("Registering DirectX 12 sub-driver");
@@ -206,26 +206,26 @@ jeBoolean DRIVERCC D3D12Drv_EnumSubDrivers(DRV_ENUM_DRV_CB* Cb, void* Context)
 		// this driver while clearly identifying the actual rendering API.
 		Cb(0, "(D3D) DirectX 12", Context);
 		D3D12Log::GetPtr()->Printf("=== D3D12Drv_EnumSubDrivers END SUCCESS ===");
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	catch (...)
 	{
 		D3D12Log::GetPtr()->Printf("CRITICAL ERROR: Exception in callback");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 }
 
-jeBoolean DRIVERCC D3D12Drv_EnumModes(S32 Driver, char* DriverName, DRV_ENUM_MODES_CB* Cb, void* Context)
+grBoolean DRIVERCC D3D12Drv_EnumModes(S32 Driver, char* DriverName, DRV_ENUM_MODES_CB* Cb, void* Context)
 {
     D3D12Log::GetPtr()->Printf("=== D3D12Drv_EnumModes START ===");
-    if (!Cb) { D3D12Log::GetPtr()->Printf("ERROR: NULL callback in EnumModes"); return JE_FALSE; }
+    if (!Cb) { D3D12Log::GetPtr()->Printf("ERROR: NULL callback in EnumModes"); return GR_FALSE; }
     try
     {
-        ComPtr<IDXGIFactory4> pFactory; HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&pFactory)); if (FAILED(hr)) return JE_FALSE;
-        ComPtr<IDXGIAdapter1> pAdapter; hr = pFactory->EnumAdapters1(0,&pAdapter); if (FAILED(hr)||!pAdapter) return JE_FALSE;
-        ComPtr<IDXGIOutput> pOutput; hr = pAdapter->EnumOutputs(0,&pOutput); if (FAILED(hr)||!pOutput) return JE_FALSE;
-        DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM; UINT numModes=0; hr=pOutput->GetDisplayModeList(format,0,&numModes,nullptr); if(FAILED(hr)||numModes==0) return JE_FALSE;
-        std::vector<DXGI_MODE_DESC> modes(numModes); hr=pOutput->GetDisplayModeList(format,0,&numModes,modes.data()); if(FAILED(hr)) return JE_FALSE;
+        ComPtr<IDXGIFactory4> pFactory; HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&pFactory)); if (FAILED(hr)) return GR_FALSE;
+        ComPtr<IDXGIAdapter1> pAdapter; hr = pFactory->EnumAdapters1(0,&pAdapter); if (FAILED(hr)||!pAdapter) return GR_FALSE;
+        ComPtr<IDXGIOutput> pOutput; hr = pAdapter->EnumOutputs(0,&pOutput); if (FAILED(hr)||!pOutput) return GR_FALSE;
+        DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM; UINT numModes=0; hr=pOutput->GetDisplayModeList(format,0,&numModes,nullptr); if(FAILED(hr)||numModes==0) return GR_FALSE;
+        std::vector<DXGI_MODE_DESC> modes(numModes); hr=pOutput->GetDisplayModeList(format,0,&numModes,modes.data()); if(FAILED(hr)) return GR_FALSE;
         int index=0; for(UINT i=0;i<numModes;i++)
         {
             if (modes[i].Width > 2048 || modes[i].Height > 1024) continue; // mirror limit
@@ -235,33 +235,33 @@ jeBoolean DRIVERCC D3D12Drv_EnumModes(S32 Driver, char* DriverName, DRV_ENUM_MOD
         }
         Cb(index,"WindowMode",-1,-1,-1,Context); // match D3D9 window mode name
         D3D12Log::GetPtr()->Printf("=== D3D12Drv_EnumModes END SUCCESS ===");
-        return JE_TRUE;
+        return GR_TRUE;
     }
-    catch(...) { D3D12Log::GetPtr()->Printf("CRITICAL ERROR: Exception in EnumModes"); return JE_FALSE; }
+    catch(...) { D3D12Log::GetPtr()->Printf("CRITICAL ERROR: Exception in EnumModes"); return GR_FALSE; }
 }
 
-jeBoolean DRIVERCC D3D12Drv_EnumPixelFormats(DRV_ENUM_PFORMAT_CB* Cb, void* Context)
+grBoolean DRIVERCC D3D12Drv_EnumPixelFormats(DRV_ENUM_PFORMAT_CB* Cb, void* Context)
 {
     D3D12Log::GetPtr()->Printf("=== D3D12Drv_EnumPixelFormats START ===");
 
     if (!Cb)
     {
         D3D12Log::GetPtr()->Printf("ERROR: NULL callback in EnumPixelFormats");
-        return JE_FALSE;
+        return GR_FALSE;
     }
 
     try
     {
         // Prepare list mirroring legacy driver entries
-        const struct { jePixelFormat pf; uint32 flags; const char* desc; } entries[] = {
-            { JE_PIXELFORMAT_32BIT_ARGB, RDRIVER_PF_3D | RDRIVER_PF_COMBINE_LIGHTMAP,                 "Base 3D" },
-            { JE_PIXELFORMAT_32BIT_ARGB, RDRIVER_PF_3D | RDRIVER_PF_COMBINE_LIGHTMAP | RDRIVER_PF_ALPHA, "3D Alpha" },
-            { JE_PIXELFORMAT_32BIT_ARGB, RDRIVER_PF_2D | RDRIVER_PF_CAN_DO_COLORKEY,                  "2D Decal" },
-            { JE_PIXELFORMAT_32BIT_ARGB, RDRIVER_PF_LIGHTMAP,                                        "Lightmap" },
-            { JE_PIXELFORMAT_16BIT_1555_ARGB, RDRIVER_PF_3D | RDRIVER_PF_COMBINE_LIGHTMAP | RDRIVER_PF_ALPHA, "Legacy 1555" }
+        const struct { grPixelFormat pf; uint32 flags; const char* desc; } entries[] = {
+            { GR_PIXELFORMAT_32BIT_ARGB, RDRIVER_PF_3D | RDRIVER_PF_COMBINE_LIGHTMAP,                 "Base 3D" },
+            { GR_PIXELFORMAT_32BIT_ARGB, RDRIVER_PF_3D | RDRIVER_PF_COMBINE_LIGHTMAP | RDRIVER_PF_ALPHA, "3D Alpha" },
+            { GR_PIXELFORMAT_32BIT_ARGB, RDRIVER_PF_2D | RDRIVER_PF_CAN_DO_COLORKEY,                  "2D Decal" },
+            { GR_PIXELFORMAT_32BIT_ARGB, RDRIVER_PF_LIGHTMAP,                                        "Lightmap" },
+            { GR_PIXELFORMAT_16BIT_1555_ARGB, RDRIVER_PF_3D | RDRIVER_PF_COMBINE_LIGHTMAP | RDRIVER_PF_ALPHA, "Legacy 1555" }
         };
 
-        jeRDriver_PixelFormat fmt;
+        grRDriver_PixelFormat fmt;
         for (const auto &e : entries)
         {
             memset(&fmt, 0, sizeof(fmt));
@@ -272,41 +272,41 @@ jeBoolean DRIVERCC D3D12Drv_EnumPixelFormats(DRV_ENUM_PFORMAT_CB* Cb, void* Cont
             {
                 D3D12Log::GetPtr()->Printf("Callback returned false; stopping enumeration early.");
                 D3D12Log::GetPtr()->Printf("=== D3D12Drv_EnumPixelFormats END (Early Stop) ===");
-                return JE_TRUE; // Early stop is still success
+                return GR_TRUE; // Early stop is still success
             }
         }
 
         D3D12Log::GetPtr()->Printf("=== D3D12Drv_EnumPixelFormats END SUCCESS ===");
-        return JE_TRUE;
+        return GR_TRUE;
     }
     catch (...)
     {
         D3D12Log::GetPtr()->Printf("CRITICAL ERROR: Exception in EnumPixelFormats");
-        return JE_FALSE;
+        return GR_FALSE;
     }
 }
 
-jeBoolean DRIVERCC D3D12Drv_GetDeviceCaps(jeDeviceCaps* DeviceCaps)
+grBoolean DRIVERCC D3D12Drv_GetDeviceCaps(grDeviceCaps* DeviceCaps)
 {
 	if (!DeviceCaps)
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: NULL DeviceCaps pointer");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// This is queried for every visible BSP face, so keep it allocation-free and
 	// silent. Advertising HWTRANSFORM would route the engine to static buffers,
 	// which this transformed-vertex renderer deliberately does not expose.
-	DeviceCaps->SuggestedDefaultRenderFlags = JE_RENDER_FLAG_BILINEAR_FILTER;
+	DeviceCaps->SuggestedDefaultRenderFlags = GR_RENDER_FLAG_BILINEAR_FILTER;
 	DeviceCaps->CanChangeRenderFlags = 0xFFFFFFFF;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //================================================================================
 //	Initialization Functions
 //================================================================================
 
-jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
+grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 {
 	D3D12Log::GetPtr()->Printf("===========================================");
 	D3D12Log::GetPtr()->Printf("D3D12Drv_Init called");
@@ -315,7 +315,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: NULL hook parameter");
 		strcpy_s(g_szLastError, "NULL initialization hook");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	D3D12Log::GetPtr()->Printf("Window: 0x%p", hook->hWnd);
@@ -387,7 +387,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create DXGI factory - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to create DXGI factory");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		D3D12Log::GetPtr()->Printf("DXGI Factory created successfully");
 
@@ -420,7 +420,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: No D3D12 compatible adapter found");
 			strcpy_s(g_szLastError, "No D3D12 compatible adapter found");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// Create D3D12 Device
@@ -430,7 +430,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create D3D12 device - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to create D3D12 device");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		D3D12Log::GetPtr()->Printf("D3D12 Device created successfully");
 
@@ -445,7 +445,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create command queue - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to create command queue");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		D3D12Log::GetPtr()->Printf("Command queue created");
 
@@ -473,7 +473,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create swap chain - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to create swap chain");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		hr = pSwapChain1.As(&g_pSwapChain);
@@ -481,7 +481,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to query IDXGISwapChain3 - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to query swap chain interface");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		D3D12Log::GetPtr()->Printf("Swap chain created (%dx%d)", swapChainDesc.Width, swapChainDesc.Height);
 
@@ -503,7 +503,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create RTV heap - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to create RTV descriptor heap");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		D3D12Log::GetPtr()->Printf("RTV descriptor heap created");
 
@@ -518,7 +518,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 			{
 				D3D12Log::GetPtr()->Printf("ERROR: Failed to get swap chain buffer %d - HR: 0x%08X", i, hr);
 				strcpy_s(g_szLastError, "Failed to get swap chain buffers");
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 
 			g_pDevice->CreateRenderTargetView(g_FrameResources[i].pRenderTarget.Get(), nullptr, rtvHandle);
@@ -531,7 +531,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 			{
 				D3D12Log::GetPtr()->Printf("ERROR: Failed to create command allocator %d - HR: 0x%08X", i, hr);
 				strcpy_s(g_szLastError, "Failed to create command allocators");
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 
 			g_FrameResources[i].FenceValue = 0;
@@ -550,7 +550,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create DSV heap - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to create DSV descriptor heap");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		D3D12Log::GetPtr()->Printf("DSV descriptor heap created");
 
@@ -589,7 +589,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create depth/stencil buffer - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to create depth/stencil buffer");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// Create Depth/Stencil View
@@ -609,7 +609,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create command list - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to create command list");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// Command lists are created in recording state, close it
@@ -622,7 +622,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create fence - HR: 0x%08X", hr);
 			strcpy_s(g_szLastError, "Failed to create fence");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		g_nFenceValue = 1;
@@ -633,7 +633,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to create fence event");
 			strcpy_s(g_szLastError, "Failed to create fence event");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		D3D12Log::GetPtr()->Printf("Fence created");
 
@@ -642,7 +642,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to initialize texture manager");
 			strcpy_s(g_szLastError, "Failed to initialize texture manager");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// Create and initialize PolyCache
@@ -651,7 +651,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to initialize PolyCache");
 			strcpy_s(g_szLastError, "Failed to initialize PolyCache");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// Create and initialize PSO Manager
@@ -660,7 +660,7 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to initialize PSO Manager");
 			strcpy_s(g_szLastError, "Failed to initialize PSO Manager");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		g_bInitialized = true;
@@ -670,24 +670,24 @@ jeBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		D3D12Log::GetPtr()->Printf("DirectX 12 Driver initialized successfully!");
 		D3D12Log::GetPtr()->Printf("===========================================");
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	catch (const std::exception& e)
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: Exception during initialization: %s", e.what());
 		strcpy_s(g_szLastError, "Exception during initialization");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 }
 
-jeBoolean DRIVERCC D3D12Drv_Shutdown()
+grBoolean DRIVERCC D3D12Drv_Shutdown()
 {
 	D3D12Log::GetPtr()->Printf("D3D12Drv_Shutdown called");
 
 	if (!g_bInitialized)
 	{
 		D3D12Log::GetPtr()->Printf("WARNING: Driver not initialized");
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	// Shutdown PSO Manager
@@ -745,41 +745,41 @@ jeBoolean DRIVERCC D3D12Drv_Shutdown()
 	D3D12Log::GetPtr()->Printf("DirectX 12 Driver shut down successfully");
 	D3D12Log::Destroy();
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_Reset()
+grBoolean DRIVERCC D3D12Drv_Reset()
 {
     D3D12Log::GetPtr()->Printf("D3D12Drv_Reset called (parity with D3D9)");
 	    D3D12WaitForGPU();
     D3D12_THandle_Shutdown();
     if (g_pPolyCache) g_pPolyCache->Shutdown();
-    if (!D3D12_THandle_Startup()) { D3D12Log::GetPtr()->Printf("ERROR: Texture manager restart failed"); return JE_FALSE; }
-    if (g_pPolyCache && !g_pPolyCache->Initialize(10000)) { D3D12Log::GetPtr()->Printf("ERROR: PolyCache re-init failed"); return JE_FALSE; }
-    return JE_TRUE;
+    if (!D3D12_THandle_Startup()) { D3D12Log::GetPtr()->Printf("ERROR: Texture manager restart failed"); return GR_FALSE; }
+    if (g_pPolyCache && !g_pPolyCache->Initialize(10000)) { D3D12Log::GetPtr()->Printf("ERROR: PolyCache re-init failed"); return GR_FALSE; }
+    return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_UpdateWindow()
+grBoolean DRIVERCC D3D12Drv_UpdateWindow()
 {
 	if (!g_bInitialized || !g_hWnd || !g_pDevice || !g_pSwapChain)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (g_bInScene)
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: UpdateWindow called during a scene");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	RECT ClientRect = {};
 	if (!GetClientRect(g_hWnd, &ClientRect))
-		return JE_FALSE;
+		return GR_FALSE;
 	const int32 Width = ClientRect.right - ClientRect.left;
 	const int32 Height = ClientRect.bottom - ClientRect.top;
 	// A minimized window has no drawable client area. Keep the current buffers and
 	// resize them when the application restores the window.
 	if (Width <= 0 || Height <= 0)
-		return JE_TRUE;
+		return GR_TRUE;
 	if (Width == g_nScreenWidth && Height == g_nScreenHeight)
-		return JE_TRUE;
+		return GR_TRUE;
 
 	D3D12Log::GetPtr()->Printf("Resizing swap chain from %dx%d to %dx%d",
 		g_nScreenWidth, g_nScreenHeight, Width, Height);
@@ -800,7 +800,7 @@ jeBoolean DRIVERCC D3D12Drv_UpdateWindow()
 	if (FAILED(Hr))
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: ResizeBuffers failed - HR: 0x%08X", Hr);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	D3D12_CPU_DESCRIPTOR_HANDLE RtvHandle =
@@ -813,7 +813,7 @@ jeBoolean DRIVERCC D3D12Drv_UpdateWindow()
 		{
 			D3D12Log::GetPtr()->Printf(
 				"ERROR: Failed to reacquire resized back buffer %u - HR: 0x%08X", i, Hr);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		g_pDevice->CreateRenderTargetView(
 			g_FrameResources[i].pRenderTarget.Get(), nullptr, RtvHandle);
@@ -844,7 +844,7 @@ jeBoolean DRIVERCC D3D12Drv_UpdateWindow()
 	{
 		D3D12Log::GetPtr()->Printf(
 			"ERROR: Failed to recreate depth buffer - HR: 0x%08X", Hr);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	D3D12_DEPTH_STENCIL_VIEW_DESC DsvDesc = {};
 	DsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
@@ -858,34 +858,34 @@ jeBoolean DRIVERCC D3D12Drv_UpdateWindow()
 	g_nCurrentFrameIndex = g_pSwapChain->GetCurrentBackBufferIndex();
 	g_nLastPresentedFrameIndex = g_nCurrentFrameIndex;
 	D3D12Log::GetPtr()->Printf("Swap chain resize completed");
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_SetActive(jeBoolean Active)
+grBoolean DRIVERCC D3D12Drv_SetActive(grBoolean Active)
 {
 	D3D12Log::GetPtr()->Printf("D3D12Drv_SetActive: %d", Active);
 
-	g_bActive = (Active != JE_FALSE);
+	g_bActive = (Active != GR_FALSE);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //================================================================================
 //	Scene Management Functions
 //================================================================================
 
-jeBoolean DRIVERCC D3D12Drv_BeginScene(jeBoolean Clear, jeBoolean ClearZ, RECT* WorldRect, jeBoolean Wireframe)
+grBoolean DRIVERCC D3D12Drv_BeginScene(grBoolean Clear, grBoolean ClearZ, RECT* WorldRect, grBoolean Wireframe)
 {
 	if (!g_bInitialized)
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: BeginScene called before driver initialization");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	if (!g_pDevice || !g_pCommandList || !g_pSwapChain)
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: BeginScene called with invalid D3D12 resources");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// If already in scene, end it first to maintain proper state
@@ -902,7 +902,7 @@ jeBoolean DRIVERCC D3D12Drv_BeginScene(jeBoolean Clear, jeBoolean ClearZ, RECT* 
 		if (FAILED(hr))
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to reset command allocator - HR: 0x%08X", hr);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// Reset command list
@@ -910,7 +910,7 @@ jeBoolean DRIVERCC D3D12Drv_BeginScene(jeBoolean Clear, jeBoolean ClearZ, RECT* 
 		if (FAILED(hr))
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to reset command list - HR: 0x%08X", hr);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// The frame-slot fence has completed before this allocator is reused, so
@@ -918,7 +918,7 @@ jeBoolean DRIVERCC D3D12Drv_BeginScene(jeBoolean Clear, jeBoolean ClearZ, RECT* 
 		D3D12_THandle_BeginFrame(g_nCurrentFrameIndex);
 		if (g_pPolyCache)
 			g_pPolyCache->BeginFrame(g_nCurrentFrameIndex);
-		g_bWireframe = (Wireframe != JE_FALSE);
+		g_bWireframe = (Wireframe != GR_FALSE);
 		g_D3D12Drv.NumRenderedPolys = 0;
 
 		// Transition render target to RENDER_TARGET state
@@ -968,22 +968,22 @@ jeBoolean DRIVERCC D3D12Drv_BeginScene(jeBoolean Clear, jeBoolean ClearZ, RECT* 
 
 		g_bInScene = true;
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	catch (...)
 	{
 		D3D12Log::GetPtr()->Printf("CRITICAL ERROR: Exception in BeginScene");
 		g_bInScene = false;
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 }
 
-jeBoolean DRIVERCC D3D12Drv_EndScene(void)
+grBoolean DRIVERCC D3D12Drv_EndScene(void)
 {
 	if (!g_bInScene)
 	{
 		D3D12Log::GetPtr()->Printf("WARNING: EndScene called without matching BeginScene - allowing anyway");
-		return JE_TRUE;  // Return success to avoid engine state mismatch
+		return GR_TRUE;  // Return success to avoid engine state mismatch
 	}
 
 	// Even if not fully initialized, we need to clear the scene state
@@ -991,7 +991,7 @@ jeBoolean DRIVERCC D3D12Drv_EndScene(void)
 	{
 		D3D12Log::GetPtr()->Printf("WARNING: EndScene called but driver not initialized - clearing state anyway");
 		g_bInScene = false;
-		return JE_TRUE;  // Return success to avoid engine state mismatch
+		return GR_TRUE;  // Return success to avoid engine state mismatch
 	}
 
 	try
@@ -1001,7 +1001,7 @@ jeBoolean DRIVERCC D3D12Drv_EndScene(void)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to flush DX12 polygon cache");
 			g_bInScene = false;
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// Transition render target back to PRESENT state
@@ -1020,7 +1020,7 @@ jeBoolean DRIVERCC D3D12Drv_EndScene(void)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to close command list - HR: 0x%08X", hr);
 			g_bInScene = false;
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		const UINT SubmittedFrameIndex = g_nCurrentFrameIndex;
@@ -1033,7 +1033,7 @@ jeBoolean DRIVERCC D3D12Drv_EndScene(void)
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to present - HR: 0x%08X", hr);
 			g_bInScene = false;
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		g_nLastPresentedFrameIndex = SubmittedFrameIndex;
 
@@ -1050,60 +1050,60 @@ jeBoolean DRIVERCC D3D12Drv_EndScene(void)
 				g_D3D12Drv.NumRenderedPolys);
 		}
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	catch (...)
 	{
 		D3D12Log::GetPtr()->Printf("CRITICAL ERROR: Exception in EndScene");
 		g_bInScene = false;
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 }
 
-jeBoolean DRIVERCC D3D12Drv_BeginBatch(void)
+grBoolean DRIVERCC D3D12Drv_BeginBatch(void)
 {
 	// For now, batching is handled internally
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_EndBatch(void)
+grBoolean DRIVERCC D3D12Drv_EndBatch(void)
 {
 	// For now, batching is handled internally
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //================================================================================
 //	Rendering Functions
 //================================================================================
 
-jeBoolean DRIVERCC D3D12Drv_RenderGouraudPoly(jeTLVertex* Pnts, int32 NumPoints, uint32 Flags)
+grBoolean DRIVERCC D3D12Drv_RenderGouraudPoly(grTLVertex* Pnts, int32 NumPoints, uint32 Flags)
 {
 	if (!g_pPolyCache)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return g_pPolyCache->AddGouraudPoly(Pnts, NumPoints, Flags);
 }
 
-jeBoolean DRIVERCC D3D12Drv_RenderWorldPoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, void* LMapCBContext, uint32 Flags)
+grBoolean DRIVERCC D3D12Drv_RenderWorldPoly(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers, int32 NumLayers, void* LMapCBContext, uint32 Flags)
 {
 	if (!g_pPolyCache)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return g_pPolyCache->AddWorldPoly(Pnts, NumPoints, Layers, NumLayers, LMapCBContext, Flags);
 }
 
-jeBoolean DRIVERCC D3D12Drv_RenderMiscTexturePoly(jeTLVertex* Pnts, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
+grBoolean DRIVERCC D3D12Drv_RenderMiscTexturePoly(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
 {
 	if (!g_pPolyCache)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return g_pPolyCache->AddMiscTexturePoly(Pnts, NumPoints, Layers, NumLayers, Flags);
 }
 
-jeBoolean DRIVERCC D3D12Drv_DrawDecal(jeTexture* Handle, RECT* SrcRect, int32 x, int32 y)
+grBoolean DRIVERCC D3D12Drv_DrawDecal(grTexture* Handle, RECT* SrcRect, int32 x, int32 y)
 {
 	if (!g_bInScene || !g_pPolyCache || !Handle || !Handle->Active)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	RECT Source = { 0, 0, Handle->Width, Handle->Height };
 	if (SrcRect)
@@ -1111,13 +1111,13 @@ jeBoolean DRIVERCC D3D12Drv_DrawDecal(jeTexture* Handle, RECT* SrcRect, int32 x,
 	const int32 Width = Source.right - Source.left;
 	const int32 Height = Source.bottom - Source.top;
 	if (Width <= 0 || Height <= 0)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	const float U0 = static_cast<float>(Source.left) / Handle->Width;
 	const float V0 = static_cast<float>(Source.top) / Handle->Height;
 	const float U1 = static_cast<float>(Source.right) / Handle->Width;
 	const float V1 = static_cast<float>(Source.bottom) / Handle->Height;
-	jeTLVertex Vertices[4] = {};
+	grTLVertex Vertices[4] = {};
 	const float X[4] = { static_cast<float>(x), static_cast<float>(x + Width),
 		static_cast<float>(x + Width), static_cast<float>(x) };
 	const float Y[4] = { static_cast<float>(y), static_cast<float>(y),
@@ -1134,24 +1134,24 @@ jeBoolean DRIVERCC D3D12Drv_DrawDecal(jeTexture* Handle, RECT* SrcRect, int32 x,
 		Vertices[i].v = V[i];
 	}
 
-	jeRDriver_Layer Layer = {};
+	grRDriver_Layer Layer = {};
 	Layer.THandle = Handle;
 	Layer.ScaleU = Layer.ScaleV = 1.0f;
-	uint32 Flags = JE_RENDER_FLAG_ALPHA | JE_RENDER_FLAG_CLAMP_UV |
-		JE_RENDER_FLAG_NO_ZTEST | JE_RENDER_FLAG_NO_ZWRITE | JE_RENDER_FLAG_BILINEAR_FILTER;
+	uint32 Flags = GR_RENDER_FLAG_ALPHA | GR_RENDER_FLAG_CLAMP_UV |
+		GR_RENDER_FLAG_NO_ZTEST | GR_RENDER_FLAG_NO_ZWRITE | GR_RENDER_FLAG_BILINEAR_FILTER;
 	if (Handle->DriverFormat.Flags & RDRIVER_PF_CAN_DO_COLORKEY)
-		Flags |= JE_RENDER_FLAG_COLORKEY;
+		Flags |= GR_RENDER_FLAG_COLORKEY;
 	return g_pPolyCache->AddMiscTexturePoly(Vertices, 4, &Layer, 1, Flags);
 }
 
-jeBoolean DRIVERCC D3D12Drv_Screenshot(const char* filename)
+grBoolean DRIVERCC D3D12Drv_Screenshot(const char* filename)
 {
 	if (!g_pDevice || !g_pCommandQueue || !g_pSwapChain || g_bInScene)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	ComPtr<ID3D12Resource> BackBuffer = g_FrameResources[g_nLastPresentedFrameIndex].pRenderTarget;
 	if (!BackBuffer)
-		return JE_FALSE;
+		return GR_FALSE;
 	D3D12WaitForGPU();
 
 	const D3D12_RESOURCE_DESC TextureDesc = BackBuffer->GetDesc();
@@ -1182,17 +1182,17 @@ jeBoolean DRIVERCC D3D12Drv_Screenshot(const char* filename)
 		nullptr,
 		IID_PPV_ARGS(&Readback));
 	if (FAILED(Hr))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	ComPtr<ID3D12CommandAllocator> Allocator;
 	if (FAILED(g_pDevice->CreateCommandAllocator(
 		D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Allocator))))
-		return JE_FALSE;
+		return GR_FALSE;
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
 	if (FAILED(g_pDevice->CreateCommandList(
 		0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator.Get(), nullptr,
 		IID_PPV_ARGS(&CommandList))))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	D3D12_RESOURCE_BARRIER ToCopy = {};
 	ToCopy.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -1217,7 +1217,7 @@ jeBoolean DRIVERCC D3D12Drv_Screenshot(const char* filename)
 	ToPresent.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	CommandList->ResourceBarrier(1, &ToPresent);
 	if (FAILED(CommandList->Close()))
-		return JE_FALSE;
+		return GR_FALSE;
 	ID3D12CommandList* Lists[] = { CommandList.Get() };
 	g_pCommandQueue->ExecuteCommandLists(1, Lists);
 	D3D12WaitForGPU();
@@ -1225,14 +1225,14 @@ jeBoolean DRIVERCC D3D12Drv_Screenshot(const char* filename)
 	void* Mapped = nullptr;
 	D3D12_RANGE ReadRange = { 0, static_cast<SIZE_T>(ReadbackSize) };
 	if (FAILED(Readback->Map(0, &ReadRange, &Mapped)))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	const char* OutputName = filename ? filename : "screenshot.bmp";
 	FILE* File = nullptr;
 	if (fopen_s(&File, OutputName, "wb") != 0)
 	{
 		Readback->Unmap(0, nullptr);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	const uint32 Width = static_cast<uint32>(TextureDesc.Width);
@@ -1274,73 +1274,73 @@ jeBoolean DRIVERCC D3D12Drv_Screenshot(const char* filename)
 	D3D12_RANGE NoWrites = { 0, 0 };
 	Readback->Unmap(0, &NoWrites);
 	D3D12Log::GetPtr()->Printf("Screenshot written: %s", OutputName);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_SetGamma(float gamma)
+grBoolean DRIVERCC D3D12Drv_SetGamma(float gamma)
 {
-    g_fGamma = gamma; g_LocalGamma = gamma; BuildRGBGammaTables(gamma); D3D12Log::GetPtr()->Printf("SetGamma: %f", gamma); return JE_TRUE;
+    g_fGamma = gamma; g_LocalGamma = gamma; BuildRGBGammaTables(gamma); D3D12Log::GetPtr()->Printf("SetGamma: %f", gamma); return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_GetGamma(float* gamma)
+grBoolean DRIVERCC D3D12Drv_GetGamma(float* gamma)
 {
-    if (gamma) *gamma = g_LocalGamma; return JE_TRUE;
+    if (gamma) *gamma = g_LocalGamma; return GR_TRUE;
 }
 
 // Single SetCamera implementation (avoid duplicate definitions)
-jeBoolean DRIVERCC D3D12Drv_SetCamera(jeCamera* Camera)
+grBoolean DRIVERCC D3D12Drv_SetCamera(grCamera* Camera)
 {
     g_pCurrentCamera = Camera;
     D3D12Log::GetPtr()->Printf("D3D12Drv_SetCamera: camera pointer %p stored", Camera);
-    return JE_TRUE;
+    return GR_TRUE;
 }
 
 // Implement missing matrix and static mesh APIs
-jeBoolean DRIVERCC D3D12Drv_SetMatrix(uint32 Type, jeXForm3d* Matrix)
+grBoolean DRIVERCC D3D12Drv_SetMatrix(uint32 Type, grXForm3d* Matrix)
 {
     if (!Matrix)
-        return JE_FALSE;
+        return GR_FALSE;
     switch (Type)
     {
-        case JE_XFORM_TYPE_WORLD:      g_WorldMatrix = *Matrix;      g_HasWorld = true;      break;
-        case JE_XFORM_TYPE_VIEW:       g_ViewMatrix = *Matrix;       g_HasView = true;       break;
-        case JE_XFORM_TYPE_PROJECTION: g_ProjectionMatrix = *Matrix; g_HasProjection = true; break;
-        default: return JE_FALSE;
+        case GR_XFORM_TYPE_WORLD:      g_WorldMatrix = *Matrix;      g_HasWorld = true;      break;
+        case GR_XFORM_TYPE_VIEW:       g_ViewMatrix = *Matrix;       g_HasView = true;       break;
+        case GR_XFORM_TYPE_PROJECTION: g_ProjectionMatrix = *Matrix; g_HasProjection = true; break;
+        default: return GR_FALSE;
     }
-    return JE_TRUE;
+    return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_GetMatrix(uint32 Type, jeXForm3d* Matrix)
+grBoolean DRIVERCC D3D12Drv_GetMatrix(uint32 Type, grXForm3d* Matrix)
 {
     if (!Matrix)
-        return JE_FALSE;
+        return GR_FALSE;
     switch (Type)
     {
-        case JE_XFORM_TYPE_WORLD:      if (!g_HasWorld) return JE_FALSE;      *Matrix = g_WorldMatrix;      return JE_TRUE;
-        case JE_XFORM_TYPE_VIEW:       if (!g_HasView) return JE_FALSE;       *Matrix = g_ViewMatrix;       return JE_TRUE;
-        case JE_XFORM_TYPE_PROJECTION: if (!g_HasProjection) return JE_FALSE; *Matrix = g_ProjectionMatrix; return JE_TRUE;
-        default: return JE_FALSE;
+        case GR_XFORM_TYPE_WORLD:      if (!g_HasWorld) return GR_FALSE;      *Matrix = g_WorldMatrix;      return GR_TRUE;
+        case GR_XFORM_TYPE_VIEW:       if (!g_HasView) return GR_FALSE;       *Matrix = g_ViewMatrix;       return GR_TRUE;
+        case GR_XFORM_TYPE_PROJECTION: if (!g_HasProjection) return GR_FALSE; *Matrix = g_ProjectionMatrix; return GR_TRUE;
+        default: return GR_FALSE;
     }
 }
 
-uint32 DRIVERCC D3D12Drv_CreateStaticMesh(jeHWVertex* Points, int32 NumPoints, jeRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
+uint32 DRIVERCC D3D12Drv_CreateStaticMesh(grHWVertex* Points, int32 NumPoints, grRDriver_Layer* Layers, int32 NumLayers, uint32 Flags)
 {
     if (!g_pPolyCache || !Points || NumPoints <= 0)
         return 0; // 0 == failure id
     return g_pPolyCache->AddStaticBuffer(Points, NumPoints, Layers, NumLayers, Flags);
 }
 
-jeBoolean DRIVERCC D3D12Drv_RemoveStaticMesh(uint32 id)
+grBoolean DRIVERCC D3D12Drv_RemoveStaticMesh(uint32 id)
 {
     if (!g_pPolyCache || id == 0)
-        return JE_FALSE;
+        return GR_FALSE;
     return g_pPolyCache->RemoveStaticBuffer(id);
 }
 
-jeBoolean DRIVERCC D3D12Drv_RenderStaticMesh(uint32 id, int32 StartVertex, int32 NumPolys, jeXForm3d* XForm)
+grBoolean DRIVERCC D3D12Drv_RenderStaticMesh(uint32 id, int32 StartVertex, int32 NumPolys, grXForm3d* XForm)
 {
     if (!g_pPolyCache || id == 0)
-        return JE_FALSE;
+        return GR_FALSE;
     return g_pPolyCache->RenderStaticBuffer(id, StartVertex, NumPolys, XForm);
 }
 
@@ -1471,41 +1471,41 @@ extern "C" DRIVERAPI BOOL DriverHook(DRV_Driver** Driver)
 	}
 }
 
-extern "C" DRIVERAPI void* jeEngine_D3D12Driver(void)
+extern "C" DRIVERAPI void* grEngine_D3D12Driver(void)
 {
-	D3D12Log::GetPtr()->Printf("jeEngine_D3D12Driver called");
+	D3D12Log::GetPtr()->Printf("grEngine_D3D12Driver called");
 	return (void*)DriverHook;
 }
 
-// Basic font struct mimic (reuse jeFont from D3D9 style if not defined for D3D12)
-struct jeFont { void* Reserved; }; // placeholder
+// Basic font struct mimic (reuse grFont from D3D9 style if not defined for D3D12)
+struct grFont { void* Reserved; }; // placeholder
 
-jeFont* DRIVERCC D3D12Drv_CreateFont(int32 Height, int32 Width, uint32 Weight, jeBoolean Italic, const char* facename)
+grFont* DRIVERCC D3D12Drv_CreateFont(int32 Height, int32 Width, uint32 Weight, grBoolean Italic, const char* facename)
 {
     // Stub: return simple allocated object
-    jeFont* f = new jeFont();
+    grFont* f = new grFont();
     return f;
 }
 
-jeBoolean DRIVERCC D3D12Drv_DrawFont(jeFont* Font, int32 x, int32 y, uint32 Color, const char* text)
+grBoolean DRIVERCC D3D12Drv_DrawFont(grFont* Font, int32 x, int32 y, uint32 Color, const char* text)
 {
     // Stub: no actual draw yet
-    return (Font && text) ? JE_TRUE : JE_FALSE;
+    return (Font && text) ? GR_TRUE : GR_FALSE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_DestroyFont(jeFont** Font)
+grBoolean DRIVERCC D3D12Drv_DestroyFont(grFont** Font)
 {
-    if (!Font || !*Font) return JE_FALSE;
-    delete *Font; *Font = nullptr; return JE_TRUE;
+    if (!Font || !*Font) return GR_FALSE;
+    delete *Font; *Font = nullptr; return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_SetRenderState(uint32 state, uint32 value)
+grBoolean DRIVERCC D3D12Drv_SetRenderState(uint32 state, uint32 value)
 {
-    g_RenderStates[state] = value; return JE_TRUE;
+    g_RenderStates[state] = value; return GR_TRUE;
 }
 
-jeBoolean DRIVERCC D3D12Drv_DrawText(char* text, int x, int y, uint32 color)
+grBoolean DRIVERCC D3D12Drv_DrawText(char* text, int x, int y, uint32 color)
 {
     // Stub
-    return (text != nullptr) ? JE_TRUE : JE_FALSE;
+    return (text != nullptr) ? GR_TRUE : GR_FALSE;
 }

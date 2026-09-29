@@ -72,7 +72,7 @@ see {} for notes/long-term-todos
 #include	<string.h>
 
 #include	"BaseType.h"
-#include	"jeTypes.h"
+#include	"grTypes.h"
 #include	"Ram.h"
 
 #include	"VFile.h"
@@ -104,7 +104,7 @@ see {} for notes/long-term-todos
 #include	"Timer.h"
 #endif
 
-#define allocate(ptr)	ptr = jeRam_Allocate(sizeof(*ptr))
+#define allocate(ptr)	ptr = grRam_Allocate(sizeof(*ptr))
 #define clear(ptr)		memset(ptr,0,sizeof(*ptr))
 
 #define SHIFT_R_ROUNDUP(val,shift)	(((val)+(1<<(shift)) - 1)>>(shift))
@@ -125,26 +125,26 @@ static int _Bitmap_Debug_ActiveRefs = 0;
 
 static int32 BitmapInit_RefCount = 0;
 static MemPool * BitmapPool = NULL;
-jeThreadQueue_Semaphore * Bitmap_Gamma_Lock = NULL;
-jeThreadQueue_Semaphore * Bitmap_BlitData_Lock = NULL;
+grThreadQueue_Semaphore * Bitmap_Gamma_Lock = NULL;
+grThreadQueue_Semaphore * Bitmap_BlitData_Lock = NULL;
 
-void jeBitmap_Start(void)
+void grBitmap_Start(void)
 {
 	if ( BitmapInit_RefCount == 0 )
 	{
-		BitmapPool = MemPool_Create(sizeof(jeBitmap),100,100);
+		BitmapPool = MemPool_Create(sizeof(grBitmap),100,100);
 		assert(BitmapPool);
 		Palettize_Start();
 		PalCreate_Start();
-		Bitmap_Gamma_Lock = jeThreadQueue_Semaphore_Create();
+		Bitmap_Gamma_Lock = grThreadQueue_Semaphore_Create();
 		assert(Bitmap_Gamma_Lock);
-		Bitmap_BlitData_Lock = jeThreadQueue_Semaphore_Create();
+		Bitmap_BlitData_Lock = grThreadQueue_Semaphore_Create();
 		assert(Bitmap_BlitData_Lock);
 	}
 	BitmapInit_RefCount ++;
 }
 
-void jeBitmap_Stop(void)
+void grBitmap_Stop(void)
 {
 	assert(BitmapInit_RefCount > 0 );
 	BitmapInit_RefCount --;
@@ -155,21 +155,21 @@ void jeBitmap_Stop(void)
 		Palettize_Stop();
 		PalCreate_Stop();
 		assert(Bitmap_Gamma_Lock);
-		jeThreadQueue_Semaphore_Destroy(&Bitmap_Gamma_Lock);
+		grThreadQueue_Semaphore_Destroy(&Bitmap_Gamma_Lock);
 		assert(Bitmap_BlitData_Lock);
-		jeThreadQueue_Semaphore_Destroy(&Bitmap_BlitData_Lock);
+		grThreadQueue_Semaphore_Destroy(&Bitmap_BlitData_Lock);
 	}
 }
 
 /*}{ ******** Creator Functions **********************/
 
-jeBitmap * jeBitmap_Create_Base(void)
+grBitmap * grBitmap_Create_Base(void)
 {
-jeBitmap * Bmp;
+grBitmap * Bmp;
 
-	jeBitmap_Start();
+	grBitmap_Start();
 
-	Bmp = (jeBitmap *)MemPool_GetHunk(BitmapPool);
+	Bmp = (grBitmap *)MemPool_GetHunk(BitmapPool);
 
 	Bmp->RefCount = 1;
 
@@ -181,7 +181,7 @@ jeBitmap * Bmp;
 return Bmp;
 }
 
-void jeBitmap_Destroy_Base(jeBitmap *Bmp)
+void grBitmap_Destroy_Base(grBitmap *Bmp)
 {
 	assert(Bmp);
 	assert(Bmp->RefCount == 0);
@@ -189,51 +189,51 @@ void jeBitmap_Destroy_Base(jeBitmap *Bmp)
 
 	MemPool_FreeHunk(BitmapPool,Bmp);
 
-	jeBitmap_Stop();
+	grBitmap_Stop();
 }
 
-JETAPI jeBitmap *	JETCC	jeBitmap_CreateCopy(const jeBitmap * Src)
+GRAPI grBitmap *	GRCC	grBitmap_CreateCopy(const grBitmap * Src)
 {
-jeBitmap_Info Info;
-jeBitmap * Ret;
+grBitmap_Info Info;
+grBitmap * Ret;
 
 	assert( Src );
-	if ( ! jeBitmap_GetInfo(Src,&Info,NULL) )
+	if ( ! grBitmap_GetInfo(Src,&Info,NULL) )
 		return NULL;
 
 	Info.MaximumMip = Info.MinimumMip = 0;
 
-	Ret = jeBitmap_CreateFromInfo(&Info);
+	Ret = grBitmap_CreateFromInfo(&Info);
 	if ( ! Ret )
 		return NULL;
 
-	if ( ! jeBitmap_BlitBitmap(Src,Ret) )
+	if ( ! grBitmap_BlitBitmap(Src,Ret) )
 	{
-		jeBitmap_Destroy(&Ret);
+		grBitmap_Destroy(&Ret);
 		return NULL;
 	}
 
-	jeBitmap_SetMipCount(Ret,Src->SeekMipCount);
+	grBitmap_SetMipCount(Ret,Src->SeekMipCount);
 
 return Ret;
 }
 
-JETAPI void JETCC	jeBitmap_CreateRef(jeBitmap *Bmp)
+GRAPI void GRCC	grBitmap_CreateRef(grBitmap *Bmp)
 {
 	assert(Bmp);
 	Bmp->RefCount ++;
 	Debug(_Bitmap_Debug_ActiveRefs ++);
 }
 
-JETAPI jeBitmap *	JETCC	jeBitmap_Create(
+GRAPI grBitmap *	GRCC	grBitmap_Create(
 	int32					 Width,
 	int32					 Height,
 	int32					 MipCount,
-	jePixelFormat Format)
+	grPixelFormat Format)
 {
-jeBitmap * Bmp;
+grBitmap * Bmp;
 
-	Bmp = jeBitmap_Create_Base();
+	Bmp = grBitmap_Create_Base();
 	if ( ! Bmp )
 		return NULL;
 
@@ -250,26 +250,26 @@ jeBitmap * Bmp;
 
 	Bmp->Info.MinimumMip = 0;
 	Bmp->Info.MaximumMip = 0;
-	Bmp->Info.HasColorKey = JE_FALSE;
+	Bmp->Info.HasColorKey = GR_FALSE;
 
 	Bmp->SeekMipCount = MipCount;
 
-	if ( Format == JE_PIXELFORMAT_WAVELET )
+	if ( Format == GR_PIXELFORMAT_WAVELET )
 	{
-		Bmp->Wavelet = jeWavelet_CreateEmpty(Width,Height);
+		Bmp->Wavelet = grWavelet_CreateEmpty(Width,Height);
 	}
 
 return Bmp;
 }
 
-JETAPI jeBitmap *	JETCC	jeBitmap_CreateFromInfo(const jeBitmap_Info * pInfo)
+GRAPI grBitmap *	GRCC	grBitmap_CreateFromInfo(const grBitmap_Info * pInfo)
 {
-jeBitmap * Bmp;
+grBitmap * Bmp;
 
 	assert(pInfo);
-	assert(jeBitmap_Info_IsValid(pInfo));
+	assert(grBitmap_Info_IsValid(pInfo));
 
-	Bmp = jeBitmap_Create_Base();
+	Bmp = grBitmap_Create_Base();
 	if ( ! Bmp )
 		return NULL;
 
@@ -279,20 +279,20 @@ jeBitmap * Bmp;
 		Bmp->Info.Stride = Bmp->Info.Width;
 
 	if ( Bmp->Info.Palette )
-		jeBitmap_Palette_CreateRef(Bmp->Info.Palette);
+		grBitmap_Palette_CreateRef(Bmp->Info.Palette);
 
-	if ( Bmp->Info.Format == JE_PIXELFORMAT_WAVELET )
+	if ( Bmp->Info.Format == GR_PIXELFORMAT_WAVELET )
 	{
-		Bmp->Wavelet = jeWavelet_CreateEmpty(Bmp->Info.Width,Bmp->Info.Height);
+		Bmp->Wavelet = grWavelet_CreateEmpty(Bmp->Info.Width,Bmp->Info.Height);
 	}
 
 return Bmp;
 }
 
-JETAPI jeBoolean	JETCC	 jeBitmap_Destroy(jeBitmap **Bmp)
+GRAPI grBoolean	GRCC	 grBitmap_Destroy(grBitmap **Bmp)
 {
 int			i;
-jeBitmap *	Bitmap;
+grBitmap *	Bitmap;
 
 	assert(Bmp);
 
@@ -302,32 +302,32 @@ jeBitmap *	Bitmap;
 	{
 		if ( Bitmap->LockOwner )
 		{
-			return jeBitmap_UnLock(Bitmap);
+			return grBitmap_UnLock(Bitmap);
 		}
 
 		if ( Bitmap->RefCount <= 1 )
 		{
 			if ( Bitmap->DataOwner )
 			{
-				jeBitmap_Destroy(&(Bitmap->DataOwner));
+				grBitmap_Destroy(&(Bitmap->DataOwner));
 				Bitmap->DataOwner = NULL;
 			}
 			else
 			{
 				if ( Bitmap->Driver )
 				{
-					jeBitmap_DetachDriver(Bitmap,JE_FALSE);
+					grBitmap_DetachDriver(Bitmap,GR_FALSE);
 				}
 
 				for	(i = Bitmap->Info.MinimumMip; i <= Bitmap->Info.MaximumMip; i++)
 				{
 					if	(Bitmap->Data[i])
-						jeRam_Free(Bitmap->Data[i]);
+						grRam_Free(Bitmap->Data[i]);
 				}
 
 				if ( Bitmap->Wavelet )
 				{
-					jeWavelet_Destroy(&(Bitmap->Wavelet));
+					grWavelet_Destroy(&(Bitmap->Wavelet));
 				}
 			}
 		}
@@ -341,40 +341,40 @@ jeBitmap *	Bitmap;
 		{
 			if	(Bitmap->Alpha)
 			{
-				jeBitmap_Destroy(&Bitmap->Alpha);
+				grBitmap_Destroy(&Bitmap->Alpha);
 			}
 
 			if	(Bitmap->Info.Palette)
 			{
-				jeBitmap_Palette_Destroy(&(Bitmap->Info.Palette));
+				grBitmap_Palette_Destroy(&(Bitmap->Info.Palette));
 			}
 
 			if	(Bitmap->DriverInfo.Palette)
 			{
-				jeBitmap_Palette_Destroy(&(Bitmap->DriverInfo.Palette));
+				grBitmap_Palette_Destroy(&(Bitmap->DriverInfo.Palette));
 			}
 
-			jeBitmap_Destroy_Base(Bitmap);
+			grBitmap_Destroy_Base(Bitmap);
 
 			*Bmp = NULL;
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
 #if 0 // {} off limits until _Lock & _UnLock percolates up DataOwner
-jeBitmap * jeBitmap_CreateXerox(jeBitmap *BmpSrc)
+grBitmap * grBitmap_CreateXerox(grBitmap *BmpSrc)
 {
-jeBitmap * Bmp;
+grBitmap * Bmp;
 
-	assert( jeBitmap_IsValid(BmpSrc) );
+	assert( grBitmap_IsValid(BmpSrc) );
 	if ( BmpSrc->LockOwner )
-		return NULL;	//{} return jeBitmap_CreateXeroxFromLock()
+		return NULL;	//{} return grBitmap_CreateXeroxFromLock()
 
-	Bmp = jeBitmap_Create_Base();
+	Bmp = grBitmap_Create_Base();
 	if ( ! Bmp )
 		return NULL;
 			
@@ -384,38 +384,38 @@ jeBitmap * Bmp;
 	Bmp->RefCount = 1;
 
 	Bmp->DataOwner = BmpSrc;
-	jeBitmap_CreateRef(BmpSrc);
+	grBitmap_CreateRef(BmpSrc);
 return Bmp;
 }
 #endif
 
-jeBoolean jeBitmap_AllocSystemMip(jeBitmap *Bmp,int32 mip)
+grBoolean grBitmap_AllocSystemMip(grBitmap *Bmp,int32 mip)
 {
 	if ( ! Bmp )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	if ( Bmp->LockOwner && mip != 0 ) return JE_FALSE;
+	if ( Bmp->LockOwner && mip != 0 ) return GR_FALSE;
 
 	if ( ! Bmp->Data[mip] )
 	{
 	int32 bytes;
-		bytes = jeBitmap_MipBytes(Bmp,mip);
+		bytes = grBitmap_MipBytes(Bmp,mip);
 		if ( bytes == 0 )
 		{
 			Bmp->Data[mip] = NULL;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-		Bmp->Data[mip] = jeRam_Allocate( bytes );
+		Bmp->Data[mip] = grRam_Allocate( bytes );
 	}
 
-return (Bmp->Data[mip]) ? JE_TRUE : JE_FALSE;
+return (Bmp->Data[mip]) ? GR_TRUE : GR_FALSE;
 }
 
-jeBoolean jeBitmap_AllocPalette(jeBitmap *Bmp,jePixelFormat Format,DRV_Driver * Driver)
+grBoolean grBitmap_AllocPalette(grBitmap *Bmp,grPixelFormat Format,DRV_Driver * Driver)
 {
-jeBitmap_Info * BmpInfo;
+grBitmap_Info * BmpInfo;
 	assert(Bmp);
 
 	if ( Driver )
@@ -423,42 +423,42 @@ jeBitmap_Info * BmpInfo;
 	else
 		BmpInfo = &(Bmp->Info);
 
-	if ( ! jePixelFormat_IsRaw(Format) )
-		Format = JE_PIXELFORMAT_32BIT_XRGB;
+	if ( ! grPixelFormat_IsRaw(Format) )
+		Format = GR_PIXELFORMAT_32BIT_XRGB;
 
 	if ( ! BmpInfo->Palette )
 	{
-		assert( BmpInfo->Format == JE_PIXELFORMAT_8BIT_PAL );
+		assert( BmpInfo->Format == GR_PIXELFORMAT_8BIT_PAL );
 
 		if ( Driver )
 		{
-		jeBoolean BmpHasAlpha;
+		grBoolean BmpHasAlpha;
 			
-			BmpHasAlpha = JE_FALSE;
-			if ( jePixelFormat_HasGoodAlpha(Bmp->Info.Format) )
-				BmpHasAlpha = JE_TRUE;
-			else if ( Bmp->Info.Palette && jePixelFormat_HasGoodAlpha(Bmp->Info.Palette->Format) )
-				BmpHasAlpha = JE_TRUE;
+			BmpHasAlpha = GR_FALSE;
+			if ( grPixelFormat_HasGoodAlpha(Bmp->Info.Format) )
+				BmpHasAlpha = GR_TRUE;
+			else if ( Bmp->Info.Palette && grPixelFormat_HasGoodAlpha(Bmp->Info.Palette->Format) )
+				BmpHasAlpha = GR_TRUE;
 
 			if ( BmpHasAlpha || (Bmp->Info.HasColorKey && ! Bmp->DriverInfo.HasColorKey ) )
-				Format = JE_PIXELFORMAT_32BIT_ARGB;
+				Format = GR_PIXELFORMAT_32BIT_ARGB;
 
-			BmpInfo->Palette = jeBitmap_Palette_CreateFromDriver(Driver,Format,256);
+			BmpInfo->Palette = grBitmap_Palette_CreateFromDriver(Driver,Format,256);
 		}
 		else
 		{			
-			BmpInfo->Palette = jeBitmap_Palette_Create(Format,256);
+			BmpInfo->Palette = grBitmap_Palette_Create(Format,256);
 		}
 	}
 
 	if ( ! BmpInfo->Palette )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( BmpInfo->HasColorKey )
 	{
 		if ( ! BmpInfo->Palette->HasColorKey )
 		{
-			BmpInfo->Palette->HasColorKey = JE_TRUE;
+			BmpInfo->Palette->HasColorKey = GR_TRUE;
 			BmpInfo->Palette->ColorKey = 1; // <>
 		}
 		BmpInfo->Palette->ColorKeyIndex = BmpInfo->ColorKey;
@@ -470,41 +470,41 @@ jeBitmap_Info * BmpInfo;
 		assert( BmpInfo->Palette->DriverHandle );
 		if ( ! Driver->THandle_SetPalette(Bmp->DriverHandle,BmpInfo->Palette->DriverHandle) )
 		{
-			jeErrorLog_AddString(-1,"AllocPal : THandle_SetPalette", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"AllocPal : THandle_SetPalette", NULL);
+			return GR_FALSE;
 		}
 	}
 
 	if ( ! Bmp->Info.Palette )
 	{
-		Bmp->Info.Palette = jeBitmap_Palette_CreateCopy(BmpInfo->Palette);
+		Bmp->Info.Palette = grBitmap_Palette_CreateCopy(BmpInfo->Palette);
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /*}{ *************** Thread & Streaming stuff *******************/
 
 #if 0 	//<> expose this?
-JETAPI jeBoolean JETCC jeBitmap_WaitForUnLock(const jeBitmap *Bmp)
+GRAPI grBoolean GRCC grBitmap_WaitForUnLock(const grBitmap *Bmp)
 {
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 	
 	if ( Bmp->LockOwner || Bmp->DataOwner )
-		return JE_FALSE;
+		return GR_FALSE;
 
-//	if ( jeThreadQueue_ActiveJobCount() <= 1 )
-//		return JE_FALSE;
+//	if ( grThreadQueue_ActiveJobCount() <= 1 )
+//		return GR_FALSE;
 
 	while ( Bmp->LockCount )
 	{
-		jeThreadQueue_Sleep(1);
+		grThreadQueue_Sleep(1);
 	}
 
 	if ( Bmp->LockOwner || Bmp->DataOwner )
-		return JE_FALSE;
+		return GR_FALSE;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 #endif
 
@@ -517,154 +517,154 @@ return JE_TRUE;
 
 ****/
 
-jeBoolean jeBitmap_WaitReady(const jeBitmap *Bmp)
+grBoolean grBitmap_WaitReady(const grBitmap *Bmp)
 {
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 	
-	if ( Bmp->StreamingStatus >= JE_BITMAP_STREAMING_STARTED )
+	if ( Bmp->StreamingStatus >= GR_BITMAP_STREAMING_STARTED )
 	{
 		assert(Bmp->Wavelet);
 		ThreadLog_Printf("Wavelet : Waiting %08X Streaming\n",(uint32)(Bmp->Wavelet));
-		jeWavelet_WaitStreaming(Bmp->Wavelet);
-		((jeBitmap *)Bmp)->StreamingStatus = JE_BITMAP_STREAMING_DATADONE;
-		((jeBitmap *)Bmp)->StreamingTHandle = JE_FALSE;
+		grWavelet_WaitStreaming(Bmp->Wavelet);
+		((grBitmap *)Bmp)->StreamingStatus = GR_BITMAP_STREAMING_DATADONE;
+		((grBitmap *)Bmp)->StreamingTHandle = GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean jeBitmap_PeekReady(const jeBitmap *Bmp)
+grBoolean grBitmap_PeekReady(const grBitmap *Bmp)
 {
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	if ( Bmp->DataOwner )
 		Bmp = Bmp->DataOwner;
 	if ( Bmp->LockOwner || Bmp->LockCount < 0 )
-		return JE_TRUE;
+		return GR_TRUE;
 			
 	//get streaming progress & time since last streaming update;
 	// then call _Update_SystemToDriver
 
-	// Warning : jeBitmap_Update_SystemToDriver calls PeekReady
-	//	and PeekReady calls jeBitmap_Update_SystemToDriver !
+	// Warning : grBitmap_Update_SystemToDriver calls PeekReady
+	//	and PeekReady calls grBitmap_Update_SystemToDriver !
 	//	be carefull!
 
-	if ( Bmp->StreamingStatus >= JE_BITMAP_STREAMING_STARTED )
+	if ( Bmp->StreamingStatus >= GR_BITMAP_STREAMING_STARTED )
 	{
 		assert(Bmp->Wavelet);
 		if ( Bmp->DriverHandle )
 		{
-			if ( ! jeWavelet_StreamingJob(Bmp->Wavelet) )
+			if ( ! grWavelet_StreamingJob(Bmp->Wavelet) )
 			{
-				((jeBitmap *)Bmp)->StreamingStatus = JE_BITMAP_STREAMING_DATADONE;
-				((jeBitmap *)Bmp)->StreamingTHandle = JE_FALSE;
+				((grBitmap *)Bmp)->StreamingStatus = GR_BITMAP_STREAMING_DATADONE;
+				((grBitmap *)Bmp)->StreamingTHandle = GR_FALSE;
 			}
 			else
 			{
-				if ( jeWavelet_ShouldDecompressStreaming(Bmp->Wavelet) )
+				if ( grWavelet_ShouldDecompressStreaming(Bmp->Wavelet) )
 				{
 					ThreadLog_Printf("Wavelet : Decompressing %08X Streaming\n",(uint32)(Bmp->Wavelet));
-					jeBitmap_Update_SystemToDriver((jeBitmap *)Bmp);
-					((jeBitmap *)Bmp)->StreamingStatus = JE_BITMAP_STREAMING_CHANGED;
+					grBitmap_Update_SystemToDriver((grBitmap *)Bmp);
+					((grBitmap *)Bmp)->StreamingStatus = GR_BITMAP_STREAMING_CHANGED;
 					
-					if ( ! jeWavelet_StreamingJob(Bmp->Wavelet) )
+					if ( ! grWavelet_StreamingJob(Bmp->Wavelet) )
 					{
-						((jeBitmap *)Bmp)->StreamingStatus = JE_BITMAP_STREAMING_DATADONE;
-						((jeBitmap *)Bmp)->StreamingTHandle = JE_FALSE;
+						((grBitmap *)Bmp)->StreamingStatus = GR_BITMAP_STREAMING_DATADONE;
+						((grBitmap *)Bmp)->StreamingTHandle = GR_FALSE;
 					}
 				}
 				else
 				{
-					((jeBitmap *)Bmp)->StreamingStatus = JE_BITMAP_STREAMING_IDLE;
+					((grBitmap *)Bmp)->StreamingStatus = GR_BITMAP_STREAMING_IDLE;
 				}
 			}
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBitmap_StreamingStatus JETCC jeBitmap_GetStreamingStatus(const jeBitmap *Bmp)
+GRAPI grBitmap_StreamingStatus GRCC grBitmap_GetStreamingStatus(const grBitmap *Bmp)
 {
-jeThreadQueue_JobStatus Status;
-jeThreadQueue_Job * Job;
-jeBitmap_StreamingStatus Ret;
+grThreadQueue_JobStatus Status;
+grThreadQueue_Job * Job;
+grBitmap_StreamingStatus Ret;
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	if ( Bmp->DataOwner )
 		Bmp = Bmp->DataOwner;
 	if ( Bmp->LockOwner || Bmp->LockCount < 0 )
-		return JE_BITMAP_STREAMING_ERROR;
+		return GR_BITMAP_STREAMING_ERROR;
 			
-	if ( Bmp->StreamingStatus < JE_BITMAP_STREAMING_STARTED )
-		return JE_BITMAP_STREAMING_NOT;
+	if ( Bmp->StreamingStatus < GR_BITMAP_STREAMING_STARTED )
+		return GR_BITMAP_STREAMING_NOT;
 
 	assert(Bmp->Wavelet);
 
-	Job = jeWavelet_StreamingJob(Bmp->Wavelet);
+	Job = grWavelet_StreamingJob(Bmp->Wavelet);
 	if ( ! Job )
 	{
 		//StreamingStatus could be DATADONE ; if so, return a real _DONE
-		if ( Bmp->StreamingStatus == JE_BITMAP_STREAMING_DONE )
-			Ret = JE_BITMAP_STREAMING_NOT;
+		if ( Bmp->StreamingStatus == GR_BITMAP_STREAMING_DONE )
+			Ret = GR_BITMAP_STREAMING_NOT;
 		else
-			Ret = JE_BITMAP_STREAMING_DONE;
+			Ret = GR_BITMAP_STREAMING_DONE;
 	}
 	else
 	{
-		if ( ! jeThreadQueue_WaitOnJob(Job,JE_THREADQUEUE_STATUS_RUNNING) )
+		if ( ! grThreadQueue_WaitOnJob(Job,GR_THREADQUEUE_STATUS_RUNNING) )
 		{
-			jeErrorLog_AddString(-1,"Bitmap_GetStreamingStatus : WaitOnJob failed! Continuing anyway!",NULL);
+			grErrorLog_AddString(-1,"Bitmap_GetStreamingStatus : WaitOnJob failed! Continuing anyway!",NULL);
 		}
 
-		Ret = JE_BITMAP_STREAMING_IDLE;
-		if ( Bmp->Wavelet && jeWavelet_ShouldDecompressStreaming(Bmp->Wavelet) )
-			Ret = JE_BITMAP_STREAMING_CHANGED;
+		Ret = GR_BITMAP_STREAMING_IDLE;
+		if ( Bmp->Wavelet && grWavelet_ShouldDecompressStreaming(Bmp->Wavelet) )
+			Ret = GR_BITMAP_STREAMING_CHANGED;
 
-		Job = jeWavelet_StreamingJob(Bmp->Wavelet);;
+		Job = grWavelet_StreamingJob(Bmp->Wavelet);;
 		if ( ! Job )
 		{
-			Ret = JE_BITMAP_STREAMING_DONE;
+			Ret = GR_BITMAP_STREAMING_DONE;
 		}
 		else
 		{
-			Status = jeThreadQueue_JobGetStatus(Job);
-			if ( Status == JE_THREADQUEUE_STATUS_COMPLETED )
-				Ret = JE_BITMAP_STREAMING_DONE;
+			Status = grThreadQueue_JobGetStatus(Job);
+			if ( Status == GR_THREADQUEUE_STATUS_COMPLETED )
+				Ret = GR_BITMAP_STREAMING_DONE;
 		}
 	}
 
-	((jeBitmap *)Bmp)->StreamingStatus = Ret;
+	((grBitmap *)Bmp)->StreamingStatus = Ret;
 
-	if (Ret == JE_BITMAP_STREAMING_DONE ||
-		Ret == JE_BITMAP_STREAMING_NOT )
-		((jeBitmap *)Bmp)->StreamingTHandle = JE_FALSE;
+	if (Ret == GR_BITMAP_STREAMING_DONE ||
+		Ret == GR_BITMAP_STREAMING_NOT )
+		((grBitmap *)Bmp)->StreamingTHandle = GR_FALSE;
 
 return Ret;
 }
 
 /*}{ *************** Locks *******************/
 
-JETAPI jeBoolean	JETCC	 jeBitmap_LockForWrite(
-	jeBitmap *			Bmp,
-	jeBitmap **			Target,
+GRAPI grBoolean	GRCC	 grBitmap_LockForWrite(
+	grBitmap *			Bmp,
+	grBitmap **			Target,
 	int32				MinimumMip,
 	int32				MaximumMip)
 {
 int32 mip;
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 	assert( Target);
 	assert(MaximumMip >= MinimumMip);
 	assert( &Bmp != Target );
 
-	jeBitmap_WaitReady(Bmp);
+	grBitmap_WaitReady(Bmp);
 
 	if ( Bmp->LockCount || Bmp->LockOwner )
 	{
-		jeErrorLog_AddString(-1,"LockForWrite : already locked", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"LockForWrite : already locked", NULL);
+		return GR_FALSE;
 	}
 
 	if ( Bmp->DriverHandle )
@@ -672,8 +672,8 @@ int32 mip;
 		if ( (MinimumMip < Bmp->DriverInfo.MinimumMip) ||
 			 (MaximumMip > Bmp->DriverInfo.MaximumMip) )
 		{
-			jeErrorLog_AddString(-1,"LockForWrite : Driver : invalid mip", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"LockForWrite : Driver : invalid mip", NULL);
+			return GR_FALSE;
 		}
 	}
 	else
@@ -681,82 +681,82 @@ int32 mip;
 		if ( (MinimumMip < Bmp->Info.MinimumMip) ||
 			 (MaximumMip >= MAXMIPLEVELS) )
 		{
-			jeErrorLog_AddString(-1,"LockForWrite : System : invalid mip", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"LockForWrite : System : invalid mip", NULL);
+			return GR_FALSE;
 		}
 
 		if ( MaximumMip > Bmp->Info.MaximumMip )
 		{
-			if ( ! jeBitmap_MakeSystemMips(Bmp,Bmp->Info.MaximumMip,MaximumMip) )
-				return JE_FALSE;
+			if ( ! grBitmap_MakeSystemMips(Bmp,Bmp->Info.MaximumMip,MaximumMip) )
+				return GR_FALSE;
 			Bmp->Info.MaximumMip = MaximumMip;
 		}
 	}
 	
-	Bmp->Persistable = JE_FALSE;
+	Bmp->Persistable = GR_FALSE;
 
 	for(mip=MinimumMip;mip <= MaximumMip;mip ++)
 	{
 		if ( Bmp->DriverHandle )
 		{
-			Target[ mip - MinimumMip ] = jeBitmap_CreateLockFromMipOnDriver(Bmp,mip,-1);
+			Target[ mip - MinimumMip ] = grBitmap_CreateLockFromMipOnDriver(Bmp,mip,-1);
 		}
 		else
 		{
-			Target[ mip - MinimumMip ] = jeBitmap_CreateLockFromMipSystem(Bmp,mip,-1);
+			Target[ mip - MinimumMip ] = grBitmap_CreateLockFromMipSystem(Bmp,mip,-1);
 		}
 		if ( ! Target[ mip - MinimumMip ] )
 		{
-			jeErrorLog_AddString(-1,"LockForWrite : CreateLockFromMip failed", NULL);
+			grErrorLog_AddString(-1,"LockForWrite : CreateLockFromMip failed", NULL);
 			mip--;
 			while(mip >= MinimumMip )
 			{
-				jeBitmap_Destroy( & Target[ mip - MinimumMip ] );
+				grBitmap_Destroy( & Target[ mip - MinimumMip ] );
 				mip--;
 			}
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
 
 	assert( Bmp->LockCount == - (MaximumMip - MinimumMip + 1) );
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeBoolean	JETCC jeBitmap_LockForWriteFormat(
-	jeBitmap *			Bmp,
-	jeBitmap **			Target,
+GRAPI grBoolean	GRCC grBitmap_LockForWriteFormat(
+	grBitmap *			Bmp,
+	grBitmap **			Target,
 	int32				MinimumMip,
 	int32				MaximumMip,
-	jePixelFormat 		Format)
+	grPixelFormat 		Format)
 {
 int32 mip;
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 	assert( Target);
 	assert(MaximumMip >= MinimumMip);
 	assert( &Bmp != Target );
 	
-	jeBitmap_WaitReady(Bmp);
+	grBitmap_WaitReady(Bmp);
 
 	if ( Bmp->LockCount || Bmp->LockOwner )
 	{
-		jeErrorLog_AddString(-1,"LockForWrite : already locked", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"LockForWrite : already locked", NULL);
+		return GR_FALSE;
 	}
 
 	if ( Format != Bmp->Info.Format && Format != Bmp->DriverInfo.Format )
 	{
-		jeErrorLog_AddString(-1,"LockForWriteFormat : must be System or Driver Format !", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"LockForWriteFormat : must be System or Driver Format !", NULL);
+		return GR_FALSE;
 	}
 
 	if ( Format == Bmp->DriverInfo.Format )
 	{
 		if ( MinimumMip < Bmp->DriverInfo.MinimumMip || MaximumMip > Bmp->DriverInfo.MaximumMip )
 		{
-			jeErrorLog_AddString(-1,"LockForWrite : invalid Driver mip", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"LockForWrite : invalid Driver mip", NULL);
+			return GR_FALSE;
 		}
 	}
 	else
@@ -765,10 +765,10 @@ int32 mip;
 
 		if ( Bmp->DriverHandle )
 		{
-			if ( ! jeBitmap_Update_DriverToSystem(Bmp) )
+			if ( ! grBitmap_Update_DriverToSystem(Bmp) )
 			{
-				jeErrorLog_AddString(-1,"LockForWrite : Update_DriverToSystem", NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"LockForWrite : Update_DriverToSystem", NULL);
+				return GR_FALSE;
 			}
 		}
 
@@ -776,74 +776,74 @@ int32 mip;
 
 		if ( MinimumMip < Bmp->Info.MinimumMip || MaximumMip >= MAXMIPLEVELS )
 		{
-			jeErrorLog_AddString(-1,"LockForWrite : invalid System mip", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"LockForWrite : invalid System mip", NULL);
+			return GR_FALSE;
 		}
 		
-		if ( ! jeBitmap_MakeSystemMips(Bmp,Bmp->Info.MaximumMip,MaximumMip) )
-			return JE_FALSE;
+		if ( ! grBitmap_MakeSystemMips(Bmp,Bmp->Info.MaximumMip,MaximumMip) )
+			return GR_FALSE;
 		Bmp->Info.MaximumMip = MaximumMip;
 	}
 
-	Bmp->Persistable = JE_FALSE;
+	Bmp->Persistable = GR_FALSE;
 
 	for(mip=MinimumMip;mip <= MaximumMip;mip ++)
 	{
 		if ( Bmp->DriverHandle && Format == Bmp->DriverInfo.Format )
 		{
-			Target[ mip - MinimumMip ] = jeBitmap_CreateLockFromMipOnDriver(Bmp,mip,-1);
+			Target[ mip - MinimumMip ] = grBitmap_CreateLockFromMipOnDriver(Bmp,mip,-1);
 		}
 		else
 		{
-			Target[ mip - MinimumMip ] = jeBitmap_CreateLockFromMipSystem(Bmp,mip,-1);
+			Target[ mip - MinimumMip ] = grBitmap_CreateLockFromMipSystem(Bmp,mip,-1);
 		}
 
 		if ( ! Target[ mip - MinimumMip ] )
 		{
-			jeErrorLog_AddString(-1,"LockForWrite : CreateLockFromMip failed", NULL);
+			grErrorLog_AddString(-1,"LockForWrite : CreateLockFromMip failed", NULL);
 			mip--;
 			while(mip >= MinimumMip )
 			{
-				jeBitmap_Destroy( & Target[ mip - MinimumMip ] );
+				grBitmap_Destroy( & Target[ mip - MinimumMip ] );
 				mip--;
 			}
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
 
 	assert( Bmp->LockCount == - (MaximumMip - MinimumMip + 1) );
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_LockForReadNative(
-	const jeBitmap *	iBmp,
-	jeBitmap **			Target,
+GRAPI grBoolean GRCC grBitmap_LockForReadNative(
+	const grBitmap *	iBmp,
+	grBitmap **			Target,
 	int32				MinimumMip,
 	int32				MaximumMip)
 {
 int32 mip;
-jeBitmap * Bmp = (jeBitmap *)iBmp;
+grBitmap * Bmp = (grBitmap *)iBmp;
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 	assert( Target);
 	assert(MaximumMip >= MinimumMip);
 	assert( &Bmp != Target );
 
 // <> lock-for-read : don't do peekready ? if it's a wavelet, 
-//	jeBitmap_PeekReady(Bmp);
+//	grBitmap_PeekReady(Bmp);
 
 	if ( (MinimumMip < Bmp->Info.MinimumMip && MinimumMip < Bmp->DriverInfo.MinimumMip) ||
 		 (MaximumMip >= MAXMIPLEVELS) )
 	{
-		jeErrorLog_AddString(-1,"LockForRead : invalid mip", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"LockForRead : invalid mip", NULL);
+		return GR_FALSE;
 	}
 
 	if ( Bmp->LockCount < 0 || Bmp->LockOwner )
 	{
-		jeErrorLog_AddString(-1,"LockForRead : already locked", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"LockForRead : already locked", NULL);
+		return GR_FALSE;
 	}
 
 	for(mip=MinimumMip;mip <= MaximumMip;mip ++)
@@ -852,132 +852,132 @@ jeBitmap * Bmp = (jeBitmap *)iBmp;
 		if ( Bmp->DriverHandle && Bmp->DriverDataChanged
 			&& mip <= Bmp->DriverInfo.MaximumMip && mip >= Bmp->DriverInfo.MinimumMip)
 		{
-			Target[ mip - MinimumMip ] = jeBitmap_CreateLockFromMipOnDriver(Bmp,mip,1);
+			Target[ mip - MinimumMip ] = grBitmap_CreateLockFromMipOnDriver(Bmp,mip,1);
 		}
 		else
 		{
-			Target[ mip - MinimumMip ] = jeBitmap_CreateLockFromMipSystem(Bmp,mip,1);
+			Target[ mip - MinimumMip ] = grBitmap_CreateLockFromMipSystem(Bmp,mip,1);
 		}
 		if ( ! Target[ mip - MinimumMip ] )
 		{
-			jeErrorLog_AddString(-1,"LockForRead : CreateLockFromMip failed", NULL);
+			grErrorLog_AddString(-1,"LockForRead : CreateLockFromMip failed", NULL);
 			mip--;
 			while(mip >= MinimumMip )
 			{
-				jeBitmap_Destroy( & Target[ mip - MinimumMip ] );
+				grBitmap_Destroy( & Target[ mip - MinimumMip ] );
 				mip--;
 			}
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean	JETCC jeBitmap_LockForRead(
-	const jeBitmap *	iBmp,
-	jeBitmap **			Target,
+GRAPI grBoolean	GRCC grBitmap_LockForRead(
+	const grBitmap *	iBmp,
+	grBitmap **			Target,
 	int32				MinimumMip,
 	int32				MaximumMip,
-	jePixelFormat		Format,
-	jeBoolean			HasColorKey,
+	grPixelFormat		Format,
+	grBoolean			HasColorKey,
 	uint32				ColorKey)
 {
 int32 mip;
-jeBitmap * Bmp = (jeBitmap *)iBmp;
+grBitmap * Bmp = (grBitmap *)iBmp;
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 	assert( Target);
 	assert(MaximumMip >= MinimumMip);
 	assert( &Bmp != Target );
 
 // <> lock-for-read : don't do peekready ?
-//	jeBitmap_PeekReady(Bmp);
+//	grBitmap_PeekReady(Bmp);
 
 	if ( MinimumMip < Bmp->Info.MinimumMip ||
 //		 MaximumMip > Bmp->Info.MaximumMip
 		MaximumMip >= MAXMIPLEVELS )
 	{
-		jeErrorLog_AddString(-1,"LockForRead : invalid mip", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"LockForRead : invalid mip", NULL);
+		return GR_FALSE;
 	}
 
 	if ( Bmp->LockCount < 0 || Bmp->LockOwner )
 	{
-		jeErrorLog_AddString(-1,"LockForRead : already locked", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"LockForRead : already locked", NULL);
+		return GR_FALSE;
 	}
 	
 	//LockForRead must special case wavelet for making many mips at once
-	if ( Bmp->Info.Format == JE_PIXELFORMAT_WAVELET )
+	if ( Bmp->Info.Format == GR_PIXELFORMAT_WAVELET )
 	{
-	jeBitmap * Lock;
-	jeBitmap_Info * Infos[MAXMIPLEVELS];
+	grBitmap * Lock;
+	grBitmap_Info * Infos[MAXMIPLEVELS];
 	void * Bits[MAXMIPLEVELS];
 	int32 i,MipCount;;
 
 		assert(Bmp->Wavelet);
-		assert(jePixelFormat_BytesPerPel(Format) > 0 );
+		assert(grPixelFormat_BytesPerPel(Format) > 0 );
 
 		MipCount = MaximumMip - MinimumMip + 1;
 
 		for(mip=MinimumMip;mip <= MaximumMip;mip ++)
 		{
 			i = mip - MinimumMip;
-			Lock = jeBitmap_CreateLock_CopyInfo(Bmp,1,mip);
+			Lock = grBitmap_CreateLock_CopyInfo(Bmp,1,mip);
 			if ( ! Lock )
 			{
-				jeBitmap_UnLockArray(Target,mip - MinimumMip);
-				return JE_FALSE;
+				grBitmap_UnLockArray(Target,mip - MinimumMip);
+				return GR_FALSE;
 			}
 
 			Lock->Info.Format = Format;
 			Lock->Info.ColorKey = ColorKey;
 			Lock->Info.HasColorKey = HasColorKey;
-			if ( ! jeBitmap_AllocSystemMip(Lock,0) )
+			if ( ! grBitmap_AllocSystemMip(Lock,0) )
 			{
-				jeBitmap_UnLockArray(Target,mip - MinimumMip + 1);
-				return JE_FALSE;
+				grBitmap_UnLockArray(Target,mip - MinimumMip + 1);
+				return GR_FALSE;
 			}
 			Target[i] = Lock;
 			Infos[i] = &(Lock->Info);
 			Bits[i] = Lock->Data[0];
 		}
 
-		if ( jeWavelet_CanDecompressMips(Bmp->Wavelet,Infos[0]) )
+		if ( grWavelet_CanDecompressMips(Bmp->Wavelet,Infos[0]) )
 		{
-			if ( ! jeWavelet_DecompressMips(Bmp->Wavelet,(const jeBitmap_Info **)Infos,(const void **)Bits,MinimumMip,MaximumMip) )
+			if ( ! grWavelet_DecompressMips(Bmp->Wavelet,(const grBitmap_Info **)Infos,(const void **)Bits,MinimumMip,MaximumMip) )
 			{
-				jeErrorLog_AddString(-1,"LockForRead : Wavelet_DecompressMips failed!", NULL);
-				jeBitmap_UnLockArray(Target,MipCount);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"LockForRead : Wavelet_DecompressMips failed!", NULL);
+				grBitmap_UnLockArray(Target,MipCount);
+				return GR_FALSE;
 			}
 		}
 		else
 		{
 			if ( MinimumMip != 0 )
 			{
-				jeErrorLog_AddString(-1,"sorry, can't lock wavelet with minMip != 0", NULL);
-				jeBitmap_UnLockArray(Target,MipCount);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"sorry, can't lock wavelet with minMip != 0", NULL);
+				grBitmap_UnLockArray(Target,MipCount);
+				return GR_FALSE;
 			}
 
-			if ( ! jeWavelet_Decompress(Bmp->Wavelet,Infos[0],Bits[0]) )
+			if ( ! grWavelet_Decompress(Bmp->Wavelet,Infos[0],Bits[0]) )
 			{
-				jeErrorLog_AddString(-1,"LockForRead : Wavelet_Decompress failed!", NULL);
-				jeBitmap_UnLockArray(Target,MipCount);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"LockForRead : Wavelet_Decompress failed!", NULL);
+				grBitmap_UnLockArray(Target,MipCount);
+				return GR_FALSE;
 			}
 
 			// now make the mips
 
 			for(i=1;i<MipCount;i++)
 			{
-				if ( ! jeBitmap_UpdateMips_Data(Infos[i-1],Bits[i-1],Infos[i],Bits[i]) )
+				if ( ! grBitmap_UpdateMips_Data(Infos[i-1],Bits[i-1],Infos[i],Bits[i]) )
 				{
-					jeErrorLog_AddString(-1,"LockForRead : UpdateMips_Data failed!", NULL);
-					jeBitmap_UnLockArray(Target,MipCount);
-					return JE_FALSE;
+					grErrorLog_AddString(-1,"LockForRead : UpdateMips_Data failed!", NULL);
+					grBitmap_UnLockArray(Target,MipCount);
+					return GR_FALSE;
 				}
 			}
 		}
@@ -986,58 +986,58 @@ jeBitmap * Bmp = (jeBitmap *)iBmp;
 	{
 		for(mip=MinimumMip;mip <= MaximumMip;mip ++)
 		{
-			Target[ mip - MinimumMip ] = jeBitmap_CreateLockFromMip(Bmp,mip, Format,HasColorKey,ColorKey,1);
+			Target[ mip - MinimumMip ] = grBitmap_CreateLockFromMip(Bmp,mip, Format,HasColorKey,ColorKey,1);
 			if ( ! Target[ mip - MinimumMip ] )
 			{
-				jeErrorLog_AddString(-1,"LockForRead : CreateLockFromMip failed", NULL);
+				grErrorLog_AddString(-1,"LockForRead : CreateLockFromMip failed", NULL);
 				mip--;
 				while(mip >= MinimumMip )
 				{
-					jeBitmap_Destroy( & Target[ mip - MinimumMip ] );
+					grBitmap_Destroy( & Target[ mip - MinimumMip ] );
 					mip--;
 				}
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean jeBitmap_UnLockArray_NoChange(jeBitmap **Locks,int32 Size)
+grBoolean grBitmap_UnLockArray_NoChange(grBitmap **Locks,int32 Size)
 {
 int i;
-jeBoolean Ret = JE_TRUE;
+grBoolean Ret = GR_TRUE;
 	assert(Locks);
 	for(i=0;i<Size;i++)
 	{
-		if ( ! jeBitmap_UnLock_NoChange(Locks[i]) )
-			Ret = JE_FALSE;
+		if ( ! grBitmap_UnLock_NoChange(Locks[i]) )
+			Ret = GR_FALSE;
 	}
 return Ret;
 }
 
-JETAPI jeBoolean	JETCC jeBitmap_UnLockArray(jeBitmap **Locks,int32 Size)
+GRAPI grBoolean	GRCC grBitmap_UnLockArray(grBitmap **Locks,int32 Size)
 {
 int i;
-jeBoolean Ret = JE_TRUE;
+grBoolean Ret = GR_TRUE;
 	assert(Locks);
 	for(i=0;i<Size;i++)
 	{
-		if ( ! jeBitmap_UnLock(Locks[i]) )
-			Ret = JE_FALSE;
+		if ( ! grBitmap_UnLock(Locks[i]) )
+			Ret = GR_FALSE;
 	}
 return Ret;
 }
 
-jeBoolean jeBitmap_UnLock_Internal(jeBitmap *Bmp,jeBoolean Apply)
+grBoolean grBitmap_UnLock_Internal(grBitmap *Bmp,grBoolean Apply)
 {
-jeBoolean Ret = JE_TRUE;
+grBoolean Ret = GR_TRUE;
 
 	if ( ! Bmp )
 	{
-		jeErrorLog_AddString(-1,"UnLock : bad bmp", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"UnLock : bad bmp", NULL);
+		return GR_FALSE;
 	}
 
 	assert( Bmp->LockCount == 0 );
@@ -1057,17 +1057,17 @@ jeBoolean Ret = JE_TRUE;
 
 			if ( Apply )
 			{
-			jeBitmap_Palette * Pal;
+			grBitmap_Palette * Pal;
 
-				Bmp->LockOwner->Modified[Bmp->Info.MinimumMip] = JE_TRUE;
+				Bmp->LockOwner->Modified[Bmp->Info.MinimumMip] = GR_TRUE;
 			
 				Pal = Bmp->DriverInfo.Palette ? Bmp->DriverInfo.Palette : Bmp->Info.Palette;
 				if ( Pal )
-					jeBitmap_SetPalette(Bmp->LockOwner,Pal);
+					grBitmap_SetPalette(Bmp->LockOwner,Pal);
 
 				// this palette will be destroyed later on
 
-				Bmp->HasAverageColor = JE_FALSE;
+				Bmp->HasAverageColor = GR_FALSE;
 			}
 
 			if ( Bmp->LockOwner->LockCount == 0 && Apply )
@@ -1077,7 +1077,7 @@ jeBoolean Ret = JE_TRUE;
 				if ( Bmp->DriverBitsLocked )
 				{
 					assert( Bmp->DriverHandle );
-					Bmp->LockOwner->DriverDataChanged = JE_TRUE;
+					Bmp->LockOwner->DriverDataChanged = GR_TRUE;
 					DoUpdate = 1;
 				}
 				else
@@ -1092,17 +1092,17 @@ jeBoolean Ret = JE_TRUE;
 			assert(Bmp->Driver);
 			if ( ! Bmp->Driver->THandle_UnLock(Bmp->DriverHandle, Bmp->DriverMipLock - Bmp->DriverMipBase) )
 			{
-				jeErrorLog_AddString(-1,"UnLock : thandle_unlock", NULL);
-				Ret = JE_FALSE;
+				grErrorLog_AddString(-1,"UnLock : thandle_unlock", NULL);
+				Ret = GR_FALSE;
 			}
-			Bmp->DriverBitsLocked = JE_FALSE;
+			Bmp->DriverBitsLocked = GR_FALSE;
 			Bmp->DriverMipLock = 0;
 		}
 
 		if ( Bmp->Alpha )
 		{
-			if ( ! jeBitmap_UnLock(Bmp->Alpha) )
-				Ret = JE_FALSE;
+			if ( ! grBitmap_UnLock(Bmp->Alpha) )
+				Ret = GR_FALSE;
 
 			Bmp->Alpha = NULL;
 		}
@@ -1115,19 +1115,19 @@ jeBoolean Ret = JE_TRUE;
 			{
 			//	don't update from driver -> system, leaved the changed data on the driver
 			//	we've got DriverDataChanged
-			//	if ( ! jeBitmap_Update_DriverToSystem(Bmp) )
-			//		Ret = JE_FALSE;
+			//	if ( ! grBitmap_Update_DriverToSystem(Bmp) )
+			//		Ret = GR_FALSE;
 			}
 			else
 			{
 				if ( Bmp->LockOwner->DriverHandle )
-					if ( ! jeBitmap_Update_SystemToDriver(Bmp->LockOwner) )
-						Ret = JE_FALSE;
+					if ( ! grBitmap_Update_SystemToDriver(Bmp->LockOwner) )
+						Ret = GR_FALSE;
 			}
 		}
 
 		// we did a CreateRef on the lockowner
-		jeBitmap_Destroy(&(Bmp->LockOwner));
+		grBitmap_Destroy(&(Bmp->LockOwner));
 		Bmp->LockOwner = NULL;
 
 	}
@@ -1135,38 +1135,38 @@ jeBoolean Ret = JE_TRUE;
 
 	assert(Bmp->RefCount == 1);
 
-	jeBitmap_Destroy(&Bmp);
+	grBitmap_Destroy(&Bmp);
 
 	assert(Bmp == NULL);
 
 return Ret;
 }
 
-JETAPI jeBoolean	JETCC jeBitmap_UnLock(jeBitmap *Bmp)
+GRAPI grBoolean	GRCC grBitmap_UnLock(grBitmap *Bmp)
 {
-return jeBitmap_UnLock_Internal(Bmp,JE_TRUE);
+return grBitmap_UnLock_Internal(Bmp,GR_TRUE);
 }
 
-jeBoolean jeBitmap_UnLock_NoChange(jeBitmap *Bmp)
+grBoolean grBitmap_UnLock_NoChange(grBitmap *Bmp)
 {
-return jeBitmap_UnLock_Internal(Bmp,JE_FALSE);
+return grBitmap_UnLock_Internal(Bmp,GR_FALSE);
 }
 
-JETAPI void *	JETCC jeBitmap_GetBits(jeBitmap *Bmp)
+GRAPI void *	GRCC grBitmap_GetBits(grBitmap *Bmp)
 {
 void * bits;
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	if ( ! Bmp )
 	{
-		jeErrorLog_AddString(-1,"GetBits : bad bmp", NULL);
+		grErrorLog_AddString(-1,"GetBits : bad bmp", NULL);
 		return NULL;
 	}
 
 	if ( ! Bmp->LockOwner )	// must be a lock!
 	{
-		jeErrorLog_AddString(-1,"GetBits : not a lock", NULL);
+		grErrorLog_AddString(-1,"GetBits : not a lock", NULL);
 		return NULL;
 	}
 
@@ -1175,11 +1175,11 @@ void * bits;
 		assert(Bmp->Driver);
 		if ( ! Bmp->Driver->THandle_Lock(Bmp->DriverHandle,Bmp->DriverMipLock - Bmp->DriverMipBase,&bits) )
 		{
-			jeErrorLog_AddString(-1,"GetBits : THandle_Lock", NULL);
+			grErrorLog_AddString(-1,"GetBits : THandle_Lock", NULL);
 			return NULL;
 		}
 
-		Bmp->DriverBitsLocked = JE_TRUE;
+		Bmp->DriverBitsLocked = GR_TRUE;
 	}
 	else if ( Bmp->Wavelet )
 	{
@@ -1196,20 +1196,20 @@ return bits;
 
 /*}{ ************* _CreateLock_#? *********************/
 
-jeBitmap * jeBitmap_CreateLock_CopyInfo(jeBitmap *BmpSrc,int32 LockCnt,int32 mip)
+grBitmap * grBitmap_CreateLock_CopyInfo(grBitmap *BmpSrc,int32 LockCnt,int32 mip)
 {
-jeBitmap * Bmp;
+grBitmap * Bmp;
 
-	assert( jeBitmap_IsValid(BmpSrc) );
+	assert( grBitmap_IsValid(BmpSrc) );
 
 	// all _CreateLocks go through here
 
-	Bmp = jeBitmap_Create_Base();
+	Bmp = grBitmap_Create_Base();
 	if ( ! Bmp )
 		return NULL;
 
-	jeBitmap_MakeMipInfo(&(BmpSrc->Info),mip,&(Bmp->Info));
-	jeBitmap_MakeMipInfo(&(BmpSrc->DriverInfo),mip,&(Bmp->DriverInfo));
+	grBitmap_MakeMipInfo(&(BmpSrc->Info),mip,&(Bmp->Info));
+	grBitmap_MakeMipInfo(&(BmpSrc->DriverInfo),mip,&(Bmp->DriverInfo));
 	Bmp->DriverFlags = BmpSrc->DriverFlags;
 	Bmp->DriverGamma = BmpSrc->DriverGamma;
 	Bmp->DriverGammaLast = BmpSrc->DriverGammaLast;
@@ -1221,7 +1221,7 @@ jeBitmap * Bmp;
 	Bmp->PreferredFormat= BmpSrc->PreferredFormat;
 
 	Bmp->LockOwner = BmpSrc;
-	jeBitmap_CreateRef(BmpSrc); // we do a _Destroy() in UnLock()
+	grBitmap_CreateRef(BmpSrc); // we do a _Destroy() in UnLock()
 
 	Bmp->HasWaveletOptions = BmpSrc->HasWaveletOptions;
 	Bmp->WaveletOptions = BmpSrc->WaveletOptions;
@@ -1231,7 +1231,7 @@ jeBitmap * Bmp;
 return Bmp;
 }
 
-void jeBitmap_MakeMipInfo(jeBitmap_Info *Src,int32 mip,jeBitmap_Info * Target)
+void grBitmap_MakeMipInfo(grBitmap_Info *Src,int32 mip,grBitmap_Info * Target)
 {
 	assert( Src && Target );
 	assert( mip >= 0 && mip < MAXMIPLEVELS );
@@ -1243,35 +1243,35 @@ void jeBitmap_MakeMipInfo(jeBitmap_Info *Src,int32 mip,jeBitmap_Info * Target)
 	Target->MinimumMip = Target->MaximumMip = mip;
 }
 
-jeBitmap * jeBitmap_CreateLockFromMip(jeBitmap *Src,int32 mip,
-	jePixelFormat Format,
-	jeBoolean	HasColorKey,
+grBitmap * grBitmap_CreateLockFromMip(grBitmap *Src,int32 mip,
+	grPixelFormat Format,
+	grBoolean	HasColorKey,
 	uint32		ColorKey,
 	int32			LockCnt)
 {
-jeBitmap * Ret;
+grBitmap * Ret;
 
-	assert( jeBitmap_IsValid(Src) );
+	assert( grBitmap_IsValid(Src) );
 	if ( mip < 0 || mip >= MAXMIPLEVELS )
 		return NULL;
 
 	// LockForRead always goes through here
 
 	// you can never lock Wavelet data (or can you?)
-//	if ( jePixelFormat_BytesPerPel(Format) < 1 )
+//	if ( grPixelFormat_BytesPerPel(Format) < 1 )
 //		return NULL;
 
 	if ( Src->DriverInfo.Format == Format &&
-		 JE_BOOLSAME(Src->DriverInfo.HasColorKey,HasColorKey) &&
+		 GR_BOOLSAME(Src->DriverInfo.HasColorKey,HasColorKey) &&
 		 (!HasColorKey || Src->DriverInfo.ColorKey == ColorKey) &&
 		 mip >= Src->DriverInfo.MinimumMip && mip <= Src->DriverInfo.MaximumMip )
 	{
-		return jeBitmap_CreateLockFromMipOnDriver(Src,mip,LockCnt);
+		return grBitmap_CreateLockFromMipOnDriver(Src,mip,LockCnt);
 	}
 
 	if ( Src->DriverHandle )
 	{
-		if ( ! jeBitmap_Update_DriverToSystem(Src) )
+		if ( ! grBitmap_Update_DriverToSystem(Src) )
 		{
 			return NULL;
 		}
@@ -1279,18 +1279,18 @@ jeBitmap * Ret;
 		
 	if ( ! Src->Data[mip] )
 	{
-		if ( ! jeBitmap_MakeSystemMips(Src,mip,mip) )
+		if ( ! grBitmap_MakeSystemMips(Src,mip,mip) )
 			return NULL;
 	}
 
 	if ( Src->Info.Format == Format &&
-		 JE_BOOLSAME(Src->Info.HasColorKey,HasColorKey) &&
+		 GR_BOOLSAME(Src->Info.HasColorKey,HasColorKey) &&
 		 (!HasColorKey || Src->Info.ColorKey == ColorKey) )
 	{
-		return jeBitmap_CreateLockFromMipSystem(Src,mip,LockCnt);
+		return grBitmap_CreateLockFromMipSystem(Src,mip,LockCnt);
 	}
 
-	Ret = jeBitmap_CreateLock_CopyInfo(Src,LockCnt,mip);
+	Ret = grBitmap_CreateLock_CopyInfo(Src,LockCnt,mip);
 
 	if ( ! Ret )
 		return NULL;
@@ -1301,49 +1301,49 @@ jeBitmap * Ret;
 	Ret->Info.ColorKey = ColorKey;
 	Ret->Info.HasColorKey = HasColorKey;
 
-	if ( jePixelFormat_HasPalette(Format) && Src->Info.Palette )
+	if ( grPixelFormat_HasPalette(Format) && Src->Info.Palette )
 	{
 		Ret->Info.Palette = Src->Info.Palette;
-		jeBitmap_Palette_CreateRef(Ret->Info.Palette);
+		grBitmap_Palette_CreateRef(Ret->Info.Palette);
 	}
 
 	assert( Ret->Alpha == NULL );
-	if ( ! jePixelFormat_HasGoodAlpha(Format) && Src->Alpha )
+	if ( ! grPixelFormat_HasGoodAlpha(Format) && Src->Alpha )
 	{
-		if ( ! jeBitmap_LockForRead(Src->Alpha,&(Ret->Alpha),mip,mip,JE_PIXELFORMAT_8BIT_GRAY,0,0) )
+		if ( ! grBitmap_LockForRead(Src->Alpha,&(Ret->Alpha),mip,mip,GR_PIXELFORMAT_8BIT_GRAY,0,0) )
 		{
-			jeErrorLog_AddString(-1,"CreateLockFromMip : LockForRead failed", NULL);
-			jeBitmap_Destroy(&Ret);
+			grErrorLog_AddString(-1,"CreateLockFromMip : LockForRead failed", NULL);
+			grBitmap_Destroy(&Ret);
 			return NULL;
 		}
 		assert( Ret->Alpha );
 	}
 
-	assert( jeBitmap_IsValid(Ret) );
+	assert( grBitmap_IsValid(Ret) );
 
-	if (	Src->Info.Format == JE_PIXELFORMAT_WAVELET &&
-			Ret->Info.Format == JE_PIXELFORMAT_WAVELET )
+	if (	Src->Info.Format == GR_PIXELFORMAT_WAVELET &&
+			Ret->Info.Format == GR_PIXELFORMAT_WAVELET )
 	{
 		assert(Src->Wavelet);
 		Ret->Wavelet = Src->Wavelet;
-		jeWavelet_CreateRef(Ret->Wavelet);
+		grWavelet_CreateRef(Ret->Wavelet);
 
 		Ret->WaveletMipLock = mip;
 	}
 	else
 	{
-		assert( Ret->Info.Format != JE_PIXELFORMAT_WAVELET);
+		assert( Ret->Info.Format != GR_PIXELFORMAT_WAVELET);
 
-		if ( ! jeBitmap_AllocSystemMip(Ret,0) )
+		if ( ! grBitmap_AllocSystemMip(Ret,0) )
 		{
-			jeBitmap_Destroy(&Ret);
+			grBitmap_Destroy(&Ret);
 			return NULL;
 		}
 
-		if ( ! jeBitmap_BlitMip( Src, mip, Ret, 0 ) )
+		if ( ! grBitmap_BlitMip( Src, mip, Ret, 0 ) )
 		{
-			jeErrorLog_AddString(-1,"CreateLockFromMip : BlitMip failed", NULL);
-			jeBitmap_Destroy(&Ret);
+			grErrorLog_AddString(-1,"CreateLockFromMip : BlitMip failed", NULL);
+			grBitmap_Destroy(&Ret);
 			return NULL;
 		}
 	}
@@ -1351,31 +1351,31 @@ jeBitmap * Ret;
 return Ret;
 }
 
-jeBitmap * jeBitmap_CreateLockFromMipSystem(jeBitmap *Src,int32 mip,int32 LockCnt)
+grBitmap * grBitmap_CreateLockFromMipSystem(grBitmap *Src,int32 mip,int32 LockCnt)
 {
-jeBitmap * Ret;
+grBitmap * Ret;
 
-	assert( jeBitmap_IsValid(Src) );
+	assert( grBitmap_IsValid(Src) );
 	if ( mip < Src->Info.MinimumMip || mip >= MAXMIPLEVELS )
 		return NULL;
 
 	// you can never lock Wavelet data {}
-	//if ( jePixelFormat_BytesPerPel(Src->Info.Format) < 1 )
+	//if ( grPixelFormat_BytesPerPel(Src->Info.Format) < 1 )
 	//	return NULL;
 
 	if ( ! Src->Data[mip] )
 	{
-		if ( ! jeBitmap_MakeSystemMips(Src,mip,mip) )
+		if ( ! grBitmap_MakeSystemMips(Src,mip,mip) )
 			return NULL;
 	}
 
-	Ret = jeBitmap_CreateLock_CopyInfo(Src,LockCnt,mip);
+	Ret = grBitmap_CreateLock_CopyInfo(Src,LockCnt,mip);
 
 	if ( ! Ret ) return NULL;
 
 	Ret->Data[0] = Src->Data[mip];
 
-	if ( Src->Info.Format == JE_PIXELFORMAT_WAVELET )
+	if ( Src->Info.Format == GR_PIXELFORMAT_WAVELET )
 	{
 		assert(Src->Wavelet);
 		Ret->Wavelet = Src->Wavelet;
@@ -1384,41 +1384,41 @@ jeBitmap * Ret;
 
 	Ret->Info.Palette = Src->Info.Palette;
 	if ( Ret->Info.Palette )
-		jeBitmap_Palette_CreateRef(Ret->Info.Palette);
+		grBitmap_Palette_CreateRef(Ret->Info.Palette);
 
 	Ret->DataOwner = Src;
-	jeBitmap_CreateRef(Src);
+	grBitmap_CreateRef(Src);
 
 	assert( Ret->Alpha == NULL );
-	if ( ! jePixelFormat_HasGoodAlpha(Src->Info.Format) && Src->Alpha )
+	if ( ! grPixelFormat_HasGoodAlpha(Src->Info.Format) && Src->Alpha )
 	{
-		if ( ! jeBitmap_LockForRead(Src->Alpha,&(Ret->Alpha),mip,mip,JE_PIXELFORMAT_8BIT_GRAY,0,0) )
+		if ( ! grBitmap_LockForRead(Src->Alpha,&(Ret->Alpha),mip,mip,GR_PIXELFORMAT_8BIT_GRAY,0,0) )
 		{
-			jeErrorLog_AddString(-1,"CreateLockFromMipSystem : LockForRead failed", NULL);
-			jeBitmap_Destroy(&Ret);
+			grErrorLog_AddString(-1,"CreateLockFromMipSystem : LockForRead failed", NULL);
+			grBitmap_Destroy(&Ret);
 			return NULL;
 		}
 		assert( Ret->Alpha );
 	}
 
-	assert( jeBitmap_IsValid(Ret) );
+	assert( grBitmap_IsValid(Ret) );
 
 return Ret;
 }
 
-jeBitmap * jeBitmap_CreateLockFromMipOnDriver(jeBitmap *Src,int32 mip,int32 LockCnt)
+grBitmap * grBitmap_CreateLockFromMipOnDriver(grBitmap *Src,int32 mip,int32 LockCnt)
 {
-jeBitmap * Ret;
+grBitmap * Ret;
 
-	assert( jeBitmap_IsValid(Src) );
+	assert( grBitmap_IsValid(Src) );
 	if ( ! Src->DriverHandle || ! Src->Driver || Src->DriverMipLock || mip < Src->DriverInfo.MinimumMip || mip > Src->DriverInfo.MaximumMip )
 		return NULL;
 
 	// the driver can never have Wavelet data
 	// {} it could have S3TC data, though..
-	assert( jePixelFormat_BytesPerPel(Src->DriverInfo.Format) > 0);
+	assert( grPixelFormat_BytesPerPel(Src->DriverInfo.Format) > 0);
 
-	Ret = jeBitmap_CreateLock_CopyInfo(Src,LockCnt,mip);
+	Ret = grBitmap_CreateLock_CopyInfo(Src,LockCnt,mip);
 
 	if ( ! Ret ) return NULL;
 
@@ -1427,14 +1427,14 @@ jeBitmap * Ret;
 	Ret->DriverMipBase = Src->DriverMipBase;
 
 	Ret->DataOwner = Src;
-	jeBitmap_CreateRef(Src);
+	grBitmap_CreateRef(Src);
 
 	Ret->DriverInfo.Palette = Src->DriverInfo.Palette;
 
-	if ( ! jeBitmap_MakeDriverLockInfo(Ret,mip,&(Ret->DriverInfo)) )
+	if ( ! grBitmap_MakeDriverLockInfo(Ret,mip,&(Ret->DriverInfo)) )
 	{
-		jeErrorLog_AddString(-1,"CreateLockFromMipOnDriver : UpdateInfo failed", NULL);
-		jeBitmap_Destroy(&Ret);
+		grErrorLog_AddString(-1,"CreateLockFromMipOnDriver : UpdateInfo failed", NULL);
+		grBitmap_Destroy(&Ret);
 		return NULL;
 	}
 
@@ -1443,11 +1443,11 @@ jeBitmap * Ret;
 	Ret->Info = Ret->DriverInfo;	//{} shouldn't be necessary
 	
 	if ( Ret->DriverInfo.Palette )
-		jeBitmap_Palette_CreateRef(Ret->DriverInfo.Palette);
+		grBitmap_Palette_CreateRef(Ret->DriverInfo.Palette);
 	if ( Ret->Info.Palette )
-		jeBitmap_Palette_CreateRef(Ret->Info.Palette);
+		grBitmap_Palette_CreateRef(Ret->Info.Palette);
 
-	assert( jeBitmap_IsValid(Ret) );
+	assert( grBitmap_IsValid(Ret) );
 
 return Ret;
 }
@@ -1456,13 +1456,13 @@ return Ret;
 
 #define MAX_DRIVER_FORMATS (100)
 
-static jeBoolean EnumPFCB(jeRDriver_PixelFormat *pFormat,void *Context)
+static grBoolean EnumPFCB(grRDriver_PixelFormat *pFormat,void *Context)
 {
-jeRDriver_PixelFormat **pDriverFormatsPtr;
-	pDriverFormatsPtr = (jeRDriver_PixelFormat **)Context;
+grRDriver_PixelFormat **pDriverFormatsPtr;
+	pDriverFormatsPtr = (grRDriver_PixelFormat **)Context;
 	**pDriverFormatsPtr = *pFormat;
 	(*pDriverFormatsPtr) += 1;
-return JE_TRUE;
+return GR_TRUE;
 }
 
 static int32 NumBitsOn(uint32 val)
@@ -1476,39 +1476,39 @@ uint32 count = 0;
 return count;
 }
 
-static jeBoolean IsInArray(uint32 Val,uint32 *Array,int32 Len)
+static grBoolean IsInArray(uint32 Val,uint32 *Array,int32 Len)
 {
 	while(Len--)
 	{
 		if ( Val == *Array )
-			return JE_TRUE;
+			return GR_TRUE;
 		Array--;
 	}
-return JE_FALSE;
+return GR_FALSE;
 }
 
-jeBoolean jeBitmap_ChooseDriverFormat(
-	jePixelFormat	SeekFormat1,
-	jePixelFormat	SeekFormat2,
-	jeBoolean		SeekCK,
-	jeBoolean		SeekAlpha,
-	jeBoolean		SeekSeparates,
+grBoolean grBitmap_ChooseDriverFormat(
+	grPixelFormat	SeekFormat1,
+	grPixelFormat	SeekFormat2,
+	grBoolean		SeekCK,
+	grBoolean		SeekAlpha,
+	grBoolean		SeekSeparates,
 	uint32			SeekFlags,
-	jeRDriver_PixelFormat *DriverFormatsArray,int32 ArrayLen,
-	jeRDriver_PixelFormat *pTarget)
+	grRDriver_PixelFormat *DriverFormatsArray,int32 ArrayLen,
+	grRDriver_PixelFormat *pTarget)
 {
 int32 i,rating;
 int32 FormatRating[MAX_DRIVER_FORMATS];
-jeRDriver_PixelFormat * DriverPalFormat;
-jeRDriver_PixelFormat * pf;
-jeBoolean FoundAlpha;
+grRDriver_PixelFormat * DriverPalFormat;
+grRDriver_PixelFormat * pf;
+grBoolean FoundAlpha;
 uint32 SeekMajor,SeekMinor;
-const jePixelFormat_Operations *seekops,*pfops;
+const grPixelFormat_Operations *seekops,*pfops;
 
 	assert(pTarget && DriverFormatsArray && ArrayLen > 0);
 
 	if ( SeekAlpha )
-		SeekCK = JE_FALSE;	// you can't have both
+		SeekCK = GR_FALSE;	// you can't have both
 
 	if ( SeekFlags & RDRIVER_PF_ALPHA_SURFACE )
 		SeekFlags = RDRIVER_PF_ALPHA_SURFACE;
@@ -1524,13 +1524,13 @@ const jePixelFormat_Operations *seekops,*pfops;
 	{
 		if ( pf->Flags & RDRIVER_PF_PALETTE )
 		{
-			if ( ! DriverPalFormat || jePixelFormat_HasGoodAlpha(pf->PixelFormat) )
+			if ( ! DriverPalFormat || grPixelFormat_HasGoodAlpha(pf->PixelFormat) )
 				DriverPalFormat = pf;
 		}
 		pf++;
 	}
 
-	seekops = jePixelFormat_GetOperations(SeekFormat1);
+	seekops = grPixelFormat_GetOperations(SeekFormat1);
 
 	for(i=0;i<ArrayLen;i++)
 	{
@@ -1576,7 +1576,7 @@ const jePixelFormat_Operations *seekops,*pfops;
 			rating += (32 - NumBitsOn( (pf->Flags ^ SeekFlags) & RDRIVER_PF_MAJOR_MASK ))<<6;
 		}
 
-		pfops = jePixelFormat_GetOperations(pf->PixelFormat);
+		pfops = grPixelFormat_GetOperations(pf->PixelFormat);
 
 		if ( pf->PixelFormat == SeekFormat1 )
 		{
@@ -1586,7 +1586,7 @@ const jePixelFormat_Operations *seekops,*pfops;
 		{
 			rating += 1<<15;
 		}
-		else if ( jePixelFormat_IsRaw(SeekFormat1) && jePixelFormat_IsRaw(pf->PixelFormat) )
+		else if ( grPixelFormat_IsRaw(SeekFormat1) && grPixelFormat_IsRaw(pf->PixelFormat) )
 		{
 		int32 R,G,B,A;
 			// measure similarity
@@ -1607,18 +1607,18 @@ const jePixelFormat_Operations *seekops,*pfops;
 			rating += 16;
 		}
 
-		FoundAlpha = JE_FALSE;
+		FoundAlpha = GR_FALSE;
 
 		if ( NumBitsOn(pfops->AMask) > 2 )
-			FoundAlpha = JE_TRUE;
+			FoundAlpha = GR_TRUE;
 
-		if ( jePixelFormat_HasPalette(pf->PixelFormat) )
+		if ( grPixelFormat_HasPalette(pf->PixelFormat) )
 		{
             // if Pixelformat is 8BIT_PAL , look at the palette's format to see if it
 			//		had alpha!
 			assert(DriverPalFormat);
-			if ( jePixelFormat_HasGoodAlpha(DriverPalFormat->PixelFormat) )
-				FoundAlpha = JE_TRUE;
+			if ( grPixelFormat_HasGoodAlpha(DriverPalFormat->PixelFormat) )
+				FoundAlpha = GR_TRUE;
 		}
 
 		if ( SeekAlpha && FoundAlpha )
@@ -1642,7 +1642,7 @@ const jePixelFormat_Operations *seekops,*pfops;
 	
 		if ( SeekCK ) 
 		{
-			if ( pf->PixelFormat == JE_PIXELFORMAT_16BIT_1555_ARGB )
+			if ( pf->PixelFormat == GR_PIXELFORMAT_16BIT_1555_ARGB )
 			{
 				rating += 1<<23; // just lower than alpha
 			}
@@ -1652,7 +1652,7 @@ const jePixelFormat_Operations *seekops,*pfops;
 			}
 		}
 
-		if ( JE_BOOLSAME((pf->Flags & RDRIVER_PF_CAN_DO_COLORKEY),SeekCK) )
+		if ( GR_BOOLSAME((pf->Flags & RDRIVER_PF_CAN_DO_COLORKEY),SeekCK) )
 		{
 			rating += 1<<17;
 		}
@@ -1673,36 +1673,36 @@ const jePixelFormat_Operations *seekops,*pfops;
 
 	if ( rating == 0)
 	{
-		jeErrorLog_AddString(-1,"ChooseDriverFormat : no valid formats found!", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"ChooseDriverFormat : no valid formats found!", NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 #if 0
-jeBoolean jeBitmap_ChooseDriverFormat(
-	jePixelFormat	SeekFormat1,
-	jePixelFormat	SeekFormat2,
-	jeBoolean		SeekCK,
-	jeBoolean		SeekAlpha,
-	jeBoolean		SeekSeparates,
+grBoolean grBitmap_ChooseDriverFormat(
+	grPixelFormat	SeekFormat1,
+	grPixelFormat	SeekFormat2,
+	grBoolean		SeekCK,
+	grBoolean		SeekAlpha,
+	grBoolean		SeekSeparates,
 	uint32			SeekFlags,
-	jeRDriver_PixelFormat *DriverFormatsArray,int32 ArrayLen,
-	jeRDriver_PixelFormat *pTarget)
+	grRDriver_PixelFormat *DriverFormatsArray,int32 ArrayLen,
+	grRDriver_PixelFormat *pTarget)
 {
 int32 i,rating;
 int32 FormatRating[MAX_DRIVER_FORMATS];
-jeRDriver_PixelFormat * DriverPalFormat;
-jeRDriver_PixelFormat * pf;
-jeBoolean FoundAlpha;
+grRDriver_PixelFormat * DriverPalFormat;
+grRDriver_PixelFormat * pf;
+grBoolean FoundAlpha;
 uint32 SeekMajor,SeekMinor;
-const jePixelFormat_Operations *seekops,*pfops;
+const grPixelFormat_Operations *seekops,*pfops;
 
 	assert(pTarget && DriverFormatsArray && ArrayLen > 0);
 
 #if 0 // @@
 	if ( SeekAlpha )
-		SeekCK = JE_FALSE;	// you can't have both, you bastard!
+		SeekCK = GR_FALSE;	// you can't have both, you bastard!
 #endif
 
 	if ( SeekFlags & RDRIVER_PF_ALPHA_SURFACE )
@@ -1722,14 +1722,14 @@ const jePixelFormat_Operations *seekops,*pfops;
 	{
 		if ( pf->Flags & RDRIVER_PF_PALETTE )
 		{
-			assert( jePixelFormat_IsRaw(pf->PixelFormat) );
-			if ( ! DriverPalFormat || jePixelFormat_HasGoodAlpha(pf->PixelFormat) )
+			assert( grPixelFormat_IsRaw(pf->PixelFormat) );
+			if ( ! DriverPalFormat || grPixelFormat_HasGoodAlpha(pf->PixelFormat) )
 				DriverPalFormat = pf;
 		}
 		pf++;
 	}
 
-	seekops = jePixelFormat_GetOperations(SeekFormat1);
+	seekops = grPixelFormat_GetOperations(SeekFormat1);
 
 	for(i=0;i<ArrayLen;i++)
 	{
@@ -1766,7 +1766,7 @@ const jePixelFormat_Operations *seekops,*pfops;
 			rating += (32 - NumBitsOn( (pf->Flags ^ SeekFlags) & RDRIVER_PF_MAJOR_MASK )) <<6;
 		}
 
-		pfops = jePixelFormat_GetOperations(pf->PixelFormat);
+		pfops = grPixelFormat_GetOperations(pf->PixelFormat);
 
 		if ( pf->PixelFormat == SeekFormat1 )
 		{
@@ -1776,7 +1776,7 @@ const jePixelFormat_Operations *seekops,*pfops;
 		{
 			rating += 1<<21;
 		}
-		else if ( jePixelFormat_IsRaw(SeekFormat1) && jePixelFormat_IsRaw(pf->PixelFormat) )
+		else if ( grPixelFormat_IsRaw(SeekFormat1) && grPixelFormat_IsRaw(pf->PixelFormat) )
 		{
 		int32 R,G,B,A;
 			// measure similarity
@@ -1791,18 +1791,18 @@ const jePixelFormat_Operations *seekops,*pfops;
 			rating += R + G + B + A;
 		}
 
-		FoundAlpha = JE_FALSE;
+		FoundAlpha = GR_FALSE;
 
 		if ( NumBitsOn(pfops->AMask) > 2 )
-			FoundAlpha = JE_TRUE;
+			FoundAlpha = GR_TRUE;
 
-		if ( jePixelFormat_HasPalette(pf->PixelFormat) )
+		if ( grPixelFormat_HasPalette(pf->PixelFormat) )
 		{
                         // if Pixelformat is 8BIT_PAL , look at the palette's format to see if it
 			//		had alpha!
 			assert(DriverPalFormat);
-			if ( jePixelFormat_HasGoodAlpha(DriverPalFormat->PixelFormat) )
-				FoundAlpha = JE_TRUE;
+			if ( grPixelFormat_HasGoodAlpha(DriverPalFormat->PixelFormat) )
+				FoundAlpha = GR_TRUE;
 		}
 
 		if ( SeekAlpha && FoundAlpha )
@@ -1816,11 +1816,11 @@ const jePixelFormat_Operations *seekops,*pfops;
 			rating += 1<<25; // VERY HIGHEST !
 		}
 	
-		if ( (pf->PixelFormat == JE_PIXELFORMAT_16BIT_1555_ARGB) && SeekCK )
+		if ( (pf->PixelFormat == GR_PIXELFORMAT_16BIT_1555_ARGB) && SeekCK )
 		{
 			rating += 1<<23; // just lower than alpha
 		}
-		else if ( JE_BOOLSAME((pf->Flags & RDRIVER_PF_CAN_DO_COLORKEY),SeekCK) )
+		else if ( GR_BOOLSAME((pf->Flags & RDRIVER_PF_CAN_DO_COLORKEY),SeekCK) )
 		{
 			rating += 1<<20;
 		}
@@ -1846,22 +1846,22 @@ const jePixelFormat_Operations *seekops,*pfops;
 
 	if ( rating == 0)
 	{
-		jeErrorLog_AddString(-1,"ChooseDriverFormat : no valid formats found!", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"ChooseDriverFormat : no valid formats found!", NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 #endif
 
-jeTexture * jeBitmap_CreateTHandle(DRV_Driver *Driver,int32 Width,int32 Height,int32 NumMipLevels,
-			jePixelFormat SeekFormat1,jePixelFormat SeekFormat2,jeBoolean SeekCK,jeBoolean SeekAlpha,jeBoolean SeekSeparates,uint32 DriverFlags)
+grTexture * grBitmap_CreateTHandle(DRV_Driver *Driver,int32 Width,int32 Height,int32 NumMipLevels,
+			grPixelFormat SeekFormat1,grPixelFormat SeekFormat2,grBoolean SeekCK,grBoolean SeekAlpha,grBoolean SeekSeparates,uint32 DriverFlags)
 {
-jeRDriver_PixelFormat DriverFormats[MAX_DRIVER_FORMATS];
-jeRDriver_PixelFormat *DriverFormatsPtr;
+grRDriver_PixelFormat DriverFormats[MAX_DRIVER_FORMATS];
+grRDriver_PixelFormat *DriverFormatsPtr;
 int32 DriverFormatsCount;
-jeRDriver_PixelFormat DriverFormat;
-jeTexture * Ret;
+grRDriver_PixelFormat DriverFormat;
+grTexture * Ret;
 
 	DriverFormatsPtr = DriverFormats;
 	Driver->EnumPixelFormats(EnumPFCB,&DriverFormatsPtr);
@@ -1870,7 +1870,7 @@ jeTexture * Ret;
 
 	if ( DriverFormatsCount == 0 )
 	{
-		jeErrorLog_AddString(-1,"Bitmap_CreateTHandle : no formats found!", NULL);
+		grErrorLog_AddString(-1,"Bitmap_CreateTHandle : no formats found!", NULL);
 		return NULL;
 	}
 
@@ -1879,23 +1879,23 @@ jeTexture * Ret;
 	else if ( ! SeekFormat2 )
 		SeekFormat2 = SeekFormat1;
 
-	assert( jePixelFormat_IsValid(SeekFormat1) );
-	assert( jePixelFormat_IsValid(SeekFormat2) );
+	assert( grPixelFormat_IsValid(SeekFormat1) );
+	assert( grPixelFormat_IsValid(SeekFormat2) );
 
 	// now choose DriverFormat
-	if ( ! jeBitmap_ChooseDriverFormat(SeekFormat1,SeekFormat2,SeekCK,SeekAlpha,SeekSeparates,DriverFlags,
+	if ( ! grBitmap_ChooseDriverFormat(SeekFormat1,SeekFormat2,SeekCK,SeekAlpha,SeekSeparates,DriverFlags,
 										DriverFormats,DriverFormatsCount,&DriverFormat) )
 		return NULL;
 
-	assert( jePixelFormat_IsValid(DriverFormat.PixelFormat) );
+	assert( grPixelFormat_IsValid(DriverFormat.PixelFormat) );
 
 #if 1 //{
 	Log_Printf("Bitmap : Chose %s for %s",
-		jePixelFormat_Description(DriverFormat.PixelFormat),
-		jePixelFormat_Description(SeekFormat1));
+		grPixelFormat_Description(DriverFormat.PixelFormat),
+		grPixelFormat_Description(SeekFormat1));
 
 	if ( SeekFormat1 != SeekFormat2 )
-		Log_Printf(" (%s)",jePixelFormat_Description(SeekFormat2));
+		Log_Printf(" (%s)",grPixelFormat_Description(SeekFormat2));
 	if ( SeekCK )
 		Log_Printf(" (sought CK)");
 	if ( SeekAlpha )
@@ -1923,36 +1923,36 @@ jeTexture * Ret;
 
 	if ( ! Ret )
 	{
-		jeErrorLog_AddString(-1, Driver->LastErrorStr, NULL);
-		jeErrorLog_AddString(-1,"Bitmap_CreateTHandle : Driver->THandle_Create failed", NULL);
+		grErrorLog_AddString(-1, Driver->LastErrorStr, NULL);
+		grErrorLog_AddString(-1,"Bitmap_CreateTHandle : Driver->THandle_Create failed", NULL);
 	}
 
 return Ret;
 }
 
-JETAPI	jeBoolean	JETCC	jeBitmap_HasAlpha(const jeBitmap * Bmp)
+GRAPI	grBoolean	GRCC	grBitmap_HasAlpha(const grBitmap * Bmp)
 {
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 	
 	if ( Bmp->Alpha )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	if ( Bmp->Wavelet )
-		return jeWavelet_HasAlpha(Bmp->Wavelet);
+		return grWavelet_HasAlpha(Bmp->Wavelet);
 
-	if ( jePixelFormat_HasGoodAlpha(Bmp->Info.Format) )
-		return JE_TRUE;
+	if ( grPixelFormat_HasGoodAlpha(Bmp->Info.Format) )
+		return GR_TRUE;
 
-	if ( jePixelFormat_HasPalette(Bmp->Info.Format) && Bmp->Info.Palette )
+	if ( grPixelFormat_HasPalette(Bmp->Info.Format) && Bmp->Info.Palette )
 	{
-		if ( jePixelFormat_HasGoodAlpha(Bmp->Info.Palette->Format) )
-			return JE_TRUE;
+		if ( grPixelFormat_HasGoodAlpha(Bmp->Info.Palette->Format) )
+			return GR_TRUE;
 	}	
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-jeBoolean	BITMAP_JET_INTERNAL jeBitmap_AttachToDriver(jeBitmap *Bmp, 
+grBoolean	BITMAP_GR_INTERNAL grBitmap_AttachToDriver(grBitmap *Bmp, 
 	DRV_Driver * Driver, uint32 DriverFlags)
 {
 
@@ -1990,24 +1990,24 @@ jeBoolean	BITMAP_JET_INTERNAL jeBitmap_AttachToDriver(jeBitmap *Bmp,
 	* 
 	****************/
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	if ( Bmp->LockOwner || Bmp->DataOwner || Bmp->LockCount )
 	{
-		jeErrorLog_AddString(-1,"AttachToDriver : not an isolated bitmap", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"AttachToDriver : not an isolated bitmap", NULL);
+		return GR_FALSE;
 	}
 
 	if ( Bmp->DriverHandle && Bmp->Driver == Driver )
 	{
 		assert( DriverFlags == 0 || DriverFlags == Bmp->DriverFlags );
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
-	if ( ! jeBitmap_DetachDriver(Bmp,JE_TRUE) )
+	if ( ! grBitmap_DetachDriver(Bmp,GR_TRUE) )
 	{
-		jeErrorLog_AddString(-1,"AttachToDriver : detach failed", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"AttachToDriver : detach failed", NULL);
+		return GR_FALSE;
 	}
 
 	if ( DriverFlags == 0 )
@@ -2015,7 +2015,7 @@ jeBoolean	BITMAP_JET_INTERNAL jeBitmap_AttachToDriver(jeBitmap *Bmp,
 		DriverFlags = Bmp->DriverFlags;
 		if ( ! DriverFlags )
 		{
-			//	return JE_FALSE;
+			//	return GR_FALSE;
 			// ? {}
 			DriverFlags = RDRIVER_PF_3D;
 		}
@@ -2025,10 +2025,10 @@ jeBoolean	BITMAP_JET_INTERNAL jeBitmap_AttachToDriver(jeBitmap *Bmp,
 	{
 	int32 NumMipLevels;
 	int32 Width,Height;
-	jeBoolean WantAlpha;
-	jeTexture * DriverHandle;
+	grBoolean WantAlpha;
+	grTexture * DriverHandle;
 
-//		jeBitmap_PeekReady(Bmp); // this is about to be done in UpdateSystem anyway..
+//		grBitmap_PeekReady(Bmp); // this is about to be done in UpdateSystem anyway..
 
 //		if ( Bmp->DriverFlags & RDRIVER_PF_COMBINE_LIGHTMAP )
 //			Bmp->SeekMipCount = max(Bmp->SeekMipCount,4);
@@ -2041,21 +2041,21 @@ jeBoolean	BITMAP_JET_INTERNAL jeBitmap_AttachToDriver(jeBitmap *Bmp,
 		Width	= Bmp->Info.Width;
 		Height	= Bmp->Info.Height;
 
-		WantAlpha = jeBitmap_HasAlpha(Bmp);
-		if ( jePixelFormat_HasGoodAlpha(Bmp->PreferredFormat) )
-			WantAlpha = JE_TRUE;
+		WantAlpha = grBitmap_HasAlpha(Bmp);
+		if ( grPixelFormat_HasGoodAlpha(Bmp->PreferredFormat) )
+			WantAlpha = GR_TRUE;
 
-		assert( jeBitmap_IsValid(Bmp) );
+		assert( grBitmap_IsValid(Bmp) );
 
-		DriverHandle = jeBitmap_CreateTHandle(Driver,Width,Height,NumMipLevels,
+		DriverHandle = grBitmap_CreateTHandle(Driver,Width,Height,NumMipLevels,
 			Bmp->PreferredFormat,Bmp->Info.Format,Bmp->Info.HasColorKey,
-			WantAlpha, (Bmp->Alpha) ? JE_TRUE : JE_FALSE,
+			WantAlpha, (Bmp->Alpha) ? GR_TRUE : GR_FALSE,
 			DriverFlags);
 
-		assert( jeBitmap_IsValid(Bmp) );
+		assert( grBitmap_IsValid(Bmp) );
 
 		if ( ! DriverHandle )
-			return JE_FALSE;
+			return GR_FALSE;
 
 		Bmp->DriverHandle = DriverHandle;
 		Bmp->Driver = Driver;
@@ -2063,15 +2063,15 @@ jeBoolean	BITMAP_JET_INTERNAL jeBitmap_AttachToDriver(jeBitmap *Bmp,
 
 #ifdef _DEBUG
 		Bmp->DriverInfo = Bmp->Info;
-		assert( jeBitmap_IsValid(Bmp) );
+		assert( grBitmap_IsValid(Bmp) );
 #endif
 		clear(&(Bmp->DriverInfo));
 
 		Bmp->DriverMipBase = 0;
-		if ( ! jeBitmap_MakeDriverLockInfo(Bmp,0,&(Bmp->DriverInfo)) )
+		if ( ! grBitmap_MakeDriverLockInfo(Bmp,0,&(Bmp->DriverInfo)) )
 		{
-			jeErrorLog_AddString(-1,"AttachToDriver : updateinfo", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"AttachToDriver : updateinfo", NULL);
+			return GR_FALSE;
 		}
 
 		Bmp->DriverInfo.MinimumMip = 0;
@@ -2087,30 +2087,30 @@ jeBoolean	BITMAP_JET_INTERNAL jeBitmap_AttachToDriver(jeBitmap *Bmp,
 
 		Bmp->DriverInfo.MaximumMip = Bmp->DriverInfo.MinimumMip + NumMipLevels - 1;
 		
-		assert( jeBitmap_IsValid(Bmp) );
+		assert( grBitmap_IsValid(Bmp) );
 
 /*******
-		if ( jePixelFormat_HasPalette(Bmp->DriverInfo.Format) )
+		if ( grPixelFormat_HasPalette(Bmp->DriverInfo.Format) )
 		{
 			if ( ! Bmp->Info.Palette )
 			{
-				Bmp->Info.Palette = createPaletteFromBitmapNoLock(Bmp, JE_FALSE);
+				Bmp->Info.Palette = createPaletteFromBitmapNoLock(Bmp, GR_FALSE);
 				if ( ! Bmp->Info.Palette )
 				{
-					jeErrorLog_AddString(-1,"AttachToDriver : createPalette failed!", NULL);
-					jeBitmap_Palette_Destroy(&(Bmp->DriverInfo.Palette));
+					grErrorLog_AddString(-1,"AttachToDriver : createPalette failed!", NULL);
+					grBitmap_Palette_Destroy(&(Bmp->DriverInfo.Palette));
 					Driver->THandle_Destroy(Bmp->DriverHandle);
 					Bmp->DriverHandle = NULL;
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 			}
 
-			if ( ! jeBitmap_AllocPalette(&(Bmp->DriverInfo), Bmp->Info.Palette->Format,Bmp->Driver) )
+			if ( ! grBitmap_AllocPalette(&(Bmp->DriverInfo), Bmp->Info.Palette->Format,Bmp->Driver) )
 			{
-				jeErrorLog_AddString(-1,"AttachToDriver : Palette_Create", NULL);
+				grErrorLog_AddString(-1,"AttachToDriver : Palette_Create", NULL);
 				Driver->THandle_Destroy(Bmp->DriverHandle);
 				Bmp->DriverHandle = NULL;
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 			assert( Bmp->DriverInfo.Palette->DriverHandle );
 
@@ -2120,48 +2120,48 @@ jeBoolean	BITMAP_JET_INTERNAL jeBitmap_AttachToDriver(jeBitmap *Bmp,
 				Bmp->DriverInfo.ColorKey = Bmp->DriverInfo.Palette->ColorKey;
 			}
 
-			jeBitmap_Palette_Copy(Bmp->Info.Palette,Bmp->DriverInfo.Palette);
+			grBitmap_Palette_Copy(Bmp->Info.Palette,Bmp->DriverInfo.Palette);
 
 			if ( ! Driver->THandle_SetPalette(Bmp->DriverHandle,Bmp->DriverInfo.Palette->DriverHandle) )
 			{
-				jeErrorLog_AddString(-1,"AttachToDriver : THandle_SetPalette", NULL);
-				jeBitmap_Palette_Destroy(&(Bmp->DriverInfo.Palette));
+				grErrorLog_AddString(-1,"AttachToDriver : THandle_SetPalette", NULL);
+				grBitmap_Palette_Destroy(&(Bmp->DriverInfo.Palette));
 				Driver->THandle_Destroy(Bmp->DriverHandle);
 				Bmp->DriverHandle = NULL;
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		}
 *******/
 
-		assert( jeBitmap_IsValid(Bmp) );
+		assert( grBitmap_IsValid(Bmp) );
 
 #ifdef DONT_DEC_STREAMING
-		if (	Bmp->StreamingStatus >= JE_BITMAP_STREAMING_STARTED && 
-				Bmp->StreamingStatus < JE_BITMAP_STREAMING_DATADONE )
+		if (	Bmp->StreamingStatus >= GR_BITMAP_STREAMING_STARTED && 
+				Bmp->StreamingStatus < GR_BITMAP_STREAMING_DATADONE )
 		{
 			assert( Bmp->Wavelet );
-			assert( jeWavelet_StreamingJob(Bmp->Wavelet) );
-			Bmp->StreamingTHandle = JE_TRUE;
-			return JE_TRUE;
+			assert( grWavelet_StreamingJob(Bmp->Wavelet) );
+			Bmp->StreamingTHandle = GR_TRUE;
+			return GR_TRUE;
 		}
 #endif
 
-		if ( ! jeBitmap_Update_SystemToDriver(Bmp) )
+		if ( ! grBitmap_Update_SystemToDriver(Bmp) )
 		{
-			jeErrorLog_AddString(-1,"AttachToDriver : Update_SystemToDriver", NULL);
+			grErrorLog_AddString(-1,"AttachToDriver : Update_SystemToDriver", NULL);
 			Driver->THandle_Destroy(Bmp->DriverHandle);
 			Bmp->DriverHandle = NULL;
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// {} Palette : Update_System calls Blit_Data, which should build it for us 
 		//		if Driver is pal & System isn't
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean jeBitmap_FixDriverFlags(uint32 *pFlags)
+grBoolean grBitmap_FixDriverFlags(uint32 *pFlags)
 {
 uint32 DriverFlags;
 	assert(pFlags);
@@ -2174,55 +2174,55 @@ uint32 DriverFlags;
 		// <> someone is doing this!
 		// bad!
 		DriverFlags ^= RDRIVER_PF_CAN_DO_COLORKEY;
-		//	return JE_FALSE;
+		//	return GR_FALSE;
 	}
 	if ( (DriverFlags & RDRIVER_PF_COMBINE_LIGHTMAP) &&
 		(DriverFlags & (RDRIVER_PF_LIGHTMAP | RDRIVER_PF_PALETTE) ) )
-		return JE_FALSE;
+		return GR_FALSE;
 	if ( NumBitsOn(DriverFlags & RDRIVER_PF_MAJOR_MASK) == 0 )
-		return JE_FALSE;
+		return GR_FALSE;
 	*pFlags = DriverFlags;
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean BITMAP_JET_INTERNAL jeBitmap_SetDriverFlags(jeBitmap *Bmp,uint32 Flags)
+grBoolean BITMAP_GR_INTERNAL grBitmap_SetDriverFlags(grBitmap *Bmp,uint32 Flags)
 {
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 	assert(Flags);
-	if ( ! jeBitmap_FixDriverFlags(&Flags) )
+	if ( ! grBitmap_FixDriverFlags(&Flags) )
 	{
 		Bmp->DriverFlags = 0;
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	Bmp->DriverFlags = Flags;
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean BITMAP_JET_INTERNAL jeBitmap_DetachDriver(jeBitmap *Bmp,jeBoolean DoUpdate)
+grBoolean BITMAP_GR_INTERNAL grBitmap_DetachDriver(grBitmap *Bmp,grBoolean DoUpdate)
 {
-jeBoolean Ret = JE_TRUE;
+grBoolean Ret = GR_TRUE;
 
-	assert(jeBitmap_IsValid(Bmp) );
+	assert(grBitmap_IsValid(Bmp) );
 
 	if ( Bmp->LockOwner || Bmp->DataOwner || Bmp->LockCount )
 	{
-		jeErrorLog_AddString(-1,"DetachDriver : not an isolated bitmap!", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"DetachDriver : not an isolated bitmap!", NULL);
+		return GR_FALSE;
 	}
 
 	if ( Bmp->RefCount > 1 )
-		DoUpdate = JE_TRUE;
+		DoUpdate = GR_TRUE;
 
 	if ( Bmp->Driver && Bmp->DriverHandle )
 	{
 		if ( DoUpdate )
 		{
-			if ( ! jeBitmap_Update_DriverToSystem(Bmp) )
+			if ( ! grBitmap_Update_DriverToSystem(Bmp) )
 			{
-				jeErrorLog_AddString(-1,"DetachDriver : Update_DriverToSystem", NULL);
-				Ret = JE_FALSE;
+				grErrorLog_AddString(-1,"DetachDriver : Update_DriverToSystem", NULL);
+				Ret = GR_FALSE;
 			}
-			assert(Bmp->DriverDataChanged == JE_FALSE);
+			assert(Bmp->DriverDataChanged == GR_FALSE);
 		}
 			Bmp->Driver->THandle_Destroy(Bmp->DriverHandle);
 		Bmp->DriverHandle = NULL;
@@ -2233,43 +2233,43 @@ jeBoolean Ret = JE_TRUE;
 		// save it for later in case we re-attach
 		if ( ! Bmp->Info.Palette )
 		{
-		jeBitmap_Palette * NewPal;
-		jePixelFormat Format;
+		grBitmap_Palette * NewPal;
+		grPixelFormat Format;
 			Format = Bmp->DriverInfo.Palette->Format;
-			NewPal = jeBitmap_Palette_Create(Format,256);
+			NewPal = grBitmap_Palette_Create(Format,256);
 			if ( NewPal )
 			{
-				if ( jeBitmap_Palette_Copy(Bmp->DriverInfo.Palette,NewPal) )
+				if ( grBitmap_Palette_Copy(Bmp->DriverInfo.Palette,NewPal) )
 				{
 					Bmp->Info.Palette = NewPal;
 				}
 				else
 				{
-					jeBitmap_Palette_Destroy(&NewPal);
+					grBitmap_Palette_Destroy(&NewPal);
 				}
 			}
 		}
 
-		jeBitmap_Palette_Destroy(&(Bmp->DriverInfo.Palette));
+		grBitmap_Palette_Destroy(&(Bmp->DriverInfo.Palette));
 	}
 
 	if ( Bmp->Alpha )
 	{
-		if ( ! jeBitmap_DetachDriver(Bmp->Alpha,DoUpdate) )
+		if ( ! grBitmap_DetachDriver(Bmp->Alpha,DoUpdate) )
 		{
-			jeErrorLog_AddString(-1,"DetachDriver : detach alpha", NULL);
-			Ret = JE_FALSE;
+			grErrorLog_AddString(-1,"DetachDriver : detach alpha", NULL);
+			Ret = GR_FALSE;
 		}
 	}
 
 	Bmp->DriverInfo.Width = Bmp->DriverInfo.Height = Bmp->DriverInfo.Stride = 0;
 	Bmp->DriverInfo.MinimumMip = Bmp->DriverInfo.MaximumMip = 0;
 	Bmp->DriverInfo.ColorKey = Bmp->DriverInfo.HasColorKey = 0;
-	Bmp->DriverInfo.Format = JE_PIXELFORMAT_NO_DATA;
+	Bmp->DriverInfo.Format = GR_PIXELFORMAT_NO_DATA;
 	Bmp->DriverInfo.Palette = NULL;
 	Bmp->DriverMipLock = 0;
-	Bmp->DriverBitsLocked = JE_FALSE;
-	Bmp->DriverDataChanged = JE_FALSE;
+	Bmp->DriverBitsLocked = GR_FALSE;
+	Bmp->DriverDataChanged = GR_FALSE;
 	Bmp->DriverHandle = NULL;
 	Bmp->Driver = NULL;
 
@@ -2278,9 +2278,9 @@ jeBoolean Ret = JE_TRUE;
 return Ret;
 }
 
-jeBoolean JETCC jeBitmap_SetGammaCorrection_DontChange(jeBitmap *Bmp,jeFloat Gamma)
+grBoolean GRCC grBitmap_SetGammaCorrection_DontChange(grBitmap *Bmp,grFloat Gamma)
 {
-	assert(jeBitmap_IsValid(Bmp));
+	assert(grBitmap_IsValid(Bmp));
 	assert( Gamma > 0.0f );
 
 	if ( ! Bmp->DriverGammaSet )
@@ -2289,12 +2289,12 @@ jeBoolean JETCC jeBitmap_SetGammaCorrection_DontChange(jeBitmap *Bmp,jeFloat Gam
 		Bmp->DriverGamma = Gamma;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_SetGammaCorrection(jeBitmap *Bmp,jeFloat Gamma,jeBoolean Apply)
+GRAPI grBoolean GRCC grBitmap_SetGammaCorrection(grBitmap *Bmp,grFloat Gamma,grBoolean Apply)
 {
-	assert(jeBitmap_IsValid(Bmp));
+	assert(grBitmap_IsValid(Bmp));
 	assert( Gamma > 0.0f );
 
 	/***
@@ -2311,10 +2311,10 @@ JETAPI jeBoolean JETCC jeBitmap_SetGammaCorrection(jeBitmap *Bmp,jeFloat Gamma,j
 
 	if ( Apply && Bmp->DriverHandle )
 	{
-		jeBitmap_PeekReady(Bmp);
+		grBitmap_PeekReady(Bmp);
 		if ( fabs(Bmp->DriverGamma - Gamma) > 0.1f )
 		{
-			if ( jePixelFormat_BytesPerPel(Bmp->Info.Format) == 0 && Bmp->DriverHandle )
+			if ( grPixelFormat_BytesPerPel(Bmp->Info.Format) == 0 && Bmp->DriverHandle )
 			{
 				// system format is compressed, and Bmp is on the card
 
@@ -2324,38 +2324,38 @@ JETAPI jeBoolean JETCC jeBitmap_SetGammaCorrection(jeBitmap *Bmp,jeFloat Gamma,j
 					// moving in the same direction
 
 					// invert the old
-					if ( ! jeBitmap_Gamma_Apply(Bmp,JE_TRUE) )
-						return JE_FALSE;
+					if ( ! grBitmap_Gamma_Apply(Bmp,GR_TRUE) )
+						return GR_FALSE;
 
 					Bmp->DriverGammaLast = Bmp->DriverGamma;
 					Bmp->DriverGamma = Gamma;
 
 					// apply the new
-					if ( ! jeBitmap_Gamma_Apply(Bmp,JE_FALSE) )
-						return JE_FALSE;
+					if ( ! grBitmap_Gamma_Apply(Bmp,GR_FALSE) )
+						return GR_FALSE;
 				}
 				else
 				{
 					// changed direction so must do an update
 
-					if ( ! jeBitmap_Update_DriverToSystem(Bmp) )
-						return JE_FALSE;
+					if ( ! grBitmap_Update_DriverToSystem(Bmp) )
+						return GR_FALSE;
 
 					Bmp->DriverGammaLast = Bmp->DriverGamma = Gamma;
 					
-					if ( ! jeBitmap_Update_SystemToDriver(Bmp) )
-						return JE_FALSE;
+					if ( ! grBitmap_Update_SystemToDriver(Bmp) )
+						return GR_FALSE;
 				}
 			}
 			else
 			{
-				if ( ! jeBitmap_Update_DriverToSystem(Bmp) )
-					return JE_FALSE;
+				if ( ! grBitmap_Update_DriverToSystem(Bmp) )
+					return GR_FALSE;
 
 				Bmp->DriverGammaLast = Bmp->DriverGamma = Gamma;
 				
-				if ( ! jeBitmap_Update_SystemToDriver(Bmp) )
-					return JE_FALSE;
+				if ( ! grBitmap_Update_SystemToDriver(Bmp) )
+					return GR_FALSE;
 			}
 		}
 	}
@@ -2363,35 +2363,35 @@ JETAPI jeBoolean JETCC jeBitmap_SetGammaCorrection(jeBitmap *Bmp,jeFloat Gamma,j
 	{
 		Bmp->DriverGamma = Gamma;
 	}
-	Bmp->DriverGammaSet = JE_TRUE;
+	Bmp->DriverGammaSet = GR_TRUE;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeTexture * BITMAP_JET_INTERNAL jeBitmap_GetTHandle(const jeBitmap *Bmp)
+grTexture * BITMAP_GR_INTERNAL grBitmap_GetTHandle(const grBitmap *Bmp)
 {
-//	assert( jeBitmap_IsValid(Bmp) );
+//	assert( grBitmap_IsValid(Bmp) );
 
 	// <> make this an assert?
 	//if ( ! Bmp->DriverHandle )
 	//	return NULL;
 
 	if ( Bmp->StreamingTHandle )
-		jeBitmap_PeekReady(Bmp);
+		grBitmap_PeekReady(Bmp);
 
 	return Bmp->DriverHandle;
 }
 
-jeBoolean jeBitmap_Update_SystemToDriver(jeBitmap *Bmp)
+grBoolean grBitmap_Update_SystemToDriver(grBitmap *Bmp)
 {
-jeBitmap * SrcLocks[MAXMIPLEVELS];
-jeBoolean Ret,MipsChanged;
+grBitmap * SrcLocks[MAXMIPLEVELS];
+grBoolean Ret,MipsChanged;
 int32 mip,mipMin,mipMax;
-jeTexture * SaveDriverHandle;
-jeBitmap * SaveAlpha;
+grTexture * SaveDriverHandle;
+grBitmap * SaveAlpha;
 int32 SaveMaxMip;
 	
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	/**
 
@@ -2405,18 +2405,18 @@ int32 SaveMaxMip;
 
 	if ( Bmp->LockCount > 0 || Bmp->DataOwner )
 	{
-		jeErrorLog_AddString(-1,"Update_SystemToDriver : not an original bitmap", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Update_SystemToDriver : not an original bitmap", NULL);
+		return GR_FALSE;
 	}
 
 	if ( ! Bmp->DriverHandle )
 	{
-		jeErrorLog_AddString(-1,"Update_SystemToDriver : no driver data", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Update_SystemToDriver : no driver data", NULL);
+		return GR_FALSE;
 	}
 
 #if 0 // <> NO! YOU CANNOT CALL PEEKREADY!	PeekReady calls us !
-	jeBitmap_PeekReady(Bmp);
+	grBitmap_PeekReady(Bmp);
 #endif
 
 	//if Bmp->Format == Wavelet && Wavelet_CanDoMips , 
@@ -2424,52 +2424,52 @@ int32 SaveMaxMip;
 
 	// <> thread the wavelet decompressor
 
-	if ( Bmp->Info.Format == JE_PIXELFORMAT_WAVELET &&
-		jeWavelet_CanDecompressMips(Bmp->Wavelet,&(Bmp->DriverInfo)) )
+	if ( Bmp->Info.Format == GR_PIXELFORMAT_WAVELET &&
+		grWavelet_CanDecompressMips(Bmp->Wavelet,&(Bmp->DriverInfo)) )
 	{
-	jeBitmap * DstLocks[MAXMIPLEVELS];
-	jeBitmap_Info Infos[MAXMIPLEVELS];
-	jeBitmap_Info * InfoPtrs[MAXMIPLEVELS];
+	grBitmap * DstLocks[MAXMIPLEVELS];
+	grBitmap_Info Infos[MAXMIPLEVELS];
+	grBitmap_Info * InfoPtrs[MAXMIPLEVELS];
 	void * Bits[MAXMIPLEVELS];
 	int32 i;
 
 		mipMax = Bmp->DriverInfo.MaximumMip;
-		if ( ! jeBitmap_LockForWrite(Bmp,DstLocks,0,mipMax) )
-			return JE_FALSE;
+		if ( ! grBitmap_LockForWrite(Bmp,DstLocks,0,mipMax) )
+			return GR_FALSE;
 
 		for(i=0;i<=mipMax;i++)
 		{
 			InfoPtrs[i] = &Infos[i];
-			jeBitmap_GetInfo(DstLocks[i],InfoPtrs[i],NULL);
-			Bits[i] = jeBitmap_GetBits(DstLocks[i]);
+			grBitmap_GetInfo(DstLocks[i],InfoPtrs[i],NULL);
+			Bits[i] = grBitmap_GetBits(DstLocks[i]);
 			assert(Bits[i]);
 		}
 
-		if ( ! jeWavelet_DecompressMips(Bmp->Wavelet,(const jeBitmap_Info **)InfoPtrs,(const void **)Bits,0,mipMax) )
+		if ( ! grWavelet_DecompressMips(Bmp->Wavelet,(const grBitmap_Info **)InfoPtrs,(const void **)Bits,0,mipMax) )
 		{
-			jeErrorLog_AddString(-1,"Update_SystemToDriver : Wavelet_DecompressMips failed!", NULL);
-			jeBitmap_UnLockArray_NoChange(DstLocks,mipMax+1);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Update_SystemToDriver : Wavelet_DecompressMips failed!", NULL);
+			grBitmap_UnLockArray_NoChange(DstLocks,mipMax+1);
+			return GR_FALSE;
 		}
 
-		jeBitmap_UnLockArray_NoChange(DstLocks,mipMax+1);
+		grBitmap_UnLockArray_NoChange(DstLocks,mipMax+1);
 		
-		if ( ! jeBitmap_Gamma_Apply(Bmp,JE_FALSE) )
+		if ( ! grBitmap_Gamma_Apply(Bmp,GR_FALSE) )
 		{
-			jeErrorLog_AddString(-1,"AttachToDriver : Gamma_Apply failed!", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"AttachToDriver : Gamma_Apply failed!", NULL);
+			return GR_FALSE;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 
-	MipsChanged = JE_FALSE;
+	MipsChanged = GR_FALSE;
 	for(mip=Bmp->DriverInfo.MinimumMip;mip<=Bmp->DriverInfo.MaximumMip;mip++)
 	{
 		if ( Bmp->Modified[mip] && mip != Bmp->Info.MinimumMip )
 		{
 			assert(Bmp->Data[mip]);
-			MipsChanged = JE_TRUE;
+			MipsChanged = GR_TRUE;
 		}
 	}
 
@@ -2488,7 +2488,7 @@ int32 SaveMaxMip;
 
 	SaveAlpha = Bmp->Alpha;
 
-	if ( Bmp->Alpha && ! jePixelFormat_HasGoodAlpha(Bmp->DriverInfo.Format) && 
+	if ( Bmp->Alpha && ! grPixelFormat_HasGoodAlpha(Bmp->DriverInfo.Format) && 
 			(Bmp->DriverFlags & RDRIVER_PF_HAS_ALPHA_SURFACE) )
 	{
 		// hide the alpha so that it won't be used to make a colorkey in the target
@@ -2499,13 +2499,13 @@ int32 SaveMaxMip;
 	// note : LockForReadNative calls PeekReady, but DriverHandle has been
 	//	set to NULL so we don't get called again!
 
-	if ( ! jeBitmap_LockForReadNative(Bmp,SrcLocks,mipMin,mipMax) )
+	if ( ! grBitmap_LockForReadNative(Bmp,SrcLocks,mipMin,mipMax) )
 	{
-		jeErrorLog_AddString(-1,"Update_SystemToDriver : LockForReadNative", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Update_SystemToDriver : LockForReadNative", NULL);
+		return GR_FALSE;
 	}
 
-	Ret = JE_TRUE;
+	Ret = GR_TRUE;
 	Bmp->DriverHandle = SaveDriverHandle;
 	Bmp->Alpha = NULL;
 
@@ -2522,19 +2522,19 @@ int32 SaveMaxMip;
 
 	for(mip=mipMin;mip <=mipMax;mip++)
 	{
-	jeBitmap *SrcMip;
+	grBitmap *SrcMip;
 	void * SrcBits,*DstBits;
-	jeBitmap_Info DstInfo;
+	grBitmap_Info DstInfo;
 
 		SrcMip = SrcLocks[mip - mipMin];
-		SrcBits = jeBitmap_GetBits(SrcMip);
+		SrcBits = grBitmap_GetBits(SrcMip);
 
 		DstInfo = Bmp->DriverInfo;
 
-		if ( ! jeBitmap_MakeDriverLockInfo(Bmp,mip,&DstInfo) )
+		if ( ! grBitmap_MakeDriverLockInfo(Bmp,mip,&DstInfo) )
 		{
-			jeErrorLog_AddString(-1,"Update_SystemToDriver : MakeInfo", NULL);
-			Ret = JE_FALSE;
+			grErrorLog_AddString(-1,"Update_SystemToDriver : MakeInfo", NULL);
+			Ret = GR_FALSE;
 			continue;
 		}
 
@@ -2546,34 +2546,34 @@ int32 SaveMaxMip;
 
 		if ( ! Bmp->Driver->THandle_Lock(SaveDriverHandle,mip - Bmp->DriverMipBase,&DstBits) )
 		{
-			jeErrorLog_AddString(-1,"Update_SystemToDriver : THandle_Lock", NULL);
-			Ret = JE_FALSE;
+			grErrorLog_AddString(-1,"Update_SystemToDriver : THandle_Lock", NULL);
+			Ret = GR_FALSE;
 			continue;
 		}
 
 		if ( ! SrcBits || ! DstBits )
 		{
-			jeErrorLog_AddString(-1,"Update_SystemToDriver : No Bits", NULL);
-			Ret = JE_FALSE;
+			grErrorLog_AddString(-1,"Update_SystemToDriver : No Bits", NULL);
+			Ret = GR_FALSE;
 			continue;
 		}
 
 		assert( DstInfo.Palette == Bmp->DriverInfo.Palette );
 
-		if ( ! jeBitmap_BlitData(	&(SrcMip->Info),SrcBits,SrcMip,
+		if ( ! grBitmap_BlitData(	&(SrcMip->Info),SrcBits,SrcMip,
 									&DstInfo,		DstBits,Bmp,
 									SrcMip->Info.Width,SrcMip->Info.Height) )
 		{
-			jeErrorLog_AddString(-1,"Update_SystemToDriver : BlitData", NULL);
+			grErrorLog_AddString(-1,"Update_SystemToDriver : BlitData", NULL);
 			assert(0);
-			Ret = JE_FALSE;
+			Ret = GR_FALSE;
 			continue;
 		}
 
 		if ( ! Bmp->Driver->THandle_UnLock(SaveDriverHandle,mip - Bmp->DriverMipBase) )
 		{
-			jeErrorLog_AddString(-1,"Update_SystemToDriver : THandle_UnLock", NULL);
-			Ret = JE_FALSE;
+			grErrorLog_AddString(-1,"Update_SystemToDriver : THandle_UnLock", NULL);
+			Ret = GR_FALSE;
 			continue;
 		}
 
@@ -2582,47 +2582,47 @@ int32 SaveMaxMip;
 		if ( DstInfo.Palette != Bmp->DriverInfo.Palette )
 		{
 			//assert( OldDstPal == NULL );
-			jeBitmap_SetPalette(Bmp,DstInfo.Palette);
-			jeBitmap_Palette_Destroy(&(DstInfo.Palette));
+			grBitmap_SetPalette(Bmp,DstInfo.Palette);
+			grBitmap_Palette_Destroy(&(DstInfo.Palette));
 			// must destroy here, since DstInfo is on the stack!
 		}
 	}
 
 	Bmp->Alpha = SaveAlpha;
-	Bmp->DriverBitsLocked = JE_FALSE;
+	Bmp->DriverBitsLocked = GR_FALSE;
 	Bmp->DriverMipLock = 0;
-	Bmp->DriverDataChanged = JE_FALSE;
+	Bmp->DriverDataChanged = GR_FALSE;
 
-	jeBitmap_UnLockArray(SrcLocks, mipMax - mipMin + 1 );
+	grBitmap_UnLockArray(SrcLocks, mipMax - mipMin + 1 );
 
 	if ( ! Ret )
 	{
-		jeErrorLog_AddString(-1,"Update_SystemToDriver : Locking and Blitting error", NULL);
+		grErrorLog_AddString(-1,"Update_SystemToDriver : Locking and Blitting error", NULL);
 	}
 
-	if ( Bmp->Alpha && ! jePixelFormat_HasGoodAlpha(Bmp->DriverInfo.Format) && 
+	if ( Bmp->Alpha && ! grPixelFormat_HasGoodAlpha(Bmp->DriverInfo.Format) && 
 			(Bmp->DriverFlags & RDRIVER_PF_HAS_ALPHA_SURFACE) )
 	{
-	jeTexture * AlphaTH;
+	grTexture * AlphaTH;
 
 		// blit the alpha surface to the separate alpha
 
 		AlphaTH = Bmp->Driver->THandle_GetAlpha(Bmp->DriverHandle);
 		if ( !AlphaTH || AlphaTH != Bmp->Alpha->DriverHandle)
 		{
-			if ( ! jeBitmap_AttachToDriver(Bmp->Alpha,Bmp->Driver,Bmp->Alpha->DriverFlags | RDRIVER_PF_ALPHA_SURFACE) )
+			if ( ! grBitmap_AttachToDriver(Bmp->Alpha,Bmp->Driver,Bmp->Alpha->DriverFlags | RDRIVER_PF_ALPHA_SURFACE) )
 			{
-				jeErrorLog_AddString(-1,"AttachToDriver : attach Alpha", NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"AttachToDriver : attach Alpha", NULL);
+				return GR_FALSE;
 			}
 
 			assert(Bmp->Alpha->DriverHandle);
 			if ( ! Bmp->Driver->THandle_SetAlpha(Bmp->DriverHandle,Bmp->Alpha->DriverHandle) )
 			{
-				jeErrorLog_AddString(-1,"AttachToDriver : THandle_SetAlpha", NULL);
-				jeBitmap_DetachDriver(Bmp->Alpha,JE_FALSE);
-				jeBitmap_DetachDriver(Bmp,JE_FALSE);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"AttachToDriver : THandle_SetAlpha", NULL);
+				grBitmap_DetachDriver(Bmp->Alpha,GR_FALSE);
+				grBitmap_DetachDriver(Bmp,GR_FALSE);
+				return GR_FALSE;
 			}
 			
 			AlphaTH = Bmp->Driver->THandle_GetAlpha(Bmp->DriverHandle);
@@ -2637,10 +2637,10 @@ int32 SaveMaxMip;
 
 	SaveMaxMip = Bmp->DriverInfo.MaximumMip;
 	Bmp->DriverInfo.MaximumMip = mipMax;
-	if ( ! jeBitmap_Gamma_Apply(Bmp,JE_FALSE) )
+	if ( ! grBitmap_Gamma_Apply(Bmp,GR_FALSE) )
 	{
-		jeErrorLog_AddString(-1,"AttachToDriver : Gamma_Apply failed!", NULL);
-		Ret = JE_FALSE;
+		grErrorLog_AddString(-1,"AttachToDriver : Gamma_Apply failed!", NULL);
+		Ret = GR_FALSE;
 	}
 	Bmp->DriverInfo.MaximumMip = SaveMaxMip;
 
@@ -2648,118 +2648,118 @@ int32 SaveMaxMip;
 	{
 		for(mip=mipMax+1;mip<= Bmp->DriverInfo.MaximumMip; mip++)
 		{
-			if ( ! jeBitmap_UpdateMips(Bmp,mip-1,mip) )
+			if ( ! grBitmap_UpdateMips(Bmp,mip-1,mip) )
 			{
-				jeErrorLog_AddString(-1,"AttachToDriver : UpdateMips on driver failed!", NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"AttachToDriver : UpdateMips on driver failed!", NULL);
+				return GR_FALSE;
 			}
 		}
 	}
 
-	Bmp->DriverDataChanged = JE_FALSE; // in case _SetPal freaks us out
+	Bmp->DriverDataChanged = GR_FALSE; // in case _SetPal freaks us out
 
 return Ret;
 }
 
-jeBoolean jeBitmap_Update_DriverToSystem(jeBitmap *Bmp)
+grBoolean grBitmap_Update_DriverToSystem(grBitmap *Bmp)
 {
-jeBitmap *DriverLocks[MAXMIPLEVELS];
-jeBoolean Ret;
+grBitmap *DriverLocks[MAXMIPLEVELS];
+grBoolean Ret;
 int32 mip;
 	
-	assert( jeBitmap_IsValid(Bmp) );
-	jeBitmap_WaitReady(Bmp);
+	assert( grBitmap_IsValid(Bmp) );
+	grBitmap_WaitReady(Bmp);
 
 	if ( Bmp->LockOwner )
 		Bmp = Bmp->LockOwner;
 
 	if ( Bmp->LockCount > 0 || Bmp->DataOwner )
 	{
-		jeErrorLog_AddString(-1,"Update_DriverToSystem : not an original bitmap", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Update_DriverToSystem : not an original bitmap", NULL);
+		return GR_FALSE;
 	}
 
 	if ( ! Bmp->DriverHandle )
 	{
-		jeErrorLog_AddString(-1,"Update_DriverToSystem : no driver data", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Update_DriverToSystem : no driver data", NULL);
+		return GR_FALSE;
 	}
 
 	if ( ! Bmp->DriverDataChanged )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	// bits are on driver; undo the gamma to copy them home
 
 	Log_Puts("Bitmap : Doing Update_DriverToSystem");
 
-	if ( ! jeBitmap_Gamma_Apply(Bmp,JE_TRUE) ) // undo the gamma!
-		return JE_FALSE;
+	if ( ! grBitmap_Gamma_Apply(Bmp,GR_TRUE) ) // undo the gamma!
+		return GR_FALSE;
 
 	if ( Bmp->Info.Palette && Bmp->DriverInfo.Palette )
 	{
-		if ( ! jeBitmap_Palette_Copy(Bmp->DriverInfo.Palette,Bmp->Info.Palette) )
+		if ( ! grBitmap_Palette_Copy(Bmp->DriverInfo.Palette,Bmp->Info.Palette) )
 		{
-			jeErrorLog_AddString(-1,"Update_DriverToSystem : Palette_Copy", NULL);
+			grErrorLog_AddString(-1,"Update_DriverToSystem : Palette_Copy", NULL);
 		}
 	}
 
-	if ( jeBitmap_LockForReadNative(Bmp,DriverLocks,
+	if ( grBitmap_LockForReadNative(Bmp,DriverLocks,
 			Bmp->DriverInfo.MinimumMip,Bmp->DriverInfo.MaximumMip) )
 	{
-		Ret = JE_TRUE;
+		Ret = GR_TRUE;
 
 		for(mip=Bmp->DriverInfo.MinimumMip;mip <=Bmp->DriverInfo.MaximumMip;mip++)
 		{	
-		jeBitmap *MipBmp;
-		jeBitmap_Info SystemInfo;
+		grBitmap *MipBmp;
+		grBitmap_Info SystemInfo;
 
 			MipBmp = DriverLocks[mip];
 
 			if ( Bmp->Modified[mip] )
 			{
 			void *DriverBits,*SystemBits;
-				DriverBits = jeBitmap_GetBits(MipBmp);
+				DriverBits = grBitmap_GetBits(MipBmp);
 				assert( MipBmp->DriverBitsLocked );
 
-				if ( ! jeBitmap_AllocSystemMip(Bmp,mip) )
-					Ret = JE_FALSE;
+				if ( ! grBitmap_AllocSystemMip(Bmp,mip) )
+					Ret = GR_FALSE;
 
 				SystemBits = Bmp->Data[mip];
 
-				jeBitmap_MakeMipInfo(&(Bmp->Info),mip,&SystemInfo);
+				grBitmap_MakeMipInfo(&(Bmp->Info),mip,&SystemInfo);
 
 				if ( DriverBits && SystemBits )
 				{
 					// _Update_DriverToSystem
 					// {} palette (not) made in AttachToDriver; must be made in here->
-					if ( ! jeBitmap_BlitData(	&(MipBmp->Info), DriverBits, MipBmp,
+					if ( ! grBitmap_BlitData(	&(MipBmp->Info), DriverBits, MipBmp,
 												&SystemInfo,	SystemBits, Bmp,
 												SystemInfo.Width,SystemInfo.Height) )
-						Ret = JE_FALSE;
+						Ret = GR_FALSE;
 				}
 				else
 				{
-					Ret = JE_FALSE;
+					Ret = GR_FALSE;
 				}
 			}
 			
-			jeBitmap_UnLock(DriverLocks[mip]);
+			grBitmap_UnLock(DriverLocks[mip]);
 		}
 
-		Bmp->DriverDataChanged = JE_FALSE;
+		Bmp->DriverDataChanged = GR_FALSE;
 	}
 	else
 	{
-		Ret = JE_FALSE;
+		Ret = GR_FALSE;
 	}
 
 	if ( ! Ret )
 	{
-		jeErrorLog_AddString(-1,"Update_DriverToSystem : Locking and Blitting error", NULL);
+		grErrorLog_AddString(-1,"Update_DriverToSystem : Locking and Blitting error", NULL);
 	}
 
-	if ( ! jeBitmap_Gamma_Apply(Bmp,JE_FALSE) ) // redo the gamma!
-		return JE_FALSE;
+	if ( ! grBitmap_Gamma_Apply(Bmp,GR_FALSE) ) // redo the gamma!
+		return GR_FALSE;
 
 return Ret;
 }
@@ -2768,14 +2768,14 @@ return Ret;
 
 // Note : all the Mip control 
 
-JETAPI jeBoolean JETCC jeBitmap_RefreshMips(jeBitmap *Bmp)
+GRAPI grBoolean GRCC grBitmap_RefreshMips(grBitmap *Bmp)
 {
 int32 mip;
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	if ( Bmp->LockOwner || Bmp->LockCount || Bmp->DataOwner )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	for(mip = (Bmp->Info.MinimumMip + 1);mip <= Bmp->Info.MaximumMip;mip++)
 	{
@@ -2787,101 +2787,101 @@ int32 mip;
 			{
 				src--;
 				if ( src < Bmp->Info.MinimumMip )
-					return JE_FALSE;
+					return GR_FALSE;
 			}
-			if ( ! jeBitmap_UpdateMips(Bmp,src,mip) )
-				return JE_FALSE;
+			if ( ! grBitmap_UpdateMips(Bmp,src,mip) )
+				return GR_FALSE;
 		}
 	}
 
 #if 0	// never turn off a modified flag
 	for(mip=0;mip<MAXMIPLEVELS;mip++)
-		Bmp->Modified[mip] = JE_FALSE;
+		Bmp->Modified[mip] = GR_FALSE;
 #endif
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_UpdateMips(jeBitmap *Bmp,int32 fm,int32 to)
+GRAPI grBoolean GRCC grBitmap_UpdateMips(grBitmap *Bmp,int32 fm,int32 to)
 {
-jeBitmap * Locks[MAXMIPLEVELS];
+grBitmap * Locks[MAXMIPLEVELS];
 void *FmBits,*ToBits;
-jeBitmap_Info FmInfo,ToInfo;
-jeBoolean Ret = JE_FALSE;
+grBitmap_Info FmInfo,ToInfo;
+grBoolean Ret = GR_FALSE;
 
-	assert( jeBitmap_IsValid(Bmp) );
-	jeBitmap_WaitReady(Bmp);
+	assert( grBitmap_IsValid(Bmp) );
+	grBitmap_WaitReady(Bmp);
 
 	if ( Bmp->LockOwner || Bmp->LockCount > 0 || Bmp->DataOwner )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( fm >= to )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( Bmp->DriverHandle ) 
 	{
 		//{} this version does *NOT* make new mips if to > Bmp->DriverInfo.MaximumMip
 
-		if ( ! jeBitmap_LockForWrite(Bmp,Locks,fm,to) )
-			return JE_FALSE;
+		if ( ! grBitmap_LockForWrite(Bmp,Locks,fm,to) )
+			return GR_FALSE;
 
-		if ( jeBitmap_GetInfo(Locks[0],&FmInfo,NULL) && jeBitmap_GetInfo(Locks[to - fm],&ToInfo,NULL) )
+		if ( grBitmap_GetInfo(Locks[0],&FmInfo,NULL) && grBitmap_GetInfo(Locks[to - fm],&ToInfo,NULL) )
 		{
-			FmBits = jeBitmap_GetBits(Locks[0]);
-			ToBits = jeBitmap_GetBits(Locks[to - fm]);
+			FmBits = grBitmap_GetBits(Locks[0]);
+			ToBits = grBitmap_GetBits(Locks[to - fm]);
 		
 			if ( FmBits && ToBits )
 			{
-				Ret = jeBitmap_UpdateMips_Data(	&FmInfo, FmBits, 
+				Ret = grBitmap_UpdateMips_Data(	&FmInfo, FmBits, 
 												&ToInfo, ToBits );
 			}
 		}
 
-		jeBitmap_UnLockArray_NoChange(Locks,to - fm + 1);
+		grBitmap_UnLockArray_NoChange(Locks,to - fm + 1);
 	}
 	else
 	{
-		Ret = jeBitmap_UpdateMips_System(Bmp,fm,to);
+		Ret = grBitmap_UpdateMips_System(Bmp,fm,to);
 	}
 
 return Ret;
 }
 
-jeBoolean jeBitmap_UpdateMips_System(jeBitmap *Bmp,int32 fm,int32 to)
+grBoolean grBitmap_UpdateMips_System(grBitmap *Bmp,int32 fm,int32 to)
 {
-jeBitmap_Info FmInfo,ToInfo;
-jeBoolean Ret;
+grBitmap_Info FmInfo,ToInfo;
+grBoolean Ret;
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	// this is called to create new mips in LockFor* -> CreateLockFrom* (through MakeSystemMips)
 
 	if ( Bmp->LockOwner )
 		Bmp = Bmp->LockOwner;
 //	if ( Bmp->LockCount > 0 )
-//		return JE_FALSE;
+//		return GR_FALSE;
 	if ( Bmp->DataOwner )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	// {} for compressed data, just don't make mips and say we did!
-	if ( jePixelFormat_BytesPerPel(Bmp->Info.Format) < 1 )
-		return JE_TRUE;
+	if ( grPixelFormat_BytesPerPel(Bmp->Info.Format) < 1 )
+		return GR_TRUE;
 
 	while(Bmp->Data[fm] == NULL || fm == to )
 	{
 		fm--;
 		if ( fm < 0 )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
 	if ( fm < Bmp->Info.MinimumMip || fm > Bmp->Info.MaximumMip ||
 	     to < fm || to >= MAXMIPLEVELS )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( ! Bmp->Data[to] )
 	{
-		if ( ! jeBitmap_AllocSystemMip(Bmp,to) )
-			return JE_FALSE;
+		if ( ! grBitmap_AllocSystemMip(Bmp,to) )
+			return GR_FALSE;
 	}
 
 	assert( to > fm && fm >= 0 );
@@ -2895,7 +2895,7 @@ jeBoolean Ret;
 	ToInfo.Height= SHIFT_R_ROUNDUP(Bmp->Info.Height,to);
 	ToInfo.Stride= SHIFT_R_ROUNDUP(Bmp->Info.Stride,to);
 
-	Ret = jeBitmap_UpdateMips_Data(	&FmInfo, Bmp->Data[fm],
+	Ret = grBitmap_UpdateMips_Data(	&FmInfo, Bmp->Data[fm],
 									&ToInfo, Bmp->Data[to]);
 
 	Bmp->Info.MaximumMip = max(Bmp->Info.MaximumMip,to);
@@ -2903,8 +2903,8 @@ jeBoolean Ret;
 return Ret;
 }
 
-jeBoolean jeBitmap_UpdateMips_Data(	jeBitmap_Info * FmInfo,void * FmBits,
-									jeBitmap_Info * ToInfo,void * ToBits)
+grBoolean grBitmap_UpdateMips_Data(	grBitmap_Info * FmInfo,void * FmBits,
+									grBitmap_Info * ToInfo,void * ToBits)
 {
 int32 fmxtra,tow,toh,toxtra,fmw,fmh,fmstep,x,y,bpp;
 
@@ -2933,26 +2933,26 @@ int32 fmxtra,tow,toh,toxtra,fmw,fmh,fmstep,x,y,bpp;
 	// 7*2 <= 14 -> Ok
 	if ( (toh-1)*fmstep > (fmh - 1) )
 	{
-		jeErrorLog_AddString(-1,"UpdateMips_Data : Vertical mip scaling doesn't match horizontal!", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"UpdateMips_Data : Vertical mip scaling doesn't match horizontal!", NULL);
+		return GR_FALSE;
 	}
 
 	// {} todo : average for some special cases (16rgb,24rgb,32rgb)
 
-	bpp = jePixelFormat_BytesPerPel(FmInfo->Format);
+	bpp = grPixelFormat_BytesPerPel(FmInfo->Format);
 
 	if ( fmstep == 2 && bpp > 1 )
 	{
 	int32 R1,G1,B1,A1,R2,G2,B2,A2,R3,G3,B3,A3,R4,G4,B4,A4;
-	jePixelFormat_ColorGetter GetColor;
-	jePixelFormat_ColorPutter PutColor;
-	const jePixelFormat_Operations *ops;
+	grPixelFormat_ColorGetter GetColor;
+	grPixelFormat_ColorPutter PutColor;
+	const grPixelFormat_Operations *ops;
 	uint8 *fmp,*fmp2,*top;
 
 		fmp = (uint8*)FmBits;
 		top = (uint8*)ToBits;
 
-		ops = jePixelFormat_GetOperations(FmInfo->Format);
+		ops = grPixelFormat_GetOperations(FmInfo->Format);
 		GetColor = ops->GetColor;
 		PutColor = ops->PutColor;
 
@@ -2962,9 +2962,9 @@ int32 fmxtra,tow,toh,toxtra,fmw,fmh,fmstep,x,y,bpp;
 		if ( FmInfo->HasColorKey )
 		{
 		uint32 ck,p1,p2,p3,p4;
-		jePixelFormat_PixelGetter GetPixel;
-		jePixelFormat_PixelPutter PutPixel;
-		jePixelFormat_Decomposer DecomposePixel;
+		grPixelFormat_PixelGetter GetPixel;
+		grPixelFormat_PixelPutter PutPixel;
+		grPixelFormat_Decomposer DecomposePixel;
 
 			assert( FmInfo->ColorKey == ToInfo->ColorKey );
 			ck = FmInfo->ColorKey;
@@ -3029,7 +3029,7 @@ int32 fmxtra,tow,toh,toxtra,fmw,fmh,fmstep,x,y,bpp;
 		assert( top == (((uint8 *)ToBits) + ToInfo->Stride * ToInfo->Height * bpp ) );
 		assert( fmp == (((uint8 *)FmBits) + FmInfo->Stride * ToInfo->Height * 2 * bpp ) );
 	}
-	else if ( fmstep == 2 && jePixelFormat_HasPalette(FmInfo->Format) )
+	else if ( fmstep == 2 && grPixelFormat_HasPalette(FmInfo->Format) )
 	{
 	int32 R,G,B;
 	uint8 *fmp,*fmp2,*top;
@@ -3040,11 +3040,11 @@ int32 fmxtra,tow,toh,toxtra,fmw,fmh,fmstep,x,y,bpp;
 		assert(bpp == 1);
 		assert(FmInfo->Palette);
 
-		if ( ! jeBitmap_Palette_GetData(FmInfo->Palette,paldata,JE_PIXELFORMAT_24BIT_RGB,256) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_GetData(FmInfo->Palette,paldata,GR_PIXELFORMAT_24BIT_RGB,256) )
+			return GR_FALSE;
 
 		if ( ! (PalInfo = closestPalInit(paldata)) )
-			return JE_FALSE;
+			return GR_FALSE;
 
 		fmp = (uint8*)FmBits;
 		top = (uint8*)ToBits;
@@ -3100,7 +3100,7 @@ int32 fmxtra,tow,toh,toxtra,fmw,fmh,fmstep,x,y,bpp;
 		{
 			default:
 			{
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 			case 1:
 			{
@@ -3178,30 +3178,30 @@ int32 fmxtra,tow,toh,toxtra,fmw,fmh,fmstep,x,y,bpp;
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_ClearMips(jeBitmap *Bmp)
+GRAPI grBoolean GRCC grBitmap_ClearMips(grBitmap *Bmp)
 {
 int32 mip;
 DRV_Driver * Driver;
 
 	// WARNING ! This destroys any mips!
 
-	assert( jeBitmap_IsValid(Bmp) );
-	jeBitmap_WaitReady(Bmp);
+	assert( grBitmap_IsValid(Bmp) );
+	grBitmap_WaitReady(Bmp);
 
 	if ( Bmp->LockOwner || Bmp->LockCount || Bmp->DataOwner )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( Bmp->SeekMipCount == 0 && Bmp->Info.MaximumMip == 0 )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	Driver = Bmp->Driver;
 	if ( Driver )
 	{
-		if ( ! jeBitmap_DetachDriver(Bmp,JE_TRUE) )
-			return JE_FALSE;
+		if ( ! grBitmap_DetachDriver(Bmp,GR_TRUE) )
+			return GR_FALSE;
 	}
 	assert(Bmp->Driver == NULL);
 
@@ -3215,7 +3215,7 @@ DRV_Driver * Driver;
 	{
 		if ( Bmp->Data[mip] )
 		{
-			jeRam_Free( Bmp->Data[mip] );
+			grRam_Free( Bmp->Data[mip] );
 			Bmp->Data[mip] = NULL;
 		}
 	}
@@ -3224,35 +3224,35 @@ DRV_Driver * Driver;
 
 	if ( Driver )
 	{
-		if ( ! jeBitmap_AttachToDriver(Bmp,Driver,0) )
-			return JE_FALSE;
+		if ( ! grBitmap_AttachToDriver(Bmp,Driver,0) )
+			return GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean 	JETCC	jeBitmap_SetMipCount(jeBitmap *Bmp,int32 Count)
+GRAPI grBoolean 	GRCC	grBitmap_SetMipCount(grBitmap *Bmp,int32 Count)
 {
 DRV_Driver * Driver;
 
-	assert( jeBitmap_IsValid(Bmp) );
-	jeBitmap_WaitReady(Bmp);
+	assert( grBitmap_IsValid(Bmp) );
+	grBitmap_WaitReady(Bmp);
 
 	if ( Bmp->LockOwner || Bmp->LockCount || Bmp->DataOwner )
-		return JE_FALSE;
+		return GR_FALSE;
 
 // @@ don't do this ?
 //	if ( Bmp->Info.MaximumMip < (Count-1) )
-//		jeBitmap_MakeSystemMips(Bmp,0,Count-1);
+//		grBitmap_MakeSystemMips(Bmp,0,Count-1);
 
 	if ( Bmp->SeekMipCount == Count )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	Driver = Bmp->Driver;
 	if ( Driver )
 	{
-		if ( ! jeBitmap_DetachDriver(Bmp,JE_TRUE) )
-			return JE_FALSE;
+		if ( ! grBitmap_DetachDriver(Bmp,GR_TRUE) )
+			return GR_FALSE;
 	}
 	assert(Bmp->Driver == NULL);
 
@@ -3260,46 +3260,46 @@ DRV_Driver * Driver;
 
 	if ( Driver )
 	{
-		if ( ! jeBitmap_AttachToDriver(Bmp,Driver,0) )
-			return JE_FALSE;
+		if ( ! grBitmap_AttachToDriver(Bmp,Driver,0) )
+			return GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean jeBitmap_MakeSystemMips(jeBitmap *Bmp,int32 low,int32 high)
+grBoolean grBitmap_MakeSystemMips(grBitmap *Bmp,int32 low,int32 high)
 {
 int32 mip;
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	// this is that CreateLockFromMip uses to make its new data
 
 	if ( Bmp->LockOwner )
 		Bmp = Bmp->LockOwner;
 //	if ( Bmp->LockCount > 0 )
-//		return JE_FALSE;
+//		return GR_FALSE;
 	if ( Bmp->DataOwner )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	// {} for compressed data, just don't make mips and say we did!
-	if ( jePixelFormat_BytesPerPel(Bmp->Info.Format) < 1 )
-		return JE_TRUE;
+	if ( grPixelFormat_BytesPerPel(Bmp->Info.Format) < 1 )
+		return GR_TRUE;
 
 	if ( low < 0 || high >= MAXMIPLEVELS || low > high )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	for( mip = low; mip <= high; mip++)
 	{
 		if ( ! Bmp->Data[mip] )
 		{
-			if ( ! jeBitmap_AllocSystemMip(Bmp,mip) )
-				return JE_FALSE;
+			if ( ! grBitmap_AllocSystemMip(Bmp,mip) )
+				return GR_FALSE;
 	
 			if ( mip != 0 )
 			{
-				if ( ! jeBitmap_UpdateMips_System(Bmp,mip-1,mip) )
-					return JE_FALSE;
+				if ( ! grBitmap_UpdateMips_System(Bmp,mip-1,mip) )
+					return GR_FALSE;
 			}
 		}
 	}
@@ -3307,25 +3307,25 @@ int32 mip;
 	Bmp->Info.MinimumMip = min(Bmp->Info.MinimumMip,low);
 	Bmp->Info.MaximumMip = max(Bmp->Info.MaximumMip,high);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /*}{ ******* Miscellany ***********/
 
-JETAPI uint32 JETCC jeBitmap_MipBytes(const jeBitmap *Bmp,int32 mip)
+GRAPI uint32 GRCC grBitmap_MipBytes(const grBitmap *Bmp,int32 mip)
 {
 uint32 bytes;
 	if ( ! Bmp )
 		return 0;
-	bytes = jePixelFormat_BytesPerPel(Bmp->Info.Format) * 
+	bytes = grPixelFormat_BytesPerPel(Bmp->Info.Format) * 
 						SHIFT_R_ROUNDUP(Bmp->Info.Stride,mip) *
 						SHIFT_R_ROUNDUP(Bmp->Info.Height,mip);
 return bytes;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_GetInfo(const jeBitmap *Bmp, jeBitmap_Info *Info, jeBitmap_Info *SecondaryInfo)
+GRAPI grBoolean GRCC grBitmap_GetInfo(const grBitmap *Bmp, grBitmap_Info *Info, grBitmap_Info *SecondaryInfo)
 {
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	assert(Info);
 
@@ -3341,12 +3341,12 @@ JETAPI jeBoolean JETCC jeBitmap_GetInfo(const jeBitmap *Bmp, jeBitmap_Info *Info
 	if ( SecondaryInfo )
 		*SecondaryInfo = Bmp->Info;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeBitmap_MakeDriverLockInfo(jeBitmap *Bmp,int32 mip,jeBitmap_Info *Into)
+grBoolean grBitmap_MakeDriverLockInfo(grBitmap *Bmp,int32 mip,grBitmap_Info *Into)
 {
-jeTexture_Info TInfo;
+grTexture_Info TInfo;
 
 	// MakeDriverLockInfo also doesn't full out the full info, so it must be a valid info first!
 	// Bmp also gets some crap written into him.
@@ -3354,12 +3354,12 @@ jeTexture_Info TInfo;
 	assert(Bmp && Into); // not necessarily valid
 
 	if ( ! Bmp->DriverHandle || ! Bmp->Driver || mip < Bmp->DriverInfo.MinimumMip || mip > Bmp->DriverInfo.MaximumMip )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( ! Bmp->Driver->THandle_GetInfo(Bmp->DriverHandle,mip - Bmp->DriverMipBase,&TInfo) )
 	{
-		jeErrorLog_AddString(-1,"MakeDriverLockInfo : THandle_GetInfo", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"MakeDriverLockInfo : THandle_GetInfo", NULL);
+		return GR_FALSE;
 	}
 
 	Bmp->DriverMipLock	= mip;
@@ -3372,106 +3372,106 @@ jeTexture_Info TInfo;
 	Into->ColorKey		= TInfo.ColorKey;
 
 	if ( TInfo.Flags & RDRIVER_THANDLE_HAS_COLORKEY )
-		Into->HasColorKey = JE_TRUE;
+		Into->HasColorKey = GR_TRUE;
 	else
-		Into->HasColorKey = JE_FALSE;
+		Into->HasColorKey = GR_FALSE;
 
 	Into->MinimumMip = Into->MaximumMip = mip;
 
-	if ( jePixelFormat_HasPalette(Into->Format) && Into->Palette && Into->Palette->HasColorKey )
+	if ( grPixelFormat_HasPalette(Into->Format) && Into->Palette && Into->Palette->HasColorKey )
 	{
-		Into->HasColorKey = JE_TRUE;
+		Into->HasColorKey = GR_TRUE;
 		Into->ColorKey = Into->Palette->ColorKeyIndex;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI int32 JETCC	jeBitmap_Width(const jeBitmap *Bmp)
+GRAPI int32 GRCC	grBitmap_Width(const grBitmap *Bmp)
 {
 	assert(Bmp);
 return(Bmp->Info.Width);
 }
 
-JETAPI int32 JETCC	jeBitmap_Height(const jeBitmap *Bmp)
+GRAPI int32 GRCC	grBitmap_Height(const grBitmap *Bmp)
 {
 	assert(Bmp);
 return(Bmp->Info.Height);
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Blit(const jeBitmap *Src, int32 SrcPositionX, int32 SrcPositionY,
-						jeBitmap *Dst, int32 DstPositionX, int32 DstPositionY,
+GRAPI grBoolean GRCC grBitmap_Blit(const grBitmap *Src, int32 SrcPositionX, int32 SrcPositionY,
+						grBitmap *Dst, int32 DstPositionX, int32 DstPositionY,
 						int32 SizeX, int32 SizeY )
 {
-	assert( jeBitmap_IsValid(Src) );
-	assert( jeBitmap_IsValid(Dst) );
-	return jeBitmap_BlitMipRect(Src,0,SrcPositionX,SrcPositionY,
+	assert( grBitmap_IsValid(Src) );
+	assert( grBitmap_IsValid(Dst) );
+	return grBitmap_BlitMipRect(Src,0,SrcPositionX,SrcPositionY,
 								Dst,0,DstPositionX,DstPositionY,
 								SizeX,SizeY);
 }
 
-JETAPI jeBoolean JETCC jeBitmap_BlitBitmap(const jeBitmap * Src, jeBitmap * Dst )
+GRAPI grBoolean GRCC grBitmap_BlitBitmap(const grBitmap * Src, grBitmap * Dst )
 {
-	assert( jeBitmap_IsValid(Src) );
-	assert( jeBitmap_IsValid(Dst) );
+	assert( grBitmap_IsValid(Src) );
+	assert( grBitmap_IsValid(Dst) );
 	assert( Src != Dst );
-	return jeBitmap_BlitMipRect(Src,0,0,0,Dst,0,0,0,-1,-1);
+	return grBitmap_BlitMipRect(Src,0,0,0,Dst,0,0,0,-1,-1);
 }
 
-JETAPI jeBoolean JETCC jeBitmap_BlitBestMip(const jeBitmap * Src, jeBitmap * Dst )
+GRAPI grBoolean GRCC grBitmap_BlitBestMip(const grBitmap * Src, grBitmap * Dst )
 {
 int32 Width,Mip;
-	assert( jeBitmap_IsValid(Src) );
-	assert( jeBitmap_IsValid(Dst) );
+	assert( grBitmap_IsValid(Src) );
+	assert( grBitmap_IsValid(Dst) );
 	assert( Src != Dst );
 	for(Mip=0;	(Width = SHIFT_R_ROUNDUP(Src->Info.Width,Mip)) > Dst->Info.Width ; Mip++) ;
-	return jeBitmap_BlitMipRect(Src,Mip,0,0,Dst,0,0,0,-1,-1);
+	return grBitmap_BlitMipRect(Src,Mip,0,0,Dst,0,0,0,-1,-1);
 }
 
-JETAPI jeBoolean JETCC jeBitmap_BlitMip(const jeBitmap * Src, int32 SrcMip, jeBitmap * Dst, int32 DstMip )
+GRAPI grBoolean GRCC grBitmap_BlitMip(const grBitmap * Src, int32 SrcMip, grBitmap * Dst, int32 DstMip )
 {
-	assert( jeBitmap_IsValid(Src) );
-	assert( jeBitmap_IsValid(Dst) );
-	return jeBitmap_BlitMipRect(Src,SrcMip,0,0,Dst,DstMip,0,0,-1,-1);
+	assert( grBitmap_IsValid(Src) );
+	assert( grBitmap_IsValid(Dst) );
+	return grBitmap_BlitMipRect(Src,SrcMip,0,0,Dst,DstMip,0,0,-1,-1);
 }
 
-jeBoolean jeBitmap_BlitMipRect(const jeBitmap * Src, int32 SrcMip, int32 SrcX,int32 SrcY,
-									 jeBitmap * Dst, int32 DstMip, int32 DstX,int32 DstY,
+grBoolean grBitmap_BlitMipRect(const grBitmap * Src, int32 SrcMip, int32 SrcX,int32 SrcY,
+									 grBitmap * Dst, int32 DstMip, int32 DstX,int32 DstY,
 							int32 SizeX,int32 SizeY)
 {
-jeBitmap * SrcLock,* DstLock;
-jeBoolean SrcUnLock,DstUnLock;
-jeBitmap_Info *SrcLockInfo,*DstLockInfo;
+grBitmap * SrcLock,* DstLock;
+grBoolean SrcUnLock,DstUnLock;
+grBitmap_Info *SrcLockInfo,*DstLockInfo;
 uint8 *SrcBits,*DstBits;
 	
 	assert(Src && Dst);
-	jeBitmap_PeekReady(Src);
-	jeBitmap_WaitReady(Dst);
+	grBitmap_PeekReady(Src);
+	grBitmap_WaitReady(Dst);
 
 	assert( Src != Dst );
 	// <> if Src == Dst we could still do this, but we assert SrcMip != DstMip & be smart
 
-	SrcUnLock = DstUnLock = JE_FALSE;
+	SrcUnLock = DstUnLock = GR_FALSE;
 
 	if ( Src->LockOwner )
 	{
 		assert( Src->LockOwner->LockCount );
 		if ( SrcMip != 0 )
 		{
-			jeErrorLog_AddString(-1,"BlitMipRect : Src is a lock and mip != 0", NULL);
+			grErrorLog_AddString(-1,"BlitMipRect : Src is a lock and mip != 0", NULL);
 			goto fail;
 		}
 
-		SrcLock = (jeBitmap *)Src;
+		SrcLock = (grBitmap *)Src;
 	}
 	else
 	{
-		if ( ! jeBitmap_LockForReadNative((jeBitmap *)Src,&SrcLock,SrcMip,SrcMip) )
+		if ( ! grBitmap_LockForReadNative((grBitmap *)Src,&SrcLock,SrcMip,SrcMip) )
 		{
-			jeErrorLog_AddString(-1,"BlitMipRect : LockForReadNative", NULL);
+			grErrorLog_AddString(-1,"BlitMipRect : LockForReadNative", NULL);
 			goto fail;
 		}
-		SrcUnLock = JE_TRUE;
+		SrcUnLock = GR_TRUE;
 	}
 
 	if ( Dst->LockOwner )
@@ -3485,12 +3485,12 @@ uint8 *SrcBits,*DstBits;
 	}
 	else
 	{
-		if ( ! jeBitmap_LockForWrite(Dst,&DstLock,DstMip,DstMip) )
+		if ( ! grBitmap_LockForWrite(Dst,&DstLock,DstMip,DstMip) )
 		{
-			jeErrorLog_AddString(-1,"BlitMipRect : LockForWrite", NULL);
+			grErrorLog_AddString(-1,"BlitMipRect : LockForWrite", NULL);
 			goto fail;
 		}
-		DstUnLock = JE_TRUE;
+		DstUnLock = GR_TRUE;
 	}
 
 	Src = Dst = NULL;
@@ -3505,10 +3505,10 @@ uint8 *SrcBits,*DstBits;
 	else
 		DstLockInfo = &(DstLock->Info);
 
-	if ( ! (SrcBits = (uint8*)jeBitmap_GetBits(SrcLock)) || 
-		 ! (DstBits = (uint8*)jeBitmap_GetBits(DstLock)) )
+	if ( ! (SrcBits = (uint8*)grBitmap_GetBits(SrcLock)) || 
+		 ! (DstBits = (uint8*)grBitmap_GetBits(DstLock)) )
 	{
-		jeErrorLog_AddString(-1,"BlitMipRect : GetBits", NULL);
+		grErrorLog_AddString(-1,"BlitMipRect : GetBits", NULL);
 		goto fail;
 	}
 
@@ -3522,61 +3522,61 @@ uint8 *SrcBits,*DstBits;
 		( (DstX + SizeX) > DstLockInfo->Width ) ||
 		( (DstY + SizeY) > DstLockInfo->Height))
 	{
-		jeErrorLog_AddString(-1,"BlitMipRect : dimensions bad", NULL);
+		grErrorLog_AddString(-1,"BlitMipRect : dimensions bad", NULL);
 		goto fail;
 	}
 
-	SrcBits += jePixelFormat_BytesPerPel(SrcLockInfo->Format) * ( SrcY * SrcLockInfo->Stride + SrcX );
-	DstBits += jePixelFormat_BytesPerPel(DstLockInfo->Format) * ( DstY * DstLockInfo->Stride + DstX );
+	SrcBits += grPixelFormat_BytesPerPel(SrcLockInfo->Format) * ( SrcY * SrcLockInfo->Stride + SrcX );
+	DstBits += grPixelFormat_BytesPerPel(DstLockInfo->Format) * ( DstY * DstLockInfo->Stride + DstX );
 
 	// _BlitMipRect : made palette
-	if ( ! jeBitmap_BlitData(	SrcLockInfo,SrcBits,SrcLock,
+	if ( ! grBitmap_BlitData(	SrcLockInfo,SrcBits,SrcLock,
 								DstLockInfo,DstBits,DstLock,
 								SizeX,SizeY) )
 	{
 		goto fail;
 	}
 
-	if ( SrcUnLock ) jeBitmap_UnLock(SrcLock);
-	if ( DstUnLock ) jeBitmap_UnLock(DstLock);
+	if ( SrcUnLock ) grBitmap_UnLock(SrcLock);
+	if ( DstUnLock ) grBitmap_UnLock(DstLock);
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 	fail:
 
-	if ( SrcUnLock ) jeBitmap_UnLock(SrcLock);
-	if ( DstUnLock ) jeBitmap_UnLock(DstLock);
+	if ( SrcUnLock ) grBitmap_UnLock(SrcLock);
+	if ( DstUnLock ) grBitmap_UnLock(DstLock);
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-JETAPI jeBoolean 	JETCC	jeBitmap_SetFormatMin(jeBitmap *Bmp,jePixelFormat NewFormat)
+GRAPI grBoolean 	GRCC	grBitmap_SetFormatMin(grBitmap *Bmp,grPixelFormat NewFormat)
 {
-jeBitmap_Palette * Pal;
+grBitmap_Palette * Pal;
 
-	assert(jeBitmap_IsValid(Bmp));
+	assert(grBitmap_IsValid(Bmp));
 
-	Pal = jeBitmap_GetPalette(Bmp);
+	Pal = grBitmap_GetPalette(Bmp);
 	if ( Bmp->Info.HasColorKey )
 	{
 	uint32 CK;
-		if ( jePixelFormat_IsRaw(NewFormat) )
+		if ( grPixelFormat_IsRaw(NewFormat) )
 		{
-			if ( jePixelFormat_IsRaw(Bmp->Info.Format) )
+			if ( grPixelFormat_IsRaw(Bmp->Info.Format) )
 			{
-				CK = jePixelFormat_ConvertPixel(Bmp->Info.Format,Bmp->Info.ColorKey,NewFormat);
+				CK = grPixelFormat_ConvertPixel(Bmp->Info.Format,Bmp->Info.ColorKey,NewFormat);
 			}
-			else if ( jePixelFormat_HasPalette(Bmp->Info.Format) )
+			else if ( grPixelFormat_HasPalette(Bmp->Info.Format) )
 			{
 				assert(Pal);
-				jeBitmap_Palette_GetEntry(Pal,Bmp->Info.ColorKey,&CK);
-				CK = jePixelFormat_ConvertPixel(Pal->Format,CK,NewFormat);
+				grBitmap_Palette_GetEntry(Pal,Bmp->Info.ColorKey,&CK);
+				CK = grPixelFormat_ConvertPixel(Pal->Format,CK,NewFormat);
 				if ( ! CK ) CK = 1;
 			}
 		}
 		else
 		{
-			if ( jePixelFormat_HasPalette(NewFormat) )
+			if ( grPixelFormat_HasPalette(NewFormat) )
 			{
 				CK = 255;
 			}
@@ -3586,95 +3586,95 @@ jeBitmap_Palette * Pal;
 			}
 		}
 		
-		return jeBitmap_SetFormat(Bmp,NewFormat,JE_TRUE,CK,Pal);
+		return grBitmap_SetFormat(Bmp,NewFormat,GR_TRUE,CK,Pal);
 	}
 	else
 	{
-		return jeBitmap_SetFormat(Bmp,NewFormat,JE_FALSE,0,Pal);
+		return grBitmap_SetFormat(Bmp,NewFormat,GR_FALSE,0,Pal);
 	}
 }
 
-JETAPI jeBoolean JETCC jeBitmap_SetCompressionOptions(jeBitmap * Bmp,int32 clevel,jeBoolean NeedMips,jeFloat ratio)
+GRAPI grBoolean GRCC grBitmap_SetCompressionOptions(grBitmap * Bmp,int32 clevel,grBoolean NeedMips,grFloat ratio)
 {
-	assert(jeBitmap_IsValid(Bmp));
+	assert(grBitmap_IsValid(Bmp));
 
-	Bmp->HasWaveletOptions = jeWavelet_SetOptions(&(Bmp->WaveletOptions),clevel,NeedMips,ratio);
+	Bmp->HasWaveletOptions = grWavelet_SetOptions(&(Bmp->WaveletOptions),clevel,NeedMips,ratio);
 
 return Bmp->HasWaveletOptions;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_SetCompressionOptionsExpert(jeBitmap * Bmp,jeFloat Ratio,int32 TransformN,int32 CoderN,jeBoolean TransposeLHs,jeBoolean Block)
+GRAPI grBoolean GRCC grBitmap_SetCompressionOptionsExpert(grBitmap * Bmp,grFloat Ratio,int32 TransformN,int32 CoderN,grBoolean TransposeLHs,grBoolean Block)
 {
-	assert(jeBitmap_IsValid(Bmp));
+	assert(grBitmap_IsValid(Bmp));
 
-	Bmp->HasWaveletOptions = jeWavelet_SetExpertOptions(&(Bmp->WaveletOptions),Ratio,TransformN,CoderN,TransposeLHs,Block);
+	Bmp->HasWaveletOptions = grWavelet_SetExpertOptions(&(Bmp->WaveletOptions),Ratio,TransformN,CoderN,TransposeLHs,Block);
 
 return Bmp->HasWaveletOptions;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_SetFormat(jeBitmap *Bmp, 
-							jePixelFormat NewFormat, 
-							jeBoolean HasColorKey, uint32 ColorKey,
-							const jeBitmap_Palette *Palette )
+GRAPI grBoolean GRCC grBitmap_SetFormat(grBitmap *Bmp, 
+							grPixelFormat NewFormat, 
+							grBoolean HasColorKey, uint32 ColorKey,
+							const grBitmap_Palette *Palette )
 {
-	assert( jeBitmap_IsValid(Bmp) );
-	jeBitmap_WaitReady(Bmp);
+	assert( grBitmap_IsValid(Bmp) );
+	grBitmap_WaitReady(Bmp);
 
 	if ( Bmp->LockOwner || Bmp->LockCount || Bmp->DataOwner )
 	{
-		jeErrorLog_AddString(-1,"SetFormat : not an original bitmap", NULL);
-		return JE_FALSE;	
+		grErrorLog_AddString(-1,"SetFormat : not an original bitmap", NULL);
+		return GR_FALSE;	
 	}
 	// can't do _SetFormat on a locked mip, cuz it would change the size of all the locked mips = no good
 
 	// always affects the non-Driver copy
 
-	if ( NewFormat == JE_PIXELFORMAT_WAVELET )
+	if ( NewFormat == GR_PIXELFORMAT_WAVELET )
 	{
-		jeBitmap_ClearMips(Bmp);
+		grBitmap_ClearMips(Bmp);
 
 		if ( Bmp->Wavelet )
 		{
-			assert(Bmp->Info.Format == JE_PIXELFORMAT_WAVELET);
-			return JE_TRUE;
+			assert(Bmp->Info.Format == GR_PIXELFORMAT_WAVELET);
+			return GR_TRUE;
 		}
 			
 		if ( Bmp->Info.HasColorKey )
-			Bmp->Info.HasColorKey = jeBitmap_UsesColorKey(Bmp);
+			Bmp->Info.HasColorKey = grBitmap_UsesColorKey(Bmp);
 
 		if ( Bmp->HasWaveletOptions )
-			Bmp->Wavelet = jeWavelet_CreateFromBitmap(Bmp,&(Bmp->WaveletOptions));
+			Bmp->Wavelet = grWavelet_CreateFromBitmap(Bmp,&(Bmp->WaveletOptions));
 		else
-			Bmp->Wavelet = jeWavelet_CreateFromBitmap(Bmp,NULL);
+			Bmp->Wavelet = grWavelet_CreateFromBitmap(Bmp,NULL);
 			
 		if ( ! Bmp->Wavelet )
-			return JE_FALSE;
+			return GR_FALSE;
 
-		Bmp->Info.Format = JE_PIXELFORMAT_WAVELET;
+		Bmp->Info.Format = GR_PIXELFORMAT_WAVELET;
 
 		if ( Bmp->Data[0] )
 		{
-			jeRam_Free(Bmp->Data[0]);
+			grRam_Free(Bmp->Data[0]);
 			Bmp->Data[0] = NULL;
 		}
 		
 		if ( Bmp->Alpha )
 		{
-			jeBitmap_Destroy(&(Bmp->Alpha));
+			grBitmap_Destroy(&(Bmp->Alpha));
 			Bmp->Alpha = NULL;
 		}
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	if ( NewFormat == Bmp->Info.Format )
 	{
 		// but not wavelet
 
-		if ( jePixelFormat_HasPalette(NewFormat) && Palette )
+		if ( grPixelFormat_HasPalette(NewFormat) && Palette )
 		{
-			if ( ! jeBitmap_SetPalette(Bmp,(jeBitmap_Palette *)Palette) )
-				return JE_FALSE;
+			if ( ! grBitmap_SetPalette(Bmp,(grBitmap_Palette *)Palette) )
+				return GR_FALSE;
 		}
 
 		if ( (! HasColorKey )
@@ -3682,11 +3682,11 @@ JETAPI jeBoolean JETCC jeBitmap_SetFormat(jeBitmap *Bmp,
 		{
 			Bmp->Info.HasColorKey = HasColorKey;
 			Bmp->Info.ColorKey = ColorKey;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else
 		{
-		jeBitmap_Info OldInfo;
+		grBitmap_Info OldInfo;
 
 			OldInfo = Bmp->Info;
 
@@ -3698,60 +3698,60 @@ JETAPI jeBoolean JETCC jeBitmap_SetFormat(jeBitmap *Bmp,
 			Bmp->Info.ColorKey = ColorKey;
 
 			if ( Bmp->Data[Bmp->Info.MinimumMip] == NULL )
-				return JE_TRUE;
+				return GR_TRUE;
 		
 			assert(Bmp->Info.MinimumMip == 0); //{} this is just out of laziness
 
 			// _SetFormat : same format
-			if ( ! jeBitmap_BlitData(	&OldInfo,		Bmp->Data[Bmp->Info.MinimumMip], NULL,
+			if ( ! grBitmap_BlitData(	&OldInfo,		Bmp->Data[Bmp->Info.MinimumMip], NULL,
 										&(Bmp->Info),	Bmp->Data[Bmp->Info.MinimumMip], NULL,
 										Bmp->Info.Width, Bmp->Info.Height) )
 			{
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	}
 	else
 	{
-	jeBitmap_Info OldInfo;
+	grBitmap_Info OldInfo;
 	int OldBPP,NewBPP;
 	int OldMaxMips;
 	DRV_Driver * Driver;
 
-		if ( jePixelFormat_HasPalette(NewFormat) )
+		if ( grPixelFormat_HasPalette(NewFormat) )
 		{
 			if ( Palette )
 			{
-				if ( ! jeBitmap_SetPalette(Bmp,(jeBitmap_Palette *)Palette) )
-					return JE_FALSE;
+				if ( ! grBitmap_SetPalette(Bmp,(grBitmap_Palette *)Palette) )
+					return GR_FALSE;
 			}
 			else
 			{
-				if ( ! jeBitmap_GetPalette(Bmp) && ! jePixelFormat_HasPalette(Bmp->Info.Format) )
+				if ( ! grBitmap_GetPalette(Bmp) && ! grPixelFormat_HasPalette(Bmp->Info.Format) )
 				{
-				jeBitmap_Palette *NewPal;
-					NewPal = jeBitmap_Palette_CreateFromBitmap(Bmp,JE_FALSE);
+				grBitmap_Palette *NewPal;
+					NewPal = grBitmap_Palette_CreateFromBitmap(Bmp,GR_FALSE);
 					if ( ! NewPal )
 					{
-						jeErrorLog_AddString(-1,"_SetFormat : createPaletteFromBitmap failed", NULL);
-						return JE_FALSE;
+						grErrorLog_AddString(-1,"_SetFormat : createPaletteFromBitmap failed", NULL);
+						return GR_FALSE;
 					}
-					if ( ! jeBitmap_SetPalette(Bmp,NewPal) )
-						return JE_FALSE;
-					jeBitmap_Palette_Destroy(&NewPal);
+					if ( ! grBitmap_SetPalette(Bmp,NewPal) )
+						return GR_FALSE;
+					grBitmap_Palette_Destroy(&NewPal);
 				}
 			}
 		}
 
 		Driver = Bmp->Driver;
 		if ( Driver )
-			if ( ! jeBitmap_DetachDriver(Bmp,JE_TRUE) )
-				return JE_FALSE;
+			if ( ! grBitmap_DetachDriver(Bmp,GR_TRUE) )
+				return GR_FALSE;
 
-		OldBPP = jePixelFormat_BytesPerPel(Bmp->Info.Format);
-		NewBPP = jePixelFormat_BytesPerPel(NewFormat);
+		OldBPP = grPixelFormat_BytesPerPel(Bmp->Info.Format);
+		NewBPP = grPixelFormat_BytesPerPel(NewFormat);
 
 		OldInfo = Bmp->Info;
 		Bmp->Info.Format = NewFormat;
@@ -3760,41 +3760,41 @@ JETAPI jeBoolean JETCC jeBitmap_SetFormat(jeBitmap *Bmp,
 
 		// {} this is not very polite; we do restore them later, though...
 		OldMaxMips = max(Bmp->Info.MaximumMip,Bmp->DriverInfo.MaximumMip);
-		jeBitmap_ClearMips(Bmp);		
+		grBitmap_ClearMips(Bmp);		
 
 		if ( ! Bmp->Wavelet && Bmp->Data[Bmp->Info.MinimumMip] == NULL && 
 				Bmp->DriverHandle == NULL )
-			return JE_TRUE;
+			return GR_TRUE;
 
 		if ( OldBPP == NewBPP )
 		{
-		jeBitmap * Lock;
+		grBitmap * Lock;
 		void * Bits;
 			// can work in place
-			if ( ! jeBitmap_LockForWrite(Bmp,&Lock,0,0) )
-				return JE_FALSE;
+			if ( ! grBitmap_LockForWrite(Bmp,&Lock,0,0) )
+				return GR_FALSE;
 
-			if ( ! (Bits = jeBitmap_GetBits(Lock)) )
+			if ( ! (Bits = grBitmap_GetBits(Lock)) )
 			{
-				jeBitmap_UnLock(Lock);
-				return JE_FALSE;
+				grBitmap_UnLock(Lock);
+				return GR_FALSE;
 			}
 
 			// _SetFormat : new format
-			if ( ! jeBitmap_BlitData(	&OldInfo,		Bits, Lock,
+			if ( ! grBitmap_BlitData(	&OldInfo,		Bits, Lock,
 										&(Lock->Info),	Bits, Lock,
 										Lock->Info.Width, Lock->Info.Height) )
 			{
-				jeBitmap_UnLock(Lock);
-				return JE_FALSE;
+				grBitmap_UnLock(Lock);
+				return GR_FALSE;
 			}
 
-			jeBitmap_UnLock(Lock);
+			grBitmap_UnLock(Lock);
 		}
 		else // NewFormat is raw && != OldFormat
 		{
-		jeBitmap OldBmp;
-		jeBitmap *Lock,*SrcLock;
+		grBitmap OldBmp;
+		grBitmap *Lock,*SrcLock;
 		void *Bits,*OldBits;
 
 			OldBmp = *Bmp;
@@ -3807,52 +3807,52 @@ JETAPI jeBoolean JETCC jeBitmap_SetFormat(jeBitmap *Bmp,
 			Bmp->Wavelet = NULL;
 			Bmp->WaveletMipLock = 0;
 
-			if ( ! jeBitmap_AllocSystemMip(Bmp,0) )
-				return JE_FALSE;
+			if ( ! grBitmap_AllocSystemMip(Bmp,0) )
+				return GR_FALSE;
 
-			if ( ! jeBitmap_LockForReadNative(&OldBmp,&SrcLock,0,0) )
-				return JE_FALSE;
+			if ( ! grBitmap_LockForReadNative(&OldBmp,&SrcLock,0,0) )
+				return GR_FALSE;
 
-			if ( ! jeBitmap_LockForWrite(Bmp,&Lock,0,0) )
-				return JE_FALSE;
+			if ( ! grBitmap_LockForWrite(Bmp,&Lock,0,0) )
+				return GR_FALSE;
 
-			if ( ! (Bits = jeBitmap_GetBits(Lock)) )
+			if ( ! (Bits = grBitmap_GetBits(Lock)) )
 			{
-				jeBitmap_UnLock(Lock);
-				return JE_FALSE;
+				grBitmap_UnLock(Lock);
+				return GR_FALSE;
 			}
-			if ( ! (OldBits = jeBitmap_GetBits(SrcLock)) )
+			if ( ! (OldBits = grBitmap_GetBits(SrcLock)) )
 			{
-				jeBitmap_UnLock(Lock);
-				return JE_FALSE;
+				grBitmap_UnLock(Lock);
+				return GR_FALSE;
 			}
 
 			// _SetFormat : new format
-			if ( ! jeBitmap_BlitData(	&OldInfo,		OldBits,		SrcLock,
+			if ( ! grBitmap_BlitData(	&OldInfo,		OldBits,		SrcLock,
 										&(Lock->Info),	Bits,			Lock,
 										Lock->Info.Width, Lock->Info.Height) )
 			{
 				// try to undo as well as possible
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		
-			jeBitmap_UnLock(Lock);
-			jeBitmap_UnLock(SrcLock);
+			grBitmap_UnLock(Lock);
+			grBitmap_UnLock(SrcLock);
 
 			if ( OldBmp.Data[0] )
 			{
-				jeRam_Free(OldBmp.Data[0]);
+				grRam_Free(OldBmp.Data[0]);
 				OldBmp.Data[0] = NULL;
 			}
 			// ok, now delete wavelet
 			if ( OldBmp.Wavelet )
 			{
-				jeWavelet_Destroy(&(OldBmp.Wavelet));
+				grWavelet_Destroy(&(OldBmp.Wavelet));
 			}
 
-			if ( jePixelFormat_HasGoodAlpha(NewFormat) )
+			if ( grPixelFormat_HasGoodAlpha(NewFormat) )
 			{
-				jeBitmap_Destroy(&(OldBmp.Alpha));
+				grBitmap_Destroy(&(OldBmp.Alpha));
 			}
 			else
 			{
@@ -3865,54 +3865,54 @@ JETAPI jeBoolean JETCC jeBitmap_SetFormat(jeBitmap *Bmp,
 			mip = Bmp->Info.MinimumMip;
 			while( mip < OldMaxMips )
 			{
-				jeBitmap_UpdateMips(Bmp,mip,mip+1);
+				grBitmap_UpdateMips(Bmp,mip,mip+1);
 				mip++;
 			}
 		}
 
 		if ( Driver )
 		{		
-			if ( ! jeBitmap_AttachToDriver(Bmp,Driver,0) )
-				return JE_FALSE;
+			if ( ! grBitmap_AttachToDriver(Bmp,Driver,0) )
+				return GR_FALSE;
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_SetColorKey(jeBitmap *Bmp, jeBoolean HasColorKey, uint32 ColorKey , jeBoolean Smart)
+GRAPI grBoolean GRCC grBitmap_SetColorKey(grBitmap *Bmp, grBoolean HasColorKey, uint32 ColorKey , grBoolean Smart)
 {
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
 	if ( Bmp->LockOwner || Bmp->LockCount || Bmp->DataOwner )
 	{
-		jeErrorLog_AddString(-1,"SetColorKey : not an original bitmap", NULL);
-		return JE_FALSE;	
+		grErrorLog_AddString(-1,"SetColorKey : not an original bitmap", NULL);
+		return GR_FALSE;	
 	}
 
 	// see comments in SetFormat
 
 	if ( Bmp->DriverHandle )
-		jeBitmap_Update_DriverToSystem(Bmp);
+		grBitmap_Update_DriverToSystem(Bmp);
 
 	if ( HasColorKey && 
-			((uint32)ColorKey>>1) >= ((uint32)1<<(jePixelFormat_BytesPerPel(Bmp->Info.Format)*8 - 1)) )
+			((uint32)ColorKey>>1) >= ((uint32)1<<(grPixelFormat_BytesPerPel(Bmp->Info.Format)*8 - 1)) )
 	{
-		jeErrorLog_AddString(-1,"jeBitmap_SetColorKey : invalid ColorKey pixel!", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"grBitmap_SetColorKey : invalid ColorKey pixel!", NULL);
+		return GR_FALSE;
 	}
-	if ( HasColorKey && jePixelFormat_HasAlpha(Bmp->Info.Format) )
+	if ( HasColorKey && grPixelFormat_HasAlpha(Bmp->Info.Format) )
 	{
-		jeErrorLog_AddString(-1,"jeBitmap_SetColorKey : non-fatal : Alpha and ColorKey together won't work right", NULL);
+		grErrorLog_AddString(-1,"grBitmap_SetColorKey : non-fatal : Alpha and ColorKey together won't work right", NULL);
 	}
 
 	if ( HasColorKey && Smart && Bmp->Data[0] )
 	{
-		Bmp->Info.HasColorKey = JE_TRUE;
+		Bmp->Info.HasColorKey = GR_TRUE;
 		Bmp->Info.ColorKey = ColorKey;
-		if ( ! jeBitmap_UsesColorKey(Bmp) )
+		if ( ! grBitmap_UsesColorKey(Bmp) )
 		{
-			Bmp->Info.HasColorKey = JE_FALSE;
+			Bmp->Info.HasColorKey = GR_FALSE;
 			Bmp->Info.ColorKey = 1;
 		}
 	}
@@ -3923,33 +3923,33 @@ JETAPI jeBoolean JETCC jeBitmap_SetColorKey(jeBitmap *Bmp, jeBoolean HasColorKey
 	}
 
 	if ( Bmp->DriverHandle )
-		jeBitmap_Update_SystemToDriver(Bmp);
+		grBitmap_Update_SystemToDriver(Bmp);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean jeBitmap_UsesColorKey(const jeBitmap * Bmp)
+grBoolean grBitmap_UsesColorKey(const grBitmap * Bmp)
 {
 void * Bits;
-const jePixelFormat_Operations * ops;
+const grPixelFormat_Operations * ops;
 int32 x,y,w,h,s;
 uint32 pel,ColorKey;
 
-	jeBitmap_WaitReady(Bmp);
+	grBitmap_WaitReady(Bmp);
 
 	if ( ! Bmp->Info.HasColorKey )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( ! Bmp->Data[0] )
 	{
-		jeErrorLog_AddString(-1,"UsesColorKey : no data!", NULL);
-		return JE_TRUE;
+		grErrorLog_AddString(-1,"UsesColorKey : no data!", NULL);
+		return GR_TRUE;
 	}
 
 	assert( Bmp->Info.MinimumMip == 0 );
 
 	Bits = Bmp->Data[0];
-	ops = jePixelFormat_GetOperations(Bmp->Info.Format);
+	ops = grPixelFormat_GetOperations(Bmp->Info.Format);
 	assert(ops);
 
 	w = Bmp->Info.Width;
@@ -3961,12 +3961,12 @@ uint32 pel,ColorKey;
 	switch(ops->BytesPerPel)
 	{
 		case 0:
-			jeErrorLog_AddString(-1,"UsesColorKey : invalid format", NULL);
-			return JE_TRUE;
+			grErrorLog_AddString(-1,"UsesColorKey : invalid format", NULL);
+			return GR_TRUE;
 		case 3:
 			#pragma message("Bitmap : UsesColorKey : no 24bit Smart ColorKey")
-			jeErrorLog_AddString(-1,"UsesColorKey : no 24bit Smart ColorKey", NULL);
-			return JE_TRUE;	
+			grErrorLog_AddString(-1,"UsesColorKey : no 24bit Smart ColorKey", NULL);
+			return GR_TRUE;	
 		case 1:
 		{
 		uint8 * ptr;
@@ -3979,7 +3979,7 @@ uint32 pel,ColorKey;
 					if ( pel == ColorKey )
 					{
 						Log_Printf("UsesColorKey : Yes\n");
-						return JE_TRUE;	
+						return GR_TRUE;	
 					}
 				}
 				ptr += (s-w);
@@ -3998,7 +3998,7 @@ uint32 pel,ColorKey;
 					if ( pel == ColorKey )
 					{
 						Log_Printf("UsesColorKey : Yes\n");
-						return JE_TRUE;	
+						return GR_TRUE;	
 					}
 				}
 				ptr += (s-w);
@@ -4017,7 +4017,7 @@ uint32 pel,ColorKey;
 					if ( pel == ColorKey )
 					{
 						Log_Printf("UsesColorKey : Yes\n");
-						return JE_TRUE;	
+						return GR_TRUE;	
 					}
 				}
 				ptr += (s-w);
@@ -4025,15 +4025,15 @@ uint32 pel,ColorKey;
 			break;
 		}
 	}
-return JE_FALSE;
+return GR_FALSE;
 }
 
 
-JETAPI jeBoolean JETCC jeBitmap_SetPalette(jeBitmap *Bmp, const jeBitmap_Palette *Palette)
+GRAPI grBoolean GRCC grBitmap_SetPalette(grBitmap *Bmp, const grBitmap_Palette *Palette)
 {
 	assert(Bmp); // not nec. valid
-	assert( jeBitmap_Palette_IsValid(Palette) );
-	jeBitmap_WaitReady(Bmp);
+	assert( grBitmap_Palette_IsValid(Palette) );
+	grBitmap_WaitReady(Bmp);
 
 	if ( Bmp->LockOwner )
 		Bmp = Bmp->LockOwner;
@@ -4041,8 +4041,8 @@ JETAPI jeBoolean JETCC jeBitmap_SetPalette(jeBitmap *Bmp, const jeBitmap_Palette
 /* //{} breaks PalCreate
 	if ( Bmp->LockCount > 0 || Bmp->DataOwner )
 	{
-		jeErrorLog_AddString(-1,"SetPalette : not an original bitmap", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"SetPalette : not an original bitmap", NULL);
+		return GR_FALSE;
 	}
 */
 
@@ -4056,23 +4056,23 @@ JETAPI jeBoolean JETCC jeBitmap_SetPalette(jeBitmap *Bmp, const jeBitmap_Palette
 		// save the palette even if we're not palettized, for later use
 		if ( Palette->Driver )
 		{
-			if ( ! jeBitmap_AllocPalette(Bmp,Palette->Format,NULL) )
-				return JE_FALSE;
+			if ( ! grBitmap_AllocPalette(Bmp,Palette->Format,NULL) )
+				return GR_FALSE;
 			
-			if ( ! jeBitmap_Palette_Copy(Palette,Bmp->Info.Palette) )
-				return JE_FALSE;
+			if ( ! grBitmap_Palette_Copy(Palette,Bmp->Info.Palette) )
+				return GR_FALSE;
 		}
 		else
 		{
 			if ( Bmp->Info.Palette )
-				jeBitmap_Palette_Destroy(&(Bmp->Info.Palette));
+				grBitmap_Palette_Destroy(&(Bmp->Info.Palette));
 
-			Bmp->Info.Palette = (jeBitmap_Palette *)Palette;
-			jeBitmap_Palette_CreateRef(Bmp->Info.Palette);
+			Bmp->Info.Palette = (grBitmap_Palette *)Palette;
+			grBitmap_Palette_CreateRef(Bmp->Info.Palette);
 		}
 	}
 
-	if ( jePixelFormat_HasPalette(Bmp->DriverInfo.Format) &&
+	if ( grPixelFormat_HasPalette(Bmp->DriverInfo.Format) &&
 		Bmp->DriverInfo.Palette != Palette )
 	{
 		if ( Palette->Driver == Bmp->Driver && 
@@ -4080,50 +4080,50 @@ JETAPI jeBoolean JETCC jeBitmap_SetPalette(jeBitmap *Bmp, const jeBitmap_Palette
 				(uint32)Palette->ColorKeyIndex == Bmp->DriverInfo.ColorKey ) )
 		{
 			if ( Bmp->DriverInfo.Palette )
-				jeBitmap_Palette_Destroy(&(Bmp->DriverInfo.Palette));
-			Bmp->DriverInfo.Palette = (jeBitmap_Palette *)Palette;
-			jeBitmap_Palette_CreateRef(Bmp->DriverInfo.Palette);
+				grBitmap_Palette_Destroy(&(Bmp->DriverInfo.Palette));
+			Bmp->DriverInfo.Palette = (grBitmap_Palette *)Palette;
+			grBitmap_Palette_CreateRef(Bmp->DriverInfo.Palette);
 		}
 		else if ( Bmp->DriverInfo.Palette )
 		{
-			if ( ! jeBitmap_Palette_Copy(Palette,Bmp->DriverInfo.Palette) )
-				return JE_FALSE;
+			if ( ! grBitmap_Palette_Copy(Palette,Bmp->DriverInfo.Palette) )
+				return GR_FALSE;
 		}
 		else
 		{
-			// IS JE_PIXELFORMAT_NO_DATA a safe replacement for 0 here?
-			if ( ! jeBitmap_AllocPalette(Bmp,JE_PIXELFORMAT_NO_DATA,Bmp->Driver) )
-				return JE_FALSE;
+			// IS GR_PIXELFORMAT_NO_DATA a safe replacement for 0 here?
+			if ( ! grBitmap_AllocPalette(Bmp,GR_PIXELFORMAT_NO_DATA,Bmp->Driver) )
+				return GR_FALSE;
 
-			if ( ! jeBitmap_Palette_Copy(Palette,Bmp->DriverInfo.Palette) )
-				return JE_FALSE;
+			if ( ! grBitmap_Palette_Copy(Palette,Bmp->DriverInfo.Palette) )
+				return GR_FALSE;
 		}
 	}
 
 	if ( Bmp->DriverHandle )
 	{
 		// if one has pal and other doesn't this is real change!
-		if (	jePixelFormat_HasPalette(Bmp->Info.Format) &&
-			  ! jePixelFormat_HasPalette(Bmp->DriverInfo.Format) )
+		if (	grPixelFormat_HasPalette(Bmp->Info.Format) &&
+			  ! grPixelFormat_HasPalette(Bmp->DriverInfo.Format) )
 		{
 			// this over-rides any driver changes!
-			Bmp->DriverDataChanged = JE_FALSE;
-			if ( ! jeBitmap_Update_SystemToDriver(Bmp) )
-				return JE_FALSE;
+			Bmp->DriverDataChanged = GR_FALSE;
+			if ( ! grBitmap_Update_SystemToDriver(Bmp) )
+				return GR_FALSE;
 		}
-		else if ( ! jePixelFormat_HasPalette(Bmp->Info.Format) &&
-				jePixelFormat_HasPalette(Bmp->DriverInfo.Format) )
+		else if ( ! grPixelFormat_HasPalette(Bmp->Info.Format) &&
+				grPixelFormat_HasPalette(Bmp->DriverInfo.Format) )
 		{
-			Bmp->DriverDataChanged = JE_TRUE;
+			Bmp->DriverDataChanged = GR_TRUE;
 		}
 	}
 
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBitmap_Palette * JETCC jeBitmap_GetPalette(const jeBitmap *Bmp)
+GRAPI grBitmap_Palette * GRCC grBitmap_GetPalette(const grBitmap *Bmp)
 {
 	if ( ! Bmp ) return NULL;
 
@@ -4137,62 +4137,62 @@ JETAPI jeBitmap_Palette * JETCC jeBitmap_GetPalette(const jeBitmap *Bmp)
 }
 
 
-JETAPI jeBitmap * JETCC jeBitmap_GetAlpha(const jeBitmap *Bmp)
+GRAPI grBitmap * GRCC grBitmap_GetAlpha(const grBitmap *Bmp)
 {
 	if ( ! Bmp ) return NULL;
 	return Bmp->Alpha;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_SetAlpha(jeBitmap *Bmp, const jeBitmap *AlphaBmp)
+GRAPI grBoolean GRCC grBitmap_SetAlpha(grBitmap *Bmp, const grBitmap *AlphaBmp)
 {
-	assert( jeBitmap_IsValid(Bmp) );
+	assert( grBitmap_IsValid(Bmp) );
 	
 	if ( Bmp->LockOwner )
 		Bmp = Bmp->LockOwner;
 	if ( Bmp->LockCount > 0 || Bmp->DataOwner )
 	{
-		jeErrorLog_AddString(-1,"SetAlpha : not an original bitmap", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"SetAlpha : not an original bitmap", NULL);
+		return GR_FALSE;
 	}
 
 	if ( AlphaBmp == Bmp->Alpha )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	if ( Bmp->DriverHandle )
 	{
-		jeBitmap_Update_DriverToSystem(Bmp);
+		grBitmap_Update_DriverToSystem(Bmp);
 	}
 
 	if ( Bmp->Alpha )
 	{
-		jeBitmap_Destroy(&(Bmp->Alpha));
+		grBitmap_Destroy(&(Bmp->Alpha));
 	}
 
-	Bmp->Alpha = (jeBitmap *)AlphaBmp;
+	Bmp->Alpha = (grBitmap *)AlphaBmp;
 	if ( AlphaBmp )
 	{
-		assert( jeBitmap_IsValid(AlphaBmp) );
-		jeBitmap_CreateRef(Bmp->Alpha);
+		assert( grBitmap_IsValid(AlphaBmp) );
+		grBitmap_CreateRef(Bmp->Alpha);
 	}
 
 	if ( Bmp->DriverHandle )
 	{
 		// upload the new alpha to the driver bitmap
-		jeBitmap_Update_SystemToDriver(Bmp);
+		grBitmap_Update_SystemToDriver(Bmp);
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_SetPreferredFormat(jeBitmap *Bmp,jePixelFormat Format)
+GRAPI grBoolean GRCC grBitmap_SetPreferredFormat(grBitmap *Bmp,grPixelFormat Format)
 {
 
 	if ( Bmp->LockOwner )
 		Bmp = Bmp->LockOwner;
 	if ( Bmp->LockCount > 0 || Bmp->DataOwner )
 	{
-		jeErrorLog_AddString(-1,"SetPrefferedFormat : not an original bitmap", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"SetPrefferedFormat : not an original bitmap", NULL);
+		return GR_FALSE;
 	}
 
 	if ( Bmp->PreferredFormat != Format )
@@ -4202,74 +4202,74 @@ JETAPI jeBoolean JETCC jeBitmap_SetPreferredFormat(jeBitmap *Bmp,jePixelFormat F
 		Driver = Bmp->Driver;
 		if ( Driver )
 		{
-			if ( ! jeBitmap_DetachDriver(Bmp,JE_TRUE) )
-				return JE_FALSE;
-			if ( ! jeBitmap_AttachToDriver(Bmp,Driver,0) )
-				return JE_FALSE;
+			if ( ! grBitmap_DetachDriver(Bmp,GR_TRUE) )
+				return GR_FALSE;
+			if ( ! grBitmap_AttachToDriver(Bmp,Driver,0) )
+				return GR_FALSE;
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jePixelFormat JETCC jeBitmap_GetPreferredFormat(const jeBitmap *Bmp)
+GRAPI grPixelFormat GRCC grBitmap_GetPreferredFormat(const grBitmap *Bmp)
 {
-	if ( ! Bmp ) return JE_PIXELFORMAT_NO_DATA;
+	if ( ! Bmp ) return GR_PIXELFORMAT_NO_DATA;
 return Bmp->PreferredFormat;
 }
 
 /*}{ ************** FILE I/O ************************/
 
 
-JETAPI jeBoolean  JETCC jeBitmap_GetPersistableName(const jeBitmap *Bmp, jeVFile ** pBaseFS, char ** pName)
+GRAPI grBoolean  GRCC grBitmap_GetPersistableName(const grBitmap *Bmp, grVFile ** pBaseFS, char ** pName)
 {
 	if ( Bmp->Persistable )
 	{
-		*pBaseFS = (jeVFile *)Bmp->PersistBaseFS;
+		*pBaseFS = (grVFile *)Bmp->PersistBaseFS;
 		*pName = (char *)Bmp->PersistName;
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	else
 	{
 		*pBaseFS = NULL;
 		*pName = (char *)Bmp->PersistName;
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 }
 
-JETAPI jeBitmap * JETCC jeBitmap_CreateFromFileName(const jeVFile *BaseFS,const char *Name)
+GRAPI grBitmap * GRCC grBitmap_CreateFromFileName(const grVFile *BaseFS,const char *Name)
 {
-	jeVFile * File;
-	jeBitmap * Bitmap;
+	grVFile * File;
+	grBitmap * Bitmap;
 
 	if ( BaseFS )
 	{
-		File = jeVFile_Open((jeVFile *)BaseFS, Name, JE_VFILE_OPEN_READONLY);
+		File = grVFile_Open((grVFile *)BaseFS, Name, GR_VFILE_OPEN_READONLY);
 	}
 	else
 	{
 		if ( strnicmp(Name,"http:",5) == 0 || strnicmp(Name,"ftp:",4) == 0 || strnicmp(Name,"www.",4) == 0 )
 		{
-		jeVFile * inet;
-			inet = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_INTERNET,NULL,NULL,JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY);
+		grVFile * inet;
+			inet = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_INTERNET,NULL,NULL,GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
 			assert(inet);
-			File = jeVFile_Open(inet,Name,JE_VFILE_OPEN_READONLY);
-			jeVFile_Close(inet);
+			File = grVFile_Open(inet,Name,GR_VFILE_OPEN_READONLY);
+			grVFile_Close(inet);
 		}
 		else
 		{
-			File = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,Name,NULL,JE_VFILE_OPEN_READONLY);
+			File = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,Name,NULL,GR_VFILE_OPEN_READONLY);
 		}
 	}
 	if ( ! File )
 		return NULL;
 
-	Bitmap = jeBitmap_CreateFromFile(File);
-	jeVFile_Close(File);
+	Bitmap = grBitmap_CreateFromFile(File);
+	grVFile_Close(File);
 
 	if ( ! Bitmap->Persistable )
 	{
-		Bitmap->Persistable = JE_TRUE;
+		Bitmap->Persistable = GR_TRUE;
 		Bitmap->PersistBaseFS = BaseFS;
 		strcpy(Bitmap->PersistName,Name);
 	}
@@ -4277,69 +4277,69 @@ JETAPI jeBitmap * JETCC jeBitmap_CreateFromFileName(const jeVFile *BaseFS,const 
 	return Bitmap;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_WriteToFileName(const jeBitmap * Bmp,const jeVFile *BaseFS,const char *Name)
+GRAPI grBoolean GRCC grBitmap_WriteToFileName(const grBitmap * Bmp,const grVFile *BaseFS,const char *Name)
 {
-	jeVFile * File;
-	jeBoolean Ret;
+	grVFile * File;
+	grBoolean Ret;
 
 	if ( BaseFS )
 	{
-		File = jeVFile_Open((jeVFile *)BaseFS, Name, JE_VFILE_OPEN_CREATE);
+		File = grVFile_Open((grVFile *)BaseFS, Name, GR_VFILE_OPEN_CREATE);
 	}
 	else
 	{
-		File = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,Name,NULL,JE_VFILE_OPEN_CREATE);
+		File = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,Name,NULL,GR_VFILE_OPEN_CREATE);
 	}
 
 	if ( ! File )
-		return JE_FALSE;
+		return GR_FALSE;
 
-	Ret = jeBitmap_WriteToFile(Bmp,File);
+	Ret = grBitmap_WriteToFile(Bmp,File);
 
-	jeVFile_Close(File);
+	grVFile_Close(File);
 
 	if ( ! Bmp->Persistable )
 	{
-		((jeBitmap *)Bmp)->Persistable = JE_TRUE;
-		((jeBitmap *)Bmp)->PersistBaseFS = BaseFS;
-		strcpy(((jeBitmap *)Bmp)->PersistName,Name);
+		((grBitmap *)Bmp)->Persistable = GR_TRUE;
+		((grBitmap *)Bmp)->PersistBaseFS = BaseFS;
+		strcpy(((grBitmap *)Bmp)->PersistName,Name);
 	}
 
 	return Ret;
 }
 
-JETAPI jeBitmap * JETCC jeBitmap_CreateFromFileName2(const jeVFile *BaseFS,const char *Name,jePtrMgr *PtrMgr)
+GRAPI grBitmap * GRCC grBitmap_CreateFromFileName2(const grVFile *BaseFS,const char *Name,grPtrMgr *PtrMgr)
 {
-	jeVFile * File;
-	jeBitmap * Bitmap;
+	grVFile * File;
+	grBitmap * Bitmap;
 
 	if ( BaseFS )
 	{
-		File = jeVFile_Open((jeVFile *)BaseFS, Name, JE_VFILE_OPEN_READONLY);
+		File = grVFile_Open((grVFile *)BaseFS, Name, GR_VFILE_OPEN_READONLY);
 	}
 	else
 	{
 		if ( strnicmp(Name,"http:",5) == 0 || strnicmp(Name,"ftp:",4) == 0 || strnicmp(Name,"www.",4) == 0 )
 		{
-		jeVFile * inet;
-			inet = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_INTERNET,NULL,NULL,JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY);
+		grVFile * inet;
+			inet = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_INTERNET,NULL,NULL,GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
 			assert(inet);
-			File = jeVFile_Open(inet,Name,JE_VFILE_OPEN_READONLY);
-			jeVFile_Close(inet);
+			File = grVFile_Open(inet,Name,GR_VFILE_OPEN_READONLY);
+			grVFile_Close(inet);
 		}
 		else
 		{
-			File = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,Name,NULL,JE_VFILE_OPEN_READONLY);
+			File = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,Name,NULL,GR_VFILE_OPEN_READONLY);
 		}
 	}
 	if ( ! File )
 		return NULL;
-	Bitmap = jeBitmap_CreateFromFile2(File,(jeVFile *)BaseFS,PtrMgr);
-	jeVFile_Close(File);
+	Bitmap = grBitmap_CreateFromFile2(File,(grVFile *)BaseFS,PtrMgr);
+	grVFile_Close(File);
 
 	if ( ! Bitmap->Persistable )
 	{
-		Bitmap->Persistable = JE_TRUE;
+		Bitmap->Persistable = GR_TRUE;
 		Bitmap->PersistBaseFS = BaseFS;
 		strcpy(Bitmap->PersistName,Name);
 	}
@@ -4347,79 +4347,79 @@ JETAPI jeBitmap * JETCC jeBitmap_CreateFromFileName2(const jeVFile *BaseFS,const
 	return Bitmap;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_WriteToFileName2(const jeBitmap * Bmp,const jeVFile *BaseFS,const char *Name,jePtrMgr *PtrMgr)
+GRAPI grBoolean GRCC grBitmap_WriteToFileName2(const grBitmap * Bmp,const grVFile *BaseFS,const char *Name,grPtrMgr *PtrMgr)
 {
-	jeVFile * File;
-	jeBoolean Ret;
+	grVFile * File;
+	grBoolean Ret;
 
 	if ( BaseFS )
 	{
-		File = jeVFile_Open((jeVFile *)BaseFS, Name, JE_VFILE_OPEN_CREATE);
+		File = grVFile_Open((grVFile *)BaseFS, Name, GR_VFILE_OPEN_CREATE);
 	}
 	else
 	{
-		File = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,Name,NULL,JE_VFILE_OPEN_CREATE);
+		File = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,Name,NULL,GR_VFILE_OPEN_CREATE);
 	}
 
 	if ( ! File )
-		return JE_FALSE;
+		return GR_FALSE;
 
-	Ret = jeBitmap_WriteToFile2(Bmp,File,PtrMgr);
+	Ret = grBitmap_WriteToFile2(Bmp,File,PtrMgr);
 
-	jeVFile_Close(File);
+	grVFile_Close(File);
 
 	if ( ! Bmp->Persistable )
 	{
-		((jeBitmap *)Bmp)->Persistable = JE_TRUE;
-		((jeBitmap *)Bmp)->PersistBaseFS = BaseFS;
-		strcpy(((jeBitmap *)Bmp)->PersistName,Name);
+		((grBitmap *)Bmp)->Persistable = GR_TRUE;
+		((grBitmap *)Bmp)->PersistBaseFS = BaseFS;
+		strcpy(((grBitmap *)Bmp)->PersistName,Name);
 	}
 
 	return Ret;
 }
 
-JETAPI jeBitmap * JETCC jeBitmap_CreateFromFile2(jeVFile *VFile,jeVFile *ResourceBaseFS,jePtrMgr *PtrMgr)
+GRAPI grBitmap * GRCC grBitmap_CreateFromFile2(grVFile *VFile,grVFile *ResourceBaseFS,grPtrMgr *PtrMgr)
 {
-	jeBitmap * Bmp;
+	grBitmap * Bmp;
 	uint8 NameStrLen;
 
 	if ( PtrMgr )
 	{
-		if (!jePtrMgr_ReadPtr(PtrMgr, VFile, (void **)&Bmp))
+		if (!grPtrMgr_ReadPtr(PtrMgr, VFile, (void **)&Bmp))
 			return NULL;
 
 		if ( Bmp )
 		{
-			jeBitmap_CreateRef(Bmp);
+			grBitmap_CreateRef(Bmp);
 			return Bmp;
 		}
 	}
 	
-	jeVFile_Read(VFile,&NameStrLen,1);
+	grVFile_Read(VFile,&NameStrLen,1);
 
 	if ( NameStrLen > 0 )
 	{
 	char Name[1024];
-		jeVFile_Read(VFile,Name,NameStrLen);
+		grVFile_Read(VFile,Name,NameStrLen);
 		Name[NameStrLen] = 0;
 
-		Bmp = jeBitmap_CreateFromFileName(ResourceBaseFS,Name);
+		Bmp = grBitmap_CreateFromFileName(ResourceBaseFS,Name);
 	}
 	else
 	{
-		Bmp = jeBitmap_CreateFromFile(VFile);
+		Bmp = grBitmap_CreateFromFile(VFile);
 	}
 
 	if ( ! Bmp )
 		return NULL;
 
 	if ( PtrMgr )
-		jePtrMgr_PushPtr(PtrMgr,Bmp);
+		grPtrMgr_PushPtr(PtrMgr,Bmp);
 
 return Bmp;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_WriteToFile2(const jeBitmap *Bmp,jeVFile *VFile,jePtrMgr *PtrMgr)
+GRAPI grBoolean GRCC grBitmap_WriteToFile2(const grBitmap *Bmp,grVFile *VFile,grPtrMgr *PtrMgr)
 {
 uint8 NameStrLen;
 
@@ -4427,36 +4427,36 @@ uint8 NameStrLen;
 	{
 	uint32 Count;
 
-		if (!jePtrMgr_WritePtr(PtrMgr, VFile, (void *)Bmp, &Count))
-			return JE_FALSE;
+		if (!grPtrMgr_WritePtr(PtrMgr, VFile, (void *)Bmp, &Count))
+			return GR_FALSE;
 
 		if (Count)		// Already loaded
-			return JE_TRUE;
+			return GR_TRUE;
 	}
 	
 	if ( ! Bmp->Persistable )	NameStrLen = 0;
 	else						NameStrLen = strlen(Bmp->PersistName);
 
-	jeVFile_Write(VFile,&NameStrLen,1);
+	grVFile_Write(VFile,&NameStrLen,1);
 
 	if ( NameStrLen > 0 )
 	{
-		jeVFile_Write(VFile,Bmp->PersistName,NameStrLen);
+		grVFile_Write(VFile,Bmp->PersistName,NameStrLen);
 	}
 	else
 	{
-		jeBitmap_WriteToFile(Bmp,VFile);
+		grBitmap_WriteToFile(Bmp,VFile);
 	}
 
 	if ( PtrMgr )
-		jePtrMgr_PushPtr(PtrMgr,(void *)Bmp);
+		grPtrMgr_PushPtr(PtrMgr,(void *)Bmp);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 // GeBm Tag in 4 bytes {}
-typedef uint32			jeBmTag_t;
-#define JEBM_TAG		((jeBmTag_t)0x6D426547)	// "GeBm"
+typedef uint32			grBmTag_t;
+#define JEBM_TAG		((grBmTag_t)0x6D426547)	// "GeBm"
 
 // version in a byte
 #define JEBM_VERSION			(((uint32)JEBM_VERSION_MAJOR<<4) + (uint32)JEBM_VERSION_MINOR)
@@ -4467,13 +4467,13 @@ typedef uint32			jeBmTag_t;
 #define MIP_FLAG_COMPRESSED		(1<<4)
 #define MIP_FLAG_PAETH_FILTERED	(1<<5)
 
-static jeBoolean jeBitmap_ReadFromBMP(jeBitmap * Bmp,jeVFile * F);
+static grBoolean grBitmap_ReadFromBMP(grBitmap * Bmp,grVFile * F);
 
-JETAPI jeBitmap * JETCC jeBitmap_CreateFromFile(jeVFile *F)
+GRAPI grBitmap * GRCC grBitmap_CreateFromFile(grVFile *F)
 {
-jeBitmap *	Bmp;
-jeBmTag_t Tag;
-jeVFile * HF;
+grBitmap *	Bmp;
+grBmTag_t Tag;
+grVFile * HF;
 
 	assert(F);
 
@@ -4481,23 +4481,23 @@ jeVFile * HF;
 	// the bitmap is not valid until these reads finish, and when we
 	// return, we gaurantee a valid bitmap.
 
-	Bmp = jeBitmap_Create_Base();
+	Bmp = grBitmap_Create_Base();
 	if ( ! Bmp )
 		return NULL;
 
 	Tag = 0;
-	if ( (HF = jeVFile_GetHintsFile(F)) != NULL )
+	if ( (HF = grVFile_GetHintsFile(F)) != NULL )
 	{
-		if ( jeVFile_Read(HF, &Tag, sizeof(Tag)) )
+		if ( grVFile_Read(HF, &Tag, sizeof(Tag)) )
 		{
 			if ( Tag != JEBM_TAG )
 			{
-				jeVFile_Seek(HF, - (int)sizeof(Tag), JE_VFILE_SEEKSET);
+				grVFile_Seek(HF, - (int)sizeof(Tag), GR_VFILE_SEEKSET);
 			}
 		}
 	}
 
-	Bmp->StreamingStatus = JE_BITMAP_STREAMING_NOT;
+	Bmp->StreamingStatus = GR_BITMAP_STREAMING_NOT;
 		// we'll set it to CHANGED later
 
 	if ( Tag == JEBM_TAG )
@@ -4509,16 +4509,16 @@ jeVFile * HF;
 		// see WriteToFile for comments on the file format
 		assert( HF );
 
-		if ( ! jeVFile_Read(HF, &Version, sizeof(Version)) )
+		if ( ! grVFile_Read(HF, &Version, sizeof(Version)) )
 			goto fail;
 
 		if ( VERSION_MAJOR(Version) != VERSION_MAJOR(JEBM_VERSION) )
 		{
-			jeErrorLog_AddString(-1,"CreateFromFile : incompatible GeBm version", NULL);	
+			grErrorLog_AddString(-1,"CreateFromFile : incompatible GeBm version", NULL);	
 			goto fail;
 		}
 
-		if ( ! jeBitmap_ReadInfo(Bmp,HF) )
+		if ( ! grBitmap_ReadInfo(Bmp,HF) )
 			goto fail;
 
 		if ( Bmp->Info.Palette )
@@ -4526,36 +4526,36 @@ jeVFile * HF;
 			Bmp->Info.Palette = NULL;
 			if ( Version <= (4<<4) )
 			{
-				if ( ! ( Bmp->Info.Palette = jeBitmap_Palette_CreateFromFile(F)) )
+				if ( ! ( Bmp->Info.Palette = grBitmap_Palette_CreateFromFile(F)) )
 					goto fail;
 			}
 			else
 			{
-				if ( ! ( Bmp->Info.Palette = jeBitmap_Palette_CreateFromFile(HF)) )
+				if ( ! ( Bmp->Info.Palette = grBitmap_Palette_CreateFromFile(HF)) )
 					goto fail;
 			}
 		}
 
-		if ( Bmp->Info.Format == JE_PIXELFORMAT_WAVELET )
+		if ( Bmp->Info.Format == GR_PIXELFORMAT_WAVELET )
 		{
 
-			Bmp->Wavelet = jeWavelet_CreateFromFile(Bmp,F);
+			Bmp->Wavelet = grWavelet_CreateFromFile(Bmp,F);
 
 			if ( ! Bmp->Wavelet )
 			{
-				jeErrorLog_AddString(-1,"jeWavelet_CreateFromFile failed!",NULL);
+				grErrorLog_AddString(-1,"grWavelet_CreateFromFile failed!",NULL);
 				goto fail;
 			}
 
-			if ( jeWavelet_StreamingJob(Bmp->Wavelet) )
-				Bmp->StreamingStatus = JE_BITMAP_STREAMING_STARTED;
+			if ( grWavelet_StreamingJob(Bmp->Wavelet) )
+				Bmp->StreamingStatus = GR_BITMAP_STREAMING_STARTED;
 			// else already set to STREAMING_NOT
 		}
 		else
 		{
 			for(;;)
 			{
-				if ( ! jeVFile_Read(HF, &flags, sizeof(flags)) )
+				if ( ! grVFile_Read(HF, &flags, sizeof(flags)) )
 					goto fail;
 
 				mip = flags & MIP_MASK;
@@ -4566,81 +4566,81 @@ jeVFile * HF;
 				assert(mip >= Bmp->Info.MinimumMip );
 				assert( Bmp->Info.Stride == Bmp->Info.Width );
 
-				if ( ! jeBitmap_AllocSystemMip(Bmp,mip) )
+				if ( ! grBitmap_AllocSystemMip(Bmp,mip) )
 					goto fail;
 
 				if ( flags & MIP_FLAG_COMPRESSED )
 				{
-				jeVFile * LzF;
+				grVFile * LzF;
 
-					LzF = jeVFile_OpenNewSystem(F,JE_VFILE_TYPE_LZ,NULL,NULL,JE_VFILE_OPEN_READONLY);
+					LzF = grVFile_OpenNewSystem(F,GR_VFILE_TYPE_LZ,NULL,NULL,GR_VFILE_OPEN_READONLY);
 					if ( ! LzF )
 					{
-						jeErrorLog_AddString(-1,"Bitmap_CreateFromFile : LZ File Open failed",NULL);
+						grErrorLog_AddString(-1,"Bitmap_CreateFromFile : LZ File Open failed",NULL);
 						return NULL;
 					}
 
-					if ( ! jeVFile_Read(LzF, Bmp->Data[mip], jeBitmap_MipBytes(Bmp,mip) ) )
+					if ( ! grVFile_Read(LzF, Bmp->Data[mip], grBitmap_MipBytes(Bmp,mip) ) )
 					{
-						jeVFile_Close(LzF);
-						jeErrorLog_AddString(-1,"Bitmap_CreateFromFile : LZ File Read failed",NULL);
+						grVFile_Close(LzF);
+						grErrorLog_AddString(-1,"Bitmap_CreateFromFile : LZ File Read failed",NULL);
 						return NULL;
 					}
 
-					if ( ! jeVFile_Close(LzF) )
+					if ( ! grVFile_Close(LzF) )
 					{
-						jeErrorLog_AddString(-1,"Bitmap_CreateFromFile : LZ File Close failed",NULL);
+						grErrorLog_AddString(-1,"Bitmap_CreateFromFile : LZ File Close failed",NULL);
 						return NULL;
 					}
 				}
 				else
 				{
-					if ( ! jeVFile_Read(F, Bmp->Data[mip], jeBitmap_MipBytes(Bmp,mip) ) )
+					if ( ! grVFile_Read(F, Bmp->Data[mip], grBitmap_MipBytes(Bmp,mip) ) )
 						goto fail;
 				}
 
 				if ( flags & MIP_FLAG_PAETH_FILTERED )
 				{
-					jeErrorLog_AddString(-1,"Bitmap_CreateFromFile : Paeth Filter not supported in this version!",NULL);
+					grErrorLog_AddString(-1,"Bitmap_CreateFromFile : Paeth Filter not supported in this version!",NULL);
 					return NULL;
 				}
 
-				Bmp->Modified[mip] = JE_TRUE;
+				Bmp->Modified[mip] = GR_TRUE;
 			}
 		}
 
 		if( Bmp->Alpha )
 		{
-			if ( ! (Bmp->Alpha = jeBitmap_CreateFromFile(F)) )
+			if ( ! (Bmp->Alpha = grBitmap_CreateFromFile(F)) )
 				goto fail;
 		}
-	}	// end jeBitmap reader
+	}	// end grBitmap reader
 	else 
 	{
-		if ( ! jeVFile_Read(F, &Tag, sizeof(Tag)) )
+		if ( ! grVFile_Read(F, &Tag, sizeof(Tag)) )
 			goto fail;
 
-		if ( ! jeVFile_Seek(F, - (int)sizeof(Tag), JE_VFILE_SEEKCUR) )
+		if ( ! grVFile_Seek(F, - (int)sizeof(Tag), GR_VFILE_SEEKCUR) )
 			goto fail;
 
 		if ( (Tag&0xFFFF) == 0x4D42 )	// 'BM'
 		{
 		
-			if ( ! jeBitmap_ReadFromBMP(Bmp,F) )
+			if ( ! grBitmap_ReadFromBMP(Bmp,F) )
 				goto fail;
 		}
 		else
 		{
-			// jeErrorLog_AddString(-1,"CreateFromFile : unknown format", NULL);
+			// grErrorLog_AddString(-1,"CreateFromFile : unknown format", NULL);
 			goto fail;
 		}
 	}
 
 	if ( ! Bmp->Persistable )
 	{
-		Bmp->Persistable = JE_TRUE;
+		Bmp->Persistable = GR_TRUE;
 		Bmp->PersistBaseFS = NULL;
-		jeVFile_GetName(F,Bmp->PersistName,sizeof(Bmp->PersistName));
+		grVFile_GetName(F,Bmp->PersistName,sizeof(Bmp->PersistName));
 	}
 
 	return Bmp;
@@ -4648,46 +4648,46 @@ jeVFile * HF;
 fail:
 	assert(Bmp);
 
-	jeBitmap_Destroy(&Bmp);
+	grBitmap_Destroy(&Bmp);
 	return NULL;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_WriteToFile(const jeBitmap *Bmp, jeVFile *F)
+GRAPI grBoolean GRCC grBitmap_WriteToFile(const grBitmap *Bmp, grVFile *F)
 {
-jeBmTag_t jeBM_Tag;
-uint8  jeBM_Version;
+grBmTag_t grBM_Tag;
+uint8  grBM_Version;
 uint8 flags;
 int32 mip;
-jeVFile * HF;
+grVFile * HF;
 	
 	assert(Bmp && F);
-	assert( jeBitmap_IsValid(Bmp) );
-	jeBitmap_WaitReady(Bmp);
+	assert( grBitmap_IsValid(Bmp) );
+	grBitmap_WaitReady(Bmp);
 
-	jeBM_Tag = JEBM_TAG;
-	jeBM_Version = JEBM_VERSION;
+	grBM_Tag = JEBM_TAG;
+	grBM_Version = JEBM_VERSION;
 
 	if ( Bmp->DriverHandle )
 	{
-		if ( ! jeBitmap_Update_DriverToSystem((jeBitmap *)Bmp) )
+		if ( ! grBitmap_Update_DriverToSystem((grBitmap *)Bmp) )
 		{
-			jeErrorLog_AddString(-1,"WriteToFile : Update_DriverToSystem", NULL);	
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"WriteToFile : Update_DriverToSystem", NULL);	
+			return GR_FALSE;
 		}
 	}
 
-	HF = jeVFile_GetHintsFile(F);
+	HF = grVFile_GetHintsFile(F);
 	if ( ! HF )
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if ( ! jeVFile_Write(HF, &jeBM_Tag, sizeof(jeBM_Tag)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(HF, &grBM_Tag, sizeof(grBM_Tag)) )
+		return GR_FALSE;
 
-	if ( ! jeVFile_Write(HF, &jeBM_Version, sizeof(jeBM_Version)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(HF, &grBM_Version, sizeof(grBM_Version)) )
+		return GR_FALSE;
 
-	if ( ! jeBitmap_WriteInfo(Bmp,HF) )
-		return JE_FALSE;
+	if ( ! grBitmap_WriteInfo(Bmp,HF) )
+		return GR_FALSE;
 
 	#ifdef COUNT_HEADER_SIZES
 		Header_Sizes += 15;
@@ -4696,14 +4696,14 @@ jeVFile * HF;
 	// the pointer Bmp->Info.Palette serves as boolean : HasPalette
 	if ( Bmp->Info.Palette )
 	{
-		if ( ! jeBitmap_Palette_WriteToFile(Bmp->Info.Palette,HF) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_WriteToFile(Bmp->Info.Palette,HF) )
+			return GR_FALSE;
 	}
 
-	if ( Bmp->Info.Format == JE_PIXELFORMAT_WAVELET )
+	if ( Bmp->Info.Format == GR_PIXELFORMAT_WAVELET )
 	{
-		if ( ! jeWavelet_WriteToFile(Bmp->Wavelet,F) )
-			return JE_FALSE;
+		if ( ! grWavelet_WriteToFile(Bmp->Wavelet,F) )
+			return GR_FALSE;
 	}
 	else
 	{
@@ -4717,33 +4717,33 @@ jeVFile * HF;
 			if ( (mip == Bmp->Info.MinimumMip || Bmp->Modified[mip]) && Bmp->Data[mip] )
 			{
 			uint8 * MipData;
-			jeBoolean MipDataAlloced;
+			grBoolean MipDataAlloced;
 			uint32 MipDataLen;
-			jeVFile * LzF;
+			grVFile * LzF;
 
 				MipDataLen = SHIFT_R_ROUNDUP(Bmp->Info.Width,mip) * SHIFT_R_ROUNDUP(Bmp->Info.Height,mip) *
-								jePixelFormat_BytesPerPel(Bmp->Info.Format);
+								grPixelFormat_BytesPerPel(Bmp->Info.Format);
 
 				if ( Bmp->Info.Stride == Bmp->Info.Width )
 				{
 					MipData = (uint8*)Bmp->Data[mip];
-					MipDataAlloced = JE_FALSE;
+					MipDataAlloced = GR_FALSE;
 				}
 				else
 				{
 				int32 w,h,s,y;
 				uint8 * fptr,*tptr;
 				
-					if ( ! (MipData = (uint8*)jeRam_Allocate(MipDataLen) ) )
+					if ( ! (MipData = (uint8*)grRam_Allocate(MipDataLen) ) )
 					{
-						jeErrorLog_AddString(-1,"Bitmap_WriteToFile : Ram_Alloc failed!",NULL);
-						return JE_FALSE;
+						grErrorLog_AddString(-1,"Bitmap_WriteToFile : Ram_Alloc failed!",NULL);
+						return GR_FALSE;
 					}
 
-					MipDataAlloced = JE_TRUE;
+					MipDataAlloced = GR_TRUE;
 
-					s = SHIFT_R_ROUNDUP(Bmp->Info.Stride,mip)* jePixelFormat_BytesPerPel(Bmp->Info.Format);
-					w = SHIFT_R_ROUNDUP(Bmp->Info.Width,mip) * jePixelFormat_BytesPerPel(Bmp->Info.Format);
+					s = SHIFT_R_ROUNDUP(Bmp->Info.Stride,mip)* grPixelFormat_BytesPerPel(Bmp->Info.Format);
+					w = SHIFT_R_ROUNDUP(Bmp->Info.Width,mip) * grPixelFormat_BytesPerPel(Bmp->Info.Format);
 					h = SHIFT_R_ROUNDUP(Bmp->Info.Height,mip);
 
 					fptr = (uint8*)Bmp->Data[mip];
@@ -4760,64 +4760,64 @@ jeVFile * HF;
 				flags = (uint8)mip;
 				//flags |= MIP_FLAG_COMPRESSED;
 
-				if ( ! jeVFile_Write(HF, &flags, sizeof(flags)) )
-					return JE_FALSE;
+				if ( ! grVFile_Write(HF, &flags, sizeof(flags)) )
+					return GR_FALSE;
 
 				if ( flags & MIP_FLAG_COMPRESSED )
-					LzF = jeVFile_OpenNewSystem(F,JE_VFILE_TYPE_LZ,NULL,NULL,JE_VFILE_OPEN_CREATE);
+					LzF = grVFile_OpenNewSystem(F,GR_VFILE_TYPE_LZ,NULL,NULL,GR_VFILE_OPEN_CREATE);
 				else
 					LzF = F;
 				
 				if ( ! LzF )
 				{
 					if ( MipDataAlloced )
-						jeRam_Free(MipData);
-					jeErrorLog_AddString(-1,"Bitmap_WriteToFile : LZ File Open failed",NULL);
-					return JE_FALSE;
+						grRam_Free(MipData);
+					grErrorLog_AddString(-1,"Bitmap_WriteToFile : LZ File Open failed",NULL);
+					return GR_FALSE;
 				}
 
-				if ( ! jeVFile_Write(LzF, MipData, MipDataLen ) )
-					return JE_FALSE;
+				if ( ! grVFile_Write(LzF, MipData, MipDataLen ) )
+					return GR_FALSE;
 
 				if ( flags & MIP_FLAG_COMPRESSED )
 				{
-					if ( ! jeVFile_Close(LzF) )
+					if ( ! grVFile_Close(LzF) )
 					{
 						if ( MipDataAlloced )
-							jeRam_Free(MipData);
-						jeErrorLog_AddString(-1,"Bitmap_WriteToFile : LZ File Close failed",NULL);
-						return JE_FALSE;
+							grRam_Free(MipData);
+						grErrorLog_AddString(-1,"Bitmap_WriteToFile : LZ File Close failed",NULL);
+						return GR_FALSE;
 					}
 				}
 
 				if ( MipDataAlloced )
-					jeRam_Free(MipData);
+					grRam_Free(MipData);
 			}
 		}
 		
 		// mip > MaximumMip signals End-Of-Mips
 
 		flags = MIP_MASK;
-		if ( ! jeVFile_Write(HF, &flags, sizeof(flags)) )
-			return JE_FALSE;
+		if ( ! grVFile_Write(HF, &flags, sizeof(flags)) )
+			return GR_FALSE;
 	}
 
 	// the pointer Bmp->Alpha serves as boolean : HasAlpha
 
 	if( Bmp->Alpha )
 	{
-		if ( ! jeBitmap_WriteToFile(Bmp->Alpha,F) )
-			return JE_FALSE;
+		if ( ! grBitmap_WriteToFile(Bmp->Alpha,F) )
+			return GR_FALSE;
 	}
 
 	if ( ! Bmp->Persistable )
 	{
-		((jeBitmap *)Bmp)->Persistable = JE_TRUE;
-		((jeBitmap *)Bmp)->PersistBaseFS = NULL;
-		jeVFile_GetName(F,((jeBitmap *)Bmp)->PersistName,sizeof(((jeBitmap *)Bmp)->PersistName));
+		((grBitmap *)Bmp)->Persistable = GR_TRUE;
+		((grBitmap *)Bmp)->PersistBaseFS = NULL;
+		grVFile_GetName(F,((grBitmap *)Bmp)->PersistName,sizeof(((grBitmap *)Bmp)->PersistName));
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /*}{********** Windows BMP Crap *******/
@@ -4856,7 +4856,7 @@ typedef struct
 } RGBQUAD;
 #pragma pack()
 
-static jeBoolean jeBitmap_ReadFromBMP(jeBitmap * Bmp,jeVFile * F)
+static grBoolean grBitmap_ReadFromBMP(grBitmap * Bmp,grVFile * F)
 {
 BITMAPFILEHEADER 	bmfh;
 BITMAPINFOHEADER	bmih;
@@ -4864,30 +4864,30 @@ int32 bPad,myRowWidth,bmpRowWidth,pelBytes;
 
 	// Windows Bitmap
 
-	if ( ! jeVFile_Read(F, &bmfh, sizeof(bmfh)) )
-		return JE_FALSE;
+	if ( ! grVFile_Read(F, &bmfh, sizeof(bmfh)) )
+		return GR_FALSE;
 
 	assert(bmfh.bfType == 0x4D42);
 
 	bPad = bmfh.bfOffBits;
 
-	if ( ! jeVFile_Read(F, &bmih, sizeof(bmih)) )
-		return JE_FALSE;
+	if ( ! grVFile_Read(F, &bmih, sizeof(bmih)) )
+		return GR_FALSE;
 
 	if ( bmih.biSize > sizeof(bmih) )
 	{
-		jeVFile_Seek(F, bmih.biSize - sizeof(bmih), JE_VFILE_SEEKCUR);
+		grVFile_Seek(F, bmih.biSize - sizeof(bmih), GR_VFILE_SEEKCUR);
 	}
 	else if ( bmih.biSize < sizeof(bmih) )
 	{
-		jeErrorLog_AddString(-1,"CreateFromFile : bmih size bad", NULL);	
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"CreateFromFile : bmih size bad", NULL);	
+		return GR_FALSE;
 	}
 
 	if ( bmih.biCompression )
 	{
-		jeErrorLog_AddString(-1,"CreateFromFile : only BI_RGB BMP compression supported", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"CreateFromFile : only BI_RGB BMP compression supported", NULL);
+		return GR_FALSE;
 	}
 
 	bPad -= sizeof(bmih) + sizeof(bmfh);
@@ -4897,55 +4897,55 @@ int32 bPad,myRowWidth,bmpRowWidth,pelBytes;
 		case 8:			/* colormapped image */
 			if ( bmih.biClrUsed == 0 ) bmih.biClrUsed = 256;
 
-			if ( ! (Bmp->Info.Palette = jeBitmap_Palette_Create(JE_PIXELFORMAT_32BIT_XRGB,bmih.biClrUsed)) )
-				return JE_FALSE;
+			if ( ! (Bmp->Info.Palette = grBitmap_Palette_Create(GR_PIXELFORMAT_32BIT_XRGB,bmih.biClrUsed)) )
+				return GR_FALSE;
 
-			if ( ! jeVFile_Read(F, Bmp->Info.Palette->Data, bmih.biClrUsed * 4) )
-				return JE_FALSE;
+			if ( ! grVFile_Read(F, Bmp->Info.Palette->Data, bmih.biClrUsed * 4) )
+				return GR_FALSE;
 
 			bPad -= bmih.biClrUsed * 4;
 
-			Bmp->Info.Format = JE_PIXELFORMAT_8BIT_PAL;
+			Bmp->Info.Format = GR_PIXELFORMAT_8BIT_PAL;
 			pelBytes = 1;
 			break;
 		case 16:			
-			Bmp->Info.Format = JE_PIXELFORMAT_16BIT_555_RGB;
+			Bmp->Info.Format = GR_PIXELFORMAT_16BIT_555_RGB;
 			// tried 555,565_BGR & RGB, seems to have too much green
 			pelBytes = 2;
 			break;
 		case 24:			
-			Bmp->Info.Format = JE_PIXELFORMAT_24BIT_BGR;
+			Bmp->Info.Format = GR_PIXELFORMAT_24BIT_BGR;
 			pelBytes = 3;
 			break;
 		case 32:			
-			Bmp->Info.Format = JE_PIXELFORMAT_32BIT_XRGB; // surprisingly sane !?
+			Bmp->Info.Format = GR_PIXELFORMAT_32BIT_XRGB; // surprisingly sane !?
 			pelBytes = 4;
 			break;
 		default:
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
 	if ( bPad < 0 )
 	{
-		jeErrorLog_AddString(-1,"CreateFromFile : bPad bad", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"CreateFromFile : bPad bad", NULL);
+		return GR_FALSE;
 	}
 
-	jeVFile_Seek(F, bPad, JE_VFILE_SEEKCUR);
+	grVFile_Seek(F, bPad, GR_VFILE_SEEKCUR);
 	
 	Bmp->Info.Width = bmih.biWidth;
 	Bmp->Info.Height = abs(bmih.biHeight);
 	Bmp->Info.Stride = ((bmih.biWidth+3)&(~3));
 
-	Bmp->Info.HasColorKey = JE_FALSE;
+	Bmp->Info.HasColorKey = GR_FALSE;
 
 	myRowWidth	= Bmp->Info.Stride * pelBytes;
 	bmpRowWidth = (((bmih.biWidth * pelBytes) + 3)&(~3));
 
 	assert( bmpRowWidth <= myRowWidth );
 
-	if ( ! jeBitmap_AllocSystemMip(Bmp,0) )
-		return JE_FALSE;
+	if ( ! grBitmap_AllocSystemMip(Bmp,0) )
+		return GR_FALSE;
 
 	if ( bmih.biHeight > 0 )
 	{
@@ -4955,8 +4955,8 @@ int32 bPad,myRowWidth,bmpRowWidth,pelBytes;
 		row += (Bmp->Info.Height - 1) * myRowWidth;
 		for(y= Bmp->Info.Height;y--;)
 		{
-			if ( ! jeVFile_Read(F, row, bmpRowWidth) )
-				return JE_FALSE;				
+			if ( ! grVFile_Read(F, row, bmpRowWidth) )
+				return GR_FALSE;				
 			row -= myRowWidth;
 		}
 	}
@@ -4967,20 +4967,20 @@ int32 bPad,myRowWidth,bmpRowWidth,pelBytes;
 		row = (char *)Bmp->Data[0];
 		for(y= Bmp->Info.Height;y--;)
 		{
-			if ( ! jeVFile_Read(F, row, bmpRowWidth) )
-				return JE_FALSE;				
+			if ( ! grVFile_Read(F, row, bmpRowWidth) )
+				return GR_FALSE;				
 			row += myRowWidth;
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }	// end BMP reader
 
 /*
 KROUER:
-First try to save jeBitmap as windows bmps
+First try to save grBitmap as windows bmps
 Function cancelled for the moment
-static jeBoolean jeBitmap_WriteToBMP(jeBitmap * Bmp,jeVFile * F)
+static grBoolean grBitmap_WriteToBMP(grBitmap * Bmp,grVFile * F)
 {
 	BITMAPFILEHEADER bfh = 
 	{
@@ -5005,7 +5005,7 @@ static jeBoolean jeBitmap_WriteToBMP(jeBitmap * Bmp,jeVFile * F)
 		0,
 		0
 	};
-	return JE_TRUE;
+	return GR_TRUE;
 }
 */
 
@@ -5018,24 +5018,24 @@ static jeBoolean jeBitmap_WriteToBMP(jeBitmap * Bmp,jeVFile * F)
 #define INFO_FLAG_HAS_AVERAGE  	(1<<4)
 #define INFO_FLAG_IF_NOT_LOG2_ARE_BYTE	(1<<5)
 
-jeBoolean jeBitmap_ReadInfo(jeBitmap *Bmp,jeVFile * F)
+grBoolean grBitmap_ReadInfo(grBitmap *Bmp,grVFile * F)
 {
 uint8 data[4];
 uint8 flags;
 uint8 b;
 uint16 w;
-jeBitmap_Info * pi;
+grBitmap_Info * pi;
 
 	pi = &(Bmp->Info);
 
-	if ( ! jeVFile_Read(F,data,3) )
-		return JE_FALSE;
+	if ( ! grVFile_Read(F,data,3) )
+		return GR_FALSE;
 
 	flags = data[0];
 
-	pi->Format = (jePixelFormat)data[1]; // could go in 5 bits
-	if ( ! jePixelFormat_IsValid(pi->Format) )
-		return JE_FALSE;
+	pi->Format = (grPixelFormat)data[1]; // could go in 5 bits
+	if ( ! grPixelFormat_IsValid(pi->Format) )
+		return GR_FALSE;
 
 	b = data[2];
 
@@ -5043,16 +5043,16 @@ jeBitmap_Info * pi;
 	Bmp->SeekMipCount = (b)&0xF;
 
 	if ( flags & INFO_FLAG_HAS_PAL )
-		pi->Palette  = (jeBitmap_Palette *)1;
+		pi->Palette  = (grBitmap_Palette *)1;
 	if ( flags & INFO_FLAG_HAS_ALPHA )
-		Bmp->Alpha = (jeBitmap *)1;
+		Bmp->Alpha = (grBitmap *)1;
 
 	if ( flags & INFO_FLAG_WH_ARE_LOG2 )
 	{
 	int logw,logh;
 
-		if ( ! jeVFile_Read(F,&b,1) )
-			return JE_FALSE;
+		if ( ! grVFile_Read(F,&b,1) )
+			return GR_FALSE;
 
 		logw = (b>>4)&0xF;
 		logh = (b   )&0xF;
@@ -5062,41 +5062,41 @@ jeBitmap_Info * pi;
 	}
 	else if ( flags & INFO_FLAG_IF_NOT_LOG2_ARE_BYTE )
 	{
-		if ( ! jeVFile_Read(F,&b,1) )
-			return JE_FALSE;
+		if ( ! grVFile_Read(F,&b,1) )
+			return GR_FALSE;
 		pi->Width = b;
-		if ( ! jeVFile_Read(F,&b,1) )
-			return JE_FALSE;
+		if ( ! grVFile_Read(F,&b,1) )
+			return GR_FALSE;
 		pi->Height = b;
 	}
 	else
 	{
-		if ( ! jeVFile_Read(F,&w,2) )
-			return JE_FALSE;
+		if ( ! grVFile_Read(F,&w,2) )
+			return GR_FALSE;
 		pi->Width = w;
-		if ( ! jeVFile_Read(F,&w,2) )
-			return JE_FALSE;
+		if ( ! grVFile_Read(F,&w,2) )
+			return GR_FALSE;
 		pi->Height = w;
 	}
 
-	if ( (flags & INFO_FLAG_HAS_CK) && jePixelFormat_BytesPerPel(pi->Format) > 0 )
+	if ( (flags & INFO_FLAG_HAS_CK) && grPixelFormat_BytesPerPel(pi->Format) > 0 )
 	{
 	uint8 * ptr;
-		pi->HasColorKey = JE_TRUE;
+		pi->HasColorKey = GR_TRUE;
 
-		if ( ! jeVFile_Read(F,data,jePixelFormat_BytesPerPel(pi->Format)) )
-			return JE_FALSE;
+		if ( ! grVFile_Read(F,data,grPixelFormat_BytesPerPel(pi->Format)) )
+			return GR_FALSE;
 		
 		ptr = data;
-		pi->ColorKey = jePixelFormat_GetPixel(pi->Format,&ptr);
+		pi->ColorKey = grPixelFormat_GetPixel(pi->Format,&ptr);
 	}
 
 	if ( flags & INFO_FLAG_HAS_AVERAGE )
 	{
-		if ( ! jeVFile_Read(F,data,3) )
-			return JE_FALSE;
+		if ( ! grVFile_Read(F,data,3) )
+			return GR_FALSE;
 
-		Bmp->HasAverageColor = JE_TRUE;
+		Bmp->HasAverageColor = GR_TRUE;
 		Bmp->AverageR = data[0];
 		Bmp->AverageG = data[1];
 		Bmp->AverageB = data[2];
@@ -5104,17 +5104,17 @@ jeBitmap_Info * pi;
 
 	pi->Stride = pi->Width;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean jeBitmap_WriteInfo(const jeBitmap *Bmp,jeVFile * F)
+grBoolean grBitmap_WriteInfo(const grBitmap *Bmp,grVFile * F)
 {
 uint8 data[64];
 uint8 * ptr;
 uint8 flags;
 uint8 b;
 int len,logw,logh;
-const jeBitmap_Info * pi;
+const grBitmap_Info * pi;
 int R,G,B;
 
 /*
@@ -5138,7 +5138,7 @@ int R,G,B;
 
 	assert( pi->Width < 65536 && pi->Height < 65536 );
 	assert( pi->MinimumMip == 0 );
-	assert( jePixelFormat_IsValid(pi->Format) );
+	assert( grPixelFormat_IsValid(pi->Format) );
 
 	flags = 0;
 	*ptr++ = 0; // flags will go there
@@ -5178,69 +5178,69 @@ int R,G,B;
 		}
 	}
 
-	if ( pi->HasColorKey && jePixelFormat_BytesPerPel(pi->Format) > 0 )
+	if ( pi->HasColorKey && grPixelFormat_BytesPerPel(pi->Format) > 0 )
 	{
 		flags |= INFO_FLAG_HAS_CK;
 
-		jePixelFormat_PutPixel(pi->Format,&ptr,pi->ColorKey);
+		grPixelFormat_PutPixel(pi->Format,&ptr,pi->ColorKey);
 	}
 
-	if ( jeBitmap_GetAverageColor(Bmp,&R,&G,&B) )
+	if ( grBitmap_GetAverageColor(Bmp,&R,&G,&B) )
 	{
 		flags |= INFO_FLAG_HAS_AVERAGE;
-		*ptr++ = JE_CLAMP8(R);
-		*ptr++ = JE_CLAMP8(G);
-		*ptr++ = JE_CLAMP8(B);
+		*ptr++ = GR_CLAMP8(R);
+		*ptr++ = GR_CLAMP8(G);
+		*ptr++ = GR_CLAMP8(B);
 	}
 
 	*data = flags;
 	len = (int)(ptr - data);
 
-	if ( ! jeVFile_Write(F,data,len) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(F,data,len) )
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*}{ ***************** Palette Functions *******************/
 
-jeBoolean jeBitmap_Palette_BlitData(jePixelFormat SrcFormat,const void *SrcData,const jeBitmap_Palette * SrcPal,
-									jePixelFormat DstFormat,	  void *DstData,const jeBitmap_Palette * DstPal,
+grBoolean grBitmap_Palette_BlitData(grPixelFormat SrcFormat,const void *SrcData,const grBitmap_Palette * SrcPal,
+									grPixelFormat DstFormat,	  void *DstData,const grBitmap_Palette * DstPal,
 									int32 Pixels)
 {
 char *SrcPtr,*DstPtr;
-jeBoolean SrcHasCK,DstHasCK;
+grBoolean SrcHasCK,DstHasCK;
 uint32 SrcCK,DstCK;
 int SrcCKi,DstCKi;
 
 	assert( SrcData && DstData );
 
-	assert( jePixelFormat_IsRaw(SrcFormat) );
-	assert( jePixelFormat_IsRaw(DstFormat) );
+	assert( grPixelFormat_IsRaw(SrcFormat) );
+	assert( grPixelFormat_IsRaw(DstFormat) );
 
 	SrcPtr = (char *)SrcData;
 	DstPtr = (char *)DstData;
 
 	if ( SrcPal && SrcPal->HasColorKey )
 	{
-		SrcHasCK = JE_TRUE;
+		SrcHasCK = GR_TRUE;
 		SrcCK = SrcPal->ColorKey;
 		SrcCKi = SrcPal->ColorKeyIndex;
 	}
 	else
 	{
-		SrcHasCK = JE_FALSE;
+		SrcHasCK = GR_FALSE;
 	}
 
 	if ( DstPal && DstPal->HasColorKey )
 	{
-		DstHasCK = JE_TRUE;
+		DstHasCK = GR_TRUE;
 		DstCK = DstPal->ColorKey;
 		DstCKi = DstPal->ColorKeyIndex;
 	}
 	else
 	{
-		DstHasCK = JE_FALSE;
+		DstHasCK = GR_FALSE;
 	}
 
 #if 0 // {} ?
@@ -5262,14 +5262,14 @@ int SrcCKi,DstCKi;
 	{
 	uint32 Pixel;
 	int p,R,G,B,A;
-	const jePixelFormat_Operations *SrcOps,*DstOps;
-	jePixelFormat_Composer		ComposePixel;
-	jePixelFormat_Decomposer	DecomposePixel;
-	jePixelFormat_PixelPutter	PutPixel;
-	jePixelFormat_PixelGetter	GetPixel;
+	const grPixelFormat_Operations *SrcOps,*DstOps;
+	grPixelFormat_Composer		ComposePixel;
+	grPixelFormat_Decomposer	DecomposePixel;
+	grPixelFormat_PixelPutter	PutPixel;
+	grPixelFormat_PixelGetter	GetPixel;
 
-		SrcOps = jePixelFormat_GetOperations(SrcFormat);
-		DstOps = jePixelFormat_GetOperations(DstFormat);
+		SrcOps = grPixelFormat_GetOperations(SrcFormat);
+		DstOps = grPixelFormat_GetOperations(DstFormat);
 		assert(SrcOps && DstOps);
 
 		GetPixel = SrcOps->GetPixel;
@@ -5344,64 +5344,64 @@ int SrcCKi,DstCKi;
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBitmap_Palette * JETCC jeBitmap_Palette_Create(jePixelFormat Format,int32 Size)
+GRAPI grBitmap_Palette * GRCC grBitmap_Palette_Create(grPixelFormat Format,int32 Size)
 {
-jeBitmap_Palette * P;
+grBitmap_Palette * P;
 int DataBytes;
-const jePixelFormat_Operations * ops;
+const grPixelFormat_Operations * ops;
 
-	ops = jePixelFormat_GetOperations(Format);
+	ops = grPixelFormat_GetOperations(Format);
 	if ( ! ops->RMask )
 	{
-		jeErrorLog_AddString(-1,"jeBitmap_Palette_Create : Invalid format for a palette!", NULL);
+		grErrorLog_AddString(-1,"grBitmap_Palette_Create : Invalid format for a palette!", NULL);
 		return NULL;
 	}
 
-	DataBytes = jePixelFormat_BytesPerPel(Format) * Size;
+	DataBytes = grPixelFormat_BytesPerPel(Format) * Size;
 	if ( DataBytes == 0 )
 	{
-		jeErrorLog_AddString(-1,"jeBitmap_Palette_Create : Invalid format for a palette!", NULL);
+		grErrorLog_AddString(-1,"grBitmap_Palette_Create : Invalid format for a palette!", NULL);
 		return NULL;
 	}
 
-	P = (jeBitmap_Palette *)jeRam_Allocate(sizeof(jeBitmap_Palette));
+	P = (grBitmap_Palette *)grRam_Allocate(sizeof(grBitmap_Palette));
 	if ( ! P ) return NULL;
 	clear(P);
 
 	P->Size = Size;
 	P->Format = Format;
-	if ( ! (P->Data = jeRam_Allocate(DataBytes)) )
+	if ( ! (P->Data = grRam_Allocate(DataBytes)) )
 	{
-		jeRam_Free(P);
+		grRam_Free(P);
 		return NULL;
 	}
 
 	P->RefCount = 1;
 	P->LockCount = 0;
 
-	P->HasColorKey = JE_FALSE;
+	P->HasColorKey = GR_FALSE;
 
 return P;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_CreateRef(jeBitmap_Palette *P)
+GRAPI grBoolean GRCC grBitmap_Palette_CreateRef(grBitmap_Palette *P)
 {
 	if ( ! P || P->RefCount < 1 )
-		return JE_FALSE;
+		return GR_FALSE;
 	P->RefCount ++;
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBitmap_Palette * JETCC jeBitmap_Palette_CreateFromBitmap(jeBitmap * Bmp,jeBoolean Slow)
+GRAPI grBitmap_Palette * GRCC grBitmap_Palette_CreateFromBitmap(grBitmap * Bmp,grBoolean Slow)
 {
-jeBitmap_Palette * Pal;
-	Pal = jeBitmap_GetPalette(Bmp);
+grBitmap_Palette * Pal;
+	Pal = grBitmap_GetPalette(Bmp);
 	if ( Pal )
 	{
-		jeBitmap_Palette_CreateRef(Pal);
+		grBitmap_Palette_CreateRef(Pal);
 		return Pal;
 	}
 	else
@@ -5410,14 +5410,14 @@ jeBitmap_Palette * Pal;
 	}
 }
 
-jeBitmap_Palette * BITMAP_JET_INTERNAL jeBitmap_Palette_CreateFromDriver(DRV_Driver * Driver,jePixelFormat Format,int32 Size)
+grBitmap_Palette * BITMAP_GR_INTERNAL grBitmap_Palette_CreateFromDriver(DRV_Driver * Driver,grPixelFormat Format,int32 Size)
 {
-jeBitmap_Palette * P;
-jeTexture_Info TInfo;
+grBitmap_Palette * P;
+grTexture_Info TInfo;
 
 	assert(Driver);
 
-	P = (jeBitmap_Palette *)jeRam_Allocate(sizeof(jeBitmap_Palette));
+	P = (grBitmap_Palette *)grRam_Allocate(sizeof(grBitmap_Palette));
 
 	if ( ! P ) return NULL;
 	clear(P);
@@ -5428,21 +5428,21 @@ jeTexture_Info TInfo;
 	// {} the pixelformat passed in here has non-trivial implications when the
 	//		driver provides more than one possible palette type
 
-	assert( jePixelFormat_IsRaw(Format) );
+	assert( grPixelFormat_IsRaw(Format) );
 
-	P->DriverHandle = jeBitmap_CreateTHandle(Driver,Size,1,1,
-			Format,JE_PIXELFORMAT_NO_DATA,0,jePixelFormat_HasAlpha(Format),0,RDRIVER_PF_PALETTE);
+	P->DriverHandle = grBitmap_CreateTHandle(Driver,Size,1,1,
+			Format,GR_PIXELFORMAT_NO_DATA,0,grPixelFormat_HasAlpha(Format),0,RDRIVER_PF_PALETTE);
 	if ( ! P->DriverHandle )
 	{
-		jeErrorLog_AddString(-1,"Palette_CreateFromDriver : CreateTHandle", NULL);	
-		jeRam_Free(P);
+		grErrorLog_AddString(-1,"Palette_CreateFromDriver : CreateTHandle", NULL);	
+		grRam_Free(P);
 		return NULL;
 	}
 
 	Driver->THandle_GetInfo(P->DriverHandle,0,&TInfo);
 	P->Format = TInfo.PixelFormat.PixelFormat;
 
-	P->HasColorKey = (TInfo.Flags & RDRIVER_THANDLE_HAS_COLORKEY) ? JE_TRUE : JE_FALSE;
+	P->HasColorKey = (TInfo.Flags & RDRIVER_THANDLE_HAS_COLORKEY) ? GR_TRUE : GR_FALSE;
 	P->ColorKey = TInfo.ColorKey;
 	P->ColorKeyIndex = -1;
 
@@ -5451,65 +5451,65 @@ jeTexture_Info TInfo;
 return P;
 }
 
-JETAPI jeBitmap_Palette * JETCC jeBitmap_Palette_CreateCopy(const jeBitmap_Palette *Palette)
+GRAPI grBitmap_Palette * GRCC grBitmap_Palette_CreateCopy(const grBitmap_Palette *Palette)
 {
-jeBitmap_Palette * P;
+grBitmap_Palette * P;
 
 	if ( ! Palette )
 		return NULL;
 
 	if ( Palette->Driver )
 	{
-		P = jeBitmap_Palette_CreateFromDriver(Palette->Driver,Palette->Format,Palette->Size);
+		P = grBitmap_Palette_CreateFromDriver(Palette->Driver,Palette->Format,Palette->Size);
 	}
 	else
 	{
-		P = jeBitmap_Palette_Create(Palette->Format,Palette->Size);
+		P = grBitmap_Palette_Create(Palette->Format,Palette->Size);
 	}
 
 	if ( ! P ) return NULL;
 
-	if ( ! jeBitmap_Palette_Copy(Palette,P) )
+	if ( ! grBitmap_Palette_Copy(Palette,P) )
 	{
-		jeBitmap_Palette_Destroy(&P);
+		grBitmap_Palette_Destroy(&P);
 		return NULL;
 	}
 
 return P;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_Destroy(jeBitmap_Palette ** ppPalette)
+GRAPI grBoolean GRCC grBitmap_Palette_Destroy(grBitmap_Palette ** ppPalette)
 {
-jeBitmap_Palette * Palette;
+grBitmap_Palette * Palette;
 	assert(ppPalette);
 	if ( Palette = *ppPalette )
 	{
 		if ( Palette->LockCount )
-			return JE_FALSE;
+			return GR_FALSE;
 		Palette->RefCount --;
 		if ( Palette->RefCount <= 0 )
 		{
 			if ( Palette->Data )
-				jeRam_Free(Palette->Data);
+				grRam_Free(Palette->Data);
 			if ( Palette->DriverHandle )
 			{
 				Palette->Driver->THandle_Destroy(Palette->DriverHandle);
 				Palette->DriverHandle = NULL;
 			}
-			jeRam_Free(Palette);
+			grRam_Free(Palette);
 		}
 	}
 	*ppPalette = NULL;
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_Lock(jeBitmap_Palette *P, void **pBits, jePixelFormat *pFormat,int32 *pSize)
+GRAPI grBoolean GRCC grBitmap_Palette_Lock(grBitmap_Palette *P, void **pBits, grPixelFormat *pFormat,int32 *pSize)
 {
 	assert(P);
 	assert(pBits);
 
 	if ( P->LockCount )
-		return JE_FALSE;
+		return GR_FALSE;
 	P->LockCount++;
 
 	*pBits = NULL;
@@ -5524,13 +5524,13 @@ JETAPI jeBoolean JETCC jeBitmap_Palette_Lock(jeBitmap_Palette *P, void **pBits, 
 	}
 	else if ( P->DriverHandle )
 	{
-	jeTexture_Info TInfo;
+	grTexture_Info TInfo;
 
 		if ( ! P->Driver->THandle_GetInfo(P->DriverHandle,0,&TInfo) )
-			return JE_FALSE;
+			return GR_FALSE;
 
 		if ( TInfo.Height != 1 )
-			return JE_FALSE;
+			return GR_FALSE;
 
 		if ( ! (P->Driver->THandle_Lock(P->DriverHandle,0,pBits)) )
 			*pBits = NULL;
@@ -5543,14 +5543,14 @@ JETAPI jeBoolean JETCC jeBitmap_Palette_Lock(jeBitmap_Palette *P, void **pBits, 
 			*pSize = TInfo.Width;
 	}
 
-	return (*pBits) ? JE_TRUE : JE_FALSE;
+	return (*pBits) ? GR_TRUE : GR_FALSE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_UnLock(jeBitmap_Palette *P)
+GRAPI grBoolean GRCC grBitmap_Palette_UnLock(grBitmap_Palette *P)
 {
 	assert(P);
 	if ( P->LockCount <= 0 )
-		return JE_FALSE;
+		return GR_FALSE;
 	P->LockCount--;
 	if ( P->LockCount == 0 )
 	{
@@ -5561,9 +5561,9 @@ JETAPI jeBoolean JETCC jeBitmap_Palette_UnLock(jeBitmap_Palette *P)
 			uint8 *Bits,*pBits;
 			uint32 Pixel;
 			int p;
-			const jePixelFormat_Operations *ops;
-			jePixelFormat_PixelPutter	PutPixel;
-			jePixelFormat_PixelGetter	GetPixel;
+			const grPixelFormat_Operations *ops;
+			grPixelFormat_PixelPutter	PutPixel;
+			grPixelFormat_PixelGetter	GetPixel;
 
 				if ( P->Data )
 				{
@@ -5574,7 +5574,7 @@ JETAPI jeBoolean JETCC jeBitmap_Palette_UnLock(jeBitmap_Palette *P)
 					Bits = (uint8*)P->DriverBits;
 				}
 
-				ops = jePixelFormat_GetOperations(P->Format);
+				ops = grPixelFormat_GetOperations(P->Format);
 				assert(ops);
 
 				GetPixel = ops->GetPixel;
@@ -5599,68 +5599,68 @@ JETAPI jeBoolean JETCC jeBitmap_Palette_UnLock(jeBitmap_Palette *P)
 		if ( P->DriverHandle )
 		{
 			if ( ! P->Driver->THandle_UnLock(P->DriverHandle,0) )
-				return JE_FALSE;
+				return GR_FALSE;
 			P->DriverBits = NULL;
 		}
 	}
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_SetFormat(jeBitmap_Palette * P,jePixelFormat Format)
+GRAPI grBoolean GRCC grBitmap_Palette_SetFormat(grBitmap_Palette * P,grPixelFormat Format)
 {
 void * NewData;
 	
 	assert(P);
 
 	if ( P->DriverHandle ) // can't change format on card!
-		return JE_FALSE;
+		return GR_FALSE;
 
 	assert( ! P->HasColorKey ); // can't have colorkey accept on crappy Glide
 
 	if ( Format == P->Format )
-		return JE_TRUE;
+		return GR_TRUE;
 
-	NewData = jeRam_Allocate( jePixelFormat_BytesPerPel(Format) * P->Size );
+	NewData = grRam_Allocate( grPixelFormat_BytesPerPel(Format) * P->Size );
 	if ( ! NewData )
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if ( ! jeBitmap_Palette_BlitData(P->Format,P->Data,NULL,Format,NewData,NULL,P->Size) )
+	if ( ! grBitmap_Palette_BlitData(P->Format,P->Data,NULL,Format,NewData,NULL,P->Size) )
 	{
-		jeRam_Free(NewData);
-		return JE_FALSE;
+		grRam_Free(NewData);
+		return GR_FALSE;
 	}
 
-	jeRam_Free(P->Data);
+	grRam_Free(P->Data);
 	P->Data = NewData;
 	P->Format = Format;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_GetData(const jeBitmap_Palette *P,void *Into,jePixelFormat Format,int32 Size)
+GRAPI grBoolean GRCC grBitmap_Palette_GetData(const grBitmap_Palette *P,void *Into,grPixelFormat Format,int32 Size)
 {
-jePixelFormat FmFormat;
+grPixelFormat FmFormat;
 const void *FmData;
 int32 FmSize;
-jeBoolean Ret;
+grBoolean Ret;
 
 	assert(P);
 	assert(Into);
 
-	if ( ! jeBitmap_Palette_Lock((jeBitmap_Palette *)P,(void **)&FmData,&FmFormat,&FmSize) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_Lock((grBitmap_Palette *)P,(void **)&FmData,&FmFormat,&FmSize) )
+		return GR_FALSE;
 
 	if ( FmSize < Size )
 		Size = FmSize;
 
-	Ret = jeBitmap_Palette_BlitData(FmFormat,FmData,P,Format,Into,NULL,Size);
+	Ret = grBitmap_Palette_BlitData(FmFormat,FmData,P,Format,Into,NULL,Size);
 	
-	jeBitmap_Palette_UnLock((jeBitmap_Palette *)P);
+	grBitmap_Palette_UnLock((grBitmap_Palette *)P);
 
 return Ret;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_GetInfo(const jeBitmap_Palette *P,jeBitmap_Info *pInfo)
+GRAPI grBoolean GRCC grBitmap_Palette_GetInfo(const grBitmap_Palette *P,grBitmap_Info *pInfo)
 {
 	assert(P && pInfo);
 
@@ -5673,76 +5673,76 @@ JETAPI jeBoolean JETCC jeBitmap_Palette_GetInfo(const jeBitmap_Palette *P,jeBitm
 	pInfo->MaximumMip = pInfo->MinimumMip = 0;
 	pInfo->Palette = NULL;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_SetData(jeBitmap_Palette *P,const void *From,jePixelFormat Format,int32 Colors)
+GRAPI grBoolean GRCC grBitmap_Palette_SetData(grBitmap_Palette *P,const void *From,grPixelFormat Format,int32 Colors)
 {
-jePixelFormat PalFormat;
+grPixelFormat PalFormat;
 void *PalData;
 int32 PalSize;
-jeBoolean Ret;
+grBoolean Ret;
 
 	assert(P);
 	assert(From);
 
-	if ( ! jeBitmap_Palette_Lock(P,&PalData,&PalFormat,&PalSize) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_Lock(P,&PalData,&PalFormat,&PalSize) )
+		return GR_FALSE;
 
 	if ( PalSize < Colors )
 		Colors = PalSize;
 
-	Ret = jeBitmap_Palette_BlitData(Format,From,NULL,PalFormat,PalData,P,Colors);
+	Ret = grBitmap_Palette_BlitData(Format,From,NULL,PalFormat,PalData,P,Colors);
 	
-	if ( ! jeBitmap_Palette_UnLock(P) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_UnLock(P) )
+		return GR_FALSE;
 
 return Ret;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_Copy(const jeBitmap_Palette * Fm,jeBitmap_Palette * To)
+GRAPI grBoolean GRCC grBitmap_Palette_Copy(const grBitmap_Palette * Fm,grBitmap_Palette * To)
 {
-jePixelFormat FmFormat,ToFormat;
+grPixelFormat FmFormat,ToFormat;
 void *FmData,*ToData;
 int32 FmSize,ToSize;
-jeBoolean Ret;
+grBoolean Ret;
 
 	assert(Fm);
 	assert(To);
 	if ( Fm == To )
-		return JE_TRUE;
+		return GR_TRUE;
 
-	if ( ! jeBitmap_Palette_Lock((jeBitmap_Palette *)Fm,&FmData,&FmFormat,&FmSize) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_Lock((grBitmap_Palette *)Fm,&FmData,&FmFormat,&FmSize) )
+		return GR_FALSE;
 
-	if ( ! jeBitmap_Palette_Lock(To,&ToData,&ToFormat,&ToSize) )
+	if ( ! grBitmap_Palette_Lock(To,&ToData,&ToFormat,&ToSize) )
 	{
-		jeBitmap_Palette_UnLock((jeBitmap_Palette *)Fm);
-		return JE_FALSE;
+		grBitmap_Palette_UnLock((grBitmap_Palette *)Fm);
+		return GR_FALSE;
 	}
 
 	if ( FmSize > ToSize )
 	{
-		Ret = JE_FALSE;
+		Ret = GR_FALSE;
 	}
 	else
 	{
-		Ret = jeBitmap_Palette_BlitData(FmFormat,FmData,Fm,ToFormat,ToData,To,FmSize);
+		Ret = grBitmap_Palette_BlitData(FmFormat,FmData,Fm,ToFormat,ToData,To,FmSize);
 	}
 	
-	jeBitmap_Palette_UnLock((jeBitmap_Palette *)Fm);
-	jeBitmap_Palette_UnLock(To);
+	grBitmap_Palette_UnLock((grBitmap_Palette *)Fm);
+	grBitmap_Palette_UnLock(To);
 
 return Ret;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_SetEntryColor(jeBitmap_Palette *P,int32 Color,int32 R,int32 G,int32 B,int32 A)
+GRAPI grBoolean GRCC grBitmap_Palette_SetEntryColor(grBitmap_Palette *P,int32 Color,int32 R,int32 G,int32 B,int32 A)
 {
 	assert(P);
 	
-	if ( A < 80 && ! jePixelFormat_HasAlpha(P->Format) && P->HasColorKey )
+	if ( A < 80 && ! grPixelFormat_HasAlpha(P->Format) && P->HasColorKey )
 	{
-		return jeBitmap_Palette_SetEntry(P,Color,P->ColorKey);
+		return grBitmap_Palette_SetEntry(P,Color,P->ColorKey);
 	}
 	else if ( P->HasColorKey )
 	{
@@ -5751,21 +5751,21 @@ JETAPI jeBoolean JETCC jeBitmap_Palette_SetEntryColor(jeBitmap_Palette *P,int32 
 		// might have alpha AND colorkey !
 
 		if ( Color == P->ColorKeyIndex ) // and A > 80 because of the above
-			return JE_FALSE;
+			return GR_FALSE;
 
-		Pixel = jePixelFormat_ComposePixel(P->Format,R,G,B,A);
+		Pixel = grPixelFormat_ComposePixel(P->Format,R,G,B,A);
 		if ( Pixel == P->ColorKey )
 			Pixel ^= 1;
 			
-		return jeBitmap_Palette_SetEntry(P,Color,Pixel);
+		return grBitmap_Palette_SetEntry(P,Color,Pixel);
 	}
 	else
 	{
-		return jeBitmap_Palette_SetEntry(P,Color,jePixelFormat_ComposePixel(P->Format,R,G,B,A));
+		return grBitmap_Palette_SetEntry(P,Color,grPixelFormat_ComposePixel(P->Format,R,G,B,A));
 	}
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_GetEntryColor(const jeBitmap_Palette *P,int32 Color,int32 *R,int32 *G,int32 *B,int32 *A)
+GRAPI grBoolean GRCC grBitmap_Palette_GetEntryColor(const grBitmap_Palette *P,int32 Color,int32 *R,int32 *G,int32 *B,int32 *A)
 {
 uint32 Pixel;
 	assert(P);
@@ -5774,39 +5774,39 @@ uint32 Pixel;
 		if ( Color == P->ColorKeyIndex )
 		{
 			*R = *G = *B = *A = 0;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		else
 		{
-			if ( ! jeBitmap_Palette_GetEntry(P,Color,&Pixel) )
-				return JE_FALSE;
+			if ( ! grBitmap_Palette_GetEntry(P,Color,&Pixel) )
+				return GR_FALSE;
 			if ( Pixel == P->ColorKey )
 			{
 				*R = *G = *B = *A = 0;
 			}
 			else
 			{
-				jePixelFormat_DecomposePixel(P->Format,Pixel,R,G,B,A);
+				grPixelFormat_DecomposePixel(P->Format,Pixel,R,G,B,A);
 			}
 		}
 	}
 	else
 	{
-		if ( ! jeBitmap_Palette_GetEntry(P,Color,&Pixel) )
-			return JE_FALSE;
-		jePixelFormat_DecomposePixel(P->Format,Pixel,R,G,B,A);
+		if ( ! grBitmap_Palette_GetEntry(P,Color,&Pixel) )
+			return GR_FALSE;
+		grPixelFormat_DecomposePixel(P->Format,Pixel,R,G,B,A);
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_SetEntry(jeBitmap_Palette *P,int32 Color,uint32 Pixel)
+GRAPI grBoolean GRCC grBitmap_Palette_SetEntry(grBitmap_Palette *P,int32 Color,uint32 Pixel)
 {
 	assert(P);
 
 	if ( P->HasColorKey )
 	{
 		if ( Color == P->ColorKeyIndex )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
 	if ( P->Data )
@@ -5814,35 +5814,35 @@ JETAPI jeBoolean JETCC jeBitmap_Palette_SetEntry(jeBitmap_Palette *P,int32 Color
 	char *Data;
 
 		if ( Color >= P->Size )
-			return JE_FALSE;
+			return GR_FALSE;
 
-		Data = (char *)(P->Data) + Color * jePixelFormat_BytesPerPel(P->Format);
-		jePixelFormat_PutPixel(P->Format,(uint8 **)&Data,Pixel);
+		Data = (char *)(P->Data) + Color * grPixelFormat_BytesPerPel(P->Format);
+		grPixelFormat_PutPixel(P->Format,(uint8 **)&Data,Pixel);
 	}
 	else
 	{
 	char *Data;
-	jePixelFormat Format;
+	grPixelFormat Format;
 	int Size;
 
-		if ( ! jeBitmap_Palette_Lock(P,(void **)&Data,&Format,&Size) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_Lock(P,(void **)&Data,&Format,&Size) )
+			return GR_FALSE;
 
 		if ( Color >= Size )
 		{
-			jeBitmap_Palette_UnLock(P);
-			return JE_FALSE;
+			grBitmap_Palette_UnLock(P);
+			return GR_FALSE;
 		}
 
-		Data += Color * jePixelFormat_BytesPerPel(Format);
-		jePixelFormat_PutPixel(Format,(uint8**)&Data,Pixel);
+		Data += Color * grPixelFormat_BytesPerPel(Format);
+		grPixelFormat_PutPixel(Format,(uint8**)&Data,Pixel);
 
-		jeBitmap_Palette_UnLock(P);
+		grBitmap_Palette_UnLock(P);
 	}
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_GetEntry(const jeBitmap_Palette *P,int32 Color,uint32 *Pixel)
+GRAPI grBoolean GRCC grBitmap_Palette_GetEntry(const grBitmap_Palette *P,int32 Color,uint32 *Pixel)
 {
 
 	assert(P);
@@ -5852,57 +5852,57 @@ JETAPI jeBoolean JETCC jeBitmap_Palette_GetEntry(const jeBitmap_Palette *P,int32
 	char *Data;
 
 		if ( Color >= P->Size )
-			return JE_FALSE;
+			return GR_FALSE;
 
-		Data = (char *)(P->Data) + Color * jePixelFormat_BytesPerPel(P->Format);
-		*Pixel = jePixelFormat_GetPixel(P->Format,(uint8 **)&Data);
+		Data = (char *)(P->Data) + Color * grPixelFormat_BytesPerPel(P->Format);
+		*Pixel = grPixelFormat_GetPixel(P->Format,(uint8 **)&Data);
 	}
 	else
 	{
 	char *Data;
-	jePixelFormat Format;
+	grPixelFormat Format;
 	int Size;
 
 		// must cast away const cuz we don't have a lockforread/write on palettes
 
-		if ( ! jeBitmap_Palette_Lock((jeBitmap_Palette *)P,(void **)&Data,&Format,&Size) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_Lock((grBitmap_Palette *)P,(void **)&Data,&Format,&Size) )
+			return GR_FALSE;
 
 		if ( Color >= Size )
 		{
-			jeBitmap_Palette_UnLock((jeBitmap_Palette *)P);
-			return JE_FALSE;
+			grBitmap_Palette_UnLock((grBitmap_Palette *)P);
+			return GR_FALSE;
 		}
 
-		Data += Color * jePixelFormat_BytesPerPel(Format);
-		*Pixel = jePixelFormat_GetPixel(Format,(uint8 **)&Data);
+		Data += Color * grPixelFormat_BytesPerPel(Format);
+		*Pixel = grPixelFormat_GetPixel(Format,(uint8 **)&Data);
 
-		jeBitmap_Palette_UnLock((jeBitmap_Palette *)P);
+		grBitmap_Palette_UnLock((grBitmap_Palette *)P);
 	}
-return JE_TRUE;
+return GR_TRUE;
 }
 
 #define PALETTE_INFO_FORMAT_MASK	(0x1F)
 #define PALETTE_INFO_FLAG_SIZE256	(1<<5)	// 5 is the low
 #define PALETTE_INFO_FLAG_COMPRESS	(1<<6)
 
-JETAPI jeBitmap_Palette * JETCC jeBitmap_Palette_CreateFromFile(jeVFile *F)
+GRAPI grBitmap_Palette * GRCC grBitmap_Palette_CreateFromFile(grVFile *F)
 {
-jeBitmap_Palette * P;
+grBitmap_Palette * P;
 int Size;
-jePixelFormat Format;
+grPixelFormat Format;
 uint8 flags,b;
-jeVFile * HF;
+grVFile * HF;
 
 	// for old version compatibility :
 	// in new versions, F is already a hints file
-	if ( ( HF = jeVFile_GetHintsFile(F) ) == NULL )
+	if ( ( HF = grVFile_GetHintsFile(F) ) == NULL )
 		HF = F;
 
-	if ( ! jeVFile_Read(HF, &flags, sizeof(flags)) )
+	if ( ! grVFile_Read(HF, &flags, sizeof(flags)) )
 		return NULL;
 
-	Format = (jePixelFormat)(flags & PALETTE_INFO_FORMAT_MASK);
+	Format = (grPixelFormat)(flags & PALETTE_INFO_FORMAT_MASK);
 
 	if ( flags & PALETTE_INFO_FLAG_SIZE256 )
 	{
@@ -5910,12 +5910,12 @@ jeVFile * HF;
 	}
 	else
 	{
-		if ( ! jeVFile_Read(HF, &b, sizeof(b)) )
+		if ( ! grVFile_Read(HF, &b, sizeof(b)) )
 			return NULL;
 		Size = b;
 	}
 
-	P = jeBitmap_Palette_Create(Format,Size);
+	P = grBitmap_Palette_Create(Format,Size);
 	if ( ! P )
 		return NULL;
 
@@ -5923,15 +5923,15 @@ jeVFile * HF;
 	{
 		if ( ! codePal_Read(P, F) )
 		{
-			jeErrorLog_AddString(-1,"Bitmap_Palette_CreateFromFile : codePal failed!",NULL);
+			grErrorLog_AddString(-1,"Bitmap_Palette_CreateFromFile : codePal failed!",NULL);
 			return NULL;
 		}
 	}
 	else
 	{
-		if ( ! jeVFile_Read(F, P->Data, jePixelFormat_BytesPerPel(P->Format) * P->Size) )
+		if ( ! grVFile_Read(F, P->Data, grPixelFormat_BytesPerPel(P->Format) * P->Size) )
 		{
-			jeRam_Free(P);
+			grRam_Free(P);
 			return NULL;
 		}
 	}
@@ -5941,7 +5941,7 @@ return P;
 
 	// we usually write the palette's header in one byte :^)
 
-jeBoolean JETCC jeBitmap_Palette_WriteHeaderToFile(int32 Size,jePixelFormat Format,jeBoolean Compressed,jeVFile *F)
+grBoolean GRCC grBitmap_Palette_WriteHeaderToFile(int32 Size,grPixelFormat Format,grBoolean Compressed,grVFile *F)
 {
 uint8 b;
 
@@ -5955,24 +5955,24 @@ uint8 b;
 	if ( Compressed )
 		b |= PALETTE_INFO_FLAG_COMPRESS;
 
-	if ( ! jeVFile_Write(F, &b, sizeof(b)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(F, &b, sizeof(b)) )
+		return GR_FALSE;
 
 	if ( Size != 256 )
 	{
 		assert(Size < 256);
 		b = (uint8)Size;
 		
-		if ( ! jeVFile_Write(F, &b, sizeof(b)) )
-			return JE_FALSE;
+		if ( ! grVFile_Write(F, &b, sizeof(b)) )
+			return GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_WriteToFile(const jeBitmap_Palette *P,jeVFile *F)
+GRAPI grBoolean GRCC grBitmap_Palette_WriteToFile(const grBitmap_Palette *P,grVFile *F)
 {
-jePixelFormat Format;
+grPixelFormat Format;
 void *Data;
 int Size,codedLen,StartPos;
 
@@ -5980,45 +5980,45 @@ int Size,codedLen,StartPos;
 
 	// assert(F->IsHintsFile); // F is a hints file!
 
-	assert( P->HasColorKey == JE_FALSE ); // system palettes can't have color key!
+	assert( P->HasColorKey == GR_FALSE ); // system palettes can't have color key!
 
-	if ( ! jeBitmap_Palette_Lock((jeBitmap_Palette *)P,&Data,&Format,&Size) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_Lock((grBitmap_Palette *)P,&Data,&Format,&Size) )
+		return GR_FALSE;
 
-	jeBitmap_Palette_UnLock((jeBitmap_Palette *)P);
+	grBitmap_Palette_UnLock((grBitmap_Palette *)P);
 
-	jeVFile_Tell(F,(int32 *)&StartPos);
+	grVFile_Tell(F,(int32 *)&StartPos);
 
-	jeBitmap_Palette_WriteHeaderToFile(Size,Format,JE_TRUE,F);
+	grBitmap_Palette_WriteHeaderToFile(Size,Format,GR_TRUE,F);
 
 	if ( ! codePal_Write(P, F, &codedLen) )
 	{
-		jeErrorLog_AddString(-1,"Bitmap_Palette_WriteToFile : codePal failed!",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Bitmap_Palette_WriteToFile : codePal failed!",NULL);
+		return GR_FALSE;
 	}
 	
-	if ( (uint32)codedLen > (jePixelFormat_BytesPerPel(Format) * Size) )
+	if ( (uint32)codedLen > (grPixelFormat_BytesPerPel(Format) * Size) )
 	{
-		jeVFile_Seek(F, StartPos, JE_VFILE_SEEKSET);
+		grVFile_Seek(F, StartPos, GR_VFILE_SEEKSET);
 
-		jeBitmap_Palette_WriteHeaderToFile(Size,Format,JE_FALSE,F);
+		grBitmap_Palette_WriteHeaderToFile(Size,Format,GR_FALSE,F);
 
-		if ( ! jeBitmap_Palette_Lock((jeBitmap_Palette *)P,&Data,&Format,&Size) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_Lock((grBitmap_Palette *)P,&Data,&Format,&Size) )
+			return GR_FALSE;
 
-		if ( ! jeVFile_Write(F, Data, jePixelFormat_BytesPerPel(Format) * Size) )
+		if ( ! grVFile_Write(F, Data, grPixelFormat_BytesPerPel(Format) * Size) )
 		{
-			jeBitmap_Palette_UnLock((jeBitmap_Palette *)P);
-			return JE_FALSE;
+			grBitmap_Palette_UnLock((grBitmap_Palette *)P);
+			return GR_FALSE;
 		}
 		
-		jeBitmap_Palette_UnLock((jeBitmap_Palette *)P);
+		grBitmap_Palette_UnLock((grBitmap_Palette *)P);
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeBitmap_Palette_SortColors(jeBitmap_Palette * P,jeBoolean Slower)
+GRAPI grBoolean GRCC grBitmap_Palette_SortColors(grBitmap_Palette * P,grBoolean Slower)
 {
 int permutation[256],usage[256];
 uint8 paldata[768];
@@ -6040,7 +6040,7 @@ int i;
 	else
 		flags = SORTPAL_FAST;
 
-	if ( jePixelFormat_HasAlpha(P->Format) )
+	if ( grPixelFormat_HasAlpha(P->Format) )
 	{
 	uint8 rgba_in[1024];
 	uint8 rgba_out[1024];
@@ -6048,13 +6048,13 @@ int i;
 		// if the palette has alpha, use the permutation to shuffle  
 		//	the alphas and thereby retain them!
 
-		if ( ! jeBitmap_Palette_GetData(P,rgba_in,JE_PIXELFORMAT_32BIT_RGBA,P->Size) )
-			return JE_FALSE;
-		if ( ! jeBitmap_Palette_GetData(P,paldata,JE_PIXELFORMAT_24BIT_RGB,P->Size) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_GetData(P,rgba_in,GR_PIXELFORMAT_32BIT_RGBA,P->Size) )
+			return GR_FALSE;
+		if ( ! grBitmap_Palette_GetData(P,paldata,GR_PIXELFORMAT_24BIT_RGB,P->Size) )
+			return GR_FALSE;
 
 		if ( ! sortPal(P->Size,paldata,permutation,usage,flags) )
-			return JE_FALSE;
+			return GR_FALSE;
 
 		for(i=0;i<256;i++)
 		{
@@ -6070,31 +6070,31 @@ int i;
 			rgba_out[4*i + 3] = R;
 		}
 
-		if ( ! jeBitmap_Palette_SetData(P,rgba_out,JE_PIXELFORMAT_32BIT_RGBA,P->Size) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_SetData(P,rgba_out,GR_PIXELFORMAT_32BIT_RGBA,P->Size) )
+			return GR_FALSE;
 	}
 	else
 	{
-		if ( ! jeBitmap_Palette_GetData(P,paldata,JE_PIXELFORMAT_24BIT_RGB,P->Size) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_GetData(P,paldata,GR_PIXELFORMAT_24BIT_RGB,P->Size) )
+			return GR_FALSE;
 
 		if ( ! sortPal(P->Size,paldata,permutation,usage,flags) )
-			return JE_FALSE;
+			return GR_FALSE;
 			
-		if ( ! jeBitmap_Palette_SetData(P,paldata,JE_PIXELFORMAT_24BIT_RGB,P->Size) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_SetData(P,paldata,GR_PIXELFORMAT_24BIT_RGB,P->Size) )
+			return GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /*}{ ******************** EOF **************************/
 
 // {} put ErrorLogs indicating where we failed in _IsValid
 
-jeBoolean jeBitmap_IsValid(const jeBitmap *Bmp)
+grBoolean grBitmap_IsValid(const grBitmap *Bmp)
 {
-	if ( ! Bmp ) return JE_FALSE;
+	if ( ! Bmp ) return GR_FALSE;
 
 	assert( Bmp->RefCount >= 1 );
 
@@ -6104,11 +6104,11 @@ jeBoolean jeBitmap_IsValid(const jeBitmap *Bmp)
 			! Bmp->DriverHandle ) );
 	assert( ! (Bmp->DriverHandle && ! Bmp->Driver) );
 
-	if ( ! jeBitmap_Info_IsValid(&(Bmp->Info)) )
-		return JE_FALSE;
+	if ( ! grBitmap_Info_IsValid(&(Bmp->Info)) )
+		return GR_FALSE;
 
-	if ( Bmp->DriverHandle && ! jeBitmap_Info_IsValid(&(Bmp->DriverInfo)) )
-		return JE_FALSE;
+	if ( Bmp->DriverHandle && ! grBitmap_Info_IsValid(&(Bmp->DriverInfo)) )
+		return GR_FALSE;
 
 	if ( Bmp->LockOwner && Bmp->Alpha )
 		assert( Bmp->Alpha->LockOwner );
@@ -6128,37 +6128,37 @@ jeBoolean jeBitmap_IsValid(const jeBitmap *Bmp)
 	if ( Bmp->Alpha )
 	{
 		assert(Bmp->Alpha != Bmp);
-		if ( ! jeBitmap_IsValid(Bmp->Alpha) )
-			return JE_FALSE;
+		if ( ! grBitmap_IsValid(Bmp->Alpha) )
+			return GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean jeBitmap_Info_IsValid(const jeBitmap_Info *Info)
+grBoolean grBitmap_Info_IsValid(const grBitmap_Info *Info)
 {
-	if ( ! Info ) return JE_FALSE;
+	if ( ! Info ) return GR_FALSE;
 
 	assert( Info->Width > 0 && Info->Height > 0 && Info->Stride >= Info->Width );
 
 	assert( Info->MinimumMip >= 0 && Info->MaximumMip < MAXMIPLEVELS && Info->MinimumMip <= Info->MaximumMip );
 
-	assert( Info->Format > JE_PIXELFORMAT_NO_DATA && Info->Format < JE_PIXELFORMAT_COUNT );
+	assert( Info->Format > GR_PIXELFORMAT_NO_DATA && Info->Format < GR_PIXELFORMAT_COUNT );
 
 //	ok to have palette on non-palettized
-//	if ( ! jePixelFormat_HasPalette(Info->Format) && Info->Palette )
-//		return JE_FALSE;
+//	if ( ! grPixelFormat_HasPalette(Info->Format) && Info->Palette )
+//		return GR_FALSE;
 
 	if ( Info->Palette )
-		if ( ! jeBitmap_Palette_IsValid(Info->Palette) )
-			return JE_FALSE;
+		if ( ! grBitmap_Palette_IsValid(Info->Palette) )
+			return GR_FALSE;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean jeBitmap_Palette_IsValid(const jeBitmap_Palette *Pal)
+grBoolean grBitmap_Palette_IsValid(const grBitmap_Palette *Pal)
 {
-	if ( ! Pal ) return JE_FALSE;
+	if ( ! Pal ) return GR_FALSE;
 
 	assert(  Pal->Data ||  Pal->DriverHandle );
 	assert( !Pal->Data || !Pal->DriverHandle );
@@ -6167,19 +6167,19 @@ jeBoolean jeBitmap_Palette_IsValid(const jeBitmap_Palette *Pal)
 		(! Pal->Driver && ! Pal->DriverHandle) );
 
 	assert( Pal->RefCount >= 1 && Pal->Size >= 1 );
-	assert( Pal->Format > JE_PIXELFORMAT_NO_DATA && Pal->Format < JE_PIXELFORMAT_COUNT );
+	assert( Pal->Format > GR_PIXELFORMAT_NO_DATA && Pal->Format < GR_PIXELFORMAT_COUNT );
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 #ifdef _DEBUG
-JETAPI uint32 JETCC jeBitmap_Debug_GetCount(void)
+GRAPI uint32 GRCC grBitmap_Debug_GetCount(void)
 {
 	assert(  _Bitmap_Debug_ActiveRefs >=  _Bitmap_Debug_ActiveCount );
 
-//	Log_Printf("jeBitmap_Debug_GetCount : Refs = %d\n",_Bitmap_Debug_ActiveRefs);
+//	Log_Printf("grBitmap_Debug_GetCount : Refs = %d\n",_Bitmap_Debug_ActiveRefs);
 
-//	jeBitmap_Gamma_Debug_Report();
+//	grBitmap_Gamma_Debug_Report();
 
 	if (  _Bitmap_Debug_ActiveCount == 0 )
 		assert(_Bitmap_Debug_ActiveRefs == 0 );
@@ -6190,13 +6190,13 @@ JETAPI uint32 JETCC jeBitmap_Debug_GetCount(void)
 
 /*}{ ******************** EOF **************************/
 
-JETAPI jeBoolean JETCC jeBitmap_GetAverageColor(const jeBitmap *Bmp,int32 *pR,int32 *pG,int32 *pB)
+GRAPI grBoolean GRCC grBitmap_GetAverageColor(const grBitmap *Bmp,int32 *pR,int32 *pG,int32 *pB)
 {
 
 	if ( ! Bmp->HasAverageColor )
 	{
 	int32 bpp,x,y,w,h,xtra,dock;
-	jePixelFormat Format;
+	grPixelFormat Format;
 	uint8 * ptr;
 	uint32 R,G,B,A,Rt,Gt,Bt,cnt,ck;
 
@@ -6205,21 +6205,21 @@ JETAPI jeBoolean JETCC jeBitmap_GetAverageColor(const jeBitmap *Bmp,int32 *pR,in
 		if ( Bmp->DriverHandle && Bmp->DriverDataChanged )
 		{
 			// must use the driver bits
-			if ( ! jeBitmap_Update_DriverToSystem((jeBitmap *)Bmp) )
+			if ( ! grBitmap_Update_DriverToSystem((grBitmap *)Bmp) )
 			{
-				jeErrorLog_AddString(-1,"Bitmap_AverageColor : DriverToSystem failed!",NULL);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"Bitmap_AverageColor : DriverToSystem failed!",NULL);
+				return GR_FALSE;
 			}
 		}
 
 		Format = Bmp->Info.Format;
-		bpp = jePixelFormat_BytesPerPel(Format);
+		bpp = grPixelFormat_BytesPerPel(Format);
 		ptr = (uint8*)Bmp->Data[0];	
 
 		if ( ! ptr || bpp < 1 )
 		{
-			jeErrorLog_AddString(-1,"Bitmap_AverageColor : no data!",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"Bitmap_AverageColor : no data!",NULL);
+			return GR_FALSE;
 		}
 
 		w = Bmp->Info.Width;
@@ -6230,23 +6230,23 @@ JETAPI jeBoolean JETCC jeBitmap_GetAverageColor(const jeBitmap *Bmp,int32 *pR,in
 
 		Rt = Gt = Bt = cnt = 0;
 
-		if ( jePixelFormat_HasPalette(Format) )
+		if ( grPixelFormat_HasPalette(Format) )
 		{
 			// <> Blech!
-			jeErrorLog_AddString(-1,"Bitmap_AverageColor : doesn't support palettized yet!",NULL);
+			grErrorLog_AddString(-1,"Bitmap_AverageColor : doesn't support palettized yet!",NULL);
 			#pragma message("Bitmap_AverageColor : doesn't support palettized yet!")
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		else
 		{
-		const jePixelFormat_Operations * ops;
-		jePixelFormat_ColorGetter GetColor;
-		jePixelFormat_PixelGetter GetPixel;
-		jePixelFormat_Decomposer Decomposer;
+		const grPixelFormat_Operations * ops;
+		grPixelFormat_ColorGetter GetColor;
+		grPixelFormat_PixelGetter GetPixel;
+		grPixelFormat_Decomposer Decomposer;
 
-			assert( jePixelFormat_IsRaw(Format) );
+			assert( grPixelFormat_IsRaw(Format) );
 
-			ops = jePixelFormat_GetOperations(Format);
+			ops = grPixelFormat_GetOperations(Format);
 			GetColor = ops->GetColor;
 			GetPixel = ops->GetPixel;
 			Decomposer = ops->DecomposePixel;
@@ -6287,15 +6287,15 @@ JETAPI jeBoolean JETCC jeBitmap_GetAverageColor(const jeBitmap *Bmp,int32 *pR,in
 			}
 		}
 
-		((jeBitmap *)Bmp)->AverageR = (Rt + (cnt>>1)) / cnt;
-		((jeBitmap *)Bmp)->AverageG = (Gt + (cnt>>1)) / cnt;
-		((jeBitmap *)Bmp)->AverageB = (Bt + (cnt>>1)) / cnt;
-		((jeBitmap *)Bmp)->HasAverageColor = JE_TRUE;
+		((grBitmap *)Bmp)->AverageR = (Rt + (cnt>>1)) / cnt;
+		((grBitmap *)Bmp)->AverageG = (Gt + (cnt>>1)) / cnt;
+		((grBitmap *)Bmp)->AverageB = (Bt + (cnt>>1)) / cnt;
+		((grBitmap *)Bmp)->HasAverageColor = GR_TRUE;
 	}
 
 	if ( pR ) *pR = Bmp->AverageR;
 	if ( pG ) *pG = Bmp->AverageG;
 	if ( pB ) *pB = Bmp->AverageB;
 
-return JE_TRUE;
+return GR_TRUE;
 }

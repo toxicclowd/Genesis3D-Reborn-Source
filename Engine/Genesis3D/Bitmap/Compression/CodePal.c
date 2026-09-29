@@ -53,9 +53,9 @@ static int mscale = 5,mmult = 1;
 //#define MULT_SCALE	(mscale)
 //#define MULT_MULT	(mmult)
 
-void codePal_Optimize(const jeBitmap_Palette * P)
+void codePal_Optimize(const grBitmap_Palette * P)
 {
-jeVFile * F;
+grVFile * F;
 int bmult,bscale,blen,zOutLen;
 
 #ifndef MULT_SCALE
@@ -69,12 +69,12 @@ int bmult,bscale,blen,zOutLen;
 	{
 		for(mscale=1;mscale<16;mscale++)
 		{
-			F = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,"r:\\z",NULL,JE_VFILE_OPEN_CREATE);
+			F = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,"r:\\z",NULL,GR_VFILE_OPEN_CREATE);
 			assert(F);
 
 			codePal_Write(P,F,&zOutLen);
 
-			jeVFile_Close(F);
+			grVFile_Close(F);
 
 			if ( zOutLen < blen )
 			{
@@ -91,10 +91,10 @@ int bmult,bscale,blen,zOutLen;
 }
 #endif // }
 
-jeBoolean codePal_Write(const jeBitmap_Palette * P,jeVFile * F,int *pWroteLen)
+grBoolean codePal_Write(const grBitmap_Palette * P,grVFile * F,int *pWroteLen)
 {
 int Size;
-jePixelFormat Format;
+grPixelFormat Format;
 void *Data;
 int R,G,B,A;
 int Ya[256],Ua[256],Va[256],Aa[256];
@@ -103,7 +103,7 @@ uint8 * DataPtr;
 int s,i,scale,max;
 uint8 OutBuf[2048];
 arithInfo * ari;
-jeBoolean HasAlpha;
+grBoolean HasAlpha;
 int WroteLen;
 uint16 OutLen;
 #ifdef OZERO
@@ -112,24 +112,24 @@ ozero * oz;
 
 	assert(P && F);
 
-	if ( ! jeBitmap_Palette_Lock((jeBitmap_Palette *)P,&Data,&Format,&Size) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_Lock((grBitmap_Palette *)P,&Data,&Format,&Size) )
+		return GR_FALSE;
 
 	assert( Size <= 256 );
 
-	HasAlpha = jePixelFormat_HasAlpha(Format);
+	HasAlpha = grPixelFormat_HasAlpha(Format);
 
 	DataPtr = (uint8*)Data;
 	Yp = Ya; Up = Ua; Vp = Va; Ap = Aa;
 	for(s=Size;s--;)
 	{
-		jePixelFormat_GetColor(Format,&DataPtr,&R,&G,&B,&A);
+		grPixelFormat_GetColor(Format,&DataPtr,&R,&G,&B,&A);
 		RGBi_to_YUVi(R,G,B,Yp++,Up++,Vp++);
 		*Ap++ = A;
 	}
 
-	if ( ! jeBitmap_Palette_UnLock((jeBitmap_Palette *)P) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_UnLock((grBitmap_Palette *)P) )
+		return GR_FALSE;
 
 	for(s=Size-1;s>0;s--)
 	{
@@ -153,14 +153,14 @@ ozero * oz;
 	OutBuf[3] = (uint8) Aa[0];
 	if ( HasAlpha )
 	{
-		if ( ! jeVFile_Write(F,OutBuf,4) )
-			return JE_FALSE;
+		if ( ! grVFile_Write(F,OutBuf,4) )
+			return GR_FALSE;
 		WroteLen += 4;
 	}
 	else
 	{
-		if ( ! jeVFile_Write(F,OutBuf,3) )
-			return JE_FALSE;
+		if ( ! grVFile_Write(F,OutBuf,3) )
+			return GR_FALSE;
 		WroteLen += 3;
 	}
 
@@ -217,14 +217,14 @@ ozero * oz;
 	}
 
 	WorkLen = WorkPtr - WorkBuf;
-	O0HuffArray(WorkBuf,WorkLen,OutBuf,&z,JE_TRUE);
+	O0HuffArray(WorkBuf,WorkLen,OutBuf,&z,GR_TRUE);
 	OutLen = z;
 
 	}
 #else //}{ not huff, ari
 
 	if ( ! (ari = arithInit()) )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	arithEncodeInit(ari,OutBuf);
 
@@ -281,24 +281,24 @@ ozero * oz;
 
 	Log_Printf("palette : 768 -> %d\n",OutLen);
 
-	if ( ! jeVFile_Write(F,&OutLen,sizeof(OutLen)) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(F,&OutLen,sizeof(OutLen)) )
+		return GR_FALSE;
 	WroteLen += sizeof(OutLen);
-	if ( ! jeVFile_Write(F,OutBuf,OutLen) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(F,OutBuf,OutLen) )
+		return GR_FALSE;
 	WroteLen += OutLen;
 
 	*pWroteLen = WroteLen;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean codePal_Read(jeBitmap_Palette * P,jeVFile * F)
+grBoolean codePal_Read(grBitmap_Palette * P,grVFile * F)
 {
 int Size;
-jePixelFormat Format;
+grPixelFormat Format;
 void *Data;
-jeBitmap_Info Info;
+grBitmap_Info Info;
 int R,G,B;
 int Ya[256],Ua[256],Va[256],Aa[256];
 int *Yp,*Up,*Vp,*Ap;
@@ -307,28 +307,28 @@ int s,i,scale,max;
 uint8 OutBuf[2048];
 uint16 OutLen;
 arithInfo * ari;
-jeBoolean HasAlpha;
+grBoolean HasAlpha;
 
 	assert(P && F);
 
-	if (! jeBitmap_Palette_GetInfo(P,&Info) )
-		return JE_FALSE;
+	if (! grBitmap_Palette_GetInfo(P,&Info) )
+		return GR_FALSE;
 
 	Size = Info.Width;
 	assert( Size <= 256 );
 
-	HasAlpha = jePixelFormat_HasAlpha(Info.Format);
+	HasAlpha = grPixelFormat_HasAlpha(Info.Format);
 
 	// get first byte of each raw
 	if ( HasAlpha )
 	{
-		if ( ! jeVFile_Read(F,OutBuf,4) )
-			return JE_FALSE;
+		if ( ! grVFile_Read(F,OutBuf,4) )
+			return GR_FALSE;
 	}
 	else
 	{
-		if ( ! jeVFile_Read(F,OutBuf,3) )
-			return JE_FALSE;
+		if ( ! grVFile_Read(F,OutBuf,3) )
+			return GR_FALSE;
 		OutBuf[3] = 255;
 	}
 	Ya[0] = OutBuf[0];
@@ -336,13 +336,13 @@ jeBoolean HasAlpha;
 	Va[0] = OutBuf[2];
 	Aa[0] = OutBuf[3];
 
-	if ( ! jeVFile_Read(F,&OutLen,sizeof(OutLen)) )
-		return JE_FALSE;
-	if ( ! jeVFile_Read(F,OutBuf,OutLen) )
-		return JE_FALSE;
+	if ( ! grVFile_Read(F,&OutLen,sizeof(OutLen)) )
+		return GR_FALSE;
+	if ( ! grVFile_Read(F,OutBuf,OutLen) )
+		return GR_FALSE;
 
 	if ( ! (ari = arithInit()) )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	arithDecodeInit(ari,OutBuf);
 
@@ -388,21 +388,21 @@ jeBoolean HasAlpha;
 
 	// fill out the palette
 
-	if ( ! jeBitmap_Palette_Lock((jeBitmap_Palette *)P,&Data,&Format,&Size) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_Lock((grBitmap_Palette *)P,&Data,&Format,&Size) )
+		return GR_FALSE;
 
 	DataPtr = (uint8*)Data;
 	Yp = Ya; Up = Ua; Vp = Va; Ap = Aa;
 	for(s=Size;s--;)
 	{
 		YUVi_to_RGBi(*Yp++,*Up++,*Vp++,&R,&G,&B);
-		jePixelFormat_PutColor(Format,&DataPtr,R,G,B,*Ap++);
+		grPixelFormat_PutColor(Format,&DataPtr,R,G,B,*Ap++);
 	}
 
-	if ( ! jeBitmap_Palette_UnLock((jeBitmap_Palette *)P) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_UnLock((grBitmap_Palette *)P) )
+		return GR_FALSE;
 
-   return JE_TRUE;
+   return GR_TRUE;
 }
 
 /****************************/

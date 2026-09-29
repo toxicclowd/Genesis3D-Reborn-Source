@@ -25,7 +25,7 @@
 #include "bitmap.h"
 #include "ram.h"
 #include "errorlog.h"
-#include "jeResource.h"
+#include "grResource.h"
 #include "ObjUtil.h"
 
 
@@ -46,14 +46,14 @@ char * ObjUtil_StrDup(
 {
 
 	// copy string
-	char * p = (char *)jeRam_Allocate( strlen( psz ) + 1 );
+	char * p = (char *)grRam_Allocate( strlen( psz ) + 1 );
 	if ( p ) 
 	{
 		strcpy( p, psz );
 	}
 	else
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 	}
 
 	// return string
@@ -87,15 +87,15 @@ char * ObjUtil_LoadLibraryString(
 	Size = LoadString( hInstance, ID, StringBuf, MAX_STRING_SIZE );
 	if ( Size <= 0 )
 	{
-		jeErrorLog_Add( JE_ERR_WINDOWS_API_FAILURE, "Failed to get resource string" );
+		grErrorLog_Add( GR_ERR_WINDOWS_API_FAILURE, "Failed to get resource string" );
 		return NULL;
 	}
 
 	// copy resource string
-	NewString = jeRam_Allocate( Size + 1 );
+	NewString = grRam_Allocate( Size + 1 );
 	if ( NewString == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Failed to allocate string memory" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Failed to allocate string memory" );
 		return NULL;
 	}
 	strcpy( NewString, StringBuf );
@@ -129,19 +129,19 @@ void ObjUtil_LogError(
 	// log generic error message if we have no hInstance
 	if ( hInstance == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "No class handle" );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "No class handle" );
 		return;
 	}
 		
 	// get error message
 	if ( LoadString( hInstance, Message, StringMessage, 256 ) <= 0 )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Could not get error message string" );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Could not get error message string" );
 		return;
 	}
 
 	// log error
-	jeErrorLog_Add( Type, StringMessage );
+	grErrorLog_Add( Type, StringMessage );
 
 } // ObjUtil_LogError()
 
@@ -152,14 +152,14 @@ void ObjUtil_LogError(
 //	ObjUtil_WriteString()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean ObjUtil_WriteString(
-	jeVFile	*File,		// file to write to
+grBoolean ObjUtil_WriteString(
+	grVFile	*File,		// file to write to
 	char	*String )	// string to write out
 {
 
 	// locals
 	int			Size;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 
 	// ensure valid data
 	assert( File != NULL );
@@ -168,8 +168,8 @@ jeBoolean ObjUtil_WriteString(
 	// write out complete
 	Size = strlen( String ) + 1;
 	assert( Size > 0 );
-	Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
-	Result &= jeVFile_Write( File, String, Size );
+	Result &= grVFile_Write( File, &Size, sizeof( Size ) );
+	Result &= grVFile_Write( File, String, Size );
 
 	// all done
 	return Result;
@@ -183,29 +183,29 @@ jeBoolean ObjUtil_WriteString(
 //	ObjUtil_ReadString()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean ObjUtil_ReadString(
-	jeVFile	*File,		// file to read from
+grBoolean ObjUtil_ReadString(
+	grVFile	*File,		// file to read from
 	char	**String )	// where to save string pointer
 {
 
 	// locals
 	int			Size;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 
 	// ensure valid data
 	assert( File != NULL );
 	assert( String != NULL );
 
 	// read string
-	Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 	{
-		*String = jeRam_Allocate( Size );
+		*String = grRam_Allocate( Size );
 		if ( *String == NULL )
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-		Result &= jeVFile_Read( File, *String, Size );
+		Result &= grVFile_Read( File, *String, Size );
 	}
 
 	// all done
@@ -222,16 +222,16 @@ jeBoolean ObjUtil_ReadString(
 //	Create a bitmap from a file.
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBitmap * ObjUtil_CreateBitmapFromFileName(
-	jeVFile		*File,			// file system to use
+grBitmap * ObjUtil_CreateBitmapFromFileName(
+	grVFile		*File,			// file system to use
 	const char	*Name,			// name of the file
 	const char	*AlphaName )	// name of the alpha file
 {
 
 	// locals
-	jeVFile		*BmpFile;
-	jeBitmap	*Bmp;
-	jeBoolean	Result;
+	grVFile		*BmpFile;
+	grBitmap	*Bmp;
+	grBoolean	Result;
 
 	// ensure valid data
 	assert( Name != NULL );
@@ -239,24 +239,24 @@ jeBitmap * ObjUtil_CreateBitmapFromFileName(
 	// open the bitmap
 	if ( File == NULL )
 	{
-		BmpFile = jeVFile_OpenNewSystem( NULL, JE_VFILE_TYPE_DOS, Name, NULL, JE_VFILE_OPEN_READONLY );
+		BmpFile = grVFile_OpenNewSystem( NULL, GR_VFILE_TYPE_DOS, Name, NULL, GR_VFILE_OPEN_READONLY );
 	}
 	else
 	{
-		BmpFile = jeVFile_Open( File, Name, JE_VFILE_OPEN_READONLY );
+		BmpFile = grVFile_Open( File, Name, GR_VFILE_OPEN_READONLY );
 	}
 	if ( BmpFile == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_OPEN, NULL );
+		grErrorLog_Add( GR_ERR_FILEIO_OPEN, NULL );
 		return NULL;
 	}
 
 	// create the bitmap
-	Bmp = jeBitmap_CreateFromFile( BmpFile );
-	jeVFile_Close( BmpFile );
+	Bmp = grBitmap_CreateFromFile( BmpFile );
+	grVFile_Close( BmpFile );
 	if ( Bmp == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 		return NULL;
 	}
 
@@ -265,62 +265,62 @@ jeBitmap * ObjUtil_CreateBitmapFromFileName(
 	{
 
 		// locals
-		jeBitmap	*AlphaBmp;
-		jeVFile		*AlphaFile;
+		grBitmap	*AlphaBmp;
+		grVFile		*AlphaFile;
 
 		// open alpha file
 		if ( File == NULL )
 		{
-			AlphaFile = jeVFile_OpenNewSystem( NULL, JE_VFILE_TYPE_DOS, AlphaName, NULL, JE_VFILE_OPEN_READONLY );
+			AlphaFile = grVFile_OpenNewSystem( NULL, GR_VFILE_TYPE_DOS, AlphaName, NULL, GR_VFILE_OPEN_READONLY );
 		}
 		else
 		{
-			AlphaFile = jeVFile_Open( File, AlphaName, JE_VFILE_OPEN_READONLY );
+			AlphaFile = grVFile_Open( File, AlphaName, GR_VFILE_OPEN_READONLY );
 		}
 		if( AlphaFile == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_OPEN, NULL );
-			jeBitmap_Destroy( &Bmp );
+			grErrorLog_Add( GR_ERR_FILEIO_OPEN, NULL );
+			grBitmap_Destroy( &Bmp );
 			return NULL;
 		}
 
 		// create alpha bitmap
-		AlphaBmp = jeBitmap_CreateFromFile( AlphaFile );
-		jeVFile_Close( AlphaFile );
+		AlphaBmp = grBitmap_CreateFromFile( AlphaFile );
+		grVFile_Close( AlphaFile );
 		if ( AlphaBmp == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-			jeBitmap_Destroy( &Bmp );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+			grBitmap_Destroy( &Bmp );
 			return NULL;
 		}
 
 		// fail if alpha isn't same size as main bitmap
-		if (	( jeBitmap_Width( Bmp ) != jeBitmap_Width( AlphaBmp ) ) ||
-				( jeBitmap_Height( Bmp ) != jeBitmap_Height( AlphaBmp ) ) )
+		if (	( grBitmap_Width( Bmp ) != grBitmap_Width( AlphaBmp ) ) ||
+				( grBitmap_Height( Bmp ) != grBitmap_Height( AlphaBmp ) ) )
 		{
-			jeErrorLog_Add( JE_ERR_BAD_PARAMETER, NULL );
-			jeBitmap_Destroy( &AlphaBmp );
-			jeBitmap_Destroy( &Bmp );
+			grErrorLog_Add( GR_ERR_BAD_PARAMETER, NULL );
+			grBitmap_Destroy( &AlphaBmp );
+			grBitmap_Destroy( &Bmp );
 			return NULL;
 		}
 
 		// set its alpha
-		Result = jeBitmap_SetAlpha( Bmp, AlphaBmp );
-		if ( Result == JE_FALSE )
+		Result = grBitmap_SetAlpha( Bmp, AlphaBmp );
+		if ( Result == GR_FALSE )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-			jeBitmap_Destroy( &AlphaBmp );
-			jeBitmap_Destroy( &Bmp );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+			grBitmap_Destroy( &AlphaBmp );
+			grBitmap_Destroy( &Bmp );
 			return NULL;
 		}
 
 		// don't need the alpha anymore
-		jeBitmap_Destroy( &AlphaBmp );
+		grBitmap_Destroy( &AlphaBmp );
 	}
 	// ...or just set the color key
 	else
 	{
-		Result = jeBitmap_SetColorKey( Bmp, JE_TRUE, 255, JE_FALSE );
+		Result = grBitmap_SetColorKey( Bmp, GR_TRUE, 255, GR_FALSE );
 		assert( Result );
 	}
 
@@ -359,26 +359,26 @@ void ObjUtil_DestroyBitmapList(
 		{
 			if ( List->Name[i] != NULL )
 			{
-				jeRam_Free( List->Name[i] );
+				grRam_Free( List->Name[i] );
 			}
 		}
-		jeRam_Free( List->Name );
+		grRam_Free( List->Name );
 	}
 
 	// destroy width and height lists
 	if ( List->Width != NULL )
 	{
-		jeRam_Free( List->Width );
+		grRam_Free( List->Width );
 	}
 	if ( List->Height != NULL )
 	{
-		jeRam_Free( List->Height );
+		grRam_Free( List->Height );
 	}
 
 	// destroy numeric sizes list
 	if ( List->NumericSizes != NULL )
 	{
-		jeRam_Free( List->NumericSizes );
+		grRam_Free( List->NumericSizes );
 	}
 
 	// destroy string sizes list
@@ -387,18 +387,18 @@ void ObjUtil_DestroyBitmapList(
 		for ( i = 0; i < List->SizesListSize; i++ )
 		{
 			assert( List->StringSizes[i] != NULL );
-			jeRam_Free( List->StringSizes[i] );
+			grRam_Free( List->StringSizes[i] );
 		}
 	}
 
 	// destroy active list
 	if ( List->ActiveList != NULL )
 	{
-		jeRam_Free( List->ActiveList );
+		grRam_Free( List->ActiveList );
 	}
 
 	// free bitmaplist struct
-	jeRam_Free( List );
+	grRam_Free( List );
 
 	// zap pointer
 	*DeadList = NULL;
@@ -453,15 +453,15 @@ static void ObjUtil_TextureGroupSetActiveList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 BitmapList * ObjUtil_CreateBitmapList(
-	jeResourceMgr	*ResourceMgr,	// resource manager to use
+	grResourceMgr	*ResourceMgr,	// resource manager to use
 	char			*ResourceName,	// name of resource
 	char			*FileFilter )	// file filter
 {
 
 	// locals
 	BitmapList		*Bmps;
-	jeVFile			*FileDir = NULL;
-	jeVFile_Finder	*Finder = NULL;
+	grVFile			*FileDir = NULL;
+	grVFile_Finder	*Finder = NULL;
 	int				CurFile;
 
 	// ensure valid data
@@ -470,85 +470,85 @@ BitmapList * ObjUtil_CreateBitmapList(
 	assert( FileFilter != NULL );
 
 	// allocate bitmaplist struct
-	Bmps = jeRam_AllocateClear( sizeof( *Bmps ) );
+	Bmps = grRam_AllocateClear( sizeof( *Bmps ) );
 	if ( Bmps == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// get vfile dir
-	FileDir = jeResource_GetVFile( ResourceMgr, ResourceName );
+	FileDir = grResource_GetVFile( ResourceMgr, ResourceName );
 	if ( FileDir == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 		goto ERROR_ObjUtil_BuildBitmapList;
 	}
 
 	// create directory finder
-	Finder = jeVFile_CreateFinder( FileDir, FileFilter );
+	Finder = grVFile_CreateFinder( FileDir, FileFilter );
 	if ( Finder == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 		goto ERROR_ObjUtil_BuildBitmapList;
 	}
 
 	// determine how many files there are
 	Bmps->Total = 1;
-	while ( jeVFile_FinderGetNextFile( Finder ) == JE_TRUE )
+	while ( grVFile_FinderGetNextFile( Finder ) == GR_TRUE )
 	{
 		Bmps->Total++;
 	}
 
 	// destroy finder
-	jeVFile_DestroyFinder( Finder );
+	grVFile_DestroyFinder( Finder );
 	Finder = NULL;
 
 	// allocate name list
-	Bmps->Name = jeRam_AllocateClear( sizeof( char * ) * Bmps->Total );
+	Bmps->Name = grRam_AllocateClear( sizeof( char * ) * Bmps->Total );
 	if ( Bmps->Name == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_ObjUtil_BuildBitmapList;
 	}
 
 	// allocate width list
-	Bmps->Width = jeRam_AllocateClear( sizeof( int * ) * Bmps->Total );
+	Bmps->Width = grRam_AllocateClear( sizeof( int * ) * Bmps->Total );
 	if ( Bmps->Width == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_ObjUtil_BuildBitmapList;
 	}
 
 	// allocate height list
-	Bmps->Height = jeRam_AllocateClear( sizeof( int * ) * Bmps->Total );
+	Bmps->Height = grRam_AllocateClear( sizeof( int * ) * Bmps->Total );
 	if ( Bmps->Height == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_ObjUtil_BuildBitmapList;
 	}
 
 	// allocate numeric sizes list
-	Bmps->NumericSizes = jeRam_AllocateClear( sizeof( int * ) * Bmps->Total );
+	Bmps->NumericSizes = grRam_AllocateClear( sizeof( int * ) * Bmps->Total );
 	if ( Bmps->NumericSizes == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_ObjUtil_BuildBitmapList;
 	}
 
 	// allocate string sizes list
-	Bmps->StringSizes = jeRam_AllocateClear( sizeof( char * ) * Bmps->Total );
+	Bmps->StringSizes = grRam_AllocateClear( sizeof( char * ) * Bmps->Total );
 	if ( Bmps->StringSizes == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		goto ERROR_ObjUtil_BuildBitmapList;
 	}
 
 	// create directory finder
-	Finder = jeVFile_CreateFinder( FileDir, FileFilter );
+	Finder = grVFile_CreateFinder( FileDir, FileFilter );
 	if ( Finder == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 		goto ERROR_ObjUtil_BuildBitmapList;
 	}
 
@@ -557,17 +557,17 @@ BitmapList * ObjUtil_CreateBitmapList(
 	Bmps->Name[CurFile++] = ObjUtil_StrDup( NoSelection );
 
 	// build file list
-	while ( jeVFile_FinderGetNextFile( Finder ) == JE_TRUE )
+	while ( grVFile_FinderGetNextFile( Finder ) == GR_TRUE )
 	{
 
 		// locals
-		jeVFile_Properties	Properties;
-		jeBitmap			*Bitmap;
+		grVFile_Properties	Properties;
+		grBitmap			*Bitmap;
 
 		// get properties of current file
-		if( jeVFile_FinderGetProperties( Finder, &Properties ) == JE_FALSE )
+		if( grVFile_FinderGetProperties( Finder, &Properties ) == GR_FALSE )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 			goto ERROR_ObjUtil_BuildBitmapList;
 		}
 
@@ -576,7 +576,7 @@ BitmapList * ObjUtil_CreateBitmapList(
 		Bmps->Name[CurFile] = ObjUtil_StrDup( Properties.Name );
 		if ( Bmps->Name[CurFile] == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 			goto ERROR_ObjUtil_BuildBitmapList;
 		}
 
@@ -584,33 +584,33 @@ BitmapList * ObjUtil_CreateBitmapList(
 		Bitmap = ObjUtil_CreateBitmapFromFileName( FileDir, Bmps->Name[CurFile], NULL );
 		if ( Bitmap == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
 			goto ERROR_ObjUtil_BuildBitmapList;
 		}
-		Bmps->Width[CurFile] = jeBitmap_Width( Bitmap );
-		Bmps->Height[CurFile] = jeBitmap_Height( Bitmap );
-		jeBitmap_Destroy( &Bitmap );
+		Bmps->Width[CurFile] = grBitmap_Width( Bitmap );
+		Bmps->Height[CurFile] = grBitmap_Height( Bitmap );
+		grBitmap_Destroy( &Bitmap );
 
 		// add size to numeric sizes list
 		{
 
 			// locals
-			jeBoolean	AddIt;
+			grBoolean	AddIt;
 			int			i;
 
 			// check if it needs to be added to numeric sizes list
-			AddIt = JE_TRUE;
+			AddIt = GR_TRUE;
 			for ( i = 0; i < Bmps->Total; i++ )
 			{
 				if ( Bmps->Width[CurFile] == Bmps->NumericSizes[i] )
 				{
-					AddIt = JE_FALSE;
+					AddIt = GR_FALSE;
 					break;
 				}
 			}
 
 			// add it if required
-			if ( AddIt == JE_TRUE )
+			if ( AddIt == GR_TRUE )
 			{
 				for ( i = 0; i < Bmps->Total; i++ )
 				{
@@ -625,12 +625,12 @@ BitmapList * ObjUtil_CreateBitmapList(
 							Bmps->NumericSizes[i] = Hold1;
 							Hold1 = Hold2;
 						}
-						AddIt = JE_FALSE;
+						AddIt = GR_FALSE;
 						break;
 					}
 				}
 			}
-			assert( AddIt == JE_FALSE );
+			assert( AddIt == GR_FALSE );
 		}
 
 		// adjust file counter
@@ -638,12 +638,12 @@ BitmapList * ObjUtil_CreateBitmapList(
 	}
 
 	// destroy finder
-	jeVFile_DestroyFinder( Finder );
+	grVFile_DestroyFinder( Finder );
 
 	// close vfile dir
-	if ( jeResource_DeleteVFile( ResourceMgr, ResourceName ) == 0 )
+	if ( grResource_DeleteVFile( ResourceMgr, ResourceName ) == 0 )
 	{
-		jeVFile_Close( FileDir );
+		grVFile_Close( FileDir );
 	}
 
 	// create string sizes list
@@ -671,10 +671,10 @@ BitmapList * ObjUtil_CreateBitmapList(
 	{
 
 		// allocate list
-		Bmps->ActiveList = jeRam_AllocateClear( sizeof( char * ) * Bmps->Total );
+		Bmps->ActiveList = grRam_AllocateClear( sizeof( char * ) * Bmps->Total );
 		if ( Bmps->ActiveList == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 			goto ERROR_ObjUtil_BuildBitmapList;
 		}
 
@@ -698,15 +698,15 @@ BitmapList * ObjUtil_CreateBitmapList(
 	// destroy finder
 	if ( Finder != NULL )
 	{
-		jeVFile_DestroyFinder( Finder );
+		grVFile_DestroyFinder( Finder );
 	}
 
 	// close vfile dir
 	if ( FileDir != NULL )
 	{
-		if ( jeResource_DeleteVFile( ResourceMgr, ResourceName ) == 0 )
+		if ( grResource_DeleteVFile( ResourceMgr, ResourceName ) == 0 )
 		{
-			jeVFile_Close( FileDir );
+			grVFile_Close( FileDir );
 		}
 	}
 
@@ -757,18 +757,18 @@ static char * ObjUtil_TextureGroupGetStringFromList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 void ObjUtil_TextureGroupSetSize(
-	jeEngine		*Engine,			// engine to use
-	jeResourceMgr	*ResourceMgr,		// resource manager to use
+	grEngine		*Engine,			// engine to use
+	grResourceMgr	*ResourceMgr,		// resource manager to use
 	BitmapList		*AvailableArt,		// list of all available art
 	char			*ChosenSizeName,	// name of size that was chosen
 	char			**SaveBitmapName,	// current bitmap name and where to save new name
 	char			**SaveAlphaName,	// current alpha name and where to save new name
-	jeBitmap		**SaveArt,			// current art and where to save new art
+	grBitmap		**SaveArt,			// current art and where to save new art
 	char			**SaveArtName )		// current art name and where to save new name
 {
 
 	// locals
-	jeBoolean	SizeChangeFailed = JE_TRUE;
+	grBoolean	SizeChangeFailed = GR_TRUE;
 	int			i;
 
 	// ensure valid data
@@ -795,11 +795,11 @@ void ObjUtil_TextureGroupSetSize(
 
 			// make adjustments
 			ObjUtil_TextureGroupSetActiveList( AvailableArt, i );
-			SizeChangeFailed = JE_FALSE;
+			SizeChangeFailed = GR_FALSE;
 			i = AvailableArt->SizesListSize;
 		}
 	}
-	assert( SizeChangeFailed == JE_FALSE );
+	assert( SizeChangeFailed == GR_FALSE );
 
 	// reset bitmap pointers
 	*SaveBitmapName = AvailableArt->ActiveList[0];
@@ -810,16 +810,16 @@ void ObjUtil_TextureGroupSetSize(
 	{
 
 		// free old art
-		jeEngine_RemoveBitmap( Engine, *SaveArt );
+		grEngine_RemoveBitmap( Engine, *SaveArt );
 		assert( *SaveArtName != NULL );
-		if ( jeResource_Delete( ResourceMgr, *SaveArtName ) == 0 )
+		if ( grResource_Delete( ResourceMgr, *SaveArtName ) == 0 )
 		{
-			jeBitmap_Destroy( &( *SaveArt ) );
+			grBitmap_Destroy( &( *SaveArt ) );
 		}
 		*SaveArt = NULL;
 
 		// free old art name
-		jeRam_Free( *SaveArtName );
+		grRam_Free( *SaveArtName );
 		*SaveArtName = NULL;
 	}
 
@@ -832,15 +832,15 @@ void ObjUtil_TextureGroupSetSize(
 //	ObjUtil_TextureGroupSetArt()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean ObjUtil_TextureGroupSetArt(
-	jeEngine		*Engine,			// engine to use
-	jeResourceMgr	*ResourceMgr,		// resource manager to use
+grBoolean ObjUtil_TextureGroupSetArt(
+	grEngine		*Engine,			// engine to use
+	grResourceMgr	*ResourceMgr,		// resource manager to use
 	BitmapList		*AvailableArt,		// list of all available art
 	char			*ChosenBitmapName,	// name of bitmap that was chosen
 	char			*ChosenAlphaName,	// name of alpha that was chosen
 	char			**SaveBitmapName,	// current bitmap name and where to save new name
 	char			**SaveAlphaName,	// current alpha name and where to save new name
-	jeBitmap		**SaveArt,			// current art and where to save new art
+	grBitmap		**SaveArt,			// current art and where to save new art
 	char			**SaveArtName )		// current art name and where to save new name
 {
 
@@ -848,7 +848,7 @@ jeBoolean ObjUtil_TextureGroupSetArt(
 	assert( Engine != NULL );
 	assert( ResourceMgr != NULL );
 	assert( AvailableArt != NULL );
-	assert( ( ( ChosenBitmapName == NULL ) && ( ChosenAlphaName == NULL ) ) == JE_FALSE );
+	assert( ( ( ChosenBitmapName == NULL ) && ( ChosenAlphaName == NULL ) ) == GR_FALSE );
 	assert( SaveBitmapName != NULL );
 	assert( SaveAlphaName != NULL );
 	assert( SaveArt != NULL );
@@ -859,16 +859,16 @@ jeBoolean ObjUtil_TextureGroupSetArt(
 	{
 
 		// free old art
-		jeEngine_RemoveBitmap( Engine, *SaveArt );
+		grEngine_RemoveBitmap( Engine, *SaveArt );
 		assert( *SaveArtName != NULL );
-		if ( jeResource_Delete( ResourceMgr, *SaveArtName ) == 0 )
+		if ( grResource_Delete( ResourceMgr, *SaveArtName ) == 0 )
 		{
-			jeBitmap_Destroy( &( *SaveArt ) );
+			grBitmap_Destroy( &( *SaveArt ) );
 		}
 		*SaveArt = NULL;
 
 		// free old art name
-		jeRam_Free( *SaveArtName );
+		grRam_Free( *SaveArtName );
 		*SaveArtName = NULL;
 	}
 
@@ -887,7 +887,7 @@ jeBoolean ObjUtil_TextureGroupSetArt(
 	// do nothing further if there is no main bitmap
 	if ( stricmp( *SaveBitmapName, NoSelection ) == 0 )
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	// build art name
@@ -904,10 +904,10 @@ jeBoolean ObjUtil_TextureGroupSetArt(
 		}
 
 		// create full artname
-		*SaveArtName = jeRam_Allocate( Size );
+		*SaveArtName = grRam_Allocate( Size );
 		if ( *SaveArtName == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Failed to allocate full art name" );
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Failed to allocate full art name" );
 			goto ERROR_ObjUtil_TextureGroupSetArt;
 		}
 		strcpy( *SaveArtName, *SaveBitmapName );
@@ -918,20 +918,20 @@ jeBoolean ObjUtil_TextureGroupSetArt(
 	}
 
 	// get new art
-	*SaveArt = jeResource_Get( ResourceMgr, *SaveArtName );
+	*SaveArt = grResource_Get( ResourceMgr, *SaveArtName );
 
 	// if it doesn't exist then create it
 	if ( *SaveArt == NULL )
 	{
 
 		// locals
-		jeVFile	*FileDir;
+		grVFile	*FileDir;
 
 		// get vfile dir
-		FileDir = jeResource_GetVFile( ResourceMgr, "GlobalMaterials" );
+		FileDir = grResource_GetVFile( ResourceMgr, "GlobalMaterials" );
 		if ( FileDir == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Failed to get a vfile resource" );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Failed to get a vfile resource" );
 			goto ERROR_ObjUtil_TextureGroupSetArt;
 		}
 
@@ -946,27 +946,27 @@ jeBoolean ObjUtil_TextureGroupSetArt(
 		}
 
 		// close vfile dir
-		if ( jeResource_DeleteVFile( ResourceMgr, "GlobalMaterials" ) == 0 )
+		if ( grResource_DeleteVFile( ResourceMgr, "GlobalMaterials" ) == 0 )
 		{
-			jeVFile_Close( FileDir );
+			grVFile_Close( FileDir );
 		}
 
 		// fail if art wasnt created
 		if ( *SaveArt == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Failed to create new art" );
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Failed to create new art" );
 			goto ERROR_ObjUtil_TextureGroupSetArt;
 		}
 
 		// add it to the resource manager
-		jeResource_Add( ResourceMgr, *SaveArtName, JE_RESOURCE_BITMAP, *SaveArt );
+		grResource_Add( ResourceMgr, *SaveArtName, GR_RESOURCE_BITMAP, *SaveArt );
 	}
 
 	// add it to the engine
-	jeEngine_AddBitmap( Engine, *SaveArt, JE_ENGINE_BITMAP_TYPE_3D );
+	grEngine_AddBitmap( Engine, *SaveArt, GR_ENGINE_BITMAP_TYPE_3D );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 
 	//
@@ -977,11 +977,11 @@ jeBoolean ObjUtil_TextureGroupSetArt(
 	// free full art name
 	if ( *SaveArtName != NULL )
 	{
-		jeRam_Free( *SaveArtName );
+		grRam_Free( *SaveArtName );
 		*SaveArtName = NULL;
 	}
 
 	// return failure
-	return JE_FALSE;
+	return GR_FALSE;
 
 } // ObjUtil_TextureGroupSetArt()

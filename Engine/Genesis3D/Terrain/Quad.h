@@ -22,7 +22,7 @@
 #define QUAD_H
 
 #include "BaseType.h"
-#include "jeLight.h"
+#include "grLight.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,36 +30,36 @@ extern "C" {
 
 typedef struct QuadTree			QuadTree;
 
-typedef struct jeTerrain		jeTerrain;
-typedef struct jeTerrain_Light	jeTerrain_Light;
+typedef struct grTerrain		grTerrain;
+typedef struct grTerrain_Light	grTerrain_Light;
 
-QuadTree *	QuadTree_Create(const jeTerrain *T);
+QuadTree *	QuadTree_Create(const grTerrain *T);
 
 void		QuadTree_Destroy(QuadTree **pQT);
 
-jeBoolean	QuadTree_SetTexDim(QuadTree *QT,int Dim);
+grBoolean	QuadTree_SetTexDim(QuadTree *QT,int Dim);
 
-jeBoolean	QuadTree_Tesselate(QuadTree *QT,jeVec3d * pPos,jeFrustum *pFrustum);
+grBoolean	QuadTree_Tesselate(QuadTree *QT,grVec3d * pPos,grFrustum *pFrustum);
 
-jeBoolean	QuadTree_Render(const QuadTree *QT,jeEngine *E,jeCamera *Cam,jeFrustum *F);
+grBoolean	QuadTree_Render(const QuadTree *QT,grEngine *E,grCamera *Cam,grFrustum *F);
 
-jeBoolean	QuadTree_LightTesselatedPoints(QuadTree *QT,jeTerrain_Light * Lights,int NumLights);
+grBoolean	QuadTree_LightTesselatedPoints(QuadTree *QT,grTerrain_Light * Lights,int NumLights);
 
-void		QuadTree_LightAllPoints(QuadTree *QT,jeLight ** Lights,int NumLights);
+void		QuadTree_LightAllPoints(QuadTree *QT,grLight ** Lights,int NumLights);
 
-void		QuadTree_LightTexture(  QuadTree *QT,jeLight ** Lights,int NumLights,jeBoolean SelfShadow,jeBoolean WorldShadow);
+void		QuadTree_LightTexture(  QuadTree *QT,grLight ** Lights,int NumLights,grBoolean SelfShadow,grBoolean WorldShadow);
 
 void		QuadTree_ShowStats(const QuadTree *QT);
 
 void		QuadTree_SetParameters(QuadTree * QT,uint32 BaseDepth,uint32 MaxQuads,float MinError);
 
-jeBoolean	QuadTree_IsValid(const QuadTree *QT);
+grBoolean	QuadTree_IsValid(const QuadTree *QT);
 
-void		QuadTree_GetExtBox(const QuadTree * QT,jeExtBox * Box);
+void		QuadTree_GetExtBox(const QuadTree * QT,grExtBox * Box);
 
-jeBoolean	QuadTree_IntersectRay(QuadTree *QT,jeVec3d *pStart,jeVec3d *pDirection);
+grBoolean	QuadTree_IntersectRay(QuadTree *QT,grVec3d *pStart,grVec3d *pDirection);
 
-jeBoolean	QuadTree_IntersectThickRay(const QuadTree * QT,const jeVec3d * From,const jeVec3d * To,jeFloat Radius,jeVec3d * pImpact);
+grBoolean	QuadTree_IntersectThickRay(const QuadTree * QT,const grVec3d * From,const grVec3d * To,grFloat Radius,grVec3d * pImpact);
 
 void		QuadTree_ResetAllVertexLighting(QuadTree * QT);
 

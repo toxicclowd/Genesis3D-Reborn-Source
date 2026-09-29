@@ -42,21 +42,21 @@ extern "C" {
 **
  **/
 
-#define BITMAP_JET_INTERNAL	JETCC
+#define BITMAP_GR_INTERNAL	GRCC
 
-jeBoolean			JETCC jeBitmap_AttachToDriver(jeBitmap *Bmp, DRV_Driver * Driver, uint32 DriverFlags);
+grBoolean			GRCC grBitmap_AttachToDriver(grBitmap *Bmp, DRV_Driver * Driver, uint32 DriverFlags);
 	// use Driverflags == 0 to use the flags from _SetDriverFlags
 
-jeBoolean			JETCC jeBitmap_DetachDriver(jeBitmap *Bmp, jeBoolean DoUpdate);
+grBoolean			GRCC grBitmap_DetachDriver(grBitmap *Bmp, grBoolean DoUpdate);
 	// You MUST Detach the Driver while it is identical to the way it was when attached!
 
-jeBitmap_Palette *	JETCC jeBitmap_Palette_CreateFromDriver(DRV_Driver * Driver,jePixelFormat Format,int32 Size); /*<>*/
+grBitmap_Palette *	GRCC grBitmap_Palette_CreateFromDriver(DRV_Driver * Driver,grPixelFormat Format,int32 Size); /*<>*/
 
-jeTexture * JETCC jeBitmap_GetTHandle(const jeBitmap *Bmp);
+grTexture * GRCC grBitmap_GetTHandle(const grBitmap *Bmp);
 
-jeBoolean BITMAP_JET_INTERNAL jeBitmap_SetDriverFlags(jeBitmap *Bmp,uint32 Flags);
+grBoolean BITMAP_GR_INTERNAL grBitmap_SetDriverFlags(grBitmap *Bmp,uint32 Flags);
 
-jeBoolean			JETCC jeBitmap_SetGammaCorrection_DontChange(jeBitmap *Bmp,jeFloat Gamma);
+grBoolean			GRCC grBitmap_SetGammaCorrection_DontChange(grBitmap *Bmp,grFloat Gamma);
 
 #ifdef __cplusplus
 }

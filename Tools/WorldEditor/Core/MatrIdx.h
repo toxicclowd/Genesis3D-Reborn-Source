@@ -26,18 +26,18 @@ extern "C" {
 #endif
 
 #include "bitmap.h"
-#include "jeMaterial.h"
+#include "grMaterial.h"
 
 typedef struct		MatrIdx_Struct		MatrIdx_Struct;
 
-MatrIdx_Struct  *		MatrIdx_Create( jeMaterial_Array * pMatlArray, jeBitmap * pBitMap, const char * Name );
+MatrIdx_Struct  *		MatrIdx_Create( grMaterial_Array * pMatlArray, grBitmap * pBitMap, const char * Name );
 const char		*		MatrIdx_GetName( MatrIdx_Struct* MatrIdx );
-jeBitmap		*		MatrIdx_GetBitmap( MatrIdx_Struct* MatrIdx );
+grBitmap		*		MatrIdx_GetBitmap( MatrIdx_Struct* MatrIdx );
 void					MatrIdx_AddRef( MatrIdx_Struct* MatrIdx );
-jeMaterial_ArrayIndex	MatrIdx_GetIndex( MatrIdx_Struct* pMatrIdx );
-//returns JE_TRUE if object was truly destroyed
-//returns JE_FALSE if only RefCnt was decremented
-jeBoolean MatrIdx_Destroy( MatrIdx_Struct** hMatrIdx );
+grMaterial_ArrayIndex	MatrIdx_GetIndex( MatrIdx_Struct* pMatrIdx );
+//returns GR_TRUE if object was truly destroyed
+//returns GR_FALSE if only RefCnt was decremented
+grBoolean MatrIdx_Destroy( MatrIdx_Struct** hMatrIdx );
 
 #ifdef __cplusplus
 }

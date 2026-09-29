@@ -87,7 +87,7 @@ VertIterator VertList_Append( VertList * pList, Vert_Struct	* pVert )
 	return List_Append( pList, (void*)pVert ) ;
 }// VertList_Append
 
-void VertList_Remove( VertList * pList, jeVertArray_Index Index, VertList_DestroyCallback Callback) 
+void VertList_Remove( VertList * pList, grVertArray_Index Index, VertList_DestroyCallback Callback) 
 {
 	VertIterator  vI;
 
@@ -98,22 +98,22 @@ void VertList_Remove( VertList * pList, jeVertArray_Index Index, VertList_Destro
 }
 
 // SEARCH
-jeBoolean VertList_SearchCB(void *pData, void *lParam)
+grBoolean VertList_SearchCB(void *pData, void *lParam)
 {
 
 	return( pData == lParam );
 }
 
-jeBoolean VertList_Search( VertList * pList, Vert_Struct *  pVert, VertIterator * vI )
+grBoolean VertList_Search( VertList * pList, Vert_Struct *  pVert, VertIterator * vI )
 {
 	void * FoundVoid;
 	
 	return( List_Search ( pList, VertList_SearchCB, (void*)pVert, &FoundVoid, vI ) );
 }
 
-jeBoolean VertList_SearchByIndexCB(void *pData, void *lParam)
+grBoolean VertList_SearchByIndexCB(void *pData, void *lParam)
 {
-	jeVertArray_Index	*	Index = (jeVertArray_Index*)lParam;
+	grVertArray_Index	*	Index = (grVertArray_Index*)lParam;
 	Vert_Struct			*	pVert = (Vert_Struct*)pData;
 	assert( Index );
 	assert( pVert );
@@ -121,7 +121,7 @@ jeBoolean VertList_SearchByIndexCB(void *pData, void *lParam)
 	return( pVert->Index == (*Index) );
 }
 
-jeBoolean VertList_SearchByIndex( VertList * pList, jeVertArray_Index * Index, VertIterator * vI )
+grBoolean VertList_SearchByIndex( VertList * pList, grVertArray_Index * Index, VertIterator * vI )
 {
 	void * FoundVoid;
 

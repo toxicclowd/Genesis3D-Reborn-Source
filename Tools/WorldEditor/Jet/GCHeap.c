@@ -74,7 +74,7 @@ GCHeap *GCHeap_Create(int ObjectSize, int ExpandCount, GCHeap_Finalizer Finalize
 //	ObjectSize = max(ObjectSize, sizeof(HeapObject));
 	ObjectSize += sizeof(HeapObject);
 	
-	Heap = jeRam_Allocate(sizeof(*Heap));
+	Heap = grRam_Allocate(sizeof(*Heap));
 	if	(!Heap)
 		return Heap;
 
@@ -106,15 +106,15 @@ void GCHeap_Destroy(GCHeap **pHeap)
 
 		Temp = Blocks->Next;
 		assert(Blocks->Data);
-		jeRam_Free(Blocks->Data);
-		jeRam_Free(Blocks);
+		grRam_Free(Blocks->Data);
+		grRam_Free(Blocks);
 		Blocks = Temp;
 	}
-	jeRam_Free(Heap);
+	grRam_Free(Heap);
 	*pHeap = NULL;
 }
 
-static	jeBoolean GCHeap_Expand(GCHeap *Heap)
+static	grBoolean GCHeap_Expand(GCHeap *Heap)
 {
 	Block *			NewBlock;
 	char *			p;
@@ -122,15 +122,15 @@ static	jeBoolean GCHeap_Expand(GCHeap *Heap)
 	HeapObject *	FreeHead;
 	HeapObject *	Free;
 
-	NewBlock = jeRam_Allocate(sizeof(*NewBlock));
+	NewBlock = grRam_Allocate(sizeof(*NewBlock));
 	if	(!NewBlock)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	NewBlock->Data = jeRam_Allocate(Heap->ExpandSize);
+	NewBlock->Data = grRam_Allocate(Heap->ExpandSize);
 	if	(!NewBlock->Data)
 	{
-		jeRam_Free(NewBlock);
-		return JE_FALSE;
+		grRam_Free(NewBlock);
+		return GR_FALSE;
 	}
 //	NewBlock->Length = ExpandSize;
 	p = NewBlock->Data;
@@ -149,7 +149,7 @@ static	jeBoolean GCHeap_Expand(GCHeap *Heap)
 	NewBlock->Next = Heap->Blocks;
 	Heap->Blocks = NewBlock;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void *GCHeap_AllocateFixed(GCHeap *Heap)
@@ -160,7 +160,7 @@ void *GCHeap_AllocateFixed(GCHeap *Heap)
 
 	if	(!Heap->FreeObjects)
 	{
-		if	(GCHeap_Expand(Heap) == JE_FALSE)
+		if	(GCHeap_Expand(Heap) == GR_FALSE)
 			return NULL;
 	}
 

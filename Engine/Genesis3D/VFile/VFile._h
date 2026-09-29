@@ -24,92 +24,92 @@
 #include	"BaseType.h"
 #include	"VFile.h"
 
-#define	JE_VFILE_HINTSFILEHEADER_SIGNATURE	(0x48484656)	// "VFHH"
+#define	GR_VFILE_HINTSFILEHEADER_SIGNATURE	(0x48484656)	// "VFHH"
 
-typedef	struct	jeVFile_HintsFileHeader
+typedef	struct	grVFile_HintsFileHeader
 {
 	unsigned long	Signature;
 	unsigned int	HintDataLength;
-}	jeVFile_HintsFileHeader;
+}	grVFile_HintsFileHeader;
 
 
-typedef void * 		(JETCC *jeVFile_FinderCreateFN)(jeVFile *FileSystem, void *Handle, const char *FileSpec);
-typedef jeBoolean 	(JETCC *jeVFile_FinderGetNextFileFN)(void *Handle);
-typedef jeBoolean 	(JETCC *jeVFile_FinderGetPropertiesFN)(void *Handle, jeVFile_Properties *Properties);
-typedef void 		(JETCC *jeVFile_FinderDestroyFN)(void *Handle);
+typedef void * 		(GRCC *grVFile_FinderCreateFN)(grVFile *FileSystem, void *Handle, const char *FileSpec);
+typedef grBoolean 	(GRCC *grVFile_FinderGetNextFileFN)(void *Handle);
+typedef grBoolean 	(GRCC *grVFile_FinderGetPropertiesFN)(void *Handle, grVFile_Properties *Properties);
+typedef void 		(GRCC *grVFile_FinderDestroyFN)(void *Handle);
 
-typedef	void * 	(JETCC *jeVFile_OpenNewSystemFN)(jeVFile *FS,
+typedef	void * 	(GRCC *grVFile_OpenNewSystemFN)(grVFile *FS,
 					 const char *Name,
 					 void *	Context,
 					 unsigned int OpenModeFlags);
 
-typedef jeBoolean (JETCC *jeVFile_UpdateContextFN)(jeVFile *FS, void *Handle, void *Context, int ContextSize);
+typedef grBoolean (GRCC *grVFile_UpdateContextFN)(grVFile *FS, void *Handle, void *Context, int ContextSize);
 
-typedef	void * 	(JETCC *jeVFile_OpenFN)(jeVFile *FS,
+typedef	void * 	(GRCC *grVFile_OpenFN)(grVFile *FS,
 					 void *Handle,
 					 const char *Name,
 					 void *	Context,
 					 unsigned int OpenModeFlags);
 
-typedef	jeBoolean  (JETCC *jeVFile_DeleteFileFN)(jeVFile *FS, void *Handle, const char *FileName);
-typedef	jeBoolean  (JETCC *jeVFile_RenameFileFN)(jeVFile *FS, void *Handle, const char *FileName, const char *NewFileName);
-typedef	jeBoolean  (JETCC *jeVFile_FileExistsFN)(jeVFile *FS, void *Handle, const char *FileName);
-typedef	jeBoolean  (JETCC *jeVFile_DisperseFN)(jeVFile *FS, void *Handle, const char *Directory);
-typedef	jeBoolean  (JETCC *jeVFile_CloseFN)(void *Handle);
+typedef	grBoolean  (GRCC *grVFile_DeleteFileFN)(grVFile *FS, void *Handle, const char *FileName);
+typedef	grBoolean  (GRCC *grVFile_RenameFileFN)(grVFile *FS, void *Handle, const char *FileName, const char *NewFileName);
+typedef	grBoolean  (GRCC *grVFile_FileExistsFN)(grVFile *FS, void *Handle, const char *FileName);
+typedef	grBoolean  (GRCC *grVFile_DisperseFN)(grVFile *FS, void *Handle, const char *Directory);
+typedef	grBoolean  (GRCC *grVFile_CloseFN)(void *Handle);
 
-typedef	jeBoolean  (JETCC *jeVFile_GetSFN)(void *Handle, void *Buff, int MaxSize);
-typedef	jeBoolean  (JETCC *jeVFile_BytesAvailableFN)(void *Handle, long *Count);
-typedef	jeBoolean  (JETCC *jeVFile_ReadFN)(void *Handle, void *Buff, uint32 Count);
-typedef	jeBoolean  (JETCC *jeVFile_WriteFN)(void *Handle, const void *Buff, int Count);
-typedef	jeBoolean  (JETCC *jeVFile_SeekFN)(void *Handle, int Where, jeVFile_Whence Whence);
-typedef	jeBoolean  (JETCC *jeVFile_EOFFN)(const void *Handle);
-typedef	jeBoolean  (JETCC *jeVFile_TellFN)(const void *Handle, long *Position);
-typedef	jeBoolean  (JETCC *jeVFile_GetPropertiesFN)(const void *Handle, jeVFile_Properties *Properties);
+typedef	grBoolean  (GRCC *grVFile_GetSFN)(void *Handle, void *Buff, int MaxSize);
+typedef	grBoolean  (GRCC *grVFile_BytesAvailableFN)(void *Handle, long *Count);
+typedef	grBoolean  (GRCC *grVFile_ReadFN)(void *Handle, void *Buff, uint32 Count);
+typedef	grBoolean  (GRCC *grVFile_WriteFN)(void *Handle, const void *Buff, int Count);
+typedef	grBoolean  (GRCC *grVFile_SeekFN)(void *Handle, int Where, grVFile_Whence Whence);
+typedef	grBoolean  (GRCC *grVFile_EOFFN)(const void *Handle);
+typedef	grBoolean  (GRCC *grVFile_TellFN)(const void *Handle, long *Position);
+typedef	grBoolean  (GRCC *grVFile_GetPropertiesFN)(const void *Handle, grVFile_Properties *Properties);
 
-typedef	jeBoolean  (JETCC *jeVFile_SizeFN)(const void *Handle, long *Size);
-typedef jeBoolean  (JETCC *jeVFile_SetSizeFN)(void *Handle, long Size);
-typedef jeBoolean  (JETCC *jeVFile_SetAttributesFN)(void *Handle, jeVFile_Attributes Attributes);
-typedef jeBoolean  (JETCC *jeVFile_SetTimeFN)(void *Handle, const jeVFile_Time *Time);
+typedef	grBoolean  (GRCC *grVFile_SizeFN)(const void *Handle, long *Size);
+typedef grBoolean  (GRCC *grVFile_SetSizeFN)(void *Handle, long Size);
+typedef grBoolean  (GRCC *grVFile_SetAttributesFN)(void *Handle, grVFile_Attributes Attributes);
+typedef grBoolean  (GRCC *grVFile_SetTimeFN)(void *Handle, const grVFile_Time *Time);
 
-typedef jeVFile *  (JETCC *jeVFile_GetHintsFileFN)(void *Handle);
+typedef grVFile *  (GRCC *grVFile_GetHintsFileFN)(void *Handle);
 
-typedef	struct	jeVFile_SystemAPIs
+typedef	struct	grVFile_SystemAPIs
 {
-	jeVFile_FinderCreateFN		FinderCreate;
-	jeVFile_FinderGetNextFileFN	FinderGetNextFile;
-	jeVFile_FinderGetPropertiesFN	FinderGetProperties;
-	jeVFile_FinderDestroyFN		FinderDestroy;
+	grVFile_FinderCreateFN		FinderCreate;
+	grVFile_FinderGetNextFileFN	FinderGetNextFile;
+	grVFile_FinderGetPropertiesFN	FinderGetProperties;
+	grVFile_FinderDestroyFN		FinderDestroy;
 
-	jeVFile_OpenNewSystemFN		OpenNewSystem;
-	jeVFile_UpdateContextFN		UpdateContext;
-	jeVFile_OpenFN				Open;
-	jeVFile_DeleteFileFN		DeleteFile;
-	jeVFile_RenameFileFN		RenameFile;
-	jeVFile_FileExistsFN		FileExists;
-	jeVFile_DisperseFN			Disperse;
-	jeVFile_CloseFN				Close;
+	grVFile_OpenNewSystemFN		OpenNewSystem;
+	grVFile_UpdateContextFN		UpdateContext;
+	grVFile_OpenFN				Open;
+	grVFile_DeleteFileFN		DeleteFile;
+	grVFile_RenameFileFN		RenameFile;
+	grVFile_FileExistsFN		FileExists;
+	grVFile_DisperseFN			Disperse;
+	grVFile_CloseFN				Close;
 
-	jeVFile_GetSFN				GetS;
-	jeVFile_BytesAvailableFN	BytesAvailable;
-	jeVFile_ReadFN				Read;
-	jeVFile_WriteFN				Write;
-	jeVFile_SeekFN				Seek;
-	jeVFile_EOFFN				Eof;
-	jeVFile_TellFN				Tell;
-	jeVFile_SizeFN				Size;
+	grVFile_GetSFN				GetS;
+	grVFile_BytesAvailableFN	BytesAvailable;
+	grVFile_ReadFN				Read;
+	grVFile_WriteFN				Write;
+	grVFile_SeekFN				Seek;
+	grVFile_EOFFN				Eof;
+	grVFile_TellFN				Tell;
+	grVFile_SizeFN				Size;
 
-	jeVFile_GetPropertiesFN		GetProperties;
+	grVFile_GetPropertiesFN		GetProperties;
 
-	jeVFile_SetSizeFN			SetSize;
-	jeVFile_SetAttributesFN		SetAttributes;
-	jeVFile_SetTimeFN			SetTime;
+	grVFile_SetSizeFN			SetSize;
+	grVFile_SetAttributesFN		SetAttributes;
+	grVFile_SetTimeFN			SetTime;
 
-	jeVFile_GetHintsFileFN		GetHintsFile;
+	grVFile_GetHintsFileFN		GetHintsFile;
 
-}	jeVFile_SystemAPIs;
+}	grVFile_SystemAPIs;
 
-jeBoolean JETCC VFile_RegisterFileSystem(
-	const jeVFile_SystemAPIs *	APIs,
-	jeVFile_TypeIdentifier *		Type);
+grBoolean GRCC VFile_RegisterFileSystem(
+	const grVFile_SystemAPIs *	APIs,
+	grVFile_TypeIdentifier *		Type);
 
 #endif

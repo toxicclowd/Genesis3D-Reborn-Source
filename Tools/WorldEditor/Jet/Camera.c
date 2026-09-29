@@ -20,7 +20,7 @@
 /****************************************************************************************/
 #include <Assert.h>
 
-#include "jet.h"
+#include "Genesis3D.h"
 #include "Ram.h"
 
 #include "Camera.h"
@@ -32,24 +32,24 @@ typedef struct tagCamera
 #ifdef _DEBUG
 	int			nSignature ;
 #endif
-	jeCamera *	pCamera ;
+	grCamera *	pCamera ;
 } Camera ;
 
 
 Camera * Camera_Create( void )
 {
-	jeRect rect = {0, 0, 1, 1} ;
-	jeXForm3d M = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, {0, 0, 0}} ;
+	grRect rect = {0, 0, 1, 1} ;
+	grXForm3d M = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, {0, 0, 0}} ;
 	Camera * pCamera ;
 
 	
-	pCamera = JE_RAM_ALLOCATE_STRUCT( Camera ) ;
+	pCamera = GR_RAM_ALLOCATE_STRUCT( Camera ) ;
 	if( pCamera != NULL )
 	{
 		assert( (pCamera->nSignature = SIGNATURE) == SIGNATURE ) ;	// ASSIGN
 	
-		pCamera->pCamera = jeCamera_Create( 2.0f, &rect ) ;
-		if( !jeCamera_SetXForm( pCamera->pCamera, &M) )
+		pCamera->pCamera = grCamera_Create( 2.0f, &rect ) ;
+		if( !grCamera_SetXForm( pCamera->pCamera, &M) )
 		{
 			Camera_Destroy( &pCamera ) ;
 			return NULL ;
@@ -65,8 +65,8 @@ void Camera_Destroy( Camera ** ppCamera )
 	assert( (*ppCamera)->nSignature == SIGNATURE ) ;
 	assert( (*ppCamera)->pCamera != NULL ) ;
 
-	jeCamera_Destroy( &(*ppCamera)->pCamera ) ;
+	grCamera_Destroy( &(*ppCamera)->pCamera ) ;
 
 	assert( ((*ppCamera)->nSignature = 0) == 0 ) ;	// CLEAR
-	jeRam_Free( *ppCamera ) ;
+	grRam_Free( *ppCamera ) ;
 }// Camera_Destroy

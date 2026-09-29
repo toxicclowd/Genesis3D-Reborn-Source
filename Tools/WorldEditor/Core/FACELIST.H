@@ -22,8 +22,8 @@
 #ifndef FACELIST_H
 #define FACELIST_H
 
-#include "jeList.h"
-#include "jeBrush.h"
+#include "grList.h"
+#include "grBrush.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,25 +32,25 @@ extern "C" {
 typedef List FaceList ;
 typedef ListIterator FaceIterator ;
 typedef List_DestroyCallback FaceList_DestroyCallback ;
-typedef jeBoolean (*FaceListCB)( jeBrush_Face *pFace, void * pVoid ) ;
+typedef grBoolean (*FaceListCB)( grBrush_Face *pFace, void * pVoid ) ;
 
 FaceList *		FaceList_Create( void ) ;
 void			FaceList_Destroy( FaceList **ppList, FaceList_DestroyCallback DestroyFcn ) ;
 
 // ACCESSORS
-jeBrush_Face *	FaceList_GetFace( FaceIterator pMI ) ;
-jeBrush_Face *	FaceList_GetFirstFace( FaceList * pList, FaceIterator * pMI ) ;
-jeBrush_Face *	FaceList_GetNextFace( FaceList * pList, FaceIterator * pMI ) ;
+grBrush_Face *	FaceList_GetFace( FaceIterator pMI ) ;
+grBrush_Face *	FaceList_GetFirstFace( FaceList * pList, FaceIterator * pMI ) ;
+grBrush_Face *	FaceList_GetNextFace( FaceList * pList, FaceIterator * pMI ) ;
 int32			FaceList_GetNumFace( FaceList * pList );
 
 
 // MODIFIERS
-FaceIterator	FaceList_Append( FaceList * pList, jeBrush_Face * pFace ) ;
-void			FaceList_Remove( FaceList * pList, jeBrush_Face * pFace ) ;
+FaceIterator	FaceList_Append( FaceList * pList, grBrush_Face * pFace ) ;
+void			FaceList_Remove( FaceList * pList, grBrush_Face * pFace ) ;
 
 //SEARCH
 
-jeBoolean FaceList_Search( FaceList * pList, jeBrush_Face*  pFace, FaceIterator * fI );
+grBoolean FaceList_Search( FaceList * pList, grBrush_Face*  pFace, FaceIterator * fI );
 //ITERATION
 int FaceList_Enum(FaceList * pList, FaceListCB CallbackFcn, void *lParam);
 #ifdef __cplusplus

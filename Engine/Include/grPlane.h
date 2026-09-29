@@ -54,10 +54,10 @@ typedef enum
 	Type_AnyZ=5,						// Arbitrary, Z dominent axis
 	Type_Any=6,							// Arbitrary (Any axis)
 } grPlane_Type;
-typedef grPlane_Type jePlane_Type;
+typedef grPlane_Type grPlane_Type;
 
 typedef uint8			grPlane_Side;
-typedef grPlane_Side	jePlane_Side;
+typedef grPlane_Side	grPlane_Side;
 
 // flags for plane on side types
 #define PSIDE_FRONT		(1<<0)
@@ -66,13 +66,13 @@ typedef grPlane_Side	jePlane_Side;
 
 #define PSIDE_BOTH		(PSIDE_FRONT|PSIDE_BACK)
 
-typedef struct jePlane
+typedef struct grPlane
 {
 	grVec3d			Normal;				// Unit Orientation
 	float			Dist;				// Distance from origin
 	grPlane_Type	Type;				// grPlane_Type
 } grPlane;
-typedef struct jePlane jePlane;
+typedef struct grPlane grPlane;
 
 
 
@@ -98,21 +98,6 @@ grBoolean		grPlane_Compare(const grPlane *Plane1, const grPlane *Plane2, float N
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jePlane_BoxSide                          grPlane_BoxSide
-#define jePlane_Compare                          grPlane_Compare
-#define jePlane_GetAAVectors                     grPlane_GetAAVectors
-#define jePlane_Inverse                          grPlane_Inverse
-#define jePlane_PointDistance                    grPlane_PointDistance
-#define jePlane_PointDistanceFast                grPlane_PointDistanceFast
-#define jePlane_Rotate                           grPlane_Rotate
-#define jePlane_SetFromVerts                     grPlane_SetFromVerts
-#define jePlane_Transform                        grPlane_Transform
-#define jePlane_TransformRenorm                  grPlane_TransformRenorm
-#define jePlane_TypeFromUnitVector               grPlane_TypeFromUnitVector
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif
 

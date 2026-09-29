@@ -21,20 +21,20 @@
 #pragma warning ( disable : 4115 )
 #include <windows.h>
 #pragma warning ( default : 4115 )
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "Corona.h"
 #include "Object.h"
 #include "ObjectDef.h"
-#include "jeVersion.h"
+#include "grVersion.h"
 #include "Errorlog.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //	Object definition
 ////////////////////////////////////////////////////////////////////////////////////////
-jeObjectDef ObjectDef =
+grObjectDef ObjectDef =
 {
-	JE_OBJECT_TYPE_UNKNOWN,
+	GR_OBJECT_TYPE_UNKNOWN,
 	"Corona",
 	0,
 	CreateInstance,
@@ -92,9 +92,9 @@ int WINAPI DllMain(
 		// dll load
 		case DLL_PROCESS_ATTACH:
 		{
-			if ( InitClass( hInstance ) == JE_FALSE )
+			if ( InitClass( hInstance ) == GR_FALSE )
 			{
-				jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Failed to init class" );
+				grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Failed to init class" );
 				return FALSE;
 			}
 			break;
@@ -103,9 +103,9 @@ int WINAPI DllMain(
 		// dll free
 		case DLL_PROCESS_DETACH:
 		{
-			if ( DeInitClass() == JE_FALSE )
+			if ( DeInitClass() == GR_FALSE )
 			{
-				jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Failed to deinit class" );
+				grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Failed to deinit class" );
 				return FALSE;
 			}
 			break;
@@ -127,26 +127,26 @@ int WINAPI DllMain(
 //	Object_RegisterDef()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-DLLExport jeBoolean Object_RegisterDef(
+DLLExport grBoolean Object_RegisterDef(
 	float Major,	// major version number
 	float Minor )	// minor version number
 {
 
 	// fail if versions don't match
-	if ( ( Major != JET_MAJOR_VERSION ) || ( Minor != JET_MINOR_VERSION ) )
+	if ( ( Major != GRT_MAJOR_VERSION ) || ( Minor != GRT_MINOR_VERSION ) )
 	{
-		jeErrorLog_Add( JE_ERR_DATA_FORMAT, "Version numbers don't match" );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_DATA_FORMAT, "Version numbers don't match" );
+		return GR_FALSE;
 	}
 
 	// register def
-	if ( jeObject_RegisterGlobalObjectDef( &ObjectDef ) == JE_FALSE )
+	if ( grObject_RegisterGlobalObjectDef( &ObjectDef ) == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Failed to register global object def" );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Failed to register global object def" );
+		return GR_FALSE;
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Object_RegisterDef()

@@ -147,7 +147,7 @@ int32 MaterialIdentList_EnumMaterialIdents( MaterialIdentList * pList, void * pV
 
 void MaterialIdentList_DestroyCB( MaterialIdent * pMaterialIdent )
 {
-	jeRam_Free(pMaterialIdent);
+	grRam_Free(pMaterialIdent);
 }
 
 

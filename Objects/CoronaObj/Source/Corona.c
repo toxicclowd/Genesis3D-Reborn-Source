@@ -25,17 +25,17 @@
 #include <assert.h>
 #include <string.h>
 #include "vfile.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 #include "ram.h"
-#include "jeResource.h"
-#include "jeWorld.h"
+#include "grResource.h"
+#include "grWorld.h"
 #include "Corona.h"
 #include "resource.h"
 #include "Errorlog.h"
 #include "ObjectMsg.h"
 #include "ObjUtil.h"
-#include "jeMaterial.h"
-#include "jeResource.h"
+#include "grMaterial.h"
+#include "grResource.h"
 
 #define CORONA_VERSION_NUMBER 1
 
@@ -98,10 +98,10 @@ enum
 ////////////////////////////////////////////////////////////////////////////////////////
 static HINSTANCE		hClassInstance = NULL;
 static BitmapList		*AvailableArt = NULL;
-static jeProperty		CoronaProperties[CORONA_LAST_INDEX];
-static jeProperty_List	CoronaPropertyList = { CORONA_LAST_INDEX, &( CoronaProperties[0] ) };
+static grProperty		CoronaProperties[CORONA_LAST_INDEX];
+static grProperty_List	CoronaPropertyList = { CORONA_LAST_INDEX, &( CoronaProperties[0] ) };
 static char				*NoSelection = "< none >";
-static jeMaterialSpec *MatSpec;
+static grMaterialSpec *MatSpec;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //	Defaults
@@ -122,25 +122,25 @@ typedef struct Corona
 {
 
 	// standard stuff
-	jeWorld			*World;
-	jeResourceMgr	*ResourceMgr;
-	jeEngine		*Engine;
+	grWorld			*World;
+	grResourceMgr	*ResourceMgr;
+	grEngine		*Engine;
 	int				RefCount;
-	jeBoolean		LoadedFromDisk;
+	grBoolean		LoadedFromDisk;
 
 	// internal stuff
-	jeBitmap	*Art;				// current art
+	grBitmap	*Art;				// current art
 	char		*ArtName;			// current art name
 	char		*SizeString;		// size string loaded from disk
 	float		LastVisibleRadius;	// last visible radius
-	jeFloat		DistanceToCorona;	// distance from camera to corona
-	jeBoolean	Visible;			// whether or not its visible
+	grFloat		DistanceToCorona;	// distance from camera to corona
+	grBoolean	Visible;			// whether or not its visible
 
 	// user adjustable stuff
-	jeXForm3d	Xf;
+	grXForm3d	Xf;
 	char		*BitmapName;		// name of chosen bitmap
 	char		*AlphaName;			// name of chosen alpha
-	jeFloat		FadeTime;			// how many seconds to spend fading away the corona
+	grFloat		FadeTime;			// how many seconds to spend fading away the corona
     float		MinRadius;			// mix corona radius
     float		MaxRadius;			// max corona radius
 	float		MinRadiusDistance;	// below this distance, corona is capped at MinRadius
@@ -156,7 +156,7 @@ typedef struct Corona
 //	InitClass()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean InitClass(
+grBoolean InitClass(
 	HINSTANCE	hInstance )	// dll instance handle
 {
 
@@ -176,11 +176,11 @@ jeBoolean InitClass(
 	String = ObjUtil_LoadLibraryString( hClassInstance, IDS_ARTGROUP );
 	if ( String == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
 		goto ERROR_InitClass;
 	}
-	jeProperty_FillGroup( &( CoronaProperties[CORONA_ARTGROUP_INDEX] ), String, CORONA_ARTGROUP_ID );
-	jeProperty_FillGroupEnd( &( CoronaProperties[CORONA_ARTGROUPEND_INDEX] ), CORONA_ARTGROUPEND_ID );
+	grProperty_FillGroup( &( CoronaProperties[CORONA_ARTGROUP_INDEX] ), String, CORONA_ARTGROUP_ID );
+	grProperty_FillGroupEnd( &( CoronaProperties[CORONA_ARTGROUPEND_INDEX] ), CORONA_ARTGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -191,70 +191,70 @@ jeBoolean InitClass(
 	String = ObjUtil_LoadLibraryString( hClassInstance, IDS_FADETIME );
 	if ( String == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
 		goto ERROR_InitClass;
 	}
-	jeProperty_FillFloat(	&( CoronaProperties[CORONA_FADETIME_INDEX] ), String,
+	grProperty_FillFloat(	&( CoronaProperties[CORONA_FADETIME_INDEX] ), String,
 							CORONA_DEFAULT_FADETIME, CORONA_FADETIME_ID, 0.0f, FLT_MAX, 0.1f );
 
 	// max visible distance
 	String = ObjUtil_LoadLibraryString( hClassInstance, IDS_MAXVISIBLEDISTANCE );
 	if ( String == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
 		goto ERROR_InitClass;
 	}
-	jeProperty_FillFloat(	&( CoronaProperties[CORONA_MAXVISIBLEDISTANCE_INDEX] ), String,
+	grProperty_FillFloat(	&( CoronaProperties[CORONA_MAXVISIBLEDISTANCE_INDEX] ), String,
 							CORONA_DEFAULT_MAXVISIBLEDISTANCE, CORONA_MAXVISIBLEDISTANCE_ID, 1.0f, FLT_MAX, 100.0f );
 
 	// min radius
 	String = ObjUtil_LoadLibraryString( hClassInstance, IDS_MINRADIUS );
 	if ( String == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
 		goto ERROR_InitClass;
 	}
-	jeProperty_FillFloat(	&( CoronaProperties[CORONA_MINRADIUS_INDEX] ), String,
+	grProperty_FillFloat(	&( CoronaProperties[CORONA_MINRADIUS_INDEX] ), String,
 							CORONA_DEFAULT_MINRADIUS, CORONA_MINRADIUS_ID, 0.1f, FLT_MAX, 0.1f );
 
 	// max radius
 	String = ObjUtil_LoadLibraryString( hClassInstance, IDS_MAXRADIUS );
 	if ( String == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
 		goto ERROR_InitClass;
 	}
-	jeProperty_FillFloat(	&( CoronaProperties[CORONA_MAXRADIUS_INDEX] ), String,
+	grProperty_FillFloat(	&( CoronaProperties[CORONA_MAXRADIUS_INDEX] ), String,
 							CORONA_DEFAULT_MAXRADIUS, CORONA_MAXRADIUS_ID, 0.1f, FLT_MAX, 0.1f );
 
 	// min radius distance
 	String = ObjUtil_LoadLibraryString( hClassInstance, IDS_MINRADIUSDISTANCE );
 	if ( String == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
 		goto ERROR_InitClass;
 	}
-	jeProperty_FillFloat(	&( CoronaProperties[CORONA_MINRADIUSDISTANCE_INDEX] ), String,
+	grProperty_FillFloat(	&( CoronaProperties[CORONA_MINRADIUSDISTANCE_INDEX] ), String,
 							CORONA_DEFAULT_MINRADIUSDISTANCE, CORONA_MINRADIUSDISTANCE_ID, 0.0f, FLT_MAX, 100.0f );
 
 	// max radius distance
 	String = ObjUtil_LoadLibraryString( hClassInstance, IDS_MAXRADIUSDISTANCE );
 	if ( String == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
 		goto ERROR_InitClass;
 	}
-	jeProperty_FillFloat(	&( CoronaProperties[CORONA_MAXRADIUSDISTANCE_INDEX] ), String,
+	grProperty_FillFloat(	&( CoronaProperties[CORONA_MAXRADIUSDISTANCE_INDEX] ), String,
 							CORONA_DEFAULT_MAXRADIUSDISTANCE, CORONA_MAXRADIUSDISTANCE_ID, 0.0f, FLT_MAX, 100.0f );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	//	End marker
 	////////////////////////////////////////////////////////////////////////////////////////
-	CoronaPropertyList.jePropertyN = CORONA_LAST_INDEX;
+	CoronaPropertyList.grPropertyN = CORONA_LAST_INDEX;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 
 	//
@@ -264,11 +264,11 @@ jeBoolean InitClass(
 
 	// reset misc stuff
 	hClassInstance = NULL;
-	CoronaPropertyList.jePropertyN = 0;
+	CoronaPropertyList.grPropertyN = 0;
 
 	// return failure
-	ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
-	return JE_FALSE;
+	ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
+	return GR_FALSE;
 
 } // InitClass()
 
@@ -279,7 +279,7 @@ jeBoolean InitClass(
 //	DeInitClass()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean DeInitClass(
+grBoolean DeInitClass(
 	void )	// no parameters
 {
 
@@ -293,7 +293,7 @@ jeBoolean DeInitClass(
 	hClassInstance = NULL;
 
 	// all done
-	 return JE_TRUE;
+	 return GR_TRUE;
 
 } // DeInitClass()
 
@@ -304,7 +304,7 @@ jeBoolean DeInitClass(
 //	CreateInstance()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void * JETCC CreateInstance(
+void * GRCC CreateInstance(
 	void )	// no parameters
 {
 
@@ -312,15 +312,15 @@ void * JETCC CreateInstance(
 	Corona	*Object;
 
 	// allocate struct
-	Object = jeRam_AllocateClear( sizeof( *Object ) );
+	Object = grRam_AllocateClear( sizeof( *Object ) );
 	if ( Object == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_MEMORY_RESOURCE, IDS_ERROR_CreateInstance_AllocateObject );
+		ObjUtil_LogError( hClassInstance, GR_ERR_MEMORY_RESOURCE, IDS_ERROR_CreateInstance_AllocateObject );
 		goto ERROR_CreateInstance;
 	}
 
 	// set defaults
-	jeXForm3d_SetIdentity( &( Object->Xf ) );
+	grXForm3d_SetIdentity( &( Object->Xf ) );
 	Object->RefCount = 1;
 	Object->FadeTime = CORONA_DEFAULT_FADETIME;
 	Object->MinRadius = CORONA_DEFAULT_MINRADIUS;
@@ -342,12 +342,12 @@ void * JETCC CreateInstance(
 	if ( Object != NULL )
 	{
 		// free object itself
-		jeRam_Free( Object );
+		grRam_Free( Object );
 		Object = NULL;
 	}
 
 	// return failure
-	ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateInstance_Failure );
+	ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateInstance_Failure );
 	return NULL;
 
 } // CreateInstance()
@@ -359,7 +359,7 @@ void * JETCC CreateInstance(
 //	CreateRef()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void JETCC CreateRef(
+void GRCC CreateRef(
 	void	*Instance )	// instance data
 {
 
@@ -382,7 +382,7 @@ void JETCC CreateRef(
 //	Destroy()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Destroy(
+grBoolean GRCC Destroy(
 	void	**Instance )	// pointer to instance data
 {
 
@@ -401,7 +401,7 @@ jeBoolean JETCC Destroy(
 	Object->RefCount--;
 	if ( Object->RefCount > 0 )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	
 	// make sure everything has been properly destroyed
@@ -410,13 +410,13 @@ jeBoolean JETCC Destroy(
 	assert( Object->ResourceMgr == NULL );
 
 	// free struct
-	jeRam_Free( Object );
+	grRam_Free( Object );
 
 	// zap pointer
 	*Instance = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Destroy()
 
@@ -427,19 +427,19 @@ jeBoolean JETCC Destroy(
 //	Render()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Render(
+grBoolean GRCC Render(
 	const void				*Instance,				// object instance data
-	const jeWorld			*World,					// world
-	const jeEngine			*Engine,				// engine
-	const jeCamera			*Camera,				// camera
-	const jeFrustum			*CameraSpaceFrustum,	// frustum 	
-	jeObject_RenderFlags	RenderFlags )			// render flags
+	const grWorld			*World,					// world
+	const grEngine			*Engine,				// engine
+	const grCamera			*Camera,				// camera
+	const grFrustum			*CameraSpaceFrustum,	// frustum 	
+	grObject_RenderFlags	RenderFlags )			// render flags
 {
 
 	// locals
 	Corona	*Object;
-    jeVec3d			Delta;
-    jeXForm3d		CameraXf;
+    grVec3d			Delta;
+    grXForm3d		CameraXf;
 
 	// ensure valid data
 	assert( Instance != NULL );
@@ -456,15 +456,15 @@ jeBoolean JETCC Render(
 	{
 
 		// locals
-		jeCollisionInfo	CollisionInfo;
-		jeExtBox		ExtBox;
+		grCollisionInfo	CollisionInfo;
+		grExtBox		ExtBox;
 
 		// get camera xform
-		jeCamera_GetXForm( Camera, &CameraXf );
+		grCamera_GetXForm( Camera, &CameraXf );
 
 		// determine distance from corona to camera
-		jeVec3d_Subtract( &( Object->Xf.Translation ), &( CameraXf.Translation ), &Delta );
-		Object->DistanceToCorona = jeVec3d_Length( &Delta );
+		grVec3d_Subtract( &( Object->Xf.Translation ), &( CameraXf.Translation ), &Delta );
+		Object->DistanceToCorona = grVec3d_Length( &Delta );
 
 		// setup extent box
         ExtBox.Min.X = -1.0f;
@@ -473,17 +473,17 @@ jeBoolean JETCC Render(
         ExtBox.Max.X = 1.0f;
         ExtBox.Max.Y = 1.0f;
         ExtBox.Max.Z = 1.0f;
-//!!		jeExtBox_SetToPoint ( &ExtBox, &( Object->Xf.Translation ) );
-//!!		jeExtBox_ExtendToEnclose( &ExtBox, &( Object->Xf.Translation ) );
+//!!		grExtBox_SetToPoint ( &ExtBox, &( Object->Xf.Translation ) );
+//!!		grExtBox_ExtendToEnclose( &ExtBox, &( Object->Xf.Translation ) );
 
 		// determine whether or not corona is visible
 		if ( Object->DistanceToCorona > Object->MaxVisibleDistance )
 		{
-			Object->Visible = JE_FALSE;
+			Object->Visible = GR_FALSE;
 		}
 		else
 		{
-			Object->Visible = !(jeWorld_Collision( World, &ExtBox, &( Object->Xf.Translation ), &( CameraXf.Translation ), &CollisionInfo ));
+			Object->Visible = !(grWorld_Collision( World, &ExtBox, &( Object->Xf.Translation ), &( CameraXf.Translation ), &CollisionInfo ));
 		}
 	}
 
@@ -493,9 +493,9 @@ jeBoolean JETCC Render(
 	{
 
 		// locals
-		jeUserPoly	*Poly;
-		jeLVertex	Vertex;
-        jeVec3d position;
+		grUserPoly	*Poly;
+		grLVertex	Vertex;
+        grVec3d position;
 
 		// setup vert
 		Vertex.a = 255.0f;
@@ -504,8 +504,8 @@ jeBoolean JETCC Render(
 		Vertex.b = 255.0f;
 		Vertex.u = 0.0f;
 		Vertex.v = 0.0f;
-        jeVec3d_Scale(&Delta,4.0f/Object->DistanceToCorona,&position);
-        jeVec3d_Add(&position,&(CameraXf.Translation),&position);
+        grVec3d_Scale(&Delta,4.0f/Object->DistanceToCorona,&position);
+        grVec3d_Add(&position,&(CameraXf.Translation),&position);
 //!!		Vertex.X = Object->Xf.Translation.X;
 //!!		Vertex.Y = Object->Xf.Translation.Y;
 //!!		Vertex.Z = Object->Xf.Translation.Z;
@@ -516,25 +516,25 @@ jeBoolean JETCC Render(
 		// add poly
 		if (!MatSpec)
     	{
-	        MatSpec = jeMaterialSpec_Create(jeResourceMgr_GetEngine(jeResourceMgr_GetSingleton()), jeResourceMgr_GetSingleton());
+	        MatSpec = grMaterialSpec_Create(grResourceMgr_GetEngine(grResourceMgr_GetSingleton()), grResourceMgr_GetSingleton());
 #pragma message ("Krouer: change NULL to something better next time")
-	        jeMaterialSpec_AddLayerFromBitmap(MatSpec, 0, Object->Art, NULL);
+	        grMaterialSpec_AddLayerFromBitmap(MatSpec, 0, Object->Art, NULL);
 	    }
   
-		Poly = jeUserPoly_CreateSprite( &Vertex, MatSpec, (Object->LastVisibleRadius * 4.0f)/Object->DistanceToCorona, 0 );
+		Poly = grUserPoly_CreateSprite( &Vertex, MatSpec, (Object->LastVisibleRadius * 4.0f)/Object->DistanceToCorona, 0 );
 		if ( Poly == NULL )
 		{
-			ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_Render_AddPoly );
+			ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_Render_AddPoly );
 		}
 		else
 		{
-			jeWorld_AddUserPoly( (jeWorld *)World, Poly, JE_TRUE );
-			jeUserPoly_Destroy( &Poly );
+			grWorld_AddUserPoly( (grWorld *)World, Poly, GR_TRUE );
+			grUserPoly_Destroy( &Poly );
 		}
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	CameraSpaceFrustum;
@@ -550,9 +550,9 @@ jeBoolean JETCC Render(
 //	AttachWorld()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachWorld(
+grBoolean GRCC AttachWorld(
 	void	*Instance,	// object instance data
-	jeWorld	*World )	// world
+	grWorld	*World )	// world
 {
 
 	// locals
@@ -569,7 +569,7 @@ jeBoolean JETCC AttachWorld(
 	Object->World = World;
 
 	// save an instance of the resource manager
-	Object->ResourceMgr = jeWorld_GetResourceMgr( World );
+	Object->ResourceMgr = grWorld_GetResourceMgr( World );
 	assert( Object->ResourceMgr != NULL );
 
 	// build bitmap list if required
@@ -580,20 +580,20 @@ jeBoolean JETCC AttachWorld(
 		AvailableArt = ObjUtil_CreateBitmapList( Object->ResourceMgr, "GlobalMaterials", "*.bmp" );
 		if ( AvailableArt == NULL )
 		{
-			ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_AttachWorld_CreateBitmapList );
+			ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_AttachWorld_CreateBitmapList );
 			goto ERROR_AttachWorld;
 		}
 	}
 
 	// set object art defaults
-	if ( Object->LoadedFromDisk == JE_FALSE )
+	if ( Object->LoadedFromDisk == GR_FALSE )
 	{
 		Object->BitmapName = AvailableArt->Name[0];
 		Object->AlphaName = AvailableArt->Name[0];
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 
 	//
@@ -610,12 +610,12 @@ jeBoolean JETCC AttachWorld(
 	// destroy our instance of the resource manager
 	if ( Object->ResourceMgr != NULL )
 	{
-		jeResource_MgrDestroy( &( Object->ResourceMgr ) );
+		grResource_MgrDestroy( &( Object->ResourceMgr ) );
 	}
 
 	// return failure
-	ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_AttachWorld_Failure );
-	return JE_FALSE;
+	ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_AttachWorld_Failure );
+	return GR_FALSE;
 
 } // AttachWorld()
 
@@ -626,9 +626,9 @@ jeBoolean JETCC AttachWorld(
 //	DettachWorld()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachWorld(
+grBoolean GRCC DettachWorld(
 	void	*Instance,	// object instance data
-	jeWorld	*World )	// world
+	grWorld	*World )	// world
 {
 
 	// locals
@@ -643,13 +643,13 @@ jeBoolean JETCC DettachWorld(
 	assert( Object->World == World );
 
 	// destroy our instance of the resource manager
-	jeResource_MgrDestroy( &( Object->ResourceMgr ) );
+	grResource_MgrDestroy( &( Object->ResourceMgr ) );
 
 	// zap world pointer
 	Object->World = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	World;
@@ -663,9 +663,9 @@ jeBoolean JETCC DettachWorld(
 //	AttachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachEngine(
+grBoolean GRCC AttachEngine(
 	void		*Instance,	// object instance data
-	jeEngine	*Engine )	// engine
+	grEngine	*Engine )	// engine
 {
 
 	// locals
@@ -682,15 +682,15 @@ jeBoolean JETCC AttachEngine(
 	Object->Engine = Engine;
 
 	// set properties if object was loaded from disk
-	if ( Object->LoadedFromDisk == JE_TRUE )
+	if ( Object->LoadedFromDisk == GR_TRUE )
 	{
 
 		// locals
-		jeBoolean	Result = JE_TRUE;
+		grBoolean	Result = GR_TRUE;
 		char		*LoadBitmapName, *LoadAlphaName;
 
 		// reset loaded from disk flag
-		Object->LoadedFromDisk = JE_FALSE;
+		Object->LoadedFromDisk = GR_FALSE;
 
 		// save allocated string pointers
 		LoadBitmapName = Object->BitmapName;
@@ -717,18 +717,18 @@ jeBoolean JETCC AttachEngine(
 												&( Object->Art ), &( Object->ArtName ) );
 
 		// free strings allocated on load
-		jeRam_Free( LoadBitmapName );
-		jeRam_Free( LoadAlphaName );
+		grRam_Free( LoadBitmapName );
+		grRam_Free( LoadAlphaName );
 
 		// log errors
-		if ( Result == JE_FALSE )
+		if ( Result == GR_FALSE )
 		{
 			goto ERROR_AttachEngine;
 		}
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 
 	//
@@ -737,8 +737,8 @@ jeBoolean JETCC AttachEngine(
 	ERROR_AttachEngine:
 
 	// return failure
-	ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_AttachEngine );
-	return JE_FALSE;
+	ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_AttachEngine );
+	return GR_FALSE;
 
 } // AttachEngine()
 
@@ -749,9 +749,9 @@ jeBoolean JETCC AttachEngine(
 //	DettachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachEngine(
+grBoolean GRCC DettachEngine(
 	void		*Instance,	// object instance data
-	jeEngine	*Engine )	// engine
+	grEngine	*Engine )	// engine
 {
 
 	// locals
@@ -769,7 +769,7 @@ jeBoolean JETCC DettachEngine(
 	Object->Engine = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Engine;
@@ -783,9 +783,9 @@ jeBoolean JETCC DettachEngine(
 //	AttachSoundSystem()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachSoundSystem(
+grBoolean GRCC AttachSoundSystem(
 	void			*Instance,		// object instance data
-	jeSound_System	*SoundSystem )	// sound system
+	grSound_System	*SoundSystem )	// sound system
 {
 
 	// ensure valid data
@@ -793,7 +793,7 @@ jeBoolean JETCC AttachSoundSystem(
 	assert( SoundSystem != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// elminate warnings
 	Instance;
@@ -808,9 +808,9 @@ jeBoolean JETCC AttachSoundSystem(
 //	DettachSoundSystem()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachSoundSystem(
+grBoolean GRCC DettachSoundSystem(
 	void			*Instance,		// object instance data
-	jeSound_System	*SoundSystem )	// sound system
+	grSound_System	*SoundSystem )	// sound system
 {
 
 	// ensure valid data
@@ -818,7 +818,7 @@ jeBoolean JETCC DettachSoundSystem(
 	assert( SoundSystem != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// elminate warnings
 	Instance;
@@ -833,17 +833,17 @@ jeBoolean JETCC DettachSoundSystem(
 //	Collision()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Collision(
-	const jeObject	*Object,
-	const jeExtBox	*Box,
-	const jeVec3d	*Front,
-	const jeVec3d	*Back,
-	jeVec3d			*Impact,
-	jePlane			*Plane )
+grBoolean GRCC Collision(
+	const grObject	*Object,
+	const grExtBox	*Box,
+	const grVec3d	*Front,
+	const grVec3d	*Back,
+	grVec3d			*Impact,
+	grPlane			*Plane )
 {
 
 	// all done
-	return JE_FALSE;
+	return GR_FALSE;
 
 	// eliminate warnings
 	Object;
@@ -862,9 +862,9 @@ jeBoolean JETCC Collision(
 //	GetExtBox()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetExtBox(
+grBoolean GRCC GetExtBox(
 	const void	*Instance,	// object instance data
-	jeExtBox	*BBox )		// where to store extent box
+	grExtBox	*BBox )		// where to store extent box
 {
 
 	// locals
@@ -881,18 +881,18 @@ jeBoolean JETCC GetExtBox(
 	{
 
 		// locals
-		jeVec3d Pos;
+		grVec3d Pos;
 		float	Size = 25.0f;
 
 		// save extent box
 		Pos = Object->Xf.Translation;
-		jeExtBox_Set (  BBox, 
+		grExtBox_Set (  BBox, 
 						Pos.X - Size, Pos.Y - Size, Pos.Z - Size,
 						Pos.X + Size, Pos.Y + Size, Pos.Z + Size );
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetExtBox()
 
@@ -903,17 +903,17 @@ jeBoolean JETCC GetExtBox(
 //	CreateFromFile()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-void * JETCC CreateFromFile(
-	jeVFile		*File,		// vfile to use
-	jePtrMgr	*PtrMgr )	// pointer manager
+void * GRCC CreateFromFile(
+	grVFile		*File,		// vfile to use
+	grPtrMgr	*PtrMgr )	// pointer manager
 {
 
 	// locals
-	jeFloat	Ver;
+	grFloat	Ver;
 	BYTE Version;
 	uint32 Tag;
 	Corona		*Object;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 
 
 	// ensure valid data
@@ -924,22 +924,22 @@ void * JETCC CreateFromFile(
 	Object = CreateInstance();
 	if ( Object == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_CreateObject );
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_CreateObject );
 		goto ERROR_CreateFromFile;
 	}
 
 	
-	if(!jeVFile_Read(File, &Tag, sizeof(Tag)))
+	if(!grVFile_Read(File, &Tag, sizeof(Tag)))
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_ReadData );
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_ReadData );
 		goto ERROR_CreateFromFile;
 	}
 
 	if (Tag == FILE_UNIQUE_ID)
 	{
-		if (!jeVFile_Read( File, &Version, sizeof( Version )))
+		if (!grVFile_Read( File, &Version, sizeof( Version )))
 		{
-		    ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_ReadData );
+		    ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_ReadData );
 		    goto ERROR_CreateFromFile;
 		}
 
@@ -947,10 +947,10 @@ void * JETCC CreateFromFile(
 	else
 	{
 		//for backwards compatibility with old object format
-		jeVFile_Seek(File,-((int)sizeof(Tag)),JE_VFILE_SEEKCUR);
-		if (!jeVFile_Read( File, &Ver, sizeof( Ver )))
+		grVFile_Seek(File,-((int)sizeof(Tag)),GR_VFILE_SEEKCUR);
+		if (!grVFile_Read( File, &Ver, sizeof( Ver )))
 		{
-		    ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_ReadData );
+		    ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_ReadData );
 		    goto ERROR_CreateFromFile;
 		}
 		Version = 1;
@@ -963,24 +963,24 @@ void * JETCC CreateFromFile(
 		Result &= ObjUtil_ReadString( File, &( Object->SizeString ) );
 	    Result &= ObjUtil_ReadString( File, &( Object->BitmapName ) );
 	    Result &= ObjUtil_ReadString( File, &( Object->AlphaName ) );
-	    Result &= jeVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
-	    Result &= jeVFile_Read( File, &( Object->FadeTime ), sizeof( Object->FadeTime ) );
-	    Result &= jeVFile_Read( File, &( Object->MinRadius ), sizeof( Object->MinRadius ) );
-	    Result &= jeVFile_Read( File, &( Object->MaxRadius ), sizeof( Object->MaxRadius ) );
-	    Result &= jeVFile_Read( File, &( Object->MinRadiusDistance ), sizeof( Object->MinRadiusDistance ) );
-	    Result &= jeVFile_Read( File, &( Object->MaxRadiusDistance ), sizeof( Object->MaxRadiusDistance ) );
-	    Result &= jeVFile_Read( File, &( Object->MaxVisibleDistance ), sizeof( Object->MaxVisibleDistance ) );
+	    Result &= grVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	    Result &= grVFile_Read( File, &( Object->FadeTime ), sizeof( Object->FadeTime ) );
+	    Result &= grVFile_Read( File, &( Object->MinRadius ), sizeof( Object->MinRadius ) );
+	    Result &= grVFile_Read( File, &( Object->MaxRadius ), sizeof( Object->MaxRadius ) );
+	    Result &= grVFile_Read( File, &( Object->MinRadiusDistance ), sizeof( Object->MinRadiusDistance ) );
+	    Result &= grVFile_Read( File, &( Object->MaxRadiusDistance ), sizeof( Object->MaxRadiusDistance ) );
+	    Result &= grVFile_Read( File, &( Object->MaxVisibleDistance ), sizeof( Object->MaxVisibleDistance ) );
 
 	    // log errors
-	    if ( Result == JE_FALSE )
+	    if ( Result == GR_FALSE )
 		{
-		    ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_ReadData );
+		    ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_ReadData );
 		    goto ERROR_CreateFromFile;
 		}
 	}
 	
 	// all done
-	Object->LoadedFromDisk = JE_TRUE;
+	Object->LoadedFromDisk = GR_TRUE;
 
 	return Object;
 
@@ -997,19 +997,19 @@ void * JETCC CreateFromFile(
 		// free strings
 		if ( Object->SizeString != NULL )
 		{
-			jeRam_Free( Object->SizeString );
+			grRam_Free( Object->SizeString );
 		}
 		if ( Object->BitmapName != NULL )
 		{
-			jeRam_Free( Object->BitmapName );
+			grRam_Free( Object->BitmapName );
 		}
 		if ( Object->AlphaName != NULL )
 		{
-			jeRam_Free( Object->AlphaName );
+			grRam_Free( Object->AlphaName );
 		}
 
 		// free object itself
-		jeRam_Free( Object );
+		grRam_Free( Object );
 		Object = NULL;
 	}
 
@@ -1028,17 +1028,17 @@ void * JETCC CreateFromFile(
 //	WriteToFile()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC WriteToFile(
+grBoolean GRCC WriteToFile(
 	const void	*Instance,
-	jeVFile		*File,
-	jePtrMgr	*PtrMgr )
+	grVFile		*File,
+	grPtrMgr	*PtrMgr )
 {
 
 	// locals
     BYTE Version = CORONA_VERSION_NUMBER;
 	uint32 Tag = FILE_UNIQUE_ID;
 	Corona		*Object;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 
 	// ensure valid data
 	assert( Instance != NULL );
@@ -1049,25 +1049,25 @@ jeBoolean JETCC WriteToFile(
 	Object = (Corona *)Instance;
 
 	// write version number
-	Result &= jeVFile_Write( File, &Tag, sizeof(Tag));
-	Result &= jeVFile_Write( File, &Version, sizeof( Version ) );
+	Result &= grVFile_Write( File, &Tag, sizeof(Tag));
+	Result &= grVFile_Write( File, &Version, sizeof( Version ) );
 	
 	// write out data
 	Result &= ObjUtil_WriteString( File, AvailableArt->StringSizes[AvailableArt->ActiveCurSize] );
 	Result &= ObjUtil_WriteString( File, Object->BitmapName );
 	Result &= ObjUtil_WriteString( File, Object->AlphaName );
-	Result &= jeVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
-	Result &= jeVFile_Write( File, &( Object->FadeTime ), sizeof( Object->FadeTime ) );
-	Result &= jeVFile_Write( File, &( Object->MinRadius ), sizeof( Object->MinRadius ) );
-	Result &= jeVFile_Write( File, &( Object->MaxRadius ), sizeof( Object->MaxRadius ) );
-	Result &= jeVFile_Write( File, &( Object->MinRadiusDistance ), sizeof( Object->MinRadiusDistance ) );
-	Result &= jeVFile_Write( File, &( Object->MaxRadiusDistance ), sizeof( Object->MaxRadiusDistance ) );
-	Result &= jeVFile_Write( File, &( Object->MaxVisibleDistance ), sizeof( Object->MaxVisibleDistance ) );
+	Result &= grVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	Result &= grVFile_Write( File, &( Object->FadeTime ), sizeof( Object->FadeTime ) );
+	Result &= grVFile_Write( File, &( Object->MinRadius ), sizeof( Object->MinRadius ) );
+	Result &= grVFile_Write( File, &( Object->MaxRadius ), sizeof( Object->MaxRadius ) );
+	Result &= grVFile_Write( File, &( Object->MinRadiusDistance ), sizeof( Object->MinRadiusDistance ) );
+	Result &= grVFile_Write( File, &( Object->MaxRadiusDistance ), sizeof( Object->MaxRadiusDistance ) );
+	Result &= grVFile_Write( File, &( Object->MaxVisibleDistance ), sizeof( Object->MaxVisibleDistance ) );
 
 	// log errors
-	if ( Result == JE_FALSE )
+	if ( Result == GR_FALSE )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_FILEIO_WRITE, IDS_ERROR_WriteToFile );
+		ObjUtil_LogError( hClassInstance, GR_ERR_FILEIO_WRITE, IDS_ERROR_WriteToFile );
 	}
 
 	// all done
@@ -1085,9 +1085,9 @@ jeBoolean JETCC WriteToFile(
 //	GetPropertyList()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetPropertyList(
+grBoolean GRCC GetPropertyList(
 	void			*Instance,	// object instance data
-	jeProperty_List	**List)		// where to save property list pointer
+	grProperty_List	**List)		// where to save property list pointer
 {
 
 	// locals
@@ -1122,33 +1122,33 @@ jeBoolean JETCC GetPropertyList(
 		// check strings
 		if ( ( ArtSize == NULL ) || ( ArtBitmap == NULL ) || ( ArtAlpha == NULL ) )
 		{
-			ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
+			ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetString );
 			goto ERROR_GetPropertyList;
 		}
 
 		// init properties
-		jeProperty_FillCombo(	&( CoronaProperties[CORONA_ARTSIZE_INDEX] ), ArtSize,
+		grProperty_FillCombo(	&( CoronaProperties[CORONA_ARTSIZE_INDEX] ), ArtSize,
 								AvailableArt->StringSizes[AvailableArt->ActiveCurSize],
 								CORONA_ARTSIZE_ID, AvailableArt->SizesListSize, AvailableArt->StringSizes );
-		jeProperty_FillCombo(	&( CoronaProperties[CORONA_ARTBITMAP_INDEX] ), ArtBitmap,
+		grProperty_FillCombo(	&( CoronaProperties[CORONA_ARTBITMAP_INDEX] ), ArtBitmap,
 								Object->BitmapName, CORONA_ARTBITMAP_ID, AvailableArt->ActiveCount, AvailableArt->ActiveList );
-		jeProperty_FillCombo(	&( CoronaProperties[CORONA_ARTALPHA_INDEX] ), ArtAlpha,
+		grProperty_FillCombo(	&( CoronaProperties[CORONA_ARTALPHA_INDEX] ), ArtAlpha,
 								Object->AlphaName, CORONA_ARTALPHA_ID, AvailableArt->ActiveCount, AvailableArt->ActiveList );
 	}
 
 	// copy property list
-	*List = jeProperty_ListCopy( &CoronaPropertyList );
+	*List = grProperty_ListCopy( &CoronaPropertyList );
 	if ( *List == NULL )
 	{
-		ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_CreateObject );
-		return JE_FALSE;
+		ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_CreateFromFile_CreateObject );
+		return GR_FALSE;
 	}
 
 	// reset dirty flag
-	CoronaPropertyList.bDirty = JE_FALSE;
+	CoronaPropertyList.bDirty = GR_FALSE;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 
 	//
@@ -1157,8 +1157,8 @@ jeBoolean JETCC GetPropertyList(
 	ERROR_GetPropertyList:
 
 	// return failure
-	ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetPropertyList );
-	return JE_FALSE;
+	ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_GetPropertyList );
+	return GR_FALSE;
 
 } // GetPropertyList()
 
@@ -1169,11 +1169,11 @@ jeBoolean JETCC GetPropertyList(
 //	SetProperty()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SetProperty(
+grBoolean GRCC SetProperty(
 	void				*Instance,	// object instance data
 	int32				FieldID,	// id of field to be changed
 	PROPERTY_FIELD_TYPE	DataType,	// type of data
-	jeProperty_Data		*pData )	// new data
+	grProperty_Data		*pData )	// new data
 {
 
 	// locals
@@ -1265,7 +1265,7 @@ jeBoolean JETCC SetProperty(
 											&( Object->Art ), &( Object->ArtName ) );
 
 			// set dirty flag
-			CoronaPropertyList.bDirty = JE_TRUE;
+			CoronaPropertyList.bDirty = GR_TRUE;
 			break;
 		}
 
@@ -1275,7 +1275,7 @@ jeBoolean JETCC SetProperty(
 		{
 
 			// locals
-			jeBoolean	Result;
+			grBoolean	Result;
 
 			// ensure valid data
 			assert( DataType == PROPERTY_COMBO_TYPE );
@@ -1299,10 +1299,10 @@ jeBoolean JETCC SetProperty(
 			}
 
 			// log errors
-			if ( Result == JE_FALSE )
+			if ( Result == GR_FALSE )
 			{
-				ObjUtil_LogError( hClassInstance, JE_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_SetProperty );
-				return JE_FALSE;
+				ObjUtil_LogError( hClassInstance, GR_ERR_SUBSYSTEM_FAILURE, IDS_ERROR_SetProperty );
+				return GR_FALSE;
 			}
 			break;
 		}
@@ -1310,13 +1310,13 @@ jeBoolean JETCC SetProperty(
 		// if we got to here then its an unsupported field
 		default:
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 			break;
 		}
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	DataType;
@@ -1330,14 +1330,14 @@ jeBoolean JETCC SetProperty(
 //	SetXForm()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SetXForm(
+grBoolean GRCC SetXForm(
 	void			*Instance,	// object instance data
-	const jeXForm3d	*Xf )		// new xform
+	const grXForm3d	*Xf )		// new xform
 {
 
 	// locals
 	Corona	*Object;
-	jeVec3d	Pos;
+	grVec3d	Pos;
 
 	// ensure valid data
 	assert( Instance != NULL );
@@ -1348,12 +1348,12 @@ jeBoolean JETCC SetXForm(
 
 	// save xform
 	Object->Xf = *Xf;
-	jeVec3d_Copy( &( Object->Xf.Translation ), &Pos );
-	jeXForm3d_Orthonormalize( &( Object->Xf ) );
-	jeVec3d_Copy( &Pos, &( Object->Xf.Translation ) );
+	grVec3d_Copy( &( Object->Xf.Translation ), &Pos );
+	grXForm3d_Orthonormalize( &( Object->Xf ) );
+	grVec3d_Copy( &Pos, &( Object->Xf.Translation ) );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // SetXForm()
 
@@ -1364,9 +1364,9 @@ jeBoolean JETCC SetXForm(
 //	GetXForm()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetXForm(
+grBoolean GRCC GetXForm(
 	const void	*Instance,	// object instance data
-	jeXForm3d	*Xf )		// where to store xform
+	grXForm3d	*Xf )		// where to store xform
 {
 
 	// locals
@@ -1383,7 +1383,7 @@ jeBoolean JETCC GetXForm(
 	*Xf = Object->Xf;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetXForm()
 
@@ -1394,12 +1394,12 @@ jeBoolean JETCC GetXForm(
 //	GetXFormModFlags()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-int	JETCC GetXFormModFlags(
+int	GRCC GetXFormModFlags(
 	const void	*Instance )	// object instance data
 {
 
 	// return xform mod flags
-	return ( JE_OBJECT_XFORM_TRANSLATE | JE_OBJECT_XFORM_ROTATE );
+	return ( GR_OBJECT_XFORM_TRANSLATE | GR_OBJECT_XFORM_ROTATE );
 
 	// eliminate warnings
 	Instance;
@@ -1413,14 +1413,14 @@ int	JETCC GetXFormModFlags(
 //	GetChildren()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetChildren(
+grBoolean GRCC GetChildren(
 	const void	*Instance,
-	jeObject	*Children,
+	grObject	*Children,
 	int			MaxNumChildren )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -1436,13 +1436,13 @@ jeBoolean JETCC GetChildren(
 //	AddChild()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AddChild(
+grBoolean GRCC AddChild(
 	void			*Instance,
-	const jeObject	*Child )
+	const grObject	*Child )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -1457,13 +1457,13 @@ jeBoolean JETCC AddChild(
 //	RemoveChild()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC RemoveChild(
+grBoolean GRCC RemoveChild(
 	void			*Instance,
-	const jeObject	*Child )
+	const grObject	*Child )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -1478,13 +1478,13 @@ jeBoolean JETCC RemoveChild(
 //	EditDialog()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC EditDialog(
+grBoolean GRCC EditDialog(
 	void	*Instance,
 	HWND	Parent )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -1499,7 +1499,7 @@ jeBoolean JETCC EditDialog(
 //	Frame()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Frame(
+grBoolean GRCC Frame(
 	void	*Instance,
 	float	TimeDelta )
 {
@@ -1514,7 +1514,7 @@ jeBoolean JETCC Frame(
 	assert( TimeDelta >= 0.0f );
 	if ( TimeDelta == 0.0f )
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	// get object
@@ -1541,7 +1541,7 @@ jeBoolean JETCC Frame(
 		{
 
 			// locals
-			jeFloat	Slope;
+			grFloat	Slope;
 
 			// determine radius
 			Slope = ( Object->MaxRadius - Object->MinRadius ) / ( Object->MaxRadiusDistance - Object->MinRadiusDistance );
@@ -1581,7 +1581,7 @@ jeBoolean JETCC Frame(
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Frame()
 
@@ -1592,7 +1592,7 @@ jeBoolean JETCC Frame(
 //	SendAMessage()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SendAMessage(
+grBoolean GRCC SendAMessage(
 	void	*Instance,	// object instance data
 	int32	Msg,		// message id
 	void	*Data )		// message data
@@ -1616,13 +1616,13 @@ jeBoolean JETCC SendAMessage(
 		// unsupported message
 		default:
 		{
-			//return JE_FALSE;
+			//return GR_FALSE;
 			break;
 		}
 	}
 
 	// all done
-	return JE_FALSE;
+	return GR_FALSE;
 
 	// Eliminate warnings
 	Data;
@@ -1635,91 +1635,91 @@ jeBoolean JETCC SendAMessage(
 //	DuplicateInstance()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-void * JETCC DuplicateInstance(void * Instance)
+void * GRCC DuplicateInstance(void * Instance)
 {
-	jeVFile *ramdisk, *ramfile;
-	jeVFile_MemoryContext vfsmemctx;
-	jeObject* newCorObj = NULL;
-	jePtrMgr *ptrMgr = NULL;
+	grVFile *ramdisk, *ramfile;
+	grVFile_MemoryContext vfsmemctx;
+	grObject* newCorObj = NULL;
+	grPtrMgr *ptrMgr = NULL;
 
 
-	vfsmemctx.Data = jeRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
+	vfsmemctx.Data = grRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
 	vfsmemctx.DataLength = OBJ_PERSIST_SIZE;
 
 	if (!vfsmemctx.Data) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
 		return NULL;
 	}
 
-	ramdisk = jeVFile_OpenNewSystem
+	ramdisk = grVFile_OpenNewSystem
 	(
 		NULL, 
-		JE_VFILE_TYPE_MEMORY|JE_VFILE_TYPE_VIRTUAL,
+		GR_VFILE_TYPE_MEMORY|GR_VFILE_TYPE_VIRTUAL,
 		"Memory",
 		NULL,
-		JE_VFILE_OPEN_CREATE|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_CREATE|GR_VFILE_OPEN_DIRECTORY
 	);
 
 	if (!ramdisk) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	ramfile = jeVFile_Open(ramdisk, "tempObject", JE_VFILE_OPEN_CREATE);
+	ramfile = grVFile_Open(ramdisk, "tempObject", GR_VFILE_OPEN_CREATE);
 
 	if (!ramfile) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
-	ptrMgr = jePtrMgr_Create();
+	ptrMgr = grPtrMgr_Create();
 
 	if (!ptrMgr) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!WriteToFile(Instance, ramfile, jePtrMgr_Create())) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!WriteToFile(Instance, ramfile, grPtrMgr_Create())) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!jeVFile_Rewind(ramfile)) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!grVFile_Rewind(ramfile)) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
 	newCorObj = CreateFromFile(ramfile, ptrMgr);
 	if (!newCorObj) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	jeVFile_Close(ramfile);
-	jeVFile_Close(ramdisk);
+	grVFile_Close(ramfile);
+	grVFile_Close(ramdisk);
 
-	jeRam_Free(vfsmemctx.Data);
+	grRam_Free(vfsmemctx.Data);
 
 	return( newCorObj );
 }
 //---
 
 // Icestorm
-jeBoolean	JETCC ChangeBoxCollision(const void *Instance,const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane)
+grBoolean	GRCC ChangeBoxCollision(const void *Instance,const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane)
 {
-	return( JE_FALSE );Plane;ImpactBox;BackBox;FrontBox;Pos;Instance;
+	return( GR_FALSE );Plane;ImpactBox;BackBox;FrontBox;Pos;Instance;
 }

@@ -26,11 +26,11 @@
 #include "transform.h"
 #include "Tsc.h"
 
-typedef void (*jeWaveletFunc) (int *to,int *fm,int len);
-void unjeWaveletImageIntPyramid(image *im,int levels,jeWaveletFunc waver,int lowScale,int highScale,pyramidHook hook,void *passback,jeBoolean doTransposeLHs);
-void jeWaveletImageInt(image *im,int levels,jeBoolean inverse,jeWaveletFunc waver,jeBoolean doTransposeLHs,jeBoolean tblock);
+typedef void (*grWaveletFunc) (int *to,int *fm,int len);
+void ungrWaveletImageIntPyramid(image *im,int levels,grWaveletFunc waver,int lowScale,int highScale,pyramidHook hook,void *passback,grBoolean doTransposeLHs);
+void grWaveletImageInt(image *im,int levels,grBoolean inverse,grWaveletFunc waver,grBoolean doTransposeLHs,grBoolean tblock);
 
-extern void untransformBlocked(image *im,int levels,jeWaveletFunc i_waver,jeBoolean doLHs);
+extern void untransformBlocked(image *im,int levels,grWaveletFunc i_waver,grBoolean doLHs);
 
 /********* transforms ***********/
 
@@ -54,15 +54,15 @@ extern void haarforward(int *to,int *from,int len);
 extern void haarinverse(int *to,int *from,int len);
 
 int nTransforms = 8;
-jeWaveletFunc forwardTransforms[] = { l97forward, cdf22forward, cdf24forward, bcw3forward, d4forward, cdf22qforward, sptforward, haarforward, NULL };
-jeWaveletFunc inverseTransforms[] = { l97inverse, cdf22inverse, cdf24inverse, bcw3inverse, d4inverse, cdf22qinverse, sptinverse, haarinverse, NULL };
+grWaveletFunc forwardTransforms[] = { l97forward, cdf22forward, cdf24forward, bcw3forward, d4forward, cdf22qforward, sptforward, haarforward, NULL };
+grWaveletFunc inverseTransforms[] = { l97inverse, cdf22inverse, cdf24inverse, bcw3inverse, d4inverse, cdf22qinverse, sptinverse, haarinverse, NULL };
 char *    transformNames[] = { "l97", "cdf22", "cdf24", "bcw3", "d4" , "cdf22q", "S+P", "Haar", NULL };
-jeBoolean transformMips [] = { 0, 1, 0, 0, 0, 1, 1, 1, 0 };
+grBoolean transformMips [] = { 0, 1, 0, 0, 0, 1, 1, 1, 0 };
 
 /****/
 
-void unjeWaveletImageIntPyramid(image *im,int levels,jeWaveletFunc waver,int lowScale,int highScale,
-										pyramidHook hook,void *passback,jeBoolean doLHs)
+void ungrWaveletImageIntPyramid(image *im,int levels,grWaveletFunc waver,int lowScale,int highScale,
+										pyramidHook hook,void *passback,grBoolean doLHs)
 {
 int x, y, w, h, l, p, width, height;
 int *buffer,*tempbuf,*temprow;
@@ -79,7 +79,7 @@ int **rows;
   
     /* Allocate a work array (for transposing columns) */
     
-  	buffer = (int *)jeRam_Allocate(sizeof(int)*(height+height+max(width,height)));
+  	buffer = (int *)grRam_Allocate(sizeof(int)*(height+height+max(width,height)));
 	assert(buffer);
 
 	temprow = buffer+height;
@@ -189,10 +189,10 @@ int **rows;
 		}
 	}
 
-	jeRam_Free(buffer);
+	grRam_Free(buffer);
 }
 
-void jeWaveletImageInt(image *im,int levels,jeBoolean inverse,jeWaveletFunc waver,jeBoolean doLHs,jeBoolean doBlock)
+void grWaveletImageInt(image *im,int levels,grBoolean inverse,grWaveletFunc waver,grBoolean doLHs,grBoolean doBlock)
 {
 int y, w, p, width, height;
 int l;
@@ -216,7 +216,7 @@ int **rows;
   
     /* Allocate a work array (for transposing columns) */
     
-  	buffer = (int *)jeRam_Allocate(sizeof(int)*(3*max(width,height)));
+  	buffer = (int *)grRam_Allocate(sizeof(int)*(3*max(width,height)));
 	assert(buffer);
 
 	temprow = buffer +   max(width,height);
@@ -324,25 +324,25 @@ int **rows;
 		showPopTSC("untrans : NOT blocked");
 	}
 
-	jeRam_Free(buffer);
+	grRam_Free(buffer);
 }
 
 void unTransformImageIntToPyramid(image *im,int levels,int transformN,
-				int lowScale,int highScale,pyramidHook hook,void *passback,jeBoolean transposeLHs)
+				int lowScale,int highScale,pyramidHook hook,void *passback,grBoolean transposeLHs)
 {
 	if ( transformN > nTransforms || transformN < 0 )
 		assert("tried to do invalid transformInt number" == NULL);
 
-	unjeWaveletImageIntPyramid(im,levels,inverseTransforms[transformN],lowScale,highScale,hook,passback,transposeLHs);
+	ungrWaveletImageIntPyramid(im,levels,inverseTransforms[transformN],lowScale,highScale,hook,passback,transposeLHs);
 }
 
-void transformImageInt(image *im,int levels,jeBoolean inverse,int transformN,jeBoolean transposeLHs,jeBoolean doBlock)
+void transformImageInt(image *im,int levels,grBoolean inverse,int transformN,grBoolean transposeLHs,grBoolean doBlock)
 {
 	if ( transformN > nTransforms || transformN < 0 )
 		assert("tried to do invalid transformInt number" == NULL);
 
-	if ( inverse )	jeWaveletImageInt(im,levels,inverse,inverseTransforms[transformN],transposeLHs,doBlock);
-	else			jeWaveletImageInt(im,levels,inverse,forwardTransforms[transformN],transposeLHs,doBlock);
+	if ( inverse )	grWaveletImageInt(im,levels,inverse,inverseTransforms[transformN],transposeLHs,doBlock);
+	else			grWaveletImageInt(im,levels,inverse,forwardTransforms[transformN],transposeLHs,doBlock);
 
 }
 
@@ -424,7 +424,7 @@ with parents : 0 ,LL,L3,L2
 
 void transformPyramid(int ** pyramid,int levels,int fulllen,int transformN,int inverse)
 {
-jeWaveletFunc waver;
+grWaveletFunc waver;
 int L,len;
 
 	if ( transformN > nTransforms || transformN < 0 )

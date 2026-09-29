@@ -265,7 +265,7 @@
     <ClCompile Include="Util\Drvlist.c">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Util\jeList.c">
+    <ClCompile Include="Util\grList.c">
       <Filter>Utilities</Filter>
     </ClCompile>
     <ClCompile Include="Util\Mtl9937.cpp">
@@ -600,7 +600,7 @@
     <ClInclude Include="Util\Drvlist.h">
       <Filter>Utilities</Filter>
     </ClInclude>
-    <ClInclude Include="Util\jeList.h">
+    <ClInclude Include="Util\grList.h">
       <Filter>Utilities</Filter>
     </ClInclude>
     <ClInclude Include="Util\Mtl9937.h">

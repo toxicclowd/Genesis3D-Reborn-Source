@@ -42,18 +42,18 @@ public:
 // Operations
 public:
 	CJweDoc* GetDocument();
-	jeCamera* GetCamera(void);
+	grCamera* GetCamera(void);
 	void OnViewType( UINT nID );
-	void SetCameraPos( jeVec3d * Pos );
-	jeBoolean  RegisterBitmap( jeBitmap * pBitmap );
-	jeBoolean	FullscreenView( void );
-	jeBoolean	ChooseWindowVideoSettings( void );
-	jeBoolean	ChooseFullscreenVideoSettings( void );
-	jeBoolean	UpdateWindow( void );
-	void		Animate( jeBoolean bAnimate );
+	void SetCameraPos( grVec3d * Pos );
+	grBoolean  RegisterBitmap( grBitmap * pBitmap );
+	grBoolean	FullscreenView( void );
+	grBoolean	ChooseWindowVideoSettings( void );
+	grBoolean	ChooseFullscreenVideoSettings( void );
+	grBoolean	UpdateWindow( void );
+	void		Animate( grBoolean bAnimate );
 
-	jeBoolean	SetFullscreenModeByString(char	*sDriverMode); // Added JH 7.3.2000
-	jeBoolean	SetWindowModeByString(char	*sDriverMode);	// Added JH 7.3.2000
+	grBoolean	SetFullscreenModeByString(char	*sDriverMode); // Added JH 7.3.2000
+	grBoolean	SetWindowModeByString(char	*sDriverMode);	// Added JH 7.3.2000
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -106,15 +106,15 @@ private:
 	UINT m_nViewType;
 
 	// Camera stuff
-	jeVec3d m_CameraPos;
-	jeVec3d m_CameraLeft;
-	jeVec3d m_CameraUp;
-	jeVec3d m_CameraIn;
+	grVec3d m_CameraPos;
+	grVec3d m_CameraLeft;
+	grVec3d m_CameraUp;
+	grVec3d m_CameraIn;
 	float	m_CameraRotX;
 	float	m_CameraRotY;
-	jeXForm3d m_CameraXForm;
+	grXForm3d m_CameraXForm;
 	BOOL m_bRecalcCamera;
-	jeCamera* m_pCamera;
+	grCamera* m_pCamera;
 	bool m_bDragging;
 	bool m_bAnimate;
 	static int m_CXDRAG ;

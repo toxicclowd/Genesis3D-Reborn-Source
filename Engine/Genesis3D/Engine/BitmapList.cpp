@@ -50,7 +50,7 @@ struct BitmapList
 };
 
 
-jeBoolean BitmapList_IsValid(BitmapList *pList);
+grBoolean BitmapList_IsValid(BitmapList *pList);
 
 //================================================================================
 //	BitmapList_Create
@@ -58,14 +58,14 @@ jeBoolean BitmapList_IsValid(BitmapList *pList);
 BitmapList *BitmapList_Create(void)
 {
 BitmapList * pList;
-	pList = (BitmapList *)jeRam_Allocate(sizeof(*pList));
+	pList = (BitmapList *)grRam_Allocate(sizeof(*pList));
 	if (! pList )
 		return NULL;
 	memset(pList,0,sizeof(*pList));
 	pList->HashPtr = Hash_Create();
 	if ( ! pList->HashPtr )
 	{
-		jeRam_Free(pList);
+		grRam_Free(pList);
 		return NULL;
 	}
 	#ifdef _DEBUG
@@ -77,12 +77,12 @@ return pList;
 //================================================================================
 //	BitmapList_Destroy
 //================================================================================
-jeBoolean BitmapList_Destroy(BitmapList *pList)
+grBoolean BitmapList_Destroy(BitmapList *pList)
 {
-jeBoolean	Ret = JE_TRUE;
+grBoolean	Ret = GR_TRUE;
 
 	if ( ! pList )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	if ( pList->HashPtr )
 	{
@@ -91,13 +91,13 @@ jeBoolean	Ret = JE_TRUE;
 		
 		while( (pNode = Hash_WalkNext(pList->HashPtr,pNode)) != NULL )
 		{
-		jeBitmap *Bmp;
+		grBitmap *Bmp;
 		uint32 TimesAdded;
 
 			HashNode_GetData(pNode,(uint32 *)&Bmp,&TimesAdded);
 
-			if (!jeBitmap_DetachDriver(Bmp, JE_TRUE))
-				Ret = JE_FALSE;
+			if (!grBitmap_DetachDriver(Bmp, GR_TRUE))
+				Ret = GR_FALSE;
 
 			assert( pList->Members >= 1 && pList->Adds >= (int)TimesAdded );
 
@@ -108,7 +108,7 @@ jeBoolean	Ret = JE_TRUE;
 			while(TimesAdded --)
 			{
 				assert(Bmp);
-				jeBitmap_Destroy(&Bmp);
+				grBitmap_Destroy(&Bmp);
 				pList->Adds --;
 			}
 		}
@@ -117,7 +117,7 @@ jeBoolean	Ret = JE_TRUE;
 		Hash_Destroy(pList->HashPtr);
 	}
 
-	jeRam_Free(pList);
+	grRam_Free(pList);
 
 	return Ret;
 }
@@ -125,7 +125,7 @@ jeBoolean	Ret = JE_TRUE;
 //================================================================================
 //	BitmapList_SetGamma
 //================================================================================
-jeBoolean BitmapList_SetGamma(BitmapList *pList, jeFloat Gamma)
+grBoolean BitmapList_SetGamma(BitmapList *pList, grFloat Gamma)
 {
 HashNode *pNode;
 
@@ -138,13 +138,13 @@ HashNode *pNode;
 	pNode = NULL;
 	while( (pNode = Hash_WalkNext(pList->HashPtr,pNode)) != NULL )
 	{
-	jeBitmap *Bmp;
-		Bmp = (jeBitmap *)HashNode_Key(pNode);
+	grBitmap *Bmp;
+		Bmp = (grBitmap *)HashNode_Key(pNode);
 
-		if (!jeBitmap_SetGammaCorrection(Bmp, Gamma, JE_TRUE) )
+		if (!grBitmap_SetGammaCorrection(Bmp, Gamma, GR_TRUE) )
 		{
-			jeErrorLog_AddString(-1,"BitmapList_SetGamma : SetGamma failed.", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"BitmapList_SetGamma : SetGamma failed.", NULL);
+			return GR_FALSE;
 		}
 	}
 	
@@ -152,13 +152,13 @@ HashNode *pNode;
 	//showPopTSCper("BitmapList_SetGamma",pList->MembersAttached,"bitmap");
 #endif
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 //================================================================================
 //	BitmapList_AttachAll
 //================================================================================
-jeBoolean BitmapList_AttachAll(BitmapList *pList, DRV_Driver *Driver, jeFloat Gamma)
+grBoolean BitmapList_AttachAll(BitmapList *pList, DRV_Driver *Driver, grFloat Gamma)
 {
 HashNode *pNode;
 int MembersAttached;
@@ -171,20 +171,20 @@ int MembersAttached;
 	MembersAttached = 0;
 	while( (pNode = Hash_WalkNext(pList->HashPtr,pNode)) != NULL )
 	{
-	jeBitmap *Bmp;
+	grBitmap *Bmp;
 
-		Bmp = (jeBitmap *)HashNode_Key(pNode);
+		Bmp = (grBitmap *)HashNode_Key(pNode);
 
-		if (!jeBitmap_SetGammaCorrection_DontChange(Bmp, Gamma) )
+		if (!grBitmap_SetGammaCorrection_DontChange(Bmp, Gamma) )
 		{
-			jeErrorLog_AddString(-1,"BitmapList_AttachAll : SetGamma failed", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"BitmapList_AttachAll : SetGamma failed", NULL);
+			return GR_FALSE;
 		}
 
-		if (!jeBitmap_AttachToDriver(Bmp, Driver, 0) )
+		if (!grBitmap_AttachToDriver(Bmp, Driver, 0) )
 		{
-			jeErrorLog_AddString(-1,"BitmapList_AttachAll : AttachToDriver failed", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"BitmapList_AttachAll : AttachToDriver failed", NULL);
+			return GR_FALSE;
 		}
 
 		MembersAttached ++;
@@ -194,16 +194,16 @@ int MembersAttached;
 
 	assert( MembersAttached == pList->Members );
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //================================================================================
 //	BitmapList_DetachAll
 //================================================================================
-jeBoolean BitmapList_DetachAll(BitmapList *pList)
+grBoolean BitmapList_DetachAll(BitmapList *pList)
 {
 HashNode	*pNode;
-jeBoolean	Ret = JE_TRUE;
+grBoolean	Ret = GR_TRUE;
 int MembersAttached;
 
 	assert(BitmapList_IsValid(pList));
@@ -211,13 +211,13 @@ int MembersAttached;
 	pNode = NULL;
 	while( (pNode = Hash_WalkNext(pList->HashPtr,pNode)) != NULL )
 	{
-	jeBitmap *Bmp;
+	grBitmap *Bmp;
 	uint32 TimesAdded;
 
 		HashNode_GetData(pNode,(uint32 *)&Bmp,&TimesAdded);
 
-		if (!jeBitmap_DetachDriver(Bmp, JE_TRUE))
-			Ret = JE_FALSE;
+		if (!grBitmap_DetachDriver(Bmp, GR_TRUE))
+			Ret = GR_FALSE;
 	}
 
 	MembersAttached = 0;
@@ -258,12 +258,12 @@ int Count;
 	pNode = NULL;
 	while( (pNode = Hash_WalkNext(pList->HashPtr,pNode)) != NULL )
 	{
-	jeBitmap *Bmp;
+	grBitmap *Bmp;
 	uint32 TimesAdded;
 
 		HashNode_GetData(pNode,(uint32 *)&Bmp,&TimesAdded);
 
-		if ( jeBitmap_GetTHandle(Bmp) )
+		if ( grBitmap_GetTHandle(Bmp) )
 			Count ++;
 	}
 
@@ -275,7 +275,7 @@ return Count;
 //================================================================================
 //	BitmapList_Has
 //================================================================================
-jeBoolean BitmapList_Has(BitmapList *pList, jeBitmap *Bitmap)
+grBoolean BitmapList_Has(BitmapList *pList, grBitmap *Bitmap)
 {
 HashNode *pNode;
 uint32 TimesAdded;
@@ -286,13 +286,13 @@ uint32 TimesAdded;
 
 	assert( pList->Adds >= (int)TimesAdded );
 
-return (pNode && TimesAdded) ? JE_TRUE : JE_FALSE;
+return (pNode && TimesAdded) ? GR_TRUE : GR_FALSE;
 }
 
 //================================================================================
 //	BitmapList_Add
 //================================================================================
-jeBoolean BitmapList_Add(BitmapList *pList, jeBitmap *Bitmap)
+grBoolean BitmapList_Add(BitmapList *pList, grBitmap *Bitmap)
 {	
 HashNode *pNode;
 uint32 TimesAdded;
@@ -301,27 +301,27 @@ uint32 TimesAdded;
 	assert(Bitmap);
 
 	// Increase reference count on this Bitmap
-	jeBitmap_CreateRef(Bitmap);
+	grBitmap_CreateRef(Bitmap);
 
 	pList->Adds ++;
 
 	if ( (pNode = Hash_Get(pList->HashPtr, (uint32)Bitmap, &TimesAdded)) != NULL )
 	{
 		HashNode_SetData(pNode,TimesAdded+1);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	else
 	{
 		pList->Members ++;
 		Hash_Add(pList->HashPtr,(uint32)Bitmap,1);
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 }
 
 //================================================================================
 //	BitmapList_Remove
 //================================================================================
-jeBoolean BitmapList_Remove(BitmapList *pList,jeBitmap *Bitmap)
+grBoolean BitmapList_Remove(BitmapList *pList,grBitmap *Bitmap)
 {
 HashNode *pNode;
 uint32 TimesAdded;
@@ -340,44 +340,44 @@ uint32 Key;
 
 	if ( TimesAdded <= 0 )
 	{
-		if ( ! jeBitmap_DetachDriver(Bitmap, JE_TRUE) )
+		if ( ! grBitmap_DetachDriver(Bitmap, GR_TRUE) )
 		{
-			jeErrorLog_AddString(-1, "BitmapList_Remove:  jeBitmap_DetachDriver failed.", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1, "BitmapList_Remove:  grBitmap_DetachDriver failed.", NULL);
+			return GR_FALSE;
 		}
 	}
 
-	jeBitmap_Destroy(&Bitmap);
+	grBitmap_Destroy(&Bitmap);
 
 	if ( TimesAdded <= 0 )
 	{
 		pList->Members --;
 		Hash_DeleteNode(pList->HashPtr,pNode);
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	else
 	{
 		HashNode_SetData(pNode,TimesAdded);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 }
 
 
-jeBoolean BitmapList_IsValid(BitmapList *pList)
+grBoolean BitmapList_IsValid(BitmapList *pList)
 {
 	if ( ! pList ) 
-		return JE_FALSE;
+		return GR_FALSE;
 		
 	if ( pList->Adds < pList->Members )
-		return JE_FALSE;
+		return GR_FALSE;
 
 #ifdef _DEBUG
 	if ( pList->MySelf != pList )
-		return JE_FALSE;
+		return GR_FALSE;
 #endif
 
 	if ( pList->Members != BitmapList_CountMembers(pList) )
-		return JE_FALSE;
+		return GR_FALSE;
 
-return JE_TRUE;
+return GR_TRUE;
 }

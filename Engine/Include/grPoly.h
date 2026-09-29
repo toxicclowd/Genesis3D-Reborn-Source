@@ -32,26 +32,26 @@ extern "C" {
 //=======================================================================================
 //=======================================================================================
 typedef uint16	grPoly_NumVertType;
-typedef grPoly_NumVertType jePoly_NumVertType;
+typedef grPoly_NumVertType grPoly_NumVertType;
 typedef grVec3d	grPoly_VertType;
-typedef grPoly_VertType jePoly_VertType;
+typedef grPoly_VertType grPoly_VertType;
 
 #define GR_POLY_MAX_VERTS	((uint32)1<<(sizeof(grPoly_NumVertType)*8))
 
 //=======================================================================================
 //=======================================================================================
 
-typedef struct jePoly
+typedef struct grPoly
 {
 	grPoly_NumVertType	NumVerts;
 	grPoly_VertType		*Verts;
 
 #ifdef _DEBUG
-	struct jePoly		*Self;
+	struct grPoly		*Self;
 #endif
 
 } grPoly;
-typedef struct jePoly jePoly;
+typedef struct grPoly grPoly;
 
 
 //=======================================================================================
@@ -79,22 +79,5 @@ grBoolean	grPoly_RemoveDegenerateEdges(grPoly *Poly, grFloat Epsilon);
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define JE_POLY_MAX_VERTS                        GR_POLY_MAX_VERTS
-#define jePoly_Area                              grPoly_Area
-#define jePoly_ClipEpsilon                       grPoly_ClipEpsilon
-#define jePoly_Create                            grPoly_Create
-#define jePoly_CreateFromPlane                   grPoly_CreateFromPlane
-#define jePoly_CreateFromPoly                    grPoly_CreateFromPoly
-#define jePoly_Destroy                           grPoly_Destroy
-#define jePoly_EdgeExist                         grPoly_EdgeExist
-#define jePoly_IsTiny                            grPoly_IsTiny
-#define jePoly_IsValid                           grPoly_IsValid
-#define jePoly_Merge                             grPoly_Merge
-#define jePoly_RemoveDegenerateEdges             grPoly_RemoveDegenerateEdges
-#define jePoly_SplitEpsilon                      grPoly_SplitEpsilon
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

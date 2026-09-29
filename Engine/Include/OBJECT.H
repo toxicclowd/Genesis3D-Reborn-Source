@@ -20,18 +20,18 @@
 	The Original Code is Jet3D, released December 12, 1999.                            
 	Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           
 */
-#ifndef JE_OBJECT_H
-#define JE_OBJECT_H
+#ifndef GR_OBJECT_H
+#define GR_OBJECT_H
 
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "VFile.h"
 #include "ExtBox.h"
 #include "Bitmap.h"
 #include "Camera.h"
-#include "jeFrustum.h"
-#include "jeProperty.h"
-#include "jeChain.h"
-#include "jePtrMgr.h"
+#include "grFrustum.h"
+#include "grProperty.h"
+#include "grChain.h"
+#include "grPtrMgr.h"
 
 
 #ifdef __cplusplus
@@ -44,14 +44,14 @@ extern "C" {
 
 #include "Sound.h"
 
-/*}{********* jeObject ********/
+/*}{********* grObject ********/
 
-#include "jePtrMgr.h"
-typedef struct jeEngine		jeEngine;
-typedef struct jeWorld		jeWorld;
+#include "grPtrMgr.h"
+typedef struct grEngine		grEngine;
+typedef struct grWorld		grWorld;
 
-typedef struct jeObject		jeObject;
-typedef struct jeObjectDef	jeObjectDef;
+typedef struct grObject		grObject;
+typedef struct grObjectDef	grObjectDef;
 
 #define FILE_UNIQUE_ID 3132205802
 
@@ -60,193 +60,193 @@ typedef struct jeObjectDef	jeObjectDef;
 #define CONTENTS_SOLID 1
 #define CONTENTS_INVISIBLE 2
 
-/*! struct jeObject
-	@brief The jeObject data structure
+/*! struct grObject
+	@brief The grObject data structure
 */
-struct jeObject
+struct grObject
 {
 	char *				Name;		//!< Name of the object in clear
-	const jeObjectDef	*Methods;	//!< Array of functions any object of this kind can use
-	void				*Instance;	//!< Value of one object of this jeObject kind
-	jeObject			*Parent;	//!< Parent object of the object Instance
-	jeChain				*Children;	//!< List of all childrens of this object Instance
-	jeWorld	*			pWorld;		//!< jeWorld attached to this object Instance
-	jeEngine *			pEngine;	//!< jeEngine attached to this object Instance
-	jeSound_System *	pSoundSystem;	//!< jeSound_System attached to this object Instance
+	const grObjectDef	*Methods;	//!< Array of functions any object of this kind can use
+	void				*Instance;	//!< Value of one object of this grObject kind
+	grObject			*Parent;	//!< Parent object of the object Instance
+	grChain				*Children;	//!< List of all childrens of this object Instance
+	grWorld	*			pWorld;		//!< grWorld attached to this object Instance
+	grEngine *			pEngine;	//!< grEngine attached to this object Instance
+	grSound_System *	pSoundSystem;	//!< grSound_System attached to this object Instance
 	/*! Collision contents 
 		@author Incarnadine
 	*/
 	int32				Contents;					
-	int32				RefCnt;		//!< The jeObject reference counter
-	jeObject*			Self;
+	int32				RefCnt;		//!< The grObject reference counter
+	grObject*			Self;
 };
 
-/*! @name jeObject XForm mod flags */
+/*! @name grObject XForm mod flags */
 /*@{ */
-/*! @def JE_OBJECT_XFORM_TRANSLATE
+/*! @def GR_OBJECT_XFORM_TRANSLATE
 	@brief The translation of an XForm can be modifyed
 */
-#define JE_OBJECT_XFORM_TRANSLATE		(1<<0)
-/*! @def JE_OBJECT_XFORM_SCALE
+#define GR_OBJECT_XFORM_TRANSLATE		(1<<0)
+/*! @def GR_OBJECT_XFORM_SCALE
 	@brief The XForm can be scaled
 */
-#define JE_OBJECT_XFORM_SCALE			(1<<1)
-/*! @def JE_OBJECT_XFORM_ROTATE
+#define GR_OBJECT_XFORM_SCALE			(1<<1)
+/*! @def GR_OBJECT_XFORM_ROTATE
 	@brief The XForm can be rotated
 */
-#define JE_OBJECT_XFORM_ROTATE			(1<<2)
-/*! @def JE_OBJECT_XFORM_SHEAR
+#define GR_OBJECT_XFORM_ROTATE			(1<<2)
+/*! @def GR_OBJECT_XFORM_SHEAR
 	@brief The XForm can be sheared
 */
-#define JE_OBJECT_XFORM_SHEAR			(1<<3)
-/*! @def JE_OBJECT_XFORM_ALL
+#define GR_OBJECT_XFORM_SHEAR			(1<<3)
+/*! @def GR_OBJECT_XFORM_ALL
 	@brief All flags altogether
 */
-#define JE_OBJECT_XFORM_ALL				( JE_OBJECT_XFORM_TRANSLATE | JE_OBJECT_XFORM_SCALE |JE_OBJECT_XFORM_ROTATE|JE_OBJECT_XFORM_SHEAR)
+#define GR_OBJECT_XFORM_ALL				( GR_OBJECT_XFORM_TRANSLATE | GR_OBJECT_XFORM_SCALE |GR_OBJECT_XFORM_ROTATE|GR_OBJECT_XFORM_SHEAR)
 /*@} */
 
-/*! @name jeObject flag possible values */
+/*! @name grObject flag possible values */
 /*@{ */
-#define JE_OBJECT_HIDDEN				0x0001		//!< This object is can not be created by user
-#define JE_OBJECT_VISRENDER				0x0002		//!< This object must be rendered only if visible
+#define GR_OBJECT_HIDDEN				0x0001		//!< This object is can not be created by user
+#define GR_OBJECT_VISRENDER				0x0002		//!< This object must be rendered only if visible
 /*@} */
 
-/*! @enum jeObject_Type
-	@brief jeObject kind possible values */
+/*! @enum grObject_Type
+	@brief grObject kind possible values */
 typedef enum
 {
-	JE_OBJECT_TYPE_OBJECTLIST,
-	JE_OBJECT_TYPE_ACTOR,
-	JE_OBJECT_TYPE_MODEL,
-	JE_OBJECT_TYPE_TERRAIN,
-	JE_OBJECT_TYPE_CURVE,
-	JE_OBJECT_TYPE_PORTAL,
-	JE_OBJECT_TYPE_UNKNOWN
-} jeObject_Type;
+	GR_OBJECT_TYPE_OBJECTLIST,
+	GR_OBJECT_TYPE_ACTOR,
+	GR_OBJECT_TYPE_MODEL,
+	GR_OBJECT_TYPE_TERRAIN,
+	GR_OBJECT_TYPE_CURVE,
+	GR_OBJECT_TYPE_PORTAL,
+	GR_OBJECT_TYPE_UNKNOWN
+} grObject_Type;
 
 	// the _UNKNOWN type cannot be cast & must be accessed through its ->Methods virtual methods
 	// note : we (or the user) can add types after _UNKNOWN
 	// you should always check >= _UNKNOWN to see if you can't cast it; (never use == _UNKNOWN)
 
 // Render Flags
-typedef uint32											jeObject_RenderFlags;
+typedef uint32											grObject_RenderFlags;
 
-#define JE_OBJECT_RENDER_FLAG_CAMERA_FRUSTUM			(1<<0)
+#define GR_OBJECT_RENDER_FLAG_CAMERA_FRUSTUM			(1<<0)
 
 // Built in system messages 
-//	(Should these be in jeWorld.h? World is really the object mgr, and should define these types of msg's...)
-#define JE_OBJECT_MSG_WORLD_ADD_SLIGHT_UPDATE			(-1)		// SLIGHT = Static Light
-#define JE_OBJECT_MSG_WORLD_REMOVE_SLIGHT_UPDATE		(-2)
-#define JE_OBJECT_MSG_WORLD_REBUILDBSP		(-3)  // Incarnadine
-#define JE_OBJECT_MSG_WORLD_REBUILDLIGHTS (-4) // Incarnadine
+//	(Should these be in grWorld.h? World is really the object mgr, and should define these types of msg's...)
+#define GR_OBJECT_MSG_WORLD_ADD_SLIGHT_UPDATE			(-1)		// SLIGHT = Static Light
+#define GR_OBJECT_MSG_WORLD_REMOVE_SLIGHT_UPDATE		(-2)
+#define GR_OBJECT_MSG_WORLD_REBUILDBSP		(-3)  // Incarnadine
+#define GR_OBJECT_MSG_WORLD_REBUILDLIGHTS (-4) // Incarnadine
 
 /*}{********************** Object-Manager Functions ******************/
 
-JETAPI jeBoolean	JETCC jeObject_RegisterGlobalObjectDef(const jeObjectDef * Methods);
+GRAPI grBoolean	GRCC grObject_RegisterGlobalObjectDef(const grObjectDef * Methods);
 							// you must Register your Def if you want _CreateFromFile
 							//	to be able to make objects of your type.
-							// this means Registering user objects *before* calling jeWorld_Create()
+							// this means Registering user objects *before* calling grWorld_Create()
 
-JETAPI int32		JETCC jeObject_GetRegisteredN();
+GRAPI int32		GRCC grObject_GetRegisteredN();
 							// Returns the number of Registered Defs
 
-JETAPI const char*	JETCC jeObject_GetRegisteredDefName( int Index );
-JETAPI uint32		JETCC jeObject_GetRegisteredFlags( int Index );
-JETAPI jeBoolean	JETCC jeObject_GetRegisteredPropertyList(const char * TypeName, jeProperty_List **List);
-JETAPI jeBoolean	JETCC jeObject_SetRegisteredProperty( const char * TypeName, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData );
+GRAPI const char*	GRCC grObject_GetRegisteredDefName( int Index );
+GRAPI uint32		GRCC grObject_GetRegisteredFlags( int Index );
+GRAPI grBoolean	GRCC grObject_GetRegisteredPropertyList(const char * TypeName, grProperty_List **List);
+GRAPI grBoolean	GRCC grObject_SetRegisteredProperty( const char * TypeName, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData );
 
 							// Index must be less than the number of Registered Defs 
 /*}{********************** Object Functions ******************/
 
-JETAPI jeObject *	JETCC jeObject_Create		( const char * TypeName );					// mallocs a blank object
-JETAPI jeObject *	JETCC jeObject_Duplicate( jeObject *pObject );
+GRAPI grObject *	GRCC grObject_Create		( const char * TypeName );					// mallocs a blank object
+GRAPI grObject *	GRCC grObject_Duplicate( grObject *pObject );
 
-JETAPI void			JETCC jeObject_Destroy	(jeObject ** pObject);	// frees & destroys an object
-JETAPI void			JETCC jeObject_SetName( jeObject * pObject, const char * Name );
-JETAPI const char  *JETCC jeObject_GetName( const jeObject * pObject );
+GRAPI void			GRCC grObject_Destroy	(grObject ** pObject);	// frees & destroys an object
+GRAPI void			GRCC grObject_SetName( grObject * pObject, const char * Name );
+GRAPI const char  *GRCC grObject_GetName( const grObject * pObject );
 
-JETAPI jeBoolean	JETCC jeObject_WriteToFile(const jeObject * Object,jeVFile * File, jePtrMgr *PtrMgr);
-JETAPI jeObject *	JETCC jeObject_CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr);
+GRAPI grBoolean	GRCC grObject_WriteToFile(const grObject * Object,grVFile * File, grPtrMgr *PtrMgr);
+GRAPI grObject *	GRCC grObject_CreateFromFile(grVFile * File, grPtrMgr *PtrMgr);
 
-JETAPI jeObject_Type	JETCC jeObject_GetType(const jeObject * Object);
-JETAPI const char	*JETCC jeObject_GetTypeName	(const jeObject * Object);
+GRAPI grObject_Type	GRCC grObject_GetType(const grObject * Object);
+GRAPI const char	*GRCC grObject_GetTypeName	(const grObject * Object);
 
-JETAPI jeBoolean	JETCC jeObject_GetPropertyList(const jeObject *Object, jeProperty_List **List);
-JETAPI jeBoolean	JETCC jeObject_SetProperty(jeObject *Object, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData );
-JETAPI jeBoolean	JETCC jeObject_GetProperty(const jeObject *Object, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData );
+GRAPI grBoolean	GRCC grObject_GetPropertyList(const grObject *Object, grProperty_List **List);
+GRAPI grBoolean	GRCC grObject_SetProperty(grObject *Object, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData );
+GRAPI grBoolean	GRCC grObject_GetProperty(const grObject *Object, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData );
 
-JETAPI void   *		JETCC jeObject_GetInstance( const jeObject *Object );
-JETAPI void			JETCC jeObject_CreateInstanceRef(jeObject * Object);
-JETAPI jeBoolean	JETCC jeObject_Free(jeObject * Object);	
+GRAPI void   *		GRCC grObject_GetInstance( const grObject *Object );
+GRAPI void			GRCC grObject_CreateInstanceRef(grObject * Object);
+GRAPI grBoolean	GRCC grObject_Free(grObject * Object);	
 						// destroys the *Instance*, not the object's memory
-						// returns JE_FALSE if RefCnt is not 0
-JETAPI void			JETCC jeObject_CreateRef(jeObject * Object);
+						// returns GR_FALSE if RefCnt is not 0
+GRAPI void			GRCC grObject_CreateRef(grObject * Object);
 
-JETAPI jeBoolean	JETCC jeObject_Render(	const jeObject			*Object,
-													const jeWorld			*World, 
-													const jeEngine			*Engine,
-													const jeCamera			*Camera, 
-													const jeFrustum			*CameraSpaceFrustum, 
-													jeObject_RenderFlags	RenderFlags);
+GRAPI grBoolean	GRCC grObject_Render(	const grObject			*Object,
+													const grWorld			*World, 
+													const grEngine			*Engine,
+													const grCamera			*Camera, 
+													const grFrustum			*CameraSpaceFrustum, 
+													grObject_RenderFlags	RenderFlags);
 
-JETAPI jeBoolean	JETCC jeObject_AttachWorld( jeObject *Object, jeWorld * pWorld );
-JETAPI jeBoolean	JETCC jeObject_DettachWorld( jeObject *Object, jeWorld * pWorld );
-JETAPI jeBoolean	JETCC jeObject_AttachEngine( jeObject *Object, jeEngine *Engine );
-JETAPI jeBoolean	JETCC jeObject_DettachEngine(jeObject *Object, jeEngine *Engine );
-JETAPI jeBoolean	JETCC jeObject_AttachSoundSystem( jeObject *Object, jeSound_System *pSoundSystem );
-JETAPI jeBoolean	JETCC jeObject_DettachSoundSystem(jeObject *Object, jeSound_System *pSoundSystem );
+GRAPI grBoolean	GRCC grObject_AttachWorld( grObject *Object, grWorld * pWorld );
+GRAPI grBoolean	GRCC grObject_DettachWorld( grObject *Object, grWorld * pWorld );
+GRAPI grBoolean	GRCC grObject_AttachEngine( grObject *Object, grEngine *Engine );
+GRAPI grBoolean	GRCC grObject_DettachEngine(grObject *Object, grEngine *Engine );
+GRAPI grBoolean	GRCC grObject_AttachSoundSystem( grObject *Object, grSound_System *pSoundSystem );
+GRAPI grBoolean	GRCC grObject_DettachSoundSystem(grObject *Object, grSound_System *pSoundSystem );
 
-JETAPI jeBoolean	JETCC jeObject_Collision(const jeObject *Object, const jeExtBox *Box, const jeVec3d *Front, const jeVec3d *Back, jeVec3d *Impact, jePlane *Plane, jeObject ** SubObject);
+GRAPI grBoolean	GRCC grObject_Collision(const grObject *Object, const grExtBox *Box, const grVec3d *Front, const grVec3d *Back, grVec3d *Impact, grPlane *Plane, grObject ** SubObject);
 
-JETAPI jeBoolean	JETCC jeObject_GetExtBox	(const jeObject * Object,jeExtBox *BBox);
+GRAPI grBoolean	GRCC grObject_GetExtBox	(const grObject * Object,grExtBox *BBox);
 
-JETAPI jeBoolean	JETCC jeObject_SetXForm	(jeObject * Object,const jeXForm3d *XF);
-JETAPI jeBoolean	JETCC jeObject_GetXForm	(const jeObject * Object,jeXForm3d *XF);
-JETAPI int			JETCC jeObject_GetXFormModFlags( const jeObject * Object );
+GRAPI grBoolean	GRCC grObject_SetXForm	(grObject * Object,const grXForm3d *XF);
+GRAPI grBoolean	GRCC grObject_GetXForm	(const grObject * Object,grXForm3d *XF);
+GRAPI int			GRCC grObject_GetXFormModFlags( const grObject * Object );
 
-JETAPI jeBoolean	JETCC jeObject_GetChildren(const jeObject * Object,jeObject * Children,int MaxNumChildren);
-JETAPI jeObject		*JETCC jeObject_GetNextChild(const jeObject *Object, jeObject *Start);
-JETAPI jeObject		*JETCC jeObject_GetParent( const jeObject *Object );
-JETAPI jeBoolean	JETCC jeObject_AddChild	(jeObject * Object,   jeObject * Child);
-JETAPI jeBoolean	JETCC jeObject_RemoveChild(jeObject * Object, jeObject * Child);
+GRAPI grBoolean	GRCC grObject_GetChildren(const grObject * Object,grObject * Children,int MaxNumChildren);
+GRAPI grObject		*GRCC grObject_GetNextChild(const grObject *Object, grObject *Start);
+GRAPI grObject		*GRCC grObject_GetParent( const grObject *Object );
+GRAPI grBoolean	GRCC grObject_AddChild	(grObject * Object,   grObject * Child);
+GRAPI grBoolean	GRCC grObject_RemoveChild(grObject * Object, grObject * Child);
 
 #ifdef WIN32
-JETAPI jeBoolean	JETCC jeObject_EditDialog (jeObject * Object,HWND Parent);
+GRAPI grBoolean	GRCC grObject_EditDialog (grObject * Object,HWND Parent);
 #endif
 
 #ifdef BUILD_BE
-JETAPI jeBoolean	JETCC jeObject_EditDialog (jeObject * Object,class G3DView * Parent);
+GRAPI grBoolean	GRCC grObject_EditDialog (grObject * Object,class G3DView * Parent);
 #endif
 
-JETAPI jeBoolean	JETCC jeObject_SendMessage (jeObject * Object,int32 Msg, void * Data);
+GRAPI grBoolean	GRCC grObject_SendMessage (grObject * Object,int32 Msg, void * Data);
 
-JETAPI jeBoolean	JETCC jeObject_Frame (jeObject * Object,float TimeDelta );
+GRAPI grBoolean	GRCC grObject_Frame (grObject * Object,float TimeDelta );
 
-JETAPI int32 JETCC jeObject_GetContents(const jeObject * Object);
-JETAPI void JETCC jeObject_SetContents(jeObject * Object, int32 Contents);
+GRAPI int32 GRCC grObject_GetContents(const grObject * Object);
+GRAPI void GRCC grObject_SetContents(grObject * Object, int32 Contents);
 
-typedef struct jeCollisionInfo jeCollisionInfo;
-JETAPI jeBoolean JETCC jeObject_MoveCollision(jeObject * Object, 											
-											const jeVec3d *TargetPos,
-											jeCollisionInfo *CollisionInfo);
+typedef struct grCollisionInfo grCollisionInfo;
+GRAPI grBoolean GRCC grObject_MoveCollision(grObject * Object, 											
+											const grVec3d *TargetPos,
+											grCollisionInfo *CollisionInfo);
 
 // Added by Icestorm
-JETAPI jeBoolean	JETCC jeObject_ChangeBoxCollision(const jeObject	*Object,
-													  const jeVec3d		*Pos,
-													  const jeExtBox	*FrontBox,
-													  const jeExtBox	*BackBox,
-													  jeExtBox			*ImpactBox,
-													  jePlane			*Plane,
-													  jeObject			** SubObject);
+GRAPI grBoolean	GRCC grObject_ChangeBoxCollision(const grObject	*Object,
+													  const grVec3d		*Pos,
+													  const grExtBox	*FrontBox,
+													  const grExtBox	*BackBox,
+													  grExtBox			*ImpactBox,
+													  grPlane			*Plane,
+													  grObject			** SubObject);
 
 // KROUER: Actor/Object visibility
-/*! @fn void jeObject_SetRenderNextPass(const jeObject	*Object, jeBoolean RenderNext)
+/*! @fn void grObject_SetRenderNextPass(const grObject	*Object, grBoolean RenderNext)
 	@brief Toggle the render of the object in the next rendering pass
     
 	This function is used mainly for visibility definition.<br>To render the objects in 
-	the next objects rendering loop, you must set the RenderNextTime flag to JE_TRUE.
+	the next objects rendering loop, you must set the RenderNextTime flag to GR_TRUE.
 	To make the object rendering loop ignoring it, you must set the RenderingNextTime 
-	flag to JE_FALSE.
+	flag to GR_FALSE.
 	JetEngine rendering is done in 2 passes:<br>
 	1. Define which part of the BSP to render and render them<br>
 	2. Render all objects<br>
@@ -258,15 +258,15 @@ JETAPI jeBoolean	JETCC jeObject_ChangeBoxCollision(const jeObject	*Object,
 	@param[in] Object The object on which apply the RenderNext value
 	@param[in] RenderNext A boolean value to set or reset the Render nex pass value
 */
-JETAPI void			JETCC jeObject_SetRenderNextPass(const jeObject	*Object, jeBoolean RenderNext);
+GRAPI void			GRCC grObject_SetRenderNextPass(const grObject	*Object, grBoolean RenderNext);
 
-/*! @fn uint32 jeObject_GetFlags(const jeObject * Object);
+/*! @fn uint32 grObject_GetFlags(const grObject * Object);
 	@brief Read the Flag member of the Object
 
     @param[in] Object The object from which to read the flag
 	@return The reading flag
 */
-JETAPI uint32		JETCC jeObject_GetFlags(const jeObject * Object);
+GRAPI uint32		GRCC grObject_GetFlags(const grObject * Object);
 
 /***
 
@@ -279,68 +279,68 @@ todos :
 
 /*}{******** The Object Def *********/
 
-struct jeObjectDef
+struct grObjectDef
 {
-	jeObject_Type	Type;
+	grObject_Type	Type;
 	const char *	Name;		// Defs MUST have unique names!
 	uint32			Flags;
 	
-	void	*	( JETCC * CreateInstance)(void);
-	void		( JETCC * CreateRef)	(void * Instance);
-	jeBoolean	( JETCC * Destroy)		(void **pInstance);
-				//Returns JE_TRUE if refcnt is 0 and instance is destroyed
+	void	*	( GRCC * CreateInstance)(void);
+	void		( GRCC * CreateRef)	(void * Instance);
+	grBoolean	( GRCC * Destroy)		(void **pInstance);
+				//Returns GR_TRUE if refcnt is 0 and instance is destroyed
 
-	jeBoolean	( JETCC * AttachWorld ) ( void * Instance, jeWorld * pWorld );
-	jeBoolean	( JETCC * DettachWorld ) ( void * Instance, jeWorld * pWorld );
+	grBoolean	( GRCC * AttachWorld ) ( void * Instance, grWorld * pWorld );
+	grBoolean	( GRCC * DettachWorld ) ( void * Instance, grWorld * pWorld );
 				
-	jeBoolean	( JETCC * AttachEngine ) ( void * Instance, jeEngine *Engine );
-	jeBoolean	( JETCC * DettachEngine ) ( void * Instance, jeEngine *Engine );
+	grBoolean	( GRCC * AttachEngine ) ( void * Instance, grEngine *Engine );
+	grBoolean	( GRCC * DettachEngine ) ( void * Instance, grEngine *Engine );
 
-	jeBoolean	( JETCC * AttachSoundSystem ) ( void * Instance, jeSound_System *SoundSystem );
-	jeBoolean	( JETCC * DettachSoundSystem ) ( void * Instance, jeSound_System *SoundSystem );
+	grBoolean	( GRCC * AttachSoundSystem ) ( void * Instance, grSound_System *SoundSystem );
+	grBoolean	( GRCC * DettachSoundSystem ) ( void * Instance, grSound_System *SoundSystem );
 
-	jeBoolean	( JETCC * Render) (const void * Instance, const jeWorld *World, const jeEngine *Engine, const jeCamera *Camera, const jeFrustum *CameraSpaceFrustum, jeObject_RenderFlags RenderFlags);
+	grBoolean	( GRCC * Render) (const void * Instance, const grWorld *World, const grEngine *Engine, const grCamera *Camera, const grFrustum *CameraSpaceFrustum, grObject_RenderFlags RenderFlags);
 
-	jeBoolean	( JETCC * Collision)	(const void * Instance, const jeExtBox *Box, const jeVec3d *Front, const jeVec3d *Back, jeVec3d *Impact, jePlane *Plane);
+	grBoolean	( GRCC * Collision)	(const void * Instance, const grExtBox *Box, const grVec3d *Front, const grVec3d *Back, grVec3d *Impact, grPlane *Plane);
 
-	jeBoolean	( JETCC * GetExtBox)	(const void * Instance,jeExtBox *BBox);
+	grBoolean	( GRCC * GetExtBox)	(const void * Instance,grExtBox *BBox);
 
 	//--- the stuff above this point is pretty secure
 
-	void *		( JETCC * CreateFromFile)(jeVFile * File, jePtrMgr *PtrMgr);
-	jeBoolean	( JETCC * WriteToFile)	(const void * Instance,jeVFile * File, jePtrMgr *PtrMgr);
+	void *		( GRCC * CreateFromFile)(grVFile * File, grPtrMgr *PtrMgr);
+	grBoolean	( GRCC * WriteToFile)	(const void * Instance,grVFile * File, grPtrMgr *PtrMgr);
 
-	jeBoolean	( JETCC * GetPropertyList)	(void * Instance, jeProperty_List **List);
-	jeBoolean	( JETCC * SetProperty)      (void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData );
-	jeBoolean	( JETCC * GetProperty )( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData );
+	grBoolean	( GRCC * GetPropertyList)	(void * Instance, grProperty_List **List);
+	grBoolean	( GRCC * SetProperty)      (void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData );
+	grBoolean	( GRCC * GetProperty )( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData );
 
-	jeBoolean	( JETCC * SetXForm)	(void * Instance,const jeXForm3d *XF);
-	jeBoolean	( JETCC * GetXForm)	(const void * Instance,jeXForm3d *XF);
+	grBoolean	( GRCC * SetXForm)	(void * Instance,const grXForm3d *XF);
+	grBoolean	( GRCC * GetXForm)	(const void * Instance,grXForm3d *XF);
 								// if your object is added to a world, you *MUST* call World_UpdateObject if
 								//	you call Object_SetXForm
-	int			( JETCC * GetXFormModFlags )( const void * Instace );
+	int			( GRCC * GetXFormModFlags )( const void * Instace );
 								//The flags determine in what way is it valid to modify the transform
 
-	jeBoolean	( JETCC * GetChildren)	(const void * Instance,jeObject * Children,int MaxNumChildren);
-	jeBoolean	( JETCC * AddChild)	(void * Instance,const jeObject * Child);
-	jeBoolean	( JETCC * RemoveChild)	(void * Instance,const jeObject * Child);
+	grBoolean	( GRCC * GetChildren)	(const void * Instance,grObject * Children,int MaxNumChildren);
+	grBoolean	( GRCC * AddChild)	(void * Instance,const grObject * Child);
+	grBoolean	( GRCC * RemoveChild)	(void * Instance,const grObject * Child);
 
-	jeBoolean	( JETCC * EditDialog )	(void * Instance, HWND Parent);
-	jeBoolean	( JETCC * SendMessage )	(void * Instance, int32 Msg, void * Data);
-	jeBoolean	( JETCC * Frame ) (void * Instance, float Time );
-	void *		( JETCC * DuplicateInstance )( void * Instance );
+	grBoolean	( GRCC * EditDialog )	(void * Instance, HWND Parent);
+	grBoolean	( GRCC * SendMessage )	(void * Instance, int32 Msg, void * Data);
+	grBoolean	( GRCC * Frame ) (void * Instance, float Time );
+	void *		( GRCC * DuplicateInstance )( void * Instance );
 
 	// Added by Icestorm
-	jeBoolean	( JETCC * ChangeBoxCollision )(const void * Instance, const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane);
+	grBoolean	( GRCC * ChangeBoxCollision )(const void * Instance, const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane);
 
-	jeBoolean	( JETCC * GetGlobalPropertyList)	(jeProperty_List **List);
-	jeBoolean	( JETCC * SetGlobalProperty)      (int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData );
+	grBoolean	( GRCC * GetGlobalPropertyList)	(grProperty_List **List);
+	grBoolean	( GRCC * SetGlobalProperty)      (int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData );
 
 	// Added by KROUER
 	/*! @brief Enable the draw for the next render pass
-		@see jeObject_SetRenderNextPass
+		@see grObject_SetRenderNextPass
 	*/
-	void        ( JETCC * SetRenderNextPass) (void * Instance, jeBoolean RenderNext);
+	void        ( GRCC * SetRenderNextPass) (void * Instance, grBoolean RenderNext);
 };
 
 #ifndef WINVER
@@ -353,33 +353,10 @@ struct jeObjectDef
 #endif
 
 // Genesis3D: Reborn gr* Aliases
-typedef struct jeObject grObject;
-typedef struct jeObjectDef grObject_Def;
-typedef struct jeObjectDef jeObject_Def;
-typedef jeObject_Type grObject_Type;
-typedef jeObject_RenderFlags grObject_RenderFlags;
+typedef struct grObjectDef grObject_Def;
+typedef grObject_Type grObject_Type;
+typedef grObject_RenderFlags grObject_RenderFlags;
 
-#define grObject_Create                  jeObject_Create
-#define grObject_Duplicate               jeObject_Duplicate
-#define grObject_Destroy                 jeObject_Destroy
-#define grObject_SetName                 jeObject_SetName
-#define grObject_GetName                 jeObject_GetName
-#define grObject_WriteToFile             jeObject_WriteToFile
-#define grObject_CreateFromFile          jeObject_CreateFromFile
-#define grObject_GetType                 jeObject_GetType
-#define grObject_GetTypeName             jeObject_GetTypeName
-#define grObject_GetPropertyList         jeObject_GetPropertyList
-#define grObject_SetProperty             jeObject_SetProperty
-#define grObject_GetProperty             jeObject_GetProperty
-#define grObject_GetInstance             jeObject_GetInstance
-#define grObject_CreateInstanceRef       jeObject_CreateInstanceRef
-#define grObject_Free                    jeObject_Free
-#define grObject_CreateRef               jeObject_CreateRef
-#define grObject_Render                  jeObject_Render
-#define grObject_Frame                   jeObject_Frame
-#define grObject_Collision               jeObject_Collision
-#define grObject_ChangeBoxCollision      jeObject_ChangeBoxCollision
-#define grObject_IsValid                 jeObject_IsValid
 
 #endif
 

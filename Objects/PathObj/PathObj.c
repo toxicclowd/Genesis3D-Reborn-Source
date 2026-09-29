@@ -42,9 +42,9 @@
 #include <limits.h>
 #include "Errorlog.h"
 #include "PathObj.h"
-#include "jeTypes.h"
-#include "jeProperty.h"
-#include "Jet.h"
+#include "grTypes.h"
+#include "grProperty.h"
+#include "Genesis3D.h"
 #include "Ram.h"
 #include "Channel.h"
 #include "Trigger.h"
@@ -68,17 +68,17 @@ static HINSTANCE hInstance;
 static image_id hInstance;
 #endif
 
-static jeObject * PathObject_FindObjectFromName(jeWorld *World, char *NameToFind);
-static jeBoolean PathObject_GetPropertyDataIdFromName(jeWorld *World, jeObject *Obj, char *NameToFind, int32 *PropDataId);
-static jeBoolean PathObject_BuildObjectNameList(PathObj *pPathObj, int TimeLineNdx, int32 *NameCount);
-static jeBoolean PathObject_BuildPropertyNameList(PathObj *pPathObj, int TimeLineNdx, int32 *NameCount);
-static jeBoolean PathObject_GetPropertyInfoFromDataId(jeWorld *World, jeObject *Obj, int32 DataId, int32 *Type, jeProperty_Data *Data);
-static jeBoolean PathObject_PutDataIntoChannelObject(PathObj *pPathObj, int TimeLineNdx, jeXForm3d *XF);
-static jeBoolean PathObject_SampleMotion(PathObj *pPathObj, int TimeLineNdx);
-static jeBoolean PathObject_ProcessEvents(PathObj *pPathObj, int TimeLineNdx, float StartTime, float EndTime);
-static jeBoolean PathObject_ValidateObject(PathObj *pPathObj, int ChannelType, jeObject *Obj, int PropID);
-static jeBoolean PathObject_BuildAllMotions(PathObj *pPathObj);
-static jeBoolean PathObject_SampleXFormAtTime(PathObj *pPathObj, int TimeLineNdx, float Time, jeBoolean *XFormSet, jeXForm3d *XF);
+static grObject * PathObject_FindObjectFromName(grWorld *World, char *NameToFind);
+static grBoolean PathObject_GetPropertyDataIdFromName(grWorld *World, grObject *Obj, char *NameToFind, int32 *PropDataId);
+static grBoolean PathObject_BuildObjectNameList(PathObj *pPathObj, int TimeLineNdx, int32 *NameCount);
+static grBoolean PathObject_BuildPropertyNameList(PathObj *pPathObj, int TimeLineNdx, int32 *NameCount);
+static grBoolean PathObject_GetPropertyInfoFromDataId(grWorld *World, grObject *Obj, int32 DataId, int32 *Type, grProperty_Data *Data);
+static grBoolean PathObject_PutDataIntoChannelObject(PathObj *pPathObj, int TimeLineNdx, grXForm3d *XF);
+static grBoolean PathObject_SampleMotion(PathObj *pPathObj, int TimeLineNdx);
+static grBoolean PathObject_ProcessEvents(PathObj *pPathObj, int TimeLineNdx, float StartTime, float EndTime);
+static grBoolean PathObject_ValidateObject(PathObj *pPathObj, int ChannelType, grObject *Obj, int PropID);
+static grBoolean PathObject_BuildAllMotions(PathObj *pPathObj);
+static grBoolean PathObject_SampleXFormAtTime(PathObj *pPathObj, int TimeLineNdx, float Time, grBoolean *XFormSet, grXForm3d *XF);
 static char	*NoSelection = "< none >";
 
 #define ID_TO_INDEX_MOD_VALUE 100
@@ -170,14 +170,14 @@ enum PathPropertyNoneID
 #define DEFAULT_RADIUS 1024.0f
 #define MIN_EVENT_STRING_SIZE 64
 
-static 	jeBitmap	*pBitmap = NULL;
+static 	grBitmap	*pBitmap = NULL;
 
 #define MAX_OBJ_NAME_LIST 2048
 #define MAX_PROP_NAME_LIST 128
 
 typedef struct TimeLineData
 {
-	jeObject				*Obj;			// Object to modify
+	grObject				*Obj;			// Object to modify
 	int						ChannelType;	// 0 for positional, 1 for property
 	int						PropDataId;		// Primary id for properties 
 	PROPERTY_FIELD_TYPE		PropFieldType;	// Not necessary if you have the DataId - but it comes in handy
@@ -187,7 +187,7 @@ typedef struct TimeLineData
 	float					CurrTime;		// Where the time bar actually is. Does not take into account looping time.
 	float					LastTime;		// Last position where the time bar actually was.
 
-	jeBoolean				LoopTime;
+	grBoolean				LoopTime;
 	int						PosInterpType;
 	int						RotInterpType;
 	char					ObjectName[256];
@@ -198,17 +198,17 @@ typedef struct TimeLineData
 
 
 typedef struct PathObj {
-	jeMotion		*Motion[64];
+	grMotion		*Motion[64];
 	TimeLineData	TimeLineList[64];
 	int				TimeLineCount;
 	int				CurTimeLine;
 	int				LastTimeLineModified;
 
 	float			Time;
-	jeBoolean		PlayMotions;
+	grBoolean		PlayMotions;
 	int				RefCnt;
-	jeBoolean		Dirty;
-	jeWorld			*World;
+	grBoolean		Dirty;
+	grWorld			*World;
 } PathObj;
 
 #define UTIL_MAX_RESOURCE_LENGTH	(128)
@@ -235,7 +235,7 @@ void Util_StripChar(char *str, char *strip)
 	memmove(ptr, ptr + strlen(strip), strlen(ptr)+1);
 }
 
-jeBoolean Util_StrDupManagePtr(char **dest, char *src, int min_size)
+grBoolean Util_StrDupManagePtr(char **dest, char *src, int min_size)
 {
 	int len;
 
@@ -249,26 +249,26 @@ jeBoolean Util_StrDupManagePtr(char **dest, char *src, int min_size)
 		if ( len < min_size )
 		{
 			strcpy(*dest, src);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
-		jeRam_Free(*dest);
+		grRam_Free(*dest);
 		*dest = NULL;
 	}
 
-	*dest = (char *)jeRam_Allocate(max(min_size, len));
+	*dest = (char *)grRam_Allocate(max(min_size, len));
 	if (*dest == NULL)
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
+		return GR_FALSE;
 	}
 
 	strcpy(*dest, src);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-void TimeEdit_FillTimeLineProperties(PathObj *pPathObj, char *Descr, jeProperty_List *List, int *ListNdx, int TimeLineNdx)
+void TimeEdit_FillTimeLineProperties(PathObj *pPathObj, char *Descr, grProperty_List *List, int *ListNdx, int TimeLineNdx)
 {
 	int BaseID;
 	TimeLineData *Element;
@@ -283,42 +283,42 @@ void TimeEdit_FillTimeLineProperties(PathObj *pPathObj, char *Descr, jeProperty_
 
 	sprintf(NewDescr, "Controlling %s", Descr);
 		
-	jeProperty_FillTimeGroup( &List->pjeProperty[(*ListNdx)], NewDescr, BaseID + PATHOBJ_TIMELINE_START);
+	grProperty_FillTimeGroup( &List->pgrProperty[(*ListNdx)], NewDescr, BaseID + PATHOBJ_TIMELINE_START);
 	(*ListNdx)++;
 
-	List->pjeProperty[(*ListNdx)].Type = PROPERTY_CHANNEL_POS_TYPE;
-	List->pjeProperty[(*ListNdx)].DataId = BaseID + PATHOBJ_TIMELINE_POS_CHANNEL;
-	List->pjeProperty[(*ListNdx)].DataSize = sizeof(void*);
-	List->pjeProperty[(*ListNdx)].Data.Ptr = &Element->Channels[CHANNEL_POS];
-	List->pjeProperty[(*ListNdx)].FieldName = NULL;
+	List->pgrProperty[(*ListNdx)].Type = PROPERTY_CHANNEL_POS_TYPE;
+	List->pgrProperty[(*ListNdx)].DataId = BaseID + PATHOBJ_TIMELINE_POS_CHANNEL;
+	List->pgrProperty[(*ListNdx)].DataSize = sizeof(void*);
+	List->pgrProperty[(*ListNdx)].Data.Ptr = &Element->Channels[CHANNEL_POS];
+	List->pgrProperty[(*ListNdx)].FieldName = NULL;
 	(*ListNdx)++;
 
-	List->pjeProperty[(*ListNdx)].Type = PROPERTY_CHANNEL_ROT_TYPE;
-	List->pjeProperty[(*ListNdx)].DataId = BaseID + PATHOBJ_TIMELINE_ROT_CHANNEL;
-	List->pjeProperty[(*ListNdx)].DataSize = sizeof(void*);
-	List->pjeProperty[(*ListNdx)].Data.Ptr = &Element->Channels[CHANNEL_ROT];
-	List->pjeProperty[(*ListNdx)].FieldName = NULL;
+	List->pgrProperty[(*ListNdx)].Type = PROPERTY_CHANNEL_ROT_TYPE;
+	List->pgrProperty[(*ListNdx)].DataId = BaseID + PATHOBJ_TIMELINE_ROT_CHANNEL;
+	List->pgrProperty[(*ListNdx)].DataSize = sizeof(void*);
+	List->pgrProperty[(*ListNdx)].Data.Ptr = &Element->Channels[CHANNEL_ROT];
+	List->pgrProperty[(*ListNdx)].FieldName = NULL;
 	(*ListNdx)++;
 
-	List->pjeProperty[(*ListNdx)].Type = PROPERTY_CHANNEL_EVENT_TYPE;
-	List->pjeProperty[(*ListNdx)].DataId = BaseID + PATHOBJ_TIMELINE_EVENT_CHANNEL;
-	List->pjeProperty[(*ListNdx)].DataSize = sizeof(void*);
-	List->pjeProperty[(*ListNdx)].Data.Ptr = &Element->Channels[CHANNEL_EVENT];
-	List->pjeProperty[(*ListNdx)].FieldName = NULL;
+	List->pgrProperty[(*ListNdx)].Type = PROPERTY_CHANNEL_EVENT_TYPE;
+	List->pgrProperty[(*ListNdx)].DataId = BaseID + PATHOBJ_TIMELINE_EVENT_CHANNEL;
+	List->pgrProperty[(*ListNdx)].DataSize = sizeof(void*);
+	List->pgrProperty[(*ListNdx)].Data.Ptr = &Element->Channels[CHANNEL_EVENT];
+	List->pgrProperty[(*ListNdx)].FieldName = NULL;
 	(*ListNdx)++;
 
-	jeProperty_FillFloat( &List->pjeProperty[(*ListNdx)], 
+	grProperty_FillFloat( &List->pgrProperty[(*ListNdx)], 
 		"", Element->CurrTime, BaseID + PATHOBJ_TIMELINE_CUR_TIME, -FLT_MAX, FLT_MAX, 1.0f );
 
-    List->pjeProperty[(*ListNdx)].Type = PROPERTY_CURTIME_TYPE;
+    List->pgrProperty[(*ListNdx)].Type = PROPERTY_CURTIME_TYPE;
 	(*ListNdx)++;
 
-	jeProperty_FillGroupEnd( &List->pjeProperty[(*ListNdx)], BaseID + PATHOBJ_TIMELINE_END);
+	grProperty_FillGroupEnd( &List->pgrProperty[(*ListNdx)], BaseID + PATHOBJ_TIMELINE_END);
 	(*ListNdx)++;
 
 }
 
-void TimeEdit_FillDetails(PathObj *pPathObj, jeProperty_List *List, int *ListNdx, int TimeLineNdx)
+void TimeEdit_FillDetails(PathObj *pPathObj, grProperty_List *List, int *ListNdx, int TimeLineNdx)
 {
 	int BaseID;
 	TimeLineData *Element;
@@ -333,10 +333,10 @@ void TimeEdit_FillDetails(PathObj *pPathObj, jeProperty_List *List, int *ListNdx
 	BaseID = (TimeLineNdx * ID_TO_INDEX_MOD_VALUE);
 	Element = &pPathObj->TimeLineList[TimeLineNdx];
 
-	jeProperty_FillGroup( &List->pjeProperty[(*ListNdx)++], 
+	grProperty_FillGroup( &List->pgrProperty[(*ListNdx)++], 
 		"Details", BaseID + PATHOBJ_DETAILS_GROUP);
 
-	jeProperty_FillCheck( &List->pjeProperty[(*ListNdx)++], 
+	grProperty_FillCheck( &List->pgrProperty[(*ListNdx)++], 
 		"Loop Time:", Element->LoopTime, BaseID + PATHOBJ_DETAILS_LOOPTIME );
 
     if (Element->ChannelType == PATH_CONTROL_PROPERTY)
@@ -352,44 +352,44 @@ void TimeEdit_FillDetails(PathObj *pPathObj, jeProperty_List *List, int *ListNdx
         InterpZeroStr = "Pos Interp Hermite Zero Div:";
     }
 
-    jeProperty_FillRadio( &List->pjeProperty[(*ListNdx)++], 
-        InterpLinearStr, Element->PosInterpType == JE_PATH_INTERPOLATE_LINEAR, 
+    grProperty_FillRadio( &List->pgrProperty[(*ListNdx)++], 
+        InterpLinearStr, Element->PosInterpType == GR_PATH_INTERPOLATE_LINEAR, 
         BaseID + PATHOBJ_DETAILS_POS_INTERP_LINEAR);
-    jeProperty_FillRadio( &List->pjeProperty[(*ListNdx)++], 
-        InterpHermiteStr, Element->PosInterpType == JE_PATH_INTERPOLATE_HERMITE, 
+    grProperty_FillRadio( &List->pgrProperty[(*ListNdx)++], 
+        InterpHermiteStr, Element->PosInterpType == GR_PATH_INTERPOLATE_HERMITE, 
         BaseID + PATHOBJ_DETAILS_POS_INTERP_HERMITE);
-    jeProperty_FillRadio( &List->pjeProperty[(*ListNdx)++], 
-        InterpZeroStr, Element->PosInterpType == JE_PATH_INTERPOLATE_HERMITE_ZERO_DERIV, 
+    grProperty_FillRadio( &List->pgrProperty[(*ListNdx)++], 
+        InterpZeroStr, Element->PosInterpType == GR_PATH_INTERPOLATE_HERMITE_ZERO_DERIV, 
         BaseID + PATHOBJ_DETAILS_POS_INTERP_HERMITE_ZERO);
-    jeProperty_FillGroupEnd( &List->pjeProperty[(*ListNdx)++], 
+    grProperty_FillGroupEnd( &List->pgrProperty[(*ListNdx)++], 
         BaseID + PATHOBJ_DETAILS_POS_END);
 
     if (Element->ChannelType == PATH_CONTROL_POSITION && !Element->Channels[CHANNEL_ROT].Disabled)
     {
-        jeProperty_FillRadio( &List->pjeProperty[(*ListNdx)++], 
-            "Rot Interp Linear:", Element->RotInterpType == JE_PATH_INTERPOLATE_LINEAR, 
+        grProperty_FillRadio( &List->pgrProperty[(*ListNdx)++], 
+            "Rot Interp Linear:", Element->RotInterpType == GR_PATH_INTERPOLATE_LINEAR, 
             BaseID + PATHOBJ_DETAILS_ROT_INTERP_LINEAR);
-        jeProperty_FillRadio( &List->pjeProperty[(*ListNdx)++], 
-            "Rot Interp Slerp:", Element->RotInterpType == JE_PATH_INTERPOLATE_SLERP, 
+        grProperty_FillRadio( &List->pgrProperty[(*ListNdx)++], 
+            "Rot Interp Slerp:", Element->RotInterpType == GR_PATH_INTERPOLATE_SLERP, 
             BaseID + PATHOBJ_DETAILS_ROT_INTERP_SLERP);
-        jeProperty_FillRadio( &List->pjeProperty[(*ListNdx)++], 
-            "Rot Interp Squad:", Element->RotInterpType == JE_PATH_INTERPOLATE_SQUAD, 
+        grProperty_FillRadio( &List->pgrProperty[(*ListNdx)++], 
+            "Rot Interp Squad:", Element->RotInterpType == GR_PATH_INTERPOLATE_SQUAD, 
             BaseID + PATHOBJ_DETAILS_ROT_INTERP_SQUAD);
-        jeProperty_FillGroupEnd( &List->pjeProperty[(*ListNdx)++], 
+        grProperty_FillGroupEnd( &List->pgrProperty[(*ListNdx)++], 
             BaseID + PATHOBJ_DETAILS_ROT_END);
     }
 
-	jeProperty_FillGroupEnd( &List->pjeProperty[(*ListNdx)++], 
+	grProperty_FillGroupEnd( &List->pgrProperty[(*ListNdx)++], 
 		BaseID + PATHOBJ_DETAILS_GROUP);
 }
 
-static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_List **List, int *PropertyCount)
+static grBoolean PathObject_BuildPropertyList(PathObj * pPathObj, grProperty_List **List, int *PropertyCount)
 {
 	int i;
 	int32 NameCount;
 	int PropertyListIndex;
 	int BaseID;
-	jeVec3d Pos = {0,0,0};
+	grVec3d Pos = {0,0,0};
 	TimeLineData *Element;
 
 	assert(pPathObj);
@@ -399,14 +399,14 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
 
 	PropertyListIndex = 0;
 
-	jeProperty_FillButton( &(*List)->pjeProperty[PropertyListIndex++], 
+	grProperty_FillButton( &(*List)->pgrProperty[PropertyListIndex++], 
 		"Add Position Time Line", PATHOBJ_ADD_POSITION_TIMELINE_BUTTON);
-	jeProperty_FillButton( &(*List)->pjeProperty[PropertyListIndex++], 
+	grProperty_FillButton( &(*List)->pgrProperty[PropertyListIndex++], 
 		"Add Property Time Line", PATHOBJ_ADD_PROPERTY_TIMELINE_BUTTON);
 
 	for (i = 0; i < pPathObj->TimeLineCount; i++)
 	{
-		jeProperty_Data Data;
+		grProperty_Data Data;
 
 		BaseID = (i * ID_TO_INDEX_MOD_VALUE);
 
@@ -426,7 +426,7 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                 CurrName = NULL;
                 if (Element->Obj)
                 {
-                    CurrName = jeObject_GetName(Element->Obj);
+                    CurrName = grObject_GetName(Element->Obj);
                     if (CurrName)
                     {
                         strcpy(Element->ObjectName, CurrName);
@@ -437,7 +437,7 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                 if (CurrName == NULL)
                     CurrName = NoSelection;
 
-                jeProperty_FillCombo( &(*List)->pjeProperty[PropertyListIndex++], 
+                grProperty_FillCombo( &(*List)->pgrProperty[PropertyListIndex++], 
                     "Object:", (char*)CurrName, BaseID + PATHOBJ_NAMELIST, NameCount, Element->ObjectNameList );
 
                 TimeEdit_FillDetails(pPathObj, *List, &PropertyListIndex, i);
@@ -446,14 +446,14 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
 
                 if (Element->Obj)
                 {
-                    jeXForm3d XF;
-                    jeObject_GetXForm(Element->Obj, &XF);
+                    grXForm3d XF;
+                    grObject_GetXForm(Element->Obj, &XF);
                     Data.Vector = XF.Translation;
 
                     if (Element->Channels[CHANNEL_POS].KeysSelected[0] >= 0 && Element->Channels[CHANNEL_ROT].KeysSelected[0] >= 0)
                     {
                         int PosSelNdx,RotSelNdx;
-                        jeXForm3d XF;
+                        grXForm3d XF;
 
                         // get rotation
                         RotSelNdx = Element->Channels[CHANNEL_ROT].KeysSelected[0];
@@ -465,19 +465,19 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                         XF.Translation = Element->Channels[CHANNEL_POS].KeyData[PosSelNdx].XForm.Translation;
 
                         // set xform
-                        jeObject_SetXForm(Element->Obj, &XF);
+                        grObject_SetXForm(Element->Obj, &XF);
                     }
                     else
                     if (Element->Channels[CHANNEL_ROT].KeysSelected[0] >= 0)
                     {
                         int RotSelNdx;
-                        jeXForm3d XF, PosXF;
+                        grXForm3d XF, PosXF;
                         float Time;
-                        jeBoolean Set;
-                        jeVec3d Pos;
+                        grBoolean Set;
+                        grVec3d Pos;
 
                         // start XF with current position/rotation
-                        jeObject_GetXForm(Element->Obj, &XF);
+                        grObject_GetXForm(Element->Obj, &XF);
                         Pos = XF.Translation;
 
                         // get rot keydata
@@ -499,18 +499,18 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                         Data.Vector = XF.Translation;
 
                         // set xform
-                        jeObject_SetXForm(Element->Obj, &XF);
+                        grObject_SetXForm(Element->Obj, &XF);
                     }
                     else
                     if (Element->Channels[CHANNEL_POS].KeysSelected[0] >= 0)
                     {
                         int PosSelNdx;
-                        jeXForm3d XF, RotXF;
+                        grXForm3d XF, RotXF;
                         float Time;
-                        jeBoolean Set;
+                        grBoolean Set;
 
                         // start XF with current position/rotation
-                        jeObject_GetXForm(Element->Obj, &XF);
+                        grObject_GetXForm(Element->Obj, &XF);
 
                         PosSelNdx = Element->Channels[CHANNEL_POS].KeysSelected[0];
 
@@ -527,26 +527,26 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                         Data.Vector = XF.Translation;
 
                         // set xform
-                        jeObject_SetXForm(Element->Obj, &XF);
+                        grObject_SetXForm(Element->Obj, &XF);
                     }
                 }
 
-                jeProperty_FillVec3dGroup( &(*List)->pjeProperty[PropertyListIndex++], 
+                grProperty_FillVec3dGroup( &(*List)->pgrProperty[PropertyListIndex++], 
                     "Position:", &Data.Vector, BaseID + PATHOBJ_POS);
 
-                jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                     "X:", Data.Vector.X, BaseID + PATHOBJ_POSX, -FLT_MAX, FLT_MAX, 1.0f );
 
-                jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                     "Y:", Data.Vector.Y, BaseID + PATHOBJ_POSY, -FLT_MAX, FLT_MAX, 1.0f );
 
-                jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                     "Z:", Data.Vector.Z, BaseID + PATHOBJ_POSZ, -FLT_MAX, FLT_MAX, 1.0f );
 
-                jeProperty_FillGroupEnd( &(*List)->pjeProperty[PropertyListIndex++], 
+                grProperty_FillGroupEnd( &(*List)->pgrProperty[PropertyListIndex++], 
                     BaseID + PATHOBJ_POS);
 
-                jeProperty_FillButton( &(*List)->pjeProperty[PropertyListIndex++], 
+                grProperty_FillButton( &(*List)->pgrProperty[PropertyListIndex++], 
                     "Delete This Time Line", BaseID + PATHOBJ_POS_DEL_BUTTON);
                 break;
             }
@@ -564,7 +564,7 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                 CurrObjName = NULL;
                 if (Element->Obj)
                 {
-                    CurrObjName = jeObject_GetName(Element->Obj);
+                    CurrObjName = grObject_GetName(Element->Obj);
                     if (CurrObjName)
                     {
                         strcpy(Element->ObjectName, CurrObjName);
@@ -575,7 +575,7 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                 if (CurrObjName == NULL)
                     CurrObjName = NoSelection;
 
-                jeProperty_FillCombo( &(*List)->pjeProperty[PropertyListIndex++], 
+                grProperty_FillCombo( &(*List)->pgrProperty[PropertyListIndex++], 
                     "Object:", (char*)CurrObjName, BaseID + PATHOBJ_NAMELIST, ObjectNameCount, Element->ObjectNameList );
 
                 TimeEdit_FillDetails(pPathObj, *List, &PropertyListIndex, i);
@@ -596,7 +596,7 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
 
                 TimeEdit_FillTimeLineProperties(pPathObj, DescrBuff, *List, &PropertyListIndex, i);
 
-                jeProperty_FillCombo( &(*List)->pjeProperty[PropertyListIndex++], 
+                grProperty_FillCombo( &(*List)->pgrProperty[PropertyListIndex++], 
                     "Property:", (char*)CurrPropName, BaseID + PATHOBJ_PROP_PROPNAMELIST, PropertyNameCount, Element->PropertyNameList );
 
                 if (Element->Obj)
@@ -609,7 +609,7 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                 {
                 default:
 
-                    jeProperty_FillButton( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillButton( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Delete This Time Line", BaseID + PATHOBJ_NONE_DEL_BUTTON);
 
                     break;
@@ -619,13 +619,13 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                     {
                         int SelNdx = Element->Channels[CHANNEL_POS].KeysSelected[0];
                         Data.Int = (int)Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation.X;
-                        jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, &Data );
+                        grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, &Data );
                     }
 
-                    jeProperty_FillInt( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillInt( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Value:", Data.Int, BaseID + PATHOBJ_INT, (float)-INT_MAX, (float)INT_MAX, (float)1 );
 
-                    jeProperty_FillButton( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillButton( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Delete This Time Line", BaseID + PATHOBJ_INT_DEL_BUTTON);
 
                     break;
@@ -636,13 +636,13 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                     {
                         int SelNdx = Element->Channels[CHANNEL_POS].KeysSelected[0];
                         Data.Float = Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation.X;
-                        jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, &Data );
+                        grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, &Data );
                     }
 
-                    jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Value:", Data.Float, BaseID + PATHOBJ_FLOAT, -FLT_MAX, FLT_MAX, 1.0f );
 
-                    jeProperty_FillButton( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillButton( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Delete This Time Line", BaseID + PATHOBJ_FLOAT_DEL_BUTTON);
                     break;
 
@@ -652,25 +652,25 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                     {
                         int SelNdx = Element->Channels[CHANNEL_POS].KeysSelected[0];
                         Data.Vector = Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation;
-                        jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, &Data );
+                        grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, &Data );
                     }
 
-                    jeProperty_FillVec3dGroup( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillVec3dGroup( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Vec:", &Data.Vector, BaseID + PATHOBJ_VEC);
 
-                    jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                         "X:", Data.Vector.X, BaseID + PATHOBJ_VECX, -FLT_MAX, FLT_MAX, 1.0f );
 
-                    jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Y:", Data.Vector.Y, BaseID + PATHOBJ_VECY, -FLT_MAX, FLT_MAX, 1.0f );
 
-                    jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Z:", Data.Vector.Z, BaseID + PATHOBJ_VECZ, -FLT_MAX, FLT_MAX, 1.0f );
 
-                    jeProperty_FillGroupEnd( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillGroupEnd( &(*List)->pgrProperty[PropertyListIndex++], 
                         BaseID + PATHOBJ_VEC);
 
-                    jeProperty_FillButton( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillButton( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Delete This Time Line", BaseID + PATHOBJ_VEC_DEL_BUTTON);
 
                     break;
@@ -681,25 +681,25 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
                     {
                         int SelNdx = Element->Channels[CHANNEL_POS].KeysSelected[0];
                         Data.Vector = Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation;
-                        jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, &Data );
+                        grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, &Data );
                     }
 
-                    jeProperty_FillVec3dGroup( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillVec3dGroup( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Color:", &Data.Vector, BaseID + PATHOBJ_COLOR);
 
-                    jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Red:", Data.Vector.X, BaseID + PATHOBJ_COLOR_R, -FLT_MAX, FLT_MAX, 1.0f );
 
-                    jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Green:", Data.Vector.Y, BaseID + PATHOBJ_COLOR_G, -FLT_MAX, FLT_MAX, 1.0f );
 
-                    jeProperty_FillFloat( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillFloat( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Blue:", Data.Vector.Z, BaseID + PATHOBJ_COLOR_B, -FLT_MAX, FLT_MAX, 1.0f );
 
-                    jeProperty_FillGroupEnd( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillGroupEnd( &(*List)->pgrProperty[PropertyListIndex++], 
                         BaseID + PATHOBJ_COLOR);
 
-                    jeProperty_FillButton( &(*List)->pjeProperty[PropertyListIndex++], 
+                    grProperty_FillButton( &(*List)->pgrProperty[PropertyListIndex++], 
                         "Delete This Time Line", BaseID + PATHOBJ_COLOR_DEL_BUTTON);
                     break;
 
@@ -710,12 +710,12 @@ static jeBoolean PathObject_BuildPropertyList(PathObj * pPathObj, jeProperty_Lis
 
 	*PropertyCount = PropertyListIndex;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeObject * PathObject_FindObjectFromName(jeWorld *World, char *NameToFind)
+static grObject * PathObject_FindObjectFromName(grWorld *World, char *NameToFind)
 {
-	jeObject *CurrObject;
+	grObject *CurrObject;
 	const char *Name;
 
 	assert (World);
@@ -726,12 +726,12 @@ static jeObject * PathObject_FindObjectFromName(jeWorld *World, char *NameToFind
 
 	while (TRUE)
 	{
-		CurrObject = jeWorld_GetNextObject(World, CurrObject);
+		CurrObject = grWorld_GetNextObject(World, CurrObject);
 
 		if (CurrObject == NULL)
 			break;
 
-		Name = jeObject_GetName( CurrObject );
+		Name = grObject_GetName( CurrObject );
 
 		if (!Name) continue;
 
@@ -742,79 +742,79 @@ static jeObject * PathObject_FindObjectFromName(jeWorld *World, char *NameToFind
 	return NULL;
 }
 
-static jeBoolean PathObject_GetPropertyDataIdFromName(jeWorld *World, jeObject *Obj, char *NameToFind, int32 *PropDataId)
+static grBoolean PathObject_GetPropertyDataIdFromName(grWorld *World, grObject *Obj, char *NameToFind, int32 *PropDataId)
 {
-	jeProperty_List *List;
+	grProperty_List *List;
 	int i;
 	char str[1024];
 	char *CurrGroupName = NULL;
-	jeBoolean SuppressGroupName;
+	grBoolean SuppressGroupName;
 
 	assert (World);
 	assert (Obj);
 	assert (NameToFind);
 	assert (PropDataId);
 
-	if (jeObject_GetPropertyList(Obj, &List) == JE_FALSE)
+	if (grObject_GetPropertyList(Obj, &List) == GR_FALSE)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// loop initializers
 	*PropDataId = -1;
 
-	for (i = 0; i < List->jePropertyN; i++)
+	for (i = 0; i < List->grPropertyN; i++)
 	{
-		SuppressGroupName = JE_FALSE;
+		SuppressGroupName = GR_FALSE;
 
 		// only list properties that are valid for path-ing
-		switch (List->pjeProperty[i].Type)
+		switch (List->pgrProperty[i].Type)
 		{
 		case PROPERTY_GROUP_END_TYPE:
 			CurrGroupName = NULL;
 			break;
 
 		case PROPERTY_GROUP_TYPE:
-			CurrGroupName = List->pjeProperty[i].FieldName;
+			CurrGroupName = List->pgrProperty[i].FieldName;
 			break;
 
 		case PROPERTY_VEC3D_GROUP_TYPE:
 		case PROPERTY_COLOR_GROUP_TYPE:
-			SuppressGroupName = JE_TRUE;
-			CurrGroupName = List->pjeProperty[i].FieldName;
+			SuppressGroupName = GR_TRUE;
+			CurrGroupName = List->pgrProperty[i].FieldName;
 			// no break! falls through on purpose!
 		case PROPERTY_INT_TYPE:
 		case PROPERTY_FLOAT_TYPE:
 
 			if (!SuppressGroupName && CurrGroupName)
-				sprintf(str, "%s->%s", CurrGroupName, List->pjeProperty[i].FieldName);
+				sprintf(str, "%s->%s", CurrGroupName, List->pgrProperty[i].FieldName);
 			else
-				strcpy(str, List->pjeProperty[i].FieldName);
+				strcpy(str, List->pgrProperty[i].FieldName);
 
 			if (strcmp(NameToFind, str) == 0)
 			{
-				*PropDataId = List->pjeProperty[i].DataId;
-				jeProperty_ListDestroy(&List);
-				return JE_TRUE;
+				*PropDataId = List->pgrProperty[i].DataId;
+				grProperty_ListDestroy(&List);
+				return GR_TRUE;
 			}
 
 			break;
 		}
 	}
 
-	jeProperty_ListDestroy(&List);
-	return JE_FALSE;
+	grProperty_ListDestroy(&List);
+	return GR_FALSE;
 }
 
 
-static jeBoolean PathObject_BuildPropertyNameList(PathObj *pPathObj, int TimeLineNdx, int32 *NameCount)
+static grBoolean PathObject_BuildPropertyNameList(PathObj *pPathObj, int TimeLineNdx, int32 *NameCount)
 {
-	jeProperty_List *List;
+	grProperty_List *List;
 	int i;
 	TimeLineData *td;
 	char *CurrGroupName = NULL;
 	char str[1024];
-	jeBoolean SuppressGroupName;
+	grBoolean SuppressGroupName;
 
 	assert (pPathObj);
 	assert (NameCount);
@@ -829,48 +829,48 @@ static jeBoolean PathObject_BuildPropertyNameList(PathObj *pPathObj, int TimeLin
 
 	if (!td->Obj)
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
-	if (jeObject_GetPropertyList(td->Obj, &List) == JE_FALSE)
+	if (grObject_GetPropertyList(td->Obj, &List) == GR_FALSE)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 
-	for (i = 0; i < List->jePropertyN; i++)
+	for (i = 0; i < List->grPropertyN; i++)
 	{
-		SuppressGroupName = JE_FALSE;
+		SuppressGroupName = GR_FALSE;
 
 		// only list properties that are valid for path-ing
-		switch (List->pjeProperty[i].Type)
+		switch (List->pgrProperty[i].Type)
 		{
 		case PROPERTY_GROUP_END_TYPE:
 			CurrGroupName = NULL;
 			break;
 
 		case PROPERTY_GROUP_TYPE:
-			CurrGroupName = List->pjeProperty[i].FieldName;
+			CurrGroupName = List->pgrProperty[i].FieldName;
 			break;
 
 		case PROPERTY_VEC3D_GROUP_TYPE:
 		case PROPERTY_COLOR_GROUP_TYPE:
-			SuppressGroupName = JE_TRUE;
-			CurrGroupName = List->pjeProperty[i].FieldName;
+			SuppressGroupName = GR_TRUE;
+			CurrGroupName = List->pgrProperty[i].FieldName;
 			// no break! falls through on purpose!
 		case PROPERTY_INT_TYPE:
 		case PROPERTY_FLOAT_TYPE:
 
-			if (td->PropDataId != List->pjeProperty[i].DataId)
+			if (td->PropDataId != List->pgrProperty[i].DataId)
 			{
-				if (PathObject_ValidateObject(pPathObj, td->ChannelType, td->Obj, List->pjeProperty[i].DataId) == JE_FALSE)
+				if (PathObject_ValidateObject(pPathObj, td->ChannelType, td->Obj, List->pgrProperty[i].DataId) == GR_FALSE)
 					break;
 			}
 
 			if (!SuppressGroupName && CurrGroupName)
-				sprintf(str, "%s->%s", CurrGroupName, List->pjeProperty[i].FieldName);
+				sprintf(str, "%s->%s", CurrGroupName, List->pgrProperty[i].FieldName);
 			else
-				strcpy(str, List->pjeProperty[i].FieldName);
+				strcpy(str, List->pgrProperty[i].FieldName);
 
 			Util_StrDupManagePtr(&td->PropertyNameList[*NameCount], str, 32);
 			assert(td->PropertyNameList[*NameCount]);
@@ -880,34 +880,34 @@ static jeBoolean PathObject_BuildPropertyNameList(PathObj *pPathObj, int TimeLin
 		}
 	}
 
-	jeProperty_ListDestroy(&List);
-	return JE_TRUE;
+	grProperty_ListDestroy(&List);
+	return GR_TRUE;
 }
 
-static jeBoolean PathObject_ObjectHasProperties(PathObj *pPathObj, jeObject *Obj, jeBoolean *HasProperties)
+static grBoolean PathObject_ObjectHasProperties(PathObj *pPathObj, grObject *Obj, grBoolean *HasProperties)
 {
-	jeProperty_List *List;
+	grProperty_List *List;
 	int i;
 
 	assert (pPathObj);
 	assert (HasProperties);
 
-	*HasProperties = JE_FALSE;
+	*HasProperties = GR_FALSE;
 
-	if (jeObject_GetPropertyList(Obj, &List) == JE_FALSE)
+	if (grObject_GetPropertyList(Obj, &List) == GR_FALSE)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	for (i = 0; i < List->jePropertyN; i++)
+	for (i = 0; i < List->grPropertyN; i++)
 	{
-		switch (List->pjeProperty[i].Type)
+		switch (List->pgrProperty[i].Type)
 		{
 		case PROPERTY_VEC3D_GROUP_TYPE:
 		case PROPERTY_COLOR_GROUP_TYPE:
 		case PROPERTY_INT_TYPE:
 		case PROPERTY_FLOAT_TYPE:
-			*HasProperties = JE_TRUE;
+			*HasProperties = GR_TRUE;
 			break;
 		}
 
@@ -915,43 +915,43 @@ static jeBoolean PathObject_ObjectHasProperties(PathObj *pPathObj, jeObject *Obj
 			break;
 	}
 
-	jeProperty_ListDestroy(&List);
-	return JE_TRUE;
+	grProperty_ListDestroy(&List);
+	return GR_TRUE;
 }
 
-static jeBoolean PathObject_GetPropertyInfoFromDataId(jeWorld *World, jeObject *Obj, int32 DataId, int32 *Type, jeProperty_Data *Data)
+static grBoolean PathObject_GetPropertyInfoFromDataId(grWorld *World, grObject *Obj, int32 DataId, int32 *Type, grProperty_Data *Data)
 {
-	jeProperty_List *List;
+	grProperty_List *List;
 	int i;
 
 	assert (World);
 	assert (Obj);
 
-	if (jeObject_GetPropertyList(Obj, &List) == JE_FALSE)
+	if (grObject_GetPropertyList(Obj, &List) == GR_FALSE)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	for (i = 0; i < List->jePropertyN; i++)
+	for (i = 0; i < List->grPropertyN; i++)
 	{
-		if (List->pjeProperty[i].DataId == DataId)
+		if (List->pgrProperty[i].DataId == DataId)
 		{
 			if (Type)
-				*Type = List->pjeProperty[i].Type;
+				*Type = List->pgrProperty[i].Type;
 			if (Data)
-				*Data = List->pjeProperty[i].Data;
+				*Data = List->pgrProperty[i].Data;
 
-			jeProperty_ListDestroy(&List);
-			return JE_TRUE;
+			grProperty_ListDestroy(&List);
+			return GR_TRUE;
 		}
 	}
 
-	jeProperty_ListDestroy(&List);
+	grProperty_ListDestroy(&List);
 
-	return (JE_FALSE);
+	return (GR_FALSE);
 }
 
-static jeBoolean PathObject_ValidateObject(PathObj *pPathObj, int ChannelType, jeObject *Obj, int PropID)
+static grBoolean PathObject_ValidateObject(PathObj *pPathObj, int ChannelType, grObject *Obj, int PropID)
 {
 	int i;
 
@@ -968,7 +968,7 @@ static jeBoolean PathObject_ValidateObject(PathObj *pPathObj, int ChannelType, j
 			{
 				if (pPathObj->TimeLineList[i].Obj == Obj)
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 			}
 			else
@@ -976,18 +976,18 @@ static jeBoolean PathObject_ValidateObject(PathObj *pPathObj, int ChannelType, j
 			{
 				if (pPathObj->TimeLineList[i].Obj == Obj && pPathObj->TimeLineList[i].PropDataId == PropID)
 				{
-    				return JE_FALSE;
+    				return GR_FALSE;
 				}
 			}
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean PathObject_BuildObjectNameList(PathObj *pPathObj, int TimeLineNdx, int32 *NameCount)
+static grBoolean PathObject_BuildObjectNameList(PathObj *pPathObj, int TimeLineNdx, int32 *NameCount)
 {
-	jeObject *CurrObject;
+	grObject *CurrObject;
 	char *Name,*TypeName;
 	TimeLineData *td;
 
@@ -1005,17 +1005,17 @@ static jeBoolean PathObject_BuildObjectNameList(PathObj *pPathObj, int TimeLineN
 
 	while (TRUE)
 	{
-		CurrObject = jeWorld_GetNextObject(pPathObj->World, CurrObject);
+		CurrObject = grWorld_GetNextObject(pPathObj->World, CurrObject);
 
 		if (CurrObject == NULL)
 			break;
 
-		Name = (char *)jeObject_GetName( CurrObject );
+		Name = (char *)grObject_GetName( CurrObject );
 
 		if (Name == NULL)
 			continue;
 
-		TypeName = (char*)jeObject_GetTypeName(CurrObject);
+		TypeName = (char*)grObject_GetTypeName(CurrObject);
 
 		if (TypeName)
 		{
@@ -1030,7 +1030,7 @@ static jeBoolean PathObject_BuildObjectNameList(PathObj *pPathObj, int TimeLineN
 		{
 			if (td->ChannelType == PATH_CONTROL_PROPERTY)
 			{
-				jeBoolean HasProperties;
+				grBoolean HasProperties;
 				PathObject_ObjectHasProperties(pPathObj, CurrObject, &HasProperties);
 
 				if (!HasProperties)
@@ -1039,14 +1039,14 @@ static jeBoolean PathObject_BuildObjectNameList(PathObj *pPathObj, int TimeLineN
 			else
 			if (td->ChannelType == PATH_CONTROL_POSITION)
 			{
-				int obj_flags = jeObject_GetXFormModFlags(CurrObject);
+				int obj_flags = grObject_GetXFormModFlags(CurrObject);
 
 				if (obj_flags == 0)
 				{
 					continue;
 				}
 
-				if (PathObject_ValidateObject(pPathObj, td->ChannelType, CurrObject, -1) == JE_FALSE)
+				if (PathObject_ValidateObject(pPathObj, td->ChannelType, CurrObject, -1) == GR_FALSE)
 					continue;
 			}
 		}
@@ -1056,7 +1056,7 @@ static jeBoolean PathObject_BuildObjectNameList(PathObj *pPathObj, int TimeLineN
 		(*NameCount)++;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -1087,11 +1087,11 @@ void Init_Class( image_id hInst)
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-void * JETCC CreateInstance()
+void * GRCC CreateInstance()
 {
 	PathObj *pPathObj;
 
-	pPathObj = JE_RAM_ALLOCATE_STRUCT( PathObj );
+	pPathObj = GR_RAM_ALLOCATE_STRUCT( PathObj );
 	if( pPathObj == NULL )
 		goto CI_ERROR;
 
@@ -1103,13 +1103,13 @@ void * JETCC CreateInstance()
 
 CI_ERROR:
 	if (pPathObj)
-		jeRam_Free( pPathObj );
+		grRam_Free( pPathObj );
 
 	return( NULL );
 }
 
 
-void JETCC CreateRef(void * Instance)
+void GRCC CreateRef(void * Instance)
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 
@@ -1118,13 +1118,13 @@ void JETCC CreateRef(void * Instance)
 	pPathObj->RefCnt++;
 }
 
-static jeBoolean PathObject_ProcessEvents(PathObj *pPathObj, int TimeLineNdx, float StartTime, float EndTime)
+static grBoolean PathObject_ProcessEvents(PathObj *pPathObj, int TimeLineNdx, float StartTime, float EndTime)
 {
 	float Time;
 	char *EventString;
 	TimeLineData *td;
-	jeMotion *Motion;
-	jeObject *Obj;
+	grMotion *Motion;
+	grObject *Obj;
 	int MessageID;
 	char *StrPtr;
 	char *ptr;
@@ -1135,9 +1135,9 @@ static jeBoolean PathObject_ProcessEvents(PathObj *pPathObj, int TimeLineNdx, fl
 	td = &pPathObj->TimeLineList[TimeLineNdx];
 	Motion = pPathObj->Motion[TimeLineNdx];
 
-	jeMotion_SetupEventIterator(Motion, StartTime, EndTime);
+	grMotion_SetupEventIterator(Motion, StartTime, EndTime);
 
-	while( jeMotion_GetNextEvent( Motion, &Time, (const char **)&EventString ) )
+	while( grMotion_GetNextEvent( Motion, &Time, (const char **)&EventString ) )
 	{
 		Obj = td->Obj;
 		MessageID = 0;
@@ -1150,7 +1150,7 @@ static jeBoolean PathObject_ProcessEvents(PathObj *pPathObj, int TimeLineNdx, fl
 			sscanf(EventString,"%s %d", ObjName, &MessageID);
 			Obj = PathObject_FindObjectFromName(pPathObj->World, ObjName);
 			if (!Obj)
-				return JE_FALSE;
+				return GR_FALSE;
 
 			StrPtr = &ptr[1];		// move one past the semi-colon
 			while(*StrPtr == ' ') // get rid of leading blanks
@@ -1161,13 +1161,13 @@ static jeBoolean PathObject_ProcessEvents(PathObj *pPathObj, int TimeLineNdx, fl
 		ed.FromObj = td->Obj;
 		ed.Args = StrPtr;
 
-		jeObject_SendMessage(Obj, 0, &ed);
+		grObject_SendMessage(Obj, 0, &ed);
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-void JETCC PathObject_FreeTimeLine(PathObj *pPathObj, int TimeLineNdx)
+void GRCC PathObject_FreeTimeLine(PathObj *pPathObj, int TimeLineNdx)
 {
 	int k;
 	int i = TimeLineNdx;
@@ -1179,16 +1179,16 @@ void JETCC PathObject_FreeTimeLine(PathObj *pPathObj, int TimeLineNdx)
 	td = &pPathObj->TimeLineList[TimeLineNdx];
 
 	if (pPathObj->Motion[i])
-		jeMotion_Destroy(&pPathObj->Motion[i]);
+		grMotion_Destroy(&pPathObj->Motion[i]);
 
 	if (td->Obj)
-		jeObject_Destroy(&td->Obj);
+		grObject_Destroy(&td->Obj);
 
 	for (k = 0; k < td->Channels[CHANNEL_EVENT].KeyCount; k++)
 	{
 		if (td->Channels[CHANNEL_EVENT].KeyData[k].String)
 		{
-			jeRam_Free(td->Channels[CHANNEL_EVENT].KeyData[k].String);
+			grRam_Free(td->Channels[CHANNEL_EVENT].KeyData[k].String);
 			td->Channels[CHANNEL_EVENT].KeyData[k].String = NULL;
 		}
 	}
@@ -1197,7 +1197,7 @@ void JETCC PathObject_FreeTimeLine(PathObj *pPathObj, int TimeLineNdx)
 	{
 		if (td->ObjectNameList[i])
 		{
-			jeRam_Free(td->ObjectNameList[i]);
+			grRam_Free(td->ObjectNameList[i]);
 			td->ObjectNameList[i] = NULL;
 		}
 	}
@@ -1206,14 +1206,14 @@ void JETCC PathObject_FreeTimeLine(PathObj *pPathObj, int TimeLineNdx)
 	{
 		if (td->PropertyNameList[i])
 		{
-			jeRam_Free(td->PropertyNameList[i]);
+			grRam_Free(td->PropertyNameList[i]);
 			td->PropertyNameList[i] = NULL;
 		}
 	}
 
 }
 
-jeBoolean JETCC Destroy(void **pInstance)
+grBoolean GRCC Destroy(void **pInstance)
 {
 	PathObj **hPathObj = (PathObj**)pInstance;
 	PathObj *pPathObj = *hPathObj;
@@ -1232,14 +1232,14 @@ jeBoolean JETCC Destroy(void **pInstance)
 			PathObject_FreeTimeLine(pPathObj, i);
 		}
 
-		jeRam_Free( pPathObj );
+		grRam_Free( pPathObj );
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean JETCC Render(const void * Instance, const jeWorld * pWorld, const jeEngine *Engine, const jeCamera *Camera, const jeFrustum *CameraSpaceFrustum, jeObject_RenderFlags RenderFlags)
+grBoolean GRCC Render(const void * Instance, const grWorld * pWorld, const grEngine *Engine, const grCamera *Camera, const grFrustum *CameraSpaceFrustum, grObject_RenderFlags RenderFlags)
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 
@@ -1248,11 +1248,11 @@ jeBoolean JETCC Render(const void * Instance, const jeWorld * pWorld, const jeEn
 	assert( Engine );
 	assert( Camera );
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-jeBoolean	JETCC AttachWorld( void * Instance, jeWorld * pWorld )
+grBoolean	GRCC AttachWorld( void * Instance, grWorld * pWorld )
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 
@@ -1260,10 +1260,10 @@ jeBoolean	JETCC AttachWorld( void * Instance, jeWorld * pWorld )
 
 	pPathObj->World = pWorld;
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	JETCC DettachWorld( void * Instance, jeWorld * pWorld )
+grBoolean	GRCC DettachWorld( void * Instance, grWorld * pWorld )
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 
@@ -1271,66 +1271,66 @@ jeBoolean	JETCC DettachWorld( void * Instance, jeWorld * pWorld )
 
 	pPathObj->World = NULL;
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 				
-jeBoolean	JETCC AttachEngine ( void * Instance, jeEngine *Engine )
+grBoolean	GRCC AttachEngine ( void * Instance, grEngine *Engine )
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 
 	assert( Instance );
 	assert( Engine );
 
-	return JE_TRUE;
+	return GR_TRUE;
 	Instance;
 }
 
-jeBoolean	JETCC DettachEngine( void * Instance, jeEngine *Engine )
+grBoolean	GRCC DettachEngine( void * Instance, grEngine *Engine )
 {
 	assert( Instance );
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 	Instance;
 }
 
-jeBoolean	JETCC AttachSoundSystem( void * Instance, jeSound_System *SoundSystem )
+grBoolean	GRCC AttachSoundSystem( void * Instance, grSound_System *SoundSystem )
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 
 	assert( Instance );
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	JETCC DettachSoundSystem( void * Instance, jeSound_System *SoundSystem )
+grBoolean	GRCC DettachSoundSystem( void * Instance, grSound_System *SoundSystem )
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 
 	assert( Instance );
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 	SoundSystem;
 }
 
-jeBoolean	JETCC Collision(const void *Object, const jeExtBox *Box, const jeVec3d *Front, const jeVec3d *Back, jeVec3d *Impact, jePlane *Plane)
+grBoolean	GRCC Collision(const void *Object, const grExtBox *Box, const grVec3d *Front, const grVec3d *Back, grVec3d *Impact, grPlane *Plane)
 {
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
-jeBoolean JETCC SetMaterial(void * Instance,const jeBitmap *Bmp,const jeRGBA * Color)
+grBoolean GRCC SetMaterial(void * Instance,const grBitmap *Bmp,const grRGBA * Color)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC GetMaterial(const void * Instance,jeBitmap **pBmp,jeRGBA * Color)
+grBoolean GRCC GetMaterial(const void * Instance,grBitmap **pBmp,grRGBA * Color)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC GetExtBox(const void * Instance,jeExtBox *BBox)
+grBoolean GRCC GetExtBox(const void * Instance,grExtBox *BBox)
 {
 	/*
-	jeVec3d Point = {0,0,0};
+	grVec3d Point = {0,0,0};
 	assert( Instance );
 	assert( BBox );
 
@@ -1341,13 +1341,13 @@ jeBoolean JETCC GetExtBox(const void * Instance,jeExtBox *BBox)
 	BBox->Max.Y = 0;
 	BBox->Max.Z = 0;
 
-	jeExtBox_Set (  BBox, 
+	grExtBox_Set (  BBox, 
 					Point.X-5.0f, Point.Y-5.0f, Point.Z-5.0f,
 					Point.X+5.0f, Point.Y+5.0f, Point.Z+5.0f);
 	*/
 
-	return JE_FALSE;
-	//return JE_TRUE;
+	return GR_FALSE;
+	//return GR_TRUE;
 	Instance, BBox;
 }
 
@@ -1356,29 +1356,29 @@ jeBoolean JETCC GetExtBox(const void * Instance,jeExtBox *BBox)
 //	ObjUtil_ReadString()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean ObjUtil_ReadString(
-	jeVFile	*File,		// file to read from
+grBoolean ObjUtil_ReadString(
+	grVFile	*File,		// file to read from
 	char	**String )	// where to save string pointer
 {
 
 	// locals
 	int			Size;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 
 	// ensure valid data
 	assert( File != NULL );
 	assert( String != NULL );
 
 	// read string
-	Result &= jeVFile_Read( File, &( Size ), sizeof( Size ) );
-	if ( ( Size > 0 ) && ( Result == JE_TRUE ) )
+	Result &= grVFile_Read( File, &( Size ), sizeof( Size ) );
+	if ( ( Size > 0 ) && ( Result == GR_TRUE ) )
 	{
-		*String = (char *)jeRam_Allocate( Size );
+		*String = (char *)grRam_Allocate( Size );
 		if ( *String == NULL )
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-		Result &= jeVFile_Read( File, *String, Size );
+		Result &= grVFile_Read( File, *String, Size );
 	}
 
 	// all done
@@ -1392,14 +1392,14 @@ jeBoolean ObjUtil_ReadString(
 //	ObjUtil_WriteString()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean ObjUtil_WriteString(
-	jeVFile	*File,		// file to write to
+grBoolean ObjUtil_WriteString(
+	grVFile	*File,		// file to write to
 	char	*String )	// string to write out
 {
 
 	// locals
 	int			Size;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 
 	// ensure valid data
 	assert( File != NULL );
@@ -1408,8 +1408,8 @@ jeBoolean ObjUtil_WriteString(
 	// write out complete
 	Size = strlen( String ) + 1;
 	assert( Size > 0 );
-	Result &= jeVFile_Write( File, &Size, sizeof( Size ) );
-	Result &= jeVFile_Write( File, String, Size );
+	Result &= grVFile_Write( File, &Size, sizeof( Size ) );
+	Result &= grVFile_Write( File, String, Size );
 
 	// all done
 	return Result;
@@ -1418,11 +1418,11 @@ jeBoolean ObjUtil_WriteString(
 
 
 
-void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
+void *	GRCC CreateFromFile(grVFile * File, grPtrMgr *PtrMgr)
 
 {
 	PathObj	*Object;
-	jeBoolean	Result = JE_TRUE;
+	grBoolean	Result = GR_TRUE;
 	int			i,k;
 	int			ProcCount;
 	int			Ver;
@@ -1439,27 +1439,27 @@ void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
 
 	if (!Object) goto ExitErr;
 
-	if(!jeVFile_Read(File, &Tag, sizeof(Tag)))
+	if(!grVFile_Read(File, &Tag, sizeof(Tag)))
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "PathObject_CreateFromFile:Tag" );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "PathObject_CreateFromFile:Tag" );
 		goto ExitErr;
 	}
 
 	if (Tag == FILE_UNIQUE_ID)
 	{
-		if (!jeVFile_Read(File, &Version, sizeof(Version)))
+		if (!grVFile_Read(File, &Version, sizeof(Version)))
 		{
-    		jeErrorLog_Add( JE_ERR_FILEIO_READ, "PathObject_CreateFromFile:Version" );
+    		grErrorLog_Add( GR_ERR_FILEIO_READ, "PathObject_CreateFromFile:Version" );
 	       	goto ExitErr;
 		}
 	}
 	else
 	{
 		//for backwards compatibility with old object format
-		jeVFile_Seek(File,-((int)sizeof(Tag)),JE_VFILE_SEEKCUR);
-		if (!jeVFile_Read(File,  &Ver, sizeof(Ver)))
+		grVFile_Seek(File,-((int)sizeof(Tag)),GR_VFILE_SEEKCUR);
+		if (!grVFile_Read(File,  &Ver, sizeof(Ver)))
 		    goto ExitErr;
-		if (!jeVFile_Read(File,  &Ver, sizeof(Ver)))
+		if (!grVFile_Read(File,  &Ver, sizeof(Ver)))
             goto ExitErr;
 		Version = 1;
 	}
@@ -1468,19 +1468,19 @@ void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
 	if (Version >= 1)
 	{
 	
-	    if (!jeVFile_Read(File,  &Object->TimeLineCount, sizeof(Object->TimeLineCount)))
+	    if (!grVFile_Read(File,  &Object->TimeLineCount, sizeof(Object->TimeLineCount)))
 		    goto ExitErr;
 
-	    if (!jeVFile_Read(File,  &Object->CurTimeLine, sizeof(Object->CurTimeLine)))
+	    if (!grVFile_Read(File,  &Object->CurTimeLine, sizeof(Object->CurTimeLine)))
 		    goto ExitErr;
 
-	    if (!jeVFile_Read(File,  &Object->LastTimeLineModified, sizeof(Object->LastTimeLineModified)))
+	    if (!grVFile_Read(File,  &Object->LastTimeLineModified, sizeof(Object->LastTimeLineModified)))
 		    goto ExitErr;
 
-	    if (!jeVFile_Read(File,  &Object->Time, sizeof(Object->Time)))
+	    if (!grVFile_Read(File,  &Object->Time, sizeof(Object->Time)))
 		    goto ExitErr;
 
-	    if (!jeVFile_Read(File,  &Object->PlayMotions, sizeof(Object->PlayMotions)))
+	    if (!grVFile_Read(File,  &Object->PlayMotions, sizeof(Object->PlayMotions)))
 		    goto ExitErr;
 	}
 
@@ -1488,7 +1488,7 @@ void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
 	for (i = 0; i < Object->TimeLineCount; i++)
 	{
 		// read an entire time line
-		if (!jeVFile_Read(File,  &Object->TimeLineList[i], sizeof(Object->TimeLineList[0])))
+		if (!grVFile_Read(File,  &Object->TimeLineList[i], sizeof(Object->TimeLineList[0])))
 			goto ExitErr;
 
 		// clear keydata for EVENTS
@@ -1511,12 +1511,12 @@ void *	JETCC CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
 				goto ExitErr;
 
 			// KeyData.String will be null
-			if (Util_StrDupManagePtr(&Object->TimeLineList[i].Channels[CHANNEL_EVENT].KeyData[k].String, Buff, MIN_EVENT_STRING_SIZE) == JE_FALSE)
+			if (Util_StrDupManagePtr(&Object->TimeLineList[i].Channels[CHANNEL_EVENT].KeyData[k].String, Buff, MIN_EVENT_STRING_SIZE) == GR_FALSE)
 				goto ExitErr;
-			jeRam_Free (Buff);
+			grRam_Free (Buff);
 
 		}
-		Object->TimeLineList[i].Obj = jeObject_CreateFromFile(File, PtrMgr);
+		Object->TimeLineList[i].Obj = grObject_CreateFromFile(File, PtrMgr);
 	}
 	
 	PathObject_BuildAllMotions(Object);
@@ -1537,7 +1537,7 @@ ExitErr:
 		{
 			if (Object->TimeLineList[i].Channels[CHANNEL_EVENT].KeyData[k].String)
 			{
-				jeRam_Free(Object->TimeLineList[i].Channels[CHANNEL_EVENT].KeyData[k].String);
+				grRam_Free(Object->TimeLineList[i].Channels[CHANNEL_EVENT].KeyData[k].String);
 				Object->TimeLineList[i].Channels[CHANNEL_EVENT].KeyData[k].String = NULL;
 			}
 		}
@@ -1547,10 +1547,10 @@ ExitErr:
 }
 
 
-jeBoolean JETCC WriteToFile(
+grBoolean GRCC WriteToFile(
 	const void	*Instance,
-	jeVFile		*File,
-	jePtrMgr	*PtrMgr )
+	grVFile		*File,
+	grPtrMgr	*PtrMgr )
 
 {
 	// locals
@@ -1575,25 +1575,25 @@ jeBoolean JETCC WriteToFile(
 	}
 
 	
-	if (!jeVFile_Write(File, &Tag,sizeof(Tag)))
+	if (!grVFile_Write(File, &Tag,sizeof(Tag)))
 		goto ExitErr;
 	
-	if (!jeVFile_Write(File,  &Version, sizeof(Version)))
+	if (!grVFile_Write(File,  &Version, sizeof(Version)))
 		goto ExitErr;
     
-	if (!jeVFile_Write(File,  &iObjects, sizeof(iObjects)))
+	if (!grVFile_Write(File,  &iObjects, sizeof(iObjects)))
 		goto ExitErr;
 
-	if (!jeVFile_Write(File,  &Object->CurTimeLine, sizeof(Object->CurTimeLine)))
+	if (!grVFile_Write(File,  &Object->CurTimeLine, sizeof(Object->CurTimeLine)))
 		goto ExitErr;
 
-	if (!jeVFile_Write(File,  &Object->LastTimeLineModified, sizeof(Object->LastTimeLineModified)))
+	if (!grVFile_Write(File,  &Object->LastTimeLineModified, sizeof(Object->LastTimeLineModified)))
 		goto ExitErr;
 
-	if (!jeVFile_Write(File,  &Object->Time, sizeof(Object->Time)))
+	if (!grVFile_Write(File,  &Object->Time, sizeof(Object->Time)))
 		goto ExitErr;
 
-	if (!jeVFile_Write(File,  &Object->PlayMotions, sizeof(Object->PlayMotions)))
+	if (!grVFile_Write(File,  &Object->PlayMotions, sizeof(Object->PlayMotions)))
 		goto ExitErr;
 
 	for (i = 0; i < iObjects; i++)
@@ -1601,7 +1601,7 @@ jeBoolean JETCC WriteToFile(
 		// write a whole time line
 	    if (Object->TimeLineList[i].Obj!=NULL)
 		{
-			if (!jeVFile_Write(File,  &Object->TimeLineList[i], sizeof(Object->TimeLineList[0])))
+			if (!grVFile_Write(File,  &Object->TimeLineList[i], sizeof(Object->TimeLineList[0])))
 				goto ExitErr;
 
 			// MAKE SURE AND SAVE THE CHANNEL STRINGS SEPERATELY!!!!!!!!
@@ -1627,7 +1627,7 @@ jeBoolean JETCC WriteToFile(
 				}
 			}
 			
-			if (!jeObject_WriteToFile(Object->TimeLineList[i].Obj, File, PtrMgr))
+			if (!grObject_WriteToFile(Object->TimeLineList[i].Obj, File, PtrMgr))
 					goto ExitErr;
 		}
 	}
@@ -1637,13 +1637,13 @@ jeBoolean JETCC WriteToFile(
 
 	ExitErr:
 
-	jeErrorLog_Add( JE_ERR_SYSTEM_RESOURCE, NULL );
+	grErrorLog_Add( GR_ERR_SYSTEM_RESOURCE, NULL );
 
-	return JE_FALSE;
+	return GR_FALSE;
 } // WriteToFile()
 
 
-jeBoolean PathObject_InitAddTimeLine(PathObj *pPathObj, int ChannelType, int ChannelFlags)
+grBoolean PathObject_InitAddTimeLine(PathObj *pPathObj, int ChannelType, int ChannelFlags)
 {
 	int ThisTimeLine;
 	int i;
@@ -1657,12 +1657,12 @@ jeBoolean PathObject_InitAddTimeLine(PathObj *pPathObj, int ChannelType, int Cha
 
 	pPathObj->TimeLineList[ThisTimeLine].ChannelType = ChannelType;
 	pPathObj->TimeLineList[ThisTimeLine].PropDataId = -1;
-	pPathObj->TimeLineList[ThisTimeLine].PosInterpType = JE_PATH_INTERPOLATE_HERMITE;
-	pPathObj->TimeLineList[ThisTimeLine].RotInterpType = JE_PATH_INTERPOLATE_SQUAD;
+	pPathObj->TimeLineList[ThisTimeLine].PosInterpType = GR_PATH_INTERPOLATE_HERMITE;
+	pPathObj->TimeLineList[ThisTimeLine].RotInterpType = GR_PATH_INTERPOLATE_SQUAD;
 
 	for (i = 0; i < MAX_CHANNELS; i++)
 	{
-		pPathObj->TimeLineList[ThisTimeLine].Channels[i].Disabled = JE_TRUE;
+		pPathObj->TimeLineList[ThisTimeLine].Channels[i].Disabled = GR_TRUE;
 
 		if (ChannelFlags & 1<<i)
 		{
@@ -1675,10 +1675,10 @@ jeBoolean PathObject_InitAddTimeLine(PathObj *pPathObj, int ChannelType, int Cha
 
 	pPathObj->TimeLineCount++;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean PathObject_EnableTimeLine(PathObj *pPathObj, int TimeLineNdx, int ChannelFlags)
+grBoolean PathObject_EnableTimeLine(PathObj *pPathObj, int TimeLineNdx, int ChannelFlags)
 {
 	int i;
 
@@ -1689,41 +1689,41 @@ jeBoolean PathObject_EnableTimeLine(PathObj *pPathObj, int TimeLineNdx, int Chan
 	{
 		if (ChannelFlags & 1<<i)
 		{
-			pPathObj->TimeLineList[TimeLineNdx].Channels[i].Disabled = JE_FALSE;
+			pPathObj->TimeLineList[TimeLineNdx].Channels[i].Disabled = GR_FALSE;
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean	JETCC GetPropertyList(void * Instance, jeProperty_List **List)
+grBoolean	GRCC GetPropertyList(void * Instance, grProperty_List **List)
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 	int PropertyCount;
-	jeProperty_List *LocalList;
+	grProperty_List *LocalList;
 
 	assert(Instance);
 	assert(List);
 
 	// Create a big list and build into that
-	LocalList = jeProperty_ListCreate(2048);
+	LocalList = grProperty_ListCreate(2048);
 	PathObject_BuildPropertyList(pPathObj, &LocalList, &PropertyCount);
 
-	LocalList->pjeProperty = JE_RAM_REALLOC_ARRAY( LocalList->pjeProperty, jeProperty, PropertyCount);
-	LocalList->jePropertyN = PropertyCount;
+	LocalList->pgrProperty = GR_RAM_REALLOC_ARRAY( LocalList->pgrProperty, grProperty, PropertyCount);
+	LocalList->grPropertyN = PropertyCount;
 
 	LocalList->bDirty = pPathObj->Dirty;
-	pPathObj->Dirty = JE_FALSE;
+	pPathObj->Dirty = GR_FALSE;
 
 	*List = LocalList;
 
 	if( *List == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean PathObject_IsLooped(PathObj *pPathObj, int TimeLineNdx)
+grBoolean PathObject_IsLooped(PathObj *pPathObj, int TimeLineNdx)
 	{
 	int i,k;
 
@@ -1733,7 +1733,7 @@ jeBoolean PathObject_IsLooped(PathObj *pPathObj, int TimeLineNdx)
 	int FirstRotNdx = -1, LastRotNdx = -1;
 	TimeLineData *td;
 
-	jeBoolean LoopValid = JE_TRUE;
+	grBoolean LoopValid = GR_TRUE;
 
 	// this routine determines if the last and first key data is the same
 	// does a seperate test for pos and rot
@@ -1762,9 +1762,9 @@ jeBoolean PathObject_IsLooped(PathObj *pPathObj, int TimeLineNdx)
 
 		if (FirstPosNdx != LastPosNdx && FirstPosNdx >= 0)
 		{
-			if (memcmp(&td->Channels[i].KeyData[FirstPosNdx].XForm, &td->Channels[i].KeyData[LastPosNdx].XForm, sizeof(jeXForm3d)))
+			if (memcmp(&td->Channels[i].KeyData[FirstPosNdx].XForm, &td->Channels[i].KeyData[LastPosNdx].XForm, sizeof(grXForm3d)))
 			{
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		}
 	}
@@ -1791,25 +1791,25 @@ jeBoolean PathObject_IsLooped(PathObj *pPathObj, int TimeLineNdx)
 
 		if (FirstRotNdx != LastRotNdx && FirstRotNdx >= 0)
 		{
-			if (memcmp(&td->Channels[i].KeyData[FirstRotNdx].XForm, &td->Channels[i].KeyData[LastRotNdx].XForm, sizeof(jeXForm3d)))
+			if (memcmp(&td->Channels[i].KeyData[FirstRotNdx].XForm, &td->Channels[i].KeyData[LastRotNdx].XForm, sizeof(grXForm3d)))
 			{
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		}
 	}
 
-	return (JE_TRUE);
+	return (GR_TRUE);
 }
 
 
-jeBoolean PathObject_BuildMotion(PathObj *pPathObj, int TimeLineNdx)
+grBoolean PathObject_BuildMotion(PathObj *pPathObj, int TimeLineNdx)
 {
 	float Time;
 	char String[256];
-	jeXForm3d XForm;
+	grXForm3d XForm;
 	int i,k;
-	int PathChannel[2] = {JE_PATH_TRANSLATION_CHANNEL, JE_PATH_ROTATION_CHANNEL};
-	jePath *Path;
+	int PathChannel[2] = {GR_PATH_TRANSLATION_CHANNEL, GR_PATH_ROTATION_CHANNEL};
+	grPath *Path;
 	int InsertIndex;
 	TimeLineData *td;
 
@@ -1817,16 +1817,16 @@ jeBoolean PathObject_BuildMotion(PathObj *pPathObj, int TimeLineNdx)
 	assert(TimeLineNdx >= 0 && TimeLineNdx <= 64);
 
 	if (pPathObj->Motion[TimeLineNdx] != NULL)
-		jeMotion_Destroy(&pPathObj->Motion[TimeLineNdx]);
+		grMotion_Destroy(&pPathObj->Motion[TimeLineNdx]);
 
-	pPathObj->Motion[TimeLineNdx] = jeMotion_Create(JE_TRUE);
+	pPathObj->Motion[TimeLineNdx] = grMotion_Create(GR_TRUE);
 
 	td = &pPathObj->TimeLineList[TimeLineNdx];
 
-	Path = jePath_Create((jePath_Interpolator)td->PosInterpType, (jePath_Interpolator)td->RotInterpType, PathObject_IsLooped(pPathObj, TimeLineNdx));
-	jePath_SetCutMode(Path, JE_TRUE);
+	Path = grPath_Create((grPath_Interpolator)td->PosInterpType, (grPath_Interpolator)td->RotInterpType, PathObject_IsLooped(pPathObj, TimeLineNdx));
+	grPath_SetCutMode(Path, GR_TRUE);
 
-	jeMotion_AddPath(pPathObj->Motion[TimeLineNdx], Path, "", &InsertIndex);
+	grMotion_AddPath(pPathObj->Motion[TimeLineNdx], Path, "", &InsertIndex);
 
 	for (i = 0; i < MAX_CHANNELS-1; i++)
 	{
@@ -1836,13 +1836,13 @@ jeBoolean PathObject_BuildMotion(PathObj *pPathObj, int TimeLineNdx)
 			{
 				Time = td->Channels[i].KeyList[k];
 				XForm = td->Channels[i].KeyData[k].XForm;
-				jePath_InsertKeyframe(Path, PathChannel[i], Time, &XForm); 
+				grPath_InsertKeyframe(Path, PathChannel[i], Time, &XForm); 
 			}
 		}
 	}
 
 	if (Path)
-		jePath_Destroy(&Path); // will only decrement ref counter because the path was ref-ed by InsertKeyFrame
+		grPath_Destroy(&Path); // will only decrement ref counter because the path was ref-ed by InsertKeyFrame
 
 	i = CHANNEL_EVENT;
 	if (!td->Channels[i].Disabled)
@@ -1853,15 +1853,15 @@ jeBoolean PathObject_BuildMotion(PathObj *pPathObj, int TimeLineNdx)
 			{
 				Time = td->Channels[i].KeyList[k];
 				strcpy(String, td->Channels[i].KeyData[k].String);
-				jeMotion_InsertEvent(pPathObj->Motion[TimeLineNdx], Time, String);
+				grMotion_InsertEvent(pPathObj->Motion[TimeLineNdx], Time, String);
 			}
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean PathObject_BuildAllMotions(PathObj *pPathObj)
+grBoolean PathObject_BuildAllMotions(PathObj *pPathObj)
 {
 	int i;
 
@@ -1870,16 +1870,16 @@ jeBoolean PathObject_BuildAllMotions(PathObj *pPathObj)
 		PathObject_BuildMotion(pPathObj, i);
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static void PathObject_SafeGetTimeExtents(jePath *Path, float *StartTime, float *EndTime)
+static void PathObject_SafeGetTimeExtents(grPath *Path, float *StartTime, float *EndTime)
 {
 	int RotCount;
 	int PosCount;
 	float FirstPosTime, FirstRotTime;
 	float LastPosTime, LastRotTime;
-	jeXForm3d FirstXForm, LastXForm;
+	grXForm3d FirstXForm, LastXForm;
 	#define MIN_PATH_INVALID_TIME -1.0f
 	#define MAX_PATH_INVALID_TIME 9999999.0f
 
@@ -1887,8 +1887,8 @@ static void PathObject_SafeGetTimeExtents(jePath *Path, float *StartTime, float 
 	assert(StartTime);
 	assert(EndTime);
 
-	PosCount = jePath_GetKeyframeCount(Path, JE_PATH_TRANSLATION_CHANNEL);
-	RotCount = jePath_GetKeyframeCount(Path, JE_PATH_ROTATION_CHANNEL);
+	PosCount = grPath_GetKeyframeCount(Path, GR_PATH_TRANSLATION_CHANNEL);
+	RotCount = grPath_GetKeyframeCount(Path, GR_PATH_ROTATION_CHANNEL);
 
 	if (PosCount == 0 && RotCount == 0)
 	{
@@ -1904,8 +1904,8 @@ static void PathObject_SafeGetTimeExtents(jePath *Path, float *StartTime, float 
 	}
 	else
 	{
-		jePath_GetKeyframe(Path, 0, JE_PATH_TRANSLATION_CHANNEL, &FirstPosTime, &FirstXForm);		// returns the matrix of the keyframe
-		jePath_GetKeyframe(Path, PosCount-1, JE_PATH_TRANSLATION_CHANNEL, &LastPosTime, &LastXForm);		// returns the matrix of the keyframe
+		grPath_GetKeyframe(Path, 0, GR_PATH_TRANSLATION_CHANNEL, &FirstPosTime, &FirstXForm);		// returns the matrix of the keyframe
+		grPath_GetKeyframe(Path, PosCount-1, GR_PATH_TRANSLATION_CHANNEL, &LastPosTime, &LastXForm);		// returns the matrix of the keyframe
 	}
 
 	if (RotCount == 0)
@@ -1915,8 +1915,8 @@ static void PathObject_SafeGetTimeExtents(jePath *Path, float *StartTime, float 
 	}
 	else
 	{
-		jePath_GetKeyframe(Path, 0, JE_PATH_ROTATION_CHANNEL, &FirstRotTime, &FirstXForm);		// returns the matrix of the keyframe
-		jePath_GetKeyframe(Path, RotCount-1, JE_PATH_ROTATION_CHANNEL, &LastRotTime, &LastXForm);		// returns the matrix of the keyframe
+		grPath_GetKeyframe(Path, 0, GR_PATH_ROTATION_CHANNEL, &FirstRotTime, &FirstXForm);		// returns the matrix of the keyframe
+		grPath_GetKeyframe(Path, RotCount-1, GR_PATH_ROTATION_CHANNEL, &LastRotTime, &LastXForm);		// returns the matrix of the keyframe
 	}
 
 	*StartTime = max(FirstPosTime, FirstRotTime);
@@ -1930,11 +1930,11 @@ static void PathObject_SafeGetTimeExtents(jePath *Path, float *StartTime, float 
 	return;
 }
 
-static jeBoolean PathObject_SampleMotion(PathObj *pPathObj, int TimeLineNdx)
+static grBoolean PathObject_SampleMotion(PathObj *pPathObj, int TimeLineNdx)
 {
-	jeXForm3d XForm;
+	grXForm3d XForm;
 	float Start, End;
-	jePath *Path;
+	grPath *Path;
 	TimeLineData *td;
 
 	assert(pPathObj);
@@ -1946,9 +1946,9 @@ static jeBoolean PathObject_SampleMotion(PathObj *pPathObj, int TimeLineNdx)
 	td->SampleTime = td->CurrTime;
 
 	if (!pPathObj->Motion[TimeLineNdx])
-		return JE_TRUE;
+		return GR_TRUE;
 
-	Path = jeMotion_GetPath(pPathObj->Motion[TimeLineNdx], 0);
+	Path = grMotion_GetPath(pPathObj->Motion[TimeLineNdx], 0);
 
 	assert(Path);
 
@@ -1958,7 +1958,7 @@ static jeBoolean PathObject_SampleMotion(PathObj *pPathObj, int TimeLineNdx)
 
 		if (Start == End || Start < 0.0f || End < 0.0f)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
 		if (td->LoopTime)
@@ -1967,7 +1967,7 @@ static jeBoolean PathObject_SampleMotion(PathObj *pPathObj, int TimeLineNdx)
 
 			if (td->CurrTime < Start)
 			{
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 
 			Diff = Start;
@@ -1983,12 +1983,12 @@ static jeBoolean PathObject_SampleMotion(PathObj *pPathObj, int TimeLineNdx)
 			td->SampleTime = CurrTime;
 
 			if (CurrTime < Start)
-				return JE_TRUE;
+				return GR_TRUE;
 			
-			jePath_Sample(Path, CurrTime, &XForm);
-			if (PathObject_ProcessEvents(pPathObj, TimeLineNdx, LastTime, CurrTime) == JE_FALSE)
+			grPath_Sample(Path, CurrTime, &XForm);
+			if (PathObject_ProcessEvents(pPathObj, TimeLineNdx, LastTime, CurrTime) == GR_FALSE)
 			{
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 			PathObject_PutDataIntoChannelObject(pPathObj, TimeLineNdx, &XForm);
 		}
@@ -1998,23 +1998,23 @@ static jeBoolean PathObject_SampleMotion(PathObj *pPathObj, int TimeLineNdx)
 
 			if (td->CurrTime >= Start && td->CurrTime <= End)
 			{
-				jePath_Sample(Path, td->CurrTime, &XForm);
-				if (PathObject_ProcessEvents(pPathObj, TimeLineNdx, td->LastTime, td->CurrTime) == JE_FALSE)
+				grPath_Sample(Path, td->CurrTime, &XForm);
+				if (PathObject_ProcessEvents(pPathObj, TimeLineNdx, td->LastTime, td->CurrTime) == GR_FALSE)
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 				PathObject_PutDataIntoChannelObject(pPathObj, TimeLineNdx, &XForm);
 			}
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean PathObject_SampleXFormAtTime(PathObj *pPathObj, int TimeLineNdx, float Time, jeBoolean *XFormSet, jeXForm3d *XF)
+static grBoolean PathObject_SampleXFormAtTime(PathObj *pPathObj, int TimeLineNdx, float Time, grBoolean *XFormSet, grXForm3d *XF)
 {
 	float Start, End;
-	jePath *Path;
+	grPath *Path;
 	TimeLineData *td;
 
 	assert(pPathObj);
@@ -2024,11 +2024,11 @@ static jeBoolean PathObject_SampleXFormAtTime(PathObj *pPathObj, int TimeLineNdx
 
 	if (!pPathObj->Motion[TimeLineNdx])
 	{
-		*XFormSet = JE_FALSE;
-		return JE_TRUE;
+		*XFormSet = GR_FALSE;
+		return GR_TRUE;
 	}
 
-	Path = jeMotion_GetPath(pPathObj->Motion[TimeLineNdx], 0);
+	Path = grMotion_GetPath(pPathObj->Motion[TimeLineNdx], 0);
 
 	assert(Path);
 
@@ -2038,18 +2038,18 @@ static jeBoolean PathObject_SampleXFormAtTime(PathObj *pPathObj, int TimeLineNdx
 
 		if (Start == End || Start < 0.0f || End < 0.0f)
 		{
-			*XFormSet = JE_FALSE;
-			return JE_TRUE;
+			*XFormSet = GR_FALSE;
+			return GR_TRUE;
 		}
 
-		jePath_Sample(Path, Time, XF);
+		grPath_Sample(Path, Time, XF);
 	}
 
-	*XFormSet = JE_TRUE;
-	return JE_TRUE;
+	*XFormSet = GR_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean PathObject_DeleteTimeLine(PathObj *pPathObj, int TimeLineNdx)
+static grBoolean PathObject_DeleteTimeLine(PathObj *pPathObj, int TimeLineNdx)
 {
 	PathObject_FreeTimeLine(pPathObj, TimeLineNdx);
 
@@ -2070,10 +2070,10 @@ static jeBoolean PathObject_DeleteTimeLine(PathObj *pPathObj, int TimeLineNdx)
 
 	pPathObj->TimeLineCount--;
 
-	return (JE_TRUE);
+	return (GR_TRUE);
 }
 
-jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData )
+grBoolean	GRCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData )
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 	int TimeLineNdx, ID;
@@ -2085,7 +2085,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 
 	// ignore anything that i'm not supposed to deal with
 	if (FieldID < PROPERTY_LOCAL_DATATYPE_START)
-		return JE_TRUE;
+		return GR_TRUE;
 
 	// Get an array index - (Range 0 to MAX_CHANNELS)
 	TimeLineNdx = (FieldID - PROPERTY_LOCAL_DATATYPE_START) / ID_TO_INDEX_MOD_VALUE;
@@ -2101,39 +2101,39 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 		case PATHOBJ_ADD_POSITION_TIMELINE_BUTTON:
 		{
 			PathObject_InitAddTimeLine(pPathObj, PATH_CONTROL_POSITION, 1<<CHANNEL_POS|1<<CHANNEL_ROT|1<<CHANNEL_EVENT);
-			pPathObj->Dirty = JE_TRUE;
-			return JE_TRUE;
+			pPathObj->Dirty = GR_TRUE;
+			return GR_TRUE;
 		}
 		case PATHOBJ_ADD_PROPERTY_TIMELINE_BUTTON:
 		{
 			PathObject_InitAddTimeLine(pPathObj, PATH_CONTROL_PROPERTY, 1<<CHANNEL_POS|1<<CHANNEL_EVENT);
-			pPathObj->Dirty = JE_TRUE;
-			return JE_TRUE;
+			pPathObj->Dirty = GR_TRUE;
+			return GR_TRUE;
 		}
 		case PATHOBJ_SET_SELECTED_KEY:
 		{
-			jeXForm3d XF;
+			grXForm3d XF;
 			int SelNdx;
 			TimeLineData *Element = &pPathObj->TimeLineList[0];
 
 			SelNdx = Element->Channels[CHANNEL_POS].KeysSelected[0];
 			if (SelNdx >= 0)
 			{
-				jeObject_GetXForm(Element->Obj, &XF);
+				grObject_GetXForm(Element->Obj, &XF);
 				Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation = XF.Translation;
 			}
 
 			SelNdx = Element->Channels[CHANNEL_ROT].KeysSelected[0];
 			if (SelNdx >= 0)
 			{
-				jeVec3d Pos;
-				jeObject_GetXForm(Element->Obj, &XF);
+				grVec3d Pos;
+				grObject_GetXForm(Element->Obj, &XF);
 				Pos = Element->Channels[CHANNEL_ROT].KeyData[SelNdx].XForm.Translation;
 				Element->Channels[CHANNEL_ROT].KeyData[SelNdx].XForm = XF;
 				Element->Channels[CHANNEL_ROT].KeyData[SelNdx].XForm.Translation = Pos;
 			}
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	}
 
@@ -2141,41 +2141,41 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 	switch (ID)
 	{
 	case PATHOBJ_DETAILS_POS_INTERP_LINEAR:
-			Element->PosInterpType = JE_PATH_INTERPOLATE_LINEAR;
+			Element->PosInterpType = GR_PATH_INTERPOLATE_LINEAR;
 			PathObject_BuildMotion(pPathObj, TimeLineNdx);
-			return JE_TRUE;
+			return GR_TRUE;
 	case PATHOBJ_DETAILS_POS_INTERP_HERMITE:
-			Element->PosInterpType = JE_PATH_INTERPOLATE_HERMITE;
+			Element->PosInterpType = GR_PATH_INTERPOLATE_HERMITE;
 			PathObject_BuildMotion(pPathObj, TimeLineNdx);
-			return JE_TRUE;
+			return GR_TRUE;
 	case PATHOBJ_DETAILS_POS_INTERP_HERMITE_ZERO:
-			Element->PosInterpType = JE_PATH_INTERPOLATE_HERMITE_ZERO_DERIV;
+			Element->PosInterpType = GR_PATH_INTERPOLATE_HERMITE_ZERO_DERIV;
 			PathObject_BuildMotion(pPathObj, TimeLineNdx);
-			return JE_TRUE;
+			return GR_TRUE;
 	case PATHOBJ_DETAILS_ROT_INTERP_LINEAR:
-			Element->RotInterpType = JE_PATH_INTERPOLATE_LINEAR;
+			Element->RotInterpType = GR_PATH_INTERPOLATE_LINEAR;
 			PathObject_BuildMotion(pPathObj, TimeLineNdx);
-			return JE_TRUE;
+			return GR_TRUE;
 	case PATHOBJ_DETAILS_ROT_INTERP_SLERP:
-			Element->RotInterpType = JE_PATH_INTERPOLATE_SLERP;
+			Element->RotInterpType = GR_PATH_INTERPOLATE_SLERP;
 			PathObject_BuildMotion(pPathObj, TimeLineNdx);
-			return JE_TRUE;
+			return GR_TRUE;
 	case PATHOBJ_DETAILS_ROT_INTERP_SQUAD:
-			Element->RotInterpType = JE_PATH_INTERPOLATE_SQUAD;
+			Element->RotInterpType = GR_PATH_INTERPOLATE_SQUAD;
 			PathObject_BuildMotion(pPathObj, TimeLineNdx);
-			return JE_TRUE;
+			return GR_TRUE;
 	case PATHOBJ_DETAILS_LOOPTIME:
 			Element->LoopTime = pData->Bool;
-			return JE_TRUE;
+			return GR_TRUE;
 	case PATHOBJ_TIMELINE_POS_CHANNEL:
 		{
 			memcpy(&Element->Channels[CHANNEL_POS], pData->Ptr, sizeof(Channel));
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	case PATHOBJ_TIMELINE_ROT_CHANNEL:
 		{
     		memcpy(&Element->Channels[CHANNEL_ROT], pData->Ptr, sizeof(Channel));
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	case PATHOBJ_TIMELINE_EVENT_CHANNEL:
 		{
@@ -2205,7 +2205,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 				if (Element->Channels[CHANNEL_EVENT].KeyData[i].String && !cp->KeyData[i].String)
 				{
 					// free and zero any old data
-					jeRam_Free(Element->Channels[CHANNEL_EVENT].KeyData[i].String);
+					grRam_Free(Element->Channels[CHANNEL_EVENT].KeyData[i].String);
 					Element->Channels[CHANNEL_EVENT].KeyData[i].String = NULL;
 					continue;
 				}
@@ -2217,7 +2217,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 				}
 			}
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		case PATHOBJ_TIMELINE_CUR_TIME:
 		{
@@ -2245,7 +2245,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 				PathObject_SampleMotion(pPathObj, TimeLineNdx);
 			}
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	}
 
@@ -2268,32 +2268,32 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
                     if (Element->Obj)
                     {
                         // selected the same object
-                        if (strcmp(pData->String, jeObject_GetName(Element->Obj)) == 0)
+                        if (strcmp(pData->String, grObject_GetName(Element->Obj)) == 0)
                             break;
 
-                        jeObject_Destroy(&Element->Obj);
+                        grObject_Destroy(&Element->Obj);
                     }
 
                     Element->Obj = PathObject_FindObjectFromName(pPathObj->World, pData->String);
-                    jeObject_CreateRef(Element->Obj);
+                    grObject_CreateRef(Element->Obj);
 
-                    obj_flags = jeObject_GetXFormModFlags(Element->Obj);
+                    obj_flags = grObject_GetXFormModFlags(Element->Obj);
 
                     tl_flags = 1<<CHANNEL_EVENT;
 
-                    if (obj_flags & JE_OBJECT_XFORM_TRANSLATE)
+                    if (obj_flags & GR_OBJECT_XFORM_TRANSLATE)
                     {
                         tl_flags |= 1<<CHANNEL_POS;
                     }
 
-                    if (obj_flags & JE_OBJECT_XFORM_ROTATE)
+                    if (obj_flags & GR_OBJECT_XFORM_ROTATE)
                     {
                         tl_flags |= 1<<CHANNEL_ROT;
                     }
 
                     PathObject_EnableTimeLine(pPathObj, TimeLineNdx, tl_flags);
 
-                    pPathObj->Dirty = JE_TRUE;
+                    pPathObj->Dirty = GR_TRUE;
                     break;
                 }
             case PATHOBJ_POS:
@@ -2303,14 +2303,14 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
                 if (SelNdx >= 0)
                 {
                     Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation = pData->Vector;
-                    jeObject_SetXForm(Element->Obj, &Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm);
+                    grObject_SetXForm(Element->Obj, &Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm);
                 }
                 else
                 {
-                    jeXForm3d XF;
-                    jeObject_GetXForm(Element->Obj, &XF);
+                    grXForm3d XF;
+                    grObject_GetXForm(Element->Obj, &XF);
                     XF.Translation = pData->Vector;
-                    jeObject_SetXForm(Element->Obj, &XF);
+                    grObject_SetXForm(Element->Obj, &XF);
                 }
                 break;
 
@@ -2320,14 +2320,14 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
                 if (SelNdx >= 0)
                 {
                     Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation.X = pData->Float;
-                    jeObject_SetXForm(Element->Obj, &Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm);
+                    grObject_SetXForm(Element->Obj, &Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm);
                 }
                 else
                 {
-                    jeXForm3d XF;
-                    jeObject_GetXForm(Element->Obj, &XF);
+                    grXForm3d XF;
+                    grObject_GetXForm(Element->Obj, &XF);
                     XF.Translation.X = pData->Float;
-                    jeObject_SetXForm(Element->Obj, &XF);
+                    grObject_SetXForm(Element->Obj, &XF);
                 }
 
                 pPathObj->LastTimeLineModified = TimeLineNdx;
@@ -2338,14 +2338,14 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
                 if (SelNdx >= 0)
                 {
                     Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation.Y = pData->Float;
-                    jeObject_SetXForm(Element->Obj, &Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm);
+                    grObject_SetXForm(Element->Obj, &Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm);
                 }
                 else
                 {
-                    jeXForm3d XF;
-                    jeObject_GetXForm(Element->Obj, &XF);
+                    grXForm3d XF;
+                    grObject_GetXForm(Element->Obj, &XF);
                     XF.Translation.Y = pData->Float;
-                    jeObject_SetXForm(Element->Obj, &XF);
+                    grObject_SetXForm(Element->Obj, &XF);
                 }
 
                 pPathObj->LastTimeLineModified = TimeLineNdx;
@@ -2357,14 +2357,14 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
                 if (SelNdx >= 0)
                 {
                     Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation.Z = pData->Float;
-                    jeObject_SetXForm(Element->Obj, &Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm);
+                    grObject_SetXForm(Element->Obj, &Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm);
                 }
                 else
                 {
-                    jeXForm3d XF;
-                    jeObject_GetXForm(Element->Obj, &XF);
+                    grXForm3d XF;
+                    grObject_GetXForm(Element->Obj, &XF);
                     XF.Translation.Z = pData->Float;
-                    jeObject_SetXForm(Element->Obj, &XF);
+                    grObject_SetXForm(Element->Obj, &XF);
                 }
 
                 pPathObj->LastTimeLineModified = TimeLineNdx;
@@ -2372,7 +2372,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
             case PATHOBJ_POS_DEL_BUTTON:
                 {
                     PathObject_DeleteTimeLine(pPathObj, TimeLineNdx);
-                    pPathObj->Dirty = JE_TRUE;
+                    pPathObj->Dirty = GR_TRUE;
                     break;
                 }
             }
@@ -2398,14 +2398,14 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
                     if (Element->Obj)
                     {
                         // selected the same object
-                        if (strcmp(pData->String, jeObject_GetName(Element->Obj)) == 0)
+                        if (strcmp(pData->String, grObject_GetName(Element->Obj)) == 0)
                             break;
-                        jeObject_Destroy(&Element->Obj);
+                        grObject_Destroy(&Element->Obj);
                     }
 
                     Element->Obj = PathObject_FindObjectFromName(pPathObj->World, pData->String);
-                    jeObject_CreateRef(Element->Obj);
-                    pPathObj->Dirty = JE_TRUE;
+                    grObject_CreateRef(Element->Obj);
+                    pPathObj->Dirty = GR_TRUE;
                 }
 			    else
 			    if (ID == PATHOBJ_PROP_PROPNAMELIST)
@@ -2417,9 +2417,9 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 					{
 					    strcpy(Element->ObjectPropertyName, pData->String);
 
-					    if (PathObject_GetPropertyDataIdFromName(pPathObj->World, Element->Obj, pData->String, (int32 *)&Element->PropDataId) == JE_FALSE)
+					    if (PathObject_GetPropertyDataIdFromName(pPathObj->World, Element->Obj, pData->String, (int32 *)&Element->PropDataId) == GR_FALSE)
 						{
-    						return JE_FALSE;
+    						return GR_FALSE;
 						}
 
 					    // set the property field type
@@ -2427,7 +2427,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 						    Element->PropDataId, (int32 *)&Element->PropFieldType, NULL);
 					    PathObject_EnableTimeLine(pPathObj, TimeLineNdx, 1<<CHANNEL_POS|1<<CHANNEL_EVENT);
 
-					    pPathObj->Dirty = JE_TRUE;
+					    pPathObj->Dirty = GR_TRUE;
 					}
 				}
     			else
@@ -2435,7 +2435,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 				{
 				default:
 					PathObject_DeleteTimeLine(pPathObj, TimeLineNdx);
-					pPathObj->Dirty = JE_TRUE;
+					pPathObj->Dirty = GR_TRUE;
 					break;
 
 				case PROPERTY_INT_TYPE:
@@ -2448,13 +2448,13 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
                         }
 
                         // modify the object data whether it is selected or not
-                        jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
+                        grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
                     }
 					else
 					if (ID == PATHOBJ_INT_DEL_BUTTON)
 					{
 						PathObject_DeleteTimeLine(pPathObj, TimeLineNdx);
-						pPathObj->Dirty = JE_TRUE;
+						pPathObj->Dirty = GR_TRUE;
 					}
 					break;
 
@@ -2466,13 +2466,13 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 							Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation.X = pData->Float;
 						}
 
-						jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
+						grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
 					}
     				else
 					if (ID == PATHOBJ_FLOAT_DEL_BUTTON)
 					{
 						PathObject_DeleteTimeLine(pPathObj, TimeLineNdx);
-						pPathObj->Dirty = JE_TRUE;
+						pPathObj->Dirty = GR_TRUE;
 					}
 					break;
 
@@ -2486,7 +2486,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 							Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation = pData->Vector;
 						}
 
-						jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
+						grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
 					}
 					else
 					if (ID == PATHOBJ_VECX)
@@ -2496,7 +2496,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 							Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation.X = pData->Float;
 						}
 
-						jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
+						grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
 					}
 					else
 					if (ID == PATHOBJ_VECY)
@@ -2506,7 +2506,7 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 							Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation.Y = pData->Float;
 						}
 
-						jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
+						grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
 					}
 					else
 					if (ID == PATHOBJ_VECZ)
@@ -2516,13 +2516,13 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 							Element->Channels[CHANNEL_POS].KeyData[SelNdx].XForm.Translation.Z = pData->Float;
 						}
 
-						jeObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
+						grObject_SetProperty(Element->Obj, Element->PropDataId, Element->PropFieldType, pData );
 					}
                     else
                     if (ID == PATHOBJ_VEC_DEL_BUTTON)
                     {
                         PathObject_DeleteTimeLine(pPathObj, TimeLineNdx);
-                        pPathObj->Dirty = JE_TRUE;
+                        pPathObj->Dirty = GR_TRUE;
                     }
 
                     break;
@@ -2532,57 +2532,57 @@ jeBoolean	JETCC SetProperty( void * Instance, int32 FieldID, PROPERTY_FIELD_TYPE
 		}
 	}
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	JETCC SetXForm(void * Instance,const jeXForm3d *XF)
+grBoolean	GRCC SetXForm(void * Instance,const grXForm3d *XF)
 {
 	assert( Instance );
 	assert( XF );
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC GetXForm(const void * Instance,jeXForm3d *XF)
+grBoolean GRCC GetXForm(const void * Instance,grXForm3d *XF)
 {
 	assert( Instance );
 	assert( XF );
 
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
-int	JETCC GetXFormModFlags( const void * Instance )
+int	GRCC GetXFormModFlags( const void * Instance )
 {
 	Instance;
 	return( 0 );
 }
 
-jeBoolean JETCC GetChildren(const void * Instance,jeObject * Children,int MaxNumChildren)
+grBoolean GRCC GetChildren(const void * Instance,grObject * Children,int MaxNumChildren)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC AddChild(void * Instance,const jeObject * Child)
+grBoolean GRCC AddChild(void * Instance,const grObject * Child)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean JETCC RemoveChild(void * Instance,const jeObject * Child)
+grBoolean GRCC RemoveChild(void * Instance,const grObject * Child)
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 #ifdef WIN32
-jeBoolean JETCC EditDialog (void * Instance,HWND Parent)
+grBoolean GRCC EditDialog (void * Instance,HWND Parent)
 #endif
 #ifdef BUILD_BE
-jeBoolean JETCC EditDialog (void * Instance, class G3DView * Parent )
+grBoolean GRCC EditDialog (void * Instance, class G3DView * Parent )
 #endif
 {
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean PathObject_PutDataIntoChannelObject(PathObj *pPathObj, int TimeLineNdx, jeXForm3d *XF)
+grBoolean PathObject_PutDataIntoChannelObject(PathObj *pPathObj, int TimeLineNdx, grXForm3d *XF)
 {
 	TimeLineData *td;
 
@@ -2593,39 +2593,39 @@ jeBoolean PathObject_PutDataIntoChannelObject(PathObj *pPathObj, int TimeLineNdx
 	td = &pPathObj->TimeLineList[TimeLineNdx];
 
 	if (!td->Obj)
-		return JE_TRUE;
+		return GR_TRUE;
 
 	if (td->ChannelType == PATH_CONTROL_POSITION)
 	{
-			jeObject_SetXForm(td->Obj, XF);
+			grObject_SetXForm(td->Obj, XF);
 	}
 	else
 	if (td->ChannelType == PATH_CONTROL_PROPERTY)
 	{
-		jeProperty_Data Data;
+		grProperty_Data Data;
 		switch (td->PropFieldType)
 		{
         case PROPERTY_INT_TYPE:
             Data.Int = (int)XF->Translation.X;
-            jeObject_SetProperty(td->Obj, td->PropDataId, td->PropFieldType, &Data );
+            grObject_SetProperty(td->Obj, td->PropDataId, td->PropFieldType, &Data );
             break;
         case PROPERTY_FLOAT_TYPE:
             Data.Float = XF->Translation.X;
-            jeObject_SetProperty(td->Obj, td->PropDataId, td->PropFieldType, &Data );
+            grObject_SetProperty(td->Obj, td->PropDataId, td->PropFieldType, &Data );
             break;
         case PROPERTY_COLOR_GROUP_TYPE:
         case PROPERTY_VEC3D_GROUP_TYPE:
             Data.Vector = XF->Translation;
-            jeObject_SetProperty(td->Obj, td->PropDataId, td->PropFieldType, &Data );
+            grObject_SetProperty(td->Obj, td->PropDataId, td->PropFieldType, &Data );
             break;
         }
     }
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
+grBoolean GRCC MessageFunction (void * Instance, int32 Msg, void * Data)
 {
 	PathObj *pPathObj = (PathObj*)Instance;
 
@@ -2635,7 +2635,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 	switch (Msg)
 	{
 		default:
-			return JE_FALSE;
+			return GR_FALSE;
 			break;
 		case OBJECT_EVENT_MSG:
 		{
@@ -2645,7 +2645,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 			{
             case EVENT_TYPE_TIMELINE_PLAY:
                 pPathObj->Time = 0;
-                pPathObj->PlayMotions = JE_TRUE;
+                pPathObj->PlayMotions = GR_TRUE;
                 PathObject_BuildAllMotions(pPathObj);
                 break;
             case EVENT_TYPE_TIMELINE_STOP:
@@ -2660,7 +2660,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 					}
 				}
 
-				pPathObj->PlayMotions = JE_FALSE;
+				pPathObj->PlayMotions = GR_FALSE;
 				break;
 			}
 
@@ -2676,7 +2676,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 			ptr->ReturnTimeLineNdx = pPathObj->LastTimeLineModified;
 			break;
 			}
-		case OBJECT_TIMELINE_GET_JEOBJECT_MSG: // this message gets the current jeObject based on the TimeLineNdx
+		case OBJECT_TIMELINE_GET_JEOBJECT_MSG: // this message gets the current grObject based on the TimeLineNdx
 			{
 			Object_TimeGetObject *ptr = (Object_TimeGetObject *)Data;
 			ptr->ReturnObj = pPathObj->TimeLineList[ptr->TimeLineNdx].Obj;
@@ -2688,7 +2688,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 			int ChannelNdx,TimeLineNdx;
 			Object_TimeKeyData *ptr = (Object_TimeKeyData *)Data;
 
-			jeXForm3d_SetIdentity(&ptr->ReturnXF);
+			grXForm3d_SetIdentity(&ptr->ReturnXF);
 			
 			TimeLineNdx = ptr->TimeLineNdx;
 			ChannelNdx = ptr->ChannelNdx;
@@ -2698,16 +2698,16 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 			td = &pPathObj->TimeLineList[TimeLineNdx];
 
 			if (!td->Obj)
-				return JE_TRUE;
+				return GR_TRUE;
 
 			if (td->ChannelType == PATH_CONTROL_POSITION)
 			{
-				jeObject_GetXForm(td->Obj, &ptr->ReturnXF);
+				grObject_GetXForm(td->Obj, &ptr->ReturnXF);
 			}
 			else
 			if (td->ChannelType == PATH_CONTROL_PROPERTY)
 			{
-				jeProperty_Data PropData;
+				grProperty_Data PropData;
 
 				PathObject_GetPropertyInfoFromDataId(pPathObj->World, td->Obj, td->PropDataId, NULL, &PropData);
 
@@ -2725,7 +2725,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
                     break;
                 default:
                     // property not set
-                    return JE_TRUE;
+                    return GR_TRUE;
 				}
 			}
 			
@@ -2750,7 +2750,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 				pPathObj->Time = pPathObj->TimeLineList[ptr->TimeLineNdx].CurrTime;
 			}
 
-			if (pPathObj->PlayMotions && ptr->PlayMode == JE_FALSE)
+			if (pPathObj->PlayMotions && ptr->PlayMode == GR_FALSE)
 			{
 				int i;
 				// here we are stopping playback - set curr time to sample time
@@ -2760,7 +2760,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 				}
 			}
 
-			pPathObj->PlayMotions = (jeBoolean)ptr->PlayMode;
+			pPathObj->PlayMotions = (grBoolean)ptr->PlayMode;
 
 			if (pPathObj->PlayMotions)
 				PathObject_BuildAllMotions(pPathObj);
@@ -2779,7 +2779,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 
 		}// switch
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
@@ -2788,7 +2788,7 @@ jeBoolean JETCC MessageFunction (void * Instance, int32 Msg, void * Data)
 //	UpdateTimeDelta()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean	JETCC UpdateTimeDelta(void * Instance, float TimeDelta )
+grBoolean	GRCC UpdateTimeDelta(void * Instance, float TimeDelta )
 {
 	// locals
 	PathObj	*pPathObj;
@@ -2798,7 +2798,7 @@ jeBoolean	JETCC UpdateTimeDelta(void * Instance, float TimeDelta )
 
 	if ( TimeDelta == 0.0f )
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	// get object
@@ -2819,11 +2819,11 @@ jeBoolean	JETCC UpdateTimeDelta(void * Instance, float TimeDelta )
 		}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 // Icestorm
-jeBoolean	JETCC ChangeBoxCollision(const void *Instance,const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane)
+grBoolean	GRCC ChangeBoxCollision(const void *Instance,const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane)
 {
-	return( JE_FALSE );
+	return( GR_FALSE );
 }

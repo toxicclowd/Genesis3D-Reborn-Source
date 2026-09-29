@@ -65,7 +65,7 @@ void Log_Printf(const char * String, ...)
 	Log_Out(TempStr);
 }
 
-void Log_PrintMatrices(jeXForm3d* pXF)
+void Log_PrintMatrices(grXForm3d* pXF)
 {
     char			TempStr[4096];
 

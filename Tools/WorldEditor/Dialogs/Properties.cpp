@@ -8,7 +8,7 @@
 #include "stdafx.h"
 #include <assert.h>
 
-#include "Jet.h"
+#include "Genesis3D.h"
 #include "ErrorLog.h"
 
 #include "jwe.h"
@@ -518,9 +518,9 @@ void CProperties::OnPropOk()
 //	                                                                                      
 //	Write Properties to File
 //
-jeBoolean CProperties::Properties_WriteToFile( /*Level * pLevel,*/ jeVFile * pF, jePtrMgr * pPtrMgr)
+grBoolean CProperties::Properties_WriteToFile( /*Level * pLevel,*/ grVFile * pF, grPtrMgr * pPtrMgr)
 {
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 	
 	char	cUserDataEntries[10];
 
@@ -533,24 +533,24 @@ jeBoolean CProperties::Properties_WriteToFile( /*Level * pLevel,*/ jeVFile * pF,
 	ret+=WriteVariable_String ("SUBJ",m_subject,pF,pPtrMgr);
 	ret+=WriteVariable_String ("TITL",m_title,pF,pPtrMgr);
 	ret+=WriteVariable_String ("VERS",m_version,pF,pPtrMgr);
-	if (ret != (int(JE_TRUE)*7))
-		return JE_FALSE;
+	if (ret != (int(GR_TRUE)*7))
+		return GR_FALSE;
 	
 
 	if (iUserDataEntries>0)
 		{
-		if (WriteVariable_String ("KEYN",_itoa(iUserDataEntries,cUserDataEntries,10),pF,pPtrMgr)==JE_FALSE)
-			return JE_FALSE;
+		if (WriteVariable_String ("KEYN",_itoa(iUserDataEntries,cUserDataEntries,10),pF,pPtrMgr)==GR_FALSE)
+			return GR_FALSE;
 		for (int X=0;X<iUserDataEntries;X++)
 			{	
 				ret  = WriteVariable_String ("KEY ",UserData[X].Name,pF,pPtrMgr);
 				ret += WriteVariable_String ("KVAL",UserData[X].Value,pF,pPtrMgr);
 				ret += WriteVariable_String ("KTYP",UserData[X].Type,pF,pPtrMgr);
-				if (ret != (int(JE_TRUE)*3))
-					return JE_FALSE;
+				if (ret != (int(GR_TRUE)*3))
+					return GR_FALSE;
 			}
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -563,27 +563,27 @@ jeBoolean CProperties::Properties_WriteToFile( /*Level * pLevel,*/ jeVFile * pF,
 //			4 Bytes  10 Bytes	  X-Bytes
 //
 
-jeBoolean CProperties::WriteVariable_String(CString Name, CString Value,jeVFile * pF, jePtrMgr * pPtrMgr)
+grBoolean CProperties::WriteVariable_String(CString Name, CString Value,grVFile * pF, grPtrMgr * pPtrMgr)
 {
 	char	cLength[12];
 
-	if(jeVFile_Write( pF, Name, Name.GetLength()) == JE_FALSE )
-		{   jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", NULL);
-			return JE_FALSE;
+	if(grVFile_Write( pF, Name, Name.GetLength()) == GR_FALSE )
+		{   grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", NULL);
+			return GR_FALSE;
 		}
 	
 	sprintf_s (cLength,"%010ld",Value.GetLength());
 
-	if(jeVFile_Write( pF,  cLength, strlen(cLength)) == JE_FALSE )
-		{   jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", NULL);
-			return JE_FALSE;
+	if(grVFile_Write( pF,  cLength, strlen(cLength)) == GR_FALSE )
+		{   grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", NULL);
+			return GR_FALSE;
 		}
-	if(jeVFile_Write( pF, Value, Value.GetLength()) == JE_FALSE )
-		{   jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", NULL);
-			return JE_FALSE;
+	if(grVFile_Write( pF, Value, Value.GetLength()) == GR_FALSE )
+		{   grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Level_WriteToFile.\n", NULL);
+			return GR_FALSE;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //---------------------------------------------------------------------
@@ -591,7 +591,7 @@ jeBoolean CProperties::WriteVariable_String(CString Name, CString Value,jeVFile 
 //	                                                                                      
 // Read Properties from File
 //
-jeBoolean CProperties::Properties_ReadFromFile( /*Level * pLevel,*/ jeVFile * pF, jePtrMgr * pPtrMgr)
+grBoolean CProperties::Properties_ReadFromFile( /*Level * pLevel,*/ grVFile * pF, grPtrMgr * pPtrMgr)
 {
 	char* sText{};
 	char	sHeader[5];
@@ -604,9 +604,9 @@ jeBoolean CProperties::Properties_ReadFromFile( /*Level * pLevel,*/ jeVFile * pF
 
 	for (;;)
 	{
-		if(jeVFile_Read( pF, sHeader , 4 ) == JE_FALSE )
+		if(grVFile_Read( pF, sHeader , 4 ) == GR_FALSE )
 			break;
-		if(jeVFile_Read( pF, sLength , 10 ) == JE_FALSE )
+		if(grVFile_Read( pF, sLength , 10 ) == GR_FALSE )
 			break;
 		iLength = atoi(sLength);
 		
@@ -617,7 +617,7 @@ jeBoolean CProperties::Properties_ReadFromFile( /*Level * pLevel,*/ jeVFile * pF
 
 		if (iLength >0)
 			{
-			  if(jeVFile_Read(pF,sText,iLength)==JE_FALSE) 
+			  if(grVFile_Read(pF,sText,iLength)==GR_FALSE) 
 				break;
 			}
 		sText[iLength]='\0';

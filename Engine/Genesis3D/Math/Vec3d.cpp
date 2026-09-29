@@ -21,12 +21,12 @@
 #include <math.h>
 #include <assert.h>
 
-#include "jeVec3d_Katmai.h"
+#include "grVec3d_Katmai.h"
 #include "Vec3d.h"
 #include "CPU.h"
 
 #ifndef NDEBUG
-JETAPI jeFloat JETCC   jeVec3d_GetElement(const jeVec3d *V, int32 Index)
+GRAPI grFloat GRCC   grVec3d_GetElement(const grVec3d *V, int32 Index)
 {
 	assert( V != NULL );
 	assert( Index >= 0 );
@@ -34,7 +34,7 @@ JETAPI jeFloat JETCC   jeVec3d_GetElement(const jeVec3d *V, int32 Index)
 	return (* ((&((V)->X)) +  (Index) ));
 }
 
-JETAPI void JETCC jeVec3d_SetElement(jeVec3d *V, int32 Index, jeFloat Value)
+GRAPI void GRCC grVec3d_SetElement(grVec3d *V, int32 Index, grFloat Value)
 {
 	assert( V != NULL );
 	assert( Index >= 0 );
@@ -45,36 +45,36 @@ JETAPI void JETCC jeVec3d_SetElement(jeVec3d *V, int32 Index, jeFloat Value)
 
 #endif
 
-JETAPI jeBoolean JETCC jeVec3d_IsValid(const jeVec3d *V)
+GRAPI grBoolean GRCC grVec3d_IsValid(const grVec3d *V)
 {
 	if (V == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((V->X * V->X) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((V->Y * V->Y) < 0.0f) 
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((V->Z * V->Z) < 0.0f) 
-		return JE_FALSE;
-	return JE_TRUE;
+		return GR_FALSE;
+	return GR_TRUE;
 }
 
 
-JETAPI void JETCC		jeVec3d_Set(jeVec3d *V, jeFloat X, jeFloat Y, jeFloat Z)
+GRAPI void GRCC		grVec3d_Set(grVec3d *V, grFloat X, grFloat Y, grFloat Z)
 {
 	assert ( V != NULL );
 	V->X = X;
 	V->Y = Y;
 	V->Z = Z;
-	assert( jeVec3d_IsValid(V) );
+	assert( grVec3d_IsValid(V) );
 }
 
-JETAPI void JETCC		jeVec3d_Get(const jeVec3d *V, jeFloat *X, jeFloat *Y, jeFloat *Z)
+GRAPI void GRCC		grVec3d_Get(const grVec3d *V, grFloat *X, grFloat *Y, grFloat *Z)
 {
 	assert ( V != NULL );
 	assert ( X != NULL );
 	assert ( Y != NULL );
 	assert ( Z != NULL );
-	assert( jeVec3d_IsValid(V) );
+	assert( grVec3d_IsValid(V) );
 	
 	*X = V->X;
 	*Y = V->Y;
@@ -82,31 +82,31 @@ JETAPI void JETCC		jeVec3d_Get(const jeVec3d *V, jeFloat *X, jeFloat *Y, jeFloat
 }
 
 
-JETAPI jeFloat JETCC	jeVec3d_DotProduct(const jeVec3d *V1, const jeVec3d *V2)
+GRAPI grFloat GRCC	grVec3d_DotProduct(const grVec3d *V1, const grVec3d *V2)
 {
 	assert ( V1 != NULL );
 	assert ( V2 != NULL );
-	assert( jeVec3d_IsValid(V1) );
-	assert( jeVec3d_IsValid(V2) );
+	assert( grVec3d_IsValid(V1) );
+	assert( grVec3d_IsValid(V2) );
 	
-	if (jeCPU_Features & JE_CPU_HAS_KATMAI)
-		return jeVec3d_DotProduct_SSE(V1, V2);
+	if (grCPU_Features & GR_CPU_HAS_KATMAI)
+		return grVec3d_DotProduct_SSE(V1, V2);
 		
 	return(V1->X*V2->X + V1->Y*V2->Y + V1->Z*V2->Z);
 }
 
-JETAPI void JETCC jeVec3d_CrossProduct(const jeVec3d *V1, const jeVec3d *V2, jeVec3d *VResult)
+GRAPI void GRCC grVec3d_CrossProduct(const grVec3d *V1, const grVec3d *V2, grVec3d *VResult)
 {
-	jeVec3d Result;
+	grVec3d Result;
 
 	assert ( V1 != NULL );
 	assert ( V2 != NULL );
 	assert ( VResult != NULL );
-	assert( jeVec3d_IsValid(V1) );
-	assert( jeVec3d_IsValid(V2) );
+	assert( grVec3d_IsValid(V1) );
+	assert( grVec3d_IsValid(V2) );
 
-	if (jeCPU_Features & JE_CPU_HAS_KATMAI)
-		jeVec3d_CrossProduct_SSE(V1, V2, VResult);
+	if (grCPU_Features & GR_CPU_HAS_KATMAI)
+		grVec3d_CrossProduct_SSE(V1, V2, VResult);
 	else
 	{
 		Result.X = V1->Y*V2->Z - V1->Z*V2->Y;
@@ -117,41 +117,41 @@ JETAPI void JETCC jeVec3d_CrossProduct(const jeVec3d *V1, const jeVec3d *V2, jeV
 	}
 }
 
-JETAPI jeBoolean JETCC jeVec3d_Compare(const jeVec3d *V1, const jeVec3d *V2, jeFloat Tolerance)
+GRAPI grBoolean GRCC grVec3d_Compare(const grVec3d *V1, const grVec3d *V2, grFloat Tolerance)
 {
 	assert ( V1 != NULL );
 	assert ( V2 != NULL );
 	assert ( Tolerance >= 0.0 );
-	assert( jeVec3d_IsValid(V1) );
-	assert( jeVec3d_IsValid(V2) );
+	assert( grVec3d_IsValid(V1) );
+	assert( grVec3d_IsValid(V2) );
 
 	if (fabs(V2->X - V1->X) > Tolerance)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (fabs(V2->Y - V1->Y) > Tolerance)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (fabs(V2->Z - V1->Z) > Tolerance)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeFloat JETCC jeVec3d_Normalize(jeVec3d *V1)
+GRAPI grFloat GRCC grVec3d_Normalize(grVec3d *V1)
 {
-	if (jeCPU_Features & JE_CPU_HAS_KATMAI)
+	if (grCPU_Features & GR_CPU_HAS_KATMAI)
 	{
-		float len = jeVec3d_Length(V1);
-		jeVec3d_Normalize_SSE(V1);
+		float len = grVec3d_Length(V1);
+		grVec3d_Normalize_SSE(V1);
 		
 		return len;
 	}
 	else
 	{
-		jeFloat OneOverDist;
-		jeFloat Dist;
+		grFloat OneOverDist;
+		grFloat Dist;
 
-		assert( jeVec3d_IsValid(V1) );
+		assert( grVec3d_IsValid(V1) );
 
-		Dist = jeVec3d_Length(V1);
+		Dist = grVec3d_Length(V1);
 		if (Dist == 0.0f)
 			return 0.0f;
 
@@ -165,26 +165,26 @@ JETAPI jeFloat JETCC jeVec3d_Normalize(jeVec3d *V1)
 	}
 }
 
-JETAPI jeBoolean JETCC	jeVec3d_IsNormalized(const jeVec3d *V)
+GRAPI grBoolean GRCC	grVec3d_IsNormalized(const grVec3d *V)
 {
-	jeFloat	length;
+	grFloat	length;
 
-	assert( jeVec3d_IsValid(V) );
+	assert( grVec3d_IsValid(V) );
 
-	length = jeVec3d_Length(V);
-	if ( fabs(length - 1.0f) < JE_EPSILON )
-		return JE_TRUE;
+	length = grVec3d_Length(V);
+	if ( fabs(length - 1.0f) < GR_EPSILON )
+		return GR_TRUE;
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-JETAPI void JETCC jeVec3d_Scale(const jeVec3d *VSrc, jeFloat Scale, jeVec3d *VDst)
+GRAPI void GRCC grVec3d_Scale(const grVec3d *VSrc, grFloat Scale, grVec3d *VDst)
 {
 	assert ( VDst != NULL );
-	assert( jeVec3d_IsValid(VSrc) );
+	assert( grVec3d_IsValid(VSrc) );
 
-	if (jeCPU_Features & JE_CPU_HAS_KATMAI)
-		jeVec3d_Scale_SSE(VSrc, Scale, VDst);
+	if (grCPU_Features & GR_CPU_HAS_KATMAI)
+		grVec3d_Scale_SSE(VSrc, Scale, VDst);
 	else
 	{
 		VDst->X = VSrc->X * Scale;
@@ -192,32 +192,32 @@ JETAPI void JETCC jeVec3d_Scale(const jeVec3d *VSrc, jeFloat Scale, jeVec3d *VDs
 		VDst->Z = VSrc->Z * Scale;
 	}
 
-	assert( jeVec3d_IsValid(VDst) );
+	assert( grVec3d_IsValid(VDst) );
 }
 
-JETAPI jeFloat JETCC jeVec3d_LengthSquared(const jeVec3d *V1)
+GRAPI grFloat GRCC grVec3d_LengthSquared(const grVec3d *V1)
 {
 	return ( (V1)->X * (V1)->X + (V1)->Y * (V1)->Y + (V1)->Z * (V1)->Z );
 }
 
-JETAPI jeFloat JETCC jeVec3d_Length(const jeVec3d *V1)
+GRAPI grFloat GRCC grVec3d_Length(const grVec3d *V1)
 {	
-	assert( jeVec3d_IsValid(V1) );
+	assert( grVec3d_IsValid(V1) );
 
-	if (jeCPU_Features & JE_CPU_HAS_KATMAI)
-		return jeVec3d_Length_SSE(V1);
+	if (grCPU_Features & GR_CPU_HAS_KATMAI)
+		return grVec3d_Length_SSE(V1);
 	else
-		return jeFloat_Sqrt(jeVec3d_LengthSquared(V1));
+		return grFloat_Sqrt(grVec3d_LengthSquared(V1));
 }
 
-JETAPI void JETCC jeVec3d_Subtract(const jeVec3d *V1, const jeVec3d *V2, jeVec3d *V1MinusV2)
+GRAPI void GRCC grVec3d_Subtract(const grVec3d *V1, const grVec3d *V2, grVec3d *V1MinusV2)
 {
-	assert( jeVec3d_IsValid(V1) );
-	assert( jeVec3d_IsValid(V2) );
+	assert( grVec3d_IsValid(V1) );
+	assert( grVec3d_IsValid(V2) );
 	assert ( V1MinusV2 != NULL );
 
-	if (jeCPU_Features & JE_CPU_HAS_KATMAI)
-		jeVec3d_Subtract_SSE(V1, V2, V1MinusV2);
+	if (grCPU_Features & GR_CPU_HAS_KATMAI)
+		grVec3d_Subtract_SSE(V1, V2, V1MinusV2);
 	else
 	{
 		V1MinusV2->X = V1->X - V2->X;
@@ -226,14 +226,14 @@ JETAPI void JETCC jeVec3d_Subtract(const jeVec3d *V1, const jeVec3d *V2, jeVec3d
 	}
 }
 
-JETAPI void JETCC jeVec3d_Add(const jeVec3d *V1, const jeVec3d *V2, jeVec3d *V1PlusV2)
+GRAPI void GRCC grVec3d_Add(const grVec3d *V1, const grVec3d *V2, grVec3d *V1PlusV2)
 {
-	assert( jeVec3d_IsValid(V1) );
-	assert( jeVec3d_IsValid(V2) );
+	assert( grVec3d_IsValid(V1) );
+	assert( grVec3d_IsValid(V2) );
 	assert ( V1PlusV2 != NULL );
 	
-	if (jeCPU_Features & JE_CPU_HAS_KATMAI)
-		jeVec3d_Add_SSE(V1, V2, V1PlusV2);
+	if (grCPU_Features & GR_CPU_HAS_KATMAI)
+		grVec3d_Add_SSE(V1, V2, V1PlusV2);
 	else
 	{
 		V1PlusV2->X = V1->X + V2->X;
@@ -242,10 +242,10 @@ JETAPI void JETCC jeVec3d_Add(const jeVec3d *V1, const jeVec3d *V2, jeVec3d *V1P
 	}
 }
 
-JETAPI void JETCC jeVec3d_MA(jeVec3d *V1, jeFloat Scale, const jeVec3d *V2, jeVec3d *V1PlusV2Scaled)
+GRAPI void GRCC grVec3d_MA(grVec3d *V1, grFloat Scale, const grVec3d *V2, grVec3d *V1PlusV2Scaled)
 {
-	assert( jeVec3d_IsValid(V1) );
-	assert( jeVec3d_IsValid(V2) );
+	assert( grVec3d_IsValid(V1) );
+	assert( grVec3d_IsValid(V2) );
 	assert ( V1PlusV2Scaled != NULL );
 	
 	V1PlusV2Scaled->X = V1->X + V2->X*Scale;
@@ -253,14 +253,14 @@ JETAPI void JETCC jeVec3d_MA(jeVec3d *V1, jeFloat Scale, const jeVec3d *V2, jeVe
 	V1PlusV2Scaled->Z = V1->Z + V2->Z*Scale;
 }
 
-JETAPI void JETCC jeVec3d_AddScaled(const jeVec3d *V1, const jeVec3d *V2, jeFloat Scale, jeVec3d *V1PlusV2Scaled)
+GRAPI void GRCC grVec3d_AddScaled(const grVec3d *V1, const grVec3d *V2, grFloat Scale, grVec3d *V1PlusV2Scaled)
 {
-	assert( jeVec3d_IsValid(V1) );
-	assert( jeVec3d_IsValid(V2) );
+	assert( grVec3d_IsValid(V1) );
+	assert( grVec3d_IsValid(V2) );
 	assert ( V1PlusV2Scaled != NULL );
 	
-	if (jeCPU_Features & JE_CPU_HAS_KATMAI)
-		jeVec3d_AddScaled_SSE(V1, V2, Scale, V1PlusV2Scaled);
+	if (grCPU_Features & GR_CPU_HAS_KATMAI)
+		grVec3d_AddScaled_SSE(V1, V2, Scale, V1PlusV2Scaled);
 	else
 	{
 		V1PlusV2Scaled->X = V1->X + V2->X*Scale;
@@ -269,15 +269,15 @@ JETAPI void JETCC jeVec3d_AddScaled(const jeVec3d *V1, const jeVec3d *V2, jeFloa
 	}
 }
 
-JETAPI void JETCC jeVec3d_Copy(const jeVec3d *VSrc, jeVec3d *VDst)
+GRAPI void GRCC grVec3d_Copy(const grVec3d *VSrc, grVec3d *VDst)
 {
 	assert ( VDst != NULL );
-	assert( jeVec3d_IsValid(VSrc) );
+	assert( grVec3d_IsValid(VSrc) );
 	
 	*VDst = *VSrc;
 }
 
-JETAPI void JETCC jeVec3d_Clear(jeVec3d *V)
+GRAPI void GRCC grVec3d_Clear(grVec3d *V)
 {
 	assert ( V != NULL );
 	
@@ -286,16 +286,16 @@ JETAPI void JETCC jeVec3d_Clear(jeVec3d *V)
 	V->Z = 0.0f;
 }
 
-JETAPI void JETCC jeVec3d_Inverse(jeVec3d *V)
+GRAPI void GRCC grVec3d_Inverse(grVec3d *V)
 {
-	assert( jeVec3d_IsValid(V) );
+	assert( grVec3d_IsValid(V) );
 	
 	V->X = -V->X;
 	V->Y = -V->Y;
 	V->Z = -V->Z;
 }
 
-JETAPI jeFloat JETCC	jeVec3d_DistanceBetweenSquared(const jeVec3d *V1, const jeVec3d *V2)
+GRAPI grFloat GRCC	grVec3d_DistanceBetweenSquared(const grVec3d *V1, const grVec3d *V2)
 {
 float d,x;
 	x = (V1->X - V2->X);
@@ -307,10 +307,10 @@ float d,x;
 return d;
 }
 
-JETAPI jeFloat JETCC	jeVec3d_DistanceBetween(const jeVec3d *V1, const jeVec3d *V2)	// returns length of V1-V2	
+GRAPI grFloat GRCC	grVec3d_DistanceBetween(const grVec3d *V1, const grVec3d *V2)	// returns length of V1-V2	
 {
-	if (jeCPU_Features & JE_CPU_HAS_KATMAI)
-		return jeVec3d_DistanceBetween_SSE(V1, V2);
+	if (grCPU_Features & GR_CPU_HAS_KATMAI)
+		return grVec3d_DistanceBetween_SSE(V1, V2);
 	else
-		return jeFloat_Sqrt( jeVec3d_DistanceBetweenSquared(V1,V2) );
+		return grFloat_Sqrt( grVec3d_DistanceBetweenSquared(V1,V2) );
 }

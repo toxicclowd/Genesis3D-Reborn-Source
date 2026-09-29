@@ -24,7 +24,7 @@
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
-#include "jeModel.h"
+#include "grModel.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CStats dialog
@@ -34,7 +34,7 @@ class CStats : public CDialog
 // Construction
 public:
 	CStats(CWnd* pParent = NULL);   // standard constructor
-	void SetData( const jeBSP_DebugInfo * pDebugInfo );
+	void SetData( const grBSP_DebugInfo * pDebugInfo );
 
 // Dialog Data
 	//{{AFX_DATA(CStats)

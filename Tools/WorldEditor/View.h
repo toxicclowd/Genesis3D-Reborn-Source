@@ -78,7 +78,7 @@ protected: // create from serialization only
 // Attributes
 public:
 	CJweDoc* GetDocument();
-	void SetCameraPos( jeVec3d * Pos );
+	void SetCameraPos( grVec3d * Pos );
 	void AbortMode();
 
 // Operations
@@ -145,7 +145,7 @@ protected:
 
 	//}}AFX_MSG
 public:
-	void DoZoom( jeFloat fZoomInc ) ;
+	void DoZoom( grFloat fZoomInc ) ;
 	afx_msg void OnViewType( UINT nID ) ;
 	Ortho	*GetOrtho();	// Added JH
 
@@ -160,13 +160,13 @@ private:
 	int32 GetAutoScrollRegion( POINT * ptCursor );
 	void SetAutoScroll( int32 ScrollRegion );
 	void SetBeginDragViewMode(POINT ptCursor);
-	void Pan( jeVec3d *pWorldDistance );
-	jeBoolean IsBeginDrag( POINT ptCursor );
-	void Drag( POINT ptCursor, jeVec3d *pWorldDistance );
+	void Pan( grVec3d *pWorldDistance );
+	grBoolean IsBeginDrag( POINT ptCursor );
+	void Drag( POINT ptCursor, grVec3d *pWorldDistance );
 	void DragEnd(CPoint point);
 	int32 GetViewSigniture();
 	void ShowMenu(CPoint point) ;
-	void SetUpRotateBox(jeExtBox  *pSelBounds );
+	void SetUpRotateBox(grExtBox  *pSelBounds );
 	void DrawRotateBox( HDC hDC);
 
 	SELECT_HANDLE m_SizeType;
@@ -174,7 +174,7 @@ private:
 	CPoint m_ptLastMouse;
 	CPoint m_ptVertualMouse;  //Used for draging brush height
 
-	jeVec3d	m_Center3d;
+	grVec3d	m_Center3d;
 	CPoint m_SelCenter;
 	RECT   m_RotateBox;
 	float  m_RotateRadius;

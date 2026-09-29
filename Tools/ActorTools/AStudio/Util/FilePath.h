@@ -29,46 +29,46 @@
 #endif
 
 // Extract drive (d:\) from pPath and place in pDrive
-jeBoolean FilePath_GetDrive (char const *pPath, char *pDrive);
+grBoolean FilePath_GetDrive (char const *pPath, char *pDrive);
 
 // Extract directory from pPath and place in pDir
-jeBoolean FilePath_GetDir (char const *pPath, char *pDir);
+grBoolean FilePath_GetDir (char const *pPath, char *pDir);
 
 // Extract Name from pPath and place in pName
-jeBoolean FilePath_GetName (char const *pPath, char *pName);
+grBoolean FilePath_GetName (char const *pPath, char *pName);
 
 // Extract Extension from pPath and place in pExt
-jeBoolean FilePath_GetExt (char const *pPath, char *pExt);
+grBoolean FilePath_GetExt (char const *pPath, char *pExt);
 
 // Extract drive and directory from pPath and place in pDriveDir
 // pDriveDir may be the same as pPath
-jeBoolean FilePath_GetDriveAndDir (char const *pPath, char *pDriveDir);
+grBoolean FilePath_GetDriveAndDir (char const *pPath, char *pDriveDir);
 
 // Extract Name and extension from pPath and place in pName
 // pName may be the same as pPath
-jeBoolean FilePath_GetNameAndExt (char const *pPath, char *pName);
+grBoolean FilePath_GetNameAndExt (char const *pPath, char *pName);
 
 // set extension of pSourceFile to pExt and place result in pDestFile
 // pDestFile may be the same as pSourceFile
-jeBoolean FilePath_SetExt (char const *pSourceFile, char const *pExt, char *pDestFile);
+grBoolean FilePath_SetExt (char const *pSourceFile, char const *pExt, char *pDestFile);
 
 // Terminate pPath with a slash (by appending if necessary), and return result in pDest.
 // pPath and pDest may be the same.
-jeBoolean FilePath_SlashTerminate (const char *pPath, char *pDest);
+grBoolean FilePath_SlashTerminate (const char *pPath, char *pDest);
 
 // Append pName to pPath and return result in pDest.
 // pDest may be the same as pPath or pName.
-jeBoolean FilePath_AppendName (char const *pPath, char const *pName, char *pDest);
+grBoolean FilePath_AppendName (char const *pPath, char const *pName, char *pDest);
 
 // Search for a Filename in the semicolon-separated paths specified in SearchPath.
-// If found, returns JE_TRUE and the full path name of the file in FoundPath.
-// Returns JE_FALSE if unsuccessful.
-jeBoolean FilePath_SearchForFile (const char *Filename, const char *SearchPath, char *FoundPath);
+// If found, returns GR_TRUE and the full path name of the file in FoundPath.
+// Returns GR_FALSE if unsuccessful.
+grBoolean FilePath_SearchForFile (const char *Filename, const char *SearchPath, char *FoundPath);
 
 
-jeBoolean FilePath_AppendSearchDir (char *SearchList, const char *NewDir);
-jeBoolean FilePath_ResolveRelativePath (const char *Relative, char *Resolved);
-jeBoolean FilePath_ResolveRelativePathList (const char *RelativeList, char *ResolvedList);
+grBoolean FilePath_AppendSearchDir (char *SearchList, const char *NewDir);
+grBoolean FilePath_ResolveRelativePath (const char *Relative, char *Resolved);
+grBoolean FilePath_ResolveRelativePathList (const char *RelativeList, char *ResolvedList);
 
 #ifdef __cplusplus
 	}

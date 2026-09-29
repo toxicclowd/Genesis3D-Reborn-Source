@@ -21,6 +21,6 @@
 #ifndef	FSMEMORY_H
 #define	FSMEMORY_H
 
-const	jeVFile_SystemAPIs * JETCC FSMemory_GetAPIs(void);
+const	grVFile_SystemAPIs * GRCC FSMemory_GetAPIs(void);
 
 #endif

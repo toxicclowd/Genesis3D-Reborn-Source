@@ -33,13 +33,13 @@
 typedef struct tagBrushModelReattachInfo
 {
 	BrushList	* pList ;
-	jeWorld		* pWorld ;
+	grWorld		* pWorld ;
 } BrushModelReattachInfo ;
 
-static jeBoolean BrushList_ClearMiscFlagsCB( Brush *pBrush, void* lParam )
+static grBoolean BrushList_ClearMiscFlagsCB( Brush *pBrush, void* lParam )
 {
 	Object_ClearMiscFlags( (Object*)pBrush, (const uint32)lParam ) ;
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// BrushList_ClearMiscFlagsCB
 
 static void BrushList_DestroyBrushCB( void *p1 )
@@ -50,27 +50,27 @@ static void BrushList_DestroyBrushCB( void *p1 )
 	Object_Free( (Object**)&pBrush ) ;
 }// BrushList_DestroyBrushCB
 
-static jeBoolean BrushList_FindCB( void *p1, void *lParam )
+static grBoolean BrushList_FindCB( void *p1, void *lParam )
 {
 	return ( p1 == lParam ) ;
 }// BrushList_FindCB
 
-static jeBoolean BrushList_FindGECB( void *p1, void *lParam )
+static grBoolean BrushList_FindGECB( void *p1, void *lParam )
 {
 	Brush * pBrush = (Brush*)p1 ;
 	assert( pBrush != NULL ) ;
 
-	return ( Brush_GetjeBrush(pBrush) == lParam ) ;
+	return ( Brush_GetgrBrush(pBrush) == lParam ) ;
 }// BrushList_FindCB
 
 
-static jeBoolean BrushList_SetMiscFlagsCB( Brush *pBrush, void* lParam )
+static grBoolean BrushList_SetMiscFlagsCB( Brush *pBrush, void* lParam )
 {
 	Object_SetMiscFlags( (Object*)pBrush, (const uint32)lParam ) ;
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// BrushList_SetMiscFlagsCB
 
-static jeBoolean BrushList_WriteCB( Brush *pBrush, void* lParam )
+static grBoolean BrushList_WriteCB( Brush *pBrush, void* lParam )
 {
 	return Brush_WriteToFile( pBrush, (Brush_WriteInfo *)lParam ) ;
 }// BrushList_ClearMiscFlagsCB
@@ -117,14 +117,14 @@ BrushIterator BrushList_Find( BrushList * pList, Brush * pBrush )
 	Brush	*		pFoundBrush ;
 
 	assert( pList != NULL ) ;
-	assert( JE_TRUE == Brush_IsValid( pBrush ) ) ;
+	assert( GR_TRUE == Brush_IsValid( pBrush ) ) ;
 
 	List_Search( pList, BrushList_FindCB, pBrush, &pFoundBrush, &pBI ) ;
 	return pBI ;
 
 }// BrushList_Find
 
-Brush *	BrushList_FindByGeBrush( BrushList * pList, BrushIterator *Interator, jeBrush * pgeBrush )
+Brush *	BrushList_FindByGeBrush( BrushList * pList, BrushIterator *Interator, grBrush * pgeBrush )
 {
 	Brush	*		pFoundBrush ;
 
@@ -138,27 +138,27 @@ Brush *	BrushList_FindByGeBrush( BrushList * pList, BrushIterator *Interator, je
 BrushIterator BrushList_Append( BrushList * pList, Brush * pBrush )
 {
 	assert( pList != NULL ) ;
-	assert( JE_TRUE == Brush_IsValid( pBrush ) ) ;
+	assert( GR_TRUE == Brush_IsValid( pBrush ) ) ;
 
 	Object_AddRef( (Object*)pBrush );
 	return List_Append( pList, pBrush ) ;
 }// BrushList_Append
 
-jeBoolean BrushList_AppendNoDup( BrushList * pList, Brush * pBrush )
+grBoolean BrushList_AppendNoDup( BrushList * pList, Brush * pBrush )
 {
 	BrushIterator	pBI ;
-	jeBoolean		bFound ;
+	grBoolean		bFound ;
 	Brush	*		pFoundBrush ;
 	assert( pList != NULL ) ;
-	assert( JE_TRUE == Brush_IsValid( pBrush ) ) ;
+	assert( GR_TRUE == Brush_IsValid( pBrush ) ) ;
 
 	bFound = List_Search( pList, BrushList_FindCB, pBrush, &pFoundBrush, &pBI ) ;
-	if( bFound == JE_FALSE )
+	if( bFound == GR_FALSE )
 	{
 		if( BrushList_Append( pList, pBrush ) == NULL )
-			return JE_FALSE ;
+			return GR_FALSE ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// BrushList_AppendNoDup
 
 void BrushList_ClearMiscFlags( BrushList * pList, const uint32 nFlags )
@@ -172,14 +172,14 @@ void BrushList_ClearMiscFlags( BrushList * pList, const uint32 nFlags )
 void BrushList_Remove( BrushList * pList, Brush * pBrush )
 {
 	BrushIterator	pBI ;
-	jeBoolean		bFound ;
+	grBoolean		bFound ;
 	Brush	*		pFoundBrush ;
 
 	assert( pList != NULL ) ;
-	assert( JE_TRUE == Brush_IsValid( pBrush ) ) ;
+	assert( GR_TRUE == Brush_IsValid( pBrush ) ) ;
 
 	bFound = List_Search( pList, BrushList_FindCB, pBrush, &pFoundBrush, &pBI ) ;
-	assert( JE_TRUE == bFound ) ;
+	assert( GR_TRUE == bFound ) ;
 
 	List_Remove( pList, pBI, NULL ) ;
 }// BrushList_Remove
@@ -204,7 +204,7 @@ int32 BrushList_EnumBrushes( BrushList * pList, void * pVoid, BrushListCB Callba
 
 
 // FILE HANDLING
-BrushList * BrushList_CreateFromFile( jeVFile * pF, jePtrMgr * pPtrMgr )
+BrushList * BrushList_CreateFromFile( grVFile * pF, grPtrMgr * pPtrMgr )
 {
 	BrushList	*	pList = NULL ;
 	Brush		*	pBrush ;
@@ -212,17 +212,17 @@ BrushList * BrushList_CreateFromFile( jeVFile * pF, jePtrMgr * pPtrMgr )
 	int32			nItems ;
 	int32			nVersion ;
 
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
-	if( !jeVFile_Read( pF, &nVersion, sizeof nVersion ) )
+	if( !grVFile_Read( pF, &nVersion, sizeof nVersion ) )
 		return NULL ;
 	if( nVersion != BRUSH_VERSION )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushList_CreateFromFile Version.\n", NULL);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushList_CreateFromFile Version.\n", NULL);
 		return NULL ;
 	}
 
-	if( !jeVFile_Read( pF, &nItems, sizeof nItems ) )
+	if( !grVFile_Read( pF, &nItems, sizeof nItems ) )
 		return NULL ;
 
 	pList = BrushList_Create( ) ;
@@ -239,7 +239,7 @@ BrushList * BrushList_CreateFromFile( jeVFile * pF, jePtrMgr * pPtrMgr )
 			Object_Free( (Object**)&pBrush ) ;
 			goto BLCFF_FAILURE ;
 		}
-		Object_SetInLevel( (Object*)pBrush, JE_TRUE );
+		Object_SetInLevel( (Object*)pBrush, GR_TRUE );
 		Object_Free( (Object**)&pBrush ) ;
 	}
 	return pList ;
@@ -252,26 +252,26 @@ BLCFF_FAILURE :
 }// BrushList_CreateFromFile
 
 
-jeBoolean BrushList_WriteToFile( BrushList * pList, Brush_WriteInfo * pWriteInfo  )
+grBoolean BrushList_WriteToFile( BrushList * pList, Brush_WriteInfo * pWriteInfo  )
 {
 	int32	nVersion ;
 	int32	nItems ;
-	jeVFile * pF = pWriteInfo->pF;
+	grVFile * pF = pWriteInfo->pF;
 	assert( pList != NULL ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	nVersion = BRUSH_VERSION ;
-	if( jeVFile_Write( pF, &nVersion, sizeof nVersion ) == JE_FALSE )
+	if( grVFile_Write( pF, &nVersion, sizeof nVersion ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 	
 	nItems = BrushList_GetNumItems( pList ) ;
-	if( jeVFile_Write( pF, &nItems, sizeof nItems ) == JE_FALSE )
+	if( grVFile_Write( pF, &nItems, sizeof nItems ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
 	return BrushList_EnumBrushes( pList, pWriteInfo, BrushList_WriteCB ) ;
@@ -279,11 +279,11 @@ jeBoolean BrushList_WriteToFile( BrushList * pList, Brush_WriteInfo * pWriteInfo
 }// BrushList_WriteToFile
 
 
-jeBoolean BrushList_Reattach( BrushList * pList, Model * pModel, jeWorld *pWorld )
+grBoolean BrushList_Reattach( BrushList * pList, Model * pModel, grWorld *pWorld )
 {
 	BrushReattachInfo	bri ;
-	jeBrush			*	pgeBrush ;
-	jeModel			*	pguModel = Model_GetguModel( pModel ) ;
+	grBrush			*	pgeBrush ;
+	grModel			*	pguModel = Model_GetguModel( pModel ) ;
 
 	assert( pList != NULL ) ;
 	assert( pModel != NULL ) ;
@@ -294,14 +294,14 @@ jeBoolean BrushList_Reattach( BrushList * pList, Model * pModel, jeWorld *pWorld
 	bri.pWorld = pWorld;
 
 	pgeBrush = NULL ;
-	while( (pgeBrush = jeModel_GetNextBrush( pguModel, pgeBrush )) != NULL )
+	while( (pgeBrush = grModel_GetNextBrush( pguModel, pgeBrush )) != NULL )
 	{
-		//bri.nIndexTag = jeBrush_GetIndexTag( pgeBrush ) ;
+		//bri.nIndexTag = grBrush_GetIndexTag( pgeBrush ) ;
 		bri.pgeBrush = pgeBrush ;
 		BrushList_EnumBrushes( pList, &bri, Brush_ReattachCB ) ;
 		assert( bri.nIndexTag == BRUSH_REATTACH_GOOD ) ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// ModelList_Reattach
 

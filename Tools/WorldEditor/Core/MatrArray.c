@@ -29,21 +29,21 @@
 
 typedef struct MatrArray_Struct {
 	List* pList;
-	jeMaterial_Array	*	pMatlArray;
+	grMaterial_Array	*	pMatlArray;
 	MatrIdx_Struct		*	CurMatrIdx;
 }	MatrArray_Struct;
 
 
 
 //Creates a material list.  
-MatrArray_Struct* MatrArray_Create( jeMaterial_Array * pMatlArray )
+MatrArray_Struct* MatrArray_Create( grMaterial_Array * pMatlArray )
 {
 	MatrArray_Struct* MatrArray;
 
-	MatrArray = JE_RAM_ALLOCATE_STRUCT( MatrArray_Struct );
+	MatrArray = GR_RAM_ALLOCATE_STRUCT( MatrArray_Struct );
 	if( MatrArray == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return( NULL );
 	}
 	MatrArray->pList = List_Create ();
@@ -60,7 +60,7 @@ void MatrArray_Destroy( MatrArray_Struct **hMatrArray )
 	if( (*hMatrArray)->pList != NULL )
 		List_Destroy ( &(*hMatrArray)->pList, (List_DestroyCallback) MatrIdx_Destroy );
 
-	jeRam_Free( (*hMatrArray) );
+	grRam_Free( (*hMatrArray) );
 
 }
 
@@ -107,7 +107,7 @@ void MatrArray_SetCurMatrIdx( MatrArray_Struct* MatrArray, MatrIdx_Struct* MatrI
 	MatrArray->CurMatrIdx = MatrIdx;
 }
 
-MatrIdx_Struct * MatrArray_Add( MatrArray_Struct * pMatrArray, jeBitmap * pBitmap, const char * Name )
+MatrIdx_Struct * MatrArray_Add( MatrArray_Struct * pMatrArray, grBitmap * pBitmap, const char * Name )
 {
 	MatrIdx_Struct* pMatrIdx;
 
@@ -115,7 +115,7 @@ MatrIdx_Struct * MatrArray_Add( MatrArray_Struct * pMatrArray, jeBitmap * pBitma
 	pMatrIdx = MatrIdx_Create( pMatrArray->pMatlArray, pBitmap, Name );
 	if( pMatrIdx == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		return( NULL );
 	}
 	List_Append ( pMatrArray->pList, pMatrIdx );
@@ -123,7 +123,7 @@ MatrIdx_Struct * MatrArray_Add( MatrArray_Struct * pMatrArray, jeBitmap * pBitma
 	return( pMatrIdx );
 }
 
-static jeBoolean MatrArray_SearchNameCB(void *pData, void *lParam)
+static grBoolean MatrArray_SearchNameCB(void *pData, void *lParam)
 {
 	MatrIdx_Struct* MatrIdx = (MatrIdx_Struct*)pData;
 	char* Name = lParam;

@@ -47,10 +47,10 @@ extern "C" {
 
 #endif
 
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "Object.h"
 #include "ObjectDef.h"
-#include "jeVersion.h"
+#include "grVersion.h"
 #include "Actor.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -107,18 +107,18 @@ int WINAPI DllMain(
 //	Object_RegisterDef()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-DLLExport jeBoolean Object_RegisterDef(
+DLLExport grBoolean Object_RegisterDef(
 	float Major,	// major version number
 	float Minor )	// minor version number
 {
 
 	// fail if versions don't match
-	if ( ( Major != JET_MAJOR_VERSION ) || ( Minor != JET_MINOR_VERSION ) )
+	if ( ( Major != GRT_MAJOR_VERSION ) || ( Minor != GRT_MINOR_VERSION ) )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// register def
-	return jeActor_RegisterObjectDef();
+	return grActor_RegisterObjectDef();
 
 } // Object_RegisterDef()

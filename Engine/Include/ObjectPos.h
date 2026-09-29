@@ -18,8 +18,8 @@
 /*                                                                                      */
 /****************************************************************************************/
 
-#ifndef JE_POSITION_H
-#define JE_POSITION_H
+#ifndef GR_POSITION_H
+#define GR_POSITION_H
 
 #include "Vec3d.h"
 #include "XForm3d.h"
@@ -30,64 +30,64 @@ extern "C" {
 
 typedef struct
 {
-	jeFloat x[3][4];
+	grFloat x[3][4];
 } Matrix34;
 
 typedef union MatrixXForm {
 	struct{ 
 		Matrix34	Matrix;
-		jeVec3d		Translation;
+		grVec3d		Translation;
 	};
-	jeXForm3d	XForm;
+	grXForm3d	XForm;
 } MatrixXForm;
 
-typedef struct jeObjectPos {
-	jeFloat		Phi;							// Spin-Angle
-	jeFloat		Psi;							// Slope-Angle
-	jeFloat		Rho;							// Tilt-Angle
-	jeFloat     CPhi;							// Their sin/cos values
-	jeFloat     SPhi;
-	jeFloat     CPsi;
-	jeFloat     SPsi;
-	jeFloat     CRho;
-	jeFloat     SRho;
+typedef struct grObjectPos {
+	grFloat		Phi;							// Spin-Angle
+	grFloat		Psi;							// Slope-Angle
+	grFloat		Rho;							// Tilt-Angle
+	grFloat     CPhi;							// Their sin/cos values
+	grFloat     SPhi;
+	grFloat     CPsi;
+	grFloat     SPsi;
+	grFloat     CRho;
+	grFloat     SRho;
 	Matrix34	RMatrix;						// Relative rotationmatrix
 	Matrix34	BMatrix; 						// Base     rotationmatrix
-	union { //  Matrix34 & jeVec3d <=> jeXForm3d
+	union { //  Matrix34 & grVec3d <=> grXForm3d
 		struct { 
 			Matrix34	Matrix;					// Resulting rotationmatrix
-			jeVec3d		Translation;			// Translation
+			grVec3d		Translation;			// Translation
 		};
-		jeXForm3d	XForm;						// Resulting rotation- and translationmatrix
+		grXForm3d	XForm;						// Resulting rotation- and translationmatrix
 	};
 	int         Flags;							// Normal  = BMatrix is identity
 												// XFormed = BMatrix is NOT identity
 												// Used internally for rotationacceleration
-} jeObjectPos;
+} grObjectPos;
 
 
 
 // Initialization-Methods
 
-JETAPI void JETCC jeObjectPos_SetIdentity(jeObjectPos *APos);
+GRAPI void GRCC grObjectPos_SetIdentity(grObjectPos *APos);
 // Initialization of APos:  Do nothing
 
-JETAPI void JETCC jeObjectPos_SetTranslation(jeObjectPos *APos, jeFloat X, jeFloat Y, jeFloat Z);
+GRAPI void GRCC grObjectPos_SetTranslation(grObjectPos *APos, grFloat X, grFloat Y, grFloat Z);
 // Initialization of APos:  Set up a translation by (X,Y,Z)
 
-JETAPI void JETCC jeObjectPos_SetTranslationByVec(jeObjectPos *APos, jeVec3d *T);
+GRAPI void GRCC grObjectPos_SetTranslationByVec(grObjectPos *APos, grVec3d *T);
 // Initialization of APos:  Set up a translation by T
 							
-JETAPI void JETCC jeObjectPos_SetRotation(jeObjectPos *APos, jeFloat Phi, jeFloat Psi, jeFloat Rho);
+GRAPI void GRCC grObjectPos_SetRotation(grObjectPos *APos, grFloat Phi, grFloat Psi, grFloat Rho);
 // Initialization of APos:  Set up a rotation:
 //							Spin by Phi, slope by Psi, tilt by Rho
 //							Same as RotateZ(Rho), RotateX(Psi), RotateY(Phi)
 
-JETAPI void JETCC jeObjectPos_SetBaseXForm(jeObjectPos *APos, const jeXForm3d *BaseXF);
+GRAPI void GRCC grObjectPos_SetBaseXForm(grObjectPos *APos, const grXForm3d *BaseXF);
 // Initialization of APos:  Set up relative Identity:
 //							Rotate by BaseXF,no translation or further rotation
 
-JETAPI void JETCC jeObjectPos_SetBaseXFormByAxis(jeObjectPos *APos, const jeVec3d *X, const jeVec3d *Y, const jeVec3d *Z);
+GRAPI void GRCC grObjectPos_SetBaseXFormByAxis(grObjectPos *APos, const grVec3d *X, const grVec3d *Y, const grVec3d *Z);
 // Same as above, but instead of a XForm the axis are given:
 //							X = "Left"-axisvector
 //							Y = "Up"-axisvector
@@ -97,19 +97,19 @@ JETAPI void JETCC jeObjectPos_SetBaseXFormByAxis(jeObjectPos *APos, const jeVec3
 
 // Set-Methods
 
-void __inline jeObjectPos_SetNewTranslationByVec(jeObjectPos *APos, jeVec3d *V) { APos->Translation=*V; }
+void __inline grObjectPos_SetNewTranslationByVec(grObjectPos *APos, grVec3d *V) { APos->Translation=*V; }
 // Moveto V
 
-void __inline jeObjectPos_SetNewTranslationVecFromMatrix(jeObjectPos *APos, jeXForm3d *XForm) { APos->Translation=XForm->Translation; }
+void __inline grObjectPos_SetNewTranslationVecFromMatrix(grObjectPos *APos, grXForm3d *XForm) { APos->Translation=XForm->Translation; }
 // Get translation of XForm and moveto there
 
-JETAPI void JETCC jeObjectPos_SetNewRotation(jeObjectPos *APos, jeFloat Phi, jeFloat Psi, jeFloat Rho);
+GRAPI void GRCC grObjectPos_SetNewRotation(grObjectPos *APos, grFloat Phi, grFloat Psi, grFloat Rho);
 // Rotate to the new angles
 
-JETAPI void JETCC jeObjectPos_SetNewBaseXForm(jeObjectPos *APos, const jeXForm3d *BaseXF);
+GRAPI void GRCC grObjectPos_SetNewBaseXForm(grObjectPos *APos, const grXForm3d *BaseXF);
 // Setup a new baseorientation by a XForm
 
-JETAPI void JETCC jeObjectPos_SetNewBaseXFormByAxis(jeObjectPos *APos, const jeVec3d *X, const jeVec3d *Y, const jeVec3d *Z);
+GRAPI void GRCC grObjectPos_SetNewBaseXFormByAxis(grObjectPos *APos, const grVec3d *X, const grVec3d *Y, const grVec3d *Z);
 // Setup a new baseorientation by left/up/forward vectors
 
 
@@ -117,73 +117,73 @@ JETAPI void JETCC jeObjectPos_SetNewBaseXFormByAxis(jeObjectPos *APos, const jeV
 
 // Transform-Methods
 
-JETAPI void JETCC jeObjectPos_Spin(jeObjectPos *APos, jeFloat DPhi);
+GRAPI void GRCC grObjectPos_Spin(grObjectPos *APos, grFloat DPhi);
 // Rotate CounterClockWise around the "up/Y-axis" by DPhi
 // pos. : "rotate right"
 // neg. : "rotate left"
 
-JETAPI void JETCC jeObjectPos_Slope(jeObjectPos *APos, jeFloat DPsi);
+GRAPI void GRCC grObjectPos_Slope(grObjectPos *APos, grFloat DPsi);
 // Rotate CCW around the "right/X-axis" by DPsi
 // pos. : "rotate up"
 // neg. : "rotate down"
 
-JETAPI void JETCC jeObjectPos_Tilt(jeObjectPos *APos, jeFloat DRho);
+GRAPI void GRCC grObjectPos_Tilt(grObjectPos *APos, grFloat DRho);
 // Rotate CCW around the "back/Z-axis" by DRho
 // pos. : "fall left"
 // neg. : "fall right"
 
-JETAPI void JETCC jeObjectPos_Rotate(jeObjectPos *APos, jeFloat DPhi, jeFloat DPsi, jeFloat DRho);
+GRAPI void GRCC grObjectPos_Rotate(grObjectPos *APos, grFloat DPhi, grFloat DPsi, grFloat DRho);
 // Rotate CCW around all axis by DPhi,DPsi,DRho
 
-JETAPI void JETCC jeObjectPos_Translate(jeObjectPos *APos, jeFloat DX, jeFloat DY, jeFloat DZ);
+GRAPI void GRCC grObjectPos_Translate(grObjectPos *APos, grFloat DX, grFloat DY, grFloat DZ);
 // Move by (DX,DY,DZ)
 
-JETAPI void JETCC jeObjectPos_Move(jeObjectPos *APos, jeVec3d *Dir, jeFloat Dist);
+GRAPI void GRCC grObjectPos_Move(grObjectPos *APos, grVec3d *Dir, grFloat Dist);
 // Move by scaled Dir vector
 // Normally used for normalized vectors
 
-JETAPI void JETCC jeObjectPos_MoveIn(jeObjectPos *APos, jeFloat Dist);
+GRAPI void GRCC grObjectPos_MoveIn(grObjectPos *APos, grFloat Dist);
 // Move forward by Dist
 
-JETAPI void JETCC jeObjectPos_MoveLeft(jeObjectPos *APos, jeFloat Dist);
+GRAPI void GRCC grObjectPos_MoveLeft(grObjectPos *APos, grFloat Dist);
 // Move left by Dist
 
-JETAPI void JETCC jeObjectPos_MoveUp(jeObjectPos *APos, jeFloat Dist);
+GRAPI void GRCC grObjectPos_MoveUp(grObjectPos *APos, grFloat Dist);
 // Move up by Dist
 
-JETAPI void JETCC jeObjectPos_MoveByDifference(const jeObjectPos *OPos, const jeObjectPos *NPos, jeObjectPos *APos);
+GRAPI void GRCC grObjectPos_MoveByDifference(const grObjectPos *OPos, const grObjectPos *NPos, grObjectPos *APos);
 // Get difference translation vector of OPos and NPos  and move APos by it
 
-JETAPI void JETCC jeObjectPos_TransformByDifference(const jeObjectPos *OPos, const jeObjectPos *NPos, jeObjectPos *APos);
+GRAPI void GRCC grObjectPos_TransformByDifference(const grObjectPos *OPos, const grObjectPos *NPos, grObjectPos *APos);
 // Same as above, but additionally spin/slope/tilt APos by difference
 
 
 // Query-Methods
 
-void __inline jeObjectPos_GetTranslation(const jeObjectPos *APos, jeVec3d *V) { *V=APos->Translation; }
+void __inline grObjectPos_GetTranslation(const grObjectPos *APos, grVec3d *V) { *V=APos->Translation; }
 // return translation
 
-void __inline jeObjectPos_ToMatrix(const jeObjectPos *APos, jeXForm3d *XForm) { *XForm=APos->XForm; }
+void __inline grObjectPos_ToMatrix(const grObjectPos *APos, grXForm3d *XForm) { *XForm=APos->XForm; }
 // return rotation and translation
 
-JETAPI void JETCC jeObjectPos_GetIn(const jeObjectPos *APos, jeVec3d *V);
+GRAPI void GRCC grObjectPos_GetIn(const grObjectPos *APos, grVec3d *V);
 // Get relative forwardvector (to baseorientation)
 
-JETAPI void JETCC jeObjectPos_GetLeft(const jeObjectPos *APos, jeVec3d *V);
+GRAPI void GRCC grObjectPos_GetLeft(const grObjectPos *APos, grVec3d *V);
 // Get relative leftvector
 
-JETAPI void	JETCC jeObjectPos_GetUp(const jeObjectPos *APos, jeVec3d *V);
+GRAPI void	GRCC grObjectPos_GetUp(const grObjectPos *APos, grVec3d *V);
 // Get relative upwardvector
 
-JETAPI jeBoolean JETCC jeObjectPos_IsValid(const jeObjectPos *APos);
+GRAPI grBoolean GRCC grObjectPos_IsValid(const grObjectPos *APos);
 // Are all variables correct initialized?
 
 
 
 #ifdef NDEBUG
-	#define jeObjectPos_SetMaximalAssertionMode(Enable )
+	#define grObjectPos_SetMaximalAssertionMode(Enable )
 #else
-	JETAPI 	void JETCC jeObjectPos_SetMaximalAssertionMode( jeBoolean Enable );
+	GRAPI 	void GRCC grObjectPos_SetMaximalAssertionMode( grBoolean Enable );
 #endif
 
 #ifdef __cplusplus

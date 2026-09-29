@@ -29,17 +29,17 @@ extern "C" {
 
 typedef	struct	RefPool		RefPool;
 
-RefPool *	JETCC RefPool_Create(int Increment);
+RefPool *	GRCC RefPool_Create(int Increment);
 
-void	JETCC RefPool_Destroy(RefPool **Pool);
+void	GRCC RefPool_Destroy(RefPool **Pool);
 
-void ** JETCC RefPool_RefCreate(RefPool *Pool);
+void ** GRCC RefPool_RefCreate(RefPool *Pool);
 
-void JETCC RefPool_RefDestroy(RefPool *Pool, void ***Ref);
+void GRCC RefPool_RefDestroy(RefPool *Pool, void ***Ref);
 
-int JETCC RefPool_GetRefCount(const RefPool *Pool);
+int GRCC RefPool_GetRefCount(const RefPool *Pool);
 
-void ** JETCC RefPool_GetNextRef(const RefPool *Pool, const void **Ref);
+void ** GRCC RefPool_GetNextRef(const RefPool *Pool, const void **Ref);
 
 #ifdef	__cplusplus
 }

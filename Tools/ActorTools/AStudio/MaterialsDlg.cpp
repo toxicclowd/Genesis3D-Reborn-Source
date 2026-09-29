@@ -509,7 +509,7 @@ void CMaterialsDlg::OnDeletematerial()
 	{
 		int Index = m_MaterialsList.GetItemData (LbItem);
 		// remove it from the project
-		if (AProject_RemoveMaterial (m_Project, Index) == JE_FALSE)
+		if (AProject_RemoveMaterial (m_Project, Index) == GR_FALSE)
 		{
 			AfxMessageBox (IDS_ERRORDELMATERIAL);
 		}
@@ -574,7 +574,7 @@ void CMaterialsDlg::OnDropFiles (HDROP hDrop)
 		else
 		{
 			// Everything's cool, so add it to the listbox.
-			if (AProject_AddMaterial (m_Project, MaterialName, ApjMaterial_Texture, NewFilename, 0, 0, 0, 0, &Index) != JE_FALSE)
+			if (AProject_AddMaterial (m_Project, MaterialName, ApjMaterial_Texture, NewFilename, 0, 0, 0, 0, &Index) != GR_FALSE)
 			{
 				// And add to listbox
 				int LbItem = m_MaterialsList.AddString (MaterialName);

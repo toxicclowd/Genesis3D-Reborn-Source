@@ -68,7 +68,7 @@ typedef struct
 	int p0,pt;
 } binContext;
 
-jeBoolean coderBPB2Init(coder *c);
+grBoolean coderBPB2Init(coder *c);
 void coderBPB2Free(coder *c);
 void coderBPB2EncodeBandBP(coderParams *P);
 void coderBPB2DecodeBandBP(coderParams *P);
@@ -86,16 +86,16 @@ typedef struct
 {
 	binContext signs[SIGN_CONTEXTS];
 	binContext stats_array[NUM_CONTEXTS];
-	jeThreadQueue_Semaphore * lock;
+	grThreadQueue_Semaphore * lock;
 } bpb2Info;
 
-jeBoolean coderBPB2Init(coder *c)
+grBoolean coderBPB2Init(coder *c)
 {
 bpb2Info *d;
 int i;
 
 	if ( ! (d = (bpb2Info *)new(bpb2Info)) )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	c->data = d;
 
@@ -111,10 +111,10 @@ int i;
 		d->signs[i].pt = 200;
 	}
 
-	d->lock = jeThreadQueue_Semaphore_Create();
+	d->lock = grThreadQueue_Semaphore_Create();
 	assert(d->lock);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 void coderBPB2Free(coder *c)
@@ -123,7 +123,7 @@ void coderBPB2Free(coder *c)
 	{
 		bpb2Info *d;
 		d = (bpb2Info *)c->data;
-		jeThreadQueue_Semaphore_Destroy(&(d->lock));
+		grThreadQueue_Semaphore_Destroy(&(d->lock));
 		destroy(d);
 		c->data = NULL;
 	}
@@ -253,7 +253,7 @@ int *dp,*pp,*dpn;
 	c = p->coderPtr;
 	bpi = (bpb2Info *)c->data;
 
-	jeThreadQueue_Semaphore_Lock(bpi->lock);
+	grThreadQueue_Semaphore_Lock(bpi->lock);
 
 	bitshift = p->bitshift;
 	bitmask = 1<<bitshift;
@@ -302,7 +302,7 @@ int *dp,*pp,*dpn;
 		dp += fullw;
 	}
 	
-	jeThreadQueue_Semaphore_UnLock(bpi->lock);
+	grThreadQueue_Semaphore_UnLock(bpi->lock);
 }
 
 void coderBPB2DecodeBandBP(coderParams *p)
@@ -319,7 +319,7 @@ int *dp,*pp,*dpn;
 	c = p->coderPtr;
 	bpi = (bpb2Info *)c->data;
 	
-	jeThreadQueue_Semaphore_Lock(bpi->lock);
+	grThreadQueue_Semaphore_Lock(bpi->lock);
 
 	bitshift = p->bitshift;
 	bitmask = 1<<bitshift;
@@ -375,6 +375,6 @@ int *dp,*pp,*dpn;
 	}
 	
 done:
-	jeThreadQueue_Semaphore_UnLock(bpi->lock);
+	grThreadQueue_Semaphore_UnLock(bpi->lock);
 }
 

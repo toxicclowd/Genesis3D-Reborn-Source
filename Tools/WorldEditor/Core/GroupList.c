@@ -56,7 +56,7 @@ Group * GroupList_GetGroup( GroupIterator pGI )
 	assert( pGI != NULL ) ;
 
 	pGroup = List_GetData( pGI ) ;
-	assert( JE_TRUE == Group_IsValid( pGroup ) ) ;
+	assert( GR_TRUE == Group_IsValid( pGroup ) ) ;
 
 	return pGroup ;
 }// GroupList_GetGroup
@@ -86,7 +86,7 @@ Group * GroupList_GetNext( GroupList * pList, GroupIterator * pGI )
 
 
 // IS
-jeBoolean GroupList_IsGroupVisible( GroupIterator pGI )
+grBoolean GroupList_IsGroupVisible( GroupIterator pGI )
 {
 	assert( pGI != NULL ) ;
 
@@ -97,12 +97,12 @@ jeBoolean GroupList_IsGroupVisible( GroupIterator pGI )
 GroupIterator GroupList_Append( GroupList * pList, Group * pGroup )
 {
 	assert( pList != NULL ) ;
-	assert( JE_TRUE == Group_IsValid( pGroup ) ) ;
+	assert( GR_TRUE == Group_IsValid( pGroup ) ) ;
 
 	return List_Append( pList, pGroup ) ;
 }// GroupList_Append
 
-static jeBoolean GroupList_ReattachObjectCB( Group * pGroup, void * lParam )
+static grBoolean GroupList_ReattachObjectCB( Group * pGroup, void * lParam )
 {
 	Object * pObject = ( Object*)lParam ;
 
@@ -114,12 +114,12 @@ static jeBoolean GroupList_ReattachObjectCB( Group * pGroup, void * lParam )
 		Object_SetGroupTag( pObject, BRUSH_REATTACH_GOOD );
 		Group_AddObject( pGroup, pObject );
 		Object_SetGroup( pObject, pGroup );
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean	GroupList_ReattachObject( GroupList * pList, Object * pObject )
+grBoolean	GroupList_ReattachObject( GroupList * pList, Object * pObject )
 {
 	return( !GroupList_EnumGroups( pList, pObject, GroupList_ReattachObjectCB ));
 }
@@ -136,30 +136,30 @@ int32 GroupList_EnumGroups( GroupList * pGroupList, void * pVoid, GroupListCB Ca
 
 // FILE HANDLING
 
-GroupList *			GroupList_CreateFromFile( jeVFile * pF  )
+GroupList *			GroupList_CreateFromFile( grVFile * pF  )
 {
 	GroupList	*	pGroupList = NULL ;
 	int32			i ;
 	int32			nItems ;
 	int32			nVersion ;
 	Group		*	pGroup;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
-	if( !jeVFile_Read( pF, &nVersion, sizeof nVersion ) )
+	if( !grVFile_Read( pF, &nVersion, sizeof nVersion ) )
 		return NULL ;
 	if( nVersion != GROUP_VERSION )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "GroupList_CreateFromFile Version.\n", NULL);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "GroupList_CreateFromFile Version.\n", NULL);
 		return NULL ;
 	}
 
-	if( !jeVFile_Read( pF, &nItems, sizeof nItems ) )
+	if( !grVFile_Read( pF, &nItems, sizeof nItems ) )
 		return NULL ;
 
 	pGroupList = GroupList_Create( ) ;
 	if( pGroupList == NULL )
 	{
-		jeErrorLog_AddString(JE_ERR_INTERNAL_RESOURCE, "GroupList_CreateFromFile\n", NULL);
+		grErrorLog_AddString(GR_ERR_INTERNAL_RESOURCE, "GroupList_CreateFromFile\n", NULL);
 		return NULL ;
 	}
 
@@ -168,7 +168,7 @@ GroupList *			GroupList_CreateFromFile( jeVFile * pF  )
 		pGroup = Group_CreateFromFile( pF ) ;
 		if( pGroup == NULL )
 		{
-			jeErrorLog_AddString(JE_ERR_INTERNAL_RESOURCE, "Grouplist_CreateFromFile\n", NULL);
+			grErrorLog_AddString(GR_ERR_INTERNAL_RESOURCE, "Grouplist_CreateFromFile\n", NULL);
 			return NULL ;
 		}
 		if( GroupList_Append( pGroupList, pGroup ) == NULL )
@@ -183,30 +183,30 @@ GroupList *			GroupList_CreateFromFile( jeVFile * pF  )
 }// GroupList_CreateFromFile
 
 
-static jeBoolean GroupList_WriteCB( Group *pGroup, void* lParam )
+static grBoolean GroupList_WriteCB( Group *pGroup, void* lParam )
 {
-	return Group_WriteToFile( pGroup, (jeVFile*)lParam ) ;
+	return Group_WriteToFile( pGroup, (grVFile*)lParam ) ;
 }// GroupList_WriteCB
 
-jeBoolean	GroupList_WriteToFile( GroupList * pList, jeVFile * pF )
+grBoolean	GroupList_WriteToFile( GroupList * pList, grVFile * pF )
 {
 	int32	nVersion ;
 	int32	nItems ;
 	assert( pList != NULL ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	nVersion = GROUP_VERSION ;
-	if( jeVFile_Write( pF, &nVersion, sizeof nVersion ) == JE_FALSE )
+	if( grVFile_Write( pF, &nVersion, sizeof nVersion ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "GroupList_WriteToFile:jeVFile_Write", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "GroupList_WriteToFile:grVFile_Write", NULL);
+		return GR_FALSE;
 	}
 	
 	nItems = GroupList_GetNumItems( pList ) ;
-	if( jeVFile_Write( pF, &nItems, sizeof nItems ) == JE_FALSE )
+	if( grVFile_Write( pF, &nItems, sizeof nItems ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "GroupList_WriteToFile:jeVFile_Writev", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "GroupList_WriteToFile:grVFile_Writev", NULL);
+		return GR_FALSE;
 	}
 
 	return GroupList_EnumGroups( pList, pF, GroupList_WriteCB ) ;

@@ -48,16 +48,16 @@ int WINAPI DllMain(image_id	hInstance,DWORD		fdwReason, PVOID		pvReserved );
 
 #endif
 
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "CamObject.h"
 #include "Object.h"
 #include "ObjectDef.h"
-#include "jeVersion.h"
+#include "grVersion.h"
 
-jeObjectDef ObjectDef = {
-	JE_OBJECT_TYPE_UNKNOWN,
+grObjectDef ObjectDef = {
+	GR_OBJECT_TYPE_UNKNOWN,
 	"Camera",
-	JE_OBJECT_HIDDEN,
+	GR_OBJECT_HIDDEN,
 	CreateInstance,
 	CreateRef,
 	Destroy,
@@ -116,13 +116,13 @@ int WINAPI DllMain(
 	return( TRUE );
 }
 
-DLLExport jeBoolean Object_RegisterDef(float Major, float Minor)
+DLLExport grBoolean Object_RegisterDef(float Major, float Minor)
 {
-	if( JET_MAJOR_VERSION != Major )
-		return( JE_FALSE );
-	if( JET_MINOR_VERSION != Minor )
-		return( JE_FALSE );
+	if( GRT_MAJOR_VERSION != Major )
+		return( GR_FALSE );
+	if( GRT_MINOR_VERSION != Minor )
+		return( GR_FALSE );
 
-	return( jeObject_RegisterGlobalObjectDef(&ObjectDef) );
+	return( grObject_RegisterGlobalObjectDef(&ObjectDef) );
 }
 

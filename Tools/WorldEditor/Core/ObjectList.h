@@ -23,19 +23,19 @@
 #ifndef OBJECTLIST_H
 #define OBJECTLIST_H
 
-#include "jeList.h"
+#include "grList.h"
 #include "jwObject.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef jeBoolean (*ObjectListCB)( Object *pObject, void * pVoid );
+typedef grBoolean (*ObjectListCB)( Object *pObject, void * pVoid );
 
 // Krouer: allow to add to the list with a sort
-// return JE_TRUE if pObj1 is before pObj2
-// return JE_FALSE if pObj1 is after pObj2
-typedef jeBoolean (*ObjectList_SortCB)(Object *pObj1, Object *pObj2);
+// return GR_TRUE if pObj1 is before pObj2
+// return GR_FALSE if pObj1 is after pObj2
+typedef grBoolean (*ObjectList_SortCB)(Object *pObj1, Object *pObj2);
 
 typedef List					ObjectList ;
 typedef ListIterator			ObjectIterator ;
@@ -50,12 +50,12 @@ Object *		ObjectList_GetNext( ObjectList * pList, ObjectIterator * Iterator ) ;
 Object *		ObjectList_GetLast( ObjectList * pList );
 int32			ObjectList_GetNumItems( ObjectList * pList ) ;
 ObjectIterator	ObjectList_Find( ObjectList * pList, Object * pObject ) ;
-void ObjectList_GetListBounds( ObjectList * pList, jeExtBox * pListBounds );
-void ObjectList_GetListDrawBounds( ObjectList * pList, jeExtBox * pListBounds );
+void ObjectList_GetListBounds( ObjectList * pList, grExtBox * pListBounds );
+void ObjectList_GetListDrawBounds( ObjectList * pList, grExtBox * pListBounds );
 
 // MODIFIERS
 ObjectIterator	ObjectList_Append( ObjectList * pList, Object * pObject ) ;
-jeBoolean		ObjectList_AppendNoDup( ObjectList * pList, Object * pObject ) ;
+grBoolean		ObjectList_AppendNoDup( ObjectList * pList, Object * pObject ) ;
 void			ObjectList_Remove( ObjectList * pList, Object * pObject ) ;
 
 // Krouer: allow to add sorted

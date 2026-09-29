@@ -144,7 +144,7 @@ void CMotionsDlg::SetupCurrentItem (int Item)
 		const ApjMotionFormat Fmt = AProject_GetMotionFormat (m_Project, Index);
 		const int OptLevel = AProject_GetMotionOptimizationLevel (m_Project, Index);
 		const char *BoneName = AProject_GetMotionBone (m_Project, Index);
-		const jeBoolean OptFlag = AProject_GetMotionOptimizationFlag (m_Project, Index);
+		const grBoolean OptFlag = AProject_GetMotionOptimizationFlag (m_Project, Index);
 
 		m_MotionFilename = Filename;
 		switch (Fmt)
@@ -363,7 +363,7 @@ void CMotionsDlg::OnAddmotion()
 		int Index = AProject_GetMotionIndex (m_Project, MotionName);
 		if (Index == -1)
 		{
-			const jeBoolean OptFlag = AOptions_GetMotionOptimizationFlag (m_Options);
+			const grBoolean OptFlag = AOptions_GetMotionOptimizationFlag (m_Options);
 			int OptLevel = AOptions_GetMotionOptimizationLevel (m_Options);
 
 			// Insert motion into list
@@ -420,7 +420,7 @@ void CMotionsDlg::OnDeletemotion()
 	{
 		int Index = (int)m_MotionsList.GetItemData (LbItem);
 		// remove it from the project
-		if (AProject_RemoveMotion (m_Project, Index) == JE_FALSE)
+		if (AProject_RemoveMotion (m_Project, Index) == GR_FALSE)
 		{
 			AfxMessageBox (IDS_ERRORDELMOTION);
 		}
@@ -444,7 +444,7 @@ void CMotionsDlg::OnDeletemotion()
 void CMotionsDlg::OnMotiondefault() 
 {
 	// Apply defaults to all motion fields
-	m_Optimize = JE_FALSE;
+	m_Optimize = GR_FALSE;
 	m_OptLevel = 0;
 	m_MotionFilename = "";
 	m_MotionFormat = 0;
@@ -590,22 +590,22 @@ void CMotionsDlg::OnDropFiles (HDROP hDrop)
 		else if (Fmt == ApjMotion_Mot)
 		{
 			// it's a Jet3D motion file.  Try to load it.
-			jeVFile *MotFile = jeVFile_OpenNewSystem (NULL, JE_VFILE_TYPE_DOS, Filename, NULL, JE_VFILE_OPEN_READONLY);
+			grVFile *MotFile = grVFile_OpenNewSystem (NULL, GR_VFILE_TYPE_DOS, Filename, NULL, GR_VFILE_OPEN_READONLY);
 			if (MotFile != NULL)
 			{
 				// opened...Let's try to load it.
-				jeMotion *Motion = jeMotion_CreateFromFile (MotFile);
+				grMotion *Motion = grMotion_CreateFromFile (MotFile);
 				if (Motion != NULL)
 				{
 					// get the name from the motion
-					const char *Name = jeMotion_GetName (Motion);
+					const char *Name = grMotion_GetName (Motion);
 					if (Name != NULL)
 					{
 						strcpy (MotionName, Name);
 					}
-					jeMotion_Destroy (&Motion);
+					grMotion_Destroy (&Motion);
 				}
-				jeVFile_Close (MotFile);
+				grVFile_Close (MotFile);
 			}
 		}
 
@@ -619,10 +619,10 @@ void CMotionsDlg::OnDropFiles (HDROP hDrop)
 		}
 		else
 		{
-			const jeBoolean OptFlag = AOptions_GetMotionOptimizationFlag (m_Options);
+			const grBoolean OptFlag = AOptions_GetMotionOptimizationFlag (m_Options);
 			int OptLevel = AOptions_GetMotionOptimizationLevel (m_Options);
 			// Everything's cool, so add it to the listbox.
-			if (AProject_AddMotion (m_Project, MotionName, NewFilename, Fmt, OptFlag, OptLevel, "", &Index) != JE_FALSE)
+			if (AProject_AddMotion (m_Project, MotionName, NewFilename, Fmt, OptFlag, OptLevel, "", &Index) != GR_FALSE)
 			{
 				// And add to listbox
 				int LbItem = m_MotionsList.AddString (MotionName);

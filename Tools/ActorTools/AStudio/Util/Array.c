@@ -22,7 +22,7 @@
 #include <assert.h>
 #include "ram.h"
 
-jeBoolean Array_Init (Array *pArray, int InitialSize, int ItemSize)
+grBoolean Array_Init (Array *pArray, int InitialSize, int ItemSize)
 {
 	assert (pArray != NULL);
 	assert (InitialSize >= 0);
@@ -39,14 +39,14 @@ jeBoolean Array_Init (Array *pArray, int InitialSize, int ItemSize)
 	}
 	else
 	{
-		pArray->Items = jeRam_Allocate (InitialSize * ItemSize);
+		pArray->Items = grRam_Allocate (InitialSize * ItemSize);
 		if (pArray->Items == NULL)
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		pArray->ItemsAllocated = InitialSize;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void Array_Uninit (Array *pArray)
@@ -55,7 +55,7 @@ void Array_Uninit (Array *pArray)
 
 	if (pArray->Items != NULL)
 	{
-		jeRam_Free (pArray->Items);
+		grRam_Free (pArray->Items);
 		pArray->Items = NULL;
 	}
 	pArray->ItemsAllocated = 0;
@@ -70,10 +70,10 @@ Array *Array_Create (int InitialSize, int ItemSize)
 	assert (InitialSize >= 0);
 	assert (ItemSize > 0);
 
-	pArray = jeRam_Allocate (sizeof (Array));
+	pArray = grRam_Allocate (sizeof (Array));
 	if (pArray != NULL)
 	{
-		if (Array_Init (pArray, InitialSize, ItemSize) == JE_FALSE)
+		if (Array_Init (pArray, InitialSize, ItemSize) == GR_FALSE)
 		{
 			Array_Destroy (&pArray);
 		}
@@ -89,7 +89,7 @@ void Array_Destroy (Array **ppArray)
 	assert (*ppArray != NULL);
 
 	Array_Uninit (*ppArray);
-	jeRam_Free (*ppArray);
+	grRam_Free (*ppArray);
 	*ppArray = NULL;
 }
 
@@ -104,7 +104,7 @@ int Array_Resize (Array *pArray, int NewSize)
 	assert (pArray != NULL);
 	assert (NewSize >= 0);
 
-	NewItems = jeRam_Realloc (pArray->Items, (NewSize * pArray->ItemSize));
+	NewItems = grRam_Realloc (pArray->Items, (NewSize * pArray->ItemSize));
 
 	// realloc returns NULL in two cases:
 	//   1) It was unable to allocate memory
@@ -259,7 +259,7 @@ int Array_Resize (Array *pArray, int NewSize)
   pr	Print string		<string to print>
 */
 
-static jeBoolean ParseCommand
+static grBoolean ParseCommand
 	(
 	  char *InputLine,
 	  int LineNo,
@@ -268,7 +268,7 @@ static jeBoolean ParseCommand
 {
 	short intcmd;
 	char *sarg;
-	jeBoolean rslt;
+	grBoolean rslt;
 	char *c;
 	int Index;
 	int nItems, ItemSize;
@@ -276,7 +276,7 @@ static jeBoolean ParseCommand
 	if ((InputLine[0] == '\0') || (InputLine[0] == ';'))
 	{
 		// it's a comment line
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	if ((InputLine[1] == ' ') || (InputLine[1] == '\0') || (InputLine[1] == '\n'))
 	{
@@ -294,10 +294,10 @@ static jeBoolean ParseCommand
 	else
 	{
 		printf ("Parse error on line %d\n", LineNo);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	rslt = JE_TRUE;
+	rslt = GR_TRUE;
 	switch (intcmd)
 	{
 		case 'c' :
@@ -308,7 +308,7 @@ static jeBoolean ParseCommand
 			if (c == NULL)
 			{
 				puts ("Expected <nItems> <ItemSize>");
-				rslt = JE_FALSE;
+				rslt = GR_FALSE;
 				break;
 			}
 			*c = '\0';
@@ -326,7 +326,7 @@ static jeBoolean ParseCommand
 			if (*ppArray == NULL)
 			{
 				puts ("Error creating array");
-				rslt = JE_FALSE;
+				rslt = GR_FALSE;
 			}
 			else
 			{
@@ -353,7 +353,7 @@ static jeBoolean ParseCommand
 			if (c == NULL)
 			{
 				puts ("Expected <ItemNo> <String>");
-				rslt = JE_FALSE;
+				rslt = GR_FALSE;
 				break;
 			}
 			*c = '\0';
@@ -369,7 +369,7 @@ static jeBoolean ParseCommand
 			if (c == NULL)
 			{
 				puts ("Expected <ItemNo> <String>");
-				rslt = JE_FALSE;
+				rslt = GR_FALSE;
 				break;
 			}
 			*c = '\0';
@@ -417,7 +417,7 @@ static jeBoolean ParseCommand
 
 		default :
 			printf ("Unknown command on line %d\n", LineNo);
-			rslt = JE_FALSE;
+			rslt = GR_FALSE;
 			break;
 	}
 	if (!rslt)
@@ -438,7 +438,7 @@ int main
 	char *InputFilename;
 	FILE *infile;
 	int LineNo;
-	jeBoolean rslt;
+	grBoolean rslt;
 
 	puts ("Array test version 1.0");
 	puts ("---------------------");
@@ -460,7 +460,7 @@ int main
 
 	LineNo = 0;
 	pArray = NULL;
-	rslt = JE_TRUE;
+	rslt = GR_TRUE;
 	while (rslt && !feof (infile))
 	{
 		char InputLine[256];

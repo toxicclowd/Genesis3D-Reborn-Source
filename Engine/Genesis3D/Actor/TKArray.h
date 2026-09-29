@@ -18,14 +18,14 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_TKARRAY_H
-#define JE_TKARRAY_H
+#ifndef GR_TKARRAY_H
+#define GR_TKARRAY_H
 /* TKArray
 	(Time-Keyed-Array)
 	This module is designed primarily to support path.c
 
 	The idea is that there are these packed arrays of elements,
-	sorted by a jeTKArray_TimeType key.  The key is assumed to be the 
+	sorted by a grTKArray_TimeType key.  The key is assumed to be the 
 	first field in each element.
 
 	the TKArray functions operate on this very specific array type.
@@ -34,7 +34,7 @@
 	
 	Michael Sandige
 
-	01-28-98 [SLB]: style consistency changes, added jeTKArray_CreateFromFile
+	01-28-98 [SLB]: style consistency changes, added grTKArray_CreateFromFile
 
 */
 
@@ -45,31 +45,31 @@
 extern "C" {
 #endif
 
-typedef jeFloat jeTKArray_TimeType;
+typedef grFloat grTKArray_TimeType;
 
-#define JE_TKA_TIME_TOLERANCE (0.00001f)
+#define GR_TKA_TIME_TOLERANCE (0.00001f)
 
-typedef struct jeTKArray jeTKArray;
+typedef struct grTKArray grTKArray;
 
-jeTKArray *JETCC jeTKArray_Create(int ElementSize);
+grTKArray *GRCC grTKArray_Create(int ElementSize);
 	// creates new array with given attributes
 
-jeTKArray *JETCC jeTKArray_CreateEmpty(int ElementSize,int ElementCount);
+grTKArray *GRCC grTKArray_CreateEmpty(int ElementSize,int ElementCount);
 	// creates new array with given element size and given count of uninitialized members
 
-jeTKArray* JETCC jeTKArray_CreateFromFile(
-	jeVFile* pFile);					// stream positioned at array data
+grTKArray* GRCC grTKArray_CreateFromFile(
+	grVFile* pFile);					// stream positioned at array data
 	// Creates a new array from the given stream.
 
-jeBoolean JETCC jeTKArray_WriteToFile(
-	const jeTKArray* Array,			// sorted array to write
-	jeVFile* pFile);					// stream positioned for writing
+grBoolean GRCC grTKArray_WriteToFile(
+	const grTKArray* Array,			// sorted array to write
+	grVFile* pFile);					// stream positioned for writing
 	// Writes the array to the given stream.
 
 
-int JETCC jeTKArray_BSearch(
-	const jeTKArray *Array,			// sorted array to search
-	jeTKArray_TimeType Key);		// searching for this time
+int GRCC grTKArray_BSearch(
+	const grTKArray *Array,			// sorted array to search
+	grTKArray_TimeType Key);		// searching for this time
 	// Searches for key in the Array. (assumes array is sorted) 
 	// if key is found (within +-tolerance), the index to that element is returned.
 	// if key is not found, the index to the key just smaller than the 
@@ -77,9 +77,9 @@ int JETCC jeTKArray_BSearch(
 	// search is only accurate to 2*TKA_TIME_TOLERANCE.  
 	// if multiple keys exist within 2*TKA_TIME_TOLERANCE, this will find an arbitrary one of them.
 
-jeBoolean JETCC jeTKArray_Insert(
-	jeTKArray **Array,
-	jeTKArray_TimeType Key,			// time to insert
+grBoolean GRCC grTKArray_Insert(
+	grTKArray **Array,
+	grTKArray_TimeType Key,			// time to insert
 	int *Index);					// new element index
 	// inserts a new element into Array.
 	// sets only the key for the new element - the rest is junk
@@ -89,36 +89,36 @@ jeBoolean JETCC jeTKArray_Insert(
 	// with the one Key element
 	// Index is the index of the new element 
 
-jeBoolean JETCC jeTKArray_DeleteElement(
-	jeTKArray **Array,
+grBoolean GRCC grTKArray_DeleteElement(
+	grTKArray **Array,
 	int N);							// element to delete
 	// deletes an element from Array.
 	// returns TRUE if the deletion was successful. 
 	// returns FALSE if the deletion failed. (key not found or realloc failed)
 
-void JETCC jeTKArray_Destroy(
-	jeTKArray **Array);	
+void GRCC grTKArray_Destroy(
+	grTKArray **Array);	
 	// destroys array
 
-void *JETCC jeTKArray_Element(
-	const jeTKArray *Array,
+void *GRCC grTKArray_Element(
+	const grTKArray *Array,
 	int N);
 	// returns a pointer to the Nth element of the array.
 
-int JETCC jeTKArray_NumElements(
-	const jeTKArray *Array);
+int GRCC grTKArray_NumElements(
+	const grTKArray *Array);
 	// returns the number of elements in the array
 
-jeTKArray_TimeType JETCC jeTKArray_ElementTime(
-	const jeTKArray *Array, 
+grTKArray_TimeType GRCC grTKArray_ElementTime(
+	const grTKArray *Array, 
 	int N);
 	// returns the Time associated with the Nth element of the array
 
-int JETCC jeTKArray_ElementSize(
-	const jeTKArray *A);
+int GRCC grTKArray_ElementSize(
+	const grTKArray *A);
 	// returns the size of each element in the array
 
-jeBoolean JETCC jeTKArray_SamplesAreTimeLinear(const jeTKArray *Array,jeFloat Tolerance);
+grBoolean GRCC grTKArray_SamplesAreTimeLinear(const grTKArray *Array,grFloat Tolerance);
 	// returns true if the samples are linear in time within a tolerance
 
 #ifdef __cplusplus

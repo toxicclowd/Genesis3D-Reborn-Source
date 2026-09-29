@@ -91,7 +91,7 @@ note : quads marked as ACTIVE_LEAF will be rendered
 #include <math.h>
 
 #include "BaseType.h"
-#include "jeTypes.h"
+#include "grTypes.h"
 
 #include "Dcommon.h"
 #include "Engine.h"
@@ -107,8 +107,8 @@ note : quads marked as ACTIVE_LEAF will be rendered
 #include "Cpu.h"
 #include "MemPool.h"
 
-#include "jeFrustum.h"
-#include "jePlane.h"
+#include "grFrustum.h"
+#include "grPlane.h"
 
 #include "Timer.h"
 #include "Report.h"
@@ -155,9 +155,9 @@ typedef enum
 
 typedef struct QuadPoint
 {
-	jeVec3d World;
-	jeVec3d Normal;
-	jeRGBA  Color;			// not used when tex-lighting and not dynamic lighting
+	grVec3d World;
+	grVec3d Normal;
+	grRGBA  Color;			// not used when tex-lighting and not dynamic lighting
 							// $$ if we got rid of the cool tesselation for dynamic lighting,
 							//	then we could get rid of this and just recompute the color on the fly
 	uint32  DLightFlags;	// only used while in the process of dynamic lighting
@@ -184,9 +184,9 @@ struct Quad
 	Quad * pChildren[4];
 	QuadPoint * Points[4];	// QUAD_NW,QUAD_NE,QUAD_SE,QUAD_SW
 
-	jeExtBox BBox;	// min&max of me and all my kids
+	grExtBox BBox;	// min&max of me and all my kids
 
-	jeVec3d Normal;	//	could use * pNormal except at the lowest level
+	grVec3d Normal;	//	could use * pNormal except at the lowest level
 
 	// this is the hard-core computed stuff:
 	float MaxSin2Normal; // cone of all childrens normals
@@ -196,7 +196,7 @@ struct Quad
 
 	int		MorphType;
 	float	MorphProgress;
-	jeLVertex MorphStart,MorphStop;
+	grLVertex MorphStart,MorphStop;
 
 	**/
 };
@@ -221,7 +221,7 @@ struct QuadTree
 
 	Quad * Root;
 
-	jeBoolean IsTesselated;
+	grBoolean IsTesselated;
 	int NumQuads,NumPoints;
 
 	// config info:
@@ -232,7 +232,7 @@ struct QuadTree
 	int TexDim;
 	float XtoU,YtoV;
 
-	const jeTerrain *Terrain; // this is super-naughty, but it's a pain in the ass to avoid
+	const grTerrain *Terrain; // this is super-naughty, but it's a pain in the ass to avoid
 };
 
 #define ACTIVE_LEAF (7)
@@ -253,7 +253,7 @@ struct QuadTree
 
 #define QuadPoint2LVertex(QPIn,LVertIn) do {\
 				QuadPoint * QP;				\
-				jeLVertex * LVert;			\
+				grLVertex * LVert;			\
 				QP = (QPIn);				\
 				LVert = (LVertIn);			\
 				LVert->X = QP->World.X;		\
@@ -280,13 +280,13 @@ struct QuadTree
 //#ifdef WIN32
 //#define swapints(a,b)	do { (a) ^= (b); (b) ^= (a); (a) ^= (b); } while(0)
 //#endif
-static void swapints(jeVec3d *v1, jeVec3d *v2)
+static void swapints(grVec3d *v1, grVec3d *v2)
 {
-	jeVec3d			temp;
+	grVec3d			temp;
 
-	jeVec3d_Copy(v1, &temp);
-	jeVec3d_Copy(v2, v1);
-	jeVec3d_Copy(&temp, v2);
+	grVec3d_Copy(v1, &temp);
+	grVec3d_Copy(v2, v1);
+	grVec3d_Copy(&temp, v2);
 }
 
 TIMER_VARS(Tesselate);
@@ -328,7 +328,7 @@ REPORT(static int QuadsUnSimplified);
 
 /*}{************ Protos **********/
 
-jeBoolean QuadTree_IntersectRay(QuadTree *QT,jeVec3d *v0,jeVec3d *v1);
+grBoolean QuadTree_IntersectRay(QuadTree *QT,grVec3d *v0,grVec3d *v1);
 
 static void Quads_ArrayToPool(QuadTree * QT,Quad * RootQuad,Quad * QuadArray,int NumQuads,QuadPoint *PointArray,int NumPoints);
 static void Quad_Simplify(Quad * pQuad,float ScaleZ,int MinDepth);
@@ -357,17 +357,17 @@ Vis Quad_Vis(Quad * pQuad);
 void Quad_RenderNoVis(Quad * pQuad);
 void Quad_RenderWithVis(Quad * pQuad);
 
-jeBoolean TriIsCCW(QuadTri *pTri);
-jeBoolean QuadTri_IsValid(QuadTri *pTri);
+grBoolean TriIsCCW(QuadTri *pTri);
+grBoolean QuadTri_IsValid(QuadTri *pTri);
 
 EQuadPosition Quad_ReflectPosAcrossEdge(EQuadPosition pos, ENodeEdge edge);
-jeBoolean Quad_PosIsInEdgeDirection(EQuadPosition pos, ENodeEdge edge);
+grBoolean Quad_PosIsInEdgeDirection(EQuadPosition pos, ENodeEdge edge);
 const Quad* Quad_GetEdgeNeighbor(const Quad* pQuad, ENodeEdge edge);
 
 Link * Quad_GetEdgeNeighborPoints(const Quad *pQuad,ENodeEdge edge,int *pNumPoints);	// use Link_Destroy() when you're done
 Link * Quad_GetEdgeNeighborQuads(const Quad *pQuad,ENodeEdge edge,int *pNumQuads);
 
-Quad * QuadTree_GetQuadAtXY(const QuadTree *QT,jeFloat X,jeFloat Y);
+Quad * QuadTree_GetQuadAtXY(const QuadTree *QT,grFloat X,grFloat Y);
 
 /*}{************ Vec3d Inlines **********/
 #ifdef WIN32
@@ -384,28 +384,28 @@ Quad * QuadTree_GetQuadAtXY(const QuadTree *QT,jeFloat X,jeFloat Y);
 //{ **************************** DLL ****************************
 // must use defines, not inline funcs!
 
-#define jeVec3d_AddScaled(V1,V2,Scale,V1PlusV2Scaled)		\
+#define grVec3d_AddScaled(V1,V2,Scale,V1PlusV2Scaled)		\
 do{ (V1PlusV2Scaled)->X = (V1)->X + (V2)->X*(Scale);		\
 	(V1PlusV2Scaled)->Y = (V1)->Y + (V2)->Y*(Scale);		\
 	(V1PlusV2Scaled)->Z = (V1)->Z + (V2)->Z*(Scale); } while(0)
 
-#define jeVec3d_Add(V1,V2,V1PlusV2)		\
+#define grVec3d_Add(V1,V2,V1PlusV2)		\
 do{ (V1PlusV2)->X = (V1)->X + (V2)->X;		\
 	(V1PlusV2)->Y = (V1)->Y + (V2)->Y;		\
 	(V1PlusV2)->Z = (V1)->Z + (V2)->Z; } while(0)
 
-#define jeVec3d_Subtract(V1,V2,V1MinusV2)	\
+#define grVec3d_Subtract(V1,V2,V1MinusV2)	\
 do{	(V1MinusV2)->X = (V1)->X - (V2)->X;			\
 	(V1MinusV2)->Y = (V1)->Y - (V2)->Y;			\
 	(V1MinusV2)->Z = (V1)->Z - (V2)->Z; } while(0)
 
-#define jeVec3d_DotProduct(V1,V2)	\
+#define grVec3d_DotProduct(V1,V2)	\
 	((V1)->X*(V2)->X + (V1)->Y*(V2)->Y + (V1)->Z*(V2)->Z)
 
-#define jeVec3d_LengthSquared(V1)	\
+#define grVec3d_LengthSquared(V1)	\
 	((V1)->X*(V1)->X + (V1)->Y*(V1)->Y + (V1)->Z*(V1)->Z )
 
-#define jeVec3d_DistanceBetweenSquared(V1,V2)     \
+#define grVec3d_DistanceBetweenSquared(V1,V2)     \
 	( ((V1)->X - (V2)->X) * ((V1)->X - (V2)->X) + \
 	  ((V1)->Y - (V2)->Y) * ((V1)->Y - (V2)->Y) + \
 	  ((V1)->Z - (V2)->Z) * ((V1)->Z - (V2)->Z) )
@@ -414,38 +414,38 @@ do{	(V1MinusV2)->X = (V1)->X - (V2)->X;			\
 
 
 
-static __inline void VEC_INLINE_CC jeVec3d_AddScaled(const jeVec3d *V1, const jeVec3d *V2, jeFloat Scale, jeVec3d *V1PlusV2Scaled)
+static __inline void VEC_INLINE_CC grVec3d_AddScaled(const grVec3d *V1, const grVec3d *V2, grFloat Scale, grVec3d *V1PlusV2Scaled)
 {
 	V1PlusV2Scaled->X = V1->X + V2->X*Scale;
 	V1PlusV2Scaled->Y = V1->Y + V2->Y*Scale;
 	V1PlusV2Scaled->Z = V1->Z + V2->Z*Scale;
 }
 
-static __inline void VEC_INLINE_CC jeVec3d_Add(const jeVec3d *V1, const jeVec3d *V2, jeVec3d *V1PlusV2)
+static __inline void VEC_INLINE_CC grVec3d_Add(const grVec3d *V1, const grVec3d *V2, grVec3d *V1PlusV2)
 {
 	V1PlusV2->X = V1->X + V2->X;
 	V1PlusV2->Y = V1->Y + V2->Y;
 	V1PlusV2->Z = V1->Z + V2->Z;
 }
 
-static __inline void VEC_INLINE_CC jeVec3d_Subtract(const jeVec3d *V1, const jeVec3d *V2, jeVec3d *V1MinusV2)
+static __inline void VEC_INLINE_CC grVec3d_Subtract(const grVec3d *V1, const grVec3d *V2, grVec3d *V1MinusV2)
 {
 	V1MinusV2->X = V1->X - V2->X;
 	V1MinusV2->Y = V1->Y - V2->Y;
 	V1MinusV2->Z = V1->Z - V2->Z;
 }
 
-static __inline jeFloat VEC_INLINE_CC jeVec3d_DotProduct(const jeVec3d *V1, const jeVec3d *V2)
+static __inline grFloat VEC_INLINE_CC grVec3d_DotProduct(const grVec3d *V1, const grVec3d *V2)
 {
 	return (V1->X*V2->X + V1->Y*V2->Y + V1->Z*V2->Z);
 }
 
-static __inline jeFloat VEC_INLINE_CC jeVec3d_LengthSquared(const jeVec3d *V1)
+static __inline grFloat VEC_INLINE_CC grVec3d_LengthSquared(const grVec3d *V1)
 {
 	return ( (V1)->X * (V1)->X + (V1)->Y * (V1)->Y + (V1)->Z * (V1)->Z );
 }
 
-static __inline jeFloat VEC_INLINE_CC jeVec3d_DistanceBetweenSquared(const jeVec3d *V1, const jeVec3d *V2)
+static __inline grFloat VEC_INLINE_CC grVec3d_DistanceBetweenSquared(const grVec3d *V1, const grVec3d *V2)
 {
 float d,x;
 	x = (V1->X - V2->X);
@@ -459,13 +459,13 @@ return d;
 
 #endif	//} ****************************
 */
-#define jeVec3d_AddTo(onto,val)			\
+#define grVec3d_AddTo(onto,val)			\
 	do { (onto)->X += (val)->X; (onto)->Y += (val)->Y; (onto)->Z += (val)->Z; } while(0)
 
-#define jeVec3d_SubtractFrom(from,val)	\
+#define grVec3d_SubtractFrom(from,val)	\
 	do { (from)->X -= (val)->X; (from)->Y -= (val)->Y; (from)->Z -= (val)->Z; } while(0)
 
-static __inline void VEC_INLINE_CC jeVec3d_Average(const jeVec3d *v1,const jeVec3d *v2,jeVec3d *v)
+static __inline void VEC_INLINE_CC grVec3d_Average(const grVec3d *v1,const grVec3d *v2,grVec3d *v)
 {
 	v->X = (v1->X + v2->X) * 0.5f;
 	v->Y = (v1->Y + v2->Y) * 0.5f;
@@ -475,7 +475,7 @@ static __inline void VEC_INLINE_CC jeVec3d_Average(const jeVec3d *v1,const jeVec
 
 /*}{************ Create/Destroy **********/
 
-QuadTree * QuadTree_Create(const jeTerrain *T)
+QuadTree * QuadTree_Create(const grTerrain *T)
 {
 QuadTree * QT;
 int QWidth,QHeight,PWidth;
@@ -490,7 +490,7 @@ QuadPoint *	Points = NULL;
 
 	assert(T);
 
-	QT = (QuadTree *)jeRam_AllocateClear(sizeof(QuadTree));
+	QT = (QuadTree *)grRam_AllocateClear(sizeof(QuadTree));
 	if ( ! QT )
 		return NULL;
 
@@ -555,14 +555,14 @@ QuadPoint *	Points = NULL;
 		return NULL;
 	}
 
-	Quads = (Quad *)jeRam_AllocateClear( NumQuads * sizeof(Quad) );
+	Quads = (Quad *)grRam_AllocateClear( NumQuads * sizeof(Quad) );
 	if ( ! Quads )
 	{
 		QuadTree_Destroy(&QT);
 		return NULL;
 	}
 
-	Points = (QuadPoint *)jeRam_AllocateClear( NumPoints * sizeof(QuadPoint) );
+	Points = (QuadPoint *)grRam_AllocateClear( NumPoints * sizeof(QuadPoint) );
 	if ( ! Points )
 	{
 		QuadTree_Destroy(&QT);
@@ -581,7 +581,7 @@ QuadPoint *	Points = NULL;
 
 	// set up the points
 	{
-	jeRGBA Color;
+	grRGBA Color;
 		pP = Points;
 		w = T->HMWidth ;
 		h = T->HMHeight;
@@ -684,7 +684,7 @@ QuadPoint *	Points = NULL;
 				pQuad->BBox.Min.Y = pQuad->Points[QUAD_SW]->World.Y;
 				pQuad->BBox.Max.Y = pQuad->Points[QUAD_NW]->World.Y;
 
-				assert( jeExtBox_IsValid(&(pQuad->BBox)) );
+				assert( grExtBox_IsValid(&(pQuad->BBox)) );
 
 				pQuad++;
 			}
@@ -703,17 +703,17 @@ QuadPoint *	Points = NULL;
 	{
 		for(x=0;x<QWidth;x++)
 		{
-		jeVec3d v1,v2;
-			jeVec3d_Subtract(&(pQuad->Points[QUAD_SE]->World),&(pQuad->Points[QUAD_SW]->World),&v1);
-			jeVec3d_Subtract(&(pQuad->Points[QUAD_NW]->World),&(pQuad->Points[QUAD_SW]->World),&v2);
-			jeVec3d_CrossProduct(&v1, &v2, &(pQuad->Normal));
-			jeVec3d_Normalize(&(pQuad->Normal));
+		grVec3d v1,v2;
+			grVec3d_Subtract(&(pQuad->Points[QUAD_SE]->World),&(pQuad->Points[QUAD_SW]->World),&v1);
+			grVec3d_Subtract(&(pQuad->Points[QUAD_NW]->World),&(pQuad->Points[QUAD_SW]->World),&v2);
+			grVec3d_CrossProduct(&v1, &v2, &(pQuad->Normal));
+			grVec3d_Normalize(&(pQuad->Normal));
 			assert(pQuad->Normal.Z > 0.0f );
 			
-			jeVec3d_AddTo(&(pQuad->Points[0]->Normal),&(pQuad->Normal));
-			jeVec3d_AddTo(&(pQuad->Points[1]->Normal),&(pQuad->Normal));
-			jeVec3d_AddTo(&(pQuad->Points[2]->Normal),&(pQuad->Normal));
-			jeVec3d_AddTo(&(pQuad->Points[3]->Normal),&(pQuad->Normal));
+			grVec3d_AddTo(&(pQuad->Points[0]->Normal),&(pQuad->Normal));
+			grVec3d_AddTo(&(pQuad->Points[1]->Normal),&(pQuad->Normal));
+			grVec3d_AddTo(&(pQuad->Points[2]->Normal),&(pQuad->Normal));
+			grVec3d_AddTo(&(pQuad->Points[3]->Normal),&(pQuad->Normal));
 
 			pQuad++;
 		}
@@ -722,7 +722,7 @@ QuadPoint *	Points = NULL;
 	pP = Points;
 	for(x=NumPoints;x--;)
 	{
-		jeVec3d_Normalize(&(pP->Normal));
+		grVec3d_Normalize(&(pP->Normal));
 		pP++;
 	}
 
@@ -738,7 +738,7 @@ QuadPoint *	Points = NULL;
 			for(x=0;x<w;x++)
 			{
 				// use the gouraud normal
-				assert( jeExtBox_ContainsPoint(&(pQuad->BBox),&(Quad_CenterPoint(pQuad)->World)) );
+				assert( grExtBox_ContainsPoint(&(pQuad->BBox),&(Quad_CenterPoint(pQuad)->World)) );
 				pQuad->Normal = Quad_CenterPoint(pQuad)->Normal;
 				pQuad++;
 			}
@@ -825,8 +825,8 @@ QuadPoint *	Points = NULL;
 
 	Quad_FixBBoxes(QT->Root);
 
-	jeRam_Free(Points);
-	jeRam_Free(Quads);
+	grRam_Free(Points);
+	grRam_Free(Quads);
 
 return QT;
 }
@@ -836,7 +836,7 @@ void QuadTree_SetParameters(QuadTree * QT,uint32 BaseDepth,uint32 MaxLeaves,floa
 	if ( BaseDepth < 3 ) BaseDepth = 3;
 	QT->BaseDepth = BaseDepth;
 	QT->MaxNumLeaves = MaxLeaves; // based on PolysPerLeaf = 2
-	QT->MinError = jeFloat_ToInt(MinError * ERROR_MAX);
+	QT->MinError = grFloat_ToInt(MinError * ERROR_MAX);
 }
 
 /*}{********* Setup Stuff ************/
@@ -987,32 +987,32 @@ float invsize = 1.0f / (size-1);
 		}
 		HMPtr += stride - size;
 	}
-	MaxErrZ2 = jeFloat_Sqrt(MaxErrZ2);
+	MaxErrZ2 = grFloat_Sqrt(MaxErrZ2);
 	pQuad->ErrNormal = MaxErrZ2 * pQuad->Normal.Z;
-	pQuad->ErrNormal = JE_ABS(pQuad->ErrNormal);
+	pQuad->ErrNormal = GR_ABS(pQuad->ErrNormal);
 
 	// this isn't really right for the isotropic error..
 	
-	pQuad->ErrIsotropic = MaxErrZ2 * jeFloat_Sqrt( 1.0f - (pQuad->Normal.Z * pQuad->Normal.Z));
+	pQuad->ErrIsotropic = MaxErrZ2 * grFloat_Sqrt( 1.0f - (pQuad->Normal.Z * pQuad->Normal.Z));
 
 /**
 	{
 	float ErrIsotropic1,ErrIsotropic2;
-	ErrIsotropic1 = MaxErrZ2 * jeFloat_Sqrt( 1.0f - (pQuad->Normal.Z * pQuad->Normal.Z));
+	ErrIsotropic1 = MaxErrZ2 * grFloat_Sqrt( 1.0f - (pQuad->Normal.Z * pQuad->Normal.Z));
 	ErrIsotropic2 = MaxErrZ2 * pQuad->MaxSin2Normal;
 	pQuad->ErrIsotropic = max(ErrIsotropic1,ErrIsotropic2);
 	}
 **/
 }
 
-float Quad_ChildrenMinCos(Quad * pQuad,jeVec3d * pNormal)
+float Quad_ChildrenMinCos(Quad * pQuad,grVec3d * pNormal)
 {
 float Cos;
 
 	// this take a huge amount of time, but there's
 	//	essentially no way around it!
 
-	Cos = jeVec3d_DotProduct(pNormal,&(pQuad->Normal));
+	Cos = grVec3d_DotProduct(pNormal,&(pQuad->Normal));
 
 	if ( Quad_HasChildren(pQuad) )
 	{
@@ -1061,7 +1061,7 @@ float MinCos;
 		pQuad->MaxSin2Normal = 0.0f;
 }
 
-jeBoolean QuadTree_SetTexDim(QuadTree *QT,int Dim)
+grBoolean QuadTree_SetTexDim(QuadTree *QT,int Dim)
 {
 int i,cnt;
 
@@ -1070,18 +1070,18 @@ int i,cnt;
 	assert( QuadTree_IsValid(QT) );
 	
 	if ( cnt > MAX_TEXTURES )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	i = 1<<(QT->BaseDepth);
 	if ( (i/Dim)*Dim != i )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	QT->TexDim = Dim;
 
 	QT->XtoU = Dim / QT->Root->BBox.Max.X;
 	QT->YtoV = Dim / QT->Root->BBox.Max.Y;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 void QuadTree_Destroy(QuadTree **pQT)
@@ -1107,18 +1107,18 @@ QuadTree * QT;
 	if ( QT->QuadPool )
 		MemPool_Destroy(&(QT->QuadPool));
 
-	jeRam_Free(QT);
+	grRam_Free(QT);
 }
 
 /*}{********* Tesselate & Render ************/
 
-static jeFrustum Frustum_g;
-static jeCamera * pCamera_g;
-static jeVec3d * pCameraPos_g;
+static grFrustum Frustum_g;
+static grCamera * pCamera_g;
+static grVec3d * pCameraPos_g;
 static DRV_Driver * pRDriver_g;
 static Stack * Stack_g;
-static jeTexture * pTHandles_g[MAX_TEXTURES];
-static jeRDriver_Layer Layer_g;
+static grTexture * pTHandles_g[MAX_TEXTURES];
+static grRDriver_Layer Layer_g;
 static int TexDim_g;
 static float XtoU_g,YtoV_g;
 
@@ -1183,7 +1183,7 @@ Quad *Q,*C;
 	REPORT(assert(NumDynamicQuads == 0 ));
 }
 
-jeBoolean QuadTree_Tesselate(QuadTree *QT,jeVec3d * pPos,jeFrustum *pFrustum)
+grBoolean QuadTree_Tesselate(QuadTree *QT,grVec3d * pPos,grFrustum *pFrustum)
 {
 RadixLN * pRadix;
 Quad * pQuad;
@@ -1231,9 +1231,9 @@ int i;
 		Quad_AddRadixLNChildrenToDepth(pRadix,QT->Root->pChildren[i],QT->BaseDepth-1);
 	}
 
-	jeCPU_FloatControl_Push();
-	jeCPU_FloatControl_SinglePrecision();
-//	jeCPU_FloatControl_RoundDown(); //{} ?
+	grCPU_FloatControl_Push();
+	grCPU_FloatControl_SinglePrecision();
+//	grCPU_FloatControl_RoundDown(); //{} ?
 
 	while( (pQuad = (Quad *)RadixLN_CutMax(pRadix,&Error)) && Error )
 	{
@@ -1246,7 +1246,7 @@ int i;
 		Quad_AddRadixLNChildren(pRadix,pQuad);
 	}
 
-	jeCPU_FloatControl_Pop();
+	grCPU_FloatControl_Pop();
 
 	TIMER_Q(Tesselate);
 
@@ -1263,7 +1263,7 @@ int i;
 	}
 	#endif //}
 
-	QT->IsTesselated = JE_TRUE;
+	QT->IsTesselated = GR_TRUE;
 
 	REPORT(SubdividedError = Error);
 	REPORT_ADD(SubdividedError);
@@ -1273,22 +1273,22 @@ int i;
 	REPORT_ADD(ViewError_Max);
 	REPORT_ADD(ViewError_Count);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean QuadTree_Render(const QuadTree *QT,jeEngine *E,jeCamera *Cam,jeFrustum *F)
+grBoolean QuadTree_Render(const QuadTree *QT,grEngine *E,grCamera *Cam,grFrustum *F)
 {
 int i;
 
 	assert( QuadTree_IsValid(QT) );
 
 	if ( ! QT->IsTesselated )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	REPORT(RenderedPolys=FrustumClips=0);
 
 	Frustum_g = *F;
-	pRDriver_g = jeEngine_GetDriver(E);
+	pRDriver_g = grEngine_GetDriver(E);
 	pCamera_g = Cam;
 
 	TexDim_g = QT->TexDim;
@@ -1297,11 +1297,11 @@ int i;
 
 	for(i=0;i<MAX_TEXTURES;i++)
 	{
-	jeBitmap ** Textures;
-		Textures = (jeBitmap **) QT->Terrain->Textures;
+	grBitmap ** Textures;
+		Textures = (grBitmap **) QT->Terrain->Textures;
 		if ( Textures[i] )
 		{
-			pTHandles_g[i] = jeBitmap_GetTHandle(Textures[i]);
+			pTHandles_g[i] = grBitmap_GetTHandle(Textures[i]);
 			assert(pTHandles_g[i]);
 		}
 		else
@@ -1313,11 +1313,11 @@ int i;
 	if ( QT->Terrain->HasSelection )
 	{
 	int sel;
-	const jeTerrain * T = QT->Terrain;
+	const grTerrain * T = QT->Terrain;
 
 		sel = T->SelectionTexX + T->SelectionTexY * T->TexDim;
 		
-		pTHandles_g[sel] = jeBitmap_GetTHandle( T->HiliteTexture );
+		pTHandles_g[sel] = grBitmap_GetTHandle( T->HiliteTexture );
 		assert(pTHandles_g[sel]);
 	}
 
@@ -1325,9 +1325,9 @@ int i;
 
 	TIMER_P(Render);
 
-	jeCPU_FloatControl_Push();
-	jeCPU_FloatControl_SinglePrecision();
-	jeCPU_FloatControl_RoundDown();
+	grCPU_FloatControl_Push();
+	grCPU_FloatControl_SinglePrecision();
+	grCPU_FloatControl_RoundDown();
 
 	//	ClipFlags already set in Tesselate; 
 	//		unfortunately that doesn't help much
@@ -1339,7 +1339,7 @@ int i;
 	Quad_RenderWithVis(QT->Root->pChildren[2]);
 	Quad_RenderWithVis(QT->Root->pChildren[3]);
 
-	jeCPU_FloatControl_Pop();
+	grCPU_FloatControl_Pop();
 
 	TIMER_Q(Render);
 
@@ -1348,9 +1348,9 @@ int i;
 	REPORT_ADD(FrustumClips);
 	REPORT_ADD(RenderedPolys);
 
-	REPORT( jeEngine_DebugPrintf(E, JE_COLOR_XRGB(255,255,255), "Terrain: Leaves : %d, Polys : %d, Error : %d",NumLeaves,RenderedPolys,SubdividedError) );
+	REPORT( grEngine_DebugPrintf(E, GR_COLOR_XRGB(255,255,255), "Terrain: Leaves : %d, Polys : %d, Error : %d",NumLeaves,RenderedPolys,SubdividedError) );
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*}{********* Render Sub-Funcs ************/
@@ -1425,7 +1425,7 @@ void Quad_RenderTris(Quad * pQuad)
 	}
 }
 
-static void UnitizeVerts(jeLVertex * Verts,int nVerts)
+static void UnitizeVerts(grLVertex * Verts,int nVerts)
 {
 int i;
 float lowu,lowv;
@@ -1442,16 +1442,16 @@ float lowu,lowv;
 		lowv = min(lowv,Verts[i].v);
 	}
 
-	lowu = jeFloat_RoundToInt(lowu + JE_EPSILON);
-	lowv = jeFloat_RoundToInt(lowv + JE_EPSILON);
+	lowu = grFloat_RoundToInt(lowu + GR_EPSILON);
+	lowv = grFloat_RoundToInt(lowv + GR_EPSILON);
 
 	while(nVerts--)
 	{
 		Verts->a = 255.0f;	// Frustum clip does *NOT* do alpha , just RGB
 		Verts->u -= lowu;
 		Verts->v -= lowv;
-		assert( JE_CLAMP(Verts->u, - JE_EPSILON,1.0f + JE_EPSILON) == Verts->u );
-		assert( JE_CLAMP(Verts->v, - JE_EPSILON,1.0f + JE_EPSILON) == Verts->v );
+		assert( GR_CLAMP(Verts->u, - GR_EPSILON,1.0f + GR_EPSILON) == Verts->u );
+		assert( GR_CLAMP(Verts->v, - GR_EPSILON,1.0f + GR_EPSILON) == Verts->v );
 		Verts++;
 	}
 }
@@ -1459,8 +1459,8 @@ float lowu,lowv;
 int Quad_TexNum(Quad *pQuad)
 {
 int u,v;
-	u = jeFloat_ToInt((pQuad->Points[QUAD_SW]->World.X + pQuad->Points[QUAD_SE]->World.X)*0.5f*XtoU_g);
-	v = jeFloat_ToInt((pQuad->Points[QUAD_SW]->World.Y + pQuad->Points[QUAD_NW]->World.Y)*0.5f*YtoV_g);
+	u = grFloat_ToInt((pQuad->Points[QUAD_SW]->World.X + pQuad->Points[QUAD_SE]->World.X)*0.5f*XtoU_g);
+	v = grFloat_ToInt((pQuad->Points[QUAD_SW]->World.Y + pQuad->Points[QUAD_NW]->World.Y)*0.5f*YtoV_g);
 return (u + v * TexDim_g);
 }
 
@@ -1468,9 +1468,9 @@ void Quad_RenderQuad(Quad *pQuad)
 {
 int32 nVerts;
 uint32 ClipFlags;
-jeLVertex Verts1[MAX_CLIP_VERTS],Verts2[MAX_CLIP_VERTS],*pVerts1,*pVerts2;
+grLVertex Verts1[MAX_CLIP_VERTS],Verts2[MAX_CLIP_VERTS],*pVerts1,*pVerts2;
 uint32 mask;
-jePlane * pPlane;
+grPlane * pPlane;
 
 	ClipFlags = pQuad->ClipFlags;
 	assert(ClipFlags);
@@ -1491,18 +1491,18 @@ jePlane * pPlane;
 
 		REPORT(FrustumClips++);
 
-		if ( ! jeFrustum_ClipLVertsToPlaneXYZUVRGB(pPlane,pVerts1,pVerts2,nVerts,&nVerts) )
+		if ( ! grFrustum_ClipLVertsToPlaneXYZUVRGB(pPlane,pVerts1,pVerts2,nVerts,&nVerts) )
 			goto RenderNextQuadTri;
 
 		z		= pVerts1;
 		pVerts1	= pVerts2;
-		pVerts2	= (jeLVertex *)z;
+		pVerts2	= (grLVertex *)z;
 	}
 
 	// pVerts1 is the good stuff
-	jeCamera_TransformAndProjectAndClampArray(pCamera_g ,
-									(jeVec3d *)pVerts1, sizeof(jeLVertex),
-									(jeVec3d *)pVerts1, sizeof(jeLVertex), nVerts);
+	grCamera_TransformAndProjectAndClampArray(pCamera_g ,
+									(grVec3d *)pVerts1, sizeof(grLVertex),
+									(grVec3d *)pVerts1, sizeof(grLVertex), nVerts);
 
 /****
 	<> apparently the softdrv uses the poly vert winding to do backfacing
@@ -1512,13 +1512,13 @@ jePlane * pPlane;
 	OF NOTE : in the TJoint version, I send it the opposite way!
 
 ****/
-#define QUAD_RENDER_FLAGS	(JE_RENDER_FLAG_COUNTER_CLOCKWISE|JE_RENDER_FLAG_CLAMP_UV)
+#define QUAD_RENDER_FLAGS	(GR_RENDER_FLAG_COUNTER_CLOCKWISE|GR_RENDER_FLAG_CLAMP_UV)
 
 	TIMER_P(R_Driver);
 	assert(pTHandles_g[Quad_TexNum(pQuad)]);
 	UnitizeVerts(pVerts1,nVerts);
 	Layer_g.THandle = pTHandles_g[Quad_TexNum(pQuad)];
-	pRDriver_g->RenderMiscTexturePoly((jeTLVertex *)pVerts1,nVerts,&Layer_g,1,QUAD_RENDER_FLAGS);
+	pRDriver_g->RenderMiscTexturePoly((grTLVertex *)pVerts1,nVerts,&Layer_g,1,QUAD_RENDER_FLAGS);
 	TIMER_Q(R_Driver);
 
 RenderNextQuadTri:
@@ -1542,26 +1542,26 @@ RenderNextQuadTri:
 
 		assert(nVerts <= MAX_CLIP_VERTS);
 
-		if ( ! jeFrustum_ClipLVertsToPlaneXYZUVRGB(pPlane,pVerts1,pVerts2,nVerts,&nVerts) )
+		if ( ! grFrustum_ClipLVertsToPlaneXYZUVRGB(pPlane,pVerts1,pVerts2,nVerts,&nVerts) )
 			return;
 
 		assert(nVerts <= MAX_CLIP_VERTS);
 
 		z		= pVerts1;
 		pVerts1	= pVerts2;
-		pVerts2	= (jeLVertex *)z;
+		pVerts2	= (grLVertex *)z;
 	}
 
 	// pVerts1 is the good stuff
-	jeCamera_TransformAndProjectAndClampArray(pCamera_g ,
-									(jeVec3d *)pVerts1, sizeof(jeLVertex),
-									(jeVec3d *)pVerts1, sizeof(jeLVertex), nVerts);
+	grCamera_TransformAndProjectAndClampArray(pCamera_g ,
+									(grVec3d *)pVerts1, sizeof(grLVertex),
+									(grVec3d *)pVerts1, sizeof(grLVertex), nVerts);
 
 	TIMER_P(R_Driver);
 	assert(pTHandles_g[Quad_TexNum(pQuad)]);
 	UnitizeVerts(pVerts1,nVerts);
 	Layer_g.THandle = pTHandles_g[Quad_TexNum(pQuad)];
-	pRDriver_g->RenderMiscTexturePoly((jeTLVertex *)pVerts1,nVerts,&Layer_g,1,QUAD_RENDER_FLAGS);
+	pRDriver_g->RenderMiscTexturePoly((grTLVertex *)pVerts1,nVerts,&Layer_g,1,QUAD_RENDER_FLAGS);
 	TIMER_Q(R_Driver);
 
 	REPORT(RenderedPolys++);
@@ -1570,9 +1570,9 @@ RenderNextQuadTri:
 void Quad_RenderQuadTri(Quad *pQuad,QuadPoint *v0,QuadPoint *v1,QuadPoint *v2)
 {
 int32 nVerts;
-jeLVertex Verts1[MAX_CLIP_VERTS],Verts2[MAX_CLIP_VERTS],*pVerts1,*pVerts2;
+grLVertex Verts1[MAX_CLIP_VERTS],Verts2[MAX_CLIP_VERTS],*pVerts1,*pVerts2;
 uint32 mask;
-jePlane * pPlane;
+grPlane * pPlane;
 uint32 ClipFlags;
 
 	ClipFlags = pQuad->ClipFlags;
@@ -1596,26 +1596,26 @@ uint32 ClipFlags;
 
 		assert(nVerts <= MAX_CLIP_VERTS);
 
-		if ( ! jeFrustum_ClipLVertsToPlaneXYZUVRGB(pPlane,pVerts1,pVerts2,nVerts,&nVerts) )
+		if ( ! grFrustum_ClipLVertsToPlaneXYZUVRGB(pPlane,pVerts1,pVerts2,nVerts,&nVerts) )
 			return;
 
 		assert(nVerts <= MAX_CLIP_VERTS);
 
 		z		= pVerts1;
 		pVerts1	= pVerts2;
-		pVerts2	= (jeLVertex *)z;
+		pVerts2	= (grLVertex *)z;
 	}
 
 	// pVerts1 is the good stuff
-	jeCamera_TransformAndProjectAndClampArray(pCamera_g ,
-									(jeVec3d *)pVerts1, sizeof(jeLVertex),
-									(jeVec3d *)pVerts1, sizeof(jeLVertex), nVerts);
+	grCamera_TransformAndProjectAndClampArray(pCamera_g ,
+									(grVec3d *)pVerts1, sizeof(grLVertex),
+									(grVec3d *)pVerts1, sizeof(grLVertex), nVerts);
 
 	TIMER_P(R_Driver);
 	assert(pTHandles_g[Quad_TexNum(pQuad)]);
 	UnitizeVerts(pVerts1,nVerts);
 	Layer_g.THandle = pTHandles_g[Quad_TexNum(pQuad)];
-	pRDriver_g->RenderMiscTexturePoly((jeTLVertex *)pVerts1,nVerts,&Layer_g,1,QUAD_RENDER_FLAGS);
+	pRDriver_g->RenderMiscTexturePoly((grTLVertex *)pVerts1,nVerts,&Layer_g,1,QUAD_RENDER_FLAGS);
 	TIMER_Q(R_Driver);
 
 	REPORT(RenderedPolys++);
@@ -1625,8 +1625,8 @@ uint32 ClipFlags;
 void Quad_RenderQuadTJ(Quad * pQuad)
 {
 int edge;
-jeLVertex LVerts[MAX_CLIP_VERTS];	// 21 LVerts is < 1K
-jeLVertex *pLVert;
+grLVertex LVerts[MAX_CLIP_VERTS];	// 21 LVerts is < 1K
+grLVertex *pLVert;
 int NumLVerts;
 
 	/*	
@@ -1670,15 +1670,15 @@ int NumLVerts;
 	assert(NumLVerts >= 4);
 	assert(NumLVerts <= MAX_CLIP_VERTS);
 
-	jeCamera_TransformAndProjectAndClampArray(pCamera_g ,
-									(jeVec3d *)LVerts, sizeof(jeLVertex),
-									(jeVec3d *)LVerts, sizeof(jeLVertex), NumLVerts);
+	grCamera_TransformAndProjectAndClampArray(pCamera_g ,
+									(grVec3d *)LVerts, sizeof(grLVertex),
+									(grVec3d *)LVerts, sizeof(grLVertex), NumLVerts);
 
 	TIMER_P(R_Driver);
 	assert(pTHandles_g[Quad_TexNum(pQuad)]);
 	UnitizeVerts(LVerts,NumLVerts);
 	Layer_g.THandle = pTHandles_g[Quad_TexNum(pQuad)];
-	pRDriver_g->RenderMiscTexturePoly((jeTLVertex *)LVerts,NumLVerts,&Layer_g,1,JE_RENDER_FLAG_CLAMP_UV);
+	pRDriver_g->RenderMiscTexturePoly((grTLVertex *)LVerts,NumLVerts,&Layer_g,1,GR_RENDER_FLAG_CLAMP_UV);
 	TIMER_Q(R_Driver);
 
 	REPORT(RenderedPolys++);	
@@ -1688,7 +1688,7 @@ int NumLVerts;
 
 int Quad_ViewError(Quad *pQuad)
 {
-jeVec3d CamToMe;
+grVec3d CamToMe;
 float dot,len;
 int err;
 
@@ -1717,11 +1717,11 @@ int err;
 	assert(pQuad->pChildren[2]);
 	assert(pQuad->pChildren[3]);
 
-	jeVec3d_Subtract(&(Quad_CenterPoint(pQuad)->World),pCameraPos_g,&CamToMe);
+	grVec3d_Subtract(&(Quad_CenterPoint(pQuad)->World),pCameraPos_g,&CamToMe);
 
-	len = jeVec3d_Normalize(&CamToMe);
+	len = grVec3d_Normalize(&CamToMe);
 
-	dot = jeVec3d_DotProduct(&CamToMe,&(pQuad->Normal));
+	dot = grVec3d_DotProduct(&CamToMe,&(pQuad->Normal));
 	// we put a little tolerance in; if we wanted to avoid this tolerance,
 	//  we would have to check the dot against the four corners of the quad,
 	//  intead of just the center
@@ -1739,8 +1739,8 @@ int err;
 
 	// there are two sqrts in here, but hard to avoid !?
 
-	jeVec3d_CrossProduct(&CamToMe,&(pQuad->Normal),&CamToMe);
-	dot = jeVec3d_Length(&CamToMe); // the magnitude of the crossproduct = sin of angle
+	grVec3d_CrossProduct(&CamToMe,&(pQuad->Normal),&CamToMe);
+	dot = grVec3d_Length(&CamToMe); // the magnitude of the crossproduct = sin of angle
 
 	dot *= pQuad->ErrNormal;		// do is now the normal error
 
@@ -1751,7 +1751,7 @@ int err;
 
 	dot *= (2.0f * ERROR_MAX / len); // divide by screen-space Z
 
-	err = jeFloat_ToInt(dot);
+	err = grFloat_ToInt(dot);
 	err = min(err,ERROR_MAX);
 
 	REPORT( if ( err > ViewError_Max ) ViewError_Max = err );
@@ -1764,7 +1764,7 @@ int err;
 
 /*}{********* Misc ************/
 
-void QuadTree_GetExtBox(const QuadTree * QT,jeExtBox * pBox)
+void QuadTree_GetExtBox(const QuadTree * QT,grExtBox * pBox)
 {
 	assert(QuadTree_IsValid(QT));
 	assert(pBox);
@@ -1855,13 +1855,13 @@ Quad **ppLeaves;
 	RadixLN_AddTail(pRadix,(LinkNode *)*ppLeaves, Quad_ViewError(*ppLeaves) ); 
 }
 
-Vis Quad_VisFrustumBBox(jeFrustum *pFrustum,uint32 * pClipFlags, jeVec3d *pMin,jeVec3d *pMax)
+Vis Quad_VisFrustumBBox(grFrustum *pFrustum,uint32 * pClipFlags, grVec3d *pMin,grVec3d *pMax)
 {
 Vis vis;
-jeFloat Dist;
-jePlane * Plane;
+grFloat Dist;
+grPlane * Plane;
 uint32 ClipFlags,mask;
-jeVec3d InclusionPoint,ExclusionPoint,*pNormal;
+grVec3d InclusionPoint,ExclusionPoint,*pNormal;
 
 	vis = VIS_FULL;
 	ClipFlags = *pClipFlags;
@@ -1899,14 +1899,14 @@ jeVec3d InclusionPoint,ExclusionPoint,*pNormal;
 		ConditionalAssign( (pNormal->Y > 0) , ExclusionPoint.Y, InclusionPoint.Y, pMax->Y, pMin->Y );
 		ConditionalAssign( (pNormal->Z > 0) , ExclusionPoint.Z, InclusionPoint.Z, pMax->Z, pMin->Z );
 
-		Dist = jeVec3d_DotProduct(&ExclusionPoint,pNormal) - Plane->Dist;
+		Dist = grVec3d_DotProduct(&ExclusionPoint,pNormal) - Plane->Dist;
 		if ( Dist < 0 ) // outside
 		{
 			vis = VIS_NONE;
 			break;	// we're done
 		}
 
-		Dist = jeVec3d_DotProduct(&InclusionPoint,pNormal) - Plane->Dist;
+		Dist = grVec3d_DotProduct(&InclusionPoint,pNormal) - Plane->Dist;
 		if ( Dist < 0 ) // outside
 		{
 			vis = VIS_PARTIAL;
@@ -1946,14 +1946,14 @@ static int intlog2(int x)
 
 /*}{***** neighbor-finding algorithms : **************/
 
-__inline jeBoolean Quad_PosIsInEdgeDirection(EQuadPosition pos, ENodeEdge edge)
+__inline grBoolean Quad_PosIsInEdgeDirection(EQuadPosition pos, ENodeEdge edge)
 {
 
 	// so for Direction = W, returns true for SW and NW
 	// edges are N,E,S,W		(both clockwise cycles)
 	// nodes are NW,NE,SE,SW
 
-	static const jeBoolean LogicTable[NUM_EDGES][NUM_QUADS] = {
+	static const grBoolean LogicTable[NUM_EDGES][NUM_QUADS] = {
 		/*N*/	{ 1,1,0,0 },
 		/*E*/	{ 0,1,1,0 },
 		/*S*/	{ 0,0,1,1 },
@@ -1965,9 +1965,9 @@ __inline jeBoolean Quad_PosIsInEdgeDirection(EQuadPosition pos, ENodeEdge edge)
 	return(LogicTable[edge][pos]);
 }
 
-__inline jeBoolean Quad_NodeIsInEdgeDirection(const Quad *pQuad, ENodeEdge edge)
+__inline grBoolean Quad_NodeIsInEdgeDirection(const Quad *pQuad, ENodeEdge edge)
 {
-	if ( ! pQuad->pParent ) return JE_FALSE;
+	if ( ! pQuad->pParent ) return GR_FALSE;
 	else
 	{
 		return Quad_PosIsInEdgeDirection((EQuadPosition)(Quad_GetPosition(pQuad)),edge);
@@ -2043,7 +2043,7 @@ static const ENodeEdge EdgeOpposite[NUM_EDGES] = {
 	EDGE_S , EDGE_W, EDGE_N, EDGE_E 
 };
 
-void Quad_AddEdgePoints(const Quad * pQuad, ENodeEdge edge,Link * Points,int *pNumPoints, jeFloat low,jeFloat high)
+void Quad_AddEdgePoints(const Quad * pQuad, ENodeEdge edge,Link * Points,int *pNumPoints, grFloat low,grFloat high)
 {
 	if ( ! Quad_IsLeaf(pQuad) ) 
 	{
@@ -2053,7 +2053,7 @@ void Quad_AddEdgePoints(const Quad * pQuad, ENodeEdge edge,Link * Points,int *pN
 	else 
 	{
 	QuadPoint *pPoint;
-	jeFloat coord;
+	grFloat coord;
 		pPoint = pQuad->Points[EdgePointPre[edge]];
 		switch(edge)
 		{
@@ -2077,7 +2077,7 @@ void Quad_AddEdgePoints(const Quad * pQuad, ENodeEdge edge,Link * Points,int *pN
 Link * Quad_GetEdgeNeighborPoints(const Quad *pQuad,ENodeEdge edge,int *pNumPoints)
 {
 Link * Points;
-jeFloat low,high;
+grFloat low,high;
 
 	*pNumPoints = 0;
 
@@ -2130,7 +2130,7 @@ jeFloat low,high;
 return Points;
 }
 
-void Quad_AddEdgeQuads(const Quad * pQuad, ENodeEdge edge,Link * Quads,int *pNumQuads, jeFloat low,jeFloat high)
+void Quad_AddEdgeQuads(const Quad * pQuad, ENodeEdge edge,Link * Quads,int *pNumQuads, grFloat low,grFloat high)
 {
 	if ( ! Quad_IsLeaf(pQuad) ) 
 	{
@@ -2139,8 +2139,8 @@ void Quad_AddEdgeQuads(const Quad * pQuad, ENodeEdge edge,Link * Quads,int *pNum
 	}
 	else 
 	{
-	jeFloat coord1,coord2;
-	jeVec3d *pt1,*pt2;
+	grFloat coord1,coord2;
+	grVec3d *pt1,*pt2;
 		pt1 = &(pQuad->Points[EdgePointPre[edge]]->World);
 		pt2 = &(pQuad->Points[EdgePointPost[edge]]->World);
 		switch(edge)
@@ -2167,7 +2167,7 @@ void Quad_AddEdgeQuads(const Quad * pQuad, ENodeEdge edge,Link * Quads,int *pNum
 Link * Quad_GetEdgeNeighborQuads(const Quad *pQuad,ENodeEdge edge,int *pNumQuads)
 {
 Link * Quads;
-jeFloat low,high;
+grFloat low,high;
 
 	*pNumQuads = 0;
 
@@ -2304,7 +2304,7 @@ QuadPoint *CornerSE,*FirstWest,*LastNorth;
 	LastPoint = CornerSE;
 	while( CurPoint = (QuadPoint *)Link_Pop( edges[EDGE_S] ) ) 
 	{
-		assert( JE_FLOATS_EQUAL( CurPoint->World.Y, LastPoint->World.Y ) );
+		assert( GR_FLOATS_EQUAL( CurPoint->World.Y, LastPoint->World.Y ) );
 		assert(LastPoint != pQuad->Points[QUAD_SW] );
 		Quad_RenderQuadTri(pQuad,FirstWest,CurPoint,LastPoint);
 		LastPoint = CurPoint;
@@ -2316,7 +2316,7 @@ QuadPoint *CornerSE,*FirstWest,*LastNorth;
 	LastPoint = FirstWest;
 	while( CurPoint = (QuadPoint *)Link_Pop( edges[EDGE_W] ) )
 	{
-		assert( JE_FLOATS_EQUAL( CurPoint->World.X, LastPoint->World.X ) );
+		assert( GR_FLOATS_EQUAL( CurPoint->World.X, LastPoint->World.X ) );
 		assert(LastPoint != pQuad->Points[QUAD_NW] );
 		Quad_RenderQuadTri(pQuad,CurPoint,LastPoint,CornerSE);
 		LastPoint = CurPoint;
@@ -2328,7 +2328,7 @@ QuadPoint *CornerSE,*FirstWest,*LastNorth;
 	PointsLeft = edgePoints[EDGE_N];
 	while( PointsLeft && (CurPoint = (QuadPoint *)Link_Pop( edges[EDGE_N] )) )
 	{
-		assert( JE_FLOATS_EQUAL( CurPoint->World.Y, LastPoint->World.Y ) );
+		assert( GR_FLOATS_EQUAL( CurPoint->World.Y, LastPoint->World.Y ) );
 		assert(LastPoint != pQuad->Points[QUAD_NE] );
 		Quad_RenderQuadTri(pQuad,CurPoint,LastPoint,CornerSE);
 		LastPoint = CurPoint;
@@ -2342,7 +2342,7 @@ QuadPoint *CornerSE,*FirstWest,*LastNorth;
 	// walk from NE to SE
 	while( CurPoint = (QuadPoint *)Link_Pop( edges[EDGE_E] ) )
 	{
-		assert( JE_FLOATS_EQUAL( CurPoint->World.X, LastPoint->World.X ) );
+		assert( GR_FLOATS_EQUAL( CurPoint->World.X, LastPoint->World.X ) );
 		assert(LastPoint != pQuad->Points[QUAD_SE] );
 		Quad_RenderQuadTri(pQuad,LastNorth,CurPoint,LastPoint);
 		LastPoint = CurPoint;
@@ -2360,23 +2360,23 @@ QuadPoint *CornerSE,*FirstWest,*LastNorth;
 
 /*}{************ Debug **********/
 
-jeBoolean QuadTri_IsValid(QuadTri *pTri)
+grBoolean QuadTri_IsValid(QuadTri *pTri)
 {
 	if ( pTri->Points[0]->World.X == pTri->Points[1]->World.X &&
 		 pTri->Points[0]->World.X == pTri->Points[2]->World.X )
-		 return  JE_FALSE;
+		 return  GR_FALSE;
 	if ( pTri->Points[0]->World.Y == pTri->Points[1]->World.Y &&
 		 pTri->Points[0]->World.Y == pTri->Points[2]->World.Y )
-		 return  JE_FALSE;
-return JE_TRUE;
+		 return  GR_FALSE;
+return GR_TRUE;
 }
 
-jeBoolean QuadTree_IsValid(const QuadTree *QT)
+grBoolean QuadTree_IsValid(const QuadTree *QT)
 {
 	assert(QT);
 	assert(QT->Signature1 == QUADTREE_SIGNATURE);
 	assert(QT->Signature2 == QUADTREE_SIGNATURE);
-return JE_TRUE;
+return GR_TRUE;
 }
 
 #if 1 //{
@@ -2413,7 +2413,7 @@ void QuadTree_ShowStats(const QuadTree *QT)
 	REPORT_REPORT(SubdividedError);
 
 #ifdef _DEBUG
-	jeRam_ShowStats(timerFP);
+	grRam_ShowStats(timerFP);
 #endif
 
 	fclose(timerFP);
@@ -2428,7 +2428,7 @@ void QuadTree_ResetAllVertexLighting(QuadTree * QT)
 {
 Stack *pStack;
 Quad * pQuad;
-jeRGBA Color;
+grRGBA Color;
 
 	// just Flat light !
 	// this is really just to clear out the old dynamic lights
@@ -2458,11 +2458,11 @@ jeRGBA Color;
 	}
 }
 
-void QuadTree_ApplyDynamicLights_Flat(QuadTree * QT,jeTerrain_Light * LightsArray,int LightArrayLen)
+void QuadTree_ApplyDynamicLights_Flat(QuadTree * QT,grTerrain_Light * LightsArray,int LightArrayLen)
 {
 Stack *pStack;
 Quad * pQuad;
-jeRGBA Color;
+grRGBA Color;
 
 	// just Flat light !
 	// this is really just to clear out the old dynamic lights
@@ -2526,11 +2526,11 @@ Quad * pQuad;
 			assert(pQuad->Active == ACTIVE_LEAF);
 			for(p=0;p<4;p++)
 			{
-			jeRGBA *pColor;
+			grRGBA *pColor;
 				pColor = &(pQuad->Points[p]->Color);
-				pColor->r = JE_CLAMP(pColor->r,0.0f,255.0f);
-				pColor->g = JE_CLAMP(pColor->g,0.0f,255.0f);
-				pColor->b = JE_CLAMP(pColor->b,0.0f,255.0f);
+				pColor->r = GR_CLAMP(pColor->r,0.0f,255.0f);
+				pColor->g = GR_CLAMP(pColor->g,0.0f,255.0f);
+				pColor->b = GR_CLAMP(pColor->b,0.0f,255.0f);
 			}
 		}
 	}
@@ -2538,9 +2538,9 @@ Quad * pQuad;
 	TIMER_Q(LightDynamic_Clamp);
 }
 
-__inline jeBoolean JETCC PointInRectXY(const jeExtBox * BBox,const jeVec3d * V,jeFloat Radius)
+__inline grBoolean GRCC PointInRectXY(const grExtBox * BBox,const grVec3d * V,grFloat Radius)
 {
-jeFloat D;
+grFloat D;
 
 	// <> all these ifs might be slower than some
 	//		more mathematical method
@@ -2549,13 +2549,13 @@ jeFloat D;
 	{
 		D = V->X - BBox->Max.X;
 		if ( D > Radius )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 	else if ( V->X < BBox->Min.X )
 	{
 		D = BBox->Min.X - V->X; 
 		if ( D > Radius )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 	// else it's in the middle
 
@@ -2563,16 +2563,16 @@ jeFloat D;
 	{
 		D = V->Y - BBox->Max.Y;
 		if ( D > Radius )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 	else if ( V->Y < BBox->Min.Y )
 	{
 		D = BBox->Min.Y - V->Y; 
 		if ( D > Radius )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 float Interp4(float fx,float fy,float NW,float NE,float SE,float SW)
@@ -2583,7 +2583,7 @@ float E,W;
 return W + fx * (E - W);
 }
 
-void Vertex_QuadInterpColors(const jeExtBox * BBox,const jeVec3d * V,jeRGBA * CornerColors,jeRGBA *InterpColor)
+void Vertex_QuadInterpColors(const grExtBox * BBox,const grVec3d * V,grRGBA * CornerColors,grRGBA *InterpColor)
 {
 float fx,fy;
 
@@ -2599,23 +2599,23 @@ float fx,fy;
 
 }
 
-void GetPointClosestToRectXY(const jeExtBox * BBox,const jeVec3d * V,jeVec3d *pGot)
+void GetPointClosestToRectXY(const grExtBox * BBox,const grVec3d * V,grVec3d *pGot)
 {
 	// this is really trival :
 	assert( BBox->Max.X > BBox->Min.X );
 	assert( BBox->Max.Y > BBox->Min.Y );
-	pGot->X = JE_CLAMP(V->X,BBox->Min.X,BBox->Max.X);
-	pGot->Y = JE_CLAMP(V->Y,BBox->Min.Y,BBox->Max.Y);
+	pGot->X = GR_CLAMP(V->X,BBox->Min.X,BBox->Max.X);
+	pGot->Y = GR_CLAMP(V->Y,BBox->Min.Y,BBox->Max.Y);
 }
 
-jeFloat DistanceSquaredToClosestXY(const jeExtBox * BBox,const jeVec3d * V)
+grFloat DistanceSquaredToClosestXY(const grExtBox * BBox,const grVec3d * V)
 {
 float X,Y;
 	// this is really trival :
 	assert( BBox->Max.X > BBox->Min.X );
 	assert( BBox->Max.Y > BBox->Min.Y );
-	X = JE_CLAMP(V->X,BBox->Min.X,BBox->Max.X);
-	Y = JE_CLAMP(V->Y,BBox->Min.Y,BBox->Max.Y);
+	X = GR_CLAMP(V->X,BBox->Min.X,BBox->Max.X);
+	Y = GR_CLAMP(V->Y,BBox->Min.Y,BBox->Max.Y);
 	X -= V->X;
 	Y -= V->Y;
 return X*X + Y*Y;
@@ -2625,14 +2625,14 @@ QuadPoint *Vert_CreateAverage(QuadTree *QT,const QuadPoint *v1,const QuadPoint *
 {
 QuadPoint * v;
 	v = (QuadPoint *)MemPool_GetHunk(QT->VertexPool);
-//	jeVec3d_Average(&(v1->Normal),&(v2->Normal),&(v->Normal));
-//	jeVec3d_Normalize(&(v->Normal)); 
+//	grVec3d_Average(&(v1->Normal),&(v2->Normal),&(v->Normal));
+//	grVec3d_Normalize(&(v->Normal)); 
 //{} normal never used ?
 #ifdef _DEBUG
-	jeVec3d_Clear(&(v->Normal));
+	grVec3d_Clear(&(v->Normal));
 #endif
-	jeVec3d_Average(&(v1->World ),&(v2->World ),&(v->World ));
-	v->World.Z  = jeTerrain_GetHeightAtXY(QT->Terrain,v->World.X,v->World.Y);
+	grVec3d_Average(&(v1->World ),&(v2->World ),&(v->World ));
+	v->World.Z  = grTerrain_GetHeightAtXY(QT->Terrain,v->World.X,v->World.Y);
 	v->Color.r	= v->Color.g = v->Color.b = TERRAIN_MAX_BRIGHT;
 	v->Color.a	= 255.0f;
 	v->DLightFlags = 0xFFFFFFFF;
@@ -2698,26 +2698,26 @@ int i;
 	Stack_Push(QT->QuadsDynamicDestroyStack,pQuad);
 }
 
-jeBoolean ThreePointsAreColinearXY(jeVec3d *p0,jeVec3d *p1,jeVec3d *p2)
+grBoolean ThreePointsAreColinearXY(grVec3d *p0,grVec3d *p1,grVec3d *p2)
 {
-jeVec3d v0,v1;
-jeFloat Len;
-	jeVec3d_Subtract(p1,p0,&v0);
-	jeVec3d_Subtract(p2,p1,&v1);
+grVec3d v0,v1;
+grFloat Len;
+	grVec3d_Subtract(p1,p0,&v0);
+	grVec3d_Subtract(p2,p1,&v1);
 	v0.Z = v1.Z = 0.0f; // kill the Z's
-	jeVec3d_CrossProduct(&v0,&v1,&v0);
-	Len = jeVec3d_LengthSquared(&v0);
-return JE_FLOAT_ISZERO(Len);
+	grVec3d_CrossProduct(&v0,&v1,&v0);
+	Len = grVec3d_LengthSquared(&v0);
+return GR_FLOAT_ISZERO(Len);
 }
 
-void QuadTree_ApplyDynamicLight_Sphere_Subdividing(QuadTree * QT,jeTerrain_Light * pLight,uint32 Mask)
+void QuadTree_ApplyDynamicLight_Sphere_Subdividing(QuadTree * QT,grTerrain_Light * pLight,uint32 Mask)
 {
 Stack *pStack;
 Quad * pQuad;
-jeVec3d LightPos;
-jeRGBA LightColor;
-jeFloat LightRadius,LightRadiusSquared;
-jeFloat ErrorToleranceSquared;
+grVec3d LightPos;
+grRGBA LightColor;
+grFloat LightRadius,LightRadiusSquared;
+grFloat ErrorToleranceSquared;
 REPORT(int SphereLight_QuadsLit = 0);
 
 
@@ -2726,9 +2726,9 @@ REPORT(int SphereLight_QuadsLit = 0);
 	LightPos = pLight->Vector;
 	LightColor = pLight->Color;
 	LightRadiusSquared = pLight->MaxColor;
-	LightRadius = jeFloat_Sqrt(LightRadiusSquared);
+	LightRadius = grFloat_Sqrt(LightRadiusSquared);
 
-	ErrorToleranceSquared = jeFloat_Sqr( QT->MinError * 0.3f );
+	ErrorToleranceSquared = grFloat_Sqr( QT->MinError * 0.3f );
 	ErrorToleranceSquared = max(ErrorToleranceSquared, 2.0f );
 
 	pStack = QT->TheStack;
@@ -2754,7 +2754,7 @@ REPORT(int SphereLight_QuadsLit = 0);
 		}
 		else	// vis done in CreateDynamic now
 		{
-		jeRGBA CornerColors[4];
+		grRGBA CornerColors[4];
 		int p;
 
 			assert( pQuad->Active == ACTIVE_LEAF );
@@ -2764,23 +2764,23 @@ REPORT(int SphereLight_QuadsLit = 0);
 			for(p=0;p<4;p++)
 			{
 			float d;
-				d = jeVec3d_DistanceBetweenSquared(&(pQuad->Points[p]->World),&LightPos);
+				d = grVec3d_DistanceBetweenSquared(&(pQuad->Points[p]->World),&LightPos);
 				d = 1.0f / d;
 				CornerColors[p].r = d * LightColor.r;
 				CornerColors[p].g = d * LightColor.g;
 				CornerColors[p].b = d * LightColor.b;
 				
-				CornerColors[p].r = JE_CLAMP(CornerColors[p].r,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
-				CornerColors[p].g = JE_CLAMP(CornerColors[p].g,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
-				CornerColors[p].b = JE_CLAMP(CornerColors[p].b,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+				CornerColors[p].r = GR_CLAMP(CornerColors[p].r,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+				CornerColors[p].g = GR_CLAMP(CornerColors[p].g,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+				CornerColors[p].b = GR_CLAMP(CornerColors[p].b,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
 			}
 
 			// should we subdivide ?
 
 			{
 			float d;
-			jeVec3d EdgePos,*PrevPos,*NextPos;
-			jeRGBA TrueColor,InterpColor,*PrevColor,*NextColor;
+			grVec3d EdgePos,*PrevPos,*NextPos;
+			grRGBA TrueColor,InterpColor,*PrevColor,*NextColor;
 				
 				// check lighting at edge midpoints vs. interpolated lighting
 				// this catches the case where one point is being lit right, but the
@@ -2798,21 +2798,21 @@ REPORT(int SphereLight_QuadsLit = 0);
 					
 					assert( ThreePointsAreColinearXY( PrevPos,&EdgePos,NextPos ) );
 
-					d = jeVec3d_DistanceBetweenSquared(&EdgePos,&LightPos);
+					d = grVec3d_DistanceBetweenSquared(&EdgePos,&LightPos);
 					d = 1.0f / d;
 					TrueColor.r = d * LightColor.r;
 					TrueColor.g = d * LightColor.g;
 					TrueColor.b = d * LightColor.b;
 
-					TrueColor.r = JE_CLAMP(TrueColor.r,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
-					TrueColor.g = JE_CLAMP(TrueColor.g,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
-					TrueColor.b = JE_CLAMP(TrueColor.b,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+					TrueColor.r = GR_CLAMP(TrueColor.r,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+					TrueColor.g = GR_CLAMP(TrueColor.g,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+					TrueColor.b = GR_CLAMP(TrueColor.b,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
 
 					InterpColor.r = (PrevColor->r + NextColor->r)*0.5f;
 					InterpColor.g = (PrevColor->g + NextColor->g)*0.5f;
 					InterpColor.b = (PrevColor->b + NextColor->b)*0.5f;
 
-					d = jeVec3d_DistanceBetweenSquared((jeVec3d *)&TrueColor,(jeVec3d *)&InterpColor); // naughty !
+					d = grVec3d_DistanceBetweenSquared((grVec3d *)&TrueColor,(grVec3d *)&InterpColor); // naughty !
 
 					if ( d > ErrorToleranceSquared )
 					{
@@ -2825,21 +2825,21 @@ REPORT(int SphereLight_QuadsLit = 0);
 				{
 					GetPointClosestToRectXY(&(pQuad->BBox),&LightPos,&EdgePos);
 
-					EdgePos.Z = jeTerrain_GetHeightAtXY(QT->Terrain,EdgePos.X,EdgePos.Y);
+					EdgePos.Z = grTerrain_GetHeightAtXY(QT->Terrain,EdgePos.X,EdgePos.Y);
 
-					d = jeVec3d_DistanceBetweenSquared(&EdgePos,&LightPos);
+					d = grVec3d_DistanceBetweenSquared(&EdgePos,&LightPos);
 					d = 1.0f / d;
 					TrueColor.r = d * LightColor.r;
 					TrueColor.g = d * LightColor.g;
 					TrueColor.b = d * LightColor.b;
 					
-					TrueColor.r = JE_CLAMP(TrueColor.r,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
-					TrueColor.g = JE_CLAMP(TrueColor.g,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
-					TrueColor.b = JE_CLAMP(TrueColor.b,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+					TrueColor.r = GR_CLAMP(TrueColor.r,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+					TrueColor.g = GR_CLAMP(TrueColor.g,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+					TrueColor.b = GR_CLAMP(TrueColor.b,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
 
 					Vertex_QuadInterpColors(&(pQuad->BBox),&EdgePos,CornerColors,&InterpColor);
 
-					d = jeVec3d_DistanceBetweenSquared((jeVec3d *)&TrueColor,(jeVec3d *)&InterpColor); // naughty !
+					d = grVec3d_DistanceBetweenSquared((grVec3d *)&TrueColor,(grVec3d *)&InterpColor); // naughty !
 
 					if ( d > ErrorToleranceSquared )
 					{
@@ -2874,7 +2874,7 @@ REPORT(int SphereLight_QuadsLit = 0);
 				QP = pQuad->Points[p];
 				if ( QP->DLightFlags & Mask )
 				{
-				jeRGBA *pColor;
+				grRGBA *pColor;
 					QP->DLightFlags ^= Mask;
 					assert ( ! (QP->DLightFlags & Mask) );
 					pColor = &(QP->Color);
@@ -2891,13 +2891,13 @@ REPORT(int SphereLight_QuadsLit = 0);
 	TIMER_Q(LightDynamic_Sphere);
 }
 
-void QuadTree_ApplyDynamicLight_Sphere(QuadTree * QT,jeTerrain_Light * pLight,uint32 Mask)
+void QuadTree_ApplyDynamicLight_Sphere(QuadTree * QT,grTerrain_Light * pLight,uint32 Mask)
 {
 Stack *pStack;
 Quad * pQuad;
-jeVec3d LightPos;
-jeRGBA LightColor;
-jeFloat LightRadius,LightRadiusSquared;
+grVec3d LightPos;
+grRGBA LightColor;
+grFloat LightRadius,LightRadiusSquared;
 REPORT(int SphereLight_QuadsLit = 0);
 
 	TIMER_P(LightDynamic_Sphere);
@@ -2905,7 +2905,7 @@ REPORT(int SphereLight_QuadsLit = 0);
 	LightPos = pLight->Vector;
 	LightColor = pLight->Color;
 	LightRadiusSquared = pLight->MaxColor;
-	LightRadius = jeFloat_Sqrt(LightRadiusSquared);
+	LightRadius = grFloat_Sqrt(LightRadiusSquared);
 
 	pStack = QT->TheStack;
 	Stack_Push(pStack,QT->Root);
@@ -2937,11 +2937,11 @@ REPORT(int SphereLight_QuadsLit = 0);
 				QP = pQuad->Points[p];
 				if ( QP->DLightFlags & Mask )
 				{
-				jeRGBA *pColor,TrueColor;
+				grRGBA *pColor,TrueColor;
 				float d;
 					QP->DLightFlags ^= Mask;
 					
-					d = jeVec3d_DistanceBetweenSquared(&(QP->World),&LightPos);
+					d = grVec3d_DistanceBetweenSquared(&(QP->World),&LightPos);
 					d = 1.0f / d;
 
 					pColor = &(QP->Color);
@@ -2950,9 +2950,9 @@ REPORT(int SphereLight_QuadsLit = 0);
 					TrueColor.g = d * LightColor.g;
 					TrueColor.b = d * LightColor.b;
 
-					TrueColor.r = JE_CLAMP(TrueColor.r,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
-					TrueColor.g = JE_CLAMP(TrueColor.g,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
-					TrueColor.b = JE_CLAMP(TrueColor.b,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+					TrueColor.r = GR_CLAMP(TrueColor.r,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+					TrueColor.g = GR_CLAMP(TrueColor.g,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
+					TrueColor.b = GR_CLAMP(TrueColor.b,-TERRAIN_MAX_DLIGHT,TERRAIN_MAX_DLIGHT);
 
 					pColor->r += TrueColor.r;
 					pColor->g += TrueColor.g;
@@ -2965,9 +2965,9 @@ REPORT(int SphereLight_QuadsLit = 0);
 	TIMER_Q(LightDynamic_Sphere);
 }
 
-void QuadTree_ApplyDynamicLights_Spheres(QuadTree * QT,jeTerrain_Light * LightsArray,int LightArrayLen)
+void QuadTree_ApplyDynamicLights_Spheres(QuadTree * QT,grTerrain_Light * LightsArray,int LightArrayLen)
 {
-jeTerrain_Light * Lights;
+grTerrain_Light * Lights;
 int n;
 	for(Lights = LightsArray,n=0;n<LightArrayLen;n++, Lights++)
 	{
@@ -2992,7 +2992,7 @@ int n;
 	}
 }
 
-jeBoolean QuadTree_LightTesselatedPoints(QuadTree *QT,jeTerrain_Light * Lights,int NumLights)
+grBoolean QuadTree_LightTesselatedPoints(QuadTree *QT,grTerrain_Light * Lights,int NumLights)
 {
 	QuadTree_ApplyDynamicLights_Flat(QT,Lights,NumLights);
 	QuadTree_ApplyDynamicLights_Spheres(QT,Lights,NumLights);
@@ -3000,25 +3000,25 @@ jeBoolean QuadTree_LightTesselatedPoints(QuadTree *QT,jeTerrain_Light * Lights,i
 
 	REPORT_ADD(NumDynamicQuads);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-#include "jeWorld.h"
+#include "grWorld.h"
 
-void QuadTree_LightTexture(QuadTree *QT,jeLight ** Lights,int NumLights,jeBoolean SelfShadow,jeBoolean WorldShadow)
+void QuadTree_LightTexture(QuadTree *QT,grLight ** Lights,int NumLights,grBoolean SelfShadow,grBoolean WorldShadow)
 {
-jeExtBox QT_BBox,TexBBox;
+grExtBox QT_BBox,TexBBox;
 float TexBBox_StepX,TexBBox_StepY;
 float Bitmap_StepX,Bitmap_StepY;
 int tx,ty,bx,by,TexDim;
-jeBitmap *Tex,*Lock;
-jeBitmap_Info TexInfo;
-jeBoolean suc;
-jeVec3d Normal;
-const jeTerrain * Terrain;
+grBitmap *Tex,*Lock;
+grBitmap_Info TexInfo;
+grBoolean suc;
+grVec3d Normal;
+const grTerrain * Terrain;
 
 	if ( WorldShadow )
-		SelfShadow = JE_TRUE;
+		SelfShadow = GR_TRUE;
 
 	Terrain = QT->Terrain;
 	QT_BBox = QT->Root->BBox;
@@ -3038,9 +3038,9 @@ const jeTerrain * Terrain;
 		for(tx=0;tx<TexDim;tx++)
 		{
 		uint8 *TexBits,*ptr;
-		jePixelFormat_ColorGetter pfGetColor;
-		jePixelFormat_ColorPutter pfPutColor;
-		const jePixelFormat_Operations * pfOps;
+		grPixelFormat_ColorGetter pfGetColor;
+		grPixelFormat_ColorPutter pfPutColor;
+		const grPixelFormat_Operations * pfOps;
 
 			Log_Printf("Quad : Light Texture %d,%d\n",tx,ty);
 
@@ -3050,33 +3050,33 @@ const jeTerrain * Terrain;
 			Tex = Terrain->Textures[ ty * TexDim + tx ];
 			assert(Tex);
 
-			jeBitmap_SetMipCount(Tex,1);
+			grBitmap_SetMipCount(Tex,1);
 
-			suc = jeBitmap_LockForWrite(Tex,&Lock,0,0);
+			suc = grBitmap_LockForWrite(Tex,&Lock,0,0);
 			assert(suc);
 
-			suc = jeBitmap_GetInfo(Lock,&TexInfo,NULL);
+			suc = grBitmap_GetInfo(Lock,&TexInfo,NULL);
 			assert(suc);
 
-			pfOps = jePixelFormat_GetOperations(TexInfo.Format);
+			pfOps = grPixelFormat_GetOperations(TexInfo.Format);
 			assert(pfOps);
 			pfGetColor = pfOps->GetColor;
 			pfPutColor = pfOps->PutColor;
 
 			if ( ! pfGetColor || ! pfPutColor )
 			{
-				jeBitmap_UnLock(Lock);
+				grBitmap_UnLock(Lock);
 
-				suc = jeBitmap_SetFormat(Tex,JE_PIXELFORMAT_32BIT_ARGB,JE_FALSE,0,NULL);
+				suc = grBitmap_SetFormat(Tex,GR_PIXELFORMAT_32BIT_ARGB,GR_FALSE,0,NULL);
 				assert(suc);
 
-				suc = jeBitmap_LockForWriteFormat(Tex,&Lock,0,0,JE_PIXELFORMAT_32BIT_ARGB);
+				suc = grBitmap_LockForWriteFormat(Tex,&Lock,0,0,GR_PIXELFORMAT_32BIT_ARGB);
 				assert(suc);
 				
-				suc = jeBitmap_GetInfo(Lock,&TexInfo,NULL);
+				suc = grBitmap_GetInfo(Lock,&TexInfo,NULL);
 				assert(suc);
 				
-				pfOps = jePixelFormat_GetOperations(TexInfo.Format);
+				pfOps = grPixelFormat_GetOperations(TexInfo.Format);
 				assert(pfOps);
 				pfGetColor = pfOps->GetColor;
 				pfPutColor = pfOps->PutColor;
@@ -3085,7 +3085,7 @@ const jeTerrain * Terrain;
 			Bitmap_StepX = (TexBBox.Max.X - TexBBox.Min.X) / TexInfo.Width;
 			Bitmap_StepY = (TexBBox.Max.Y - TexBBox.Min.Y) / TexInfo.Height;
 
-			TexBits = (uint8 *)jeBitmap_GetBits(Lock);
+			TexBits = (uint8 *)grBitmap_GetBits(Lock);
 			assert(TexBits);
 			ptr = TexBits;
 
@@ -3108,10 +3108,10 @@ const jeTerrain * Terrain;
 				{
 				uint8 * saveptr;
 				int R,G,B,A,l;
-				jeRGBA LightColor;
-				jeVec3d World;
+				grRGBA LightColor;
+				grVec3d World;
 
-					jeTerrain_GetNormalAtXY_Rough(Terrain,X,Y,&Normal);
+					grTerrain_GetNormalAtXY_Rough(Terrain,X,Y,&Normal);
 
 					assert( X >= TexBBox.Min.X && X <= TexBBox.Max.X );
 					assert( Y >= TexBBox.Min.Y && Y <= TexBBox.Max.Y );
@@ -3121,45 +3121,45 @@ const jeTerrain * Terrain;
 
 					World.X = X;
 					World.Y = Y;
-					World.Z = jeTerrain_GetHeightAtXY(Terrain,X,Y);
+					World.Z = grTerrain_GetHeightAtXY(Terrain,X,Y);
 
 					LightColor.r = LightColor.g = LightColor.b = 0.0f;
 
 					if ( WorldShadow )
 					{
 					uint32 Flags;
-					jeFloat Radius,Brightness;
-					jeVec3d LightVec,Color;
-					jeVec3d RaisedWorld;
+					grFloat Radius,Brightness;
+					grVec3d LightVec,Color;
+					grVec3d RaisedWorld;
 					Quad * MyQ;
-					jeCollisionInfo CollisionInfo;
-					jeVec3d RaisedWorldWorld,LightVecWorld;
+					grCollisionInfo CollisionInfo;
+					grVec3d RaisedWorldWorld,LightVecWorld;
 
 						// try to make sure we don't hit ourselves accidentally:
 						MyQ = QuadTree_GetQuadAtXY(QT,World.X,World.Y);
 						RaisedWorld = World;
-						RaisedWorld.Z = MyQ->BBox.Max.Z + QT->Terrain->CubeSize.Z + JE_EPSILON;
+						RaisedWorld.Z = MyQ->BBox.Max.Z + QT->Terrain->CubeSize.Z + GR_EPSILON;
 
-						jeXForm3d_Transform(&(QT->Terrain->XFTerrainToWorld),&RaisedWorld,&RaisedWorldWorld);
+						grXForm3d_Transform(&(QT->Terrain->XFTerrainToWorld),&RaisedWorld,&RaisedWorldWorld);
 
 						for(l=0;l<NumLights;l++)
 						{
-							jeLight_GetAttributes(Lights[l],&LightVec,&Color,&Radius,&Brightness,&Flags);
+							grLight_GetAttributes(Lights[l],&LightVec,&Color,&Radius,&Brightness,&Flags);
 						
-							if ( Flags & JE_LIGHT_FLAG_SUN )
+							if ( Flags & GR_LIGHT_FLAG_SUN )
 							{
-								jeVec3d_AddScaled(&RaisedWorld,&LightVec,4000.0f,&LightVec);
+								grVec3d_AddScaled(&RaisedWorld,&LightVec,4000.0f,&LightVec);
 							}
-							else if ( jeVec3d_DistanceBetweenSquared(&RaisedWorld,&LightVec) >= (Radius * Radius) )
+							else if ( grVec3d_DistanceBetweenSquared(&RaisedWorld,&LightVec) >= (Radius * Radius) )
 							{
 								continue;
 							}
-							jeXForm3d_Transform(&(QT->Terrain->XFTerrainToWorld),&LightVec,&LightVecWorld);
+							grXForm3d_Transform(&(QT->Terrain->XFTerrainToWorld),&LightVec,&LightVecWorld);
 
-							if ( ! jeWorld_Collision(QT->Terrain->World,NULL,&RaisedWorldWorld,&LightVecWorld,&CollisionInfo) )
+							if ( ! grWorld_Collision(QT->Terrain->World,NULL,&RaisedWorldWorld,&LightVecWorld,&CollisionInfo) )
 							{
-							jeRGBA CurColor;
-								jeLight_CalculateLighting(Lights[l],&World,&Normal,&CurColor);
+							grRGBA CurColor;
+								grLight_CalculateLighting(Lights[l],&World,&Normal,&CurColor);
 								LightColor.r += CurColor.r;
 								LightColor.g += CurColor.g;
 								LightColor.b += CurColor.b;
@@ -3168,43 +3168,43 @@ const jeTerrain * Terrain;
 					}
 					else if ( SelfShadow )
 					{
-					jeBoolean Blocked;
+					grBoolean Blocked;
 					uint32 Flags;
-					jeFloat Radius,Brightness;
-					jeVec3d LightVec,Color;
-					jeVec3d RaisedWorld;
+					grFloat Radius,Brightness;
+					grVec3d LightVec,Color;
+					grVec3d RaisedWorld;
 					Quad * MyQ;
 
 						// try to make sure we don't hit ourselves accidentally:
 						MyQ = QuadTree_GetQuadAtXY(QT,World.X,World.Y);
 						RaisedWorld = World;
-						RaisedWorld.Z = MyQ->BBox.Max.Z + QT->Terrain->CubeSize.Z + JE_EPSILON;
+						RaisedWorld.Z = MyQ->BBox.Max.Z + QT->Terrain->CubeSize.Z + GR_EPSILON;
 
 						for(l=0;l<NumLights;l++)
 						{
-							jeLight_GetAttributes(Lights[l],&LightVec,&Color,&Radius,&Brightness,&Flags);
+							grLight_GetAttributes(Lights[l],&LightVec,&Color,&Radius,&Brightness,&Flags);
 						
-							if ( Flags & JE_LIGHT_FLAG_SUN )
+							if ( Flags & GR_LIGHT_FLAG_SUN )
 							{
 								Blocked = QuadTree_IntersectRay(QT,&RaisedWorld,&LightVec);
 							}
 							else
 							{
-								if ( jeVec3d_DistanceBetweenSquared(&RaisedWorld,&LightVec) >= (Radius * Radius) )
+								if ( grVec3d_DistanceBetweenSquared(&RaisedWorld,&LightVec) >= (Radius * Radius) )
 								{
 									continue;
 								}
 								else
 								{
-								jeVec3d Hit;
+								grVec3d Hit;
 									Blocked = QuadTree_IntersectThickRay(QT,&RaisedWorld,&LightVec,0.0f,&Hit);
 								}
 							}
 							
 							if ( ! Blocked )
 							{
-							jeRGBA CurColor;
-								jeLight_CalculateLighting(Lights[l],&World,&Normal,&CurColor);
+							grRGBA CurColor;
+								grLight_CalculateLighting(Lights[l],&World,&Normal,&CurColor);
 								LightColor.r += CurColor.r;
 								LightColor.g += CurColor.g;
 								LightColor.b += CurColor.b;
@@ -3215,8 +3215,8 @@ const jeTerrain * Terrain;
 					{
 						for(l=0;l<NumLights;l++)
 						{
-						jeRGBA CurColor;
-							jeLight_CalculateLighting(Lights[l],&World,&Normal,&CurColor);
+						grRGBA CurColor;
+							grLight_CalculateLighting(Lights[l],&World,&Normal,&CurColor);
 							LightColor.r += CurColor.r;
 							LightColor.g += CurColor.g;
 							LightColor.b += CurColor.b;
@@ -3226,31 +3226,31 @@ const jeTerrain * Terrain;
 					#define ONE_OVER_256	(0.00390625f)
 
 					#if 1 //{ @@ else does overbrighting
-					LightColor.r = JE_CLAMP(LightColor.r,0,255);
-					LightColor.g = JE_CLAMP(LightColor.g,0,255);
-					LightColor.b = JE_CLAMP(LightColor.b,0,255);
+					LightColor.r = GR_CLAMP(LightColor.r,0,255);
+					LightColor.g = GR_CLAMP(LightColor.g,0,255);
+					LightColor.b = GR_CLAMP(LightColor.b,0,255);
 					#endif //}
 
 					R = (int)(R * LightColor.r * ONE_OVER_256);
 					G = (int)(G * LightColor.g * ONE_OVER_256);
 					B = (int)(B * LightColor.b * ONE_OVER_256);
 
-					R = JE_CLAMP(R,0,255);
-					G = JE_CLAMP(G,0,255);
-					B = JE_CLAMP(B,0,255);
+					R = GR_CLAMP(R,0,255);
+					G = GR_CLAMP(G,0,255);
+					B = GR_CLAMP(B,0,255);
 
 					pfPutColor(&saveptr,R,G,B,A);
 				}
 			}
 
-			jeBitmap_UnLock(Lock);
+			grBitmap_UnLock(Lock);
 		}
 	}
 	
 	showPopTSC("Quad : LightTexture");
 }
 
-void QuadTree_LightAllPoints(QuadTree *QT,jeLight ** Lights,int NumLights)
+void QuadTree_LightAllPoints(QuadTree *QT,grLight ** Lights,int NumLights)
 {
 Stack *pStack;
 Quad * pQuad;
@@ -3279,15 +3279,15 @@ Quad * pQuad;
 				v->Color.r = v->Color.g = v->Color.b = 0.0f;
 				for(l=0;l<NumLights;l++)
 				{
-				jeRGBA CurColor;
-					jeLight_CalculateLighting(Lights[l],&(v->World),&(v->Normal),&CurColor);
+				grRGBA CurColor;
+					grLight_CalculateLighting(Lights[l],&(v->World),&(v->Normal),&CurColor);
 					v->Color.r += CurColor.r;
 					v->Color.g += CurColor.g;
 					v->Color.b += CurColor.b;
 				}
-				v->Color.r = JE_CLAMP(v->Color.r,0.0f,255.0f);
-				v->Color.g = JE_CLAMP(v->Color.g,0.0f,255.0f);
-				v->Color.b = JE_CLAMP(v->Color.b,0.0f,255.0f);
+				v->Color.r = GR_CLAMP(v->Color.r,0.0f,255.0f);
+				v->Color.g = GR_CLAMP(v->Color.g,0.0f,255.0f);
+				v->Color.b = GR_CLAMP(v->Color.b,0.0f,255.0f);
 				v->Color.a = 255.0f;
 				v++;
 			}
@@ -3297,7 +3297,7 @@ Quad * pQuad;
 
 /*}{************ IntersectRay **********/
 
-jeBoolean jeExtBox_HitsSegment(const jeExtBox * pBox,jeVec3d * pA,jeVec3d *pB)
+grBoolean grExtBox_HitsSegment(const grExtBox * pBox,grVec3d * pA,grVec3d *pB)
 {
 
 	// look for quick inclusion : is one of the points in the box ?
@@ -3305,18 +3305,18 @@ jeBoolean jeExtBox_HitsSegment(const jeExtBox * pBox,jeVec3d * pA,jeVec3d *pB)
 	if ( (pA->X > pBox->Min.X) && (pA->X < pBox->Max.X) &&
 		 (pA->Y > pBox->Min.Y) && (pA->Y < pBox->Max.Y) &&
 		 (pA->Z > pBox->Min.Z) && (pA->Z < pBox->Max.Z) )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	if ( (pB->X > pBox->Min.X) && (pB->X < pBox->Max.X) &&
 		 (pB->Y > pBox->Min.Y) && (pB->Y < pBox->Max.Y) &&
 		 (pB->Z > pBox->Min.Z) && (pB->Z < pBox->Max.Z) )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	// both points are out, straddling some edges; must do intersects
 
 	{
-	jeVec3d VA,VB;
-	jeFloat Mult;
+	grVec3d VA,VB;
+	grFloat Mult;
 
 		// pA & pB get modified, so put 'em in temp stores
 		VA = *pA; pA = &VA;
@@ -3332,7 +3332,7 @@ jeBoolean jeExtBox_HitsSegment(const jeExtBox * pBox,jeVec3d * pA,jeVec3d *pB)
 
 		// it's all out one side or the other :
 		if ( pB->X <= pBox->Min.X || pA->X >= pBox->Max.X )
-			return JE_FALSE;
+			return GR_FALSE;
 
 		if ( pA->X <= pBox->Min.X && pB->X >= pBox->Min.X )
 		{
@@ -3360,18 +3360,18 @@ jeBoolean jeExtBox_HitsSegment(const jeExtBox * pBox,jeVec3d * pA,jeVec3d *pB)
 
 		if ( pA->Y > pB->Y ) 
 		{
-			jeVec3d			temp;
+			grVec3d			temp;
 
-			jeVec3d_Copy(pA, &temp);
-			jeVec3d_Copy(pB, pA);
-			jeVec3d_Copy(&temp, pB);
+			grVec3d_Copy(pA, &temp);
+			grVec3d_Copy(pB, pA);
+			grVec3d_Copy(&temp, pB);
 			//swapints(pA,pB);
 		}
 
 		assert( pA->Y <= pB->Y );
 
 		if ( pB->Y <= pBox->Min.Y || pA->Y >= pBox->Max.Y )
-			return JE_FALSE;
+			return GR_FALSE;
 
 		if ( pA->Y <= pBox->Min.Y && pB->Y >= pBox->Min.Y )
 		{
@@ -3399,14 +3399,14 @@ jeBoolean jeExtBox_HitsSegment(const jeExtBox * pBox,jeVec3d * pA,jeVec3d *pB)
 		assert( pA->Z <= pB->Z );
 
 		if ( pB->Z <= pBox->Min.Z || pA->Z >= pBox->Max.Z )
-			return JE_FALSE;
+			return GR_FALSE;
 
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-Quad * QuadTree_GetQuadAtXY(const QuadTree *QT,jeFloat X,jeFloat Y)
+Quad * QuadTree_GetQuadAtXY(const QuadTree *QT,grFloat X,grFloat Y)
 {
 Quad * Q;
 	Q = QT->Root;
@@ -3445,18 +3445,18 @@ Quad * Q;
 return Q;
 }
 
-jeBoolean CollideExtBoxXY2(const jeVec3d *pVec,const jeVec3d *pDirection,const jeExtBox *pBox,
-								jeVec3d * pHits)
+grBoolean CollideExtBoxXY2(const grVec3d *pVec,const grVec3d *pDirection,const grExtBox *pBox,
+								grVec3d * pHits)
 {
-jeFloat Scale;
-jeVec3d Hit;
+grFloat Scale;
+grVec3d Hit;
 int HitI = 0;
 
 	if ( (pDirection->X > 0.0f && pVec->X >= pBox->Max.X) ||
 		 (pDirection->X < 0.0f && pVec->X <= pBox->Min.X) ||
 		 (pDirection->Y > 0.0f && pVec->Y >= pBox->Max.Y) ||
 		 (pDirection->Y < 0.0f && pVec->Y <= pBox->Min.Y) )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( pDirection->X > 0.0f )
 	{
@@ -3508,10 +3508,10 @@ int HitI = 0;
 		{
 			while(HitI > 2)
 			{
-			jeFloat d1,d2,d3;
-				d1 = jeVec3d_DistanceBetweenSquared(pHits+0,pHits+1);
-				d2 = jeVec3d_DistanceBetweenSquared(pHits+HitI-1,pHits+HitI-2);
-				d3 = jeVec3d_DistanceBetweenSquared(pHits+HitI-1,pHits+0);
+			grFloat d1,d2,d3;
+				d1 = grVec3d_DistanceBetweenSquared(pHits+0,pHits+1);
+				d2 = grVec3d_DistanceBetweenSquared(pHits+HitI-1,pHits+HitI-2);
+				d3 = grVec3d_DistanceBetweenSquared(pHits+HitI-1,pHits+0);
 				if ( d2 < d1 || d3 < d1 )
 				{
 					// clones are at end of list
@@ -3530,15 +3530,15 @@ int HitI = 0;
 			}
 		}
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-jeBoolean CollideExtBoxXY(jeVec3d *pVec,const jeVec3d *pDirection,const jeExtBox *pBox)
+grBoolean CollideExtBoxXY(grVec3d *pVec,const grVec3d *pDirection,const grExtBox *pBox)
 {
-jeFloat Scale;
+grFloat Scale;
 
 	// left or right edge plane
 
@@ -3553,7 +3553,7 @@ jeFloat Scale;
 			pVec->Z = pVec->Z + pDirection->Z * Scale;
 
 			if ( pVec->Y >= pBox->Min.Y && pVec->Y <= pBox->Max.Y )
-				return JE_TRUE;
+				return GR_TRUE;
 		}
 	}
 	else
@@ -3566,7 +3566,7 @@ jeFloat Scale;
 			pVec->Z = pVec->Z + pDirection->Z * Scale;
 
 			if ( pVec->Y >= pBox->Min.Y && pVec->Y <= pBox->Max.Y )
-				return JE_TRUE;
+				return GR_TRUE;
 		}
 	}
 
@@ -3581,7 +3581,7 @@ jeFloat Scale;
 			pVec->Z = pVec->Z + pDirection->Z * Scale;
 
 			if ( pVec->X >= pBox->Min.X && pVec->X <= pBox->Max.X )
-				return JE_TRUE;
+				return GR_TRUE;
 		}
 	}
 	else
@@ -3594,17 +3594,17 @@ jeFloat Scale;
 			pVec->Z = pVec->Z + pDirection->Z * Scale;
 
 			if ( pVec->X >= pBox->Min.X && pVec->X <= pBox->Max.X )
-				return JE_TRUE;
+				return GR_TRUE;
 		}
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-jeBoolean QuadTree_RayCollision(const QuadTree * QT,const Quad *pQuad,const jeVec3d * pStart,const jeVec3d *pDirection)
+grBoolean QuadTree_RayCollision(const QuadTree * QT,const Quad *pQuad,const grVec3d * pStart,const grVec3d *pDirection)
 {
-jeVec3d Hits[4];
-const jeExtBox *pBox;
+grVec3d Hits[4];
+const grExtBox *pBox;
 
 	// find the X & Y's of the two intersection points
 	pBox = &(pQuad->BBox);
@@ -3612,24 +3612,24 @@ const jeExtBox *pBox;
 	#if 0
 	if (pStart->X >= pBox->Min.X && pStart->X <= pBox->Max.X &&
 		pStart->Y >= pBox->Min.Y && pStart->Y <= pBox->Max.Y )
-		return JE_FALSE; // point is on *my* quad !
+		return GR_FALSE; // point is on *my* quad !
 	#endif
 
 	if ( ! CollideExtBoxXY2(pStart,pDirection,pBox,Hits) )
-		return JE_FALSE; // missed it completely
+		return GR_FALSE; // missed it completely
 
-	if ( Hits[0].Z <= jeTerrain_GetHeightAtXY(QT->Terrain,Hits[0].X,Hits[0].Y) )
-		return JE_TRUE;
-	if ( Hits[1].Z <= jeTerrain_GetHeightAtXY(QT->Terrain,Hits[1].X,Hits[1].Y) )
-		return JE_TRUE;
+	if ( Hits[0].Z <= grTerrain_GetHeightAtXY(QT->Terrain,Hits[0].X,Hits[0].Y) )
+		return GR_TRUE;
+	if ( Hits[1].Z <= grTerrain_GetHeightAtXY(QT->Terrain,Hits[1].X,Hits[1].Y) )
+		return GR_TRUE;
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-jeBoolean Quad_RayCollision(const Quad *pQuad,const jeVec3d * pStart,const jeVec3d *pDirection)
+grBoolean Quad_RayCollision(const Quad *pQuad,const grVec3d * pStart,const grVec3d *pDirection)
 {
-jeFloat DNormal,Dot;
-jeVec3d P;
+grFloat DNormal,Dot;
+grVec3d P;
 
 	// <> this is kinda foogly cuz a quad is not really planar; it is four points which may not be coplanar!
 
@@ -3639,15 +3639,15 @@ jeVec3d P;
 
 	// fraction of the ray that points towards the plane
 	// dot should be negative
-	Dot = jeVec3d_DotProduct(&(pQuad->Normal),pDirection);
+	Dot = grVec3d_DotProduct(&(pQuad->Normal),pDirection);
 
 	// distance from start perp to the plane :
 	// distance from start perp to the plane :
-	jeVec3d_Average(&(pQuad->BBox.Min),&(pQuad->BBox.Max),&P);
-	jeVec3d_Subtract(&P,pStart,&P);
-	DNormal = jeVec3d_DotProduct(&(pQuad->Normal),&P);
+	grVec3d_Average(&(pQuad->BBox.Min),&(pQuad->BBox.Max),&P);
+	grVec3d_Subtract(&P,pStart,&P);
+	DNormal = grVec3d_DotProduct(&(pQuad->Normal),&P);
 
-	if ( JE_ABS(Dot) < PLANE_TOLERANCE )
+	if ( GR_ABS(Dot) < PLANE_TOLERANCE )
 	{
 		if ( Dot <= 0.0f )
 			Dot = - PLANE_TOLERANCE;
@@ -3658,36 +3658,36 @@ jeVec3d P;
 	DNormal /= Dot;	// neg / neg = pos
 
 	if ( DNormal < 0.0f ) // collision point is behind the start point
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeVec3d_AddScaled(pStart,pDirection,DNormal,&P);
+	grVec3d_AddScaled(pStart,pDirection,DNormal,&P);
 
 
 	if (P.X <= (pQuad->BBox.Min.X - PLANE_TOLERANCE) ||
 		P.X >= (pQuad->BBox.Max.X + PLANE_TOLERANCE) ||
 		P.Y <= (pQuad->BBox.Min.Y - PLANE_TOLERANCE) ||
-		P.Y >= (pQuad->BBox.Max.Y + PLANE_TOLERANCE) ) return JE_FALSE;
+		P.Y >= (pQuad->BBox.Max.Y + PLANE_TOLERANCE) ) return GR_FALSE;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean Quad_RayCollision2(const Quad *pQuad,const jeVec3d * pStart,const jeVec3d *pDirection,jeFloat RayLength,jeVec3d *pHit)
+grBoolean Quad_RayCollision2(const Quad *pQuad,const grVec3d * pStart,const grVec3d *pDirection,grFloat RayLength,grVec3d *pHit)
 {
-jeFloat DNormal,Dot;
-jeVec3d P;
+grFloat DNormal,Dot;
+grVec3d P;
 
 	// find the intersection with the plane of the quad :
 
 	// fraction of the ray that points towards the plane
 	// dot should be negative
-	Dot = jeVec3d_DotProduct(&(pQuad->Normal),pDirection);
+	Dot = grVec3d_DotProduct(&(pQuad->Normal),pDirection);
 
 	// distance from start perp to the plane :
-	jeVec3d_Average(&(pQuad->BBox.Min),&(pQuad->BBox.Max),&P);
-	jeVec3d_Subtract(&P,pStart,&P);
-	DNormal = jeVec3d_DotProduct(&(pQuad->Normal),&P);
+	grVec3d_Average(&(pQuad->BBox.Min),&(pQuad->BBox.Max),&P);
+	grVec3d_Subtract(&P,pStart,&P);
+	DNormal = grVec3d_DotProduct(&(pQuad->Normal),&P);
 
-	if ( JE_ABS(Dot) < PLANE_TOLERANCE )
+	if ( GR_ABS(Dot) < PLANE_TOLERANCE )
 	{
 		if ( Dot <= 0.0f )
 			Dot = - PLANE_TOLERANCE;
@@ -3698,66 +3698,66 @@ jeVec3d P;
 	DNormal /= Dot;	// neg / neg = pos
 
 	if ( DNormal < 0.0f ) // collision point is behind the start point
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeVec3d_AddScaled(pStart,pDirection,DNormal,&P);
+	grVec3d_AddScaled(pStart,pDirection,DNormal,&P);
 
 	if (P.X <= (pQuad->BBox.Min.X - PLANE_TOLERANCE) ||
 		P.X >= (pQuad->BBox.Max.X + PLANE_TOLERANCE) ||
 		P.Y <= (pQuad->BBox.Min.Y - PLANE_TOLERANCE) ||
-		P.Y >= (pQuad->BBox.Max.Y + PLANE_TOLERANCE) ) return JE_FALSE;
+		P.Y >= (pQuad->BBox.Max.Y + PLANE_TOLERANCE) ) return GR_FALSE;
 
 	*pHit = P;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean QuadTree_ThickRayCollision(const QuadTree * QT,const Quad *pQuad,const jeVec3d * pStart,const jeVec3d *pDirection,
-										jeFloat Radius,jeFloat RayLength,jeVec3d *pHit)
+grBoolean QuadTree_ThickRayCollision(const QuadTree * QT,const Quad *pQuad,const grVec3d * pStart,const grVec3d *pDirection,
+										grFloat Radius,grFloat RayLength,grVec3d *pHit)
 {
-jeVec3d Hits[4];
-const jeExtBox *pBox;
+grVec3d Hits[4];
+const grExtBox *pBox;
 
 	// find the X & Y's of the two intersection points
 	pBox = &(pQuad->BBox);
 	
 	if ( ! CollideExtBoxXY2(pStart,pDirection,pBox,Hits) )
-		return JE_FALSE; // missed it completely
+		return GR_FALSE; // missed it completely
 
-	if ( Hits[0].Z <= (jeTerrain_GetHeightAtXY(QT->Terrain,Hits[0].X,Hits[0].Y) + Radius) )
+	if ( Hits[0].Z <= (grTerrain_GetHeightAtXY(QT->Terrain,Hits[0].X,Hits[0].Y) + Radius) )
 	{
 		*pHit = Hits[0];
-		if ( jeVec3d_DistanceBetween(pStart,pHit) < RayLength )
-			return JE_TRUE;
+		if ( grVec3d_DistanceBetween(pStart,pHit) < RayLength )
+			return GR_TRUE;
 	}
-	if ( Hits[1].Z <= (jeTerrain_GetHeightAtXY(QT->Terrain,Hits[1].X,Hits[1].Y) + Radius) )
+	if ( Hits[1].Z <= (grTerrain_GetHeightAtXY(QT->Terrain,Hits[1].X,Hits[1].Y) + Radius) )
 	{
 		*pHit = Hits[1];
-		if ( jeVec3d_DistanceBetween(pStart,pHit) < RayLength )
-			return JE_TRUE;
+		if ( grVec3d_DistanceBetween(pStart,pHit) < RayLength )
+			return GR_TRUE;
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-jeBoolean Quad_ThickRayCollision(const Quad *pQuad,const jeVec3d * pStart,const jeVec3d *pDirection,
-										jeFloat Radius,jeFloat RayLength,jeVec3d *pHit)
+grBoolean Quad_ThickRayCollision(const Quad *pQuad,const grVec3d * pStart,const grVec3d *pDirection,
+										grFloat Radius,grFloat RayLength,grVec3d *pHit)
 {
-jeFloat DNormal,Dot;
-jeVec3d P;
+grFloat DNormal,Dot;
+grVec3d P;
 
 	// find the intersection with the plane of the quad :
 
 	// fraction of the ray that points towards the plane
 	// dot should be negative
-	Dot = jeVec3d_DotProduct(&(pQuad->Normal),pDirection);
+	Dot = grVec3d_DotProduct(&(pQuad->Normal),pDirection);
 
 	// distance from start perp to the plane :
-	jeVec3d_Average(&(pQuad->BBox.Min),&(pQuad->BBox.Max),&P);
-	jeVec3d_Subtract(&P,pStart,&P);
-	DNormal = jeVec3d_DotProduct(&(pQuad->Normal),&P);
+	grVec3d_Average(&(pQuad->BBox.Min),&(pQuad->BBox.Max),&P);
+	grVec3d_Subtract(&P,pStart,&P);
+	DNormal = grVec3d_DotProduct(&(pQuad->Normal),&P);
 
-	if ( JE_ABS(Dot) < PLANE_TOLERANCE )
+	if ( GR_ABS(Dot) < PLANE_TOLERANCE )
 	{
 		if ( Dot <= 0.0f )
 			Dot = - PLANE_TOLERANCE;
@@ -3770,9 +3770,9 @@ jeVec3d P;
 	// DNormal is now the length along Direction where we hit :
 
 	if ( DNormal < 0.0f || DNormal > (RayLength + Radius) )
-		return JE_FALSE; // off the end of the segment
+		return GR_FALSE; // off the end of the segment
 
-	jeVec3d_AddScaled(pStart,pDirection,DNormal,&P);
+	grVec3d_AddScaled(pStart,pDirection,DNormal,&P);
 
 	// @@ could pretty easily make this a proper extbox instead of a sphere
 
@@ -3781,19 +3781,19 @@ jeVec3d P;
 	if ((P.X + Radius) <= pQuad->BBox.Min.X ||
 		(P.X - Radius) >= pQuad->BBox.Max.X ||
 		(P.Y + Radius) <= pQuad->BBox.Min.Y ||
-		(P.Y - Radius) >= pQuad->BBox.Max.Y ) return JE_FALSE;
+		(P.Y - Radius) >= pQuad->BBox.Max.Y ) return GR_FALSE;
 
 	*pHit = P;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /** QuadTree_IntersectRay ; the parent intersection functions **************/
 
-jeBoolean QuadTree_IntersectRay(QuadTree *QT,jeVec3d *pStart,jeVec3d *pDirection)
+grBoolean QuadTree_IntersectRay(QuadTree *QT,grVec3d *pStart,grVec3d *pDirection)
 {
-jeVec3d StartP,EndP,Direction;// B = A + AB
-//jeExtBox EndPox;
+grVec3d StartP,EndP,Direction;// B = A + AB
+//grExtBox EndPox;
 Stack * S = NULL;
 Quad * Q = NULL;
 
@@ -3815,15 +3815,15 @@ Quad * Q = NULL;
 
 	StartP = *pStart;
 	Direction = *pDirection;
-	jeVec3d_AddScaled(pStart,&Direction,
+	grVec3d_AddScaled(pStart,&Direction,
 		(QT->Root->BBox.Max.X - QT->Root->BBox.Min.X + QT->Root->BBox.Max.Y - QT->Root->BBox.Min.Y),
 		&EndP);
 
-	assert( jeVec3d_IsNormalized(&Direction) );
+	assert( grVec3d_IsNormalized(&Direction) );
 	
 	#if 0
 	{
-	jeVec3d Down;
+	grVec3d Down;
 		Down.Z = - 1.0f;
 		Down.X = Down.Y = 0.0f;
 		assert( Quad_RayCollision(MyQ,&StartP,&Down) );
@@ -3835,24 +3835,24 @@ Quad * Q = NULL;
 
 	while( (Q = (Quad *)Stack_Pop(S)) )
 	{
-	jeExtBox *pBox;
-	jeVec3d AtoQ;
-	jeFloat Dot,DistSqr,BoxRadiusSqr;
+	grExtBox *pBox;
+	grVec3d AtoQ;
+	grFloat Dot,DistSqr,BoxRadiusSqr;
 
 		pBox = &(Q->BBox);
 
 		// radius of bounding sphere :
 		// we-over count the quads that could hit me
 
-		BoxRadiusSqr = jeVec3d_DistanceBetweenSquared(&(pBox->Max),&(pBox->Min)) * 0.25f + JE_EPSILON;
+		BoxRadiusSqr = grVec3d_DistanceBetweenSquared(&(pBox->Max),&(pBox->Min)) * 0.25f + GR_EPSILON;
 
 		AtoQ.X = (pBox->Min.X + pBox->Max.X)*0.5f - StartP.X;
 		AtoQ.Y = (pBox->Min.Y + pBox->Max.Y)*0.5f - StartP.Y;
 		AtoQ.Z = (pBox->Min.Z + pBox->Max.Z)*0.5f - StartP.Z;
 
-		Dot = jeVec3d_DotProduct(&AtoQ,&Direction);
+		Dot = grVec3d_DotProduct(&AtoQ,&Direction);
 
-		DistSqr = jeVec3d_LengthSquared(&AtoQ) - Dot * Dot;
+		DistSqr = grVec3d_LengthSquared(&AtoQ) - Dot * Dot;
 
 		if ( DistSqr > BoxRadiusSqr )
 			continue;
@@ -3874,21 +3874,21 @@ Quad * Q = NULL;
 			if ( QuadTree_RayCollision(QT,Q,&StartP,&Direction) )
 			{
 				Stack_Reset(S);
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-jeBoolean	QuadTree_IntersectThickRay(const QuadTree * QT,
-				const jeVec3d * pFrom,const jeVec3d * pTo,
-				jeFloat Radius,jeVec3d * pImpact)
+grBoolean	QuadTree_IntersectThickRay(const QuadTree * QT,
+				const grVec3d * pFrom,const grVec3d * pTo,
+				grFloat Radius,grVec3d * pImpact)
 {
-jeVec3d StartP,EndP,Direction;
-jeFloat RayLength;
+grVec3d StartP,EndP,Direction;
+grFloat RayLength;
 Stack * S;
 Quad * Q;
 
@@ -3896,8 +3896,8 @@ Quad * Q;
 
 	StartP = *pFrom;
 	EndP   = *pTo;
-	jeVec3d_Subtract( &EndP, &StartP, &Direction );
-	RayLength = jeVec3d_Normalize( &Direction );
+	grVec3d_Subtract( &EndP, &StartP, &Direction );
+	RayLength = grVec3d_Normalize( &Direction );
 
 
 	S = QT->TheStack;
@@ -3905,16 +3905,16 @@ Quad * Q;
 
 	while( (Q = (Quad *)Stack_Pop(S)) )
 	{
-	jeExtBox *pBox;
-	jeVec3d AtoQ,Qcenter;
-	jeFloat Dot,DistSqr,BoxRadius,BoxRadiusSqr;
+	grExtBox *pBox;
+	grVec3d AtoQ,Qcenter;
+	grFloat Dot,DistSqr,BoxRadius,BoxRadiusSqr;
 
 		pBox = &(Q->BBox);
 
 		// radius of bounding sphere :
 		// we-over count the quads that could hit me
 
-		BoxRadius = jeVec3d_DistanceBetween(&(pBox->Max),&(pBox->Min)) * 0.5f + JE_EPSILON + Radius;
+		BoxRadius = grVec3d_DistanceBetween(&(pBox->Max),&(pBox->Min)) * 0.5f + GR_EPSILON + Radius;
 		BoxRadiusSqr = BoxRadius * BoxRadius;
 
 
@@ -3926,9 +3926,9 @@ Quad * Q;
 		AtoQ.Y = Qcenter.Y - StartP.Y;
 		AtoQ.Z = Qcenter.Z - StartP.Z;
 
-		Dot = jeVec3d_DotProduct(&AtoQ,&Direction);
+		Dot = grVec3d_DotProduct(&AtoQ,&Direction);
 
-		DistSqr = jeVec3d_LengthSquared(&AtoQ) - Dot * Dot;
+		DistSqr = grVec3d_LengthSquared(&AtoQ) - Dot * Dot;
 
 		if ( DistSqr > BoxRadiusSqr )
 			continue;
@@ -3964,82 +3964,82 @@ Quad * Q;
 //			if ( QuadTree_ThickRayCollision(QT,Q,&StartP,&Direction,Radius,RayLength,pImpact) )
 			{
 				Stack_Reset(S);
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-void jeXForm3d_SetInverseRay(jeXForm3d * pXF,const jeVec3d * pBase,const jeVec3d *prayZ)
+void grXForm3d_SetInverseRay(grXForm3d * pXF,const grVec3d * pBase,const grVec3d *prayZ)
 {
-jeVec3d rayX,rayY;
+grVec3d rayX,rayY;
 
 	rayX.X = prayZ->Y;
 	rayX.Y = prayZ->Z;
 	rayX.Z = prayZ->X;
 
-	jeVec3d_CrossProduct(&rayX,prayZ,&rayY);
-	jeVec3d_Normalize(&rayY);
-	jeVec3d_CrossProduct(&rayY,prayZ,&rayX);
-	jeVec3d_Normalize(&rayX);
+	grVec3d_CrossProduct(&rayX,prayZ,&rayY);
+	grVec3d_Normalize(&rayY);
+	grVec3d_CrossProduct(&rayY,prayZ,&rayX);
+	grVec3d_Normalize(&rayX);
 	
-	jeXForm3d_SetFromLeftUpIn(pXF,&rayX,&rayY,prayZ);
+	grXForm3d_SetFromLeftUpIn(pXF,&rayX,&rayY,prayZ);
 
 	pXF->Translation = *pBase;
 
-	jeXForm3d_GetTranspose(pXF,pXF);
+	grXForm3d_GetTranspose(pXF,pXF);
 }
 
-jeBoolean Quad_ThickRayCollisionProjecting(const Quad * Q,const jeXForm3d * pXF,
-	jeFloat Radius,jeFloat RayLength,jeVec3d * pImpact)
+grBoolean Quad_ThickRayCollisionProjecting(const Quad * Q,const grXForm3d * pXF,
+	grFloat Radius,grFloat RayLength,grVec3d * pImpact)
 {
-jeVec3d Points[4];
-jeExtBox EB;
-	jeXForm3d_Transform(pXF,Quad_WorldPoint(Q,0),Points+0);
-	jeXForm3d_Transform(pXF,Quad_WorldPoint(Q,1),Points+1);
-	jeXForm3d_Transform(pXF,Quad_WorldPoint(Q,2),Points+2);
-	jeXForm3d_Transform(pXF,Quad_WorldPoint(Q,3),Points+3);
+grVec3d Points[4];
+grExtBox EB;
+	grXForm3d_Transform(pXF,Quad_WorldPoint(Q,0),Points+0);
+	grXForm3d_Transform(pXF,Quad_WorldPoint(Q,1),Points+1);
+	grXForm3d_Transform(pXF,Quad_WorldPoint(Q,2),Points+2);
+	grXForm3d_Transform(pXF,Quad_WorldPoint(Q,3),Points+3);
 
 	// <> could do a true point in poly; just be lazy for now :
 
-	jeExtBox_SetToPoint(&EB,Points+0);
-	jeExtBox_ExtendToEnclose(&EB,Points+1);
-	jeExtBox_ExtendToEnclose(&EB,Points+2);
-	jeExtBox_ExtendToEnclose(&EB,Points+3);
+	grExtBox_SetToPoint(&EB,Points+0);
+	grExtBox_ExtendToEnclose(&EB,Points+1);
+	grExtBox_ExtendToEnclose(&EB,Points+2);
+	grExtBox_ExtendToEnclose(&EB,Points+3);
 
 	if (EB.Min.X <= Radius && EB.Max.X >= -Radius &&
 		EB.Min.Y <= Radius && EB.Max.Y >= -Radius &&
 		EB.Min.Z <= (RayLength + Radius) )
 	{
-		jeVec3d_Average( Quad_WorldPoint(Q,0) ,Quad_WorldPoint(Q,2), pImpact );
-		return JE_TRUE;
+		grVec3d_Average( Quad_WorldPoint(Q,0) ,Quad_WorldPoint(Q,2), pImpact );
+		return GR_TRUE;
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
-static void jeExtBox_Transform(const jeExtBox *pIn,const jeXForm3d * pXF,jeExtBox *pOut)
+static void grExtBox_Transform(const grExtBox *pIn,const grXForm3d * pXF,grExtBox *pOut)
 {
-jeVec3d Corners[8];
+grVec3d Corners[8];
 int i;
 
 	for(i=0;i<8;i++)
 	{
-	jeVec3d *pV;
+	grVec3d *pV;
 		pV = Corners + i;
 		if ( i & 1 ) pV->X = pIn->Min.X; else pV->X = pIn->Max.X;
 		if ( i & 2 ) pV->Y = pIn->Min.Y; else pV->Y = pIn->Max.Y;
 		if ( i & 4 ) pV->Z = pIn->Min.Z; else pV->Z = pIn->Max.Z;
 		
-		jeXForm3d_Transform(pXF,pV,pV);
+		grXForm3d_Transform(pXF,pV,pV);
 	}
 
 	pOut->Min = pOut->Max = Corners[0];
 	for(i=1;i<8;i++)
 	{
-	jeVec3d *pV;
+	grVec3d *pV;
 		pV = Corners + i;
 		pOut->Min.X = min(pOut->Min.X,pV->X);
 		pOut->Min.Y = min(pOut->Min.Y,pV->Y);
@@ -4050,21 +4050,21 @@ int i;
 	}
 }
 
-jeBoolean Quad_ThickRayCollisionProjectingBBox(const Quad * Q,const jeXForm3d * pXF,
-	jeFloat Radius,jeFloat RayLength)
+grBoolean Quad_ThickRayCollisionProjectingBBox(const Quad * Q,const grXForm3d * pXF,
+	grFloat Radius,grFloat RayLength)
 {
-jeExtBox EB;
+grExtBox EB;
 
-	jeExtBox_Transform(&(Q->BBox),pXF,&EB);
+	grExtBox_Transform(&(Q->BBox),pXF,&EB);
 
 	if (EB.Min.X <= Radius && EB.Max.X >= -Radius &&
 		EB.Min.Y <= Radius && EB.Max.Y >= -Radius &&
 		EB.Min.Z <= (RayLength + Radius) )
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
 /*****
@@ -4080,22 +4080,22 @@ here's another way to do collisions :
 
 *******/
 
-jeBoolean	QuadTree_IntersectThickRayProjecting(const QuadTree * QT,
-				const jeVec3d * pFrom,const jeVec3d * pTo,
-				jeFloat Radius,jeVec3d * pImpact)
+grBoolean	QuadTree_IntersectThickRayProjecting(const QuadTree * QT,
+				const grVec3d * pFrom,const grVec3d * pTo,
+				grFloat Radius,grVec3d * pImpact)
 {
-jeVec3d StartP,EndP,Direction;
-jeFloat RayLength;
+grVec3d StartP,EndP,Direction;
+grFloat RayLength;
 Stack * S;
 Quad * Q;
-jeXForm3d XF;
+grXForm3d XF;
 
 	StartP = *pFrom;
 	EndP   = *pTo;
-	jeVec3d_Subtract( &EndP, &StartP, &Direction );
-	RayLength = jeVec3d_Normalize( &Direction );
+	grVec3d_Subtract( &EndP, &StartP, &Direction );
+	RayLength = grVec3d_Normalize( &Direction );
 
-	jeXForm3d_SetInverseRay(&XF,&StartP,&Direction);
+	grXForm3d_SetInverseRay(&XF,&StartP,&Direction);
 
 	S = QT->TheStack;
 	Stack_Push(S,QT->Root);
@@ -4121,11 +4121,11 @@ jeXForm3d XF;
 				continue;
 
 			Stack_Reset(S);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
 /*}************ EOF **********/

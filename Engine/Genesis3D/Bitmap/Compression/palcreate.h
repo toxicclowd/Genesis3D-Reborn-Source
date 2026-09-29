@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_BRANDO_PALCREATE_H
-#define JE_BRANDO_PALCREATE_H
+#ifndef GR_BRANDO_PALCREATE_H
+#define GR_BRANDO_PALCREATE_H
 
 #include "BaseType.h"
 #include "Bitmap.h"
@@ -29,17 +29,17 @@
 extern "C" {
 #endif
 
-extern jeBitmap_Palette * createPaletteGood(const jeBitmap_Info * Info,const void * Bits);
-extern jeBitmap_Palette * createPaletteFast(const jeBitmap_Info * Info,const void * Bits);
+extern grBitmap_Palette * createPaletteGood(const grBitmap_Info * Info,const void * Bits);
+extern grBitmap_Palette * createPaletteFast(const grBitmap_Info * Info,const void * Bits);
 
-typedef jeBitmap_Palette * (*paletteCreater) (const jeBitmap_Info * Info,const void * Bits);
+typedef grBitmap_Palette * (*paletteCreater) (const grBitmap_Info * Info,const void * Bits);
 extern void setCreatePaletteFunc(paletteCreater func);
 
-extern jeBitmap_Palette * createPalette(const jeBitmap_Info * Info,const void * Bits);
+extern grBitmap_Palette * createPalette(const grBitmap_Info * Info,const void * Bits);
 
-extern jeBitmap_Palette * createPaletteFromBitmap(const jeBitmap * Bitmap,jeBoolean Optimize);
+extern grBitmap_Palette * createPaletteFromBitmap(const grBitmap * Bitmap,grBoolean Optimize);
 
-jeBitmap_Palette * createPaletteFromImage(const image *im);
+grBitmap_Palette * createPaletteFromImage(const image *im);
 
 extern void PalCreate_Start(void);
 extern void PalCreate_Stop(void);

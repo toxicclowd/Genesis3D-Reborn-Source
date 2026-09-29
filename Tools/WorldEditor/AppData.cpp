@@ -60,7 +60,7 @@ AppData * AppData_Create( void )
 	AppData *	pAppData ;
 	HINSTANCE	hRes{} ;
 	
-	pAppData = JE_RAM_ALLOCATE_STRUCT( AppData ) ;
+	pAppData = GR_RAM_ALLOCATE_STRUCT( AppData ) ;
 	if( pAppData == nullptr )
 		goto ADC_FAILURE ;
 
@@ -153,7 +153,7 @@ void AppData_Destroy( AppData ** ppAppData )
 	if( pAppData->hBMSelectedVertex != nullptr )
 		DeleteBitmap( pAppData->hBMSelectedVertex ) ;
 
-	jeRam_Free( *ppAppData ) ;
+	grRam_Free( *ppAppData ) ;
 
 }// AppData_Destroy
 

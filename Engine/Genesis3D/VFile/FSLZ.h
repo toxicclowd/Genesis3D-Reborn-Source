@@ -22,7 +22,7 @@
 #ifndef	FSLZ_H
 #define	FSLZ_H
 
-const	jeVFile_SystemAPIs * JETCC FSLZ_GetAPIs(void);
+const	grVFile_SystemAPIs * GRCC FSLZ_GetAPIs(void);
 
 #endif
 

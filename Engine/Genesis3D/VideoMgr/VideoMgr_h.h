@@ -1,9 +1,9 @@
-//jeVidMgr - CyRiuS
+//grVidMgr - CyRiuS
 
 #ifndef VideoMgrH_H
 #define VideoMgrH_H
 
-#include "jet.h"
+#include "Genesis3D.h"
 #include "VideoMgr.h"
 #include <windows.h>
 #include <string.h>
@@ -49,9 +49,9 @@ typedef struct tagVIDEOMEDIASTATE
 
 //	FUNCTION PROTOTYPES	=================================================
 
-jeBoolean	InitVideoMgr(HWND mainwindowhandle);
+grBoolean	InitVideoMgr(HWND mainwindowhandle);
 void		UnInitVideoMgr(HWND mainwindowhandle);
-jeBoolean	InitVideoMedia(HWND mainwindowhandle);
+grBoolean	InitVideoMedia(HWND mainwindowhandle);
 void		OpenVideoFile(HWND mainwindowhandle, LPSTR szFile );
 HANDLE		GetGraphEventHandleVideo( void );
 void		OpenVideoFile( HWND hwnd, LPSTR szFile );
@@ -69,7 +69,7 @@ void		OnVideoPause();
 void		StopVideo();
 void		OnVideoAbortStop();
 void		OnGraphNotifyVideo();
-jeBoolean	VideoPlaying();
+grBoolean	VideoPlaying();
 
 #ifdef __cplusplus
 }

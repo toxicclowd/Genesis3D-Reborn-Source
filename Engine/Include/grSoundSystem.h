@@ -37,26 +37,25 @@
 *	@typedef grSoundSystem
 *	@brief The sound system structure
 */
-typedef struct jeSoundSystem grSoundSystem;
-typedef struct jeSoundSystem jeSoundSystem;
+typedef struct grSoundSystem grSoundSystem;
 
 /*!
 *	@typedef grSound
 *	@brief A reference to a sound buffer
 */
-typedef struct jeSound							grSound;
+typedef struct grSound							grSound;
 
 /*!
 *	@typedef grSound3d
 *	@brief A 3D sound
 */
-typedef struct jeSound3d						grSound3d;
+typedef struct grSound3d						grSound3d;
 
 /*!
 *	@typedef grSoundListener
 *	@brief Represents the position of the player in the world relative to all 3D sounds.
 */
-typedef struct jeSoundListener					grSoundListener;
+typedef struct grSoundListener					grSoundListener;
 
 /*!
 *	@fn grSoundSystem *grSoundSystem_Create(HWND hWnd, uint32 Flags)
@@ -202,24 +201,5 @@ GRAPI grBoolean GRCC grSound_SetPan(grSound *Snd, float pan);
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeSoundSystem_Create                     grSoundSystem_Create
-#define jeSoundSystem_CreateRef                  grSoundSystem_CreateRef
-#define jeSoundSystem_Destroy                    grSoundSystem_Destroy
-#define jeSoundSystem_DestroySound               grSoundSystem_DestroySound
-#define jeSoundSystem_IsLooping                  grSoundSystem_IsLooping
-#define jeSoundSystem_IsPaused                   grSoundSystem_IsPaused
-#define jeSoundSystem_IsPlaying                  grSoundSystem_IsPlaying
-#define jeSoundSystem_LoadSound                  grSoundSystem_LoadSound
-#define jeSoundSystem_PauseSound                 grSoundSystem_PauseSound
-#define jeSoundSystem_PlaySound                  grSoundSystem_PlaySound
-#define jeSoundSystem_StopSound                  grSoundSystem_StopSound
-#define jeSound_GetPan                           grSound_GetPan
-#define jeSound_GetVolume                        grSound_GetVolume
-#define jeSound_SetPan                           grSound_SetPan
-#define jeSound_SetVolume                        grSound_SetVolume
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

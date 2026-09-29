@@ -24,13 +24,13 @@
 // separated by a small distance.
 //
 
-#if !defined (JE_BOX_H)
-#define JE_BOX_H
+#if !defined (GR_BOX_H)
+#define GR_BOX_H
 
 #include "Vec3d.h"
 #include "Xform3d.h"
 
-typedef struct jeBox
+typedef struct grBox
 {
 	// all member variables are **PRIVATE**
 	// the Box's scales along the Box's local frame axes
@@ -41,27 +41,27 @@ typedef struct jeBox
 	//
 	// these are the scaled Box axes in the global frame
 	 
-	jeVec3d GlobalFrameAxes[3];
+	grVec3d GlobalFrameAxes[3];
 
 	// the transformation that takes the Box's axes from local space
 	// to global space, and its inverse
 
-	jeXForm3d Transform, TransformInv;
+	grXForm3d Transform, TransformInv;
 
-}jeBox;
+}grBox;
 
 /////////////////////////////////////////////////////////////////////////////
 // call this to set up an Box for the first time or when the Box's
 // local frame axes scale(s) change
-void jeBox_Set(jeBox* Box, float xScale, float yScale, float zScale, const jeXForm3d* Transform);
+void grBox_Set(grBox* Box, float xScale, float yScale, float zScale, const grXForm3d* Transform);
 
 
 // call this to set the Box's transformation matrix (does not change the
 // scales of the Box's local frame axes)
-void jeBox_SetXForm(jeBox* Box, const jeXForm3d* Transform);
+void grBox_SetXForm(grBox* Box, const grXForm3d* Transform);
 
 
-// returns JE_TRUE if the boxes overlap, JE_FALSE otherwise
-jeBoolean jeBox_DetectCollisionBetween(const jeBox* Box1, const jeBox* Box2);
+// returns GR_TRUE if the boxes overlap, GR_FALSE otherwise
+grBoolean grBox_DetectCollisionBetween(const grBox* Box1, const grBox* Box2);
 
 #endif

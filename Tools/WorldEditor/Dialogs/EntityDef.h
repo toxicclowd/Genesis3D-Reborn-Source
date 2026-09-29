@@ -34,10 +34,10 @@ class CEntityDef : public CDialog
 {
 // Construction
 public:
-	static jeBoolean UpdateDefinitionsCB( jeSymbol * pSymbol, void * lParam );
-	jeSymbol_Table * m_pEntities;
-	jeSymbol_Type m_SymbolType;
-	void ShowFieldsBySymbolType( jeSymbol_Type Type );
+	static grBoolean UpdateDefinitionsCB( grSymbol * pSymbol, void * lParam );
+	grSymbol_Table * m_pEntities;
+	grSymbol_Type m_SymbolType;
+	void ShowFieldsBySymbolType( grSymbol_Type Type );
 	CEntityDef(CWnd* pParent = NULL);   // standard constructor
 
 // Dialog Data
@@ -81,8 +81,8 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
-	jeBoolean GetFieldData( jeSymbol_Type Type, char * pszDefaultValue );
-	void SetFields( jeSymbol * pField );
+	grBoolean GetFieldData( grSymbol_Type Type, char * pszDefaultValue );
+	void SetFields( grSymbol * pField );
 	void FillProperties( void );
 };
 

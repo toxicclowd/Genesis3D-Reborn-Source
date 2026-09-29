@@ -21,55 +21,55 @@
 
 #include "vfile.h"
 #include "bitmap.h"
-#include "jeMaterial.h"
+#include "grMaterial.h"
 #include <string.h>
 #include "assert.h"
 #include "errorlog.h"
 #include "ram.h"
 #include "util.h"
 
-/* This structure contains the binding of the jeBitmaps to the editable bmps */
+/* This structure contains the binding of the grBitmaps to the editable bmps */
 typedef struct MatrIdx_Struct {
 	char					*	Name;
-	jeMaterial_ArrayIndex		MaterialIndex;
+	grMaterial_ArrayIndex		MaterialIndex;
 	int32						RefCnt;
 } MatrIdx_Struct;
 
 
 // Creates a new MatrIdx structure, addes pBitmap to array and initializes structure
-MatrIdx_Struct *MatrIdx_Create( jeMaterial_Array * pMatlArray, jeBitmap * pBitmap, const char * Name )
+MatrIdx_Struct *MatrIdx_Create( grMaterial_Array * pMatlArray, grBitmap * pBitmap, const char * Name )
 {
 	MatrIdx_Struct *pMatrIdx;
 
-	pMatrIdx = JE_RAM_ALLOCATE_STRUCT( MatrIdx_Struct );
+	pMatrIdx = GR_RAM_ALLOCATE_STRUCT( MatrIdx_Struct );
 	if( pMatrIdx == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Failed allocate MatrIdx" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Failed allocate MatrIdx" );
 		return( NULL );
 	}
 	pMatrIdx->Name = Util_StrDup( Name );
 	if( pMatrIdx->Name == NULL )
 	{
-		jeRam_Free( pMatrIdx );
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Failed allocate MatrIdx->Name");
+		grRam_Free( pMatrIdx );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Failed allocate MatrIdx->Name");
 		return( NULL );
 	}
 
 
-	pMatrIdx->MaterialIndex =  jeMaterial_ArrayCreateMaterial(pMatlArray, Name );
-	if( pMatrIdx->MaterialIndex  == JE_MATERIAL_ARRAY_NULL_INDEX )
+	pMatrIdx->MaterialIndex =  grMaterial_ArrayCreateMaterial(pMatlArray, Name );
+	if( pMatrIdx->MaterialIndex  == GR_MATERIAL_ARRAY_NULL_INDEX )
 	{
-		jeRam_Free( pMatrIdx->Name );
-		jeRam_Free( pMatrIdx );
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Failed to create Material to array.");
+		grRam_Free( pMatrIdx->Name );
+		grRam_Free( pMatrIdx );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Failed to create Material to array.");
 		return( NULL );
 	}
 
-	if( !jeMaterial_ArraySetMaterialBitmap( pMatlArray, pMatrIdx->MaterialIndex, pBitmap, Name ) )
+	if( !grMaterial_ArraySetMaterialBitmap( pMatlArray, pMatrIdx->MaterialIndex, pBitmap, Name ) )
 	{
-		jeRam_Free( pMatrIdx->Name );
-		jeRam_Free( pMatrIdx );
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Failed to add Material to array.");
+		grRam_Free( pMatrIdx->Name );
+		grRam_Free( pMatrIdx );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Failed to add Material to array.");
 		return( NULL );
 	}
 	pMatrIdx->RefCnt = 1;
@@ -83,19 +83,19 @@ const char* MatrIdx_GetName( MatrIdx_Struct* MatrIdx )
 	return( MatrIdx->Name );
 }
 
-const jeBitmap	*	MatrIdx_GetBitmap( jeMaterial_Array * pMatlArray, MatrIdx_Struct* MatrIdx )
+const grBitmap	*	MatrIdx_GetBitmap( grMaterial_Array * pMatlArray, MatrIdx_Struct* MatrIdx )
 {
-	const jeMaterial * Material;
+	const grMaterial * Material;
 
 	assert( MatrIdx );
 
-	Material = jeMaterial_ArrayGetMaterialByIndex( pMatlArray, MatrIdx->MaterialIndex );
+	Material = grMaterial_ArrayGetMaterialByIndex( pMatlArray, MatrIdx->MaterialIndex );
 	if( Material ==  NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Failed to add Material to array.");
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Failed to add Material to array.");
 		return( NULL );
 	}
-	return( jeMaterial_GetBitmap( Material ) );
+	return( grMaterial_GetBitmap( Material ) );
 
 }
 
@@ -106,14 +106,14 @@ void MatrIdx_AddRef( MatrIdx_Struct* MatrIdx )
 	MatrIdx->RefCnt++;
 }
 
-jeMaterial_ArrayIndex	MatrIdx_GetIndex( MatrIdx_Struct* pMatrIdx )
+grMaterial_ArrayIndex	MatrIdx_GetIndex( MatrIdx_Struct* pMatrIdx )
 {
 	return( pMatrIdx->MaterialIndex );
 }
 
-//returns JE_TRUE if object was truly destroyed
-//returns JE_FALSE if only RefCnt was decremented
-jeBoolean MatrIdx_Destroy( MatrIdx_Struct** hMatrIdx )
+//returns GR_TRUE if object was truly destroyed
+//returns GR_FALSE if only RefCnt was decremented
+grBoolean MatrIdx_Destroy( MatrIdx_Struct** hMatrIdx )
 {
 	assert( hMatrIdx );
 
@@ -122,14 +122,14 @@ jeBoolean MatrIdx_Destroy( MatrIdx_Struct** hMatrIdx )
 
 	(*hMatrIdx )->RefCnt--;
 	if( (*hMatrIdx )->RefCnt > 0 )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
 	if( (*hMatrIdx )->Name != NULL )
-		jeRam_Free( (*hMatrIdx )->Name );
+		grRam_Free( (*hMatrIdx )->Name );
 
 
-	jeRam_Free( (*hMatrIdx ) );
-	return( JE_TRUE );
+	grRam_Free( (*hMatrIdx ) );
+	return( GR_TRUE );
 }
 	
 

@@ -31,8 +31,7 @@
 extern "C" {
 #endif
 
-typedef struct jeObjectIO grObjectIO;
-typedef struct jeObjectIO jeObjectIO;
+typedef struct grObjectIO grObjectIO;
 
 grObjectIO *grObjectIO_Create(grWorld *pWorld);
 void grObjectIO_Destroy(grObjectIO **grIO);
@@ -47,13 +46,5 @@ grBoolean grObjectIO_ReadObject(grObjectIO *grIO, grVFile *File, grPtrMgr *PtrMg
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeObjectIO_Create                        grObjectIO_Create
-#define jeObjectIO_Destroy                       grObjectIO_Destroy
-#define jeObjectIO_ReadObject                    grObjectIO_ReadObject
-#define jeObjectIO_WriteObject                   grObjectIO_WriteObject
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

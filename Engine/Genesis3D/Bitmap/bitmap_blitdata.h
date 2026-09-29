@@ -26,9 +26,9 @@
 Intentional Error : bitmap_blidata only allowed in bitmap internals!
 #endif
 
-extern jeBoolean jeBitmap_BlitData(
-								const jeBitmap_Info * SrcInfo,const void *SrcData,const jeBitmap *SrcBmp,
-									  jeBitmap_Info * DstInfo,		void *DstData,const jeBitmap *DstBmp,
+extern grBoolean grBitmap_BlitData(
+								const grBitmap_Info * SrcInfo,const void *SrcData,const grBitmap *SrcBmp,
+									  grBitmap_Info * DstInfo,		void *DstData,const grBitmap *DstBmp,
 								int SizeX,
 								int SizeY);
 

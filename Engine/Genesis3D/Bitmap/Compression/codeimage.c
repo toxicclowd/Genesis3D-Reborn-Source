@@ -58,22 +58,22 @@ void CodeImage_Report(void)
 
 /***** internal-only protos : ******/
 
-void encodeImage(jeWavelet *w,coder * encoder,image *im);
-void decodeImage(jeWavelet *w,coder * decoder,image *im);
-void encodeLL(jeWavelet * w,coder * encoder,image *im);
-void decodeLL(jeWavelet * w,coder * decoder,image *im);
+void encodeImage(grWavelet *w,coder * encoder,image *im);
+void decodeImage(grWavelet *w,coder * decoder,image *im);
+void encodeLL(grWavelet * w,coder * encoder,image *im);
+void decodeLL(grWavelet * w,coder * decoder,image *im);
 
 void encodeImageBand(coderParams *CP);
 
 /*******/
 
-jeBoolean encodeWaveletImage(jeWavelet *w,image *im)
+grBoolean encodeWaveletImage(grWavelet *w,image *im)
 {
 coder *encoder;
 
 	if ( (encoder = coderCreateWrite(w->coderN,w->comp)) == NULL ) 
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	encodeImageAlpha(encoder,im);
@@ -83,16 +83,16 @@ coder *encoder;
 	w->compLen = coderFlushWrite(encoder);
 	coderDestroy(encoder);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean decodeWaveletImage(jeWavelet *w,image *im)
+grBoolean decodeWaveletImage(grWavelet *w,image *im)
 {
 coder *decoder;
 
 	if ( (decoder = coderCreateRead(w->coderN,w->comp,w->stopLen)) == NULL ) 
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	decodeImageAlpha(decoder,im);
@@ -102,10 +102,10 @@ coder *decoder;
 	coderFlushRead(decoder);
 	coderDestroy(decoder);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-void encodeImage(jeWavelet *w,coder * encoder,image *im)
+void encodeImage(grWavelet *w,coder * encoder,image *im)
 {
 int p,sizeX,sizeY,x,y;
 int l,levels;
@@ -213,7 +213,7 @@ int *dp,y,width,height;
 	TIMER_Q(CodeImage_Zero);
 }
 
-void decodeImage(jeWavelet *w,coder * decoder,image *im)
+void decodeImage(grWavelet *w,coder * decoder,image *im)
 {
 int p,sizeX,sizeY;
 int l,levels;
@@ -350,7 +350,7 @@ int i,j,k;
 
 }
 
-void encodeLL(jeWavelet * w,coder * encoder,image *im)
+void encodeLL(grWavelet * w,coder * encoder,image *im)
 {
 int p,llw,llh;
 
@@ -361,7 +361,7 @@ int p,llw,llh;
 		coderEncodeDPCM(encoder,im->data[p][0],llw,llh,im->stride - llw);
 }
 
-void decodeLL(jeWavelet * w,coder * decoder,image *im)
+void decodeLL(grWavelet * w,coder * decoder,image *im)
 {
 int p,llw,llh;
 

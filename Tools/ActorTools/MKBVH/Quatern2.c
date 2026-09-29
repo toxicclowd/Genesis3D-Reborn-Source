@@ -242,13 +242,13 @@ EulerAngles Eul_FromQuat(Quat q, int order)
 
 #include "quatern2.h"
 
-void Quaternion_GetEulerZXY(jeQuaternion* Q, float* pZ, float* pX, float* pY)
+void Quaternion_GetEulerZXY(grQuaternion* Q, float* pZ, float* pX, float* pY)
 {
-	jeXForm3d Matrix;
+	grXForm3d Matrix;
 	EulerAngles ea;
 	HMatrix M;
 
-	jeQuaternion_ToMatrix(Q, &Matrix);
+	grQuaternion_ToMatrix(Q, &Matrix);
 
 	// convert to HMatrix type
 	M[X][X] = Matrix.AX;

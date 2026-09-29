@@ -4,7 +4,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 static void ActorObj_DestroyMotionList(
-	jeActor* Actor )	// object whose motion list will be destroyed
+	grActor* Actor )	// object whose motion list will be destroyed
 {
 
 	// locals
@@ -22,11 +22,11 @@ static void ActorObj_DestroyMotionList(
 	for ( i = 0; i < Object->MotionListSize; i++ )
 	{
 		assert( Object->MotionList[i] != NULL );
-		jeRam_Free( Object->MotionList[i] );
+		grRam_Free( Object->MotionList[i] );
 	}
 
 	// free list
-	jeRam_Free( Object->MotionList );
+	grRam_Free( Object->MotionList );
 
 	// reset related data fields
 	Object->MotionList = NULL;
@@ -35,7 +35,7 @@ static void ActorObj_DestroyMotionList(
 	Object->MotionTime = 0.0f;
 	if ( Object->MotionName != NULL )
 	{
-		jeRam_Free( Object->MotionName );
+		grRam_Free( Object->MotionName );
 		Object->MotionName = NULL;
 	}
 
@@ -49,7 +49,7 @@ static void ActorObj_DestroyMotionList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 static void ActorObj_DestroyBoneList(
-	jeActor* Actor)	// object whose bone list will be destroyed
+	grActor* Actor)	// object whose bone list will be destroyed
 {
 
 	// locals
@@ -70,11 +70,11 @@ static void ActorObj_DestroyBoneList(
 	}
 
 	// free list
-	jeRam_Free( Object->BoneList );
+	grRam_Free( Object->BoneList );
 
 	// free current bone name
 	assert( Object->LightReferenceBoneName != NULL );
-	jeRam_Free( Object->LightReferenceBoneName );
+	grRam_Free( Object->LightReferenceBoneName );
 	Object->LightReferenceBoneName = NULL;
 
 	// reset related data fields
@@ -91,7 +91,7 @@ static void ActorObj_DestroyBoneList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 static void ActorObj_DestroyMaterialList(
-	jeActor	*Actor )	// object whose material list will be destroyed
+	grActor	*Actor )	// object whose material list will be destroyed
 {
 
 	// locals
@@ -121,10 +121,10 @@ static void ActorObj_DestroyMaterialList(
 			{
 				//undone
 				Util_ResetActorMaterialToDefault( Actor, Actor->ActorDefinition, i );
-				/*jeEngine_RemoveBitmap( Object->Engine, Object->MaterialOverideBitmap[i] );
-				if ( jeResource_Delete( Object->ResourceMgr, Object->MaterialOverideList[i] ) == 0 )
+				/*grEngine_RemoveBitmap( Object->Engine, Object->MaterialOverideBitmap[i] );
+				if ( grResource_Delete( Object->ResourceMgr, Object->MaterialOverideList[i] ) == 0 )
 				{
-					jeBitmap_Destroy( &( Object->MaterialOverideBitmap[i] ) );
+					grBitmap_Destroy( &( Object->MaterialOverideBitmap[i] ) );
 				}*/
 				Object->MaterialOverideBitmap[i] = NULL;
 			}
@@ -146,22 +146,22 @@ static void ActorObj_DestroyMaterialList(
 	// free lists
 	if ( Object->MaterialList != NULL )
 	{
-		jeRam_Free( Object->MaterialList );
+		grRam_Free( Object->MaterialList );
 		Object->MaterialList = NULL;
 	}
 	if ( Object->MaterialOverideList != NULL )
 	{
-		jeRam_Free( Object->MaterialOverideList );
+		grRam_Free( Object->MaterialOverideList );
 		Object->MaterialOverideList = NULL;
 	}
 	if ( Object->MaterialOverideBitmap != NULL )
 	{
-		jeRam_Free( Object->MaterialOverideBitmap );
+		grRam_Free( Object->MaterialOverideBitmap );
 		Object->MaterialOverideBitmap = NULL;
 	}
 	if ( Object->MaterialMapperList != NULL )
 	{
-		jeRam_Free( Object->MaterialMapperList );
+		grRam_Free( Object->MaterialMapperList );
 		Object->MaterialMapperList = NULL;
 	}
 
@@ -178,8 +178,8 @@ static void ActorObj_DestroyMaterialList(
 //	ActorObj_CreateMotionList()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean ActorObj_CreateMotionList(
-	jeActor	*Actor )	// object whose motion list will be created
+static grBoolean ActorObj_CreateMotionList(
+	grActor	*Actor )	// object whose motion list will be created
 {
 
 	// locals
@@ -195,16 +195,16 @@ static jeBoolean ActorObj_CreateMotionList(
 	Object->MotionListSize = 1;
 	if ( Actor->ActorDefinition != NULL )
 	{
-		Object->MotionListSize += jeActor_GetMotionCount( Actor->ActorDefinition );
+		Object->MotionListSize += grActor_GetMotionCount( Actor->ActorDefinition );
 	}
 
 	// allocate motion list
-	Object->MotionList = (char **)jeRam_Allocate( sizeof( char * ) * Object->MotionListSize );
+	Object->MotionList = (char **)grRam_Allocate( sizeof( char * ) * Object->MotionListSize );
 	if ( Object->MotionList == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		Object->MotionListSize = 0;
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// first entry is always the "no selection" slot
@@ -215,7 +215,7 @@ static jeBoolean ActorObj_CreateMotionList(
 	{
 		for ( i = 1; i < Object->MotionListSize; i++ )
 		{
-			MotionName = jeActor_GetMotionName( Actor->ActorDefinition, i - 1 );
+			MotionName = grActor_GetMotionName( Actor->ActorDefinition, i - 1 );
 			assert( MotionName != NULL );
 			Object->MotionList[i] = Util_StrDup( MotionName );
 		}
@@ -224,7 +224,7 @@ static jeBoolean ActorObj_CreateMotionList(
 	// set default motion
 	assert( Object->MotionName == NULL );
 	Object->MotionName = Util_StrDup( Object->MotionList[0] );
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MOTIONLIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MOTIONLIST_INDEX] ),
 							IDS_MOTIONLIST,
 							Object->MotionList[0],
 							ACTOROBJ_MOTIONLIST_ID,
@@ -232,7 +232,7 @@ static jeBoolean ActorObj_CreateMotionList(
 							Object->MotionList );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // ActorObj_CreateMotionList()
 
@@ -243,14 +243,14 @@ static jeBoolean ActorObj_CreateMotionList(
 //	ActorObj_CreateBoneList()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean ActorObj_CreateBoneList(
-	jeActor* Actor )	// object whose bone list will be created
+static grBoolean ActorObj_CreateBoneList(
+	grActor* Actor )	// object whose bone list will be created
 {
 
 	// locals
-	jeBody		*Body = NULL;
+	grBody		*Body = NULL;
 	int			i;
-	jeXForm3d	Xf;
+	grXForm3d	Xf;
 	int			ParentBoneIndex;
 	ActorObj* Object;
 
@@ -261,23 +261,23 @@ static jeBoolean ActorObj_CreateBoneList(
 	// get actor body
 	if ( Actor->ActorDefinition != NULL )
 	{
-		Body = jeActor_GetBody( Actor->ActorDefinition );
+		Body = grActor_GetBody( Actor->ActorDefinition );
 	}
 
 	// get bone count
 	Object->BoneListSize = 1;
 	if ( Body != NULL )
 	{
-		Object->BoneListSize += jeBody_GetBoneCount( Body );
+		Object->BoneListSize += grBody_GetBoneCount( Body );
 	}
 
 	// allocate bone list
 	assert( Object->BoneList == NULL );
-	Object->BoneList = (char **)jeRam_Allocate( sizeof( char * ) * Object->BoneListSize );
+	Object->BoneList = (char **)grRam_Allocate( sizeof( char * ) * Object->BoneListSize );
 	if ( Object->BoneList == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
+		return GR_FALSE;
 	}
 
 	// first entry is always the "no selection" slot
@@ -288,7 +288,7 @@ static jeBoolean ActorObj_CreateBoneList(
 	{
 		for ( i = 1; i < Object->BoneListSize; i++ )
 		{
-			jeBody_GetBone( Body, i - 1, (const char **)&( Object->BoneList[i] ), &Xf, &ParentBoneIndex );
+			grBody_GetBone( Body, i - 1, (const char **)&( Object->BoneList[i] ), &Xf, &ParentBoneIndex );
 			assert( Object->BoneList[i] != NULL );
 		}
 	}
@@ -296,7 +296,7 @@ static jeBoolean ActorObj_CreateBoneList(
 	// set default bone
 	assert( Object->LightReferenceBoneName == NULL );
 	Object->LightReferenceBoneName = Util_StrDup( Object->BoneList[0] );
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_LIGHTREFERENCEBONENAMELIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_LIGHTREFERENCEBONENAMELIST_INDEX] ),
 							IDS_BONELIST,
 							Object->LightReferenceBoneName,
 							ACTOROBJ_LIGHTREFERENCEBONENAMELIST_ID,
@@ -304,7 +304,7 @@ static jeBoolean ActorObj_CreateBoneList(
 							Object->BoneList );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // ActorObj_CreateBoneList()
 
@@ -315,12 +315,12 @@ static jeBoolean ActorObj_CreateBoneList(
 //	ActorObj_CreateMaterialList()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean ActorObj_CreateMaterialList(
-	jeActor* Actor )	// object whose material list will be created
+static grBoolean ActorObj_CreateMaterialList(
+	grActor* Actor )	// object whose material list will be created
 {
 
 	// locals
-	jeBody	*Body;
+	grBody	*Body;
 	int		i;
 	ActorObj* Object;
 
@@ -333,17 +333,17 @@ static jeBoolean ActorObj_CreateMaterialList(
 	Object->MaterialCurrent = 0;
 
 	// prepare material list if required
-	Object->MaterialListSize = jeActor_GetMaterialCount( Actor );
+	Object->MaterialListSize = grActor_GetMaterialCount( Actor );
 	if ( Object->MaterialListSize <= 0 )
 	{
 		goto ERROR_ActorObj_CreateMaterialList;
 	}
 
 	// allocate lists
-	Object->MaterialList = (char **)jeRam_AllocateClear( sizeof( char * ) * Object->MaterialListSize );
-	Object->MaterialOverideList = (char **)jeRam_AllocateClear( sizeof( char * ) * Object->MaterialListSize );
-	Object->MaterialMapperList = (char **)jeRam_AllocateClear( sizeof( char * ) * Object->MaterialListSize );
-	Object->MaterialOverideBitmap = (jeMaterialSpec **)jeRam_AllocateClear( sizeof ( jeMaterialSpec * ) * Object->MaterialListSize );
+	Object->MaterialList = (char **)grRam_AllocateClear( sizeof( char * ) * Object->MaterialListSize );
+	Object->MaterialOverideList = (char **)grRam_AllocateClear( sizeof( char * ) * Object->MaterialListSize );
+	Object->MaterialMapperList = (char **)grRam_AllocateClear( sizeof( char * ) * Object->MaterialListSize );
+	Object->MaterialOverideBitmap = (grMaterialSpec **)grRam_AllocateClear( sizeof ( grMaterialSpec * ) * Object->MaterialListSize );
 	if (	( Object->MaterialList == NULL ) ||
 			( Object->MaterialOverideList == NULL ) ||
 			( Object->MaterialOverideBitmap == NULL ) ||
@@ -354,7 +354,7 @@ static jeBoolean ActorObj_CreateMaterialList(
 	}
 
 	// get actor body
-	Body = jeActor_GetBody( Actor->ActorDefinition );
+	Body = grActor_GetBody( Actor->ActorDefinition );
 	if ( Body == NULL )
 	{
 		goto ERROR_ActorObj_CreateMaterialList;
@@ -365,15 +365,15 @@ static jeBoolean ActorObj_CreateMaterialList(
 	{
 
 		// locals
-		jeBoolean	GotMaterial;
-		jeMaterialSpec	*Bitmap;
-		jeFloat		Red, Green, Blue;
-		jeUVMapper	Mapper;
+		grBoolean	GotMaterial;
+		grMaterialSpec	*Bitmap;
+		grFloat		Red, Green, Blue;
+		grUVMapper	Mapper;
 
 		// setup material name list
-		GotMaterial = jeBody_GetMaterial(	Body, i, (const char **)&( Object->MaterialList[i] ), 
+		GotMaterial = grBody_GetMaterial(	Body, i, (const char **)&( Object->MaterialList[i] ), 
 											&Bitmap, &Red, &Green, &Blue, &Mapper );
-		if ( GotMaterial == JE_FALSE )
+		if ( GotMaterial == GR_FALSE )
 		{
 			goto ERROR_ActorObj_CreateMaterialList;
 		}
@@ -386,19 +386,19 @@ static jeBoolean ActorObj_CreateMaterialList(
 	}
 
 	// setup defaults
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MATERIALLIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MATERIALLIST_INDEX] ),
 							IDS_MATERIALLIST,
 							Object->MaterialList[Object->MaterialCurrent],
 							ACTOROBJ_MATERIALLIST_ID,	
 							Object->MaterialListSize,
 							Object->MaterialList );
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MATERIALOVERIDE_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MATERIALOVERIDE_INDEX] ),
 							IDS_MATERIALOVERIDE,
 							Object->MaterialOverideList[Object->MaterialCurrent],
 							ACTOROBJ_MATERIALOVERIDE_ID,	
 							Bitmaps->Total,
 							Bitmaps->Name );
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MATERIALMAPPER_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MATERIALMAPPER_INDEX] ),
 							IDS_MATERIALMAPPER,
 							Object->MaterialMapperList[0],
 							ACTOROBJ_MATERIALMAPPER_ID,
@@ -406,7 +406,7 @@ static jeBoolean ActorObj_CreateMaterialList(
 							MaterialMapperNameList );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// handle errors
 	ERROR_ActorObj_CreateMaterialList:
@@ -415,7 +415,7 @@ static jeBoolean ActorObj_CreateMaterialList(
 	ActorObj_DestroyMaterialList( Actor );
 
 	// return failure
-	return JE_FALSE;
+	return GR_FALSE;
 
 } // ActorObj_CreateMaterialList()
 
@@ -426,7 +426,7 @@ static jeBoolean ActorObj_CreateMaterialList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 static void ActorObj_ResetMotionList(
-	jeActor *Actor )	// object whose motion list will be reset
+	grActor *Actor )	// object whose motion list will be reset
 {
 	ActorObj* Object;
 
@@ -444,7 +444,7 @@ static void ActorObj_ResetMotionList(
 	Util_CreateEmptyList( &( Object->MotionList ), &( Object->MotionListSize ) );
 
 	// set combo box choice
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MOTIONLIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MOTIONLIST_INDEX] ),
 							IDS_MOTIONLIST,
 							Object->MotionList[0],
 							ACTOROBJ_MOTIONLIST_ID,
@@ -454,7 +454,7 @@ static void ActorObj_ResetMotionList(
 	// set default choice
 	if ( Object->MotionName != NULL )
 	{
-		jeRam_Free( Object->MotionName );
+		grRam_Free( Object->MotionName );
 	}
 	Object->MotionName = Util_StrDup( Object->MotionList[0] );
 
@@ -469,7 +469,7 @@ static void ActorObj_ResetMotionList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 static void ActorObj_ResetBoneList(
-	jeActor* Actor)	// object whose bone list will be reset
+	grActor* Actor)	// object whose bone list will be reset
 {
 	ActorObj* Object;
 
@@ -487,7 +487,7 @@ static void ActorObj_ResetBoneList(
 	Util_CreateEmptyList( &( Object->BoneList ), &( Object->BoneListSize ) );
 
 	// set combo box choice
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_LIGHTREFERENCEBONENAMELIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_LIGHTREFERENCEBONENAMELIST_INDEX] ),
 							IDS_BONELIST,
 							Object->LightReferenceBoneName,
 							ACTOROBJ_LIGHTREFERENCEBONENAMELIST_ID,
@@ -497,7 +497,7 @@ static void ActorObj_ResetBoneList(
 	// set default choice
 	if ( Object->LightReferenceBoneName != NULL )
 	{
-		jeRam_Free( Object->LightReferenceBoneName );
+		grRam_Free( Object->LightReferenceBoneName );
 	}
 	Object->LightReferenceBoneName = Util_StrDup( Object->BoneList[0] );
 
@@ -511,7 +511,7 @@ static void ActorObj_ResetBoneList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 static void ActorObj_ResetMaterialList(
-	jeActor *Actor )	// object whose material list will be reset
+	grActor *Actor )	// object whose material list will be reset
 {
 	ActorObj* Object;
 
@@ -528,19 +528,19 @@ static void ActorObj_ResetMaterialList(
 	Util_CreateEmptyList( &( Object->MaterialMapperList ), &( Object->MaterialListSize ) );
 
 	// set combo box defaults
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MATERIALLIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MATERIALLIST_INDEX] ),
 							IDS_MATERIALLIST,
 							Object->MaterialList[0],
 							ACTOROBJ_MATERIALLIST_ID,	
 							Object->MaterialListSize,
 							Object->MaterialList );
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MATERIALOVERIDE_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MATERIALOVERIDE_INDEX] ),
 							IDS_MATERIALOVERIDE,
 							Object->MaterialOverideList[0],
 							ACTOROBJ_MATERIALOVERIDE_ID,	
 							Object->MaterialListSize,
 							Object->MaterialOverideList );
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MATERIALMAPPER_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MATERIALMAPPER_INDEX] ),
 							IDS_MATERIALMAPPER,
 							Object->MaterialMapperList[0],
 							ACTOROBJ_MATERIALMAPPER_ID,
@@ -549,14 +549,14 @@ static void ActorObj_ResetMaterialList(
 
 } // ActorObj_ResetMaterialList()
 
-void InitObjectProperties(jeActor *Actor)
+void InitObjectProperties(grActor *Actor)
 {	
 	ActorObj* Object;
 	
 	Object = Actor->Object;
 
-	jeExtBox_Set(&(Object->CollisionExtBox), -5.0f,-5.0f,-5.0f,5.0f,5.0f,5.0f);
-	jeExtBox_Set(&(Object->RenderHintExtBox), -5.0f,-5.0f,-5.0f,5.0f,5.0f,5.0f);
+	grExtBox_Set(&(Object->CollisionExtBox), -5.0f,-5.0f,-5.0f,5.0f,5.0f,5.0f);
+	grExtBox_Set(&(Object->RenderHintExtBox), -5.0f,-5.0f,-5.0f,5.0f,5.0f,5.0f);
 
 	// Init strings
 	Object->MotionName = NULL;
@@ -565,7 +565,7 @@ void InitObjectProperties(jeActor *Actor)
 	// get default settings
 	Object->UseFillLight = ACTOROBJ_DEFAULT_USEFILLLIGHT;
 	Object->FillNormalActorRelative = ACTOROBJ_DEFAULT_FILLLIGHTNORMALACTORRELATIVE;
-	jeVec3d_Set( &( Object->FillLightNormal ), ACTOROBJ_DEFAULT_FILLNORMALX, ACTOROBJ_DEFAULT_FILLNORMALY, ACTOROBJ_DEFAULT_FILLNORMALZ );
+	grVec3d_Set( &( Object->FillLightNormal ), ACTOROBJ_DEFAULT_FILLNORMALX, ACTOROBJ_DEFAULT_FILLNORMALY, ACTOROBJ_DEFAULT_FILLNORMALZ );
 	Object->FillLightRed = ACTOROBJ_DEFAULT_FILLLIGHTRED;
 	Object->FillLightGreen = ACTOROBJ_DEFAULT_FILLLIGHTGREEN;
 	Object->FillLightBlue = ACTOROBJ_DEFAULT_FILLLIGHTBLUE;
@@ -584,12 +584,12 @@ void InitObjectProperties(jeActor *Actor)
 	Object->MotionTimeScale = ACTOROBJ_DEFAULT_MOTIONTIMESCALE;
 
 	// init remaining fields
-	jeXForm3d_SetIdentity( &( Actor->Xf ) );
+	grXForm3d_SetIdentity( &( Actor->Xf ) );
 	Object->RefCount = 1;
 
 	// create empty actor def list
 	Object->ActorDefName = Util_StrDup( NoSelection );
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_LIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_LIST_INDEX] ),
 							IDS_ACTORLIST,
 							NoSelection,
 							ACTOROBJ_LIST_ID,

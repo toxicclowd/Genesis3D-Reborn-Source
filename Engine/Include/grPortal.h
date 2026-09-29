@@ -32,12 +32,11 @@
 extern "C" {
 #endif
 
-typedef struct jePortal grPortal;
-typedef struct jePortal jePortal;
+typedef struct grPortal grPortal;
 
 typedef grBoolean GRCC grPortal_RenderFunc(grPortal *Portal, const grPlane *Plane, const grXForm3d *FaceXForm, void *Context, grCamera *Camera, grFrustum *Frustum);
 
-typedef struct jePortal
+typedef struct grPortal
 {
 	int32				RefCount;
 
@@ -59,14 +58,5 @@ GRAPI grBoolean	GRCC grPortal_IsValid(const grPortal *Portal);
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jePortal_Create                          grPortal_Create
-#define jePortal_CreateRef                       grPortal_CreateRef
-#define jePortal_Destroy                         grPortal_Destroy
-#define jePortal_IsValid                         grPortal_IsValid
-#define jePortal_RenderFunc                      grPortal_RenderFunc
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

@@ -275,7 +275,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	// EOF JH
 
-	m_SoundSystem = jeSound_CreateSoundSystem( this->GetSafeHwnd());
+	m_SoundSystem = grSound_CreateSoundSystem( this->GetSafeHwnd());
 	if( !m_wndToolBar.CreateEx	// GENERAL TOOLBAR
 		(
 			this, 
@@ -461,7 +461,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	
 	RecalcLayout();
 
-	if( Util_IsKeyDown( VK_SHIFT ) == JE_FALSE )
+	if( Util_IsKeyDown( VK_SHIFT ) == GR_FALSE )
 	{
 		LoadBarState( pszDesktopKey ) ;
 	    CSizingControlBar::GlobalLoadState(this, pszDesktopKey);
@@ -581,7 +581,7 @@ void CMainFrame::SetStatusText( const char * Text )
 	m_wndStatusBar.SetPaneText(0, Text);
 }
 
-void CMainFrame::Set3DViewStats(jeFloat fps, int32 nbFaces)
+void CMainFrame::Set3DViewStats(grFloat fps, int32 nbFaces)
 {
     char tmp[40];
 /*
@@ -595,7 +595,7 @@ void CMainFrame::Set3DViewStats(jeFloat fps, int32 nbFaces)
 }
 
 // Added JH 4.3.2000
-void CMainFrame::SetStatusSize(jeFloat X,jeFloat Y,jeFloat Z)
+void CMainFrame::SetStatusSize(grFloat X,grFloat Y,grFloat Z)
 {
     char sSize[40];
 
@@ -609,7 +609,7 @@ void CMainFrame::SetStatusSize(jeFloat X,jeFloat Y,jeFloat Z)
     m_sZSize.SetWindowText(sSize);
 }
 
-void CMainFrame::SetStatusPos (jeFloat X,jeFloat Y,jeFloat Z)
+void CMainFrame::SetStatusPos (grFloat X,grFloat Y,grFloat Z)
 {
     char sSize[40];
 
@@ -648,14 +648,14 @@ void CMainFrame::InitObjectList( void )
 
 	ObjectList = &m_wndObjectType;
 	
-	RegObjN = jeObject_GetRegisteredN();
+	RegObjN = grObject_GetRegisteredN();
 	for( int i = 0; i < RegObjN ; i++ )
 	{
-		flags = jeObject_GetRegisteredFlags( i );
+		flags = grObject_GetRegisteredFlags( i );
 
-		if( flags & JE_OBJECT_HIDDEN )
+		if( flags & GR_OBJECT_HIDDEN )
 			continue;
-		ObjTypeName = jeObject_GetRegisteredDefName( i);
+		ObjTypeName = grObject_GetRegisteredDefName( i);
 		ObjectList->AddString( ObjTypeName );
 	}
 	if( RegObjN )
@@ -665,20 +665,20 @@ void CMainFrame::InitObjectList( void )
 
 void CMainFrame::EndRotateSub( Object * pObject  )
 {
-	m_TimeLine.SubSelectEndRotate( Object_GetjeObject( pObject ) );
+	m_TimeLine.SubSelectEndRotate( Object_GetgrObject( pObject ) );
 }
 
 void CMainFrame::EndMoveSub( Object * pObject )
 {
-	m_TimeLine.SubSelectEndMove( Object_GetjeObject( pObject ) );
+	m_TimeLine.SubSelectEndMove( Object_GetgrObject( pObject ) );
 }
 
 void  CMainFrame::SubSelectObject( Object * pObject )
 {
-	m_TimeLine.SubSelectObject( Object_GetjeObject( pObject ) );
+	m_TimeLine.SubSelectObject( Object_GetgrObject( pObject ) );
 }
 
-jeBoolean CMainFrame::GetCurUserObjName( CString * Name )
+grBoolean CMainFrame::GetCurUserObjName( CString * Name )
 {
 	CComboBox* ObjectList{};
 	int CurSel{};
@@ -687,13 +687,13 @@ jeBoolean CMainFrame::GetCurUserObjName( CString * Name )
 
 	CurSel = ObjectList->GetCurSel();
 	if( CurSel < 0 )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	ObjectList->GetLBText( CurSel, *Name);
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 
-jeSound_System * CMainFrame::GetSoundSystem()
+grSound_System * CMainFrame::GetSoundSystem()
 {
 	return( m_SoundSystem );
 }
@@ -716,7 +716,7 @@ void CMainFrame::SetCommandPanelTab( MAINFRM_COMMANDPANEL_TAB nTab )
 	}
 }// SetCommandPanelTab
 
-void CMainFrame::SetStats( const jeBSP_DebugInfo * pDebugInfo )
+void CMainFrame::SetStats( const grBSP_DebugInfo * pDebugInfo )
 {
 	pDebugInfo;
 }
@@ -781,7 +781,7 @@ CJweDoc * CMainFrame::GetCurrentDocument()
 
 
 
-void CMainFrame::SetProperties( jeProperty_List * pArray )
+void CMainFrame::SetProperties( grProperty_List * pArray )
 {
 	m_PropertiesDlg.Reset();
 	m_TimeLine.Reset();
@@ -792,7 +792,7 @@ void CMainFrame::SetProperties( jeProperty_List * pArray )
 	}
 }
 
-void CMainFrame::UpdateProperties( jeProperty_List * pArray )
+void CMainFrame::UpdateProperties( grProperty_List * pArray )
 {
 	if( pArray != nullptr )
 	{
@@ -1012,8 +1012,8 @@ void CMainFrame::OnInitMenu(CMenu* pMenu)
 
 	if( pDoc != nullptr )
 	{
-		pDoc->RenderAnimate( JE_FALSE );
-//		SetCurAnimateState( JE_FALSE );
+		pDoc->RenderAnimate( GR_FALSE );
+//		SetCurAnimateState( GR_FALSE );
 	}
 	CJ3DMainFrame::OnInitMenu(pMenu);
 }

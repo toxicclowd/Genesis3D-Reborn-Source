@@ -87,7 +87,7 @@ TClip_Rasterize      : 0.006183 : 1.$ %
 
 #include "Timer.h"
 
-#include "jeMaterial.h"
+#include "grMaterial.h"
 
 TIMER_VARS(TClip_Triangle);
 
@@ -101,7 +101,7 @@ typedef enum
 	TOP_CLIPPING_PLANE,
 	BOTTOM_CLIPPING_PLANE,
 	NUM_CLIPPING_PLANES
-} jeTClip_ClippingPlane;
+} grTClip_ClippingPlane;
 
 // 3 bits for V_IN/OUT flags
 #define V_ALL_IN (0)
@@ -112,142 +112,142 @@ typedef enum
 	// at a=0, result is l;  at a=1, result is h
 #define LINEAR_INTERPOLATE(a,l,h)     ((l)+(((h)-(l))*(a)))
 
-typedef struct jeTClip_StaticsType
+typedef struct grTClip_StaticsType
 {
-	jeFloat LeftEdge;
-	jeFloat RightEdge;
-	jeFloat TopEdge;
-	jeFloat BottomEdge;
-	jeFloat BackEdge;
+	grFloat LeftEdge;
+	grFloat RightEdge;
+	grFloat TopEdge;
+	grFloat BottomEdge;
+	grFloat BackEdge;
 
 	DRV_Driver * Driver;
-	jeEngine	*Engine;
-	const jeMaterialSpec *Material;
-	jeTexture * THandle;
+	grEngine	*Engine;
+	const grMaterialSpec *Material;
+	grTexture * THandle;
 
 	int32 RenderFlags;
 	uint32 DefaultRenderFlags;
-} jeTClip_StaticsType;
+} grTClip_StaticsType;
 
 /*}{************ Protos ***********/
 
-static void JETCF jeTClip_Split(JE_LVertex *NewVertex,const JE_LVertex *V1,const JE_LVertex *V2,int ClippingPlane);
-static void JETCF jeTClip_TrianglePlane(const JE_LVertex * zTriVertex,int ClippingPlane);
+static void GRCF grTClip_Split(GR_LVertex *NewVertex,const GR_LVertex *V1,const GR_LVertex *V2,int ClippingPlane);
+static void GRCF grTClip_TrianglePlane(const GR_LVertex * zTriVertex,int ClippingPlane);
 
 /*}{************ The State Statics ***********/
 
-static Link * jeTClip_Link = NULL;
-static jeTClip_StaticsType jeTClip_Statics;
+static Link * grTClip_Link = NULL;
+static grTClip_StaticsType grTClip_Statics;
 
 /*}{************ Functions ***********/
 
-JETAPI jeBoolean JETCC jeTClip_Push(void)
+GRAPI grBoolean GRCC grTClip_Push(void)
 {
-jeTClip_StaticsType * TCI;
+grTClip_StaticsType * TCI;
 
-	if ( ! jeTClip_Link )
+	if ( ! grTClip_Link )
 	{
 		List_Start();
-		jeTClip_Link = Link_Create();
-		if ( ! jeTClip_Link ) 
-			return JE_FALSE;
+		grTClip_Link = Link_Create();
+		if ( ! grTClip_Link ) 
+			return GR_FALSE;
 	}
 
-	TCI = (jeTClip_StaticsType *)jeRam_Allocate(sizeof(jeTClip_StaticsType));
+	TCI = (grTClip_StaticsType *)grRam_Allocate(sizeof(grTClip_StaticsType));
 	if ( ! TCI )
-		return JE_FALSE;
-	memcpy(TCI,&jeTClip_Statics,sizeof(jeTClip_StaticsType));
+		return GR_FALSE;
+	memcpy(TCI,&grTClip_Statics,sizeof(grTClip_StaticsType));
 
-	Link_Push( jeTClip_Link , TCI );
+	Link_Push( grTClip_Link , TCI );
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeTClip_Pop(void)
+GRAPI grBoolean GRCC grTClip_Pop(void)
 {
-jeTClip_StaticsType * TCI;
-	if ( ! jeTClip_Link )
-		return JE_FALSE;
-	TCI = (jeTClip_StaticsType *)Link_Pop( jeTClip_Link );
+grTClip_StaticsType * TCI;
+	if ( ! grTClip_Link )
+		return GR_FALSE;
+	TCI = (grTClip_StaticsType *)Link_Pop( grTClip_Link );
 	if ( ! TCI )
-		return JE_FALSE;
-	memcpy(&jeTClip_Statics,TCI,sizeof(jeTClip_StaticsType));
-	jeRam_Free(TCI);
+		return GR_FALSE;
+	memcpy(&grTClip_Statics,TCI,sizeof(grTClip_StaticsType));
+	grRam_Free(TCI);
 
-	if ( ! Link_Peek(jeTClip_Link) )
+	if ( ! Link_Peek(grTClip_Link) )
 	{
-		Link_Destroy(jeTClip_Link);
-		jeTClip_Link = NULL;
+		Link_Destroy(grTClip_Link);
+		grTClip_Link = NULL;
 		List_Stop();
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeTClip_SetTexture(const jeMaterialSpec * Material, int32 RenderFlags)
+GRAPI grBoolean GRCC grTClip_SetTexture(const grMaterialSpec * Material, int32 RenderFlags)
 {
-	jeTexture* Texture = NULL;
-	jeBitmap* Bitmap = NULL;
-	jeTClip_Statics.Material = Material;
-	jeTClip_Statics.RenderFlags = RenderFlags;
+	grTexture* Texture = NULL;
+	grBitmap* Bitmap = NULL;
+	grTClip_Statics.Material = Material;
+	grTClip_Statics.RenderFlags = RenderFlags;
 	
     if (Material != NULL) {
-	    Texture = jeMaterialSpec_GetLayerTexture(Material, 0);
-	    jeTClip_Statics.THandle = Texture;
+	    Texture = grMaterialSpec_GetLayerTexture(Material, 0);
+	    grTClip_Statics.THandle = Texture;
 	    if ( Texture == NULL) {
-		    Bitmap = jeMaterialSpec_GetLayerBitmap(Material, 0);
+		    Bitmap = grMaterialSpec_GetLayerBitmap(Material, 0);
 	    }
     }
 
 	if ( Bitmap )
 	{
-		jeTClip_Statics.THandle = jeBitmap_GetTHandle(Bitmap);
-		assert(jeTClip_Statics.THandle);
+		grTClip_Statics.THandle = grBitmap_GetTHandle(Bitmap);
+		assert(grTClip_Statics.THandle);
 	}
 	else
 	{
-		jeTClip_Statics.THandle = NULL;
+		grTClip_Statics.THandle = NULL;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI void JETCC jeTClip_SetupEdges(
-	jeEngine *Engine,
-	jeFloat LeftEdge, 
-	jeFloat RightEdge,
-	jeFloat TopEdge ,
-	jeFloat BottomEdge,
-	jeFloat BackEdge)
+GRAPI void GRCC grTClip_SetupEdges(
+	grEngine *Engine,
+	grFloat LeftEdge, 
+	grFloat RightEdge,
+	grFloat TopEdge ,
+	grFloat BottomEdge,
+	grFloat BackEdge)
 { 
 	assert(Engine);
-	memset(&jeTClip_Statics,0,sizeof(jeTClip_Statics));
-	jeTClip_Statics.Engine		= Engine;
-	jeTClip_Statics.Driver		= jeEngine_GetDriver(Engine);
-	jeTClip_Statics.LeftEdge	= LeftEdge;
-	jeTClip_Statics.RightEdge	= RightEdge;
-	jeTClip_Statics.TopEdge		= TopEdge;
-	jeTClip_Statics.BottomEdge	= BottomEdge;
-	jeTClip_Statics.BackEdge	= BackEdge;
-	if (jeEngine_GetDefaultRenderFlags(Engine, &jeTClip_Statics.DefaultRenderFlags)==JE_FALSE)
+	memset(&grTClip_Statics,0,sizeof(grTClip_Statics));
+	grTClip_Statics.Engine		= Engine;
+	grTClip_Statics.Driver		= grEngine_GetDriver(Engine);
+	grTClip_Statics.LeftEdge	= LeftEdge;
+	grTClip_Statics.RightEdge	= RightEdge;
+	grTClip_Statics.TopEdge		= TopEdge;
+	grTClip_Statics.BottomEdge	= BottomEdge;
+	grTClip_Statics.BackEdge	= BackEdge;
+	if (grEngine_GetDefaultRenderFlags(Engine, &grTClip_Statics.DefaultRenderFlags)==GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeTClip_SetupEdges");
-			jeErrorLog_Clear();
-			jeTClip_Statics.DefaultRenderFlags = 0;
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grTClip_SetupEdges");
+			grErrorLog_Clear();
+			grTClip_Statics.DefaultRenderFlags = 0;
 		}
 }
 
 #ifdef DO_TIMER
-void jeTClip_Done(void)
+void grTClip_Done(void)
 {
 	TIMER_REPORT(TClip_Triangle);
 }
 #endif
 
-JETAPI void JETCC jeTClip_Triangle(const JE_LVertex TriVertex[3])
+GRAPI void GRCC grTClip_Triangle(const GR_LVertex TriVertex[3])
 {
 
 	TIMER_P(TClip_Triangle);
 
-	jeTClip_TrianglePlane(TriVertex,BACK_CLIPPING_PLANE);
+	grTClip_TrianglePlane(TriVertex,BACK_CLIPPING_PLANE);
 
 	TIMER_Q(TClip_Triangle);
 }
@@ -256,10 +256,10 @@ JETAPI void JETCC jeTClip_Triangle(const JE_LVertex TriVertex[3])
 
 /*}{************ TClip_Split ***********/
 
-static void JETCF jeTClip_Split(JE_LVertex *NewVertex,const JE_LVertex *V1,const JE_LVertex *V2,int ClippingPlane)
+static void GRCF grTClip_Split(GR_LVertex *NewVertex,const GR_LVertex *V1,const GR_LVertex *V2,int ClippingPlane)
 {
-	jeFloat Ratio=0.0f;
-	jeFloat OneOverZ1,OneOverZ2;
+	grFloat Ratio=0.0f;
+	grFloat OneOverZ1,OneOverZ2;
 	
 	#ifdef ONE_OVER_Z_PIPELINE
 		// in here ->Z is really (one over z)
@@ -274,22 +274,22 @@ static void JETCF jeTClip_Split(JE_LVertex *NewVertex,const JE_LVertex *V1,const
 		{
 			case (BACK_CLIPPING_PLANE):
 				assert((V2->Z - V1->Z)!=0.0f);
-				Ratio = ((1.0f/jeTClip_Statics.BackEdge) - OneOverZ2)/( OneOverZ1 - OneOverZ2 );
+				Ratio = ((1.0f/grTClip_Statics.BackEdge) - OneOverZ2)/( OneOverZ1 - OneOverZ2 );
 
 				NewVertex->X = LINEAR_INTERPOLATE(Ratio,(V2->X),(V1->X));
 				NewVertex->Y = LINEAR_INTERPOLATE(Ratio,(V2->Y),(V1->Y));
 				#ifdef ONE_OVER_Z_PIPELINE
-				NewVertex->Z = 1.0f/ jeTClip_Statics.BackEdge;
+				NewVertex->Z = 1.0f/ grTClip_Statics.BackEdge;
 				#else
-				NewVertex->Z = jeTClip_Statics.BackEdge;
+				NewVertex->Z = grTClip_Statics.BackEdge;
 				#endif
 			
 				break;
 			case (LEFT_CLIPPING_PLANE):
 				assert((V2->X - V1->X)!=0.0f);
-				Ratio = (jeTClip_Statics.LeftEdge - V2->X)/( V1->X - V2->X);
+				Ratio = (grTClip_Statics.LeftEdge - V2->X)/( V1->X - V2->X);
 
-				NewVertex->X = jeTClip_Statics.LeftEdge;
+				NewVertex->X = grTClip_Statics.LeftEdge;
 				NewVertex->Y = LINEAR_INTERPOLATE(Ratio,(V2->Y),(V1->Y));
 				#ifdef ONE_OVER_Z_PIPELINE
 				NewVertex->Z = LINEAR_INTERPOLATE(Ratio,OneOverZ2,OneOverZ1);
@@ -300,9 +300,9 @@ static void JETCF jeTClip_Split(JE_LVertex *NewVertex,const JE_LVertex *V1,const
 				break;
 			case (RIGHT_CLIPPING_PLANE):
 				assert((V2->X - V1->X)!=0.0f);
-				Ratio = (jeTClip_Statics.RightEdge - V2->X)/( V1->X - V2->X);
+				Ratio = (grTClip_Statics.RightEdge - V2->X)/( V1->X - V2->X);
 
-				NewVertex->X = jeTClip_Statics.RightEdge;
+				NewVertex->X = grTClip_Statics.RightEdge;
 				NewVertex->Y = LINEAR_INTERPOLATE(Ratio,(V2->Y),(V1->Y));
 				#ifdef ONE_OVER_Z_PIPELINE
 				NewVertex->Z = LINEAR_INTERPOLATE(Ratio,OneOverZ2,OneOverZ1);
@@ -313,10 +313,10 @@ static void JETCF jeTClip_Split(JE_LVertex *NewVertex,const JE_LVertex *V1,const
 				break;
 			case (TOP_CLIPPING_PLANE):
 				assert((V2->Y - V1->Y)!=0.0f);
-				Ratio = (jeTClip_Statics.TopEdge - V2->Y)/( V1->Y - V2->Y);
+				Ratio = (grTClip_Statics.TopEdge - V2->Y)/( V1->Y - V2->Y);
 
 				NewVertex->X = LINEAR_INTERPOLATE(Ratio,(V2->X),(V1->X));
-				NewVertex->Y = jeTClip_Statics.TopEdge;
+				NewVertex->Y = grTClip_Statics.TopEdge;
 				#ifdef ONE_OVER_Z_PIPELINE
 				NewVertex->Z = LINEAR_INTERPOLATE(Ratio,OneOverZ2,OneOverZ1);
 				#else
@@ -326,10 +326,10 @@ static void JETCF jeTClip_Split(JE_LVertex *NewVertex,const JE_LVertex *V1,const
 				break;
 			case (BOTTOM_CLIPPING_PLANE):
 				assert((V2->Y - V1->Y)!=0.0f);
-				Ratio = (jeTClip_Statics.BottomEdge - V2->Y)/( V1->Y - V2->Y);
+				Ratio = (grTClip_Statics.BottomEdge - V2->Y)/( V1->Y - V2->Y);
 
 				NewVertex->X = LINEAR_INTERPOLATE(Ratio,(V2->X),(V1->X));
-				NewVertex->Y = jeTClip_Statics.BottomEdge;
+				NewVertex->Y = grTClip_Statics.BottomEdge;
 				#ifdef ONE_OVER_Z_PIPELINE
 				NewVertex->Z = LINEAR_INTERPOLATE(Ratio,OneOverZ2,OneOverZ1);
 				#else
@@ -341,8 +341,8 @@ static void JETCF jeTClip_Split(JE_LVertex *NewVertex,const JE_LVertex *V1,const
 
 	
 	{
-		jeFloat OneOverZ1_Ratio;
-		jeFloat OneOverZ2_Ratio;
+		grFloat OneOverZ1_Ratio;
+		grFloat OneOverZ2_Ratio;
 		#ifdef ONE_OVER_Z_PIPELINE
 		OneOverZ1 *= 1.0f / NewVertex->Z;
 		OneOverZ2 *= 1.0f / NewVertex->Z;
@@ -369,7 +369,7 @@ static void JETCF jeTClip_Split(JE_LVertex *NewVertex,const JE_LVertex *V1,const
 
 /*}{************ TClip_TrianglePlane (New) ***********/
 
-static void JETCF jeTClip_TrianglePlane(const JE_LVertex * TriVertex,
+static void GRCF grTClip_TrianglePlane(const GR_LVertex * TriVertex,
 											int ClippingPlane)
 {
 uint32 OutBits = 0;
@@ -378,33 +378,33 @@ uint32 OutBits = 0;
 	{
 	case BACK_CLIPPING_PLANE:
 
-		OutBits |= (TriVertex[0].Z < jeTClip_Statics.BackEdge) ? V0_OUT : 0;
-		OutBits |= (TriVertex[1].Z < jeTClip_Statics.BackEdge) ? V1_OUT : 0;
-		OutBits |= (TriVertex[2].Z < jeTClip_Statics.BackEdge) ? V2_OUT : 0;
+		OutBits |= (TriVertex[0].Z < grTClip_Statics.BackEdge) ? V0_OUT : 0;
+		OutBits |= (TriVertex[1].Z < grTClip_Statics.BackEdge) ? V1_OUT : 0;
+		OutBits |= (TriVertex[2].Z < grTClip_Statics.BackEdge) ? V2_OUT : 0;
 
 	case LEFT_CLIPPING_PLANE:
 
-		OutBits |= (TriVertex[0].X < jeTClip_Statics.LeftEdge)  ? (V0_OUT<<3) : 0;
-		OutBits |= (TriVertex[1].X < jeTClip_Statics.LeftEdge)  ? (V1_OUT<<3) : 0;
-		OutBits |= (TriVertex[2].X < jeTClip_Statics.LeftEdge)  ? (V2_OUT<<3) : 0;
+		OutBits |= (TriVertex[0].X < grTClip_Statics.LeftEdge)  ? (V0_OUT<<3) : 0;
+		OutBits |= (TriVertex[1].X < grTClip_Statics.LeftEdge)  ? (V1_OUT<<3) : 0;
+		OutBits |= (TriVertex[2].X < grTClip_Statics.LeftEdge)  ? (V2_OUT<<3) : 0;
 
 	case RIGHT_CLIPPING_PLANE:
 
-		OutBits |= (TriVertex[0].X > jeTClip_Statics.RightEdge) ? (V0_OUT<<6) : 0;
-		OutBits |= (TriVertex[1].X > jeTClip_Statics.RightEdge) ? (V1_OUT<<6) : 0;
-		OutBits |= (TriVertex[2].X > jeTClip_Statics.RightEdge) ? (V2_OUT<<6) : 0;
+		OutBits |= (TriVertex[0].X > grTClip_Statics.RightEdge) ? (V0_OUT<<6) : 0;
+		OutBits |= (TriVertex[1].X > grTClip_Statics.RightEdge) ? (V1_OUT<<6) : 0;
+		OutBits |= (TriVertex[2].X > grTClip_Statics.RightEdge) ? (V2_OUT<<6) : 0;
 
 	case TOP_CLIPPING_PLANE:
 
-		OutBits |= (TriVertex[0].Y < jeTClip_Statics.TopEdge) ? (V0_OUT<<9) : 0;
-		OutBits |= (TriVertex[1].Y < jeTClip_Statics.TopEdge) ? (V1_OUT<<9) : 0;
-		OutBits |= (TriVertex[2].Y < jeTClip_Statics.TopEdge) ? (V2_OUT<<9) : 0;
+		OutBits |= (TriVertex[0].Y < grTClip_Statics.TopEdge) ? (V0_OUT<<9) : 0;
+		OutBits |= (TriVertex[1].Y < grTClip_Statics.TopEdge) ? (V1_OUT<<9) : 0;
+		OutBits |= (TriVertex[2].Y < grTClip_Statics.TopEdge) ? (V2_OUT<<9) : 0;
 
 	case BOTTOM_CLIPPING_PLANE:
 
-		OutBits |= (TriVertex[0].Y > jeTClip_Statics.BottomEdge) ?  (V0_OUT<<12) : 0;
-		OutBits |= (TriVertex[1].Y > jeTClip_Statics.BottomEdge) ?  (V1_OUT<<12) : 0;
-		OutBits |= (TriVertex[2].Y > jeTClip_Statics.BottomEdge) ?  (V2_OUT<<12) : 0;
+		OutBits |= (TriVertex[0].Y > grTClip_Statics.BottomEdge) ?  (V0_OUT<<12) : 0;
+		OutBits |= (TriVertex[1].Y > grTClip_Statics.BottomEdge) ?  (V1_OUT<<12) : 0;
+		OutBits |= (TriVertex[2].Y > grTClip_Statics.BottomEdge) ?  (V2_OUT<<12) : 0;
 
 	case NUM_CLIPPING_PLANES:
 		break;
@@ -412,7 +412,7 @@ uint32 OutBits = 0;
 
 	if ( OutBits )
 	{
-	JE_LVertex NewTriVertex[3];
+	GR_LVertex NewTriVertex[3];
 		ClippingPlane = 0;
 		for(;;)
 		{
@@ -429,69 +429,69 @@ uint32 OutBits = 0;
 
 				case (V0_OUT):
 					NewTriVertex[0] = TriVertex[2];
-					jeTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+2,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+2,ClippingPlane);
 					NewTriVertex[2] = TriVertex[1];
 
-					jeTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
+					grTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
 
 					NewTriVertex[0] = NewTriVertex[1];
-					jeTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+1,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+1,ClippingPlane);
 
 					//<> could gain a little speed like this, but who cares?
 					//	if ( ! (OutBits>>3) )
 					//		goto Rasterize
 					//	else
-					jeTClip_TrianglePlane(NewTriVertex,ClippingPlane+1); 
+					grTClip_TrianglePlane(NewTriVertex,ClippingPlane+1); 
 					return;
 
 				case (V1_OUT):
 					NewTriVertex[0] = TriVertex[0];
-					jeTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+1,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+1,ClippingPlane);
 					NewTriVertex[2] = TriVertex[2];
 
-					jeTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
+					grTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
 
 					NewTriVertex[0] = NewTriVertex[1];
-					jeTClip_Split(&(NewTriVertex[1]),TriVertex+1,TriVertex+2,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[1]),TriVertex+1,TriVertex+2,ClippingPlane);
 					
-					jeTClip_TrianglePlane(NewTriVertex,ClippingPlane+1); 
+					grTClip_TrianglePlane(NewTriVertex,ClippingPlane+1); 
 					return;
 
 				case (V0_OUT + V1_OUT):
 					NewTriVertex[0] = TriVertex[2];
-					jeTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+2,ClippingPlane);
-					jeTClip_Split(&(NewTriVertex[2]),TriVertex+1,TriVertex+2,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+2,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[2]),TriVertex+1,TriVertex+2,ClippingPlane);
 				
-					jeTClip_TrianglePlane(NewTriVertex,ClippingPlane+1); 
+					grTClip_TrianglePlane(NewTriVertex,ClippingPlane+1); 
 					return;
 
 				case (V2_OUT):
 					NewTriVertex[0] = TriVertex[1];
-					jeTClip_Split(&(NewTriVertex[1]),TriVertex+1,TriVertex+2,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[1]),TriVertex+1,TriVertex+2,ClippingPlane);
 					NewTriVertex[2] = TriVertex[0];
 
-					jeTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
+					grTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
 
 					NewTriVertex[0] = NewTriVertex[1];
-					jeTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+2,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+2,ClippingPlane);
 
-					jeTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
+					grTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
 					return;
 
 				case (V2_OUT + V0_OUT):
 					NewTriVertex[0] = TriVertex[1];
-					jeTClip_Split(&(NewTriVertex[1]),TriVertex+1,TriVertex+2,ClippingPlane);
-					jeTClip_Split(&(NewTriVertex[2]),TriVertex+0,TriVertex+1,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[1]),TriVertex+1,TriVertex+2,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[2]),TriVertex+0,TriVertex+1,ClippingPlane);
 
-					jeTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
+					grTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
 					return;
 
 				case (V2_OUT + V1_OUT):
 					NewTriVertex[0] = TriVertex[0];
-					jeTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+1,ClippingPlane);
-					jeTClip_Split(&(NewTriVertex[2]),TriVertex+0,TriVertex+2,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[1]),TriVertex+0,TriVertex+1,ClippingPlane);
+					grTClip_Split(&(NewTriVertex[2]),TriVertex+0,TriVertex+2,ClippingPlane);
 
-					jeTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
+					grTClip_TrianglePlane(NewTriVertex,ClippingPlane+1);
 					return;
 
 				case (V2_OUT + V1_OUT + V0_OUT):
@@ -502,22 +502,22 @@ uint32 OutBits = 0;
 	}
 
 
-	if ( jeTClip_Statics.THandle )
+	if ( grTClip_Statics.THandle )
 	{
-		jeRDriver_Layer		Layer;
+		grRDriver_Layer		Layer;
 
-		Layer.THandle = jeTClip_Statics.THandle;
+		Layer.THandle = grTClip_Statics.THandle;
 
-		assert(jeTClip_Statics.Driver);
-		jeTClip_Statics.Driver->RenderMiscTexturePoly((jeTLVertex *)TriVertex,
+		assert(grTClip_Statics.Driver);
+		grTClip_Statics.Driver->RenderMiscTexturePoly((grTLVertex *)TriVertex,
 			3,&Layer, 1, 
-			jeTClip_Statics.RenderFlags | jeTClip_Statics.DefaultRenderFlags | JE_RENDER_FLAG_COUNTER_CLOCKWISE );
+			grTClip_Statics.RenderFlags | grTClip_Statics.DefaultRenderFlags | GR_RENDER_FLAG_COUNTER_CLOCKWISE );
 	}
 	else
 	{
-		assert(jeTClip_Statics.Driver);
-		jeTClip_Statics.Driver->RenderGouraudPoly((jeTLVertex *)TriVertex,3,
-			jeTClip_Statics.RenderFlags | jeTClip_Statics.DefaultRenderFlags | JE_RENDER_FLAG_COUNTER_CLOCKWISE );
+		assert(grTClip_Statics.Driver);
+		grTClip_Statics.Driver->RenderGouraudPoly((grTLVertex *)TriVertex,3,
+			grTClip_Statics.RenderFlags | grTClip_Statics.DefaultRenderFlags | GR_RENDER_FLAG_COUNTER_CLOCKWISE );
 	}
 
 

@@ -32,12 +32,12 @@ typedef struct context context;
 
 extern context * contextCreate(arithInfo * arithinfo,int alphabet_size);
 extern context * contextCreateMax(arithInfo * arithinfo,int length,int totalMax);
-extern jeBoolean contextEncode(context *pContext, int symbol); 	/* returns "was char written?" */
+extern grBoolean contextEncode(context *pContext, int symbol); 	/* returns "was char written?" */
 extern int  contextDecode(context *pContext); 							/* returns -1 for escape; after escape you MUST call contextAdd! */
 extern void contextAdd   (context *pContext, int symbol); 	/* same as Decode_GotC */
 extern void contextHalve (context *pContext); 							/* halve counts */
 extern void contextFree  (context *pContext); 							/* purge */
-extern jeBoolean contextHas   (context *pContext,int symbol);
+extern grBoolean contextHas   (context *pContext,int symbol);
 
 /******** not for the general public: ********/
 
@@ -48,7 +48,7 @@ extern int contextGetProb(context *pContext,int symbol);
 /******** same as normal encode/decode , but use cap as NumSymbols;
 		i.e. symbol < cap always *******/
 
-extern jeBoolean contextEncodeCapped(context *pContext, int symbol,int cap);
+extern grBoolean contextEncodeCapped(context *pContext, int symbol,int cap);
 extern int contextDecodeCapped(context *pContext,int cap);
 
 #ifdef __cplusplus

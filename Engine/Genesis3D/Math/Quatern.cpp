@@ -26,16 +26,16 @@
 
 
 #ifndef NDEBUG
-	static jeBoolean jeQuaternion_MaximalAssertionMode = JE_TRUE;
-	#define jeQuaternion_Assert if (jeQuaternion_MaximalAssertionMode) assert
+	static grBoolean grQuaternion_MaximalAssertionMode = GR_TRUE;
+	#define grQuaternion_Assert if (grQuaternion_MaximalAssertionMode) assert
 
-	JETAPI void JETCC jeQuaternion_SetMaximalAssertionMode( jeBoolean Enable )
+	GRAPI void GRCC grQuaternion_SetMaximalAssertionMode( grBoolean Enable )
 	{
-		assert( (Enable == JE_TRUE) || (Enable == JE_FALSE) );
-		jeQuaternion_MaximalAssertionMode = Enable;
+		assert( (Enable == GR_TRUE) || (Enable == GR_FALSE) );
+		grQuaternion_MaximalAssertionMode = Enable;
 	}
 #else
-	#define jeQuaternion_Assert assert
+	#define grQuaternion_Assert assert
 #endif
 
 #define UNIT_TOLERANCE 0.001  
@@ -53,23 +53,23 @@
 #define AA_QZERO_TOLERANCE 0.0001
 	
 
-JETAPI jeBoolean JETCC jeQuaternion_IsValid(const jeQuaternion *Q)
+GRAPI grBoolean GRCC grQuaternion_IsValid(const grQuaternion *Q)
 {
 	if (Q == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((Q->W * Q->W) < 0.0f)
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((Q->X * Q->X) < 0.0f)
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((Q->Y * Q->Y) < 0.0f)
-		return JE_FALSE;
+		return GR_FALSE;
 	if ((Q->Z * Q->Z) < 0.0f)
-		return JE_FALSE;
-	return JE_TRUE;
+		return GR_FALSE;
+	return GR_TRUE;
 }
 
-JETAPI void JETCC jeQuaternion_Set( 
-	jeQuaternion *Q, jeFloat W, jeFloat X, jeFloat Y, jeFloat Z)
+GRAPI void GRCC grQuaternion_Set( 
+	grQuaternion *Q, grFloat W, grFloat X, grFloat Y, grFloat Z)
 {
 	assert( Q != NULL );
 
@@ -77,14 +77,14 @@ JETAPI void JETCC jeQuaternion_Set(
 	Q->X = X;
 	Q->Y = Y;
 	Q->Z = Z;
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 }
 
-JETAPI void JETCC jeQuaternion_SetVec3d(
-	jeQuaternion *Q, jeFloat W, const jeVec3d *V)
+GRAPI void GRCC grQuaternion_SetVec3d(
+	grQuaternion *Q, grFloat W, const grVec3d *V)
 {
 	assert( Q != NULL );
-	assert( jeVec3d_IsValid(V) != JE_FALSE );
+	assert( grVec3d_IsValid(V) != GR_FALSE );
 
 	Q->W = W;
 	Q->X = V->X;
@@ -92,15 +92,15 @@ JETAPI void JETCC jeQuaternion_SetVec3d(
 	Q->Z = V->Z;
 }	
 
-JETAPI void JETCC jeQuaternion_Get( 
-	const jeQuaternion *Q, 
-	jeFloat *W, 
-	jeFloat *X, 
-	jeFloat *Y, 
-	jeFloat *Z)
+GRAPI void GRCC grQuaternion_Get( 
+	const grQuaternion *Q, 
+	grFloat *W, 
+	grFloat *X, 
+	grFloat *Y, 
+	grFloat *Z)
 	// get quaternion components into W,X,Y,Z
 {
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 	assert( W != NULL );
 	assert( X != NULL );
 	assert( Y != NULL );
@@ -112,63 +112,63 @@ JETAPI void JETCC jeQuaternion_Get(
 	*Z = Q->Z;
 }
 
-JETAPI void JETCC jeQuaternion_SetFromAxisAngle(jeQuaternion *Q, const jeVec3d *Axis, jeFloat Theta)
+GRAPI void GRCC grQuaternion_SetFromAxisAngle(grQuaternion *Q, const grVec3d *Axis, grFloat Theta)
 	// set a quaternion from an axis and a rotation around the axis
 {
-	jeFloat sinTheta;
+	grFloat sinTheta;
 	assert( Q != NULL);
-	assert( jeVec3d_IsValid(Axis) != JE_FALSE);
+	assert( grVec3d_IsValid(Axis) != GR_FALSE);
 	assert( (Theta * Theta) >= 0.0f );
-	assert( ( fabs(jeVec3d_Length(Axis)-1.0f) < AA_QZERO_TOLERANCE) );
+	assert( ( fabs(grVec3d_Length(Axis)-1.0f) < AA_QZERO_TOLERANCE) );
 	
-	Theta = Theta * (jeFloat)0.5f;
-	Q->W     = (jeFloat) cos(Theta);
-	sinTheta = (jeFloat) sin(Theta);
+	Theta = Theta * (grFloat)0.5f;
+	Q->W     = (grFloat) cos(Theta);
+	sinTheta = (grFloat) sin(Theta);
 	Q->X = sinTheta * Axis->X;
 	Q->Y = sinTheta * Axis->Y;
 	Q->Z = sinTheta * Axis->Z;
 
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q) == JE_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q) == GR_TRUE );
 }
 
 
-JETAPI jeBoolean JETCC jeQuaternion_GetAxisAngle(const jeQuaternion *Q, jeVec3d *Axis, jeFloat *Theta)
+GRAPI grBoolean GRCC grQuaternion_GetAxisAngle(const grQuaternion *Q, grVec3d *Axis, grFloat *Theta)
 {	
 	float OneOverSinTheta;
 	float HalfTheta;
 	assert( Q != NULL );
 	assert( Axis != NULL );
 	assert( Theta != NULL );
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q) != JE_FALSE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q) != GR_FALSE );
 	
-	HalfTheta  = (jeFloat)acos( Q->W );
+	HalfTheta  = (grFloat)acos( Q->W );
 	if (HalfTheta>QZERO_TOLERANCE)
 		{
-			OneOverSinTheta = 1.0f / (jeFloat)sin( HalfTheta );
+			OneOverSinTheta = 1.0f / (grFloat)sin( HalfTheta );
 			Axis->X = OneOverSinTheta * Q->X;
 			Axis->Y = OneOverSinTheta * Q->Y;
 			Axis->Z = OneOverSinTheta * Q->Z;
 			*Theta = 2.0f * HalfTheta;
-			jeQuaternion_Assert( jeVec3d_IsValid(Axis) != JE_FALSE );
-			jeQuaternion_Assert( (*Theta * *Theta) >= 0.0f);
-			return JE_TRUE;
+			grQuaternion_Assert( grVec3d_IsValid(Axis) != GR_FALSE );
+			grQuaternion_Assert( (*Theta * *Theta) >= 0.0f);
+			return GR_TRUE;
 		}
 	else
 		{
 			Axis->X = Axis->Y = Axis->Z = 0.0f;
 			*Theta = 0.0f;
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 }
 
 
-JETAPI void JETCC jeQuaternion_GetVec3d( 
-	const jeQuaternion *Q, 
-	jeFloat *W, 
-	jeVec3d *V)
+GRAPI void GRCC grQuaternion_GetVec3d( 
+	const grQuaternion *Q, 
+	grFloat *W, 
+	grVec3d *V)
 	// get quaternion components into W and V
 {
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 	assert( W != NULL );
 	assert( V != NULL );
 	
@@ -179,22 +179,22 @@ JETAPI void JETCC jeQuaternion_GetVec3d(
 }
 
 
-JETAPI void JETCC jeQuaternion_FromMatrix(
-	const jeXForm3d		*M,
-	      jeQuaternion	*Q)
+GRAPI void GRCC grQuaternion_FromMatrix(
+	const grXForm3d		*M,
+	      grQuaternion	*Q)
 	// takes upper 3 by 3 portion of matrix (rotation sub matrix) 
 	// and generates a quaternion
 {
-	jeFloat trace,s;
+	grFloat trace,s;
 
 	assert( M != NULL );
 	assert( Q != NULL );
-	jeQuaternion_Assert( jeXForm3d_IsOrthonormal(M)==JE_TRUE );
+	grQuaternion_Assert( grXForm3d_IsOrthonormal(M)==GR_TRUE );
 
 	trace = M->AX + M->BY + M->CZ;
 	if (trace > 0.0f)
 		{
-			s = (jeFloat)sqrt(trace + 1.0f);
+			s = (grFloat)sqrt(trace + 1.0f);
 			Q->W = s * 0.5f;
 			s = 0.5f / s;
 
@@ -225,7 +225,7 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 			switch (biggest)
 				{
 				case A:
-					s = (jeFloat)sqrt( M->AX - (M->BY + M->CZ) + 1.0);
+					s = (grFloat)sqrt( M->AX - (M->BY + M->CZ) + 1.0);
 					if (s > TRACE_QZERO_TOLERANCE)
 						{
 							Q->X = s * 0.5f;
@@ -236,7 +236,7 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 							break;
 						}
 							// I
-							s = (jeFloat)sqrt( M->CZ - (M->AX + M->BY) + 1.0);
+							s = (grFloat)sqrt( M->CZ - (M->AX + M->BY) + 1.0);
 							if (s > TRACE_QZERO_TOLERANCE)
 								{
 									Q->Z = s * 0.5f;
@@ -247,7 +247,7 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 									break;
 								}
 							// E
-							s = (jeFloat)sqrt( M->BY - (M->CZ + M->AX) + 1.0);
+							s = (grFloat)sqrt( M->BY - (M->CZ + M->AX) + 1.0);
 							if (s > TRACE_QZERO_TOLERANCE)
 								{
 									Q->Y = s * 0.5f;
@@ -259,7 +259,7 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 								}
 							break;
 				case E:
-					s = (jeFloat)sqrt( M->BY - (M->CZ + M->AX) + 1.0);
+					s = (grFloat)sqrt( M->BY - (M->CZ + M->AX) + 1.0);
 					if (s > TRACE_QZERO_TOLERANCE)
 						{
 							Q->Y = s * 0.5f;
@@ -270,7 +270,7 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 							break;
 						}
 							// I
-							s = (jeFloat)sqrt( M->CZ - (M->AX + M->BY) + 1.0);
+							s = (grFloat)sqrt( M->CZ - (M->AX + M->BY) + 1.0);
 							if (s > TRACE_QZERO_TOLERANCE)
 								{
 									Q->Z = s * 0.5f;
@@ -281,7 +281,7 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 									break;
 								}
 							// A
-							s = (jeFloat)sqrt( M->AX - (M->BY + M->CZ) + 1.0);
+							s = (grFloat)sqrt( M->AX - (M->BY + M->CZ) + 1.0);
 							if (s > TRACE_QZERO_TOLERANCE)
 								{
 									Q->X = s * 0.5f;
@@ -293,7 +293,7 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 								}
 					break;
 				case I:
-					s = (jeFloat)sqrt( M->CZ - (M->AX + M->BY) + 1.0);
+					s = (grFloat)sqrt( M->CZ - (M->AX + M->BY) + 1.0);
 					if (s > TRACE_QZERO_TOLERANCE)
 						{
 							Q->Z = s * 0.5f;
@@ -304,7 +304,7 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 							break;
 						}
 							// A
-							s = (jeFloat)sqrt( M->AX - (M->BY + M->CZ) + 1.0);
+							s = (grFloat)sqrt( M->AX - (M->BY + M->CZ) + 1.0);
 							if (s > TRACE_QZERO_TOLERANCE)
 								{
 									Q->X = s * 0.5f;
@@ -315,7 +315,7 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 									break;
 								}
 							// E
-							s = (jeFloat)sqrt( M->BY - (M->CZ + M->AX) + 1.0);
+							s = (grFloat)sqrt( M->BY - (M->CZ + M->AX) + 1.0);
 							if (s > TRACE_QZERO_TOLERANCE)
 								{
 									Q->Y = s * 0.5f;
@@ -330,23 +330,23 @@ JETAPI void JETCC jeQuaternion_FromMatrix(
 					assert(0);
 				}
 		}
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q) == JE_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q) == GR_TRUE );
 }
 
-JETAPI void JETCC jeQuaternion_ToMatrix(
-	const jeQuaternion	*Q, 
-		  jeXForm3d		*M)
+GRAPI void GRCC grQuaternion_ToMatrix(
+	const grQuaternion	*Q, 
+		  grXForm3d		*M)
 	// takes a unit quaternion and fills out an equivelant rotation
 	// portion of a xform
 {
-	jeFloat X2,Y2,Z2;		//2*QX, 2*QY, 2*QZ
-	jeFloat XX2,YY2,ZZ2;	//2*QX*QX, 2*QY*QY, 2*QZ*QZ
-	jeFloat XY2,XZ2,XW2;	//2*QX*QY, 2*QX*QZ, 2*QX*QW
-	jeFloat YZ2,YW2,ZW2;	// ...
+	grFloat X2,Y2,Z2;		//2*QX, 2*QY, 2*QZ
+	grFloat XX2,YY2,ZZ2;	//2*QX*QX, 2*QY*QY, 2*QZ*QZ
+	grFloat XY2,XZ2,XW2;	//2*QX*QY, 2*QX*QZ, 2*QX*QW
+	grFloat YZ2,YW2,ZW2;	// ...
 
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 	assert( M != NULL );
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q) == JE_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q) == GR_TRUE );
 	
 	
 	X2  = 2.0f * Q->X;
@@ -379,10 +379,10 @@ JETAPI void JETCC jeQuaternion_ToMatrix(
 	M->Translation.X = M->Translation.Y = M->Translation.Z = 0.0f;
 
 #ifdef USE_CONVENTIONS
-	M->Convention = JE_XFORM3D_RIGHT_HANDED;
+	M->Convention = GR_XFORM3D_RIGHT_HANDED;
 #endif
 
-	jeQuaternion_Assert( jeXForm3d_IsOrthonormal(M)==JE_TRUE );
+	grQuaternion_Assert( grXForm3d_IsOrthonormal(M)==GR_TRUE );
 
 }
 
@@ -391,23 +391,23 @@ JETAPI void JETCC jeQuaternion_ToMatrix(
 
 
 
-JETAPI void JETCC jeQuaternion_Slerp(
-	const jeQuaternion		*Q0, 
-	const jeQuaternion		*Q1, 
-	jeFloat					T,		
-	jeQuaternion			*QT)
+GRAPI void GRCC grQuaternion_Slerp(
+	const grQuaternion		*Q0, 
+	const grQuaternion		*Q1, 
+	grFloat					T,		
+	grQuaternion			*QT)
 	// spherical interpolation between q0 and q1.   0<=t<=1 
 	// resulting quaternion is 'between' q0 and q1
 	// with t==0 being all q0, and t==1 being all q1.
 {
-	jeFloat omega,cosom,sinom,Scale0,Scale1;
-	jeQuaternion QL;
+	grFloat omega,cosom,sinom,Scale0,Scale1;
+	grQuaternion QL;
 	assert( Q0 != NULL );
 	assert( Q1 != NULL );
 	assert( QT  != NULL );
 	assert( ( 0 <= T ) && ( T <= 1.0f ) );
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q0) == JE_TRUE );
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q1) == JE_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q0) == GR_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q1) == GR_TRUE );
 
 	cosom =		(Q0->W * Q1->W) + (Q0->X * Q1->X) 
 			  + (Q0->Y * Q1->Y) + (Q0->Z * Q1->Z);
@@ -428,10 +428,10 @@ JETAPI void JETCC jeQuaternion_Slerp(
 
 	if ( (1.0f - cosom) > EPSILON )
 		{
-			omega  = (jeFloat) acos( cosom );
-			sinom  = (jeFloat) sin( omega );
-			Scale0 = (jeFloat) sin( (1.0f-T) * omega) / sinom;
-			Scale1 = (jeFloat) sin( T*omega) / sinom;
+			omega  = (grFloat) acos( cosom );
+			sinom  = (grFloat) sin( omega );
+			Scale0 = (grFloat) sin( (1.0f-T) * omega) / sinom;
+			Scale1 = (grFloat) sin( T*omega) / sinom;
 		}
 	else
 		{
@@ -447,28 +447,28 @@ JETAPI void JETCC jeQuaternion_Slerp(
 	QT-> Y = Scale0 * Q0->Y + Scale1 * QL.Y;
 	QT-> Z = Scale0 * Q0->Z + Scale1 * QL.Z;
 	QT-> W = Scale0 * Q0->W + Scale1 * QL.W;
-	jeQuaternion_Assert( jeQuaternion_IsUnit(QT) == JE_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(QT) == GR_TRUE );
 }
 
 
 
 
-JETAPI void JETCC jeQuaternion_SlerpNotShortest(
-	const jeQuaternion		*Q0, 
-	const jeQuaternion		*Q1, 
-	jeFloat					T,		
-	jeQuaternion			*QT)
+GRAPI void GRCC grQuaternion_SlerpNotShortest(
+	const grQuaternion		*Q0, 
+	const grQuaternion		*Q1, 
+	grFloat					T,		
+	grQuaternion			*QT)
 	// spherical interpolation between q0 and q1.   0<=t<=1 
 	// resulting quaternion is 'between' q0 and q1
 	// with t==0 being all q0, and t==1 being all q1.
 {
-	jeFloat omega,cosom,sinom,Scale0,Scale1;
+	grFloat omega,cosom,sinom,Scale0,Scale1;
 	assert( Q0 != NULL );
 	assert( Q1 != NULL );
 	assert( QT  != NULL );
 	assert( ( 0 <= T ) && ( T <= 1.0f ) );
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q0) == JE_TRUE );
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q1) == JE_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q0) == GR_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q1) == GR_TRUE );
 
 	cosom =		(Q0->W * Q1->W) + (Q0->X * Q1->X) 
 			  + (Q0->Y * Q1->Y) + (Q0->Z * Q1->Z);
@@ -476,8 +476,8 @@ JETAPI void JETCC jeQuaternion_SlerpNotShortest(
 		{
 			if ( (1.0f - cosom) > EPSILON )
 				{
-					omega  = (jeFloat) acos( cosom );
-					sinom  = (jeFloat) sin( omega );
+					omega  = (grFloat) acos( cosom );
+					sinom  = (grFloat) sin( omega );
 					// has numerical difficulties around cosom == nPI/2
 					// in this case everything is up for grabs... 
 					//  ...degenerate to linear interpolation
@@ -488,8 +488,8 @@ JETAPI void JETCC jeQuaternion_SlerpNotShortest(
 						}
 					else
 						{
-							Scale0 = (jeFloat) sin( (1.0f-T) * omega) / sinom;
-							Scale1 = (jeFloat) sin( T*omega) / sinom;
+							Scale0 = (grFloat) sin( (1.0f-T) * omega) / sinom;
+							Scale1 = (grFloat) sin( T*omega) / sinom;
 						}
 				}
 			else
@@ -505,8 +505,8 @@ JETAPI void JETCC jeQuaternion_SlerpNotShortest(
 			QT-> Z = Scale0 * Q0->Z + Scale1 * Q1->Z;
 			QT-> W = Scale0 * Q0->W + Scale1 * Q1->W;
 			//#pragma message (" ack:!!!!!!")
-			//jeQuaternionNormalize(QT); 
-			jeQuaternion_Assert( jeQuaternion_IsUnit(QT));
+			//grQuaternionNormalize(QT); 
+			grQuaternion_Assert( grQuaternion_IsUnit(QT));
 		}
 	else
 		{
@@ -514,27 +514,27 @@ JETAPI void JETCC jeQuaternion_SlerpNotShortest(
 			QT->Y =  Q0->X;
 			QT->Z = -Q0->W;
 			QT->W =  Q0->Z;
-			Scale0 = (jeFloat) sin( (1.0f - T) * (QUATERNION_PI*0.5) );
-			Scale1 = (jeFloat) sin( T * (QUATERNION_PI*0.5) );
+			Scale0 = (grFloat) sin( (1.0f - T) * (QUATERNION_PI*0.5) );
+			Scale1 = (grFloat) sin( T * (QUATERNION_PI*0.5) );
 			QT-> X = Scale0 * Q0->X + Scale1 * QT->X;
 			QT-> Y = Scale0 * Q0->Y + Scale1 * QT->Y;
 			QT-> Z = Scale0 * Q0->Z + Scale1 * QT->Z;
 			QT-> W = Scale0 * Q0->W + Scale1 * QT->W;
-			jeQuaternion_Assert( jeQuaternion_IsUnit(QT));
+			grQuaternion_Assert( grQuaternion_IsUnit(QT));
 		}
 }
 
-JETAPI void JETCC jeQuaternion_Multiply(
-	const jeQuaternion	*Q1, 
-	const jeQuaternion	*Q2, 
-	jeQuaternion		*Q)
+GRAPI void GRCC grQuaternion_Multiply(
+	const grQuaternion	*Q1, 
+	const grQuaternion	*Q2, 
+	grQuaternion		*Q)
 	// multiplies q1 * q2, and places the result in q.
 	// no failure. 	renormalization not automatic
 
 {
-	jeQuaternion Q1L,Q2L;
-	assert( jeQuaternion_IsValid(Q1) != JE_FALSE );
-	assert( jeQuaternion_IsValid(Q2) != JE_FALSE );
+	grQuaternion Q1L,Q2L;
+	assert( grQuaternion_IsValid(Q1) != GR_FALSE );
+	assert( grQuaternion_IsValid(Q2) != GR_FALSE );
 	assert( Q  != NULL );
 	Q1L = *Q1;
 	Q2L = *Q2;
@@ -550,67 +550,67 @@ JETAPI void JETCC jeQuaternion_Multiply(
 
 	Q->Z  = (  (Q1L.W*Q2L.Z) + (Q1L.X*Q2L.Y) 
 			 - (Q1L.Y*Q2L.X) + (Q1L.Z*Q2L.W) );
-	jeQuaternion_Assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	grQuaternion_Assert( grQuaternion_IsValid(Q) != GR_FALSE );
 
 }
 
 
-JETAPI void JETCC jeQuaternion_Rotate(
-	const jeQuaternion	*Q, 
-	const jeVec3d         *V, 
-	jeVec3d				*VRotated)
+GRAPI void GRCC grQuaternion_Rotate(
+	const grQuaternion	*Q, 
+	const grVec3d         *V, 
+	grVec3d				*VRotated)
 	// Rotates V by the quaternion Q, places the result in VRotated.
 {
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
-	assert( jeVec3d_IsValid(V)  != JE_FALSE );
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
+	assert( grVec3d_IsValid(V)  != GR_FALSE );
 	assert( VRotated  != NULL );
 
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q) == JE_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q) == GR_TRUE );
 
 	{
-		jeQuaternion Qinv,QV,QRotated, QT;
-		jeFloat zero;
-		jeQuaternion_SetVec3d(&QV ,0.0f,V);
-		jeQuaternion_Inverse (Q,&Qinv);
-		jeQuaternion_Multiply(Q,&QV,&QT);
-		jeQuaternion_Multiply(&QT,&Qinv,&QRotated);
-		jeQuaternion_GetVec3d(&QRotated,&zero,VRotated);
+		grQuaternion Qinv,QV,QRotated, QT;
+		grFloat zero;
+		grQuaternion_SetVec3d(&QV ,0.0f,V);
+		grQuaternion_Inverse (Q,&Qinv);
+		grQuaternion_Multiply(Q,&QV,&QT);
+		grQuaternion_Multiply(&QT,&Qinv,&QRotated);
+		grQuaternion_GetVec3d(&QRotated,&zero,VRotated);
 	}
 	
 }
 
 
 
-JETAPI jeBoolean JETCC jeQuaternion_IsUnit(const jeQuaternion *Q)
-	// returns JE_TRUE if Q is a unit jeQuaternion.  JE_FALSE otherwise.
+GRAPI grBoolean GRCC grQuaternion_IsUnit(const grQuaternion *Q)
+	// returns GR_TRUE if Q is a unit grQuaternion.  GR_FALSE otherwise.
 {
-	jeFloat magnitude;
+	grFloat magnitude;
 	assert( Q != NULL );
 
 	magnitude  =   (Q->W * Q->W) + (Q->X * Q->X) 
 					  + (Q->Y * Q->Y) + (Q->Z * Q->Z);
 
 	if (( magnitude < 1.0+UNIT_TOLERANCE ) && ( magnitude > 1.0-UNIT_TOLERANCE ))
-		return JE_TRUE;
-	return JE_FALSE;
+		return GR_TRUE;
+	return GR_FALSE;
 }
 
-JETAPI jeFloat JETCC jeQuaternion_Magnitude(const jeQuaternion *Q)
+GRAPI grFloat GRCC grQuaternion_Magnitude(const grQuaternion *Q)
 	// returns Magnitude of Q.  
 {
 
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 	return   (Q->W * Q->W) + (Q->X * Q->X)  + (Q->Y * Q->Y) + (Q->Z * Q->Z);
 }
 
 
-JETAPI jeFloat JETCC jeQuaternion_Normalize(jeQuaternion *Q)
-	// normalizes Q to be a unit jeQuaternion
+GRAPI grFloat GRCC grQuaternion_Normalize(grQuaternion *Q)
+	// normalizes Q to be a unit grQuaternion
 {
-	jeFloat magnitude,one_over_magnitude;
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	grFloat magnitude,one_over_magnitude;
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 	
-	magnitude =   (jeFloat) sqrt ((Q->W * Q->W) + (Q->X * Q->X) 
+	magnitude =   (grFloat) sqrt ((Q->W * Q->W) + (Q->X * Q->X) 
 							  + (Q->Y * Q->Y) + (Q->Z * Q->Z));
 
 	if (( magnitude < QZERO_TOLERANCE ) && ( magnitude > -QZERO_TOLERANCE ))
@@ -628,18 +628,18 @@ JETAPI jeFloat JETCC jeQuaternion_Normalize(jeQuaternion *Q)
 }
 
 
-JETAPI void JETCC jeQuaternion_Copy(const jeQuaternion *QSrc, jeQuaternion *QDst)
+GRAPI void GRCC grQuaternion_Copy(const grQuaternion *QSrc, grQuaternion *QDst)
 	// copies quaternion QSrc into QDst
 {
-	assert( jeQuaternion_IsValid(QSrc) != JE_FALSE );
+	assert( grQuaternion_IsValid(QSrc) != GR_FALSE );
 	assert( QDst != NULL );
 	*QDst = *QSrc;
 }
 
-JETAPI void JETCC jeQuaternion_Inverse(const jeQuaternion *Q, jeQuaternion *QInv)
+GRAPI void GRCC grQuaternion_Inverse(const grQuaternion *Q, grQuaternion *QInv)
 	// sets QInv to the inverse of Q.  
 {
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 	assert( QInv != NULL );
 
 	QInv->W =  Q->W;
@@ -649,14 +649,14 @@ JETAPI void JETCC jeQuaternion_Inverse(const jeQuaternion *Q, jeQuaternion *QInv
 }
 
 
-JETAPI void JETCC jeQuaternion_Add(
-	const jeQuaternion *Q1, 
-	const jeQuaternion *Q2, 
-	jeQuaternion *QSum)
+GRAPI void GRCC grQuaternion_Add(
+	const grQuaternion *Q1, 
+	const grQuaternion *Q2, 
+	grQuaternion *QSum)
 	// QSum = Q1 + Q2  (result is not generally a unit quaternion!)
 {
-	assert( jeQuaternion_IsValid(Q1) != JE_FALSE );
-	assert( jeQuaternion_IsValid(Q2) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q1) != GR_FALSE );
+	assert( grQuaternion_IsValid(Q2) != GR_FALSE );
 	assert( QSum != NULL );
 	QSum->W = Q1->W + Q2->W;
 	QSum->X = Q1->X + Q2->X;
@@ -664,14 +664,14 @@ JETAPI void JETCC jeQuaternion_Add(
 	QSum->Z = Q1->Z + Q2->Z;
 }
 
-JETAPI void JETCC jeQuaternion_Subtract(
-	const jeQuaternion *Q1, 
-	const jeQuaternion *Q2, 
-	jeQuaternion *QSum)
+GRAPI void GRCC grQuaternion_Subtract(
+	const grQuaternion *Q1, 
+	const grQuaternion *Q2, 
+	grQuaternion *QSum)
 	// QSum = Q1 - Q2  (result is not generally a unit quaternion!)
 {
-	assert( jeQuaternion_IsValid(Q1) != JE_FALSE );
-	assert( jeQuaternion_IsValid(Q2) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q1) != GR_FALSE );
+	assert( grQuaternion_IsValid(Q2) != GR_FALSE );
 	assert( QSum != NULL );
 	QSum->W = Q1->W - Q2->W;
 	QSum->X = Q1->X - Q2->X;
@@ -682,16 +682,16 @@ JETAPI void JETCC jeQuaternion_Subtract(
 
 #define ZERO_EPSILON (0.0001f)
  
-JETAPI void JETCC jeQuaternion_Ln(
-	const jeQuaternion *Q, 
-	jeQuaternion *LnQ)
+GRAPI void GRCC grQuaternion_Ln(
+	const grQuaternion *Q, 
+	grQuaternion *LnQ)
 	// ln(Q) for unit quaternion only!
 {
-	jeFloat Theta;
-	jeQuaternion QL;
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	grFloat Theta;
+	grQuaternion QL;
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 	assert( LnQ != NULL );
-	jeQuaternion_Assert( jeQuaternion_IsUnit(Q) == JE_TRUE );
+	grQuaternion_Assert( grQuaternion_IsUnit(Q) == GR_TRUE );
 	
 	if (Q->W < 0.0f)
 		{
@@ -704,7 +704,7 @@ JETAPI void JETCC jeQuaternion_Ln(
 		{
 			QL = *Q;
 		}
-	Theta    = (jeFloat)  acos( QL.W  );
+	Theta    = (grFloat)  acos( QL.W  );
 	 //  0 < Theta < pi
 	if (Theta< ZERO_EPSILON)
 		{
@@ -716,7 +716,7 @@ JETAPI void JETCC jeQuaternion_Ln(
 		}
 	else
 		{
-			jeFloat Theta_Over_sin_Theta =  Theta / (jeFloat) sin ( Theta );
+			grFloat Theta_Over_sin_Theta =  Theta / (grFloat) sin ( Theta );
 			LnQ->W = 0.0f;
 			LnQ->X = Theta_Over_sin_Theta * QL.X;
 			LnQ->Y = Theta_Over_sin_Theta * QL.Y;
@@ -725,41 +725,41 @@ JETAPI void JETCC jeQuaternion_Ln(
 
 }
 	
-JETAPI void JETCC jeQuaternion_Exp(
-	const jeQuaternion *Q,
-	jeQuaternion *ExpQ)
+GRAPI void GRCC grQuaternion_Exp(
+	const grQuaternion *Q,
+	grQuaternion *ExpQ)
 	// exp(Q) for pure quaternion only!  (zero scalar part (W))
 {
-	jeFloat Theta;
-	jeFloat sin_Theta_over_Theta;
+	grFloat Theta;
+	grFloat sin_Theta_over_Theta;
 
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 	assert( ExpQ != NULL);
 	assert( Q->W == 0.0 );	//check a range?
 
-	Theta = (jeFloat) sqrt(Q->X*Q->X  +  Q->Y*Q->Y  +  Q->Z*Q->Z);
+	Theta = (grFloat) sqrt(Q->X*Q->X  +  Q->Y*Q->Y  +  Q->Z*Q->Z);
 	if (Theta > ZERO_EPSILON)
 		{
-			sin_Theta_over_Theta = (jeFloat) sin(Theta) / Theta;
+			sin_Theta_over_Theta = (grFloat) sin(Theta) / Theta;
 		}
 	else
 		{
-			sin_Theta_over_Theta = (jeFloat) 1.0f;
+			sin_Theta_over_Theta = (grFloat) 1.0f;
 		}
 
-	ExpQ->W   = (jeFloat) cos(Theta);
+	ExpQ->W   = (grFloat) cos(Theta);
 	ExpQ->X   = sin_Theta_over_Theta * Q->X;
 	ExpQ->Y   = sin_Theta_over_Theta * Q->Y;
 	ExpQ->Z   = sin_Theta_over_Theta * Q->Z;
 }	
 
-JETAPI void JETCC jeQuaternion_Scale(
-	const jeQuaternion *Q,
-	jeFloat Scale,
-	jeQuaternion *QScaled)
+GRAPI void GRCC grQuaternion_Scale(
+	const grQuaternion *Q,
+	grFloat Scale,
+	grQuaternion *QScaled)
 	// Q = Q * Scale  (result is not generally a unit quaternion!)
 {
-	assert( jeQuaternion_IsValid(Q) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q) != GR_FALSE );
 	assert( (Scale * Scale) >=0.0f );
 	assert( QScaled != NULL);
 
@@ -769,7 +769,7 @@ JETAPI void JETCC jeQuaternion_Scale(
 	QScaled->Z = Q->Z * Scale;
 }
 
-JETAPI void JETCC jeQuaternion_SetNoRotation(jeQuaternion *Q)
+GRAPI void GRCC grQuaternion_SetNoRotation(grQuaternion *Q)
 	// sets Q to be a quaternion with no rotation (like an identity matrix)
 {
 	Q->W = 1.0f;
@@ -777,19 +777,19 @@ JETAPI void JETCC jeQuaternion_SetNoRotation(jeQuaternion *Q)
 	
 	/* this is equivalent to 
 		{	
-			jeXForm3d M;
-			jeXForm3d_SetIdentity(&M);
-			jeQuaternionFromMatrix(&M,Q);
+			grXForm3d M;
+			grXForm3d_SetIdentity(&M);
+			grQuaternionFromMatrix(&M,Q);
 		}
 	*/
 }
 
 
 
-JETAPI jeBoolean JETCC jeQuaternion_Compare( jeQuaternion *Q1, jeQuaternion *Q2, jeFloat Tolerance )
+GRAPI grBoolean GRCC grQuaternion_Compare( grQuaternion *Q1, grQuaternion *Q2, grFloat Tolerance )
 {
-	assert( jeQuaternion_IsValid(Q1) != JE_FALSE );
-	assert( jeQuaternion_IsValid(Q2) != JE_FALSE );
+	assert( grQuaternion_IsValid(Q1) != GR_FALSE );
+	assert( grQuaternion_IsValid(Q2) != GR_FALSE );
 	assert ( Tolerance >= 0.0 );
 
 	if (	// they are the same but with opposite signs
@@ -805,9 +805,9 @@ JETAPI jeBoolean JETCC jeQuaternion_Compare( jeQuaternion *Q1, jeQuaternion *Q2,
 				&&  (fabs(Q1->W - Q2->W) <= Tolerance )  
 			)
 		)
-		return JE_TRUE;
+		return GR_TRUE;
 	else
-		return JE_FALSE;
+		return GR_FALSE;
 
 
 	

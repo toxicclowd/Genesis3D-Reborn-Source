@@ -22,7 +22,7 @@
 #include <string.h>
 
 
-#include "jet.h"
+#include "Genesis3D.h"
 #include "actor.h"
 #include "ram.h"
 #include "fmtactor.h"
@@ -49,10 +49,10 @@ const static FmtActor_Options DefaultOptions =
 };
 
 
-static void FmtActor_Summary(jeActor_Def *A, char *SummaryFile, MkUtil_Printf Printf)
+static void FmtActor_Summary(grActor_Def *A, char *SummaryFile, MkUtil_Printf Printf)
 {
 	FILE *f;
-	jeBody *B;
+	grBody *B;
 	int i;
 	int j;
 	
@@ -66,7 +66,7 @@ static void FmtActor_Summary(jeActor_Def *A, char *SummaryFile, MkUtil_Printf Pr
 			return;
 		}
 
-	B = jeActor_GetBody(A);
+	B = grActor_GetBody(A);
 	if (B==NULL)
 		{
 			fprintf(f,"Actor has no body\n");
@@ -74,58 +74,58 @@ static void FmtActor_Summary(jeActor_Def *A, char *SummaryFile, MkUtil_Printf Pr
 	else
 		{
 			fprintf(f,"Body:\n");
-			fprintf(f,"\t%d Bones\n",jeBody_GetBoneCount(B));
-			for (j=0; j<jeBody_GetBoneCount(B); j++)
+			fprintf(f,"\t%d Bones\n",grBody_GetBoneCount(B));
+			for (j=0; j<grBody_GetBoneCount(B); j++)
 				{
-					jeXForm3d A;
+					grXForm3d A;
 					int parent;
 					const char *Name;
-					jeBody_GetBone(B,j,&Name,&A,&parent);
+					grBody_GetBone(B,j,&Name,&A,&parent);
 					fprintf(f,"\t\tBone %d Name='%s'\n",j,Name);
 				}
-			fprintf(f,"\t%d Materials\n",jeBody_GetMaterialCount(B));
-			for (j=0; j<jeBody_GetMaterialCount(B); j++)
+			fprintf(f,"\t%d Materials\n",grBody_GetMaterialCount(B));
+			for (j=0; j<grBody_GetMaterialCount(B); j++)
 				{
 					const char *n;
 					const char *a;
-					jeFloat r,g,b;
-					jeBody_GetMaterial(B,j,&n,&a,&r,&g,&b);
+					grFloat r,g,b;
+					grBody_GetMaterial(B,j,&n,&a,&r,&g,&b);
 					fprintf(f,"\t\tMaterial %d Name='%s'  Alpha='%s'  rgb=(%f %f %f)\n",
 						j,n,a,r,g,b);
 				}
-			fprintf(f,"\t%d Levels of Detail\n",JE_BODY_NUMBER_OF_LOD);
-			for (j=0; j<JE_BODY_NUMBER_OF_LOD; j++)
+			fprintf(f,"\t%d Levels of Detail\n",GR_BODY_NUMBER_OF_LOD);
+			for (j=0; j<GR_BODY_NUMBER_OF_LOD; j++)
 				{
 					int v,n,faces;
-					jeBody_GetGeometryStats(B,j,&v,&faces,&n);
+					grBody_GetGeometryStats(B,j,&v,&faces,&n);
 					fprintf(f,"\t\tLOD%d  %d Vertices   %d Normals   %d Faces\n",j,v,n,faces);
 				}
 		}
-	fprintf(f,"%d Motions\n",jeActor_GetMotionCount(A));
-	for (i=0; i<jeActor_GetMotionCount(A); i++)
+	fprintf(f,"%d Motions\n",grActor_GetMotionCount(A));
+	for (i=0; i<grActor_GetMotionCount(A); i++)
 		{
-			jeMotion *M;
+			grMotion *M;
 			const char *name;
-			M=jeActor_GetMotionByIndex(A,i);
-			name= jeMotion_GetName(M);
+			M=grActor_GetMotionByIndex(A,i);
+			name= grMotion_GetName(M);
 
 			{
 				int Match=0;
 
 				if (B!=NULL)
 					{
-						if (jeBody_GetBoneNameChecksum(B) == jeMotion_GetNameChecksum(M))
+						if (grBody_GetBoneNameChecksum(B) == grMotion_GetNameChecksum(M))
 							Match = 1;
 						else
 							Match = 0;
 					}
 				if (name != NULL)
 					fprintf(f,"\tMotion %d Name='%s' (%d Joints)  (%s)\n",i,
-						name,jeMotion_GetPathCount(M),
+						name,grMotion_GetPathCount(M),
 						(Match==1)?"Matches Bones":"Doesn't Match Bones" );
 				else
 					fprintf(f,"\tMotion %d (no name) (%d Joints)  (%s)\n",i,
-						jeMotion_GetPathCount(M),
+						grMotion_GetPathCount(M),
 						(Match==1)?"Matches Bones":"Doesn't Match Bones");
 			}
 		}
@@ -140,10 +140,10 @@ static void FmtActor_Summary(jeActor_Def *A, char *SummaryFile, MkUtil_Printf Pr
 ReturnCode FmtActor_DoMake(FmtActor_Options* options, MkUtil_Printf Printf)
 {
 	ReturnCode retValue = RETURN_SUCCESS;
-	jeVFile *sf;
-	jeVFile *df;
-	jeBoolean ok;
-	jeActor_Def* A = NULL;
+	grVFile *sf;
+	grVFile *df;
+	grBoolean ok;
+	grActor_Def* A = NULL;
 
 	// Actor files must be specified
 	if(options->SourceActorFile[0] == 0)
@@ -163,7 +163,7 @@ ReturnCode FmtActor_DoMake(FmtActor_Options* options, MkUtil_Printf Printf)
 			options->OptimizationLevel = 0;
 		}
 
-	sf = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->SourceActorFile,NULL,JE_VFILE_OPEN_READONLY);
+	sf = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->SourceActorFile,NULL,GR_VFILE_OPEN_READONLY);
 	if (sf==NULL)
 		{
 			Printf("ERROR: Could not open source actor file (%s).\n", options->SourceActorFile);
@@ -173,31 +173,31 @@ ReturnCode FmtActor_DoMake(FmtActor_Options* options, MkUtil_Printf Printf)
 	
 	if (options->TextOutput)
 		{
-			df = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->DestinationActorFile,NULL,JE_VFILE_OPEN_CREATE);
+			df = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->DestinationActorFile,NULL,GR_VFILE_OPEN_CREATE);
 			//		df = fopen(options->DestinationActorFile,"w");
 		}
 	else
 		{
-			df = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->DestinationActorFile,NULL,JE_VFILE_OPEN_CREATE);
+			df = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->DestinationActorFile,NULL,GR_VFILE_OPEN_CREATE);
 			//      df = fopen(options->DestinationActorFile,"wb");
 		}
 	if (df==NULL)
 		{
 			Printf("ERROR: Could not open destination actor file (%s).\n", options->SourceActorFile);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-			jeVFile_Close(sf);
+			grVFile_Close(sf);
 			unlink(options->DestinationActorFile);
 			return retValue;
 		} 
 	
 	
-	A = jeActor_DefCreateFromFile(sf);
-	jeVFile_Close(sf);
+	A = grActor_DefCreateFromFile(sf);
+	grVFile_Close(sf);
 	if (A==NULL)
 		{
 			Printf("ERROR: Failed to create actor from source actor file (%s).\n", options->SourceActorFile);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
-			jeVFile_Close(df);
+			grVFile_Close(df);
 			unlink(options->DestinationActorFile);
 			return retValue;
 		}
@@ -211,15 +211,15 @@ ReturnCode FmtActor_DoMake(FmtActor_Options* options, MkUtil_Printf Printf)
 
 	if (options->TextOutput)
 		{
-			ok = jeActor_DefWriteToFile(A,df);
+			ok = grActor_DefWriteToFile(A,df);
 		}
 	else
 		{
-			ok = jeActor_DefWriteToBinaryFile(A,df);
+			ok = grActor_DefWriteToBinaryFile(A,df);
 		}
-	if (ok == JE_TRUE)
+	if (ok == GR_TRUE)
 		{
-			ok = jeVFile_Close(df);
+			ok = grVFile_Close(df);
 		}
 
 	if (options->SummaryFile[0]!=0)
@@ -227,8 +227,8 @@ ReturnCode FmtActor_DoMake(FmtActor_Options* options, MkUtil_Printf Printf)
 			FmtActor_Summary(A,options->SummaryFile,Printf);
 		}
 
-	jeActor_DefDestroy(&A);
-	if (ok == JE_FALSE)
+	grActor_DefDestroy(&A);
+	if (ok == GR_FALSE)
 		{
 			Printf("ERROR: Failed to write destination actor file (%s).\n", options->DestinationActorFile);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
@@ -264,7 +264,7 @@ FmtActor_Options* FmtActor_OptionsCreate()
 {
 	FmtActor_Options* pOptions;
 
-	pOptions = JE_RAM_ALLOCATE_STRUCT(FmtActor_Options);
+	pOptions = GR_RAM_ALLOCATE_STRUCT(FmtActor_Options);
 	if(pOptions != NULL)
 		{
 			*pOptions = DefaultOptions;
@@ -282,7 +282,7 @@ void FmtActor_OptionsDestroy(FmtActor_Options** ppOptions)
 
 	p = *ppOptions;
 
-	jeRam_Free(*ppOptions);
+	grRam_Free(*ppOptions);
 
 	*ppOptions = NULL;
 }

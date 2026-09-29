@@ -25,46 +25,46 @@
 #define MIN(aa,bb)   ( ((aa)<(bb))?(aa):(bb) )
 
 // Added by Icestorm
-JETAPI jeBoolean JETCC jeExtBox_IsPoint(  const jeExtBox *B )
+GRAPI grBoolean GRCC grExtBox_IsPoint(  const grExtBox *B )
 {
 	assert (B != NULL);
-	if (!JE_FLOATS_EQUAL(B->Min.X,B->Max.X))
-		return JE_FALSE;
-    if (!JE_FLOATS_EQUAL(B->Min.Y,B->Max.Y))
-		return JE_FALSE;
-	if (!JE_FLOATS_EQUAL(B->Min.Z,B->Max.Z))
-		return JE_FALSE;
+	if (!GR_FLOATS_EQUAL(B->Min.X,B->Max.X))
+		return GR_FALSE;
+    if (!GR_FLOATS_EQUAL(B->Min.Y,B->Max.Y))
+		return GR_FALSE;
+	if (!GR_FLOATS_EQUAL(B->Min.Z,B->Max.Z))
+		return GR_FALSE;
 	else
-		return JE_TRUE;
+		return GR_TRUE;
 }
 
 
-JETAPI jeBoolean JETCC jeExtBox_IsValid(  const jeExtBox *B )
+GRAPI grBoolean GRCC grExtBox_IsValid(  const grExtBox *B )
 {
-	if (B == NULL) return JE_FALSE;
+	if (B == NULL) return GR_FALSE;
 	
-	if (jeVec3d_IsValid(&(B->Min)) == JE_FALSE)
-		return JE_FALSE;
-	if (jeVec3d_IsValid(&(B->Max)) == JE_FALSE)
-		return JE_FALSE;
+	if (grVec3d_IsValid(&(B->Min)) == GR_FALSE)
+		return GR_FALSE;
+	if (grVec3d_IsValid(&(B->Max)) == GR_FALSE)
+		return GR_FALSE;
 
 
 	if (    (B->Min.X <= B->Max.X) &&
 			(B->Min.Y <= B->Max.Y) &&
 			(B->Min.Z <= B->Max.Z)   	)
-		return JE_TRUE;
+		return GR_TRUE;
 	else
-		return JE_FALSE;
+		return GR_FALSE;
 }
 
-JETAPI void JETCC jeExtBox_Set(  jeExtBox *B,
-					jeFloat X1,jeFloat Y1,jeFloat Z1,
-					jeFloat X2,jeFloat Y2,jeFloat Z2)
+GRAPI void GRCC grExtBox_Set(  grExtBox *B,
+					grFloat X1,grFloat Y1,grFloat Z1,
+					grFloat X2,grFloat Y2,grFloat Z2)
 {
 	assert (B != NULL);
 
-	//jeVec3d_Set	(&B->Min, MIN (x1, x2),	MIN (y1, y2),MIN (z1, z2));
-	//jeVec3d_Set (&B->Max, MAX (x1, x2),	MAX (y1, y2),MAX (z1, z2));
+	//grVec3d_Set	(&B->Min, MIN (x1, x2),	MIN (y1, y2),MIN (z1, z2));
+	//grVec3d_Set (&B->Max, MAX (x1, x2),	MAX (y1, y2),MAX (z1, z2));
 
 	if ( X1 > X2 )
 		{	B->Max.X = X1;	B->Min.X = X2;	}
@@ -81,17 +81,17 @@ JETAPI void JETCC jeExtBox_Set(  jeExtBox *B,
 	else
 		{	B->Max.Z = Z2;  B->Min.Z = Z1;  }
 
-	assert( jeVec3d_IsValid(&(B->Min)) != JE_FALSE );
-	assert( jeVec3d_IsValid(&(B->Max)) != JE_FALSE );
+	assert( grVec3d_IsValid(&(B->Min)) != GR_FALSE );
+	assert( grVec3d_IsValid(&(B->Max)) != GR_FALSE );
 
 }
 
 // Set box Min and Max to the passed point
-JETAPI void JETCC jeExtBox_SetToPoint ( jeExtBox *B, const jeVec3d *Point )
+GRAPI void GRCC grExtBox_SetToPoint ( grExtBox *B, const grVec3d *Point )
 {
 	assert( B     != NULL );
 	assert( Point != NULL );
-	assert( jeVec3d_IsValid(Point) != JE_FALSE );
+	assert( grVec3d_IsValid(Point) != GR_FALSE );
 
 	
 	B->Max = *Point;
@@ -99,11 +99,11 @@ JETAPI void JETCC jeExtBox_SetToPoint ( jeExtBox *B, const jeVec3d *Point )
 }
 
 // Extend a box to encompass the passed point
-JETAPI void JETCC jeExtBox_ExtendToEnclose( jeExtBox *B, const jeVec3d *Point )
+GRAPI void GRCC grExtBox_ExtendToEnclose( grExtBox *B, const grVec3d *Point )
 {
-	assert ( jeExtBox_IsValid(B) != JE_FALSE );
+	assert ( grExtBox_IsValid(B) != GR_FALSE );
 	assert( Point != NULL );
-	assert( jeVec3d_IsValid(Point) != JE_FALSE );
+	assert( grVec3d_IsValid(Point) != GR_FALSE );
 
 	if (Point->X > B->Max.X ) B->Max.X = Point->X;
 	if (Point->Y > B->Max.Y ) B->Max.Y = Point->Y;
@@ -115,30 +115,30 @@ JETAPI void JETCC jeExtBox_ExtendToEnclose( jeExtBox *B, const jeVec3d *Point )
 
 }
 
-static jeBoolean JETCC jeExtBox_Intersects(  const jeExtBox *B1,  const jeExtBox *B2 )
+static grBoolean GRCC grExtBox_Intersects(  const grExtBox *B1,  const grExtBox *B2 )
 {
-	assert ( jeExtBox_IsValid (B1) != JE_FALSE );
-	assert ( jeExtBox_IsValid (B2) != JE_FALSE );
+	assert ( grExtBox_IsValid (B1) != GR_FALSE );
+	assert ( grExtBox_IsValid (B2) != GR_FALSE );
 
-	if ((B1->Min.X > B2->Max.X) || (B1->Max.X < B2->Min.X)) return JE_FALSE;
-	if ((B1->Min.Y > B2->Max.Y) || (B1->Max.Y < B2->Min.Y)) return JE_FALSE;
-	if ((B1->Min.Z > B2->Max.Z) || (B1->Max.Z < B2->Min.Z)) return JE_FALSE;
-	return JE_TRUE;
+	if ((B1->Min.X > B2->Max.X) || (B1->Max.X < B2->Min.X)) return GR_FALSE;
+	if ((B1->Min.Y > B2->Max.Y) || (B1->Max.Y < B2->Min.Y)) return GR_FALSE;
+	if ((B1->Min.Z > B2->Max.Z) || (B1->Max.Z < B2->Min.Z)) return GR_FALSE;
+	return GR_TRUE;
 }
 
 
 	
-JETAPI jeBoolean JETCC jeExtBox_Intersection( const jeExtBox *B1, const jeExtBox *B2, jeExtBox *Result )
+GRAPI grBoolean GRCC grExtBox_Intersection( const grExtBox *B1, const grExtBox *B2, grExtBox *Result )
 {
-	jeBoolean rslt;
+	grBoolean rslt;
 
-	assert ( jeExtBox_IsValid (B1) != JE_FALSE );
-	assert ( jeExtBox_IsValid (B2) != JE_FALSE );
+	assert ( grExtBox_IsValid (B1) != GR_FALSE );
+	assert ( grExtBox_IsValid (B2) != GR_FALSE );
 
-	rslt = jeExtBox_Intersects (B1, B2);
-	if ( (rslt != JE_FALSE) && (Result != NULL))
+	rslt = grExtBox_Intersects (B1, B2);
+	if ( (rslt != GR_FALSE) && (Result != NULL))
 		{
-			jeExtBox_Set ( Result,
+			grExtBox_Set ( Result,
 						MAX (B1->Min.X, B2->Min.X),
 						MAX (B1->Min.Y, B2->Min.Y),
 						MAX (B1->Min.Z, B2->Min.Z),
@@ -149,13 +149,13 @@ JETAPI jeBoolean JETCC jeExtBox_Intersection( const jeExtBox *B1, const jeExtBox
 	return rslt;
 }
 
-JETAPI void JETCC jeExtBox_Union( const jeExtBox *B1, const jeExtBox *B2, jeExtBox *Result )
+GRAPI void GRCC grExtBox_Union( const grExtBox *B1, const grExtBox *B2, grExtBox *Result )
 {
-	assert ( jeExtBox_IsValid (B1) != JE_FALSE );
-	assert ( jeExtBox_IsValid (B2) != JE_FALSE );
+	assert ( grExtBox_IsValid (B1) != GR_FALSE );
+	assert ( grExtBox_IsValid (B2) != GR_FALSE );
 	assert (Result != NULL);
 
-	jeExtBox_Set (	Result,
+	grExtBox_Set (	Result,
 				MIN (B1->Min.X, B2->Min.X),
 				MIN (B1->Min.Y, B2->Min.Y),
 				MIN (B1->Min.Z, B2->Min.Z),
@@ -164,75 +164,75 @@ JETAPI void JETCC jeExtBox_Union( const jeExtBox *B1, const jeExtBox *B2, jeExtB
 				MAX (B1->Max.Z, B2->Max.Z) );
 }
 
-JETAPI jeBoolean JETCC jeExtBox_ContainsPoint(  const jeExtBox *B,  const jeVec3d *Point )
+GRAPI grBoolean GRCC grExtBox_ContainsPoint(  const grExtBox *B,  const grVec3d *Point )
 {
-	assert (jeExtBox_IsValid (B) != JE_FALSE);
-	assert( jeVec3d_IsValid(Point) != JE_FALSE );
+	assert (grExtBox_IsValid (B) != GR_FALSE);
+	assert( grVec3d_IsValid(Point) != GR_FALSE );
 
 	if (    (Point->X >= B->Min.X) && (Point->X <= B->Max.X) &&
 			(Point->Y >= B->Min.Y) && (Point->Y <= B->Max.Y) &&
 			(Point->Z >= B->Min.Z) && (Point->Z <= B->Max.Z)     )
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	else
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 }
 
 
-JETAPI void JETCC jeExtBox_GetTranslation( const jeExtBox *B, jeVec3d *pCenter )
+GRAPI void GRCC grExtBox_GetTranslation( const grExtBox *B, grVec3d *pCenter )
 {
-	assert (jeExtBox_IsValid (B) != JE_FALSE);
+	assert (grExtBox_IsValid (B) != GR_FALSE);
 	assert (pCenter != NULL);
 
-	jeVec3d_Set( pCenter,
+	grVec3d_Set( pCenter,
 				(B->Min.X + B->Max.X)/2.0f,
 				(B->Min.Y + B->Max.Y)/2.0f,
 				(B->Min.Z + B->Max.Z)/2.0f );
 }
 
-JETAPI void JETCC jeExtBox_Translate(  jeExtBox *B,  jeFloat DX,  jeFloat DY,  jeFloat DZ	)
+GRAPI void GRCC grExtBox_Translate(  grExtBox *B,  grFloat DX,  grFloat DY,  grFloat DZ	)
 {
-	jeVec3d VecDelta;
+	grVec3d VecDelta;
 
-	assert (jeExtBox_IsValid (B) != JE_FALSE);
+	assert (grExtBox_IsValid (B) != GR_FALSE);
 
-	jeVec3d_Set (&VecDelta, DX, DY, DZ);
-		assert( jeVec3d_IsValid(&VecDelta) != JE_FALSE );
-	jeVec3d_Add (&B->Min, &VecDelta, &B->Min);
-	jeVec3d_Add (&B->Max, &VecDelta, &B->Max);
+	grVec3d_Set (&VecDelta, DX, DY, DZ);
+		assert( grVec3d_IsValid(&VecDelta) != GR_FALSE );
+	grVec3d_Add (&B->Min, &VecDelta, &B->Min);
+	grVec3d_Add (&B->Max, &VecDelta, &B->Max);
 }
 
-JETAPI void JETCC jeExtBox_SetTranslation( jeExtBox *B, const jeVec3d *pCenter )
+GRAPI void GRCC grExtBox_SetTranslation( grExtBox *B, const grVec3d *pCenter )
 {
-	jeVec3d Center,Translation;
+	grVec3d Center,Translation;
 
-	assert (jeExtBox_IsValid (B) != JE_FALSE);
+	assert (grExtBox_IsValid (B) != GR_FALSE);
 	assert (pCenter != NULL);
-	assert( jeVec3d_IsValid(pCenter) != JE_FALSE );
+	assert( grVec3d_IsValid(pCenter) != GR_FALSE );
 
-	jeExtBox_GetTranslation( B, &Center );
-	jeVec3d_Subtract( pCenter, &Center, &Translation);
+	grExtBox_GetTranslation( B, &Center );
+	grVec3d_Subtract( pCenter, &Center, &Translation);
 
-	jeExtBox_Translate( B, Translation.X, Translation.Y, Translation.Z );
+	grExtBox_Translate( B, Translation.X, Translation.Y, Translation.Z );
 }
 
 // Icestorm Begin
-JETAPI void JETCC jeExtBox_SetNewOrigin( jeExtBox *B, const jeVec3d *pOrigin)
+GRAPI void GRCC grExtBox_SetNewOrigin( grExtBox *B, const grVec3d *pOrigin)
 {
-	assert (jeExtBox_IsValid (B) != JE_FALSE);
+	assert (grExtBox_IsValid (B) != GR_FALSE);
 	assert (pOrigin != NULL);
-	assert( jeVec3d_IsValid(pOrigin) != JE_FALSE );
-	jeVec3d_Subtract(&B->Min, pOrigin, &B->Min);
-	jeVec3d_Subtract(&B->Max, pOrigin, &B->Max);
+	assert( grVec3d_IsValid(pOrigin) != GR_FALSE );
+	grVec3d_Subtract(&B->Min, pOrigin, &B->Min);
+	grVec3d_Subtract(&B->Max, pOrigin, &B->Max);
 }
 
-JETAPI void JETCC jeExtBox_MoveToOrigin( jeExtBox *B, jeVec3d *OldCenter )
+GRAPI void GRCC grExtBox_MoveToOrigin( grExtBox *B, grVec3d *OldCenter )
 {
-	jeFloat DX,DY,DZ;
-	assert (jeExtBox_IsValid (B) != JE_FALSE);
+	grFloat DX,DY,DZ;
+	assert (grExtBox_IsValid (B) != GR_FALSE);
 
 	DX=(B->Min.X+B->Max.X)*0.5f;
 	B->Min.X-=DX;B->Max.X-=DX;
@@ -243,13 +243,13 @@ JETAPI void JETCC jeExtBox_MoveToOrigin( jeExtBox *B, jeVec3d *OldCenter )
 	DZ=(B->Min.Z+B->Max.Z)*0.5f;
 	B->Min.Z-=DZ;B->Max.Z-=DZ;
 	if (OldCenter)
-		jeVec3d_Set(OldCenter, DX, DY, DZ);
+		grVec3d_Set(OldCenter, DX, DY, DZ);
 }
 
-JETAPI void JETCC jeExtBox_TranslateAndMoveToOrigin( jeExtBox *B, const jeVec3d *vMove, jeVec3d *MovedCenter )
+GRAPI void GRCC grExtBox_TranslateAndMoveToOrigin( grExtBox *B, const grVec3d *vMove, grVec3d *MovedCenter )
 {
-	jeFloat DX,DY,DZ;
-	assert (jeExtBox_IsValid (B) != JE_FALSE);
+	grFloat DX,DY,DZ;
+	assert (grExtBox_IsValid (B) != GR_FALSE);
 
 	DX=(B->Min.X+B->Max.X)*0.5f;
 	B->Min.X-=DX;B->Max.X-=DX;
@@ -268,21 +268,21 @@ JETAPI void JETCC jeExtBox_TranslateAndMoveToOrigin( jeExtBox *B, const jeVec3d 
 }
 // Icestorm End
 
-JETAPI void JETCC jeExtBox_GetScaling( const jeExtBox *B, jeVec3d *pScale )
+GRAPI void GRCC grExtBox_GetScaling( const grExtBox *B, grVec3d *pScale )
 {
-	assert (jeExtBox_IsValid (B) != JE_FALSE );
+	assert (grExtBox_IsValid (B) != GR_FALSE );
 	assert (pScale != NULL);
 
-	jeVec3d_Subtract( &(B->Max), &(B->Min), pScale );
+	grVec3d_Subtract( &(B->Max), &(B->Min), pScale );
 }
 
-JETAPI void JETCC jeExtBox_Scale( jeExtBox *B, jeFloat ScaleX, jeFloat ScaleY, jeFloat ScaleZ )
+GRAPI void GRCC grExtBox_Scale( grExtBox *B, grFloat ScaleX, grFloat ScaleY, grFloat ScaleZ )
 {
-	jeVec3d Center;
-	jeVec3d Scale;
-	jeFloat DX,DY,DZ;
+	grVec3d Center;
+	grVec3d Scale;
+	grFloat DX,DY,DZ;
 
-	assert (jeExtBox_IsValid (B) != JE_FALSE );
+	assert (grExtBox_IsValid (B) != GR_FALSE );
 	assert (ScaleX >= 0.0f );
 	assert (ScaleY >= 0.0f );
 	assert (ScaleZ >= 0.0f );
@@ -290,8 +290,8 @@ JETAPI void JETCC jeExtBox_Scale( jeExtBox *B, jeFloat ScaleX, jeFloat ScaleY, j
 	assert (ScaleY * ScaleY >= 0.0f );
 	assert (ScaleZ * ScaleZ >= 0.0f );
 
-	jeExtBox_GetTranslation( B, &Center );
-	jeExtBox_GetScaling    ( B, &Scale  );
+	grExtBox_GetTranslation( B, &Center );
+	grExtBox_GetScaling    ( B, &Scale  );
 	
 	DX = ScaleX * Scale.X * 0.5f;
 	DY = ScaleY * Scale.Y * 0.5f;
@@ -305,22 +305,22 @@ JETAPI void JETCC jeExtBox_Scale( jeExtBox *B, jeFloat ScaleX, jeFloat ScaleY, j
 	B->Max.Y = Center.Y + DY;
 	B->Max.Z = Center.Z + DZ;
 	
-	assert (jeExtBox_IsValid (B) != JE_FALSE);
+	assert (grExtBox_IsValid (B) != GR_FALSE);
 }
 
-JETAPI void JETCC jeExtBox_SetScaling( jeExtBox *B, const jeVec3d *pScale )
+GRAPI void GRCC grExtBox_SetScaling( grExtBox *B, const grVec3d *pScale )
 {
-	jeVec3d Center;
-	jeFloat DX,DY,DZ;
+	grVec3d Center;
+	grFloat DX,DY,DZ;
 
-	assert (jeExtBox_IsValid (B) != JE_FALSE );
+	assert (grExtBox_IsValid (B) != GR_FALSE );
 	assert (pScale != NULL );
-	assert (jeVec3d_IsValid( pScale )!= JE_FALSE);
+	assert (grVec3d_IsValid( pScale )!= GR_FALSE);
 	assert (pScale->X >= 0.0f );
 	assert (pScale->Y >= 0.0f );
 	assert (pScale->Z >= 0.0f );
 
-	jeExtBox_GetTranslation( B, &Center );
+	grExtBox_GetTranslation( B, &Center );
 
 	DX = pScale->X / 2.0f;
 	DY = pScale->Y / 2.0f;
@@ -335,17 +335,17 @@ JETAPI void JETCC jeExtBox_SetScaling( jeExtBox *B, const jeVec3d *pScale )
 	B->Max.Z = Center.Z + DZ;
 }
 
-JETAPI void JETCC jeExtBox_LinearSweep(	const jeExtBox *BoxToSweep, 
-						const jeVec3d *StartPoint, 
-						const jeVec3d *EndPoint, 
-						jeExtBox *EnclosingBox )
+GRAPI void GRCC grExtBox_LinearSweep(	const grExtBox *BoxToSweep, 
+						const grVec3d *StartPoint, 
+						const grVec3d *EndPoint, 
+						grExtBox *EnclosingBox )
 {
 
-	assert (jeExtBox_IsValid (BoxToSweep) != JE_FALSE );
+	assert (grExtBox_IsValid (BoxToSweep) != GR_FALSE );
 	assert (StartPoint   != NULL );
 	assert (EndPoint     != NULL );
-	assert (jeVec3d_IsValid( StartPoint )!= JE_FALSE);
-	assert (jeVec3d_IsValid( EndPoint   )!= JE_FALSE);
+	assert (grVec3d_IsValid( StartPoint )!= GR_FALSE);
+	assert (grVec3d_IsValid( EndPoint   )!= GR_FALSE);
 	assert (EnclosingBox != NULL );
 
 	*EnclosingBox = *BoxToSweep;
@@ -382,14 +382,14 @@ JETAPI void JETCC jeExtBox_LinearSweep(	const jeExtBox *BoxToSweep,
 			EnclosingBox->Min.Z += EndPoint->Z; 
 			EnclosingBox->Max.Z += StartPoint->Z; 
 		}
-	assert (jeExtBox_IsValid (EnclosingBox) != JE_FALSE );
+	assert (grExtBox_IsValid (EnclosingBox) != GR_FALSE );
 }
 
-static jeBoolean JETCC jeExtBox_XFaceDist(  const jeVec3d *Start, 
-												const jeVec3d *Delta, const jeExtBox *B, jeFloat *T, jeFloat X)
+static grBoolean GRCC grExtBox_XFaceDist(  const grVec3d *Start, 
+												const grVec3d *Delta, const grExtBox *B, grFloat *T, grFloat X)
 {
-	jeFloat t;
-	jeFloat Y,Z;
+	grFloat t;
+	grFloat Y,Z;
 	assert( Start != NULL );
 	assert( Delta != NULL );
 	assert( B     != NULL );
@@ -405,17 +405,17 @@ static jeBoolean JETCC jeExtBox_XFaceDist(  const jeVec3d *Start,
 					if ( ( B->Min.Z <= Z) && (Z <= B->Max.Z) )
 						{
 							*T = t;
-							return JE_TRUE;
+							return GR_TRUE;
 						}
 				}
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static jeBoolean JETCC jeExtBox_YFaceDist(  const jeVec3d *Start, const jeVec3d *Delta, const jeExtBox *B, jeFloat *T, jeFloat Y)
+static grBoolean GRCC grExtBox_YFaceDist(  const grVec3d *Start, const grVec3d *Delta, const grExtBox *B, grFloat *T, grFloat Y)
 {
-	jeFloat t;
-	jeFloat X,Z;
+	grFloat t;
+	grFloat X,Z;
 	assert( Start != NULL );
 	assert( Delta != NULL );
 	assert( B     != NULL );
@@ -431,18 +431,18 @@ static jeBoolean JETCC jeExtBox_YFaceDist(  const jeVec3d *Start, const jeVec3d 
 					if ( ( B->Min.X <= X) && (X <= B->Max.X) )
 						{
 							*T = t;
-							return JE_TRUE;
+							return GR_TRUE;
 						}
 				}
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 
-static jeBoolean JETCC jeExtBox_ZFaceDist(  const jeVec3d *Start, const jeVec3d *Delta, const jeExtBox *B, jeFloat *T, jeFloat Z)
+static grBoolean GRCC grExtBox_ZFaceDist(  const grVec3d *Start, const grVec3d *Delta, const grExtBox *B, grFloat *T, grFloat Z)
 {
-	jeFloat t;
-	jeFloat X,Y;
+	grFloat t;
+	grFloat X,Y;
 	assert( Start != NULL );
 	assert( Delta != NULL );
 	assert( B     != NULL );
@@ -458,32 +458,32 @@ static jeBoolean JETCC jeExtBox_ZFaceDist(  const jeVec3d *Start, const jeVec3d 
 					if ( ( B->Min.Y <= Y) && (Y <= B->Max.Y) )
 						{
 							*T = t;
-							return JE_TRUE;
+							return GR_TRUE;
 						}
 				}
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 
 
-JETAPI jeBoolean JETCC jeExtBox_RayCollision( const jeExtBox *B, const jeVec3d *Start, const jeVec3d *End, 
-								jeFloat *T, jeVec3d *Normal )
+GRAPI grBoolean GRCC grExtBox_RayCollision( const grExtBox *B, const grVec3d *Start, const grVec3d *End, 
+								grFloat *T, grVec3d *Normal )
 {
 	// only detects rays going 'in' to the box
-	jeFloat t;
-	jeVec3d Delta;
-	jeVec3d LocalNormal;
-	jeFloat LocalT;
+	grFloat t;
+	grVec3d Delta;
+	grVec3d LocalNormal;
+	grFloat LocalT;
 
 	assert( B != NULL );
 	assert( Start != NULL );
 	assert( End != NULL );
-	assert (jeVec3d_IsValid( Start )!= JE_FALSE);
-	assert (jeVec3d_IsValid( End   )!= JE_FALSE);
-	assert (jeExtBox_IsValid( B )!= JE_FALSE );
+	assert (grVec3d_IsValid( Start )!= GR_FALSE);
+	assert (grVec3d_IsValid( End   )!= GR_FALSE);
+	assert (grExtBox_IsValid( B )!= GR_FALSE );
 
-	jeVec3d_Subtract(End,Start,&Delta);
+	grVec3d_Subtract(End,Start,&Delta);
 	
 	if (Normal == NULL)
 		Normal = &LocalNormal;
@@ -494,21 +494,21 @@ JETAPI jeBoolean JETCC jeExtBox_RayCollision( const jeExtBox *B, const jeVec3d *
 	if (Delta.X > 0.0f)
 		{
 			if ( (Start->X <= B->Min.X) && (B->Min.X <= End->X) &&
-				 (jeExtBox_XFaceDist(  Start ,&Delta, B, &t, B->Min.X ) != JE_FALSE) )
+				 (grExtBox_XFaceDist(  Start ,&Delta, B, &t, B->Min.X ) != GR_FALSE) )
 					{
-						jeVec3d_Set( Normal,  -1.0f, 0.0f, 0.0f );
+						grVec3d_Set( Normal,  -1.0f, 0.0f, 0.0f );
 						*T = t;
-						return JE_TRUE;
+						return GR_TRUE;
 					}
 		}
 	else if (Delta.X < 0.0f)
 		{
 			if ( (End->X <= B->Max.X) && (B->Max.X <= Start->X) &&
-				 (jeExtBox_XFaceDist(  Start ,&Delta, B, &t, B->Max.X ) != JE_FALSE) )
+				 (grExtBox_XFaceDist(  Start ,&Delta, B, &t, B->Max.X ) != GR_FALSE) )
 					{
-						jeVec3d_Set( Normal,  1.0f, 0.0f, 0.0f );
+						grVec3d_Set( Normal,  1.0f, 0.0f, 0.0f );
 						*T = t;
-						return JE_TRUE;
+						return GR_TRUE;
 					}
 		}
 	
@@ -516,21 +516,21 @@ JETAPI jeBoolean JETCC jeExtBox_RayCollision( const jeExtBox *B, const jeVec3d *
 	if (Delta.Y > 0.0f)
 		{	
 			if ( (Start->Y <= B->Min.Y) && (B->Min.Y <= End->Y) &&
-				 (jeExtBox_YFaceDist(  Start ,&Delta, B, &t, B->Min.Y ) != JE_FALSE) )
+				 (grExtBox_YFaceDist(  Start ,&Delta, B, &t, B->Min.Y ) != GR_FALSE) )
 				{
-					jeVec3d_Set( Normal,  0.0f, -1.0f, 0.0f );
+					grVec3d_Set( Normal,  0.0f, -1.0f, 0.0f );
 					*T = t;
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 		}
 	else if (Delta.Y < 0.0f)
 		{
 			if ( (End->Y <= B->Max.Y) && (B->Max.Y <= Start->Y) &&
-				 (jeExtBox_YFaceDist(  Start ,&Delta, B, &t, B->Max.Y ) != JE_FALSE) )
+				 (grExtBox_YFaceDist(  Start ,&Delta, B, &t, B->Max.Y ) != GR_FALSE) )
 				{
-					jeVec3d_Set( Normal,  0.0f, 1.0f, 0.0f );
+					grVec3d_Set( Normal,  0.0f, 1.0f, 0.0f );
 					*T = t;
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 		}
 	
@@ -538,55 +538,55 @@ JETAPI jeBoolean JETCC jeExtBox_RayCollision( const jeExtBox *B, const jeVec3d *
 	if (Delta.Z > 0.0f)
 		{	
 			if ( (Start->Z <= B->Min.Z) && (B->Min.Z <= End->Z) &&
-			     (jeExtBox_ZFaceDist(  Start ,&Delta, B, &t, B->Min.Z ) != JE_FALSE) )
+			     (grExtBox_ZFaceDist(  Start ,&Delta, B, &t, B->Min.Z ) != GR_FALSE) )
 				{
-					jeVec3d_Set( Normal,  0.0f, 0.0f, -1.0f );
+					grVec3d_Set( Normal,  0.0f, 0.0f, -1.0f );
 					*T = t;
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 		}
 	else if (Delta.Z < 0.0f)
 		{			
 			if ( (End->Z <= B->Max.Z) && (B->Max.Z <= Start->Z) &&
-				 (jeExtBox_ZFaceDist(  Start ,&Delta, B, &t, B->Max.Z ) != JE_FALSE) )
+				 (grExtBox_ZFaceDist(  Start ,&Delta, B, &t, B->Max.Z ) != GR_FALSE) )
 				{
-					jeVec3d_Set( Normal,  0.0f, 0.0f, 1.0f );
+					grVec3d_Set( Normal,  0.0f, 0.0f, 1.0f );
 					*T = t;
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 		}
-	return JE_FALSE;	
+	return GR_FALSE;	
 }
 
-JETAPI void JETCC jeExtBox_GetPoint( const jeExtBox *B, const int iPoint, jeVec3d *vPoint)
+GRAPI void GRCC grExtBox_GetPoint( const grExtBox *B, const int iPoint, grVec3d *vPoint)
 {
 	assert(vPoint != NULL);
 
 	switch(iPoint)
 	{
 	case 0:
-		jeVec3d_Set(vPoint, B->Min.X, B->Min.Y, B->Min.Z);
+		grVec3d_Set(vPoint, B->Min.X, B->Min.Y, B->Min.Z);
 		break;
 	case 1:
-		jeVec3d_Set(vPoint, B->Max.X, B->Min.Y, B->Min.Z);
+		grVec3d_Set(vPoint, B->Max.X, B->Min.Y, B->Min.Z);
 		break;
 	case 2:
-		jeVec3d_Set(vPoint, B->Min.X, B->Max.Y, B->Min.Z);
+		grVec3d_Set(vPoint, B->Min.X, B->Max.Y, B->Min.Z);
 		break;
 	case 3:
-		jeVec3d_Set(vPoint, B->Max.X, B->Max.Y, B->Min.Z);
+		grVec3d_Set(vPoint, B->Max.X, B->Max.Y, B->Min.Z);
 		break;
 	case 4:
-		jeVec3d_Set(vPoint, B->Min.X, B->Min.Y, B->Max.Z);
+		grVec3d_Set(vPoint, B->Min.X, B->Min.Y, B->Max.Z);
 		break;
 	case 5:
-		jeVec3d_Set(vPoint, B->Max.X, B->Min.Y, B->Max.Z);
+		grVec3d_Set(vPoint, B->Max.X, B->Min.Y, B->Max.Z);
 		break;
 	case 6:
-		jeVec3d_Set(vPoint, B->Min.X, B->Max.Y, B->Max.Z);
+		grVec3d_Set(vPoint, B->Min.X, B->Max.Y, B->Max.Z);
 		break;
 	case 7:
-		jeVec3d_Set(vPoint, B->Max.X, B->Max.Y, B->Max.Z);
+		grVec3d_Set(vPoint, B->Max.X, B->Max.Y, B->Max.Z);
 		break;
 	}
 }
@@ -598,7 +598,7 @@ JETAPI void JETCC jeExtBox_GetPoint( const jeExtBox *B, const int iPoint, jeVec3
 //			Added more asm code (prevents unnecessary fdiv)
 //			Flipped normals into right direction ;)
 //			Fixed FPU-stack-overflow-bug
-static  jeFloat			JE_EXTBOX_FC_EPSILON = 0.00001f;
+static  grFloat			GR_EXTBOX_FC_EPSILON = 0.00001f;
 #define FSIZE			4
 #define VSIZE			4*FSIZE
 #define _X				+0*FSIZE]
@@ -616,7 +616,7 @@ __asm	fld   _VPATH _P				/* |   vPath->_P								*/ \
 __asm	fmul  t						/* | t*vPath->_P								*/ \
 __asm	fld   _B _MAX _P 			/* | t*vPath->_P | B->Max._P					*/ \
 __asm	fsub  _XMOVINGBOX _MIN _P  	/* | t*vPath->_P | B->Max._P-xMovingBox->Min._P */ \
-__asm   fadd  JE_EXTBOX_FC_EPSILON  /*   IMPROTANT!!								*/ \
+__asm   fadd  GR_EXTBOX_FC_EPSILON  /*   IMPROTANT!!								*/ \
 __asm	fcomp						/* | t*vPath->_P								*/ \
 __asm	fnstsw ax					/*												*/ \
 __asm	test  ah,1h					/*												*/ \
@@ -627,13 +627,13 @@ __asm	jmp  short NoCollision		/*												*/
 #define _ASM_TEST_B(_P)																   \
 __asm	fld   _B _MIN _P			/* | t*vPath->_P | B->Min._P					*/ \
 __asm	fsub  _XMOVINGBOX _MAX _P	/* | t*vPath->_P | B->Min._P-xMovingBox->Max._P */ \
-__asm   fsub  JE_EXTBOX_FC_EPSILON  /*   IMPROTANT!!								*/ \
+__asm   fsub  GR_EXTBOX_FC_EPSILON  /*   IMPROTANT!!								*/ \
 __asm	fcompp						/*												*/ \
 __asm	fnstsw ax					/*												*/ \
 __asm	test  ah,41h				/*												*/ \
 __asm	je    NoCollision			/* !(B->Min._P<=t*vPath->_P+xMovingBox->Max._P) */
 
-static __inline jeBoolean jeExtBox_asmCollisionTestX_(jeFloat t, jeVec3d *vPath, const jeExtBox *B, jeExtBox *xMovingBox)
+static __inline grBoolean grExtBox_asmCollisionTestX_(grFloat t, grVec3d *vPath, const grExtBox *B, grExtBox *xMovingBox)
 {
 	__asm
 	{
@@ -654,7 +654,7 @@ End:
 	}
 }
 
-static __inline jeBoolean jeExtBox_asmCollisionTestY_(jeFloat t, jeVec3d *vPath, const jeExtBox *B, jeExtBox *xMovingBox)
+static __inline grBoolean grExtBox_asmCollisionTestY_(grFloat t, grVec3d *vPath, const grExtBox *B, grExtBox *xMovingBox)
 {
 	_asm
 	{
@@ -675,7 +675,7 @@ End:
 	}
 }
 
-static __inline jeBoolean jeExtBox_asmCollisionTestZ_(jeFloat t, jeVec3d *vPath, const jeExtBox *B, jeExtBox *xMovingBox)
+static __inline grBoolean grExtBox_asmCollisionTestZ_(grFloat t, grVec3d *vPath, const grExtBox *B, grExtBox *xMovingBox)
 {
 	_asm
 	{
@@ -702,42 +702,42 @@ End:
 // Collides a moving box (or ray) against a stationary box.  The moving box
 // must be relative to the path and move from Start to End.
 //   Only returns a ray/box hitting the outside of the box.  
-//     on success, JE_TRUE is returned, and 
+//     on success, GR_TRUE is returned, and 
 //       if T is non-NULL, T is returned as 0..1 where 0 is a collision at Start, and 1 is a collision at End
 //       if Normal is non-NULL, Normal is the surface normal of the box where the collision occured.
-JETAPI jeBoolean JETCC jeExtBox_Collision(	const jeExtBox *B, const jeExtBox *MovingBox,
-											const jeVec3d *Start, const jeVec3d *End, 
-											jeFloat *T, jeVec3d *Normal )
+GRAPI grBoolean GRCC grExtBox_Collision(	const grExtBox *B, const grExtBox *MovingBox,
+											const grVec3d *Start, const grVec3d *End, 
+											grFloat *T, grVec3d *Normal )
 {
-	jeFloat t;
-	jeExtBox xSweepBox,xMovingBox,*xMovingBoxPtr=&xMovingBox;
-	jeVec3d vPath,*vPathPtr=&vPath;
-	jeBoolean TestB;
+	grFloat t;
+	grExtBox xSweepBox,xMovingBox,*xMovingBoxPtr=&xMovingBox;
+	grVec3d vPath,*vPathPtr=&vPath;
+	grBoolean TestB;
 
 	assert(B != NULL);
 
 	// If there's no moving box, do a ray collision
 	if(MovingBox == NULL)
-		return jeExtBox_RayCollision(B,Start,End,T,Normal);
+		return grExtBox_RayCollision(B,Start,End,T,Normal);
 
 	// If the boxes already overlap, we have to report no collision
 	// to be consistent with the rest of the engine collision calls.
 	xMovingBox = *MovingBox;  // Used later as well.
-	jeExtBox_Translate(&xMovingBox, Start->X, Start->Y, Start->Z);
-	if(jeExtBox_Intersection(B, &xMovingBox, NULL)) return JE_FALSE;	
+	grExtBox_Translate(&xMovingBox, Start->X, Start->Y, Start->Z);
+	if(grExtBox_Intersection(B, &xMovingBox, NULL)) return GR_FALSE;	
 
 	// Verify the sweepbox intersects this box
-	jeExtBox_LinearSweep(MovingBox, Start, End, &xSweepBox);
-	if(!jeExtBox_Intersection(B, &xSweepBox, NULL)) return JE_FALSE;
+	grExtBox_LinearSweep(MovingBox, Start, End, &xSweepBox);
+	if(!grExtBox_Intersection(B, &xSweepBox, NULL)) return GR_FALSE;
 
-	jeVec3d_Subtract(End,Start,&vPath);
+	grVec3d_Subtract(End,Start,&vPath);
 
 	// CollisionTest X-Front
 	if (vPath.X<0.0f)
 	{
 		//t=(B->Max.X-xMovingBox.Min.X)/vPath.X;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -766,15 +766,15 @@ CTEndX1:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xMovingBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xMovingBox.Max,&vPath,t,&vPoint2);
+			//grVec3d_AddScaled(&xMovingBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xMovingBox.Max,&vPath,t,&vPoint2);
 			//if (vPoint.Y<=B->Max.Y && B->Min.Y<=vPoint2.Y &&
 			//	vPoint.Z<=B->Max.Z && B->Min.Z<=vPoint2.Z)		
-			if (jeExtBox_asmCollisionTestX_(t, &vPath, B, &xMovingBox) )
+			if (grExtBox_asmCollisionTestX_(t, &vPath, B, &xMovingBox) )
 			{ 
-				if (Normal) jeVec3d_Set(Normal,1.0f,0.0f,0.0f);
+				if (Normal) grVec3d_Set(Normal,1.0f,0.0f,0.0f);
 				if (T) *T=t;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	} 
@@ -783,7 +783,7 @@ CTEndX1:
 	{
 		//t=(B->Min.X-xMovingBox.Max.X)/vPath.X;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -811,15 +811,15 @@ CTEndX2:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath,t,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath,t,&vPoint2);
 			//if (vPoint.Y<=B->Max.Y && B->Min.Y<=vPoint2.Y &&
 			//	vPoint.Z<=B->Max.Z && B->Min.Z<=vPoint2.Z)
-			if (jeExtBox_asmCollisionTestX_(t, &vPath, B, &xMovingBox) )
+			if (grExtBox_asmCollisionTestX_(t, &vPath, B, &xMovingBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,-1.0f,0.0f,0.0f);
+				if (Normal) grVec3d_Set(Normal,-1.0f,0.0f,0.0f);
 				if (T) *T=t;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
@@ -828,7 +828,7 @@ CTEndX2:
 	{
 		//t=(B->Max.Y-xMovingBox.Min.Y)/vPath.Y;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -857,15 +857,15 @@ CTEndY1:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,bT,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath,bT,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,bT,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath,bT,&vPoint2);
 			//if (vPoint.X<=B->Max.X && B->Min.X<=vPoint2.X &&
 			//	vPoint.Z<=B->Max.Z && B->Min.Z<=vPoint2.Z)
-			if (jeExtBox_asmCollisionTestY_(t, &vPath, B, &xMovingBox) )
+			if (grExtBox_asmCollisionTestY_(t, &vPath, B, &xMovingBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,0.0f,+1.0f,0.0f);
+				if (Normal) grVec3d_Set(Normal,0.0f,+1.0f,0.0f);
 				if (T) *T=t;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
@@ -874,7 +874,7 @@ CTEndY1:
 	{
 		//t=(B->Min.Y-xMovingBox.Max.Y)/vPath.Y;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -903,15 +903,15 @@ CTEndY2:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath,t,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath,t,&vPoint2);
 			//if (vPoint.X<=B->Max.X && B->Min.X<=vPoint2.X &&
 			//	vPoint.Z<=B->Max.Z && B->Min.Z<=vPoint2.Z)
-			if (jeExtBox_asmCollisionTestY_(t, &vPath, B, &xMovingBox) )
+			if (grExtBox_asmCollisionTestY_(t, &vPath, B, &xMovingBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,0.0f,-1.0f,0.0f);
+				if (Normal) grVec3d_Set(Normal,0.0f,-1.0f,0.0f);
 				if (T) *T=t;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
@@ -920,7 +920,7 @@ CTEndY2:
 	{
 		//t=(B->Max.Z-xMovingBox.Min.Z)/vPath.Z;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -949,15 +949,15 @@ CTEndZ1:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath,t,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath,t,&vPoint2);
 			//if (vPoint.X<=B->Max.X && B->Min.X<=vPoint2.X &&
 			//	vPoint.Y<=B->Max.Y && B->Min.Y<=vPoint2.Y)
-			if (jeExtBox_asmCollisionTestZ_(t, &vPath, B, &xMovingBox) )
+			if (grExtBox_asmCollisionTestZ_(t, &vPath, B, &xMovingBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,0.0f,0.0f,+1.0f);
+				if (Normal) grVec3d_Set(Normal,0.0f,0.0f,+1.0f);
 				if (T) *T=t;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
@@ -966,7 +966,7 @@ CTEndZ1:
 	{
 		//t=(B->Min.Z-xMovingBox.Max.Z)/vPath.Z;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -995,21 +995,21 @@ CTEndZ2:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath,t,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath,t,&vPoint2);
 			//if (vPoint.X<=B->Max.X && B->Min.X<=vPoint2.X &&
 			//	vPoint.Y<=B->Max.Y && B->Min.Y<=vPoint2.Y)
-			if (jeExtBox_asmCollisionTestZ_(t, &vPath, B, &xMovingBox) )
+			if (grExtBox_asmCollisionTestZ_(t, &vPath, B, &xMovingBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,0.0f,0.0f,-1.0f);
+				if (Normal) grVec3d_Set(Normal,0.0f,0.0f,-1.0f);
 				if (T) *T=t;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
 
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 
@@ -1018,7 +1018,7 @@ __asm	fld   _VPATH _P				/* |   vPath->_P								*/ \
 __asm	fmul  t						/* | t*vPath->_P								*/ \
 __asm	fld   _B _MAX _P 			/* | t*vPath->_P | B->Max._P					*/ \
 __asm	fsub  _XMOVINGBOX _MIN _P  	/* | t*vPath->_P | B->Max._P-xMovingBox->Min._P */ \
-__asm   fadd  JE_EXTBOX_FC_EPSILON  /*   IMPROTANT!!								*/ \
+__asm   fadd  GR_EXTBOX_FC_EPSILON  /*   IMPROTANT!!								*/ \
 __asm	fcompp						/*												*/ \
 __asm	fnstsw ax					/*												*/ \
 __asm	test  ah,1h					/*												*/ \
@@ -1028,14 +1028,14 @@ __asm	fld   _VPATH2 _P			/* |   vPath2->_P								*/ \
 __asm	fmul  t						/* | t*vPath2->_P								*/ \
 __asm	fld   _B _MIN _P			/* | t*vPath2->_P | B->Min._P					*/ \
 __asm	fsub  _XMOVINGBOX _MAX _P	/* | t*vPath2->_P | B->Min._P-xMovingBox->Max._P*/ \
-__asm   fsub  JE_EXTBOX_FC_EPSILON  /*   IMPROTANT!!								*/ \
+__asm   fsub  GR_EXTBOX_FC_EPSILON  /*   IMPROTANT!!								*/ \
 __asm	fcompp						/*												*/ \
 __asm	fnstsw ax					/*												*/ \
 __asm	test  ah,41h				/*												*/ \
 __asm	je    NoCollision			/* !(B->Min._P<=t*vPath2->_P+xMovingBox->Max._P)*/
 
-static __inline jeBoolean jeExtBox_asmCollisionTestX2_(jeFloat t, jeVec3d *vPath, jeVec3d *vPath2,
-													   const jeExtBox *B, jeExtBox *xMovingBox)
+static __inline grBoolean grExtBox_asmCollisionTestX2_(grFloat t, grVec3d *vPath, grVec3d *vPath2,
+													   const grExtBox *B, grExtBox *xMovingBox)
 {
 	__asm
 	{
@@ -1053,8 +1053,8 @@ End:
 	}
 }
 
-static __inline jeBoolean jeExtBox_asmCollisionTestY2_(jeFloat t, jeVec3d *vPath, jeVec3d *vPath2,
-													   const jeExtBox *B, jeExtBox *xMovingBox)
+static __inline grBoolean grExtBox_asmCollisionTestY2_(grFloat t, grVec3d *vPath, grVec3d *vPath2,
+													   const grExtBox *B, grExtBox *xMovingBox)
 {
 	_asm
 	{
@@ -1072,8 +1072,8 @@ End:
 	}
 }
 
-static __inline jeBoolean jeExtBox_asmCollisionTestZ2_(jeFloat t, jeVec3d *vPath, jeVec3d *vPath2,
-													   const jeExtBox *B, jeExtBox *xMovingBox)
+static __inline grBoolean grExtBox_asmCollisionTestZ2_(grFloat t, grVec3d *vPath, grVec3d *vPath2,
+													   const grExtBox *B, grExtBox *xMovingBox)
 {
 	_asm
 	{
@@ -1097,18 +1097,18 @@ End:
 // Collides a changing box against a stationary box.  The changing box
 // must be relative to Pos.
 //   Only returns a box hitting the outside of the box.  
-//     on success, JE_TRUE is returned, and 
+//     on success, GR_TRUE is returned, and 
 //       if T is non-NULL, T is returned as 0..1 where 0 is a collision at Start, and 1 is a collision at End
 //       if Normal is non-NULL, Normal is the surfacenormal of the box where the collision occured.
 //       if Point is non-NULL, Point is a point of the surface where the collision occured.
-JETAPI jeBoolean JETCC jeExtBox_ChangeBoxCollision(	const jeExtBox *B, const jeVec3d *Pos,
-													const jeExtBox *StartBox, const jeExtBox *EndBox,
-													jeFloat *T, jeVec3d *Normal, jeVec3d *Point )
+GRAPI grBoolean GRCC grExtBox_ChangeBoxCollision(	const grExtBox *B, const grVec3d *Pos,
+													const grExtBox *StartBox, const grExtBox *EndBox,
+													grFloat *T, grVec3d *Normal, grVec3d *Point )
 {
-	jeFloat t;
-	jeExtBox xStartBox,xChangeBox,*xStartBoxPtr=&xStartBox;
-	jeVec3d vPath,vPath2,*vPathPtr=&vPath,*vPathPtr2=&vPath2;
-	jeBoolean TestB;
+	grFloat t;
+	grExtBox xStartBox,xChangeBox,*xStartBoxPtr=&xStartBox;
+	grVec3d vPath,vPath2,*vPathPtr=&vPath,*vPathPtr2=&vPath2;
+	grBoolean TestB;
 
 	assert(B != NULL);
 	assert(StartBox != NULL);
@@ -1117,22 +1117,22 @@ JETAPI jeBoolean JETCC jeExtBox_ChangeBoxCollision(	const jeExtBox *B, const jeV
 	// If the boxes already overlap, we have to report no collision
 	// to be consistent with the rest of the engine collision calls.
 	xStartBox = *StartBox;  // Used later as well.
-	jeExtBox_Translate(&xStartBox, Pos->X, Pos->Y, Pos->Z);
-	if(jeExtBox_Intersection(B, &xStartBox, NULL)) return JE_FALSE;	
+	grExtBox_Translate(&xStartBox, Pos->X, Pos->Y, Pos->Z);
+	if(grExtBox_Intersection(B, &xStartBox, NULL)) return GR_FALSE;	
 
 	// Verify the sweepbox intersects this box
-	jeExtBox_Union(StartBox, EndBox, &xChangeBox);
-	if(!jeExtBox_Intersection(B, &xChangeBox, NULL)) return JE_FALSE;
+	grExtBox_Union(StartBox, EndBox, &xChangeBox);
+	if(!grExtBox_Intersection(B, &xChangeBox, NULL)) return GR_FALSE;
 
-	jeVec3d_Subtract(&(EndBox->Min),&(StartBox->Min),&vPath);
-	jeVec3d_Subtract(&(EndBox->Max),&(StartBox->Max),&vPath2);
+	grVec3d_Subtract(&(EndBox->Min),&(StartBox->Min),&vPath);
+	grVec3d_Subtract(&(EndBox->Max),&(StartBox->Max),&vPath2);
 
 	// CollisionTest X-Front
 	if (vPath.X<0.0f)
 	{
 		//t=(B->Max.X-xStartBox.Min.X)/vPath.X;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -1161,16 +1161,16 @@ CTEndX1:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
 			//if (vPoint.Y<=B->Max.Y && B->Min.Y<=vPoint2.Y &&
 			//	vPoint.Z<=B->Max.Z && B->Min.Z<=vPoint2.Z)		
-			if (jeExtBox_asmCollisionTestX2_(t, &vPath, &vPath2, B, &xStartBox) )
+			if (grExtBox_asmCollisionTestX2_(t, &vPath, &vPath2, B, &xStartBox) )
 			{ 
-				if (Normal) jeVec3d_Set(Normal,1.0f,0.0f,0.0f);
+				if (Normal) grVec3d_Set(Normal,1.0f,0.0f,0.0f);
 				if (Point) *Point=B->Max;
 				if (T) *T=t;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	} 
@@ -1179,7 +1179,7 @@ CTEndX1:
 	{
 		//t=(B->Min.X-xStartBox.Max.X)/vPath2.X;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -1207,16 +1207,16 @@ CTEndX2:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
 			//if (vPoint.Y<=B->Max.Y && B->Min.Y<=vPoint2.Y &&
 			//	vPoint.Z<=B->Max.Z && B->Min.Z<=vPoint2.Z)
-			if (jeExtBox_asmCollisionTestX2_(t, &vPath, &vPath2, B, &xStartBox) )
+			if (grExtBox_asmCollisionTestX2_(t, &vPath, &vPath2, B, &xStartBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,-1.0f,0.0f,0.0f);
+				if (Normal) grVec3d_Set(Normal,-1.0f,0.0f,0.0f);
 				if (T) *T=t;
 				if (Point) *Point=B->Min;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
@@ -1225,7 +1225,7 @@ CTEndX2:
 	{
 		//t=(B->Max.Y-xStartBox.Min.Y)/vPath.Y;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -1254,16 +1254,16 @@ CTEndY1:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,bT,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath2,bT,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,bT,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath2,bT,&vPoint2);
 			//if (vPoint.X<=B->Max.X && B->Min.X<=vPoint2.X &&
 			//	vPoint.Z<=B->Max.Z && B->Min.Z<=vPoint2.Z)
-			if (jeExtBox_asmCollisionTestY2_(t, &vPath, &vPath2, B, &xStartBox) )
+			if (grExtBox_asmCollisionTestY2_(t, &vPath, &vPath2, B, &xStartBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,0.0f,+1.0f,0.0f);
+				if (Normal) grVec3d_Set(Normal,0.0f,+1.0f,0.0f);
 				if (T) *T=t;
 				if (Point) *Point=B->Max;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
@@ -1272,7 +1272,7 @@ CTEndY1:
 	{
 		//t=(B->Min.Y-xStartBox.Max.Y)/vPath2.Y;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -1301,16 +1301,16 @@ CTEndY2:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
 			//if (vPoint.X<=B->Max.X && B->Min.X<=vPoint2.X &&
 			//	vPoint.Z<=B->Max.Z && B->Min.Z<=vPoint2.Z)
-			if (jeExtBox_asmCollisionTestY2_(t, &vPath, &vPath2, B, &xStartBox) )
+			if (grExtBox_asmCollisionTestY2_(t, &vPath, &vPath2, B, &xStartBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,0.0f,-1.0f,0.0f);
+				if (Normal) grVec3d_Set(Normal,0.0f,-1.0f,0.0f);
 				if (T) *T=t;
 				if (Point) *Point=B->Min;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
@@ -1319,7 +1319,7 @@ CTEndY2:
 	{
 		//t=(B->Max.Z-xStartBox.Min.Z)/vPath.Z;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -1348,16 +1348,16 @@ CTEndZ1:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
 			//if (vPoint.X<=B->Max.X && B->Min.X<=vPoint2.X &&
 			//	vPoint.Y<=B->Max.Y && B->Min.Y<=vPoint2.Y)
-			if (jeExtBox_asmCollisionTestZ2_(t, &vPath, &vPath2, B, &xStartBox) )
+			if (grExtBox_asmCollisionTestZ2_(t, &vPath, &vPath2, B, &xStartBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,0.0f,0.0f,+1.0f);
+				if (Normal) grVec3d_Set(Normal,0.0f,0.0f,+1.0f);
 				if (T) *T=t;
 				if (Point) *Point=B->Max;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
@@ -1366,7 +1366,7 @@ CTEndZ1:
 	{
 		//t=(B->Min.Z-xStartBox.Max.Z)/vPath2.Z;
 		//if (t>=0 && t<=1)
-		TestB=JE_TRUE;
+		TestB=GR_TRUE;
 		__asm 
 		{
 			mov   edi,B
@@ -1395,20 +1395,20 @@ CTEndZ2:
 		}
 		if(TestB)
 		{
-			//jeVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
-			//jeVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
+			//grVec3d_AddScaled(&xStartBox.Min,&vPath,t,&vPoint);
+			//grVec3d_AddScaled(&xStartBox.Max,&vPath2,t,&vPoint2);
 			//if (vPoint.X<=B->Max.X && B->Min.X<=vPoint2.X &&
 			//	vPoint.Y<=B->Max.Y && B->Min.Y<=vPoint2.Y)
-			if (jeExtBox_asmCollisionTestZ2_(t, &vPath, &vPath2, B, &xStartBox) )
+			if (grExtBox_asmCollisionTestZ2_(t, &vPath, &vPath2, B, &xStartBox) )
 			{
-				if (Normal) jeVec3d_Set(Normal,0.0f,0.0f,-1.0f);
+				if (Normal) grVec3d_Set(Normal,0.0f,0.0f,-1.0f);
 				if (T) *T=t;
 				if (Point) *Point=B->Min;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 		}
 	}
 
 
-	return JE_FALSE;
+	return GR_FALSE;
 }

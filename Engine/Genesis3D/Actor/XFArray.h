@@ -18,10 +18,10 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_XFARRAY_H
-#define JE_XFARRAY_H
+#ifndef GR_XFARRAY_H
+#define GR_XFARRAY_H
 
-/* This is a simple object to formalize an array of transforms (jeXForm3d)
+/* This is a simple object to formalize an array of transforms (grXForm3d)
 
    Unfortunately, it's not a very safe object.
 
@@ -38,22 +38,22 @@
 extern "C" {
 #endif
 
-typedef struct jeXFArray jeXFArray;
+typedef struct grXFArray grXFArray;
 
 	// Create the object.  Creates an array of Size elements.  
 	// All elements are initialized to the identity transform
-jeXFArray *JETCC jeXFArray_Create(int Size);
+grXFArray *GRCC grXFArray_Create(int Size);
 
 	// Destroy the object.  Don't use the pointer returned by _GetElements
 	// after destroying the ojbect!
-void JETCC jeXFArray_Destroy( jeXFArray **XFA );
+void GRCC grXFArray_Destroy( grXFArray **XFA );
 
 	// Get a pointer to the array.  For external iteration.  The size of the 
 	// array is returned in Size.  Valid array indicies are (0..Size-1)
-jeXForm3d *JETCC jeXFArray_GetElements(const jeXFArray *XFA, int *Size);
+grXForm3d *GRCC grXFArray_GetElements(const grXFArray *XFA, int *Size);
 
 	// Sets every transform in the array to the given transform.
-void JETCC jeXFArray_SetAll(jeXFArray *XFA, const jeXForm3d *Matrix);
+void GRCC grXFArray_SetAll(grXFArray *XFA, const grXForm3d *Matrix);
 
 #ifdef __cplusplus
 }

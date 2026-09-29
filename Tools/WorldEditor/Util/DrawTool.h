@@ -36,7 +36,7 @@ jwePen	*	Pen_SelectSubtractBrushColor( int32 hDC ) ;
 jwePen	*	Pen_SelectAddBrushColor( int32 hDC ) ;
 jwePen	*	Pen_SelectSelectedFaceColor( int32 hDC ) ;
 void		Pen_Release( jwePen * pPen, int32 hDC );
-jeBoolean	Pen_Polyline( int32 hDC, Point * pPoints, int32 nPoints ) ;
+grBoolean	Pen_Polyline( int32 hDC, Point * pPoints, int32 nPoints ) ;
 
 
 #ifdef __cplusplus

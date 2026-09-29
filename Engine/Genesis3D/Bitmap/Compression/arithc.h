@@ -68,13 +68,13 @@ extern void		arithEncByteRaw(arithInfo * ari,uint32 byte);
 extern uint32   arithDecByteRaw(arithInfo * ari);
 
 // these are deprecated:
-extern void arithEncBit(arithInfo * ari,uint32 p0,uint32 pt,jeBoolean bit);
-extern jeBoolean arithDecBit(arithInfo * ari,uint32 p0,uint32 pt);
-extern void arithModelEncBit(arithInfo * ari,uint32 *p0,uint32 *pt,jeBoolean bit);
-extern jeBoolean arithModelDecBit(arithInfo * ari,uint32 *p0,uint32 *pt);
+extern void arithEncBit(arithInfo * ari,uint32 p0,uint32 pt,grBoolean bit);
+extern grBoolean arithDecBit(arithInfo * ari,uint32 p0,uint32 pt);
+extern void arithModelEncBit(arithInfo * ari,uint32 *p0,uint32 *pt,grBoolean bit);
+extern grBoolean arithModelDecBit(arithInfo * ari,uint32 *p0,uint32 *pt);
 
-extern void ARITHCC arithEncBitRaw(arithInfo * ari,jeBoolean bit);
-extern jeBoolean ARITHCC arithDecBitRaw(arithInfo * ari);
+extern void ARITHCC arithEncBitRaw(arithInfo * ari,grBoolean bit);
+extern grBoolean ARITHCC arithDecBitRaw(arithInfo * ari);
 
 extern uint32 arithTellEncPos(arithInfo * ari);
 extern uint32 arithTellDecPos(arithInfo * ari);

@@ -29,7 +29,7 @@
 #include "Pose.h"
 #include "StrBlock.h"
 
-#define JE_POSE_STARTING_JOINT_COUNT (1)
+#define GR_POSE_STARTING_JOINT_COUNT (1)
 
 
 /* this object maintains a hierarchy of joints.
@@ -39,51 +39,51 @@
    **The parent's index is always smaller than the child**
 */
 
-typedef struct jePose_Joint
+typedef struct grPose_Joint
 {
 	int			 ParentJoint;		// parent of path
-	jeXForm3d    *Transform;		// matrix for path	(pointer into TransformArray)
-	jeQuaternion Rotation;			// quaternion representation for orientation of above Transform
+	grXForm3d    *Transform;		// matrix for path	(pointer into TransformArray)
+	grQuaternion Rotation;			// quaternion representation for orientation of above Transform
 
-	jeVec3d		 UnscaledAttachmentTranslation;	
+	grVec3d		 UnscaledAttachmentTranslation;	
 					// point of Attachment to parent (in parent frame of ref) **Unscaled
-	jeQuaternion AttachmentRotation;// rotation of attachement to parent (in parent frame of ref)
-	jeXForm3d    AttachmentTransform;	//------------
+	grQuaternion AttachmentRotation;// rotation of attachement to parent (in parent frame of ref)
+	grXForm3d    AttachmentTransform;	//------------
 
-	jeVec3d		 LocalTranslation;	// translation relative to attachment 
-	jeQuaternion LocalRotation;		// rotation relative to attachment 
+	grVec3d		 LocalTranslation;	// translation relative to attachment 
+	grQuaternion LocalRotation;		// rotation relative to attachment 
 
-	jeBoolean    Touched;			// if this joint has been touched and needs recomputation
-	jeBoolean    NoAttachmentRotation; // JE_TRUE if there is no attachment rotation.
+	grBoolean    Touched;			// if this joint has been touched and needs recomputation
+	grBoolean    NoAttachmentRotation; // GR_TRUE if there is no attachment rotation.
 	int			 Covered;			// if joint has been 100% set (no blending)
-} jePose_Joint;						// structure to bind a name and a path for a joint
+} grPose_Joint;						// structure to bind a name and a path for a joint
 
-typedef struct jePose
+typedef struct grPose
 {
 	int				  JointCount;	// number of joints in the motion
 	int32			  NameChecksum;	// checksum based on joint names and list order
-	jeBoolean		  Touched;		// if any joint has been touched & needs recomputation	
-	jeStrBlock		 *JointNames;
-	jeVec3d			  Scale;		// current scaling. Used for scaling motion samples
+	grBoolean		  Touched;		// if any joint has been touched & needs recomputation	
+	grStrBlock		 *JointNames;
+	grVec3d			  Scale;		// current scaling. Used for scaling motion samples
 
-	jeBoolean		  Slave;			// if pose is 'slaved' to parent -vs- attached.
+	grBoolean		  Slave;			// if pose is 'slaved' to parent -vs- attached.
 	int				  SlaveJointIndex;	// index of 'slaved' joint
-	jePose			 *Parent;		
-	jePose_Joint	  RootJoint;		
-	jeXForm3d		  ParentsLastTransform;	// Compared to parent's transform to see if it changed: recompute is needed
-	jeXForm3d		  RootTransform;
-	jeXFArray		 *TransformArray;	
-	jePose_Joint	 *JointArray;
+	grPose			 *Parent;		
+	grPose_Joint	  RootJoint;		
+	grXForm3d		  ParentsLastTransform;	// Compared to parent's transform to see if it changed: recompute is needed
+	grXForm3d		  RootTransform;
+	grXFArray		 *TransformArray;	
+	grPose_Joint	 *JointArray;
 	int				  OnlyThisJoint;		// update only this joint (and it's parents) if this is >0
-} jePose;
+} grPose;
 
 
 
-static void jePose_ReattachTransforms(jePose *P)
+static void grPose_ReattachTransforms(grPose *P)
 {
 	int XFormCount;
 	int JointCount;
-	jeXForm3d *XForms;
+	grXForm3d *XForms;
 	int i;
 
 	assert( P != NULL );
@@ -93,7 +93,7 @@ static void jePose_ReattachTransforms(jePose *P)
 		{
 			assert( P->TransformArray != NULL );
 
-			XForms = jeXFArray_GetElements(P->TransformArray,&XFormCount);
+			XForms = grXFArray_GetElements(P->TransformArray,&XFormCount);
 			
 			assert( XForms != NULL );
 			assert( XFormCount == JointCount );
@@ -107,13 +107,13 @@ static void jePose_ReattachTransforms(jePose *P)
 }
 	
 
-static const jePose_Joint *jePose_JointByIndex(const jePose *P, int Index)
+static const grPose_Joint *grPose_JointByIndex(const grPose *P, int Index)
 {
 	assert( P != NULL );
-	assert( (Index >=0)                 || (Index==(JE_POSE_ROOT_JOINT)));
-	assert( (Index < P->JointCount)     || (Index==(JE_POSE_ROOT_JOINT)));
+	assert( (Index >=0)                 || (Index==(GR_POSE_ROOT_JOINT)));
+	assert( (Index < P->JointCount)     || (Index==(GR_POSE_ROOT_JOINT)));
 
-	if (Index == JE_POSE_ROOT_JOINT)
+	if (Index == GR_POSE_ROOT_JOINT)
 		{
 			return &(P->RootJoint);
 		}
@@ -123,86 +123,86 @@ static const jePose_Joint *jePose_JointByIndex(const jePose *P, int Index)
 		}
 }
 
-static void JETCF jePose_SetAttachmentRotationFlag( jePose_Joint *Joint)
+static void GRCF grPose_SetAttachmentRotationFlag( grPose_Joint *Joint)
 {
-	jeQuaternion Q = Joint->AttachmentRotation;
-#define JE_POSE_ROTATION_THRESHOLD (0.0001)  // if the rotation is closer than this to zero for
+	grQuaternion Q = Joint->AttachmentRotation;
+#define GR_POSE_ROTATION_THRESHOLD (0.0001)  // if the rotation is closer than this to zero for
 										     // quaterion elements X,Y,Z -> no rotation computed
-	if (     (  (Q.X<JE_POSE_ROTATION_THRESHOLD) && (Q.X>-JE_POSE_ROTATION_THRESHOLD) ) 
-		  && (  (Q.Y<JE_POSE_ROTATION_THRESHOLD) && (Q.Y>-JE_POSE_ROTATION_THRESHOLD) ) 
-		  && (  (Q.Z<JE_POSE_ROTATION_THRESHOLD) && (Q.Z>-JE_POSE_ROTATION_THRESHOLD) )  )
+	if (     (  (Q.X<GR_POSE_ROTATION_THRESHOLD) && (Q.X>-GR_POSE_ROTATION_THRESHOLD) ) 
+		  && (  (Q.Y<GR_POSE_ROTATION_THRESHOLD) && (Q.Y>-GR_POSE_ROTATION_THRESHOLD) ) 
+		  && (  (Q.Z<GR_POSE_ROTATION_THRESHOLD) && (Q.Z>-GR_POSE_ROTATION_THRESHOLD) )  )
 		{
-			Joint->NoAttachmentRotation = JE_TRUE;
+			Joint->NoAttachmentRotation = GR_TRUE;
 		}
 	else
 		{
-			Joint->NoAttachmentRotation = JE_FALSE;
+			Joint->NoAttachmentRotation = GR_FALSE;
 		}
 }
 
-static void JETCF jePose_InitializeJoint(jePose_Joint *Joint, int ParentJointIndex, const jeXForm3d *Attachment)
+static void GRCF grPose_InitializeJoint(grPose_Joint *Joint, int ParentJointIndex, const grXForm3d *Attachment)
 {
 	assert( Joint != NULL );
 	
 	Joint->ParentJoint = ParentJointIndex;
 	if (Attachment != NULL)
 		{
-			jeQuaternion_FromMatrix(Attachment,&(Joint->AttachmentRotation));
+			grQuaternion_FromMatrix(Attachment,&(Joint->AttachmentRotation));
 			Joint->AttachmentTransform = *Attachment;
 			Joint->UnscaledAttachmentTranslation = Joint->AttachmentTransform.Translation;
 		}
 	else
 		{
-			jeQuaternion_SetNoRotation(&(Joint->AttachmentRotation));
-			jeXForm3d_SetIdentity(&(Joint->AttachmentTransform));
+			grQuaternion_SetNoRotation(&(Joint->AttachmentRotation));
+			grXForm3d_SetIdentity(&(Joint->AttachmentTransform));
 			Joint->UnscaledAttachmentTranslation = Joint->AttachmentTransform.Translation;
 		}
 
-	jeQuaternion_SetNoRotation(&(Joint->LocalRotation));
+	grQuaternion_SetNoRotation(&(Joint->LocalRotation));
 	
-	jeXForm3d_SetIdentity(Joint->Transform);
-	jeQuaternion_SetNoRotation(&(Joint->Rotation));
+	grXForm3d_SetIdentity(Joint->Transform);
+	grQuaternion_SetNoRotation(&(Joint->Rotation));
 	
-	jeVec3d_Set( (&Joint->LocalTranslation),0.0f,0.0f,0.0f);
-	jeQuaternion_SetNoRotation(&(Joint->LocalRotation));
-	Joint->Touched = JE_TRUE;		
-	jePose_SetAttachmentRotationFlag(Joint);
+	grVec3d_Set( (&Joint->LocalTranslation),0.0f,0.0f,0.0f);
+	grQuaternion_SetNoRotation(&(Joint->LocalRotation));
+	Joint->Touched = GR_TRUE;		
+	grPose_SetAttachmentRotationFlag(Joint);
 }
 
 
 
-jePose *JETCF jePose_Create(void)
+grPose *GRCF grPose_Create(void)
 {
-	jePose *P;
+	grPose *P;
 
-	P = JE_RAM_ALLOCATE_STRUCT_CLEAR(jePose);
+	P = GR_RAM_ALLOCATE_STRUCT_CLEAR(grPose);
 
 	if ( P == NULL )
 		{
-			jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jePose_Create.");
+			grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grPose_Create.");
 			goto PoseCreateFailure;
 		}
 	P->JointCount = 0;
-	P->OnlyThisJoint = JE_POSE_ROOT_JOINT-1;		
-	P->JointNames = jeStrBlock_Create();
-	P->Touched = JE_FALSE;
+	P->OnlyThisJoint = GR_POSE_ROOT_JOINT-1;		
+	P->JointNames = grStrBlock_Create();
+	P->Touched = GR_FALSE;
 	if ( P->JointNames == NULL )
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePose_Create: failed to create string block.");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPose_Create: failed to create string block.");
 			goto PoseCreateFailure;
 		}
-	P->JointArray = JE_RAM_ALLOCATE_STRUCT_CLEAR( jePose_Joint );
+	P->JointArray = GR_RAM_ALLOCATE_STRUCT_CLEAR( grPose_Joint );
 	if (P->JointArray == NULL)
 		{
-			jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jePose_Create.");
+			grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grPose_Create.");
 			goto PoseCreateFailure;
 		}
-	P->TransformArray=NULL; //jeXFArray_Create(0);
+	P->TransformArray=NULL; //grXFArray_Create(0);
 
-	P->Slave = JE_FALSE;
+	P->Slave = GR_FALSE;
 	P->Parent = NULL;
-	jePose_ReattachTransforms(P);
-	jePose_InitializeJoint(&(P->RootJoint),JE_POSE_ROOT_JOINT,NULL);
+	grPose_ReattachTransforms(P);
+	grPose_InitializeJoint(&(P->RootJoint),GR_POSE_ROOT_JOINT,NULL);
 
 	P->Scale.X = P->Scale.Y = P->Scale.Z = 1.0f;
 	return P;
@@ -210,96 +210,96 @@ jePose *JETCF jePose_Create(void)
 	if (P!=NULL)
 		{
 			if (P->JointNames != NULL)
-				jeStrBlock_Destroy(&(P->JointNames));
+				grStrBlock_Destroy(&(P->JointNames));
 			if (P->JointArray != NULL)
-				jeRam_Free(P->JointArray);
-			jeRam_Free(P);
+				grRam_Free(P->JointArray);
+			grRam_Free(P);
 		}
 	return NULL;
 }
 
-void JETCF jePose_Destroy(jePose **PP)
+void GRCF grPose_Destroy(grPose **PP)
 {
 	assert(PP   != NULL );
 	assert(*PP  != NULL );
 
 	assert( (*PP)->JointNames != NULL );
-	assert( jeStrBlock_GetCount((*PP)->JointNames) == (*PP)->JointCount );
-	jeStrBlock_Destroy( &( (*PP)->JointNames ) );
+	assert( grStrBlock_GetCount((*PP)->JointNames) == (*PP)->JointCount );
+	grStrBlock_Destroy( &( (*PP)->JointNames ) );
 	if ((*PP)->TransformArray!=NULL)
 		{
-			jeXFArray_Destroy(&( (*PP)->TransformArray) );
+			grXFArray_Destroy(&( (*PP)->TransformArray) );
 		}
 	if ((*PP)->JointArray != NULL)
-		jeRam_Free((*PP)->JointArray);
-	jeRam_Free( *PP );
+		grRam_Free((*PP)->JointArray);
+	grRam_Free( *PP );
 
 	*PP = NULL;
 }
 
 // uses J->LocalRotation and J->LocalTranslation to compute 
 //    J->Rotation,J->Translation and J->Transform
-static void JETCF jePose_JointRelativeToParent(
-		 const jePose_Joint *Parent,
-		 jePose_Joint *J)
+static void GRCF grPose_JointRelativeToParent(
+		 const grPose_Joint *Parent,
+		 grPose_Joint *J)
 {
 	
 	#if 0
 		// the math in clearer (but slower) matrix form.
 		// W = PAK
-		jeXForm3d X;
-		jeXForm3d K;
+		grXForm3d X;
+		grXForm3d K;
 
-		jeQuaternion_ToMatrix(&(J->LocalRotation),&K);
+		grQuaternion_ToMatrix(&(J->LocalRotation),&K);
 		K.Translation = J->LocalTranslation;
 
-		jeXForm3d_Multiply((Parent->Transform),&(J->AttachmentTransform),&X);
-		jeXForm3d_Multiply(&X,&(K),J->Transform);
+		grXForm3d_Multiply((Parent->Transform),&(J->AttachmentTransform),&X);
+		grXForm3d_Multiply(&X,&(K),J->Transform);
 		
 		J->LocalTranslation = K.Translation;
-		jeQuaternion_FromMatrix(J->Transform,&(J->LocalRotation));
+		grQuaternion_FromMatrix(J->Transform,&(J->LocalRotation));
 
 	#endif
 
 
-	jeVec3d *Translation = &(J->Transform->Translation);
-	if (J->NoAttachmentRotation != JE_FALSE)
+	grVec3d *Translation = &(J->Transform->Translation);
+	if (J->NoAttachmentRotation != GR_FALSE)
 		{
 			//    ( no attachment rotation )
 			//ROTATION:
 			// concatenate local rotation to parent rotation for complete rotation
-			jeQuaternion_Multiply(&(Parent->Rotation), &(J->LocalRotation), &(J->Rotation));
+			grQuaternion_Multiply(&(Parent->Rotation), &(J->LocalRotation), &(J->Rotation));
 			
-			jeQuaternion_ToMatrix(&(J->Rotation), (J->Transform));
+			grQuaternion_ToMatrix(&(J->Rotation), (J->Transform));
 			//TRANSLATION:
-			jeVec3d_Add(&(J->LocalTranslation),&(J->AttachmentTransform.Translation),Translation);
-			jeXForm3d_Transform((Parent->Transform),Translation,Translation);
+			grVec3d_Add(&(J->LocalTranslation),&(J->AttachmentTransform.Translation),Translation);
+			grXForm3d_Transform((Parent->Transform),Translation,Translation);
 		}
 	else
 		{
 			//  (there is an attachment rotation)
 			
-			jeQuaternion BaseRotation; // attachement transform applied to the parent transform:
+			grQuaternion BaseRotation; // attachement transform applied to the parent transform:
 			//ROTATION:
 			// concatenate attachment rotation to parent rotation for base rotation
-			jeQuaternion_Multiply(&(Parent->Rotation),&(J->AttachmentRotation),&BaseRotation);
+			grQuaternion_Multiply(&(Parent->Rotation),&(J->AttachmentRotation),&BaseRotation);
 			// concatenate base rotation with local rotation for complete rotation
-			jeQuaternion_Multiply(&BaseRotation, &(J->LocalRotation), &(J->Rotation));
+			grQuaternion_Multiply(&BaseRotation, &(J->LocalRotation), &(J->Rotation));
 
-			jeQuaternion_ToMatrix(&(J->Rotation), (J->Transform));
+			grQuaternion_ToMatrix(&(J->Rotation), (J->Transform));
 
 			//TRANSLATION:
-			jeXForm3d_Transform(&(J->AttachmentTransform),&(J->LocalTranslation),Translation);
-			jeXForm3d_Transform((Parent->Transform),Translation,Translation);
+			grXForm3d_Transform(&(J->AttachmentTransform),&(J->LocalTranslation),Translation);
+			grXForm3d_Transform((Parent->Transform),Translation,Translation);
 		}
 }
 
 
-jeBoolean JETCF jePose_Attach(jePose *Slave, int SlaveBoneIndex,
-				  jePose *Master, int MasterBoneIndex, 
-				  const jeXForm3d *Attachment)
+grBoolean GRCF grPose_Attach(grPose *Slave, int SlaveBoneIndex,
+				  grPose *Master, int MasterBoneIndex, 
+				  const grXForm3d *Attachment)
 {
-	jePose *P;
+	grPose *P;
 	P = Master;
 
 	assert( Slave != NULL );
@@ -310,110 +310,110 @@ jeBoolean JETCF jePose_Attach(jePose *Slave, int SlaveBoneIndex,
 	assert( Master != Slave );
 
 
-	assert( (SlaveBoneIndex >=0)                 || (SlaveBoneIndex==(JE_POSE_ROOT_JOINT)));
-	assert( (SlaveBoneIndex < Slave->JointCount) || (SlaveBoneIndex==(JE_POSE_ROOT_JOINT)));
+	assert( (SlaveBoneIndex >=0)                 || (SlaveBoneIndex==(GR_POSE_ROOT_JOINT)));
+	assert( (SlaveBoneIndex < Slave->JointCount) || (SlaveBoneIndex==(GR_POSE_ROOT_JOINT)));
 
 	while (P!=NULL)
 		{
 			if (P==Slave)
 				{
-					jeErrorLog_Add(JE_ERR_BAD_PARAMETER, "jePose_Attach: circular loop of attachments not allowed");
-					return JE_FALSE;
+					grErrorLog_Add(GR_ERR_BAD_PARAMETER, "grPose_Attach: circular loop of attachments not allowed");
+					return GR_FALSE;
 				}
 			P=P->Parent;
 		}
 
 	Slave->SlaveJointIndex = SlaveBoneIndex;
 	Slave->Parent = Master;
-	if (SlaveBoneIndex == JE_POSE_ROOT_JOINT)
+	if (SlaveBoneIndex == GR_POSE_ROOT_JOINT)
 		{
-			Slave->Slave = JE_FALSE;
+			Slave->Slave = GR_FALSE;
 		}
 	else
 		{
-			Slave->Slave = JE_TRUE;
+			Slave->Slave = GR_TRUE;
 		}
 
-	jePose_InitializeJoint(&(Slave->RootJoint),MasterBoneIndex,Attachment);
-	Slave->Touched = JE_TRUE;
+	grPose_InitializeJoint(&(Slave->RootJoint),MasterBoneIndex,Attachment);
+	Slave->Touched = GR_TRUE;
 	Slave->ParentsLastTransform = *(Master->RootJoint.Transform);
 	
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-void JETCF jePose_Detach(jePose *P)
+void GRCF grPose_Detach(grPose *P)
 {
 	P->Parent = NULL;
-	P->Slave = JE_FALSE;
-	jePose_InitializeJoint(&(P->RootJoint),JE_POSE_ROOT_JOINT,NULL);
+	P->Slave = GR_FALSE;
+	grPose_InitializeJoint(&(P->RootJoint),GR_POSE_ROOT_JOINT,NULL);
 }
 
 
-static jeBoolean JETCF jePose_TransformCompare(const jeXForm3d *T1, const jeXForm3d *T2)
+static grBoolean GRCF grPose_TransformCompare(const grXForm3d *T1, const grXForm3d *T2)
 {
-	if (T1->AX != T2->AX) return JE_FALSE;
-	if (T1->BX != T2->BX) return JE_FALSE;
-	if (T1->CX != T2->CX) return JE_FALSE;
-	if (T1->AY != T2->AY) return JE_FALSE;
-	if (T1->BY != T2->BY) return JE_FALSE;
-	if (T1->CY != T2->CY) return JE_FALSE;
-	if (T1->AZ != T2->AZ) return JE_FALSE;
-	if (T1->BZ != T2->BZ) return JE_FALSE;
-	if (T1->CZ != T2->CZ) return JE_FALSE;
+	if (T1->AX != T2->AX) return GR_FALSE;
+	if (T1->BX != T2->BX) return GR_FALSE;
+	if (T1->CX != T2->CX) return GR_FALSE;
+	if (T1->AY != T2->AY) return GR_FALSE;
+	if (T1->BY != T2->BY) return GR_FALSE;
+	if (T1->CY != T2->CY) return GR_FALSE;
+	if (T1->AZ != T2->AZ) return GR_FALSE;
+	if (T1->BZ != T2->BZ) return GR_FALSE;
+	if (T1->CZ != T2->CZ) return GR_FALSE;
 	
-	if (T1->Translation.X != T2->Translation.X) return JE_FALSE;
-	if (T1->Translation.Y != T2->Translation.Y) return JE_FALSE;
-	if (T1->Translation.Z != T2->Translation.Z) return JE_FALSE;
-	return JE_TRUE;
+	if (T1->Translation.X != T2->Translation.X) return GR_FALSE;
+	if (T1->Translation.Y != T2->Translation.Y) return GR_FALSE;
+	if (T1->Translation.Z != T2->Translation.Z) return GR_FALSE;
+	return GR_TRUE;
 }
 	
 	
-static void JETCF jePose_UpdateRecursively(jePose *P,int Joint)
+static void GRCF grPose_UpdateRecursively(grPose *P,int Joint)
 {
-	jePose_Joint *J;
+	grPose_Joint *J;
 	assert( P != NULL );
-	assert( Joint >= JE_POSE_ROOT_JOINT );
+	assert( Joint >= GR_POSE_ROOT_JOINT );
 
 	J=&(P->JointArray[Joint]);
 
 	assert( J->ParentJoint < Joint);
 
-	if (J->ParentJoint != JE_POSE_ROOT_JOINT)
-		jePose_UpdateRecursively(P,J->ParentJoint);
+	if (J->ParentJoint != GR_POSE_ROOT_JOINT)
+		grPose_UpdateRecursively(P,J->ParentJoint);
 
-	jePose_JointRelativeToParent(jePose_JointByIndex(P, J->ParentJoint) ,J);
+	grPose_JointRelativeToParent(grPose_JointByIndex(P, J->ParentJoint) ,J);
 }
 
 //  updates a node if node->touched or if any of it's parents have been touched.
-//  returns JE_TRUE if any updates were made.
-static void JETCF jePose_UpdateRelativeToParent(jePose *P)
+//  returns GR_TRUE if any updates were made.
+static void GRCF grPose_UpdateRelativeToParent(grPose *P)
 {
 	int i;
-	jePose_Joint *J;
-	const jePose_Joint *Parent;
+	grPose_Joint *J;
+	const grPose_Joint *Parent;
 	assert( P != NULL );
 	
 	if ( P->Parent != NULL )
 		{
-			jePose_UpdateRelativeToParent(P->Parent);
-			if (jePose_TransformCompare(
-						(P->Parent->RootJoint.Transform),&(P->ParentsLastTransform)) != JE_FALSE)
+			grPose_UpdateRelativeToParent(P->Parent);
+			if (grPose_TransformCompare(
+						(P->Parent->RootJoint.Transform),&(P->ParentsLastTransform)) != GR_FALSE)
 				{
-					P->Touched = JE_TRUE;
-					P->RootJoint.Touched = JE_TRUE;  // bubble touched down entire hierarchy
+					P->Touched = GR_TRUE;
+					P->RootJoint.Touched = GR_TRUE;  // bubble touched down entire hierarchy
 					P->ParentsLastTransform = *(P->Parent->RootJoint.Transform);
 				}
 				
-			if (P->Slave == JE_FALSE)
+			if (P->Slave == GR_FALSE)
 				{
-					Parent = jePose_JointByIndex(P->Parent, P->RootJoint.ParentJoint);
-					jePose_JointRelativeToParent(Parent,&(P->RootJoint));
+					Parent = grPose_JointByIndex(P->Parent, P->RootJoint.ParentJoint);
+					grPose_JointRelativeToParent(Parent,&(P->RootJoint));
 				}
 			else
 				{
-					jeXForm3d_SetIdentity(P->RootJoint.Transform);
-					jeQuaternion_SetNoRotation(&(P->RootJoint.Rotation));
+					grXForm3d_SetIdentity(P->RootJoint.Transform);
+					grQuaternion_SetNoRotation(&(P->RootJoint.Rotation));
 				}
 		}
 	else
@@ -422,22 +422,22 @@ static void JETCF jePose_UpdateRelativeToParent(jePose *P)
 			J = &(P->RootJoint);
 			if (J->Touched)
 				{
-					jeQuaternion_Multiply(&(J->AttachmentRotation),&(J->LocalRotation),&(J->Rotation));
-					jeQuaternion_ToMatrix(&(J->Rotation), (J->Transform));
-					jeXForm3d_Transform(&(J->AttachmentTransform),&(J->LocalTranslation),&(J->Transform->Translation));
+					grQuaternion_Multiply(&(J->AttachmentRotation),&(J->LocalRotation),&(J->Rotation));
+					grQuaternion_ToMatrix(&(J->Rotation), (J->Transform));
+					grXForm3d_Transform(&(J->AttachmentTransform),&(J->LocalTranslation),&(J->Transform->Translation));
 				}
 		}
 
 
-	if (P->Touched == JE_FALSE)
+	if (P->Touched == GR_FALSE)
 		{
 			return;
 		}
 
 
-	if (P->OnlyThisJoint>=JE_POSE_ROOT_JOINT)
+	if (P->OnlyThisJoint>=GR_POSE_ROOT_JOINT)
 		{
-			jePose_UpdateRecursively(P,P->OnlyThisJoint);
+			grPose_UpdateRecursively(P,P->OnlyThisJoint);
 		}
 	else
 		{
@@ -445,221 +445,221 @@ static void JETCF jePose_UpdateRelativeToParent(jePose *P)
 				{
 					assert( J->ParentJoint < i);
 
-					Parent = jePose_JointByIndex(P, J->ParentJoint);
-					if (J->Touched == JE_TRUE)
+					Parent = grPose_JointByIndex(P, J->ParentJoint);
+					if (J->Touched == GR_TRUE)
 						{
-							jePose_JointRelativeToParent(Parent ,J);
+							grPose_JointRelativeToParent(Parent ,J);
 						}
 					else
 						{
 							if (Parent->Touched)
 								{
-									J->Touched = JE_TRUE;
-									jePose_JointRelativeToParent(Parent,J);
+									J->Touched = GR_TRUE;
+									grPose_JointRelativeToParent(Parent,J);
 								}
 						}
 				}
 			// touched flags don't mean anything when recursing backwards.  
-			P->RootJoint.Touched = JE_FALSE;
+			P->RootJoint.Touched = GR_FALSE;
 			for (i=0, J=&(P->JointArray[0]); i<P->JointCount; i++,J++)
 				{
-					J->Touched = JE_FALSE;
+					J->Touched = GR_FALSE;
 				}
 		}
 
-	if (P->Slave != JE_FALSE)
+	if (P->Slave != GR_FALSE)
 		{
-			jeXForm3d SlavedJointInverse;
-			jeXForm3d FullSlaveTransform;
-			jeXForm3d *MasterTransform;
-			jeXForm3d MasterAttachment;
+			grXForm3d SlavedJointInverse;
+			grXForm3d FullSlaveTransform;
+			grXForm3d *MasterTransform;
+			grXForm3d MasterAttachment;
 			
 			MasterTransform = (P->Parent->JointArray[P->RootJoint.ParentJoint].Transform);
-			jeXForm3d_GetTranspose((P->JointArray[P->SlaveJointIndex].Transform), &SlavedJointInverse);
+			grXForm3d_GetTranspose((P->JointArray[P->SlaveJointIndex].Transform), &SlavedJointInverse);
 
-			jeQuaternion_ToMatrix(&(P->RootJoint.AttachmentRotation), &MasterAttachment);
+			grQuaternion_ToMatrix(&(P->RootJoint.AttachmentRotation), &MasterAttachment);
 			//MasterAttachment.Translation = P->RootJoint.AttachmentTranslation;
 			MasterAttachment.Translation = P->RootJoint.AttachmentTransform.Translation;
 
-			jeXForm3d_Multiply(MasterTransform,&MasterAttachment,&FullSlaveTransform);
+			grXForm3d_Multiply(MasterTransform,&MasterAttachment,&FullSlaveTransform);
 			
 			*(P->RootJoint.Transform) = FullSlaveTransform;
 			
-			jeXForm3d_Multiply(&FullSlaveTransform,&SlavedJointInverse,&FullSlaveTransform);
+			grXForm3d_Multiply(&FullSlaveTransform,&SlavedJointInverse,&FullSlaveTransform);
 
 			for (i=0, J=&(P->JointArray[0]); i<P->JointCount; i++,J++)
 				{
-					jeXForm3d_Multiply(&FullSlaveTransform,
+					grXForm3d_Multiply(&FullSlaveTransform,
 										(P->JointArray[i].Transform),
 										(P->JointArray[i].Transform));
 				}
 			
 		}
-	P->Touched = JE_FALSE;
+	P->Touched = GR_FALSE;
 }	
 
 
-jeBoolean JETCF jePose_FindNamedJointIndex(const jePose *P, const char *JointName, int *Index)
+grBoolean GRCF grPose_FindNamedJointIndex(const grPose *P, const char *JointName, int *Index)
 {
 	int i;
 
 	assert( P != NULL );
 	assert( Index!= NULL );
 	if (JointName == NULL )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	for (i=0; i<P->JointCount; i++)
 		{
-			const char *NthName = jeStrBlock_GetString(P->JointNames,i);
+			const char *NthName = grStrBlock_GetString(P->JointNames,i);
 			assert( NthName!= NULL );
 			if ( strcmp(JointName,NthName)==0 )
 				{
 					*Index = i;
-					return JE_TRUE;
+					return GR_TRUE;
 				}	
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 	
 
-jeBoolean JETCF jePose_AddJoint(
-	jePose *P,
+grBoolean GRCF grPose_AddJoint(
+	grPose *P,
 	int ParentJointIndex,
 	const char *JointName,
-	const jeXForm3d *Attachment,
+	const grXForm3d *Attachment,
 	int *JointIndex)
 {
 	int JointCount;
-	jePose_Joint *Joint;
+	grPose_Joint *Joint;
 
 	assert(  P != NULL );
 	assert( JointIndex != NULL );
 	assert( P->JointCount >= 0 );
-	assert( (ParentJointIndex == JE_POSE_ROOT_JOINT) || 
+	assert( (ParentJointIndex == GR_POSE_ROOT_JOINT) || 
 			((ParentJointIndex >=0) && (ParentJointIndex <P->JointCount) ) );
 
 	// Duplicate names ARE allowed
 
 	JointCount = P->JointCount;
 	{
-		jePose_Joint *NewJoints;
-		NewJoints = JE_RAM_REALLOC_ARRAY(P->JointArray,jePose_Joint,JointCount+1);
+		grPose_Joint *NewJoints;
+		NewJoints = GR_RAM_REALLOC_ARRAY(P->JointArray,grPose_Joint,JointCount+1);
 		if (NewJoints == NULL)
 			{
-				jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jePose_AddJoint.");
-				return JE_FALSE;
+				grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grPose_AddJoint.");
+				return GR_FALSE;
 			}
 		P->JointArray = NewJoints;
 	}
 	
 	assert( P->JointNames != NULL );
-	assert( jeStrBlock_GetCount(P->JointNames) == P->JointCount );
+	assert( grStrBlock_GetCount(P->JointNames) == P->JointCount );
 
-	if (jeStrBlock_Append( &(P->JointNames), (JointName==NULL)?"":JointName )==JE_FALSE)
+	if (grStrBlock_Append( &(P->JointNames), (JointName==NULL)?"":JointName )==GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePose_AddJoint: failed to append into string block.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPose_AddJoint: failed to append into string block.");
+			return GR_FALSE;
 		}
 	
 
 	{
-		jeXFArray *NewXFA;
-		NewXFA = jeXFArray_Create(JointCount+1);
+		grXFArray *NewXFA;
+		NewXFA = grXFArray_Create(JointCount+1);
 		if (NewXFA == NULL)
 			{
-				jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePose_AddJoint: failed to create XFArray.");
-				return JE_FALSE;
+				grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPose_AddJoint: failed to create XFArray.");
+				return GR_FALSE;
 			}
 		if (P->TransformArray != NULL)
 			{
-				jeXFArray_Destroy(&(P->TransformArray));
+				grXFArray_Destroy(&(P->TransformArray));
 			}
 		P->TransformArray = NewXFA;
 	}
 
 	P->JointCount = JointCount+1;
-	jePose_ReattachTransforms(P);
+	grPose_ReattachTransforms(P);
 	
 	Joint = &( P->JointArray[JointCount] );
-	jePose_InitializeJoint(Joint,ParentJointIndex, Attachment);
-	P->Touched = JE_TRUE;
+	grPose_InitializeJoint(Joint,ParentJointIndex, Attachment);
+	P->Touched = GR_TRUE;
 
 	*JointIndex = JointCount;
 
-	P->NameChecksum = jeStrBlock_GetChecksum( P->JointNames );
-	return JE_TRUE;
+	P->NameChecksum = grStrBlock_GetChecksum( P->JointNames );
+	return GR_TRUE;
 }
 
-void JETCF jePose_GetJointAttachment(const jePose *P,int JointIndex, jeXForm3d *AttachmentTransform)
+void GRCF grPose_GetJointAttachment(const grPose *P,int JointIndex, grXForm3d *AttachmentTransform)
 {
 	assert( P != NULL );
 	assert( AttachmentTransform != NULL );
 	{
-		const jePose_Joint *J;
-		J = jePose_JointByIndex(P, JointIndex);
+		const grPose_Joint *J;
+		J = grPose_JointByIndex(P, JointIndex);
 		*AttachmentTransform = J->AttachmentTransform;
 	}
 }
 
-void JETCF jePose_SetJointAttachment(jePose *P,
+void GRCF grPose_SetJointAttachment(grPose *P,
 	int JointIndex, 
-	const jeXForm3d *AttachmentTransform)
+	const grXForm3d *AttachmentTransform)
 {
 	assert( P != NULL );
 	assert( AttachmentTransform != NULL );
 	{
-		jePose_Joint *J;
-		J = (jePose_Joint *)jePose_JointByIndex(P, JointIndex);
-		jeQuaternion_FromMatrix(AttachmentTransform,&(J->AttachmentRotation));
-		J->Touched = JE_TRUE;
+		grPose_Joint *J;
+		J = (grPose_Joint *)grPose_JointByIndex(P, JointIndex);
+		grQuaternion_FromMatrix(AttachmentTransform,&(J->AttachmentRotation));
+		J->Touched = GR_TRUE;
 		J->AttachmentTransform = *AttachmentTransform;
 		J->UnscaledAttachmentTranslation = J->AttachmentTransform.Translation;
-		jePose_SetAttachmentRotationFlag(J);
+		grPose_SetAttachmentRotationFlag(J);
 	}
-	P->Touched = JE_TRUE;
+	P->Touched = GR_TRUE;
 }
 
-void JETCF jePose_GetJointTransform(const jePose *P, int JointIndex,jeXForm3d *Transform)
+void GRCF grPose_GetJointTransform(const grPose *P, int JointIndex,grXForm3d *Transform)
 {
 	assert( P != NULL );
 	assert( Transform != NULL );
 	
-	jePose_UpdateRelativeToParent((jePose *)P);
+	grPose_UpdateRelativeToParent((grPose *)P);
 	
 	{
-		const jePose_Joint *J;
-		J = jePose_JointByIndex(P, JointIndex);
+		const grPose_Joint *J;
+		J = grPose_JointByIndex(P, JointIndex);
 		*Transform = *(J->Transform);
 	}
 }
 
-void JETCF jePose_GetJointLocalTransform(const jePose *P, int JointIndex,jeXForm3d *Transform)
+void GRCF grPose_GetJointLocalTransform(const grPose *P, int JointIndex,grXForm3d *Transform)
 {
 	assert( P != NULL );
 	assert( Transform != NULL );
 	{
-		const jePose_Joint *J;
-		J = jePose_JointByIndex(P, JointIndex);
-		jeQuaternion_ToMatrix(&(J->LocalRotation), Transform);
+		const grPose_Joint *J;
+		J = grPose_JointByIndex(P, JointIndex);
+		grQuaternion_ToMatrix(&(J->LocalRotation), Transform);
 		Transform->Translation = J->LocalTranslation;
 	}
 }
 
-void JETCF jePose_SetJointLocalTransform(jePose *P, int JointIndex,const jeXForm3d *Transform)
+void GRCF grPose_SetJointLocalTransform(grPose *P, int JointIndex,const grXForm3d *Transform)
 {
 	assert( P != NULL );
 	assert( Transform != NULL );
 	{
-		jePose_Joint *J;
-		J = (jePose_Joint *)jePose_JointByIndex(P, JointIndex);
-		jeQuaternion_FromMatrix(Transform,&(J->LocalRotation));
+		grPose_Joint *J;
+		J = (grPose_Joint *)grPose_JointByIndex(P, JointIndex);
+		grQuaternion_FromMatrix(Transform,&(J->LocalRotation));
 		J->LocalTranslation = Transform->Translation;
-		J->Touched = JE_TRUE;
+		J->Touched = GR_TRUE;
 	}
-	P->Touched = JE_TRUE;
+	P->Touched = GR_TRUE;
 }
 
-int JETCF jePose_GetJointCount(const jePose *P)
+int GRCF grPose_GetJointCount(const grPose *P)
 {
 	assert( P != NULL );
 	assert( P->JointCount >= 0 );
@@ -667,86 +667,86 @@ int JETCF jePose_GetJointCount(const jePose *P)
 	return P->JointCount;
 }
 
-jeBoolean JETCF jePose_MatchesMotionExactly(const jePose *P, const jeMotion *M)
+grBoolean GRCF grPose_MatchesMotionExactly(const grPose *P, const grMotion *M)
 {
-	if (jeMotion_HasNames(M) != JE_FALSE)
+	if (grMotion_HasNames(M) != GR_FALSE)
 		{
-			if (jeMotion_GetNameChecksum(M) == P->NameChecksum)
-				return JE_TRUE;
+			if (grMotion_GetNameChecksum(M) == P->NameChecksum)
+				return GR_TRUE;
 			else
-				return JE_FALSE;
+				return GR_FALSE;
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 // sets pose to it's base position: applies no modifier to the joints: only
 // it's attachment positioning is used.
-void JETCF jePose_Clear(jePose *P,const jeXForm3d *Transform)
+void GRCF grPose_Clear(grPose *P,const grXForm3d *Transform)
 {
 	int i;
-	jePose_Joint *J;
+	grPose_Joint *J;
 	
 	assert( P != NULL );
 	assert( P->JointCount >= 0 );
-	P->OnlyThisJoint = JE_POSE_ROOT_JOINT-1;		// calling this function disables one-joint optimizations
+	P->OnlyThisJoint = GR_POSE_ROOT_JOINT-1;		// calling this function disables one-joint optimizations
 	if (P->Parent==NULL)
 		{
 			if (Transform!=NULL)
 				{
-					jeQuaternion_FromMatrix(Transform,&(P->RootJoint.LocalRotation));
+					grQuaternion_FromMatrix(Transform,&(P->RootJoint.LocalRotation));
 					P->RootJoint.LocalTranslation = Transform->Translation;
 				}
-			P->RootJoint.Touched = JE_TRUE;
+			P->RootJoint.Touched = GR_TRUE;
 		}
 			
 	for (i=0, J=&(P->JointArray[0]); i<P->JointCount; i++,J++)
 		{
-			jeVec3d_Set( (&J->LocalTranslation),0.0f,0.0f,0.0f);
-			jeQuaternion_SetNoRotation(&(J->LocalRotation));
+			grVec3d_Set( (&J->LocalTranslation),0.0f,0.0f,0.0f);
+			grQuaternion_SetNoRotation(&(J->LocalRotation));
 			assert( J->ParentJoint < i);
-			P->Touched = JE_TRUE;
+			P->Touched = GR_TRUE;
 		}	
-	P->Touched = JE_TRUE;
+	P->Touched = GR_TRUE;
 }	
 
-void JETCF jePose_SetMotion(jePose *P, const jeMotion *M, jeFloat Time,
-							const jeXForm3d *Transform)
+void GRCF grPose_SetMotion(grPose *P, const grMotion *M, grFloat Time,
+							const grXForm3d *Transform)
 {
-	jeBoolean NameBinding;
+	grBoolean NameBinding;
 	int i;
-	jePose_Joint *J;
-	jeXForm3d RootTransform;
+	grPose_Joint *J;
+	grXForm3d RootTransform;
 	
 	assert( P != NULL );
 
-	P->OnlyThisJoint = JE_POSE_ROOT_JOINT-1;		// calling this function disables one-joint optimizations
+	P->OnlyThisJoint = GR_POSE_ROOT_JOINT-1;		// calling this function disables one-joint optimizations
 
     if (P->Parent==NULL)
     {
-        jeBoolean SetRoot = JE_FALSE;
-        if (jeMotion_GetTransform(M,Time,&RootTransform)!=JE_FALSE)
+        grBoolean SetRoot = GR_FALSE;
+        if (grMotion_GetTransform(M,Time,&RootTransform)!=GR_FALSE)
         {
-            SetRoot = JE_TRUE;
+            SetRoot = GR_TRUE;
 
             if ( Transform != NULL )
             {
-                jeXForm3d_Multiply(Transform,&RootTransform,&RootTransform);
+                grXForm3d_Multiply(Transform,&RootTransform,&RootTransform);
             }
         }
         else
         {
             if ( Transform != NULL )
             {
-                SetRoot = JE_TRUE;
+                SetRoot = GR_TRUE;
                 RootTransform = *Transform;
             }
         }
 
-        if (SetRoot != JE_FALSE)
+        if (SetRoot != GR_FALSE)
         {
-            jeQuaternion_FromMatrix(&RootTransform,&(P->RootJoint.LocalRotation));
+            grQuaternion_FromMatrix(&RootTransform,&(P->RootJoint.LocalRotation));
             P->RootJoint.LocalTranslation = RootTransform.Translation;
-            P->RootJoint.Touched = JE_TRUE;
+            P->RootJoint.Touched = GR_TRUE;
         }
     }
 
@@ -755,75 +755,75 @@ void JETCF jePose_SetMotion(jePose *P, const jeMotion *M, jeFloat Time,
         return;
     }
 
-	if (jePose_MatchesMotionExactly(P,M)==JE_TRUE)
-		NameBinding = JE_FALSE;
+	if (grPose_MatchesMotionExactly(P,M)==GR_TRUE)
+		NameBinding = GR_FALSE;
 	else
-		NameBinding = JE_TRUE;
+		NameBinding = GR_TRUE;
 
-	P->Touched = JE_TRUE;
+	P->Touched = GR_TRUE;
 
 #pragma message("could optimize this by looping two ways (min(jointcount,pathcount))")
 	for (i=0, J=&(P->JointArray[0]); i<P->JointCount; i++,J++)
     {
-        if (NameBinding == JE_FALSE)
+        if (NameBinding == GR_FALSE)
         {
-            jeMotion_SampleChannels(M,i,Time,&(J->LocalRotation),&(J->LocalTranslation));
+            grMotion_SampleChannels(M,i,Time,&(J->LocalRotation),&(J->LocalTranslation));
         }
         else
         {
-            if (jeMotion_SampleChannelsNamed(M,
-                jeStrBlock_GetString(P->JointNames,i),
-                Time,&(J->LocalRotation),&(J->LocalTranslation))==JE_FALSE)
+            if (grMotion_SampleChannelsNamed(M,
+                grStrBlock_GetString(P->JointNames,i),
+                Time,&(J->LocalRotation),&(J->LocalTranslation))==GR_FALSE)
                 continue;
 
         }
-        J->Touched = JE_TRUE;
+        J->Touched = GR_TRUE;
         J->LocalTranslation.X *= P->Scale.X;
         J->LocalTranslation.Y *= P->Scale.Y;
         J->LocalTranslation.Z *= P->Scale.Z;
     }
 }
 
-static void JETCF jePose_SetMotionForABoneRecursion(jePose *P, const jeMotion *M, jeFloat Time,
-							int BoneIndex,jeBoolean NameBinding)
+static void GRCF grPose_SetMotionForABoneRecursion(grPose *P, const grMotion *M, grFloat Time,
+							int BoneIndex,grBoolean NameBinding)
 {
-	jePose_Joint *J;
-	jeBoolean Touched = JE_FALSE;
+	grPose_Joint *J;
+	grBoolean Touched = GR_FALSE;
 	assert(P!=NULL);
 	assert(M!=NULL);
 	assert( BoneIndex >= 0);
 
 	J=&(P->JointArray[BoneIndex]);
 
-	if (NameBinding == JE_FALSE)
+	if (NameBinding == GR_FALSE)
 		{
-			jeMotion_SampleChannels(M,BoneIndex,Time,&(J->LocalRotation),&(J->LocalTranslation));
-			Touched = JE_TRUE;
+			grMotion_SampleChannels(M,BoneIndex,Time,&(J->LocalRotation),&(J->LocalTranslation));
+			Touched = GR_TRUE;
 		}
 	else
 		{
-			if (jeMotion_SampleChannelsNamed(M,
-				jeStrBlock_GetString(P->JointNames,BoneIndex),
-				Time,&(J->LocalRotation),&(J->LocalTranslation))!=JE_FALSE)
-				Touched = JE_TRUE;
+			if (grMotion_SampleChannelsNamed(M,
+				grStrBlock_GetString(P->JointNames,BoneIndex),
+				Time,&(J->LocalRotation),&(J->LocalTranslation))!=GR_FALSE)
+				Touched = GR_TRUE;
 		}
-	if (Touched != JE_FALSE)
+	if (Touched != GR_FALSE)
 		{
-			J->Touched = JE_TRUE;
+			J->Touched = GR_TRUE;
 			J->LocalTranslation.X *= P->Scale.X;
 			J->LocalTranslation.Y *= P->Scale.Y;
 			J->LocalTranslation.Z *= P->Scale.Z;
 		}
-	if (J->ParentJoint != JE_POSE_ROOT_JOINT)
-		jePose_SetMotionForABoneRecursion(P,M,Time,J->ParentJoint,NameBinding);
+	if (J->ParentJoint != GR_POSE_ROOT_JOINT)
+		grPose_SetMotionForABoneRecursion(P,M,Time,J->ParentJoint,NameBinding);
 	
 }
 
-void JETCF jePose_SetMotionForABone(jePose *P, const jeMotion *M, jeFloat Time,
-							const jeXForm3d *Transform,int BoneIndex)
+void GRCF grPose_SetMotionForABone(grPose *P, const grMotion *M, grFloat Time,
+							const grXForm3d *Transform,int BoneIndex)
 {
-	jeBoolean NameBinding;
-	jeXForm3d RootTransform;
+	grBoolean NameBinding;
+	grXForm3d RootTransform;
 	
 	assert( P != NULL );
 	//assert( M != NULL );
@@ -831,30 +831,30 @@ void JETCF jePose_SetMotionForABone(jePose *P, const jeMotion *M, jeFloat Time,
 	
 	if (P->Parent==NULL)
 		{
-			jeBoolean SetRoot = JE_FALSE;
-			if (jeMotion_GetTransform(M,Time,&RootTransform)!=JE_FALSE)
+			grBoolean SetRoot = GR_FALSE;
+			if (grMotion_GetTransform(M,Time,&RootTransform)!=GR_FALSE)
 				{
-					SetRoot = JE_TRUE;
+					SetRoot = GR_TRUE;
 
 					if ( Transform != NULL )
 						{
-							jeXForm3d_Multiply(Transform,&RootTransform,&RootTransform);
+							grXForm3d_Multiply(Transform,&RootTransform,&RootTransform);
 						}
 				}
 			else
 				{
 					if ( Transform != NULL )
 						{
-							SetRoot = JE_TRUE;
+							SetRoot = GR_TRUE;
 							RootTransform = *Transform;
 						}
 				}
 
-			if (SetRoot != JE_FALSE)
+			if (SetRoot != GR_FALSE)
 				{
-					jeQuaternion_FromMatrix(&RootTransform,&(P->RootJoint.LocalRotation));
+					grQuaternion_FromMatrix(&RootTransform,&(P->RootJoint.LocalRotation));
 					P->RootJoint.LocalTranslation = RootTransform.Translation;
-					P->RootJoint.Touched = JE_TRUE;
+					P->RootJoint.Touched = GR_TRUE;
 				}
 		}
 
@@ -862,19 +862,19 @@ void JETCF jePose_SetMotionForABone(jePose *P, const jeMotion *M, jeFloat Time,
 		{
 			return;
 		}
-	if (BoneIndex == JE_POSE_ROOT_JOINT)
+	if (BoneIndex == GR_POSE_ROOT_JOINT)
 		{
 			return;
 		}
 
-	if (jePose_MatchesMotionExactly(P,M)==JE_TRUE)
-		NameBinding = JE_FALSE;
+	if (grPose_MatchesMotionExactly(P,M)==GR_TRUE)
+		NameBinding = GR_FALSE;
 	else
-		NameBinding = JE_TRUE;
+		NameBinding = GR_TRUE;
 
-	P->Touched = JE_TRUE;
+	P->Touched = GR_TRUE;
 
-	jePose_SetMotionForABoneRecursion(P, M, Time, BoneIndex, NameBinding);
+	grPose_SetMotionForABoneRecursion(P, M, Time, BoneIndex, NameBinding);
 }
 	
 
@@ -885,28 +885,28 @@ void JETCF jePose_SetMotionForABone(jePose *P, const jeMotion *M, jeFloat Time,
 
 
 
-void JETCF jePose_BlendMotion(	
-	jePose *P, const jeMotion *M, jeFloat Time,
-	const jeXForm3d *Transform,
-	jeFloat BlendAmount, jePose_BlendingType BlendingType)
+void GRCF grPose_BlendMotion(	
+	grPose *P, const grMotion *M, grFloat Time,
+	const grXForm3d *Transform,
+	grFloat BlendAmount, grPose_BlendingType BlendingType)
 {
 	int i;
-	jeBoolean NameBinding;
-	jePose_Joint *J;
-	jeQuaternion R1;
-	jeVec3d      T1;
-	jeXForm3d    RootTransform;
+	grBoolean NameBinding;
+	grPose_Joint *J;
+	grQuaternion R1;
+	grVec3d      T1;
+	grXForm3d    RootTransform;
 	
 	assert( P != NULL );
 	//assert( M != NULL );  // M can be NULL
-	assert( BlendingType == JE_POSE_BLEND_HERMITE || BlendingType == JE_POSE_BLEND_LINEAR);
+	assert( BlendingType == GR_POSE_BLEND_HERMITE || BlendingType == GR_POSE_BLEND_LINEAR);
 	assert( BlendAmount >= 0.0f );
 	assert( BlendAmount <= 1.0f );
 
-	P->OnlyThisJoint = JE_POSE_ROOT_JOINT-1;		// calling this function disables one-joint optimizations
-	if (BlendingType == JE_POSE_BLEND_HERMITE)
+	P->OnlyThisJoint = GR_POSE_ROOT_JOINT-1;		// calling this function disables one-joint optimizations
+	if (BlendingType == GR_POSE_BLEND_HERMITE)
 		{
-			jeFloat t2,t3;
+			grFloat t2,t3;
 			t2 = BlendAmount * BlendAmount;
 			t3 = t2 * BlendAmount;
 			BlendAmount = t2*3.0f -t3-t3;
@@ -914,38 +914,38 @@ void JETCF jePose_BlendMotion(
 
 	if (P->Parent==NULL)
 		{
-			jeBoolean SetRoot = JE_FALSE;
-			if (jeMotion_GetTransform(M,Time,&RootTransform)!=JE_FALSE)
+			grBoolean SetRoot = GR_FALSE;
+			if (grMotion_GetTransform(M,Time,&RootTransform)!=GR_FALSE)
 				{
-					SetRoot = JE_TRUE;
+					SetRoot = GR_TRUE;
 
 					if ( Transform != NULL )
 						{
-							jeXForm3d_Multiply(Transform,&RootTransform,&RootTransform);
+							grXForm3d_Multiply(Transform,&RootTransform,&RootTransform);
 						}
 				}
 			else
 				{
 					if ( Transform != NULL )
 						{
-							SetRoot = JE_TRUE;
+							SetRoot = GR_TRUE;
 							RootTransform = *Transform;
 						}
 				}
 
-			if (SetRoot != JE_FALSE)
+			if (SetRoot != GR_FALSE)
 				{
-					jeQuaternion_FromMatrix(&RootTransform,&R1);
+					grQuaternion_FromMatrix(&RootTransform,&R1);
 					T1 = RootTransform.Translation;
 					J  = &(P->RootJoint);
-					jeQuaternion_Slerp(&(J->LocalRotation),&(R1),BlendAmount,&(J->LocalRotation));
+					grQuaternion_Slerp(&(J->LocalRotation),&(R1),BlendAmount,&(J->LocalRotation));
 					{
-						jeVec3d      *LT = &(J->LocalTranslation);
+						grVec3d      *LT = &(J->LocalTranslation);
 						LT->X = LINEAR_BLEND(LT->X,T1.X,BlendAmount);
 						LT->Y = LINEAR_BLEND(LT->Y,T1.Y,BlendAmount);
 						LT->Z = LINEAR_BLEND(LT->Z,T1.Z,BlendAmount);
 					}
-					J->Touched = JE_TRUE;
+					J->Touched = GR_TRUE;
 				}
 		}
 
@@ -955,46 +955,46 @@ void JETCF jePose_BlendMotion(
 		}
 
 	
-	if (jePose_MatchesMotionExactly(P,M)==JE_TRUE)
-		NameBinding = JE_FALSE;
+	if (grPose_MatchesMotionExactly(P,M)==GR_TRUE)
+		NameBinding = GR_FALSE;
 	else
-		NameBinding = JE_TRUE;
+		NameBinding = GR_TRUE;
 	
-	P->Touched = JE_TRUE;
+	P->Touched = GR_TRUE;
 
 	for (i=0, J=&(P->JointArray[0]); i<P->JointCount; i++,J++)
 		{
-			//jePath *JointPath;
+			//grPath *JointPath;
 							
-			if (NameBinding == JE_FALSE)
+			if (NameBinding == GR_FALSE)
 				{
-					jeMotion_SampleChannels(M,i,Time,&R1,&T1);
-					//JointPath = jeMotion_GetPath(M,i);
+					grMotion_SampleChannels(M,i,Time,&R1,&T1);
+					//JointPath = grMotion_GetPath(M,i);
 					//assert( JointPath != NULL );
 				}
 			else
 				{
-					//JointPath = jeMotion_GetPathNamed(M, jeStrBlock_GetString(P->JointNames,i));
+					//JointPath = grMotion_GetPathNamed(M, grStrBlock_GetString(P->JointNames,i));
 					//if (JointPath == NULL)
 					//	continue;
-					if (jeMotion_SampleChannelsNamed(M,
-						jeStrBlock_GetString(P->JointNames,i),
-						Time,&R1,&T1)==JE_FALSE)
+					if (grMotion_SampleChannelsNamed(M,
+						grStrBlock_GetString(P->JointNames,i),
+						Time,&R1,&T1)==GR_FALSE)
 						continue;
 
 				}
-			J->Touched = JE_TRUE;
+			J->Touched = GR_TRUE;
 
-			//jePath_SampleChannels(JointPath,Time,&(R1),&(T1));
+			//grPath_SampleChannels(JointPath,Time,&(R1),&(T1));
 			
 			T1.X *= P->Scale.X;
 			T1.Y *= P->Scale.Y;
 			T1.Z *= P->Scale.Z;
 			
-			jeQuaternion_Slerp(&(J->LocalRotation),&(R1),BlendAmount,&(J->LocalRotation));
+			grQuaternion_Slerp(&(J->LocalRotation),&(R1),BlendAmount,&(J->LocalRotation));
 						
 			{
-				jeVec3d      *LT = &(J->LocalTranslation);
+				grVec3d      *LT = &(J->LocalTranslation);
 				LT->X = LINEAR_BLEND(LT->X,T1.X,BlendAmount);
 				LT->Y = LINEAR_BLEND(LT->Y,T1.Y,BlendAmount);
 				LT->Z = LINEAR_BLEND(LT->Z,T1.Z,BlendAmount);
@@ -1002,20 +1002,20 @@ void JETCF jePose_BlendMotion(
 		}
 }
 
-const char* JETCF jePose_GetJointName(const jePose* P, int JointIndex)
+const char* GRCF grPose_GetJointName(const grPose* P, int JointIndex)
 {
-	return jeStrBlock_GetString(P->JointNames, JointIndex);
+	return grStrBlock_GetString(P->JointNames, JointIndex);
 }
 
-const jeXFArray * JETCF jePose_GetAllJointTransforms(const jePose *P)
+const grXFArray * GRCF grPose_GetAllJointTransforms(const grPose *P)
 {
 	assert( P != NULL );
 
-	jePose_UpdateRelativeToParent((jePose *)P);
+	grPose_UpdateRelativeToParent((grPose *)P);
 	return P->TransformArray;
 }
 
-void JETCF jePose_GetScale(const jePose *P, jeVec3d *Scale)
+void GRCF grPose_GetScale(const grPose *P, grVec3d *Scale)
 {
 	assert( P     != NULL );
 	assert( Scale != NULL );
@@ -1023,17 +1023,17 @@ void JETCF jePose_GetScale(const jePose *P, jeVec3d *Scale)
 }
 	
 
-void JETCF jePose_SetScale(jePose *P, const jeVec3d *Scale )
+void GRCF grPose_SetScale(grPose *P, const grVec3d *Scale )
 {
 	assert( P != NULL );
-	assert( jeVec3d_IsValid(Scale) != JE_FALSE );
+	assert( grVec3d_IsValid(Scale) != GR_FALSE );
 
 	{
 		int i;
-		jePose_Joint *J;
+		grPose_Joint *J;
 
 		P->Scale = *Scale;
-		//jeVec3d_Set(&(P->Scale),ScaleX,ScaleY,ScaleZ);
+		//grVec3d_Set(&(P->Scale),ScaleX,ScaleY,ScaleZ);
 
 		for (i=0, J=&(P->JointArray[0]); i<P->JointCount; i++,J++)
 			{	
@@ -1041,19 +1041,19 @@ void JETCF jePose_SetScale(jePose *P, const jeVec3d *Scale )
 				J->AttachmentTransform.Translation.Y = J->UnscaledAttachmentTranslation.Y * Scale->Y;
 				J->AttachmentTransform.Translation.Z = J->UnscaledAttachmentTranslation.Z * Scale->Z;
 				//J->AttachmentTransform.Translation = J->AttachmentTranslation;
-				J->Touched = JE_TRUE;
+				J->Touched = GR_TRUE;
 			}
-		P->Touched = JE_TRUE;
+		P->Touched = GR_TRUE;
 	}
 }
 
-void JETCF jePose_ClearCoverage(jePose *P, int ClearTo)
+void GRCF grPose_ClearCoverage(grPose *P, int ClearTo)
 {
 	int i;
-	jePose_Joint *J;
+	grPose_Joint *J;
 
 	assert( P != NULL );
-	assert( (ClearTo == JE_FALSE) || (ClearTo == JE_TRUE) );
+	assert( (ClearTo == GR_FALSE) || (ClearTo == GR_TRUE) );
 
 	for (i=0, J=&(P->JointArray[0]); i<P->JointCount; i++,J++)
 		{	
@@ -1061,12 +1061,12 @@ void JETCF jePose_ClearCoverage(jePose *P, int ClearTo)
 		}
 }
 
-int JETCF jePose_AccumulateCoverage(jePose *P, const jeMotion *M, jeBoolean QueryOnly)
+int GRCF grPose_AccumulateCoverage(grPose *P, const grMotion *M, grBoolean QueryOnly)
 {
 	int i,SubMotions;
-	jeBoolean NameBinding;
+	grBoolean NameBinding;
 	int Covers=0;
-	jePose_Joint *J;
+	grPose_Joint *J;
 	
 	assert( P != NULL );
 	if (M==NULL)
@@ -1074,12 +1074,12 @@ int JETCF jePose_AccumulateCoverage(jePose *P, const jeMotion *M, jeBoolean Quer
 			return P->JointCount;
 		}
 
-	SubMotions = jeMotion_GetSubMotionCount(M);
+	SubMotions = grMotion_GetSubMotionCount(M);
 	if (SubMotions>0)
 		{
 			for (i=0; i<SubMotions; i++)
 				{
-					int c = jePose_AccumulateCoverage(P, jeMotion_GetSubMotion(M,i),QueryOnly);
+					int c = grPose_AccumulateCoverage(P, grMotion_GetSubMotion(M,i),QueryOnly);
 					if (c > Covers)
 						{
 							Covers = c;
@@ -1088,25 +1088,25 @@ int JETCF jePose_AccumulateCoverage(jePose *P, const jeMotion *M, jeBoolean Quer
 			return Covers;
 		}
 	
-	if (jePose_MatchesMotionExactly(P,M)==JE_TRUE)
-		NameBinding = JE_FALSE;
+	if (grPose_MatchesMotionExactly(P,M)==GR_TRUE)
+		NameBinding = GR_FALSE;
 	else
-		NameBinding = JE_TRUE;
+		NameBinding = GR_TRUE;
 
 	for (i=0, J=&(P->JointArray[0]); i<P->JointCount; i++,J++)
 		{
-			jePath *JointPath;
-			if (J->Covered == JE_FALSE)
+			grPath *JointPath;
+			if (J->Covered == GR_FALSE)
 				{
-					if (NameBinding == JE_TRUE)
+					if (NameBinding == GR_TRUE)
 						{
-							JointPath = jeMotion_GetPathNamed(M, jeStrBlock_GetString(P->JointNames,i));
+							JointPath = grMotion_GetPathNamed(M, grStrBlock_GetString(P->JointNames,i));
 							if (JointPath == NULL)
 								continue;
 						}
-					if (QueryOnly == JE_FALSE)
+					if (QueryOnly == GR_FALSE)
 						{
-							J->Covered = JE_TRUE;
+							J->Covered = GR_TRUE;
 						}
 					Covers ++;
 				}

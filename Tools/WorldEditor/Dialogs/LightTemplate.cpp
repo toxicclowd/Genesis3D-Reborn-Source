@@ -222,9 +222,9 @@ void CLightTemplate::GetFields(LightInfo *pLightInfo)
 	pLightInfo->Brightness = m_fIntensity  ;
 	pLightInfo->Radius = m_fRadius ;
 	Color = m_bnColor.GetColor( ) ;
-	pLightInfo->Color.X = (jeFloat)GetRValue( Color ) ;
-	pLightInfo->Color.Y = (jeFloat)GetGValue( Color ) ;
-	pLightInfo->Color.Z = (jeFloat)GetBValue( Color ) ;
+	pLightInfo->Color.X = (grFloat)GetRValue( Color ) ;
+	pLightInfo->Color.Y = (grFloat)GetGValue( Color ) ;
+	pLightInfo->Color.Z = (grFloat)GetBValue( Color ) ;
 
 	UpdateData( false ) ;
 }// GetFields
@@ -245,9 +245,9 @@ LRESULT CLightTemplate::OnChangeColor( WPARAM wParam, LPARAM lParam )
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	if( pDoc != NULL )
 	{
-		sLightInfo.Color.X = (jeFloat)GetRValue( color ) ;
-		sLightInfo.Color.Y = (jeFloat)GetGValue( color ) ;
-		sLightInfo.Color.Z = (jeFloat)GetBValue( color ) ;
+		sLightInfo.Color.X = (grFloat)GetRValue( color ) ;
+		sLightInfo.Color.Y = (grFloat)GetGValue( color ) ;
+		sLightInfo.Color.Z = (grFloat)GetBValue( color ) ;
 
 		Light_SetInfo( (Light*)pDoc->GetTemplate(), &sLightInfo, LIGHT_FIELD_COLOR ) ;
 	}

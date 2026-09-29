@@ -29,8 +29,8 @@ typedef struct rungO1 rungO1;
 rungO1 *rungO1Create(arithInfo *ari,int NumContexts);
 void	rungO1Destroy(rungO1 * ro1);
 
-void	rungO1Encode(rungO1 * ro1, int context, jeBoolean bit);
-jeBoolean	rungO1Decode(rungO1 * ro1, int context);
+void	rungO1Encode(rungO1 * ro1, int context, grBoolean bit);
+grBoolean	rungO1Decode(rungO1 * ro1, int context);
 
 #endif // RUNG_O1_H
 

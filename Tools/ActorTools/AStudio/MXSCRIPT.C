@@ -86,7 +86,7 @@ MXScript *MXScript_StartScript(const char *tempdir, MkUtil_Printf Printf)
 {
 	MXScript *M = NULL;
 
-	M = JE_RAM_ALLOCATE_STRUCT( MXScript );
+	M = GR_RAM_ALLOCATE_STRUCT( MXScript );
 	if (M == NULL)
 		{
 			Printf("Error: unable to get memory for 3DS MAX script structure\n");
@@ -96,12 +96,12 @@ MXScript *MXScript_StartScript(const char *tempdir, MkUtil_Printf Printf)
 	M->ScriptFileName[0] = 0;
 	M->LogName[0]        = 0;
 	
-	if (FilePath_AppendName	(tempdir,"max.ms",M->ScriptFileName)==JE_FALSE)
+	if (FilePath_AppendName	(tempdir,"max.ms",M->ScriptFileName)==GR_FALSE)
 		{
 			goto StartScriptError;
 		}
 
-	if (FilePath_AppendName	(tempdir,"max.log",M->LogName)==JE_FALSE)
+	if (FilePath_AppendName	(tempdir,"max.log",M->LogName)==GR_FALSE)
 		{
 			goto StartScriptError;
 		}
@@ -132,7 +132,7 @@ StartScriptError:
 	if (M->File != NULL)
 		fclose(M->File);
 	if (M != NULL)
-		jeRam_Free(M);
+		grRam_Free(M);
 	return NULL;
 }
 	
@@ -142,9 +142,9 @@ const char *MXScript_GetScriptFileName(MXScript *Script)
 	return Script->ScriptFileName;
 }
 
-jeBoolean MXScript_EndScript(MXScript *Script,MkUtil_Printf Printf)
+grBoolean MXScript_EndScript(MXScript *Script,MkUtil_Printf Printf)
 {
-	jeBoolean rval = JE_TRUE;
+	grBoolean rval = GR_TRUE;
 	assert( Script != NULL );
 	assert( Script->File );
 	assert( Script->ScriptFileName );
@@ -156,7 +156,7 @@ jeBoolean MXScript_EndScript(MXScript *Script,MkUtil_Printf Printf)
 	if (Script->Error > 0)
 		{
 			Printf("Error: unable to write footer to script file (%s)\n",Script->ScriptFileName);
-			rval = JE_FALSE;
+			rval = GR_FALSE;
 		}
 	
 	fclose(Script->File);
@@ -174,11 +174,11 @@ void MXScript_Destroy( MXScript *Script )
 			Script->File = NULL;
 		}
 	Script->Error = 999;
-	jeRam_Free(Script);
+	grRam_Free(Script);
 }
 	
 
-jeBoolean MXScript_AddExport(MXScript *M,const char *LoadFilename, const char *ExportFilename, MkUtil_Printf Printf)
+grBoolean MXScript_AddExport(MXScript *M,const char *LoadFilename, const char *ExportFilename, MkUtil_Printf Printf)
 {
 	assert( M != NULL );
 	assert( M->File );
@@ -205,13 +205,13 @@ jeBoolean MXScript_AddExport(MXScript *M,const char *LoadFilename, const char *E
 	if (M->Error > 0)
 		{
 			Printf("Error: unable to write export lines to 3DS MAX script for '%s' to script file\n",LoadFilename);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean MXScript_ArePluginsInstalled( const char *MaxExeName, MkUtil_Printf Printf )
+grBoolean MXScript_ArePluginsInstalled( const char *MaxExeName, MkUtil_Printf Printf )
 {
 	long Handle;
 	struct _finddata_t PluginData;
@@ -234,7 +234,7 @@ jeBoolean MXScript_ArePluginsInstalled( const char *MaxExeName, MkUtil_Printf Pr
 	else
 		{
 			Printf("Error: Did not locate 3DS MAX plugin: '%s'\n",PluginName);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	_makepath( PluginName, drive,dir,"KEYEXP","DLE" );
@@ -246,13 +246,13 @@ jeBoolean MXScript_ArePluginsInstalled( const char *MaxExeName, MkUtil_Printf Pr
 	else
 		{
 			Printf("Error: Did not locate 3DS MAX plugin: '%s'\n",PluginName);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean MXScript_RunScript( MXScript *M, const char *MaxExeName, MkUtil_Printf Printf )
+grBoolean MXScript_RunScript( MXScript *M, const char *MaxExeName, MkUtil_Printf Printf )
 {
 	char Command[BIG];
 	char FirstLine[BIG];
@@ -271,32 +271,32 @@ jeBoolean MXScript_RunScript( MXScript *M, const char *MaxExeName, MkUtil_Printf
 	if (errno != 0)
 		{
 			Printf("Error: unable to execute 3DSMax\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	if (MkUtil_Interrupt())
 		{
 			Printf("Interrupted.\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	F = fopen(M->LogName,"rt");
 	if (F == NULL)
 		{
 			Printf("Error: unable to open temporary output file (%s)\n",M->LogName);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	if (fgets(FirstLine,BIG-1,F)== NULL)
 		{
 			Printf("Error: unable to access first line of temporary output file (%s)\n",M->LogName);
 			fclose(F);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	fclose(F);
 	if (strncmp(FirstLine,"\"Success",strlen("\"Success"))!=0)
 		{
 			Printf(FirstLine);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	Printf("3DSMAX data export succeeded\n");
-	return JE_TRUE;
+	return GR_TRUE;
 }

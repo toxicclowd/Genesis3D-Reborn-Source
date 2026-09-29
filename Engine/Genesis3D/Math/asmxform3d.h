@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_ASMXFORM_H
-#define JE_ASMXFORM_H
+#ifndef GR_ASMXFORM_H
+#define GR_ASMXFORM_H
 
 #include "Xform3d.h"
 
@@ -27,29 +27,29 @@
 extern "C" {
 #endif
 
-void JETCC jeXForm3d_TransformVecArrayKatmai(const jeXForm3d *XForm, const jeVec3d *Source, jeVec3d *Dest, int32 Count);
+void GRCC grXForm3d_TransformVecArrayKatmai(const grXForm3d *XForm, const grVec3d *Source, grVec3d *Dest, int32 Count);
 
-void JETCC jeXForm3d_TransformArrayKatmai(const jeXForm3d *XForm,
-										   const jeVec3d *Source,
-										   jeVec3d *Dest,
+void GRCC grXForm3d_TransformArrayKatmai(const grXForm3d *XForm,
+										   const grVec3d *Source,
+										   grVec3d *Dest,
 										   int32 SourceStride,
 										   int32 DestStride,
 										   int32 Count);
 
-void JETCC jeXForm3d_TransformArrayX86(const jeXForm3d *XForm,
-										const jeVec3d *Source,
-										jeVec3d *Dest,
+void GRCC grXForm3d_TransformArrayX86(const grXForm3d *XForm,
+										const grVec3d *Source,
+										grVec3d *Dest,
 										int32 SourceStride,
 										int32 DestStride,
 										int32 Count);
 
-void JETCC jeXForm3d_TransformVecArrayX86(const jeXForm3d *XForm, const jeVec3d *Source, jeVec3d *Dest, int32 Count);
+void GRCC grXForm3d_TransformVecArrayX86(const grXForm3d *XForm, const grVec3d *Source, grVec3d *Dest, int32 Count);
 
-void JETCC jeXForm3d_TransformVecArray3DNow(const jeXForm3d *XForm, const jeVec3d *Source, jeVec3d *Dest, int32 Count);
+void GRCC grXForm3d_TransformVecArray3DNow(const grXForm3d *XForm, const grVec3d *Source, grVec3d *Dest, int32 Count);
 
-void JETCC jeXForm3d_TransformArray3DNow(const jeXForm3d *XForm,
-										  const jeVec3d *Source,
-										  jeVec3d *Dest,
+void GRCC grXForm3d_TransformArray3DNow(const grXForm3d *XForm,
+										  const grVec3d *Source,
+										  grVec3d *Dest,
 										  int32 SourceStride,
 										  int32 DestStride,
 										  int32 Count);
@@ -59,4 +59,4 @@ void JETCC jeXForm3d_TransformArray3DNow(const jeXForm3d *XForm,
 }
 #endif
 
-#endif // JE_ASMXFORM_H
+#endif // GR_ASMXFORM_H

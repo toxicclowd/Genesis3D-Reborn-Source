@@ -18,7 +18,7 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#define DO_YUV_DEFINE (JE_TRUE)
+#define DO_YUV_DEFINE (GR_TRUE)
 
 /**********
 
@@ -51,12 +51,12 @@ createPaletteGood :
 	we keep removing the node which has the lowest cost to cut
 		(we use a radix sort to sort on cutCost ; this gives us the speed win)
 
-my fast (incremental) way to compute the JE_TRUE node cost :
-	JE_TRUE_cost = Sum[kids] kid_count * (kid_color - new_color)^2
+my fast (incremental) way to compute the GR_TRUE node cost :
+	GR_TRUE_cost = Sum[kids] kid_count * (kid_color - new_color)^2
 	my_cost = Sum[kids] kid_count * (kid_color - node_color)^2
 					+ node_count * (node_color - new_color)^2
 
-	JE_TRUE_cost = Sum[kids] kid_count * (kid_color - new_color)^2
+	GR_TRUE_cost = Sum[kids] kid_count * (kid_color - new_color)^2
 			  = Sum[kids] kid_count * ((kid_color - node_color) + (node_color - new_color))^2
 			  = Sum[kids] kid_count * ((kid_color - node_color)^2 + (node_color - new_color)^2
 										+ 2 * (kid_color - node_color) * (node_color - new_color))
@@ -91,13 +91,13 @@ why this isn't exactly optimal:
 
 /*******/
 
-#define allocate(ptr)	ptr = jeRam_AllocateClear(sizeof(*ptr))
+#define allocate(ptr)	ptr = grRam_AllocateClear(sizeof(*ptr))
 #define clear(ptr)		memset(ptr,0,sizeof(*ptr))
 
 /*}{*************************************************/
 
-jeBitmap_Palette * createPaletteGood(const jeBitmap_Info * Info,const void * Bits);
-jeBitmap_Palette * createPaletteFast(const jeBitmap_Info * Info,const void * Bits);
+grBitmap_Palette * createPaletteGood(const grBitmap_Info * Info,const void * Bits);
+grBitmap_Palette * createPaletteFast(const grBitmap_Info * Info,const void * Bits);
 
 paletteCreater myPaletteCreater = createPaletteGood;
 
@@ -107,22 +107,22 @@ void setCreatePaletteFunc(paletteCreater func)
 	myPaletteCreater = func;
 }
 
-jeBitmap_Palette * createPalette(const jeBitmap_Info * Info,const void * Bits)
+grBitmap_Palette * createPalette(const grBitmap_Info * Info,const void * Bits)
 {
 	assert(Info && Bits);
 	switch(Info->Format)
 	{
-		case JE_PIXELFORMAT_8BIT_PAL :
+		case GR_PIXELFORMAT_8BIT_PAL :
 			return Info->Palette;
-		case JE_PIXELFORMAT_8BIT_GRAY :
+		case GR_PIXELFORMAT_8BIT_GRAY :
 		{
-		jeBitmap_Palette * Pal;
+		grBitmap_Palette * Pal;
 		uint8 GrayPal[256];
 		int i;
-			Pal = jeBitmap_Palette_Create(JE_PIXELFORMAT_8BIT_GRAY,256);
+			Pal = grBitmap_Palette_Create(GR_PIXELFORMAT_8BIT_GRAY,256);
 			if ( ! Pal ) return NULL;
 			for(i=0;i<256;i++) GrayPal[i] = i;
-			jeBitmap_Palette_SetData(Pal,GrayPal,JE_PIXELFORMAT_8BIT_GRAY,256);
+			grBitmap_Palette_SetData(Pal,GrayPal,GR_PIXELFORMAT_8BIT_GRAY,256);
 		return Pal;
 		}
 		default:
@@ -130,23 +130,23 @@ jeBitmap_Palette * createPalette(const jeBitmap_Info * Info,const void * Bits)
 	}
 }
 
-jeBitmap_Palette * createPaletteFromBitmap(const jeBitmap * Bitmap,jeBoolean Optimize)
+grBitmap_Palette * createPaletteFromBitmap(const grBitmap * Bitmap,grBoolean Optimize)
 {
-jeBitmap * Lock;
-jeBitmap_Info Info;
+grBitmap * Lock;
+grBitmap_Info Info;
 const void * Bits;
-jeBitmap_Palette * Pal;
+grBitmap_Palette * Pal;
 
-	if ( ! jeBitmap_GetInfo(Bitmap,&Info,NULL) )
+	if ( ! grBitmap_GetInfo(Bitmap,&Info,NULL) )
 		return NULL;
 
-	if ( ! jeBitmap_LockForRead((jeBitmap *)Bitmap,&Lock,0,0,JE_PIXELFORMAT_24BIT_RGB,JE_FALSE,0) )
+	if ( ! grBitmap_LockForRead((grBitmap *)Bitmap,&Lock,0,0,GR_PIXELFORMAT_24BIT_RGB,GR_FALSE,0) )
 		return NULL;
 	
-	if ( ! jeBitmap_GetInfo(Lock,&Info,NULL) )
+	if ( ! grBitmap_GetInfo(Lock,&Info,NULL) )
 		return NULL;
 
-	Bits = (const void *) jeBitmap_GetBits(Lock);
+	Bits = (const void *) grBitmap_GetBits(Lock);
 
 	Pal = createPalette(&Info,Bits);
 
@@ -154,16 +154,16 @@ jeBitmap_Palette * Pal;
 	{
 	uint8 paldata[768];
 
-		if ( ! jeBitmap_Palette_GetData(Pal,paldata,JE_PIXELFORMAT_24BIT_RGB,256) )
+		if ( ! grBitmap_Palette_GetData(Pal,paldata,GR_PIXELFORMAT_24BIT_RGB,256) )
 			assert(0);
 		
 		paletteOptimize(&Info,Bits,paldata,256,0);
 		
-		if ( ! jeBitmap_Palette_SetData(Pal,paldata,JE_PIXELFORMAT_24BIT_RGB,256) )
+		if ( ! grBitmap_Palette_SetData(Pal,paldata,GR_PIXELFORMAT_24BIT_RGB,256) )
 			assert(0);
 	}
 		
-	jeBitmap_UnLock(Lock);
+	grBitmap_UnLock(Lock);
 
 return Pal;
 }
@@ -190,8 +190,8 @@ struct octNode
 #define RADIX_SIZE	1024
 
 int createOctTreeFromImage(octNode * root,const image *im);
-int createOctTree(octNode * root,const jeBitmap_Info * Info,const void * Bits,jeBoolean doYUV);
-jeBitmap_Palette * createPaletteGoodSub(const jeBitmap_Info * Info,const void * Bits,const image *im);
+int createOctTree(octNode * root,const grBitmap_Info * Info,const void * Bits,grBoolean doYUV);
+grBitmap_Palette * createPaletteGoodSub(const grBitmap_Info * Info,const void * Bits,const image *im);
 static void addOctNode(octNode *root,int R,int G,int B,int *nLeavesPtr);
 static void gatherLeaves(octNode *node,octNode *** leavesPtrPtr,int minCount);
 static void gatherLeavesCutting(octNode *node,octNode *** leavesPtrPtr);
@@ -233,14 +233,14 @@ void PalCreate_Stop(void)
 
 /*}{*************************************************/
 
-jeBitmap_Palette * createPaletteFast(const jeBitmap_Info * Info,const void * Bits)
+grBitmap_Palette * createPaletteFast(const grBitmap_Info * Info,const void * Bits)
 {
 octNode * root;
 int nLeaves,minCount,gotLeaves;
 octNode ** leaves,**leavesPtr;
 uint8 palette[768];
 int palEntries = 256;
-jeBitmap_Palette * Pal;
+grBitmap_Palette * Pal;
 
 	pushTSC();
 
@@ -250,9 +250,9 @@ jeBitmap_Palette * Pal;
 	MemPool_Reset(octNodePool);
 	root = (octNode *)MemPool_GetHunk(octNodePool);
 	assert(root);
-	nLeaves = createOctTree(root,Info,Bits,JE_FALSE);
+	nLeaves = createOctTree(root,Info,Bits,GR_FALSE);
 
-	leaves = (octNode **)jeRam_AllocateClear(sizeof(octNode *)*nLeaves);
+	leaves = (octNode **)grRam_AllocateClear(sizeof(octNode *)*nLeaves);
 	assert(leaves);
 	
 	// gather leaves into a linear array
@@ -279,26 +279,26 @@ jeBitmap_Palette * Pal;
 
 	showPopTSC("createPalFast");
 
-	Pal = jeBitmap_Palette_Create(JE_PIXELFORMAT_24BIT_RGB,palEntries);
+	Pal = grBitmap_Palette_Create(GR_PIXELFORMAT_24BIT_RGB,palEntries);
 	if ( ! Pal )
 		return NULL;
-	if ( ! jeBitmap_Palette_SetData(Pal,palette,JE_PIXELFORMAT_24BIT_RGB,palEntries) )
+	if ( ! grBitmap_Palette_SetData(Pal,palette,GR_PIXELFORMAT_24BIT_RGB,palEntries) )
 		assert(0);
 return Pal;
 }
 
 /*}{*************************************************/
 
-jeBitmap_Palette * createPaletteGood(const jeBitmap_Info * Info,const void * Bits)
+grBitmap_Palette * createPaletteGood(const grBitmap_Info * Info,const void * Bits)
 {
 	return createPaletteGoodSub(Info,Bits,NULL);
 }
-jeBitmap_Palette * createPaletteFromImage(const image *im)
+grBitmap_Palette * createPaletteFromImage(const image *im)
 {
 	return createPaletteGoodSub(NULL,NULL,im);
 }
 
-jeBitmap_Palette * createPaletteGoodSub(const jeBitmap_Info * Info,const void * Bits,const image *im)
+grBitmap_Palette * createPaletteGoodSub(const grBitmap_Info * Info,const void * Bits,const image *im)
 {
 octNode * root;
 int nLeaves,i,gotLeaves,radixN;
@@ -307,21 +307,21 @@ octNode *leaf,*node;
 octNode *radix;
 uint8 palette[768],*palPtr;
 int palEntries = 256;
-jeBitmap_Palette * Pal;
-jeBoolean DoYUV;
+grBitmap_Palette * Pal;
+grBoolean DoYUV;
 
 	pushTSC();
 
 	if ( im )
-		DoYUV = JE_FALSE;
+		DoYUV = GR_FALSE;
 	else
 		DoYUV = DO_YUV_DEFINE;
 
 	// <> hack !
-//	if ( Info->Format == JE_PIXELFORMAT_24BIT_RGB )
+//	if ( Info->Format == GR_PIXELFORMAT_24BIT_RGB )
 
 //	else
-//		DoYUV = JE_FALSE;
+//		DoYUV = GR_FALSE;
 
 	// read the whole image into an octree
 	//	this is the only pass over the input plane
@@ -335,7 +335,7 @@ jeBoolean DoYUV;
 	else
 		nLeaves = createOctTree(root,Info,Bits,DoYUV);
 
-	leaves = (octNode **)jeRam_AllocateClear(sizeof(octNode *)*nLeaves);
+	leaves = (octNode **)grRam_AllocateClear(sizeof(octNode *)*nLeaves);
 	assert(leaves);
 
 	computeOctRGBs(root);
@@ -360,7 +360,7 @@ jeBoolean DoYUV;
 	// sort the leaves by cutCost
 	// radix sort instead of qsort
 
-	radix = (octNode *)jeRam_AllocateClear(sizeof(octNode)*RADIX_SIZE);
+	radix = (octNode *)grRam_AllocateClear(sizeof(octNode)*RADIX_SIZE);
 	assert(radix);
 
 	for(i=0;i<RADIX_SIZE;i++)
@@ -430,11 +430,11 @@ done:
 		YUVb_to_RGBb_line(palette,palette,palEntries);
 	}
 
-	Pal = jeBitmap_Palette_Create(JE_PIXELFORMAT_24BIT_RGB,palEntries);
+	Pal = grBitmap_Palette_Create(GR_PIXELFORMAT_24BIT_RGB,palEntries);
 	if ( ! Pal )
 		return NULL;
 
-	if ( ! jeBitmap_Palette_SetData(Pal,palette,JE_PIXELFORMAT_24BIT_RGB,palEntries) )
+	if ( ! grBitmap_Palette_SetData(Pal,palette,GR_PIXELFORMAT_24BIT_RGB,palEntries) )
 		assert(0);
 
 return Pal;
@@ -661,14 +661,14 @@ int distance,minDistance;
 
 /*}{*************************************************/
 
-int createOctTree(octNode * root,const jeBitmap_Info * Info,const void * Bits,jeBoolean doYUV)
+int createOctTree(octNode * root,const grBitmap_Info * Info,const void * Bits,grBoolean doYUV)
 {
 int nLeaves;
 int w,h,xtra,bpp,x,y;
-jePixelFormat Format;
-const jePixelFormat_Operations * ops;
+grPixelFormat Format;
+const grPixelFormat_Operations * ops;
 int R,G,B,A;
-jePixelFormat_Decomposer Decompose;
+grPixelFormat_Decomposer Decompose;
 
 	assert(Bits);
 
@@ -678,9 +678,9 @@ jePixelFormat_Decomposer Decompose;
 	w = Info->Width;
 	h = Info->Height;
 	xtra = Info->Stride - Info->Width;
-	bpp = jePixelFormat_BytesPerPel(Format);
+	bpp = grPixelFormat_BytesPerPel(Format);
 
-	ops = jePixelFormat_GetOperations(Format);
+	ops = grPixelFormat_GetOperations(Format);
 	assert(ops);
 	Decompose = ops->DecomposePixel;
 	assert(Decompose);
@@ -693,7 +693,7 @@ jePixelFormat_Decomposer Decompose;
 		{
 			default:
 			case 0:
-				return JE_FALSE;
+				return GR_FALSE;
 			case 1:
 			{
 			const uint8 *ptr;
@@ -738,7 +738,7 @@ jePixelFormat_Decomposer Decompose;
 
 				switch(Format)
 				{
-				case JE_PIXELFORMAT_24BIT_RGB :
+				case GR_PIXELFORMAT_24BIT_RGB :
 					for(y=h;y--;)
 					{
 						for(x=w;x--;)
@@ -750,7 +750,7 @@ jePixelFormat_Decomposer Decompose;
 						ptr += xtra;
 					}
 					break;
-				case JE_PIXELFORMAT_24BIT_BGR :
+				case GR_PIXELFORMAT_24BIT_BGR :
 					for(y=h;y--;)
 					{
 						for(x=w;x--;)
@@ -807,7 +807,7 @@ jePixelFormat_Decomposer Decompose;
 		{
 			default:
 			case 0:
-				return JE_FALSE;
+				return GR_FALSE;
 			case 1:
 			{
 			const uint8 *ptr;
@@ -850,7 +850,7 @@ jePixelFormat_Decomposer Decompose;
 
 				switch(Format)
 				{
-				case JE_PIXELFORMAT_24BIT_RGB :
+				case GR_PIXELFORMAT_24BIT_RGB :
 					for(y=h;y--;)
 					{
 						for(x=w;x--;)
@@ -863,7 +863,7 @@ jePixelFormat_Decomposer Decompose;
 						ptr += xtra;
 					}
 					break;
-				case JE_PIXELFORMAT_24BIT_BGR :
+				case GR_PIXELFORMAT_24BIT_BGR :
 					for(y=h;y--;)
 					{
 						for(x=w;x--;)

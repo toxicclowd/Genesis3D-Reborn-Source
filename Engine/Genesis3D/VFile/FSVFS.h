@@ -23,6 +23,6 @@
 
 #include "VFile._h"
 
-const	jeVFile_SystemAPIs * JETCC FSVFS_GetAPIs(void);
+const	grVFile_SystemAPIs * GRCC FSVFS_GetAPIs(void);
 
 #endif

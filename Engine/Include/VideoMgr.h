@@ -1,9 +1,9 @@
-//jeVidMgr - CyRiuS
+//grVidMgr - CyRiuS
 
 #ifndef VideoMgr_H
 #define VideoMgr_H
 
-#include "jet.h"
+#include "Genesis3D.h"
 #include <windows.h>
 #include <string.h>
 
@@ -17,28 +17,28 @@ extern "C" {
 	
 	
 
-typedef struct jeVideo_Def_
+typedef struct grVideo_Def_
 {
 	LPSTR szFileName;
 	// add other stuff here later
-} jeVideo_Def;
+} grVideo_Def;
 	
-typedef struct //the jeVidMgr holds info about the vids you wanna play. files[] allows easy access
+typedef struct //the grVidMgr holds info about the vids you wanna play. files[] allows easy access
 {			   //to all of your vids
 	int				numvids;
 	int				curvid;
-	jeVideo_Def		files[MAX_VIDS];
+	grVideo_Def		files[MAX_VIDS];
 	HWND			mwh;
 
-} jeVidMgr;
+} grVidMgr;
 
-JETAPI jeVidMgr * JETCC jeVideo_CreateManager(HWND mainwindowhandle);
-JETAPI jeBoolean JETCC jeVideo_DestroyManager(jeVidMgr **VideoMgr);
-JETAPI void JETCC jeVideo_Notify();
+GRAPI grVidMgr * GRCC grVideo_CreateManager(HWND mainwindowhandle);
+GRAPI grBoolean GRCC grVideo_DestroyManager(grVidMgr **VideoMgr);
+GRAPI void GRCC grVideo_Notify();
 
-JETAPI void JETCC jeVideo_Open(jeVidMgr *VidMgr, LPSTR szFile );
-JETAPI void JETCC jeVideo_Play (jeVidMgr *VidMgr, int vid);
-JETAPI jeBoolean JETCC jeVideo_IsPlaying();
+GRAPI void GRCC grVideo_Open(grVidMgr *VidMgr, LPSTR szFile );
+GRAPI void GRCC grVideo_Play (grVidMgr *VidMgr, int vid);
+GRAPI grBoolean GRCC grVideo_IsPlaying();
 
 #ifdef __cplusplus
 }

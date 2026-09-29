@@ -39,7 +39,7 @@ int linesSkipped=0,linesCoded=0;
 #define LOG(x)
 #endif
 
-jeBoolean coderFast3Init(coder *c);
+grBoolean coderFast3Init(coder *c);
 void coderFast3Free(coder *c);
 void coderFast3_flush(coder *c);
 void coderFast3EncodeBandBP(coderParams *p);
@@ -63,18 +63,18 @@ typedef struct
 	rung_t rungs[CONTEXTS];
 } bpInfo;
 
-jeBoolean coderFast3Init(coder *c)
+grBoolean coderFast3Init(coder *c)
 {
 bpInfo *d;
 
 	if ( !(d = (bpInfo *)new(bpInfo)) )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	c->data = d;
 
 	coderFast3_flush(c);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 void coderFast3Free(coder *c)

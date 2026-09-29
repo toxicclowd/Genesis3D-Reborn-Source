@@ -211,7 +211,7 @@ BOOL CAStudioApp::InitInstance()
 		}
 
 		// if no extension, then append .apj
-		if (FilePath_GetExt (LoadProjectName, Ext) == JE_FALSE)
+		if (FilePath_GetExt (LoadProjectName, Ext) == GR_FALSE)
 		{
 			FilePath_SetExt (LoadProjectName, ".apj", LoadProjectName);
 		}
@@ -257,7 +257,7 @@ BOOL CAStudioApp::InitInstance()
 		AProject_Destroy (&pProject);
 	}
 		
-	jeRam_ReportAllocations();
+	grRam_ReportAllocations();
 	// Since the dialog has been closed, return FALSE so that we exit the
 	//  application, rather than start the application's message pump.
 	return FALSE;

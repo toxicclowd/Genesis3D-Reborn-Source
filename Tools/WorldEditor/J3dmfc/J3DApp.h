@@ -26,12 +26,12 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "Jet.h"
+#include "Genesis3D.h"
 
 class CJ3DApp : public CWinApp  
 {
 public:
-	virtual BOOL GetDriverAndMode(jeEngine* pEngine, jeDriver **ppDriver, jeDriver_Mode **ppMode) = 0;
+	virtual BOOL GetDriverAndMode(grEngine* pEngine, grDriver **ppDriver, grDriver_Mode **ppMode) = 0;
 	virtual const char* GetDriverPath(void) = 0;
 	CJ3DApp();
 	virtual ~CJ3DApp();

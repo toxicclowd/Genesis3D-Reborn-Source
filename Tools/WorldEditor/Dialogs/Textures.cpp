@@ -399,37 +399,37 @@ void CTextures::UpdateNames()
 
 }// UpdateNames
 
-jeBoolean CTextures::UpdateNamesCB(Material_Struct *pMaterial, void *lParam)
+grBoolean CTextures::UpdateNamesCB(Material_Struct *pMaterial, void *lParam)
 {
 	NameInfo	*	pni = (NameInfo*)lParam ;
 	int				nIndex ;
 
 	nIndex = pni->pCB->AddString( Materials_GetName( pMaterial ) ) ;
 	if( nIndex == CB_ERR || nIndex == CB_ERRSPACE )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
 	pni->pCB->SetItemData( nIndex, (DWORD)pMaterial ) ;
 	if( pMaterial == pni->pCurrent )
 		pni->pCB->SetCurSel( nIndex ) ;
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 }//UpdateNamesCB
 
 //CYRIUS
-jeBoolean CTextures::UpdateNamesTR(Material_Struct *pShader, void *lParam)
+grBoolean CTextures::UpdateNamesTR(Material_Struct *pShader, void *lParam)
 {
 	NameInfo	*	pni = (NameInfo*)lParam ;
 	int				nIndex ;
 
 	nIndex = pni->pCB->AddString( Materials_GetName( pShader ) ) ;
 	if( nIndex == CB_ERR || nIndex == CB_ERRSPACE )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
 	pni->pCB->SetItemData( nIndex, (DWORD)pShader ) ;
 	if( pShader == pni->pCurrent )
 		pni->pCB->SetCurSel( nIndex ) ;
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 }//UpdateNamesTR
 
 //END
@@ -460,6 +460,6 @@ void CTextures::OnSelchangeCbName()
 BOOL CTextures::OnCommand(WPARAM wParam, LPARAM lParam) 
 {
 	if( wParam == 1 && lParam == 0 )
-		return(JE_TRUE );	
+		return(GR_TRUE );	
 	return CDialog::OnCommand(wParam, lParam);
 }

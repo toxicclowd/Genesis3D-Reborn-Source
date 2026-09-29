@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_BODY__H
-#define JE_BODY__H 
+#ifndef GR_BODY__H
+#define GR_BODY__H 
 
 
 #include "BaseType.h"
@@ -28,124 +28,124 @@
 #include "StrBlock.h"
 #include "Bitmap.h"
 #include "UVMap.h"
-#include "jeMaterial.h"
+#include "grMaterial.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define JE_BODY_INDEX_MAX (0xEFFF)
+#define GR_BODY_INDEX_MAX (0xEFFF)
 
-#define JE_BODY_REALLY_BIG_NUMBER (9e9f)		// bigger than any skin point
+#define GR_BODY_REALLY_BIG_NUMBER (9e9f)		// bigger than any skin point
 
-#define JE_BODY_HIGHEST_LOD_MASK	( 1 << JE_BODY_HIGHEST_LOD )
-#define JE_BODY_BBOX_LOD_MASK		( 1 << JE_BODY_NUMBER_OF_LOD ) // bounding box mask
+#define GR_BODY_HIGHEST_LOD_MASK	( 1 << GR_BODY_HIGHEST_LOD )
+#define GR_BODY_BBOX_LOD_MASK		( 1 << GR_BODY_NUMBER_OF_LOD ) // bounding box mask
 
 
-typedef int16 jeBody_Index;
+typedef int16 grBody_Index;
 
-typedef struct jeBody_BlendData
+typedef struct grBody_BlendData
 {
-	jeVec3d			XPoint;
-	jeVec3d			Normal;
-	jeFloat			weight;
-	jeBody_Index	boneIndex;
+	grVec3d			XPoint;
+	grVec3d			Normal;
+	grFloat			weight;
+	grBody_Index	boneIndex;
 
-}jeBody_BlendData;
+}grBody_BlendData;
 
-typedef struct jeBody_XSkinVertex
+typedef struct grBody_XSkinVertex
 {
-	jeVec3d			XPoint;
-	jeFloat			XU,XV;
+	grVec3d			XPoint;
+	grFloat			XU,XV;
 	int8			LevelOfDetailMask;
-	jeBody_Index	BoneIndex;
+	grBody_Index	BoneIndex;
 
 	int16			nBlends; // = 0 if vertex isn't blended
-	jeBody_Index	bdaOffset; // offset into body's blend data array
+	grBody_Index	bdaOffset; // offset into body's blend data array
 
-} jeBody_XSkinVertex;
+} grBody_XSkinVertex;
 
-typedef struct jeBody_Normal
+typedef struct grBody_Normal
 {
-	jeVec3d			Normal;
+	grVec3d			Normal;
 	int8			LevelOfDetailMask;
-	jeBody_Index	BoneIndex;
+	grBody_Index	BoneIndex;
 
 	int16			nBlends; // = 0 if vertex isn't blended
-	jeBody_Index	bdaOffset; // offset into body's blend data array
+	grBody_Index	bdaOffset; // offset into body's blend data array
 
-} jeBody_Normal;
+} grBody_Normal;
 
-typedef struct jeBody_Bone
+typedef struct grBody_Bone
 {
-	jeVec3d			BoundingBoxMin;
-	jeVec3d			BoundingBoxMax;
-	jeXForm3d       AttachmentMatrix;
-	jeBody_Index	ParentBoneIndex;
-} jeBody_Bone;
+	grVec3d			BoundingBoxMin;
+	grVec3d			BoundingBoxMax;
+	grXForm3d       AttachmentMatrix;
+	grBody_Index	ParentBoneIndex;
+} grBody_Bone;
 		
-typedef struct jeBody_Triangle
+typedef struct grBody_Triangle
 {
-	jeBody_Index	VtxIndex[3];
-	jeBody_Index	NormalIndex[3];
-	jeBody_Index	MaterialIndex;
-	//jeBody_Index    FaceNormal;
-} jeBody_Triangle;
+	grBody_Index	VtxIndex[3];
+	grBody_Index	NormalIndex[3];
+	grBody_Index	MaterialIndex;
+	//grBody_Index    FaceNormal;
+} grBody_Triangle;
 			
-typedef struct jeBody_TriangleList
+typedef struct grBody_TriangleList
 {
-	jeBody_Index	  FaceCount;
-	jeBody_Triangle  *FaceArray;		// Sorted by MaterialIndex
-} jeBody_TriangleList;
+	grBody_Index	  FaceCount;
+	grBody_Triangle  *FaceArray;		// Sorted by MaterialIndex
+} grBody_TriangleList;
 
-typedef struct jeBody_Material
+typedef struct grBody_Material
 {
-	jeMaterialSpec *MatSpec;
-	jeFloat Red,Green,Blue;
-	jeUVMapper Mapper;
-} jeBody_Material;
+	grMaterialSpec *MatSpec;
+	grFloat Red,Green,Blue;
+	grUVMapper Mapper;
+} grBody_Material;
 
 /*
-typedef struct jeBody_Weight
+typedef struct grBody_Weight
 {
-	jeBody_Index	BoneIndex;
-	jeFloat			Weight;
-} jeBody_Weight;
+	grBody_Index	BoneIndex;
+	grFloat			Weight;
+} grBody_Weight;
 */
 
-typedef struct jeBody
+typedef struct grBody
 {
-	jeVec3d				  BoundingBoxMin;
-	jeVec3d				  BoundingBoxMax;
+	grVec3d				  BoundingBoxMin;
+	grVec3d				  BoundingBoxMax;
 
-	jeBody_Index		  XSkinVertexCount;
-	jeBody_XSkinVertex	 *XSkinVertexArray;		// Sorted by BoneIndex
+	grBody_Index		  XSkinVertexCount;
+	grBody_XSkinVertex	 *XSkinVertexArray;		// Sorted by BoneIndex
 
-	jeBody_Index		  SkinNormalCount;
-	jeBody_Normal		 *SkinNormalArray;
+	grBody_Index		  SkinNormalCount;
+	grBody_Normal		 *SkinNormalArray;
 
 	int16				blendDataCount;
-	jeBody_BlendData	*blendDataArray;
+	grBody_BlendData	*blendDataArray;
 
-	jeBody_Index		  BoneCount;
-	jeBody_Bone			 *BoneArray;
-	jeStrBlock			 *BoneNames;
+	grBody_Index		  BoneCount;
+	grBody_Bone			 *BoneArray;
+	grStrBlock			 *BoneNames;
 
-	jeBody_Index		  MaterialCount;
-	jeBody_Material		 *MaterialArray;
-	jeStrBlock			 *MaterialNames;		
+	grBody_Index		  MaterialCount;
+	grBody_Material		 *MaterialArray;
+	grStrBlock			 *MaterialNames;		
 
 	int					  LevelsOfDetail;
-	jeBody_TriangleList	  SkinFaces[JE_BODY_NUMBER_OF_LOD];
+	grBody_TriangleList	  SkinFaces[GR_BODY_NUMBER_OF_LOD];
 
 	uint32 optFlags;
 	
-	jeBody				 *IsValid;
-} jeBody;
+	grBody				 *IsValid;
+} grBody;
 
 #if defined(DEBUG) || !defined(NDEBUG)
-JETAPI jeBoolean JETCC jeBody_SanityCheck(const jeBody *B);
+GRAPI grBoolean GRCC grBody_SanityCheck(const grBody *B);
 #endif
 
 

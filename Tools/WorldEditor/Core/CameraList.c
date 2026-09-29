@@ -44,7 +44,7 @@ static void CameraList_DestroyCameraCB( void *p1 )
 	Object_Free( (Object**)&pCamera ) ;
 }// CameraList_DestroyCameraCB
 
-static jeBoolean CameraList_FindCB( void *p1, void *lParam )
+static grBoolean CameraList_FindCB( void *p1, void *lParam )
 {
 	return ( p1 == lParam ) ;
 }// CameraList_FindCB
@@ -55,17 +55,17 @@ CameraList * CameraList_Create(  )
 {
 	CameraList *pCameraList;
 
-	pCameraList = JE_RAM_ALLOCATE_STRUCT( CameraList );
+	pCameraList = GR_RAM_ALLOCATE_STRUCT( CameraList );
 	if( pCameraList == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate CameraList" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate CameraList" );
 		return( NULL );
 	}
 	pCameraList->pList = List_Create( );
 	if( pCameraList->pList == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeRam_Free( pCameraList );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grRam_Free( pCameraList );
 		return( NULL );
 	}
 
@@ -76,7 +76,7 @@ CameraList * CameraList_Create(  )
 void CameraList_Destroy( CameraList **ppCameraList )
 {
 	List_Destroy( &(*ppCameraList)->pList, CameraList_DestroyCameraCB ) ;
-	jeRam_Free( (*ppCameraList) );
+	grRam_Free( (*ppCameraList) );
 }// CameraList_Destroy
 
 //
@@ -130,13 +130,13 @@ CameraIterator CameraList_Append( CameraList * pCameraList, Camera * pCamera )
 void CameraList_Remove( CameraList * pCameraList, Camera * pCamera )
 {
 	CameraIterator	pBI ;
-	jeBoolean		bFound ;
+	grBoolean		bFound ;
 	Camera	*		pFoundCamera ;
 
 	assert( pCameraList != NULL ) ;
 
 	bFound = List_Search( pCameraList->pList, CameraList_FindCB, pCamera, &pFoundCamera, &pBI ) ;
-	assert( JE_TRUE == bFound ) ;
+	assert( GR_TRUE == bFound ) ;
 
 	List_Remove( pCameraList->pList, pBI, NULL ) ;
 }// CameraList_Remove
@@ -159,30 +159,30 @@ int32 CameraList_EnumCameras( CameraList * pCameraList, void * pVoid, CameraList
 
 
 
-CameraList * CameraList_CreateFromFile( jeVFile * pF, jePtrMgr *pPtrMgr  )
+CameraList * CameraList_CreateFromFile( grVFile * pF, grPtrMgr *pPtrMgr  )
 {
 	CameraList	*	pCameraList = NULL ;
 	Camera		*	pCamera ;
 	int32			i ;
 	int32			nItems ;
 	int32			nVersion ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
-	if( !jeVFile_Read( pF, &nVersion, sizeof nVersion ) )
+	if( !grVFile_Read( pF, &nVersion, sizeof nVersion ) )
 		return NULL ;
 	if( nVersion != CAMERA_VERSION )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushList_CreateFromFile Version.\n", NULL);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushList_CreateFromFile Version.\n", NULL);
 		return NULL ;
 	}
 
-	if( !jeVFile_Read( pF, &nItems, sizeof nItems ) )
+	if( !grVFile_Read( pF, &nItems, sizeof nItems ) )
 		return NULL ;
 
 	pCameraList = CameraList_Create(  ) ;
 	if( pCameraList == NULL )
 	{
-		jeErrorLog_AddString(JE_ERR_INTERNAL_RESOURCE, "Cameraist_CreateFromFile\n", NULL);
+		grErrorLog_AddString(GR_ERR_INTERNAL_RESOURCE, "Cameraist_CreateFromFile\n", NULL);
 		return NULL ;
 	}
 
@@ -191,7 +191,7 @@ CameraList * CameraList_CreateFromFile( jeVFile * pF, jePtrMgr *pPtrMgr  )
 		pCamera = Camera_CreateFromFile( pF, pPtrMgr ) ;
 		if( pCamera == NULL )
 		{
-			jeErrorLog_AddString(JE_ERR_INTERNAL_RESOURCE, "Cameraist_CreateFromFile\n", NULL);
+			grErrorLog_AddString(GR_ERR_INTERNAL_RESOURCE, "Cameraist_CreateFromFile\n", NULL);
 			return NULL ;
 		}
 		if( CameraList_Append( pCameraList, pCamera ) == NULL )
@@ -207,7 +207,7 @@ CameraList * CameraList_CreateFromFile( jeVFile * pF, jePtrMgr *pPtrMgr  )
 
 
 
-jeBoolean CameraList_WriteToFile( CameraList * pList, jeVFile * pF, jePtrMgr *pPtrMgr )
+grBoolean CameraList_WriteToFile( CameraList * pList, grVFile * pF, grPtrMgr *pPtrMgr )
 
 {
 	int32	nVersion ;
@@ -216,20 +216,20 @@ jeBoolean CameraList_WriteToFile( CameraList * pList, jeVFile * pF, jePtrMgr *pP
 	ListIterator pli;
 
 	assert( pList != NULL ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	nVersion = CAMERA_VERSION ;
-	if( jeVFile_Write( pF, &nVersion, sizeof nVersion ) == JE_FALSE )
+	if( grVFile_Write( pF, &nVersion, sizeof nVersion ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 	
 	nItems = CameraList_GetNumItems( pList ) ;
-	if( jeVFile_Write( pF, &nItems, sizeof nItems ) == JE_FALSE )
+	if( grVFile_Write( pF, &nItems, sizeof nItems ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 	
 	pCamera = (Camera	*)List_GetFirst (pList->pList, &pli);
@@ -237,13 +237,13 @@ jeBoolean CameraList_WriteToFile( CameraList * pList, jeVFile * pF, jePtrMgr *pP
 	{
 		if( !Camera_WriteToFile( pCamera, pF, pPtrMgr ) )
 		{
-			jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Camera_WriteToFile.\n", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Camera_WriteToFile.\n", NULL);
+			return GR_FALSE;
 		}
 
 		pCamera = (Camera*)List_GetNext( pList->pList, &pli );
 	}
-	return  JE_TRUE;
+	return  GR_TRUE;
 
 }// CameraList_WriteToFile
 

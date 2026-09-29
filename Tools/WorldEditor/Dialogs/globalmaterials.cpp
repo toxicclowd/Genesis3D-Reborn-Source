@@ -136,20 +136,20 @@ BOOL CGlobalMaterials::OnInitDialog()
 	DestRect.top = 4;
 	DestRect.right = 172;
 	DestRect.bottom = 332;
-	this->MoveWindow( &DestRect, JE_TRUE );
+	this->MoveWindow( &DestRect, GR_TRUE );
 
 	// get our window rect
 	this->GetWindowRect( &SourceRect );
 
 	// create materials list dialog
-	if ( m_MaterialsList.Create( IDD_MATERIALLIST, this ) == JE_FALSE )
+	if ( m_MaterialsList.Create( IDD_MATERIALLIST, this ) == GR_FALSE )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// position materials list dialog
 	Rect_GetBasedOnAnother( &SourceRect, 8, 120, 8, 8, 20, 20, &DestRect );
-	m_MaterialsList.MoveWindow( &DestRect, JE_TRUE );
+	m_MaterialsList.MoveWindow( &DestRect, GR_TRUE );
 
 	// process materials
 	{
@@ -161,8 +161,8 @@ BOOL CGlobalMaterials::OnInitDialog()
 		RootMaterialDirectory = MaterialList2_Create( "TestDir" );
 		if ( RootMaterialDirectory == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Could not create material list" );
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Could not create material list" );
+			return GR_FALSE;
 		}
 
 		//undone

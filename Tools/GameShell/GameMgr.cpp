@@ -46,15 +46,15 @@ bool CGameMgr::Release()
 	return true;
 }
 
-jeBoolean CGameMgr::Initialize(HWND hWnd)
+grBoolean CGameMgr::Initialize(HWND hWnd)
 {
 	GLOG("CGameMgr - Initializing game manager...");
 
-	m_pEngine = jeEngine_Create(hWnd, "JetShell", ".");
+	m_pEngine = grEngine_Create(hWnd, "JetShell", ".");
 	if (!m_pEngine)
 	{
 		GLOG("CGameMgr - Could not create engine!!");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	m_hWnd = hWnd;
@@ -65,7 +65,7 @@ jeBoolean CGameMgr::Initialize(HWND hWnd)
 	CScriptMgr::GetPtr()->LoadScript(".\\Scripts\\JetMain.eos");
 	CScriptMgr::GetPtr()->Call("JetMain");
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void CGameMgr::Shutdown()
@@ -73,19 +73,19 @@ void CGameMgr::Shutdown()
 	GLOG("CGameMgr - Shutting down game manager...");
 
 	if (m_pWorld)
-		jeWorld_Destroy(&m_pWorld);
+		grWorld_Destroy(&m_pWorld);
 
 	if (m_pCamera)
-		jeCamera_Destroy(&m_pCamera);
+		grCamera_Destroy(&m_pCamera);
 
 	if (m_pResMgr)
-		jeResource_MgrDestroy(&m_pResMgr);
+		grResource_MgrDestroy(&m_pResMgr);
 
 	if (m_pPtrMgr)
-		jePtrMgr_Destroy(&m_pPtrMgr);
+		grPtrMgr_Destroy(&m_pPtrMgr);
 
 	if (m_pEngine)
-		jeEngine_Destroy(&m_pEngine);
+		grEngine_Destroy(&m_pEngine);
 
 	m_pEngine = NULL;
 }
@@ -96,11 +96,11 @@ void CGameMgr::SetDriver(const char *drivername)
 	strcpy(m_DriverName, drivername);
 }
 
-jeBoolean CGameMgr::SetDriverMode(int32 w, int32 h, int32 b)
+grBoolean CGameMgr::SetDriverMode(int32 w, int32 h, int32 b)
 {
-	jeDriver_System						*DrvSys = NULL;
-	jeDriver							*Driver = NULL;
-	jeDriver_Mode						*Mode = NULL;
+	grDriver_System						*DrvSys = NULL;
+	grDriver							*Driver = NULL;
+	grDriver_Mode						*Mode = NULL;
 	int32								width, height, bpp;
 
 	GLOG("CGameMgr - Preparing video mode...");
@@ -115,18 +115,18 @@ jeBoolean CGameMgr::SetDriverMode(int32 w, int32 h, int32 b)
 	if (b == 0)
 		b = -1;
 
-	DrvSys = jeEngine_GetDriverSystem(m_pEngine);
+	DrvSys = grEngine_GetDriverSystem(m_pEngine);
 	if (!DrvSys)
 	{
 		GLOG("CGameMgr - Could not get driver system!!");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	for (Driver = jeDriver_SystemGetNextDriver(DrvSys, NULL); Driver != NULL; Driver = jeDriver_SystemGetNextDriver(DrvSys, Driver))
+	for (Driver = grDriver_SystemGetNextDriver(DrvSys, NULL); Driver != NULL; Driver = grDriver_SystemGetNextDriver(DrvSys, Driver))
 	{
 		const char						*drvname = NULL;
 
-		jeDriver_GetName(Driver, &drvname);
+		grDriver_GetName(Driver, &drvname);
 		if (drvname && !strcmp(drvname, m_DriverName))
 			break;
 	}
@@ -135,12 +135,12 @@ jeBoolean CGameMgr::SetDriverMode(int32 w, int32 h, int32 b)
 	{
 		GLOG("Could not find requested driver!!");
 		DrvSys = NULL;
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	for (Mode = jeDriver_GetNextMode(Driver, NULL); Mode != NULL; Mode = jeDriver_GetNextMode(Driver, Mode))
+	for (Mode = grDriver_GetNextMode(Driver, NULL); Mode != NULL; Mode = grDriver_GetNextMode(Driver, Mode))
 	{
-		jeDriver_ModeGetAttributes(Mode, &width, &height, &bpp);
+		grDriver_ModeGetAttributes(Mode, &width, &height, &bpp);
 		if (width == w && height == h && bpp == b)
 			break;
 	}
@@ -150,65 +150,65 @@ jeBoolean CGameMgr::SetDriverMode(int32 w, int32 h, int32 b)
 		GLOG("Could not find a valid video mode!!");
 		Driver = NULL;
 		DrvSys = NULL;
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	if (!jeEngine_SetDriverAndMode(m_pEngine, m_hWnd, Driver, Mode))
+	if (!grEngine_SetDriverAndMode(m_pEngine, m_hWnd, Driver, Mode))
 	{
 		GLOG("Could not activate engine!!");
 		Mode = NULL;
 		Driver = NULL;
 		DrvSys = NULL;
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	jeEngine_RegisterObjects("Objects");
+	grEngine_RegisterObjects("Objects");
 
-	jeRect						r;
+	grRect						r;
 
 	r.Left = 0;
 	r.Top = 0;
 	r.Bottom = 800 - 1;
 	r.Right = 600 - 1;
 
-	m_pCamera = jeCamera_Create(2.0f, &r);
+	m_pCamera = grCamera_Create(2.0f, &r);
 
-	jeXForm3d_SetIdentity(&m_CameraXForm);
-	jeCamera_SetXForm(m_pCamera, &m_CameraXForm);
+	grXForm3d_SetIdentity(&m_CameraXForm);
+	grCamera_SetXForm(m_pCamera, &m_CameraXForm);
 
-	m_pPtrMgr = jePtrMgr_Create();
+	m_pPtrMgr = grPtrMgr_Create();
 	if (!m_pPtrMgr)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	m_pResMgr = jeResource_MgrCreateDefault(m_pEngine);
+	m_pResMgr = grResource_MgrCreateDefault(m_pEngine);
 	if (!m_pResMgr)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	m_LastTime = timeGetTime();
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean CGameMgr::LoadWorld(const char *filename)
+grBoolean CGameMgr::LoadWorld(const char *filename)
 {
-	jeVFile						*File = NULL;
+	grVFile						*File = NULL;
 
 	if (!m_pPtrMgr || !m_pResMgr)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	m_pWorld = jeWorld_CreateFromEditorFile(filename, m_pPtrMgr, m_pResMgr);
+	m_pWorld = grWorld_CreateFromEditorFile(filename, m_pPtrMgr, m_pResMgr);
 	if (!m_pWorld)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeWorld_SetEngine(m_pWorld, m_pEngine);
+	grWorld_SetEngine(m_pWorld, m_pEngine);
 
-	jeWorld_RebuildBSP(m_pWorld, BSP_OPTIONS_CSG_BRUSHES, Logic_Smart, 5);
-	jeWorld_RebuildLights(m_pWorld);
+	grWorld_RebuildBSP(m_pWorld, BSP_OPTIONS_CSG_BRUSHES, Logic_Smart, 5);
+	grWorld_RebuildLights(m_pWorld);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean CGameMgr::Frame()
+grBoolean CGameMgr::Frame()
 {
 	DWORD						currTime;
 	float						deltaTime;
@@ -218,34 +218,34 @@ jeBoolean CGameMgr::Frame()
 	currTime = timeGetTime();
 	deltaTime = ((float)(currTime - m_LastTime)) * 0.001f;
 
-	if (!jeEngine_BeginFrame(m_pEngine, m_pCamera, JE_TRUE))
-		return JE_FALSE;
+	if (!grEngine_BeginFrame(m_pEngine, m_pCamera, GR_TRUE))
+		return GR_FALSE;
 
 	if (m_pWorld)
 	{
-		jeWorld_Frame(m_pWorld, deltaTime);
-		jeWorld_Render(m_pWorld, m_pCamera, NULL);
+		grWorld_Frame(m_pWorld, deltaTime);
+		grWorld_Render(m_pWorld, m_pCamera, NULL);
 	}
 
-	if (!jeEngine_EndFrame(m_pEngine))
-		return JE_FALSE;
+	if (!grEngine_EndFrame(m_pEngine))
+		return GR_FALSE;
 
 	// Temporary end-to-end renderer verification; removed after the capture build.
-	static jeBoolean CapturedFrame = JE_FALSE;
+	static grBoolean CapturedFrame = GR_FALSE;
 	if (!CapturedFrame)
-		CapturedFrame = jeEngine_ScreenShot(m_pEngine, ".codex-gameshell-d3d12.bmp");
+		CapturedFrame = grEngine_ScreenShot(m_pEngine, ".codex-gameshell-d3d12.bmp");
 
 	m_LastTime = currTime;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void CGameMgr::EOSEnableFrameRateCounter()
 {
-	jeBoolean					enable;
+	grBoolean					enable;
 
-	enable = (jeBoolean)exe->pop()->geti(0);
-	jeEngine_EnableFrameRateCounter(m_pEngine, enable);
+	enable = (grBoolean)exe->pop()->geti(0);
+	grEngine_EnableFrameRateCounter(m_pEngine, enable);
 }
 
 void CGameMgr::EOSSetGamma()
@@ -253,7 +253,7 @@ void CGameMgr::EOSSetGamma()
 	float						gamma;
 
 	gamma = exe->pop()->getd(0);
-	jeEngine_SetGamma(m_pEngine, gamma);
+	grEngine_SetGamma(m_pEngine, gamma);
 }
 
 void CGameMgr::EOSSetDriver()

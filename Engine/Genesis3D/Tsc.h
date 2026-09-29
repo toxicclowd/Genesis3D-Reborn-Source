@@ -30,7 +30,7 @@ extern "C" {
 
 	routines to access the TSC
 
-	you must run jeCPU_GetInfo() to calibrary the Hz <-> Seconds converter
+	you must run grCPU_GetInfo() to calibrary the Hz <-> Seconds converter
 
 	note : showPop* functions use floats, but are MMX-safe
 

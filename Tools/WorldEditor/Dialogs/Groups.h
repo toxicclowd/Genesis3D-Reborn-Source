@@ -38,7 +38,7 @@ public:
 	CGroups(CWnd* pParent = NULL);   // standard constructor
 	~CGroups();
 	void SetCurrentDocument(CJweDoc *pDoc);
-	jeBoolean AddObject( Object* pObject );
+	grBoolean AddObject( Object* pObject );
 	void RenameObject( Object *pObject );
 	void AddSelection(CJweDoc *pDoc);
 	void RemoveDeleted();
@@ -92,20 +92,20 @@ private:
 	CImageList m_ImageList;
     long m_lHiddenItemCount;
 	
-	static jeBoolean AddSelectionCB(Object *pObject, void *lParam);
-	static jeBoolean GroupListCB( Group *pGroup, void *lParam);
-	static jeBoolean GroupComboCB( Group *pGroup, void *lParam);
-	static jeBoolean ObjectCB( Object *pObject, void *lParam);
-	static jeBoolean RemoveSelectionCB(Object *pObject, void *lParam);
-	static jeBoolean SelectCB(Object *pObject, void *lParam);
+	static grBoolean AddSelectionCB(Object *pObject, void *lParam);
+	static grBoolean GroupListCB( Group *pGroup, void *lParam);
+	static grBoolean GroupComboCB( Group *pGroup, void *lParam);
+	static grBoolean ObjectCB( Object *pObject, void *lParam);
+	static grBoolean RemoveSelectionCB(Object *pObject, void *lParam);
+	static grBoolean SelectCB(Object *pObject, void *lParam);
 	static HTREEITEM GetObjectItem( CTreeCtrl *pList, Object *pObject );
 
 	void   DeRefAllObjects();
 	void   ChangeGroups( HTREEITEM hItem );
-	void   SelectGroup( HTREEITEM hGroupItem, jeBoolean bSelect );
+	void   SelectGroup( HTREEITEM hGroupItem, grBoolean bSelect );
 
-	static jeBoolean GroupNameCB( Group *pGroup, void *lParam);
-	static jeBoolean AddObjectCB( Object *pBrush, void *lParam);
+	static grBoolean GroupNameCB( Group *pGroup, void *lParam);
+	static grBoolean AddObjectCB( Object *pBrush, void *lParam);
 public:
     afx_msg void OnWorldmodelInvertshow();
     afx_msg void OnWorldmodelShow();

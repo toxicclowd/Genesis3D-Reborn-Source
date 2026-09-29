@@ -33,8 +33,7 @@ extern "C" {
 //========================================================================================
 //	Typedefs/#defines
 //========================================================================================
-typedef struct jeGArray grGArray;
-typedef struct jeGArray jeGArray;
+typedef struct grGArray grGArray;
 typedef			uint16				grGArray_Index;
 									
 typedef			void				grGArray_Element;
@@ -82,33 +81,5 @@ const		grGArray_Element *grGArray_GetElementByIndex(const grGArray *Array, grGAr
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-typedef grGArray_Index jeGArray_Index;
-typedef grGArray_Element jeGArray_Element;
-typedef grGArray_RefType jeGArray_RefType;
-
-#define JE_GARRAY_MAX_ELEMENTS                   GR_GARRAY_MAX_ELEMENTS
-#define JE_GARRAY_MAX_ELEMENT_REFCOUNT           GR_GARRAY_MAX_ELEMENT_REFCOUNT
-#define JE_GARRAY_MAX_ELEMENT_SIZE               GR_GARRAY_MAX_ELEMENT_SIZE
-#define JE_GARRAY_NULL_INDEX                     GR_GARRAY_NULL_INDEX
-#define jeGArray_AddElement                      grGArray_AddElement
-#define jeGArray_Create                          grGArray_Create
-#define jeGArray_CreateFromFile                  grGArray_CreateFromFile
-#define jeGArray_CreateRef                       grGArray_CreateRef
-#define jeGArray_Destroy                         grGArray_Destroy
-#define jeGArray_GetElementByIndex               grGArray_GetElementByIndex
-#define jeGArray_GetElementRefCountByIndex       grGArray_GetElementRefCountByIndex
-#define jeGArray_GetElements                     grGArray_GetElements
-#define jeGArray_GetRefCounts                    grGArray_GetRefCounts
-#define jeGArray_GetSize                         grGArray_GetSize
-#define jeGArray_IOFunc                          grGArray_IOFunc
-#define jeGArray_IsValid                         grGArray_IsValid
-#define jeGArray_RefElement                      grGArray_RefElement
-#define jeGArray_RemoveElement                   grGArray_RemoveElement
-#define jeGArray_SetElementByIndex               grGArray_SetElementByIndex
-#define jeGArray_WriteToFile                     grGArray_WriteToFile
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

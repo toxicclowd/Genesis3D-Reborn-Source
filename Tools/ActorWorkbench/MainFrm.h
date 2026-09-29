@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "jet.h"
+#include "Genesis3D.h"
 #include "ToolBrowser.h"
 
 class CMainFrame : public CFrameWnd
@@ -49,7 +49,7 @@ protected:
 	virtual BOOL OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pContext);
 	virtual void OnSize(UINT nType, int cx, int cy);
 public:
-	jeBoolean LoadActor(const char * filename, const char *actorname);
+	grBoolean LoadActor(const char * filename, const char *actorname);
 	afx_msg void OnFileOpen();
 };
 

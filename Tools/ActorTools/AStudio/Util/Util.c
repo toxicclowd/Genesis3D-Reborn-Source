@@ -32,7 +32,7 @@ char *Util_Strdup (const char *s)
 
 	assert (s != NULL);
 
-	rslt = (char *)(jeRam_Allocate (strlen (s) + 1));
+	rslt = (char *)(grRam_Allocate (strlen (s) + 1));
 	if (rslt != NULL)
 	{
 		strcpy (rslt, s);
@@ -40,7 +40,7 @@ char *Util_Strdup (const char *s)
 	return rslt;
 }
 
-jeBoolean Util_SetString (char **ppString, const char *NewValue)
+grBoolean Util_SetString (char **ppString, const char *NewValue)
 {
 	char *pNewString;
 
@@ -53,20 +53,20 @@ jeBoolean Util_SetString (char **ppString, const char *NewValue)
 		pNewString = Util_Strdup (NewValue);
 		if (pNewString == NULL)
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	}
 	if (*ppString != NULL)
 	{
-		jeRam_Free (*ppString);
+		grRam_Free (*ppString);
 	}
 	*ppString = pNewString;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Util_IsValidInt
+grBoolean Util_IsValidInt
     (
 	  char const *Text,
 	  int *TheVal
@@ -102,15 +102,15 @@ jeBoolean Util_IsValidInt
 	if (*c == '\0')
 	{
 	    *TheVal = sign * val;
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	else
 	{
-	    return JE_FALSE;
+	    return GR_FALSE;
 	}
 }
 
-jeBoolean Util_IsValidFloat
+grBoolean Util_IsValidFloat
     (
 	  const char *Text,
 	  float *TheFloat
@@ -157,11 +157,11 @@ jeBoolean Util_IsValidFloat
 	if (*c == '\0')
 	{
 		*TheFloat = num;
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 	else
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 }
 
@@ -222,7 +222,7 @@ void Util_QuoteString (const char *s, char *d)
 
 
 
-jeBoolean Util_GetEndStringValue
+grBoolean Util_GetEndStringValue
     ( 
       const char *psz, 
       int32 *pVal, 
@@ -232,7 +232,7 @@ jeBoolean Util_GetEndStringValue
     int i;
     int Num;
     int Power;
-    jeBoolean bValueFound = JE_FALSE ;
+    grBoolean bValueFound = GR_FALSE ;
 
     assert (psz != NULL);
     assert (pVal != NULL);
@@ -249,7 +249,7 @@ jeBoolean Util_GetEndStringValue
 		Num += ((c - '0') * Power);
 		Power *= 10;
 		--i;
-		bValueFound = JE_TRUE ;
+		bValueFound = GR_TRUE ;
     }
     
     if( bValueFound )
@@ -261,7 +261,7 @@ jeBoolean Util_GetEndStringValue
     return bValueFound ;
 }
 
-jeBoolean Util_FileExists (const char *Filename)
+grBoolean Util_FileExists (const char *Filename)
 {
-	return (_access (Filename, 0) == 0) ? JE_TRUE : JE_FALSE;
+	return (_access (Filename, 0) == 0) ? GR_TRUE : GR_FALSE;
 }

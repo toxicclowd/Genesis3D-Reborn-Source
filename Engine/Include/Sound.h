@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef	JE_SOUND_H
-#define	JE_SOUND_H
+#ifndef	GR_SOUND_H
+#define	GR_SOUND_H
 
 #include "Sound.h"
 #include "VFile.h"
@@ -30,77 +30,61 @@ extern "C" {
 #endif
 
 
-// JET_PUBLIC_APIS
+// GR_PUBLIC_APIS
 
-typedef struct jeSound_System	jeSound_System;
-typedef struct jeSound_Def		jeSound_Def;
-typedef struct jeSound			jeSound;
+typedef struct grSound_System	grSound_System;
+typedef struct grSound_Def		grSound_Def;
+typedef struct grSound			grSound;
 
-typedef struct jeSound_System	grSound_System;
-typedef struct jeSound_Def		grSound_Def;
-typedef struct jeSound			grSound;
 
 
 #ifdef _INC_WINDOWS
 	// Windows.h must be previously included for this api to be exposed.
-JETAPI	jeSound_System * JETCC jeSound_CreateSoundSystem(HWND hWnd);
-JETAPI	jeBoolean JETCC jeSound_SetHwnd(HWND hWnd);
+GRAPI	grSound_System * GRCC grSound_CreateSoundSystem(HWND hWnd);
+GRAPI	grBoolean GRCC grSound_SetHwnd(HWND hWnd);
 
 #endif
 
-JETAPI	void			JETCC jeSound_DestroySoundSystem(jeSound_System *Sound);
+GRAPI	void			GRCC grSound_DestroySoundSystem(grSound_System *Sound);
 
 
-JETAPI	jeSound_Def	   * JETCC jeSound_LoadSoundDef(jeSound_System *SoundS, jeVFile *File);
-JETAPI	jeBoolean		JETCC jeSound_FreeSoundDef(jeSound_System *SoundS, jeSound_Def *SoundDef);
+GRAPI	grSound_Def	   * GRCC grSound_LoadSoundDef(grSound_System *SoundS, grVFile *File);
+GRAPI	grBoolean		GRCC grSound_FreeSoundDef(grSound_System *SoundS, grSound_Def *SoundDef);
 
-JETAPI	jeSound		   * JETCC jeSound_PlaySoundDef(jeSound_System *SoundS, 
-									jeSound_Def *SoundDef, 
-									jeFloat Volume, 
-									jeFloat Pan, 
-									jeFloat Frequency, 
-									jeBoolean Loop);
-JETAPI	jeBoolean		JETCC jeSound_StopSound(jeSound_System *SoundS, jeSound *Sound);
-JETAPI	jeBoolean		JETCC jeSound_ModifySound(jeSound_System *SoundS, 
-									jeSound *Sound, 
-									jeFloat Volume, 
-									jeFloat Pan, 
-									jeFloat Frequency);
-JETAPI	jeBoolean		JETCC jeSound_SoundIsPlaying(jeSound_System *SoundS, jeSound *Sound);
-JETAPI	jeBoolean		JETCC jeSound_SetMasterVolume( jeSound_System *SoundS, jeFloat Volume );
+GRAPI	grSound		   * GRCC grSound_PlaySoundDef(grSound_System *SoundS, 
+									grSound_Def *SoundDef, 
+									grFloat Volume, 
+									grFloat Pan, 
+									grFloat Frequency, 
+									grBoolean Loop);
+GRAPI	grBoolean		GRCC grSound_StopSound(grSound_System *SoundS, grSound *Sound);
+GRAPI	grBoolean		GRCC grSound_ModifySound(grSound_System *SoundS, 
+									grSound *Sound, 
+									grFloat Volume, 
+									grFloat Pan, 
+									grFloat Frequency);
+GRAPI	grBoolean		GRCC grSound_SoundIsPlaying(grSound_System *SoundS, grSound *Sound);
+GRAPI	grBoolean		GRCC grSound_SetMasterVolume( grSound_System *SoundS, grFloat Volume );
 
 //	added by tom morris May 2005
-JETAPI	int				JETCC jeSound_GetStatus(jeSound_System *pSoundSys, jeSound *pSound);
+GRAPI	int				GRCC grSound_GetStatus(grSound_System *pSoundSys, grSound *pSound);
 //	end add
 
 //CyRiuS Begin
 
-JETAPI int JETCC jeMp3_LoadSound(jeSound_System *SoundS, char * filename, int ref); //load an MP3 into mp3mgr
-JETAPI	int JETCC jeMp3_PlaySound(jeSound_System *SoundS, int song_number, long Volume, jeBoolean Loop);
+GRAPI int GRCC grMp3_LoadSound(grSound_System *SoundS, char * filename, int ref); //load an MP3 into mp3mgr
+GRAPI	int GRCC grMp3_PlaySound(grSound_System *SoundS, int song_number, long Volume, grBoolean Loop);
 
 //CyRiuS End
 
 
-// JET_PRIVATE_APIS
+// GR_PRIVATE_APIS
 
 #ifdef	__cplusplus
 }
 #endif
 
 // Genesis3D: Reborn Aliases
-#define grSound_CreateSoundSystem     jeSound_CreateSoundSystem
-#define grSound_SetHwnd               jeSound_SetHwnd
-#define grSound_DestroySoundSystem    jeSound_DestroySoundSystem
-#define grSound_LoadSoundDef          jeSound_LoadSoundDef
-#define grSound_FreeSoundDef          jeSound_FreeSoundDef
-#define grSound_PlaySoundDef          jeSound_PlaySoundDef
-#define grSound_StopSound             jeSound_StopSound
-#define grSound_ModifySound           jeSound_ModifySound
-#define grSound_SoundIsPlaying        jeSound_SoundIsPlaying
-#define grSound_SetMasterVolume       jeSound_SetMasterVolume
-#define grSound_GetStatus             jeSound_GetStatus
-#define grMp3_LoadSound               jeMp3_LoadSound
-#define grMp3_PlaySound               jeMp3_PlaySound
 
 #endif
 

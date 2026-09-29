@@ -148,21 +148,21 @@ void CExtFileDialog::OnFileNameChange()
 {
 	if (!m_preview) return;
 
-	jePtrMgr	*	pPtrMgr = nullptr;
-	jeVFile		*	pF		= nullptr ;	
-	jeVFile		*	pFS		= nullptr ;
-	jeBoolean		ret;
+	grPtrMgr	*	pPtrMgr = nullptr;
+	grVFile		*	pF		= nullptr ;	
+	grVFile		*	pFS		= nullptr ;
+	grBoolean		ret;
 
 	long			Length{};
 	
 
-	pFS = jeVFile_OpenNewSystem
+	pFS = grVFile_OpenNewSystem
 	(
 		NULL, 
-		JE_VFILE_TYPE_VIRTUAL,
+		GR_VFILE_TYPE_VIRTUAL,
 		GetPathName(),
 		NULL,
-		JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY
 	);
 
 	if( pFS == NULL )
@@ -179,16 +179,16 @@ void CExtFileDialog::OnFileNameChange()
 
 	CProperties	PropsDialog;				
 
-	pF = jeVFile_Open( pFS, "LevelProperties", JE_VFILE_OPEN_READONLY);
+	pF = grVFile_Open( pFS, "LevelProperties", GR_VFILE_OPEN_READONLY);
 	if( pF != NULL )
 	{
-		if( PropsDialog.Properties_ReadFromFile( pF, pPtrMgr ) == JE_FALSE )
-		{	jeVFile_Close( pFS ) ;
+		if( PropsDialog.Properties_ReadFromFile( pF, pPtrMgr ) == GR_FALSE )
+		{	grVFile_Close( pFS ) ;
 			return;
 		}
 
-		if( jeVFile_Close( pF ) == JE_FALSE )
-		{	jeVFile_Close( pFS ) ;
+		if( grVFile_Close( pF ) == GR_FALSE )
+		{	grVFile_Close( pFS ) ;
 			return;
 		}
 	}
@@ -199,25 +199,25 @@ void CExtFileDialog::OnFileNameChange()
 		  PreviewData  = nullptr;
 		}
 
-	pF = jeVFile_Open( pFS, "LevelThumbnail", JE_VFILE_OPEN_READONLY);
+	pF = grVFile_Open( pFS, "LevelThumbnail", GR_VFILE_OPEN_READONLY);
 	if( pF != nullptr )
 	{	
-		ret = jeVFile_Size(pF,&Length);
+		ret = grVFile_Size(pF,&Length);
 
-		if (ret==JE_TRUE)
+		if (ret==GR_TRUE)
 		{
 			PreviewData = new char [Length];
-			ret = jeVFile_Read(pF,PreviewData,Length);
+			ret = grVFile_Read(pF,PreviewData,Length);
 			
-			if (ret==JE_TRUE)
+			if (ret==GR_TRUE)
 			{
 				lpbiPreview = (LPBITMAPINFOHEADER)(PreviewData+sizeof(BITMAPFILEHEADER));
 				m_stRect.SetBitmap (lpbiPreview);
 			}
 		}
 
-		if( jeVFile_Close( pF ) == JE_FALSE )
-		{	jeVFile_Close( pFS ) ;
+		if( grVFile_Close( pF ) == GR_FALSE )
+		{	grVFile_Close( pFS ) ;
 			return;
 		}
 
@@ -228,7 +228,7 @@ void CExtFileDialog::OnFileNameChange()
 		m_stRect.SetBitmap(NULL);
 	}
 
-	jeVFile_Close( pFS ) ;
+	grVFile_Close( pFS ) ;
 	
 	//	by trilobite	Jan. 2011 - custom template and controls not recognized since Vista
 	if (GetDlgItem( IDC_EXTFILEDIALOG_TITLE ))

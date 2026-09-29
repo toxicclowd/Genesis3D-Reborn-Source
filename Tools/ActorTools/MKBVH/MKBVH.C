@@ -56,7 +56,7 @@ const MkBVH_Options DefaultOptions =
 };
 
 // Thanks to Taylor Wilson for this bit of knowledge.  BVH requires the Y axis be up.
-static void convertVectorYUp( jeVec3d *v )
+static void convertVectorYUp( grVec3d *v )
 {
    // Converts the given vector in place from z-up to y-up
 
@@ -104,27 +104,27 @@ static int FPutTabs(FILE* fp, int Count)
 	return(i);
 }
 
-static void GetConcatenatedMatrix(const jeBody* pBody, int Index, jeXForm3d* pMatrix)
+static void GetConcatenatedMatrix(const grBody* pBody, int Index, grXForm3d* pMatrix)
 {
 	int ParentIndex;
 	const char* pName;
-	jeXForm3d BoneMatrix;
+	grXForm3d BoneMatrix;
 
 	assert(pBody != NULL);
-	assert(jeBody_IsValid(pBody) != JE_FALSE);
+	assert(grBody_IsValid(pBody) != GR_FALSE);
 	assert(pMatrix != NULL);
 
-	jeBody_GetBone(pBody, Index, &pName, &BoneMatrix, &ParentIndex);
+	grBody_GetBone(pBody, Index, &pName, &BoneMatrix, &ParentIndex);
 
-	if(ParentIndex != JE_BODY_NO_PARENT_BONE)
+	if(ParentIndex != GR_BODY_NO_PARENT_BONE)
 	{
 		GetConcatenatedMatrix(pBody, ParentIndex, pMatrix);
 	}
 
-	jeXForm3d_Multiply(pMatrix, &BoneMatrix, pMatrix);
+	grXForm3d_Multiply(pMatrix, &BoneMatrix, pMatrix);
 }
 
-static MK_Boolean WriteBVHEndSite(FILE* fp, int Depth, jeVec3d* offset)
+static MK_Boolean WriteBVHEndSite(FILE* fp, int Depth, grVec3d* offset)
 {
 	int D;
 
@@ -174,15 +174,15 @@ static MK_Boolean WriteBVHEndSite(FILE* fp, int Depth, jeVec3d* offset)
 	return(MK_TRUE);
 }
 
-static MK_Boolean WriteBVHNodeHierarchy(FILE* fp, TopDownBody* pTDNode, int Depth, jeBody* pBody, jeMotion* pMotion)
+static MK_Boolean WriteBVHNodeHierarchy(FILE* fp, TopDownBody* pTDNode, int Depth, grBody* pBody, grMotion* pMotion)
 {
 	int i;
 	int RChanCount, TChanCount;
 	const char* pName;
-	jeXForm3d Matrix;
+	grXForm3d Matrix;
 	int ParentIndex;
-	jePath* pPath;
-	jeVec3d v;
+	grPath* pPath;
+	grVec3d v;
 #define LINE_LENGTH 1024
 	char line[LINE_LENGTH];
 	int D;
@@ -190,22 +190,22 @@ static MK_Boolean WriteBVHNodeHierarchy(FILE* fp, TopDownBody* pTDNode, int Dept
 	assert(fp != NULL);
 	assert(pTDNode != NULL);
 	assert(pBody != NULL);
-	assert(jeBody_IsValid(pBody) != JE_FALSE);
+	assert(grBody_IsValid(pBody) != GR_FALSE);
 	assert(pMotion != NULL);
 	assert(Depth >= 0);
 
 	D = Depth;
 
-	jeBody_GetBone(pBody, pTDNode->BoneIndex, &pName, &Matrix, &ParentIndex);
+	grBody_GetBone(pBody, pTDNode->BoneIndex, &pName, &Matrix, &ParentIndex);
 
 	// Check motion for any channels and which types
 	RChanCount = 0;
 	TChanCount = 0;
-	pPath = jeMotion_GetPathNamed(pMotion, pName);
+	pPath = grMotion_GetPathNamed(pMotion, pName);
 	if(pPath != NULL)
 	{
-		RChanCount = jePath_GetKeyframeCount(pPath, JE_PATH_ROTATION_CHANNEL);
-		TChanCount = jePath_GetKeyframeCount(pPath, JE_PATH_TRANSLATION_CHANNEL);
+		RChanCount = grPath_GetKeyframeCount(pPath, GR_PATH_ROTATION_CHANNEL);
+		TChanCount = grPath_GetKeyframeCount(pPath, GR_PATH_TRANSLATION_CHANNEL);
 	}
 
 	// "Root name" or "JOINT name"
@@ -252,10 +252,10 @@ static MK_Boolean WriteBVHNodeHierarchy(FILE* fp, TopDownBody* pTDNode, int Dept
 	// Need world-space translation from parent
 	v = Matrix.Translation;
 #if 0 // gather all parents' attachments
-	jeXForm3d_SetIdentity(&Matrix);
+	grXForm3d_SetIdentity(&Matrix);
 	GetConcatenatedMatrix(pBody, pTDNode->BoneIndex, &Matrix);
-	jeVec3d_Clear(&Matrix.Translation);
-	jeXForm3d_Transform(&Matrix, &v, &v);
+	grVec3d_Clear(&Matrix.Translation);
+	grXForm3d_Transform(&Matrix, &v, &v);
 #else
 #endif
 
@@ -286,7 +286,7 @@ static MK_Boolean WriteBVHNodeHierarchy(FILE* fp, TopDownBody* pTDNode, int Dept
 
 		if( (TChanCount > 0) 
 #ifdef ROOT_XLATE_ONLY
-			&& (ParentIndex == JE_BODY_NO_PARENT_BONE)
+			&& (ParentIndex == GR_BODY_NO_PARENT_BONE)
 #endif
 			)
 		{
@@ -335,12 +335,12 @@ static MK_Boolean WriteBVHNodeHierarchy(FILE* fp, TopDownBody* pTDNode, int Dept
 	return(MK_TRUE);
 }
 
-static MK_Boolean WriteBVHHierarchy(FILE* fp, TopDownBody* pTDBody, jeBody* pBody, jeMotion* pMotion)
+static MK_Boolean WriteBVHHierarchy(FILE* fp, TopDownBody* pTDBody, grBody* pBody, grMotion* pMotion)
 {
 	assert(fp != NULL);
 	assert(pTDBody != NULL);
 	assert(pBody != NULL);
-	assert(jeBody_IsValid(pBody) != JE_FALSE);
+	assert(grBody_IsValid(pBody) != GR_FALSE);
 	assert(pMotion != NULL);
 
 	if(fputs("HIERARCHY\n", fp) < 0)
@@ -350,48 +350,48 @@ static MK_Boolean WriteBVHHierarchy(FILE* fp, TopDownBody* pTDBody, jeBody* pBod
 		return(MK_FALSE);
 }
 
-static MK_Boolean WriteBVHNodeMotion(FILE* fp, jeFloat KeyTime, TopDownBody* pTDNode, jeBody* pBody, jeMotion* pMotion)
+static MK_Boolean WriteBVHNodeMotion(FILE* fp, grFloat KeyTime, TopDownBody* pTDNode, grBody* pBody, grMotion* pMotion)
 {
 	int i;
 	int RChanCount, TChanCount;
 	const char* pName;
-	jeXForm3d Matrix;
+	grXForm3d Matrix;
 	int ParentIndex;
-	jePath* pPath;
-	jeQuaternion q, qAttach;
-	jeVec3d v, r;
+	grPath* pPath;
+	grQuaternion q, qAttach;
+	grVec3d v, r;
 
 	assert(fp != NULL);
 	assert(pTDNode != NULL);
 	assert(pBody != NULL);
-	assert(jeBody_IsValid(pBody) != JE_FALSE);
+	assert(grBody_IsValid(pBody) != GR_FALSE);
 	assert(pMotion != NULL);
 
-	jeBody_GetBone(pBody, pTDNode->BoneIndex, &pName, &Matrix, &ParentIndex);
+	grBody_GetBone(pBody, pTDNode->BoneIndex, &pName, &Matrix, &ParentIndex);
 
-	jeQuaternion_FromMatrix(&Matrix, &qAttach);
+	grQuaternion_FromMatrix(&Matrix, &qAttach);
 
 	// Check motion for any channels and which types
 	RChanCount = 0;
 	TChanCount = 0;
-	pPath = jeMotion_GetPathNamed(pMotion, pName);
+	pPath = grMotion_GetPathNamed(pMotion, pName);
 	if(pPath != NULL)
 	{
-		RChanCount = jePath_GetKeyframeCount(pPath, JE_PATH_ROTATION_CHANNEL);
-		TChanCount = jePath_GetKeyframeCount(pPath, JE_PATH_TRANSLATION_CHANNEL);
+		RChanCount = grPath_GetKeyframeCount(pPath, GR_PATH_ROTATION_CHANNEL);
+		TChanCount = grPath_GetKeyframeCount(pPath, GR_PATH_TRANSLATION_CHANNEL);
 
 		// Looks like End Sites do not get motions
-		jePath_SampleChannels(pPath, KeyTime, &q, &v);
+		grPath_SampleChannels(pPath, KeyTime, &q, &v);
 	}
 
 	if( (TChanCount > 0) 
 #ifdef ROOT_XLATE_ONLY
-		&& (ParentIndex == JE_BODY_NO_PARENT_BONE)
+		&& (ParentIndex == GR_BODY_NO_PARENT_BONE)
 #endif
 		)
 	{
 		// motion keys must include the attachment
-		jeVec3d_Add(&v, &Matrix.Translation, &v);
+		grVec3d_Add(&v, &Matrix.Translation, &v);
 
 		convertVectorYUp( &v );
 
@@ -403,11 +403,11 @@ static MK_Boolean WriteBVHNodeMotion(FILE* fp, jeFloat KeyTime, TopDownBody* pTD
 	if(RChanCount > 0)
 	{
 		// motion keys must include the attachment
-		jeQuaternion_Multiply(&q, &qAttach, &q);
+		grQuaternion_Multiply(&q, &qAttach, &q);
 
-		jeQuaternion_ToMatrix(&q, &Matrix);
-		jeXForm3d_GetEulerAngles(&Matrix, &r);
-		jeVec3d_Scale(&r, (180.0f / QUATERNION_PI), &r);
+		grQuaternion_ToMatrix(&q, &Matrix);
+		grXForm3d_GetEulerAngles(&Matrix, &r);
+		grVec3d_Scale(&r, (180.0f / QUATERNION_PI), &r);
 
 		// Convert to a y-up rotation vector.
 		convertVectorYUp( &r );
@@ -428,23 +428,23 @@ static MK_Boolean WriteBVHNodeMotion(FILE* fp, jeFloat KeyTime, TopDownBody* pTD
 	return(MK_TRUE);
 }
 
-static MK_Boolean WriteBVHMotion(FILE* fp, float FramesPerSecond, TopDownBody* pTDBody, jeBody* pBody, jeMotion* pMotion)
+static MK_Boolean WriteBVHMotion(FILE* fp, float FramesPerSecond, TopDownBody* pTDBody, grBody* pBody, grMotion* pMotion)
 {
 	int i;
-	jeFloat StartKeyTime, EndKeyTime;
-	jeFloat KeyTime;
+	grFloat StartKeyTime, EndKeyTime;
+	grFloat KeyTime;
 	float SecondsPerFrame;
 
 	assert(FramesPerSecond > 0.00001);
 	assert(fp != NULL);
 	assert(pTDBody != NULL);
 	assert(pBody != NULL);
-	assert(jeBody_IsValid(pBody) != JE_FALSE);
+	assert(grBody_IsValid(pBody) != GR_FALSE);
 	assert(pMotion != NULL);
 
 	SecondsPerFrame = 1.0f / FramesPerSecond;
 
-	if(jeMotion_GetTimeExtents(pMotion, &StartKeyTime, &EndKeyTime) == JE_FALSE)
+	if(grMotion_GetTimeExtents(pMotion, &StartKeyTime, &EndKeyTime) == GR_FALSE)
 		return(MK_FALSE);
 
 	// Give a little threshold for reaching the end
@@ -487,10 +487,10 @@ static MK_Boolean WriteBVHMotion(FILE* fp, float FramesPerSecond, TopDownBody* p
 
 ReturnCode MkBVH_DoMake(MkBVH_Options* options,MkUtil_Printf Printf)
 {
-	jeBody* pBody = NULL;
-	jeMotion* pMotion = NULL;
+	grBody* pBody = NULL;
+	grMotion* pMotion = NULL;
 	FILE* fp=NULL;
-	jeVFile *VF=NULL;
+	grVFile *VF=NULL;
 	ReturnCode retValue = RETURN_SUCCESS;
 	TopDownBody* pTDBody = NULL;
 
@@ -517,7 +517,7 @@ ReturnCode MkBVH_DoMake(MkBVH_Options* options,MkUtil_Printf Printf)
 	}
 
 	// Read the body file
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->BodyFile,NULL,JE_VFILE_OPEN_READONLY);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->BodyFile,NULL,GR_VFILE_OPEN_READONLY);
 	//fp = fopen(options->BodyFile, "rt");
 	if(VF == NULL)
 	{
@@ -527,8 +527,8 @@ ReturnCode MkBVH_DoMake(MkBVH_Options* options,MkUtil_Printf Printf)
 	}
 	else
 	{
-		pBody = jeBody_CreateFromFile(VF);
-		jeVFile_Close(VF);
+		pBody = grBody_CreateFromFile(VF);
+		grVFile_Close(VF);
 		VF = NULL;
 		if(pBody == NULL)
 		{
@@ -539,7 +539,7 @@ ReturnCode MkBVH_DoMake(MkBVH_Options* options,MkUtil_Printf Printf)
 	}
 
 	// Read the motion file
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->MotionFile,NULL,JE_VFILE_OPEN_READONLY);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->MotionFile,NULL,GR_VFILE_OPEN_READONLY);
 	//fp = fopen(options->MotionFile, "rt");
 	if(VF == NULL)
 	{
@@ -549,8 +549,8 @@ ReturnCode MkBVH_DoMake(MkBVH_Options* options,MkUtil_Printf Printf)
 	}
 	else
 	{
-		pMotion = jeMotion_CreateFromFile(VF);
-		jeVFile_Close(VF);
+		pMotion = grMotion_CreateFromFile(VF);
+		grVFile_Close(VF);
 		VF = NULL;
 		if(pMotion == NULL)
 		{
@@ -615,13 +615,13 @@ DOMAKE_CLEAN:
 	if(fp != NULL)
 		fclose(fp);
 	if(VF != NULL)
-		jeVFile_Close(VF);
+		grVFile_Close(VF);
 	if(pTDBody != NULL)
 		TopDownBody_Destroy(&pTDBody);
 	if(pMotion != NULL)
-		jeMotion_Destroy(&pMotion);
+		grMotion_Destroy(&pMotion);
 	if(pBody != NULL)
-		jeBody_Destroy(&pBody);
+		grBody_Destroy(&pBody);
 
 	if(retValue == RETURN_SUCCESS)
 	{
@@ -650,7 +650,7 @@ MkBVH_Options* MkBVH_OptionsCreate()
 {
 	MkBVH_Options* pOptions;
 
-	pOptions = JE_RAM_ALLOCATE_STRUCT(MkBVH_Options);
+	pOptions = GR_RAM_ALLOCATE_STRUCT(MkBVH_Options);
 	if(pOptions != NULL)
 	{
 		*pOptions = DefaultOptions;
@@ -668,7 +668,7 @@ void MkBVH_OptionsDestroy(MkBVH_Options** ppOptions)
 
 	p = *ppOptions;
 
-	jeRam_Free(*ppOptions);
+	grRam_Free(*ppOptions);
 
 	*ppOptions = NULL;
 }

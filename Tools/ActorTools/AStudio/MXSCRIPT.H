@@ -29,17 +29,17 @@ extern "C" {
 
 typedef struct MXScript MXScript;
 
-jeBoolean MXScript_ArePluginsInstalled( const char *MaxExeName, MkUtil_Printf Printf );
+grBoolean MXScript_ArePluginsInstalled( const char *MaxExeName, MkUtil_Printf Printf );
 
 MXScript *MXScript_StartScript(const char *TempDir, MkUtil_Printf Printf);
 
-jeBoolean MXScript_AddExport(MXScript *Script,const char *LoadFilename, 
+grBoolean MXScript_AddExport(MXScript *Script,const char *LoadFilename, 
 								const char *ExportFilename,MkUtil_Printf Printf);
 
-jeBoolean MXScript_EndScript(MXScript *Script,MkUtil_Printf Printf);
+grBoolean MXScript_EndScript(MXScript *Script,MkUtil_Printf Printf);
 
 void MXScript_Destroy(MXScript *Script);
-jeBoolean MXScript_RunScript(MXScript *Script, const char *MaxExeName, MkUtil_Printf Printf);
+grBoolean MXScript_RunScript(MXScript *Script, const char *MaxExeName, MkUtil_Printf Printf);
 
 
 #ifdef __cplusplus

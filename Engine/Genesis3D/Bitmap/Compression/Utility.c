@@ -55,11 +55,11 @@ void __fastcall copy32_x86(char *to,const char *from);
 void copy32_8_c(char * to,const char **froms);
 void copy32_8_katmai(char *to, const char **froms);
 
-static jeBoolean IsSetup = JE_FALSE;
+static grBoolean IsSetup = GR_FALSE;
 
 void UnSetupUtility(void)
 {
-	IsSetup = JE_FALSE;
+	IsSetup = GR_FALSE;
 	cachetouch_r	=NULL;
 	cachetouch_w	=NULL;
 	fastmemclear32s =NULL;
@@ -72,13 +72,13 @@ void SetupUtility(void)
 {
 	if ( IsSetup )
 		return;
-	IsSetup = JE_TRUE;
+	IsSetup = GR_TRUE;
 
-	jeCPU_GetInfo();
+	grCPU_GetInfo();
 
 	SetupYUV();
 
-	if ( jeCPU_Features & JE_CPU_HAS_KATMAI )
+	if ( grCPU_Features & GR_CPU_HAS_KATMAI )
 	{
 		cachetouch_r = cachetouch_katmai;
 		cachetouch_w = cachetouch_katmai;
@@ -87,7 +87,7 @@ void SetupUtility(void)
 		copy32 = copy32_katmai;
 		copy32_8 = copy32_8_katmai;
 	}
-	else if ( jeCPU_Features & JE_CPU_HAS_3DNOW )
+	else if ( grCPU_Features & GR_CPU_HAS_3DNOW )
 	{
 		cachetouch_r = cachetouch_r_3dnow;
 		cachetouch_w = cachetouch_w_3dnow;
@@ -112,7 +112,7 @@ void SetupUtility(void)
 		cachetouch_w = cachetouch_nada;
 
 	#if 0 //{ // just use the x86 versions !!
-		if ( jeCPU_Features & JE_CPU_HAS_MMX )
+		if ( grCPU_Features & GR_CPU_HAS_MMX )
 		{
 			fastmemclear32s = memclear_mmx;
 			fastmemclear32s = memclear_x86;

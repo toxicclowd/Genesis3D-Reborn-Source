@@ -26,7 +26,7 @@
 
 #include "Rect.h"
 
-jeBoolean Rect_Compare(const Rect* pRect1, const Rect* pRect2)
+grBoolean Rect_Compare(const Rect* pRect1, const Rect* pRect2)
 {
 	assert(pRect1 != NULL);
 	assert(pRect2 != NULL);
@@ -34,7 +34,7 @@ jeBoolean Rect_Compare(const Rect* pRect1, const Rect* pRect2)
 	return(EqualRect((const RECT*)pRect1, (const RECT*)pRect2));
 }
 
-jeBoolean Rect_IsContained(const Rect* pRect, const Rect* pQueryRect)
+grBoolean Rect_IsContained(const Rect* pRect, const Rect* pQueryRect)
 {
 	assert(pRect != NULL);
 	assert(pQueryRect != NULL);
@@ -44,13 +44,13 @@ jeBoolean Rect_IsContained(const Rect* pRect, const Rect* pQueryRect)
 		(pQueryRect->Right <= pRect->Right) &&
 		(pQueryRect->Bottom <= pRect->Bottom) )
 	{
-		return(JE_TRUE);
+		return(GR_TRUE);
 	}
 
-	return(JE_FALSE);
+	return(GR_FALSE);
 }
 
-jeBoolean Rect_IsIntersecting(const Rect* pRect1, const Rect* pRect2)
+grBoolean Rect_IsIntersecting(const Rect* pRect1, const Rect* pRect2)
 {
 	RECT r;
 
@@ -61,7 +61,7 @@ jeBoolean Rect_IsIntersecting(const Rect* pRect1, const Rect* pRect2)
 }
 
 // NZ == intersected, Z = no intersection
-jeBoolean Rect_Intersect( Rect * pIntersectedRect, const Rect * pR1, const Rect * pR2 )
+grBoolean Rect_Intersect( Rect * pIntersectedRect, const Rect * pR1, const Rect * pR2 )
 {
 	return IntersectRect( (RECT*)pIntersectedRect, (const RECT*)pR1, (const RECT*)pR2 ) ;
 }/* Rect_Intersect */
@@ -85,7 +85,7 @@ void Rect_Normalize( Rect * pRect )
     }
 }/* Rect_Normalize */
 
-jeBoolean Rect_Union( Rect * pDest, const Rect * pR1, const Rect * pR2 )
+grBoolean Rect_Union( Rect * pDest, const Rect * pR1, const Rect * pR2 )
 {
 	assert( pDest != NULL ) ;
 	assert( pR1 != NULL ) ;
@@ -128,23 +128,23 @@ void Rect_SetEmpty( Rect * pRect )
 // IS Functions
 //
 
-jeBoolean Rect_IsEmpty( const Rect * pRect )
+grBoolean Rect_IsEmpty( const Rect * pRect )
 {
 	assert( pRect != NULL);
 	
 	return IsRectEmpty( (RECT*)pRect ) ;
 }/* Rect_IsEmpty */
 
-jeBoolean Rect_IsPointIn( const Rect * pRect, const Point * pPoint )
+grBoolean Rect_IsPointIn( const Rect * pRect, const Point * pPoint )
 {
 	assert(pRect != NULL);
 	assert(pPoint != NULL);
 
 	if( pPoint->X >= pRect->Left && pPoint->X <= pRect->Right )
 		if( pPoint->Y >= pRect->Top && pPoint->Y <= pRect->Bottom )
-			return JE_TRUE ;
+			return GR_TRUE ;
 
-	return JE_FALSE ;
+	return GR_FALSE ;
 }// Rect_IsPointIn
 
 

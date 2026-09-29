@@ -34,19 +34,19 @@ AOptions *AOptions_Create (void);
 
 AOptions *AOptions_CreateFromFile (const char *IniFilename);
 void AOptions_Destroy (AOptions **pOptions);
-jeBoolean AOptions_WriteToFile (const AOptions *Options, const char *IniFilename);
+grBoolean AOptions_WriteToFile (const AOptions *Options, const char *IniFilename);
 
 const char *AOptions_GetViewerPath (const AOptions *Options);
-jeBoolean AOptions_SetViewerPath (AOptions *Options, const char *ViewerPath);
+grBoolean AOptions_SetViewerPath (AOptions *Options, const char *ViewerPath);
 
 const char *AOptions_Get3DSMaxPath (const AOptions *Options);
-jeBoolean AOptions_Set3DSMaxPath (AOptions *Options, const char *MaxPath);
+grBoolean AOptions_Set3DSMaxPath (AOptions *Options, const char *MaxPath);
 
-jeBoolean AOptions_GetMotionOptimizationFlag (const AOptions *Options);
-jeBoolean AOptions_SetMotionOptimizationFlag (AOptions *Options, jeBoolean Flag);
+grBoolean AOptions_GetMotionOptimizationFlag (const AOptions *Options);
+grBoolean AOptions_SetMotionOptimizationFlag (AOptions *Options, grBoolean Flag);
 
 int AOptions_GetMotionOptimizationLevel (const AOptions *Options);
-jeBoolean AOptions_SetMotionOptimizationLevel (AOptions *Options, int OptLevel);
+grBoolean AOptions_SetMotionOptimizationLevel (AOptions *Options, int OptLevel);
 
 #ifdef __cplusplus
 	}

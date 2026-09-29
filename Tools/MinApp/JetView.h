@@ -24,7 +24,7 @@
 // ChildView.h : interface of the CJetView class
 //
 
-#include "Jet.h"
+#include "Genesis3D.h"
 
 
 #pragma once
@@ -62,7 +62,7 @@ private:
 	bool		m_bReadyToRender;		//	render gatekeeper flag
 	LARGE_INTEGER	m_LIOldTick, m_LIFreq;	//	time-calc vars
 		CRect		m_rectMainView;
-			JE_Rect			m_Rect;				//	camera rect
+			GR_Rect			m_Rect;				//	camera rect
 //	message handlers -- called by the MFC framewowrk
 public:
 	afx_msg void OnTimer(UINT nIDEvent);

@@ -37,10 +37,8 @@ extern "C" {
 //========================================================================================
 //	Structure defs
 //========================================================================================
-typedef struct jeChain grChain;
-typedef struct jeChain jeChain;
-typedef struct jeChain_Link grChain_Link;
-typedef struct jeChain_Link jeChain_Link;
+typedef struct grChain grChain;
+typedef struct grChain_Link grChain_Link;
 
 typedef grBoolean grChain_IOFunc(grVFile *VFile, void **LinkData, void *Context, grPtrMgr *PtrMgr); // Write
 typedef grBoolean grChain_ReadIOFunc(grVFile *VFile, void **LinkData, void *Context, grPtrMgr *PtrMgr); //Read
@@ -86,38 +84,6 @@ uint32		grChain_LinkDataGetIndex(const grChain *Chain, void *LinkData);
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeChain_AddLink                          grChain_AddLink
-#define jeChain_AddLinkData                      grChain_AddLinkData
-#define jeChain_Create                           grChain_Create
-#define jeChain_CreateFromFile                   grChain_CreateFromFile
-#define jeChain_CreateRef                        grChain_CreateRef
-#define jeChain_Destroy                          grChain_Destroy
-#define jeChain_FindLink                         grChain_FindLink
-#define jeChain_GetFirstLink                     grChain_GetFirstLink
-#define jeChain_GetLinkByIndex                   grChain_GetLinkByIndex
-#define jeChain_GetLinkCount                     grChain_GetLinkCount
-#define jeChain_GetLinkDataByIndex               grChain_GetLinkDataByIndex
-#define jeChain_GetNextLinkData                  grChain_GetNextLinkData
-#define jeChain_IOFunc                           grChain_IOFunc
-#define jeChain_InsertLinkAfter                  grChain_InsertLinkAfter
-#define jeChain_InsertLinkBefore                 grChain_InsertLinkBefore
-#define jeChain_InsertLinkData                   grChain_InsertLinkData
-#define jeChain_IsValid                          grChain_IsValid
-#define jeChain_LinkCreate                       grChain_LinkCreate
-#define jeChain_LinkDataGetIndex                 grChain_LinkDataGetIndex
-#define jeChain_LinkDestroy                      grChain_LinkDestroy
-#define jeChain_LinkGetLinkData                  grChain_LinkGetLinkData
-#define jeChain_LinkGetNext                      grChain_LinkGetNext
-#define jeChain_LinkGetPrev                      grChain_LinkGetPrev
-#define jeChain_LinkIsValid                      grChain_LinkIsValid
-#define jeChain_ReadIOFunc                       grChain_ReadIOFunc
-#define jeChain_RemoveLink                       grChain_RemoveLink
-#define jeChain_RemoveLinkData                   grChain_RemoveLinkData
-#define jeChain_WriteToFile                      grChain_WriteToFile
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif
 

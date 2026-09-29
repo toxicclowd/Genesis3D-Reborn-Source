@@ -32,9 +32,9 @@
 #define LEVEL_H
 
 #include "ObjectList.h"
-#include "Jet.h"
+#include "Genesis3D.h"
 #include "GroupList.h"
-#include "jeWorld.h"
+#include "grWorld.h"
 #include "ModelList.h"
 #include "MaterialList.h"
 #include "LightList.h"
@@ -43,7 +43,7 @@
 #include "TernList.h"
 #include "Symbol.h"
 #include "Undo.h"
-#include "jePtrMgr.h"
+#include "grPtrMgr.h"
 #include "Class.h"
 
 #ifdef __cplusplus
@@ -84,13 +84,13 @@ typedef struct tagSelectObjectInfo
 
 
 
-Level *				Level_Create( jeWorld * pWorld, MaterialList_Struct * pGlobalMaterials) ;
+Level *				Level_Create( grWorld * pWorld, MaterialList_Struct * pGlobalMaterials) ;
 void				Level_Destroy( Level ** ppLevel ) ;
-jeResourceMgr	*	Level_CreateResourceMgr( jeEngine* pEngine );
+grResourceMgr	*	Level_CreateResourceMgr( grEngine* pEngine );
 
 // ACCESSORS
 Group *					Level_GetCurrentGroup( const Level * pLevel ) ;
-jeSymbol_Table *		Level_GetEntities( Level * pLevel ) ;
+grSymbol_Table *		Level_GetEntities( Level * pLevel ) ;
 int32					Level_GetGridSnapSize( const Level * pLevel ) ;
 int32					Level_GetRotateSnapSize( const Level * pLevel );
 
@@ -105,52 +105,52 @@ Model *					Level_GetCurModel( Level * pLevel ) ;
 ObjectList *			Level_GetSelList( Level * pLevel );
 ObjectList *			Level_GetSubSelList( Level * pLevel );
 int32					Level_GetNextObjectId( Level * pLevel, OBJECT_KIND Kind, const char* Name );
-const jeExtBox *		Level_GetSelBounds( const Level * pLevel ) ;
-const jeExtBox *		Level_GetSubSelDrawBounds( const Level * pLevel );
-const jeExtBox *		Level_GetSelDrawBounds( const Level * pLevel ) ;
-jeBoolean				Level_GetSelBoundsCenter( const Level * pLevel, jeVec3d * const pCenter ) ;
+const grExtBox *		Level_GetSelBounds( const Level * pLevel ) ;
+const grExtBox *		Level_GetSubSelDrawBounds( const Level * pLevel );
+const grExtBox *		Level_GetSelDrawBounds( const Level * pLevel ) ;
+grBoolean				Level_GetSelBoundsCenter( const Level * pLevel, grVec3d * const pCenter ) ;
 LEVEL_SEL				Level_GetSelType( const Level * pLevel ) ;
 Undo	*				Level_GetUndo( const Level * pLevel );
-const jeFaceInfo *		Level_GetCurFaceInfo( const Level * pLevel );
+const grFaceInfo *		Level_GetCurFaceInfo( const Level * pLevel );
 int32					Level_SelXFormModFlags(  const Level * pLevel );
 int32					Level_SubSelXFormModFlags(  const Level * pLevel );
 float					Level_GetConstructorPlane( const Level * pLevel, int32 Index );
 LEVEL_UPDATE			Level_GetBrushUpdate( const Level * pLevel );
 LEVEL_UPDATE			Level_GetLightUpdate( const Level * pLevel );
-jeBoolean				Level_GetBrushLighting( const Level * pLevel );
-jeBoolean				Level_GetCurCamXForm( const Level * pLevel, jeXForm3d * pXForm );
-jeBoolean				Level_GetCurCamFOV( const Level * pLevel, float *pFOV );
-jeObject *				Level_GetCurCamObject( const Level * pLevel );
-const jeExtBox *		Level_GetCurCamBounds( const Level * pLevel );
+grBoolean				Level_GetBrushLighting( const Level * pLevel );
+grBoolean				Level_GetCurCamXForm( const Level * pLevel, grXForm3d * pXForm );
+grBoolean				Level_GetCurCamFOV( const Level * pLevel, float *pFOV );
+grObject *				Level_GetCurCamObject( const Level * pLevel );
+const grExtBox *		Level_GetCurCamBounds( const Level * pLevel );
 void					Level_GetCurCamXYRot( const Level * pLevel, float *XRot, float *YRot );
-void					Level_GetBSPBuildOptions( const Level * pLevel, jeBSP_Options * Options, jeBSP_Logic * Logic, jeBSP_LogicBalance * LogicBalance );
-jeWorld	*				Level_GetjeWorld( const Level * pLevel );
-// Krouer: Move from jeBitmap to jeMaterialSpec
+void					Level_GetBSPBuildOptions( const Level * pLevel, grBSP_Options * Options, grBSP_Logic * Logic, grBSP_LogicBalance * LogicBalance );
+grWorld	*				Level_GetgrWorld( const Level * pLevel );
+// Krouer: Move from grBitmap to grMaterialSpec
 #ifdef _USE_BITMAPS
-jeBitmap *				Level_GetCurMaterialjeBitmap( const Level * pLevel );
-jeBitmap *				Level_GetMaterialBitmapByName( const Level * pLevel, char* szBitmapName );
+grBitmap *				Level_GetCurMaterialgrBitmap( const Level * pLevel );
+grBitmap *				Level_GetMaterialBitmapByName( const Level * pLevel, char* szBitmapName );
 #else
-jeMaterialSpec *		Level_GetMaterialSpecByName( const Level * pLevel, char* szMatName );
-jeMaterialSpec *		Level_GetCurMaterialSpec( const Level * pLevel );
+grMaterialSpec *		Level_GetMaterialSpecByName( const Level * pLevel, char* szMatName );
+grMaterialSpec *		Level_GetCurMaterialSpec( const Level * pLevel );
 #endif
 
 // Added by cjp
-jeBoolean				Level_GetShouldSnapVerts( const Level * pLevel );
-void					Level_SetShouldSnapVerts( Level * pLevel, jeBoolean bShouldSnapVerts );
+grBoolean				Level_GetShouldSnapVerts( const Level * pLevel );
+void					Level_SetShouldSnapVerts( Level * pLevel, grBoolean bShouldSnapVerts );
 // end added by cjp
 
 // HAS-IS
-jeBoolean			Level_HasSelections( const Level * pLevel ) ;
-jeBoolean			Level_HasSubSelections( const Level * pLevel ) ;
-jeBoolean			Level_IsObjectVisible( const Level * pLevel, const Object * pObject ) ;
-jeBoolean			Level_IsSelected( Level * pLevel, Object * pObject ) ;
-jeBoolean			Level_IsSnapGrid( const Level * pLevel ) ;
-jeBoolean			Level_HasChanged( const Level * pLevel );
+grBoolean			Level_HasSelections( const Level * pLevel ) ;
+grBoolean			Level_HasSubSelections( const Level * pLevel ) ;
+grBoolean			Level_IsObjectVisible( const Level * pLevel, const Object * pObject ) ;
+grBoolean			Level_IsSelected( Level * pLevel, Object * pObject ) ;
+grBoolean			Level_IsSnapGrid( const Level * pLevel ) ;
+grBoolean			Level_HasChanged( const Level * pLevel );
 
 //---------------------------------------------------
 // Added DJT - 12/20/99
 //---------------------------------------------------
-jeBoolean           Level_TestForObject(Level * pLevel, OBJECT_KIND Kind);
+grBoolean           Level_TestForObject(Level * pLevel, OBJECT_KIND Kind);
 //---------------------------------------------------
 // End DJT
 //---------------------------------------------------
@@ -164,25 +164,25 @@ int32				Level_EnumSelected( Level * pLevel, void * lParam, ObjectListCB Callbac
 int32				Level_EnumSubSelected( Level * pLevel, void * lParam, ObjectListCB Callback ) ;
 
 // STATE CHANGES
-void				Level_SetChanged( Level * pLevel, jeBoolean bChanged );
+void				Level_SetChanged( Level * pLevel, grBoolean bChanged );
 void				Level_SetCurCamXYRot( const Level * pLevel, float XRot, float YRot );
 void				Level_ClearMiscFlags( Level * pLevel, const uint32 nFlags ) ;
-void				Level_RebuildAll( Level * pLevel, jeBSP_Options Options, jeBSP_Logic Logic, jeBSP_LogicBalance LogicBalance );
+void				Level_RebuildAll( Level * pLevel, grBSP_Options Options, grBSP_Logic Logic, grBSP_LogicBalance LogicBalance );
 void				Level_RebuildLights( Level * pLevel );
-void				Level_RebuildBSP( Level * pLevel , jeBSP_Options Options, jeBSP_Logic Logic, jeBSP_LogicBalance LogicBalance );
+void				Level_RebuildBSP( Level * pLevel , grBSP_Options Options, grBSP_Logic Logic, grBSP_LogicBalance LogicBalance );
 void				Level_SetMiscFlags( Level * pLevel, const uint32 nFlags ) ;
 void				Level_SetModifiedSelection( Level * pLevel ) ;
 void				Level_SetSelType( Level * pLevel ) ;
-void				Level_SetSnapGrid( Level * pLevel, jeBoolean bState ) ;
+void				Level_SetSnapGrid( Level * pLevel, grBoolean bState ) ;
 void				Level_SetGridSnapSize( Level * pLevel, int32 nSnapSize ) ;
 void				Level_SetRotateSnapSize( Level * pLevel, int32 nSnapSize );
 void				Level_SelectFirstFace( Level * pLevel );
 void				Level_SelectLastFace( Level * pLevel  );
-jeBoolean			Level_SetFaceInfoToCurMaterial( Level * pLevel );
+grBoolean			Level_SetFaceInfoToCurMaterial( Level * pLevel );
 Group		*		Level_AddGroup( Level * pLevel, const char * pszName );
 Model		*		Level_AddModel( Level * pLevel, const char * pszName );
 Class		*		Level_AddClass( Level * pLevel, const char * pszName, int Kind );
-void				Level_ModelLock( Level * pLevel, Model * pModel, jeBoolean bLock );
+void				Level_ModelLock( Level * pLevel, Model * pModel, grBoolean bLock );
 void				Level_SetCurrentGroup( Level * pLevel, Group * pGroup );
 void				Level_SetCurrentModel( Level * pLevel, Model * pModel );
 void				Level_SetConstructor( Level * pLevel, int Index, float Value );
@@ -191,35 +191,35 @@ void				Level_SetLightUpdate( Level * pLevel, int Update );
 void				Level_SetBrushLighting( Level * pLevel, int BrushLighting );
 void				Level_UpdateAll( Level * pLevel );
 void				Level_UpdateSelected( Level * pLevel );
-jeBoolean			Level_RotCurCamX( const Level * pLevel, float Radians );
-jeBoolean			Level_RotCurCamY( const Level * pLevel, float Radians );
-jeBoolean			Level_TranslateCurCam( const Level * pLevel, jeVec3d * Offset );
-jeBoolean			Level_SetRenderMode( Level * pLevel, int Mode );
-void				Level_SetBSPBuildOptions( Level * pLevel, jeBSP_Options  Options, jeBSP_Logic  Logic, jeBSP_LogicBalance  LogicBalance );
+grBoolean			Level_RotCurCamX( const Level * pLevel, float Radians );
+grBoolean			Level_RotCurCamY( const Level * pLevel, float Radians );
+grBoolean			Level_TranslateCurCam( const Level * pLevel, grVec3d * Offset );
+grBoolean			Level_SetRenderMode( Level * pLevel, int Mode );
+void				Level_SetBSPBuildOptions( Level * pLevel, grBSP_Options  Options, grBSP_Logic  Logic, grBSP_LogicBalance  LogicBalance );
 void				Level_RenameSelected( Level * pLevel, char * Name );
 
 // OBJECT MANIPULATION
 
-Object		*		Level_NewObject( Level * pLevel, int Kind, int SubKind,  const jeExtBox * pBrushBounds ) ;
-Object		*		Level_SubtractBrush( Level * pLevel, int SubKind, const jeExtBox * pBrushBounds  ) ;
-Object		*		Level_NewUserObject( Level * pLevel, const char * TypeName, const jeExtBox * pBrushBounds );
-jeBoolean			Level_SelectObject( Level * pLevel, Object * pObject , LEVEL_STATE eState ) ;
-jeBoolean			Level_SubSelectObject( Level * pLevel, Object * pObject , LEVEL_STATE eState ) ;
-jeBoolean			Level_DeselectAllSub( Level * pLevel, jeExtBox * pWorldBounds );
-jeBoolean			Level_UnMarkAllSub( Level * pLevel, jeExtBox * pWorldBounds );
-jeBoolean			Level_MarkSubSelect( Level * pLevel,  jeObject * pgeObject , int32 flag );
-jeBoolean			Level_SubSelectgeObject( Level * pLevel, jeObject * pgeObject , LEVEL_STATE eState ) ;
-jeBoolean			Level_SelectGroup( Level * pLevel, Group * pGroup, LEVEL_STATE eState );
-jeBoolean			Level_AddObject( Level * pLevel, Object* pObject );
-jeBoolean			Level_PrepareForSave( Level* pLevel );
+Object		*		Level_NewObject( Level * pLevel, int Kind, int SubKind,  const grExtBox * pBrushBounds ) ;
+Object		*		Level_SubtractBrush( Level * pLevel, int SubKind, const grExtBox * pBrushBounds  ) ;
+Object		*		Level_NewUserObject( Level * pLevel, const char * TypeName, const grExtBox * pBrushBounds );
+grBoolean			Level_SelectObject( Level * pLevel, Object * pObject , LEVEL_STATE eState ) ;
+grBoolean			Level_SubSelectObject( Level * pLevel, Object * pObject , LEVEL_STATE eState ) ;
+grBoolean			Level_DeselectAllSub( Level * pLevel, grExtBox * pWorldBounds );
+grBoolean			Level_UnMarkAllSub( Level * pLevel, grExtBox * pWorldBounds );
+grBoolean			Level_MarkSubSelect( Level * pLevel,  grObject * pgeObject , int32 flag );
+grBoolean			Level_SubSelectgeObject( Level * pLevel, grObject * pgeObject , LEVEL_STATE eState ) ;
+grBoolean			Level_SelectGroup( Level * pLevel, Group * pGroup, LEVEL_STATE eState );
+grBoolean			Level_AddObject( Level * pLevel, Object* pObject );
+grBoolean			Level_PrepareForSave( Level* pLevel );
 void				Level_DeleteObject( Level * pLevel, Object* pObject );
-jeBoolean			Level_DragBegin( Level * pLevel, Object* pObject );
-jeBoolean			Level_AddToWorld( Level * pLevel, Object* pObject, int Update );
-Object		*		Level_FindgeObject( Level * pLevel,  jeObject * pgeObject );
+grBoolean			Level_DragBegin( Level * pLevel, Object* pObject );
+grBoolean			Level_AddToWorld( Level * pLevel, Object* pObject, int Update );
+Object		*		Level_FindgeObject( Level * pLevel,  grObject * pgeObject );
 
 // FILE HANDLING
-jeBoolean			Level_WriteToFile( Level * pLevel, jeVFile * pF, jePtrMgr * pPtrMgr ) ;
-Level *				Level_CreateFromFile( jeVFile * pF, jeWorld * pWorld, MaterialList_Struct * pGlobalMaterials, jePtrMgr * pPtrMgr, float Version ) ;
+grBoolean			Level_WriteToFile( Level * pLevel, grVFile * pF, grPtrMgr * pPtrMgr ) ;
+Level *				Level_CreateFromFile( grVFile * pF, grWorld * pWorld, MaterialList_Struct * pGlobalMaterials, grPtrMgr * pPtrMgr, float Version ) ;
 
 
 #ifdef __cplusplus

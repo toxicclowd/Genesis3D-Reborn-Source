@@ -231,7 +231,7 @@
     <ClCompile Include="Util\Dlist.c" />
     <ClCompile Include="Util\DrawTool.c" />
     <ClCompile Include="Util\Drvlist.c" />
-    <ClCompile Include="Util\jeList.c" />
+    <ClCompile Include="Util\grList.c" />
     <ClCompile Include="Util\Mtl9937.cpp" />
     <ClCompile Include="Util\Noise.cpp" />
     <ClCompile Include="Util\Rect.c" />
@@ -419,7 +419,7 @@
     <ClInclude Include="Util\Dlist.h" />
     <ClInclude Include="Util\DrawTool.h" />
     <ClInclude Include="Util\Drvlist.h" />
-    <ClInclude Include="Util\jeList.h" />
+    <ClInclude Include="Util\grList.h" />
     <ClInclude Include="Util\Mtl9937.h" />
     <ClInclude Include="Util\Noise.h" />
     <ClInclude Include="Util\Point.h" />

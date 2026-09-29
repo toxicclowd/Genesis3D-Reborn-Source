@@ -25,7 +25,7 @@ extern "C" {
 
 #define DLLExport __declspec(dllexport)
 
-DLLExport jeBoolean Object_RegisterDef( float Major, float Minor);
+DLLExport grBoolean Object_RegisterDef( float Major, float Minor);
 
 #ifdef __cplusplus
 }

@@ -291,34 +291,34 @@
     <ClCompile Include="Bitmap\Compression\yuv.c">
       <Filter>Source Files\Bitmap\Compression</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSP.cpp">
+    <ClCompile Include="Bsp\grBSP.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSP_Brush.cpp">
+    <ClCompile Include="Bsp\grBSP_Brush.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSP_TopBrush.cpp">
+    <ClCompile Include="Bsp\grBSP_TopBrush.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSPNode.cpp">
+    <ClCompile Include="Bsp\grBSPNode.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSPNode_Area.cpp">
+    <ClCompile Include="Bsp\grBSPNode_Area.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSPNode_DrawFace.cpp">
+    <ClCompile Include="Bsp\grBSPNode_DrawFace.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSPNode_Face.cpp">
+    <ClCompile Include="Bsp\grBSPNode_Face.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSPNode_Leaf.cpp">
+    <ClCompile Include="Bsp\grBSPNode_Leaf.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSPNode_Light.cpp">
+    <ClCompile Include="Bsp\grBSPNode_Light.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
-    <ClCompile Include="Bsp\jeBSPNode_Portal.cpp">
+    <ClCompile Include="Bsp\grBSPNode_Portal.cpp">
       <Filter>Source Files\BSP</Filter>
     </ClCompile>
     <ClCompile Include="Engine\BitmapList.cpp">
@@ -330,67 +330,67 @@
     <ClCompile Include="Engine\FontBmp.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\jePolyMgr.cpp">
+    <ClCompile Include="Engine\grPolyMgr.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\jeTexture.cpp">
+    <ClCompile Include="Engine\grTexture.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
     <ClCompile Include="Engine\splash_bmp.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeBrush.cpp">
+    <ClCompile Include="guWorld\grBrush.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeFaceInfo.cpp">
+    <ClCompile Include="guWorld\grFaceInfo.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeFrustum.cpp">
+    <ClCompile Include="guWorld\grFrustum.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeGArray.cpp">
+    <ClCompile Include="guWorld\grGArray.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeIndexPoly.cpp">
+    <ClCompile Include="guWorld\grIndexPoly.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeLight.cpp">
+    <ClCompile Include="guWorld\grLight.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeMaterial.cpp">
+    <ClCompile Include="guWorld\grMaterial.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeMaterialSpec.cpp">
+    <ClCompile Include="guWorld\grMaterialSpec.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeModel.cpp">
+    <ClCompile Include="guWorld\grModel.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jePlane.cpp">
+    <ClCompile Include="guWorld\grPlane.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jePlaneArray.cpp">
+    <ClCompile Include="guWorld\grPlaneArray.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jePoly.cpp">
+    <ClCompile Include="guWorld\grPoly.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jePortal.cpp">
+    <ClCompile Include="guWorld\grPortal.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeStaticMesh.cpp">
+    <ClCompile Include="guWorld\grStaticMesh.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeTexVec.cpp">
+    <ClCompile Include="guWorld\grTexVec.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeUserPoly.cpp">
+    <ClCompile Include="guWorld\grUserPoly.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeVertArray.cpp">
+    <ClCompile Include="guWorld\grVertArray.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
-    <ClCompile Include="guWorld\jeWorld.cpp">
+    <ClCompile Include="guWorld\grWorld.cpp">
       <Filter>Source Files\guWorld</Filter>
     </ClCompile>
     <ClCompile Include="guWorld\VisObject.cpp">
@@ -408,10 +408,10 @@
     <ClCompile Include="Math\ExtBox.cpp">
       <Filter>Source Files\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Math\jeRay.cpp">
+    <ClCompile Include="Math\grRay.cpp">
       <Filter>Source Files\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Math\jeVec3d_Katmai.cpp">
+    <ClCompile Include="Math\grVec3d_Katmai.cpp">
       <Filter>Source Files\Math</Filter>
     </ClCompile>
     <ClCompile Include="Math\ObjectPos.cpp">
@@ -444,25 +444,25 @@
     <ClCompile Include="Support\Errorlog.cpp">
       <Filter>Source Files\Support</Filter>
     </ClCompile>
-    <ClCompile Include="Support\jeAssert.cpp">
+    <ClCompile Include="Support\grAssert.cpp">
       <Filter>Source Files\Support</Filter>
     </ClCompile>
-    <ClCompile Include="Support\jeChain.cpp">
+    <ClCompile Include="Support\grChain.cpp">
       <Filter>Source Files\Support</Filter>
     </ClCompile>
-    <ClCompile Include="Support\jeMemAllocInfo.cpp">
+    <ClCompile Include="Support\grMemAllocInfo.cpp">
       <Filter>Source Files\Support</Filter>
     </ClCompile>
-    <ClCompile Include="Support\jeNameMgr.cpp">
+    <ClCompile Include="Support\grNameMgr.cpp">
       <Filter>Source Files\Support</Filter>
     </ClCompile>
-    <ClCompile Include="Support\jeProperty.cpp">
+    <ClCompile Include="Support\grProperty.cpp">
       <Filter>Source Files\Support</Filter>
     </ClCompile>
-    <ClCompile Include="Support\jePtrMgr.cpp">
+    <ClCompile Include="Support\grPtrMgr.cpp">
       <Filter>Source Files\Support</Filter>
     </ClCompile>
-    <ClCompile Include="Support\jeResource.cpp">
+    <ClCompile Include="Support\grResource.cpp">
       <Filter>Source Files\Support</Filter>
     </ClCompile>
     <ClCompile Include="Support\Log.cpp">
@@ -513,7 +513,7 @@
     <ClCompile Include="Terrain\Terrain.cpp">
       <Filter>Source Files\Terrain</Filter>
     </ClCompile>
-    <ClCompile Include="Particle\jeParticle.cpp">
+    <ClCompile Include="Particle\grParticle.cpp">
       <Filter>Source Files\Particle</Filter>
     </ClCompile>
     <ClCompile Include="Mp3Mgr\Mp3Mgr.cpp">
@@ -530,10 +530,10 @@
     <ClInclude Include="CSNetMgr.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeTypes.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grTypes.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeVersion.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grVersion.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="list.h">
@@ -743,7 +743,7 @@
     <ClInclude Include="Bitmap\Compression\yuv.h">
       <Filter>Source Files\Bitmap\Compression</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeBSP.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grBSP.h">
       <Filter>Source Files\BSP</Filter>
     </ClInclude>
     <ClInclude Include="Engine\BitmapList.h">
@@ -752,61 +752,61 @@
     <ClInclude Include="$(G3DRoot)Engine\Include\ENGINE.H">
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\jePolyMgr.h">
+    <ClInclude Include="Engine\grPolyMgr.h">
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeTexture.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grTexture.h">
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Drivers\Dcommon.h">
       <Filter>Source Files\Engine\Drivers</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeBrush.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grBrush.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeFaceInfo.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grFaceInfo.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeFrustum.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grFrustum.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeGArray.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grGArray.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="guWorld\jeIndexPoly.h">
+    <ClInclude Include="guWorld\grIndexPoly.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeLight.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grLight.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeMaterial.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grMaterial.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
     <ClInclude Include="$(G3DRoot)Engine\Include\JEMODEL.H">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jePlane.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grPlane.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="guWorld\jePlaneArray.h">
+    <ClInclude Include="guWorld\grPlaneArray.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jePoly.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grPoly.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jePortal.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grPortal.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeStaticMesh.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grStaticMesh.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="guWorld\jeTexVec.h">
+    <ClInclude Include="guWorld\grTexVec.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeUserPoly.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grUserPoly.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeVertArray.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grVertArray.h">
       <Filter>Source Files\guWorld</Filter>
     </ClInclude>
     <ClInclude Include="$(G3DRoot)Engine\Include\JEWORLD.H">
@@ -827,10 +827,10 @@
     <ClInclude Include="$(G3DRoot)Engine\Include\ExtBox.h">
       <Filter>Source Files\Math</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeRay.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grRay.h">
       <Filter>Source Files\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Math\jeVec3d_Katmai.h">
+    <ClInclude Include="Math\grVec3d_Katmai.h">
       <Filter>Source Files\Math</Filter>
     </ClInclude>
     <ClInclude Include="$(G3DRoot)Engine\Include\ObjectPos.h">
@@ -866,22 +866,22 @@
     <ClInclude Include="$(G3DRoot)Engine\Include\Errorlog.h">
       <Filter>Source Files\Support</Filter>
     </ClInclude>
-    <ClInclude Include="Support\jeAssert.h">
+    <ClInclude Include="Support\grAssert.h">
       <Filter>Source Files\Support</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeChain.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grChain.h">
       <Filter>Source Files\Support</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeNameMgr.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grNameMgr.h">
       <Filter>Source Files\Support</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeProperty.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grProperty.h">
       <Filter>Source Files\Support</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jePtrMgr.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grPtrMgr.h">
       <Filter>Source Files\Support</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeResource.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grResource.h">
       <Filter>Source Files\Support</Filter>
     </ClInclude>
     <ClInclude Include="Support\log.h">
@@ -932,7 +932,7 @@
     <ClInclude Include="$(G3DRoot)Engine\Include\TERRAIN.H">
       <Filter>Source Files\Terrain</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeParticle.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grParticle.h">
       <Filter>Source Files\Particle</Filter>
     </ClInclude>
     <ClInclude Include="$(G3DRoot)Engine\Include\Mp3Mgr.h">
@@ -947,10 +947,10 @@
     <ClInclude Include="VideoMgr\VideoMgr_h.h">
       <Filter>Source Files\VideoMgr</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeCamera.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grCamera.h">
       <Filter>Interface Headers</Filter>
     </ClInclude>
-    <ClInclude Include="$(G3DRoot)Engine\Include\jeEngine.h">
+    <ClInclude Include="$(G3DRoot)Engine\Include\grEngine.h">
       <Filter>Interface Headers</Filter>
     </ClInclude>
   </ItemGroup>
@@ -969,19 +969,19 @@
     <None Include="Bitmap\bitmap._h">
       <Filter>Source Files\Bitmap</Filter>
     </None>
-    <None Include="Bsp\jeBSP._h">
+    <None Include="Bsp\grBSP._h">
       <Filter>Source Files\BSP</Filter>
     </None>
     <None Include="Engine\engine._h">
       <Filter>Source Files\Engine</Filter>
     </None>
-    <None Include="guWorld\jeMaterial._h">
+    <None Include="guWorld\grMaterial._h">
       <Filter>Source Files\guWorld</Filter>
     </None>
-    <None Include="guWorld\jeModel._h">
+    <None Include="guWorld\grModel._h">
       <Filter>Source Files\guWorld</Filter>
     </None>
-    <None Include="Support\jeMemAllocInfo._h">
+    <None Include="Support\grMemAllocInfo._h">
       <Filter>Source Files\Support</Filter>
     </None>
   </ItemGroup>

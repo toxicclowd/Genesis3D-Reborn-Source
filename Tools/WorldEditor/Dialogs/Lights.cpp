@@ -211,7 +211,7 @@ void CLights::OnKillfocusEdBrightness()
 		return ;
 	
 	UpdateData( true ) ;
-	LightInfo.Brightness = (jeFloat)atof( m_csfBrightness ) ;
+	LightInfo.Brightness = (grFloat)atof( m_csfBrightness ) ;
 	pDoc->SetLightInfo( &LightInfo, LIGHT_FIELD_BRIGHTNESS ) ;
 	m_csfBrightness.Format( "%5.2f", LightInfo.Brightness ) ;
 	TrimString( m_csfBrightness ) ;
@@ -227,7 +227,7 @@ void CLights::OnKillfocusEdRadius()
 		return ;
 
 	UpdateData( true ) ;
-	LightInfo.Radius = (jeFloat)atof( m_csfRadius ) ;
+	LightInfo.Radius = (grFloat)atof( m_csfRadius ) ;
 	pDoc->SetLightInfo( &LightInfo, LIGHT_FIELD_RADIUS ) ;
 	m_csfRadius.Format( "%5.2f", LightInfo.Radius ) ;
 	TrimString( m_csfRadius ) ;
@@ -265,16 +265,16 @@ void CLights::OnBnColor()
 	
 }// OnBnColor
 
-void CLights::GetPosition(jeVec3d *pPos)
+void CLights::GetPosition(grVec3d *pPos)
 {
 	UpdateData( true ) ;
 
-	pPos->X = (jeFloat)atof( m_csfX ) ;
-	pPos->Y = (jeFloat)atof( m_csfY ) ;
-	pPos->Z	= (jeFloat)atof( m_csfZ ) ;
+	pPos->X = (grFloat)atof( m_csfX ) ;
+	pPos->Y = (grFloat)atof( m_csfY ) ;
+	pPos->Z	= (grFloat)atof( m_csfZ ) ;
 }// GetPosition
 
-void CLights::SetPosition(jeVec3d *pPos)
+void CLights::SetPosition(grVec3d *pPos)
 {
 	m_csfX.Format( "%5.2f", pPos->X ) ;
 	TrimString( m_csfX ) ;
@@ -292,9 +292,9 @@ LRESULT CLights::OnChangeColor( WPARAM wParam, LPARAM lParam )
 	if( pDoc == NULL )
 		return 0 ;
 
-	LightInfo.Color.X = (jeFloat)GetRValue( color ) ;
-	LightInfo.Color.Y = (jeFloat)GetGValue( color ) ;
-	LightInfo.Color.Z = (jeFloat)GetBValue( color ) ;
+	LightInfo.Color.X = (grFloat)GetRValue( color ) ;
+	LightInfo.Color.Y = (grFloat)GetGValue( color ) ;
+	LightInfo.Color.Z = (grFloat)GetBValue( color ) ;
 
 	pDoc->SetLightInfo( &LightInfo, LIGHT_FIELD_COLOR ) ;
 

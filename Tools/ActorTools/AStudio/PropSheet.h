@@ -105,8 +105,8 @@ private:
 	int				m_NormalHeight;
 	int				m_ExpandedHeight;
 
-    jeEngine        *m_pEngine;
-    jeResourceMgr   *m_pResManager;
+    grEngine        *m_pEngine;
+    grResourceMgr   *m_pResManager;
 
 	// Parent passes a pointer-to-pointer to structure so we can return it.
 	// But we use m_Project.

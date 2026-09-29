@@ -24,41 +24,41 @@
 #include "Errorlog.h"
 
 
-typedef struct jeXFArray
+typedef struct grXFArray
 {
 	int		 TransformCount;
-	jeXForm3d *TransformArray;
-} jeXFArray;
+	grXForm3d *TransformArray;
+} grXFArray;
 
-jeXFArray *JETCC jeXFArray_Create(int Size)
+grXFArray *GRCC grXFArray_Create(int Size)
 {
-	jeXFArray *XFA;
+	grXFArray *XFA;
 
 	assert( Size > 0 );
 
-	XFA = JE_RAM_ALLOCATE_STRUCT_CLEAR( jeXFArray );
+	XFA = GR_RAM_ALLOCATE_STRUCT_CLEAR( grXFArray );
 	if (XFA == NULL)
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE , "jeXFArray_Create.");
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE , "grXFArray_Create.");
 			return NULL;
 		}
-	XFA->TransformArray = JE_RAM_ALLOCATE_ARRAY_CLEAR(jeXForm3d,Size);
+	XFA->TransformArray = GR_RAM_ALLOCATE_ARRAY_CLEAR(grXForm3d,Size);
 	if (XFA->TransformArray == NULL)
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE , "jeXFArray_Create.");
-			jeRam_Free( XFA );
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE , "grXFArray_Create.");
+			grRam_Free( XFA );
 			return NULL;
 		}
 	XFA->TransformCount = Size;
 	{
-		jeXForm3d X;
-		jeXForm3d_SetIdentity(&X);
-		jeXFArray_SetAll(XFA,&X);
+		grXForm3d X;
+		grXForm3d_SetIdentity(&X);
+		grXFArray_SetAll(XFA,&X);
 	}
 	return XFA;
 }
 
-void JETCC jeXFArray_Destroy( jeXFArray **XFA )
+void GRCC grXFArray_Destroy( grXFArray **XFA )
 {
 	assert( XFA != NULL );
 	assert( *XFA != NULL );
@@ -66,13 +66,13 @@ void JETCC jeXFArray_Destroy( jeXFArray **XFA )
 	assert( (*XFA)->TransformArray != NULL );
 	
 	(*XFA)->TransformCount = -1;
-	jeRam_Free( (*XFA)->TransformArray);
+	grRam_Free( (*XFA)->TransformArray);
 	(*XFA)->TransformArray = NULL;
-	jeRam_Free( (*XFA) );
+	grRam_Free( (*XFA) );
 	(*XFA) = NULL;
 }
 
-jeXForm3d *JETCC jeXFArray_GetElements(const jeXFArray *XFA, int *Size)
+grXForm3d *GRCC grXFArray_GetElements(const grXFArray *XFA, int *Size)
 {
 	assert( XFA != NULL );
 	assert( Size != NULL );
@@ -83,7 +83,7 @@ jeXForm3d *JETCC jeXFArray_GetElements(const jeXFArray *XFA, int *Size)
 	return XFA->TransformArray;
 }
 
-void JETCC jeXFArray_SetAll(jeXFArray *XFA, const jeXForm3d *Matrix)
+void GRCC grXFArray_SetAll(grXFArray *XFA, const grXForm3d *Matrix)
 {
 	assert( XFA != NULL );
 	assert( Matrix != NULL );
@@ -91,7 +91,7 @@ void JETCC jeXFArray_SetAll(jeXFArray *XFA, const jeXForm3d *Matrix)
 	assert( XFA->TransformArray != NULL );
 	{
 		int i;
-		jeXForm3d *X;
+		grXForm3d *X;
 		for (i=0,X=XFA->TransformArray; i<XFA->TransformCount; i++,X++)
 			{
 				*X = *Matrix;

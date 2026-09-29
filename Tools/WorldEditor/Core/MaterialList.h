@@ -22,7 +22,7 @@
 #ifndef MATERIALLIST_H
 #define MATERIALLIST_H
 
-#include "jeList.h"
+#include "grList.h"
 #include "Materials.h"
 
 #ifdef __cplusplus
@@ -32,7 +32,7 @@ extern "C" {
 typedef struct MaterialList_Struct MaterialList_Struct ;
 typedef ListIterator MaterialIterator ;
 
-typedef jeBoolean (*MaterialListCB)( Material_Struct * pMaterial, void * pVoid ) ;
+typedef grBoolean (*MaterialListCB)( Material_Struct * pMaterial, void * pVoid ) ;
 
 MaterialList_Struct *		MaterialList_Create( void ) ;
 void				MaterialList_Destroy( MaterialList_Struct **ppList ) ;
@@ -49,7 +49,7 @@ void				MaterialList_SetCurMaterial( MaterialList_Struct* MaterialList, Material
 
 // MODIFIERS
 MaterialIterator	MaterialList_Append( MaterialList_Struct * pList, Material_Struct * pMaterial ) ;
-jeBoolean			MaterialList_LoadFromDir( MaterialList_Struct* MaterialList, jeEngine* pEngine, jeResourceMgr* pResMgr, char* DirPath );
+grBoolean			MaterialList_LoadFromDir( MaterialList_Struct* MaterialList, grEngine* pEngine, grResourceMgr* pResMgr, char* DirPath );
 
 // ENUMERATION
 int32				MaterialList_EnumMaterials( MaterialList_Struct * pList, void * pVoid, MaterialListCB Callback ) ;

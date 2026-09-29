@@ -28,11 +28,11 @@
 *
 ******/
 
-extern jeBoolean RunPack(uint8 *Array,uint32 ArrayLen,uint8 * Literals,
+extern grBoolean RunPack(uint8 *Array,uint32 ArrayLen,uint8 * Literals,
   uint32 * NumLiteralsPtr,uint8 * PackedRunArray,uint32 * NumRunsPtr,
   uint32 * RunPackedLenPtr);
 
-extern jeBoolean UnRunPack(uint8 *Array,uint32 ArrayLen,uint8 * Literals,
+extern grBoolean UnRunPack(uint8 *Array,uint32 ArrayLen,uint8 * Literals,
   uint8 * PackedRunArray);
 
 /**

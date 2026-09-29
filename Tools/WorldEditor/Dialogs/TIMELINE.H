@@ -27,7 +27,7 @@
 
 /////////////////////////////////////////////////////////////////////////////
 // CTimeLine dialog
-#include "jeProperty.h"
+#include "grProperty.h"
 
 #include "basetype.h"
 
@@ -41,12 +41,12 @@ typedef struct TimeEdit TimeEdit;
 typedef union ChannelData
 {
 	char		*String;
-	jeXForm3d	XForm;
+	grXForm3d	XForm;
 }ChannelData;
 
 typedef struct Channel
 {
-	jeBoolean	Disabled;
+	grBoolean	Disabled;
 	ChannelData	KeyData[MAX_KEYS];
 	float		KeyList[MAX_KEYS];	// list of key times
 	int			KeyCount;
@@ -60,14 +60,14 @@ public:
 	CTimeLine(CWnd* pParent = NULL);   // standard constructor
 	~CTimeLine(); 
 
-	BOOL BuildFromDescriptor( jeProperty_List *pArray );
+	BOOL BuildFromDescriptor( grProperty_List *pArray );
 	void Reset();
-	BOOL UpdateDataByArray( jeProperty_List *pArray );
+	BOOL UpdateDataByArray( grProperty_List *pArray );
 
-	jeBoolean SubSelectObject(jeObject *pObj);
-	jeBoolean SubSelectEndMove(jeObject *pObj);
-	jeBoolean SubSelectEndRotate(jeObject *pObj);
-	jeBoolean UpdateTimeDelta(float TimeDelta );
+	grBoolean SubSelectObject(grObject *pObj);
+	grBoolean SubSelectEndMove(grObject *pObj);
+	grBoolean SubSelectEndRotate(grObject *pObj);
+	grBoolean UpdateTimeDelta(float TimeDelta );
 
 	void SetEventProperties();
 	void GetEventProperties();
@@ -125,7 +125,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 private:
 	HWND m_hWnd;
-	BOOL HasTimeLineData( jeProperty_List *pArray );
+	BOOL HasTimeLineData( grProperty_List *pArray );
 	TimeEdit *m_TE;
 	void TimelineModeSet(int);
 	void OnSetObjectNames();

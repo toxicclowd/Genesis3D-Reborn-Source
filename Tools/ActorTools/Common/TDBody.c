@@ -33,27 +33,27 @@ static void TopDownBody_InitNode(TopDownBody* pTDNode, int ThisBone)
 	pTDNode->pChildren = NULL;
 }
 
-static jeBoolean TopDownBody_AddChildren(TopDownBody* pTDNode, int ThisBone, jeBody* pBody)
+static grBoolean TopDownBody_AddChildren(TopDownBody* pTDNode, int ThisBone, grBody* pBody)
 {
 	int BoneCount;
 	int i;
 	const char* pName;
-	jeXForm3d dummyMatrix;
+	grXForm3d dummyMatrix;
 	int ParentIndex;
 
 	assert(pTDNode != NULL);
 	assert(pBody != NULL);
-	assert(jeBody_IsValid(pBody) != JE_FALSE);
+	assert(grBody_IsValid(pBody) != GR_FALSE);
 	assert(pTDNode->NumChildren == 0);
 	assert(pTDNode->pChildren == NULL);
 
 	// Body's bone hierarchy links each bone to its parent.  This guarantees
 	// all children to have a higher bone index or they would not have been
 	// to be added.
-	BoneCount = jeBody_GetBoneCount(pBody);
+	BoneCount = grBody_GetBoneCount(pBody);
 	for(i=ThisBone+1;i<BoneCount;i++)
 	{
-		jeBody_GetBone(pBody, i, &pName, &dummyMatrix, &ParentIndex);
+		grBody_GetBone(pBody, i, &pName, &dummyMatrix, &ParentIndex);
 		if(ParentIndex == ThisBone)
 		{
 			// found a child
@@ -66,11 +66,11 @@ static jeBoolean TopDownBody_AddChildren(TopDownBody* pTDNode, int ThisBone, jeB
 			}
 #endif
 
-			pNewNode = jeRam_Realloc(	pTDNode->pChildren, 
+			pNewNode = grRam_Realloc(	pTDNode->pChildren, 
 										sizeof(TopDownBody) * (pTDNode->NumChildren + 1) );
 			if(pNewNode == NULL)
 			{
-				return(JE_FALSE);
+				return(GR_FALSE);
 			}
 
 			// Do not adjust the number of children until the child node
@@ -79,15 +79,15 @@ static jeBoolean TopDownBody_AddChildren(TopDownBody* pTDNode, int ThisBone, jeB
 			TopDownBody_InitNode(&pTDNode->pChildren[pTDNode->NumChildren], i);
 			pTDNode->NumChildren++;
 
-			if(TopDownBody_AddChildren(&pTDNode->pChildren[pTDNode->NumChildren - 1], i, pBody) == JE_FALSE)
+			if(TopDownBody_AddChildren(&pTDNode->pChildren[pTDNode->NumChildren - 1], i, pBody) == GR_FALSE)
 			{
 				// something failed
-				return(JE_FALSE);
+				return(GR_FALSE);
 			}
 		}
 	}
 
-	return(JE_TRUE);
+	return(GR_TRUE);
 }
 
 static void TopDownBody_DestroyChildren(TopDownBody* pTDNode)
@@ -102,19 +102,19 @@ static void TopDownBody_DestroyChildren(TopDownBody* pTDNode)
 			TopDownBody_DestroyChildren(&pTDNode->pChildren[i]);
 		}
 
-		jeRam_Free(pTDNode->pChildren);
+		grRam_Free(pTDNode->pChildren);
 		pTDNode->NumChildren = 0;
 	}
 }
 
-TopDownBody* TopDownBody_CreateFromBody(jeBody* pBody)
+TopDownBody* TopDownBody_CreateFromBody(grBody* pBody)
 {
 	TopDownBody* pTDBody = NULL;
 
 	assert(pBody != NULL);
-	assert(jeBody_IsValid(pBody) != JE_FALSE);
+	assert(grBody_IsValid(pBody) != GR_FALSE);
 
-	pTDBody = JE_RAM_ALLOCATE_STRUCT(TopDownBody);
+	pTDBody = GR_RAM_ALLOCATE_STRUCT(TopDownBody);
 	if(pTDBody == NULL)
 	{
 		return(NULL);
@@ -123,7 +123,7 @@ TopDownBody* TopDownBody_CreateFromBody(jeBody* pBody)
 	// Initialize for root which is guaranteed to be the first bone (0).
 	TopDownBody_InitNode(pTDBody, 0);
 
-	if(TopDownBody_AddChildren(pTDBody, 0, pBody) == JE_FALSE)
+	if(TopDownBody_AddChildren(pTDBody, 0, pBody) == GR_FALSE)
 	{
 		// something failed
 		TopDownBody_Destroy(&pTDBody);
@@ -136,7 +136,7 @@ void TopDownBody_Destroy(TopDownBody** ppTDBody)
 {
 	TopDownBody_DestroyChildren(*ppTDBody);
 
-	jeRam_Free(*ppTDBody);
+	grRam_Free(*ppTDBody);
 }
 
 const TopDownBody* TopDownBody_FindBoneIndex(const TopDownBody* pTDNode, int Index)

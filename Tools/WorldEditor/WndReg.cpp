@@ -48,11 +48,11 @@ WindowRegister *WndReg_Create()
 {
 	WindowRegister * pWindowRegister ;
 	
-	pWindowRegister = JE_RAM_ALLOCATE_STRUCT( WindowRegister ) ;
+	pWindowRegister = GR_RAM_ALLOCATE_STRUCT( WindowRegister ) ;
 	if( pWindowRegister == NULL )
 		goto WRC_FAILURE ;
 
-	pWindowRegister->EntryArray = JE_RAM_ALLOCATE_ARRAY( WindowEntry, DEFAULT_ARRAY_SIZE ) ;
+	pWindowRegister->EntryArray = GR_RAM_ALLOCATE_ARRAY( WindowEntry, DEFAULT_ARRAY_SIZE ) ;
 	if( pWindowRegister->EntryArray == NULL )
 		goto WRC_FAILURE ;
 
@@ -62,10 +62,10 @@ WindowRegister *WndReg_Create()
 
 WRC_FAILURE:
 	if( pWindowRegister->EntryArray != NULL )
-		jeRam_Free( pWindowRegister->EntryArray );
+		grRam_Free( pWindowRegister->EntryArray );
 
 	if( pWindowRegister != NULL )
-		jeRam_Free( pWindowRegister );
+		grRam_Free( pWindowRegister );
 	return( NULL );
 
 }
@@ -73,38 +73,38 @@ WRC_FAILURE:
 void WndReg_Destroy( WindowRegister **hWndReg )
 {
 	if( (*hWndReg)->EntryArray != NULL )
-		jeRam_Free( (*hWndReg)->EntryArray );
+		grRam_Free( (*hWndReg)->EntryArray );
 
-	jeRam_Free( (*hWndReg) );
+	grRam_Free( (*hWndReg) );
 }
 
-jeBoolean WndReg_EnlargeArray( WindowRegister *pWndReg )
+grBoolean WndReg_EnlargeArray( WindowRegister *pWndReg )
 {
 	int BlockN;
 	WindowEntry * EntryArray;
 
 	BlockN = pWndReg->ArraySize/ DEFAULT_ARRAY_SIZE + 1;
 
-	EntryArray = JE_RAM_REALLOC_ARRAY( pWndReg->EntryArray, WindowEntry, BlockN * DEFAULT_ARRAY_SIZE );
+	EntryArray = GR_RAM_REALLOC_ARRAY( pWndReg->EntryArray, WindowEntry, BlockN * DEFAULT_ARRAY_SIZE );
 	if( EntryArray == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	pWndReg->EntryArray = EntryArray;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean WndReg_RegisterWindow( HWND pHwnd, int32 Signiture )
+grBoolean WndReg_RegisterWindow( HWND pHwnd, int32 Signiture )
 {
 	WindowRegister *pWndReg = ((CJweApp*)AfxGetApp())->m_WndReg;
 	if( pWndReg->EntryN ==  pWndReg->ArraySize )
 	{
 		if( !WndReg_EnlargeArray( pWndReg ) )
-			return( JE_FALSE );
+			return( GR_FALSE );
 	}
 	pWndReg->EntryArray[ pWndReg->EntryN].pHwnd = pHwnd;
 	pWndReg->EntryArray[ pWndReg->EntryN].Signiture = Signiture;
 	pWndReg->EntryN++;
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 int32 WndReg_GetSigniture( HWND pHwnd )

@@ -14,23 +14,23 @@ void ChangeStateToVideo( VideoState newState )
     VideoMedia.state = newState;
 }
 
-jeBoolean InitVideoMgr(HWND mainwindowhandle)
+grBoolean InitVideoMgr(HWND mainwindowhandle)
 {
     // Filter interface initialize?
     if( SUCCEEDED( CoInitialize( NULL )))
-		return JE_TRUE;
+		return GR_TRUE;
 	
-    return JE_FALSE;
+    return GR_FALSE;
 }
 
-jeBoolean InitVideoMedia(HWND mainwindowhandle)
+grBoolean InitVideoMedia(HWND mainwindowhandle)
 {
     ChangeStateToVideo( UninitializedV );
 	
     VideoMedia.hGraphNotifyEvent = NULL;
     //VideoMedia.pGraph = NULL;
 	
-    return JE_TRUE;
+    return GR_TRUE;
 }
 
 
@@ -47,13 +47,13 @@ void UnInitVideoMgr(HWND mainwindowhandle)
 //	VideoMgr
 //
 
-JETAPI jeVidMgr * JETCC jeVideo_CreateManager(HWND mainwindowhandle)
+GRAPI grVidMgr * GRCC grVideo_CreateManager(HWND mainwindowhandle)
 {
-	jeVidMgr *VideoMgr;
+	grVidMgr *VideoMgr;
 	
-	VideoMgr = JE_RAM_ALLOCATE_STRUCT(jeVidMgr);
+	VideoMgr = GR_RAM_ALLOCATE_STRUCT(grVidMgr);
 	
-	memset(VideoMgr, 0, sizeof(jeVidMgr));
+	memset(VideoMgr, 0, sizeof(grVidMgr));
 	
 	// Initialise COM and the application
     InitVideoMgr(mainwindowhandle);
@@ -68,10 +68,10 @@ JETAPI jeVidMgr * JETCC jeVideo_CreateManager(HWND mainwindowhandle)
 		
 }	// VideoMgr
 
-JETAPI jeBoolean JETCC jeVideo_DestroyManager(jeVidMgr **VideoMgr)
+GRAPI grBoolean GRCC grVideo_DestroyManager(grVidMgr **VideoMgr)
 {
 	//destroys the VideoManager
-	jeVidMgr *	Vid;
+	grVidMgr *	Vid;
 
 	assert(VideoMgr);
 
@@ -95,13 +95,13 @@ JETAPI jeBoolean JETCC jeVideo_DestroyManager(jeVidMgr **VideoMgr)
 		HELPER_RELEASE(VideoMedia.pGraph);
 		HELPER_RELEASE(VideoMedia.pimex);
 
-		jeRam_Free(Vid);
+		grRam_Free(Vid);
 		//*Vid = NULL;
-		return JE_TRUE;
+		return GR_TRUE;
 
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
 
@@ -162,7 +162,7 @@ void DeleteContentsVideo()
 //	You may specify any of the following video file types:
 //	*.avi, *.mpg, *.mpeg, *.mov, *.qt
 //
-JETAPI void JETCC jeVideo_Open(jeVidMgr *VidMgr, LPSTR szFile )
+GRAPI void GRCC grVideo_Open(grVidMgr *VidMgr, LPSTR szFile )
 {
     //if( szFile != NULL && RenderFileVideo( szFile ))
     //{
@@ -181,7 +181,7 @@ JETAPI void JETCC jeVideo_Open(jeVidMgr *VidMgr, LPSTR szFile )
 // PlayVideo
 //
 
-JETAPI void JETCC jeVideo_Play (jeVidMgr *VidMgr, int vid)
+GRAPI void GRCC grVideo_Play (grVidMgr *VidMgr, int vid)
 {
 	WCHAR wFile[MAX_PATH];
     LPSTR szFile;
@@ -267,7 +267,7 @@ HANDLE GetGraphEventHandleVideo()
 // anything has happened (eg the graph has stopped...)
 //
 
-JETAPI void JETCC jeVideo_Notify()
+GRAPI void GRCC grVideo_Notify()
 {
 	
 	long      evCode;
@@ -288,7 +288,7 @@ JETAPI void JETCC jeVideo_Notify()
 				
 				//VideoMedia.pimc->Stop(VideoMedia.pimc);
 
-				VideoMedia.pivw->put_Visible(JE_FALSE);
+				VideoMedia.pivw->put_Visible(GR_FALSE);
 				//VideoMedia.pivw->put_Owner(VideoMedia.pivw, (OAHWND)NULL);
 								
                 HELPER_RELEASE(VideoMedia.pivw);
@@ -310,7 +310,7 @@ JETAPI void JETCC jeVideo_Notify()
 VIDEOPLAYING
 This function checks to see if the current Video file is still playing.
 =====================================================================================*/
-JETAPI jeBoolean JETCC jeVideo_IsPlaying()
+GRAPI grBoolean GRCC grVideo_IsPlaying()
 {
 	HRESULT				hr;
 	IMediaPosition		*pMP;
@@ -333,12 +333,12 @@ JETAPI jeBoolean JETCC jeVideo_IsPlaying()
 							if ((tLength - tCurrent) > 0) 
 							{
 								pMP->Release();	//	release our access to the interface
-								return JE_TRUE;	// if so, still playing, buddy.
+								return GR_TRUE;	// if so, still playing, buddy.
 							}
 							else
 							{
 								pMP->Release();	//	release our access to the interface
-								return JE_FALSE;
+								return GR_FALSE;
 							}
 						}
 					}
@@ -346,5 +346,5 @@ JETAPI jeBoolean JETCC jeVideo_IsPlaying()
 		}
 
 				
-				return JE_FALSE;	//	Video file is all done playing.				
+				return GR_FALSE;	//	Video file is all done playing.				
 }	//VideoPlaying

@@ -34,212 +34,212 @@ extern "C" {
 /* Krouer: enable/disable trace in VFile */
 //#define KROUERDEBUG
 
-/*! @typedef jeVFile
+/*! @typedef grVFile
 	@brief A virtual file or filesystem, physic file or directory instance.
 */
-typedef	struct	jeVFile			jeVFile;
+typedef	struct	grVFile			grVFile;
 
 //--------- Finder (Directory) --------------
-typedef	struct	jeVFile_Finder	jeVFile_Finder;
+typedef	struct	grVFile_Finder	grVFile_Finder;
 
-typedef unsigned int    jeVFile_Attributes;
+typedef unsigned int    grVFile_Attributes;
 
 // <> is this still used?
-typedef struct	jeVFile_Hints
+typedef struct	grVFile_Hints
 {
 	void *			HintData;
 	unsigned int	HintDataLength;
-}	jeVFile_Hints;
+}	grVFile_Hints;
 
-typedef	struct	jeVFile_Time
+typedef	struct	grVFile_Time
 {
 	unsigned long	Time1;
 	unsigned long	Time2;
-}	jeVFile_Time;
+}	grVFile_Time;
 
-#define	JE_VFILE_ATTRIB_READONLY	(1UL<<0)
-#define	JE_VFILE_ATTRIB_DIRECTORY	(1UL<<1)
-#define	JE_VFILE_ATTRIB_REMOTE		(1UL<<2)
+#define	GR_VFILE_ATTRIB_READONLY	(1UL<<0)
+#define	GR_VFILE_ATTRIB_DIRECTORY	(1UL<<1)
+#define	GR_VFILE_ATTRIB_REMOTE		(1UL<<2)
 
-typedef	struct	jeVFile_Properties
+typedef	struct	grVFile_Properties
 {
-	jeVFile_Time			Time;
-	jeVFile_Attributes		AttributeFlags;
+	grVFile_Time			Time;
+	grVFile_Attributes		AttributeFlags;
 	long					Size;
-//<>jeVFile_Hints			Hints;
+//<>grVFile_Hints			Hints;
 	char					Name[1024];
-}	jeVFile_Properties;
+}	grVFile_Properties;
 
 #ifdef _INC_WINDOWS
-JETAPI void JETCC jeVFile_TimeToWin32FileTime(const jeVFile_Time *, LPFILETIME Win32FileTime);
-	// Converts a jeVFile time to a Win32 FILETIME structure.  This API is the
+GRAPI void GRCC grVFile_TimeToWin32FileTime(const grVFile_Time *, LPFILETIME Win32FileTime);
+	// Converts a grVFile time to a Win32 FILETIME structure.  This API is the
 	// way to get the file time into a format to do standardized date/time
 	// operations on.  We do not provide date/time operations natively.
 #endif
 
 #ifdef BUILD_BE
 #ifdef _SUPPORT_DEFS_H
-JETAPI void JETCC jeVFile_TimeToTime_TFileTime(const jeVFile_Time *Time, bigtime_t* fileTime);
+GRAPI void GRCC grVFile_TimeToTime_TFileTime(const grVFile_Time *Time, bigtime_t* fileTime);
 #endif
 #endif
 
-JETAPI jeVFile_Finder * JETCC jeVFile_CreateFinder(
-	jeVFile *		FileSystem,
+GRAPI grVFile_Finder * GRCC grVFile_CreateFinder(
+	grVFile *		FileSystem,
 	const char *	FileSpec);
 	// Creates a finder object from which you can get iterated file names.
 	// This is findfirst/findnext functionality.  
 
-JETAPI void JETCC jeVFile_DestroyFinder(jeVFile_Finder *Finder);
+GRAPI void GRCC grVFile_DestroyFinder(grVFile_Finder *Finder);
 	// Destroys a Finder object
 
-JETAPI jeBoolean JETCC jeVFile_FinderGetNextFile(jeVFile_Finder *Finder);
+GRAPI grBoolean GRCC grVFile_FinderGetNextFile(grVFile_Finder *Finder);
 	// Tracks to the next file in the finder directory
 
-JETAPI jeBoolean JETCC jeVFile_FinderGetProperties(const jeVFile_Finder *Finder, jeVFile_Properties *Properties);
-	// Gets the file properties from a jeVFile_Finder.  You cannot set properties for
-	// a file through a finder.  You have to set the properties through a jeVFile.
+GRAPI grBoolean GRCC grVFile_FinderGetProperties(const grVFile_Finder *Finder, grVFile_Properties *Properties);
+	// Gets the file properties from a grVFile_Finder.  You cannot set properties for
+	// a file through a finder.  You have to set the properties through a grVFile.
 
 //--------- File System Operations ----
 
-typedef	struct	jeVFile_MemoryContext
+typedef	struct	grVFile_MemoryContext
 {
 	void *	Data;
 	int		DataLength;
-}	jeVFile_MemoryContext;
+}	grVFile_MemoryContext;
 
-typedef	struct	jeVFile_RemoteFileStatistics
+typedef	struct	grVFile_RemoteFileStatistics
 {
 	int		TotalBytesReceived;
 	int		TotalBlocksReceived;
 	int		MinBlockSize;
 	int		MaxBlockSize;
-}	jeVFile_RemoteFileStatistics;
+}	grVFile_RemoteFileStatistics;
 
 typedef enum {
-	JE_VFILE_TYPE_INVALID = 0,
-	JE_VFILE_TYPE_DOS,
-	JE_VFILE_TYPE_MEMORY,
-	JE_VFILE_TYPE_VIRTUAL,
-	JE_VFILE_TYPE_LZ,
-	JE_VFILE_TYPE_FAKENET,
-	JE_VFILE_TYPE_INTERNET,
-	JE_VFILE_TYPE_COUNT
-} jeVFile_TypeIdentifier;
+	GR_VFILE_TYPE_INVALID = 0,
+	GR_VFILE_TYPE_DOS,
+	GR_VFILE_TYPE_MEMORY,
+	GR_VFILE_TYPE_VIRTUAL,
+	GR_VFILE_TYPE_LZ,
+	GR_VFILE_TYPE_FAKENET,
+	GR_VFILE_TYPE_INTERNET,
+	GR_VFILE_TYPE_COUNT
+} grVFile_TypeIdentifier;
 
 // First three flags are mutually exclusive.  Combining them will result in failure
-// returns for both jeVFile_OpenNewSystem and jeVFile_Open.
-#define	JE_VFILE_OPEN_READONLY	 (1UL<<0)
-#define	JE_VFILE_OPEN_UPDATE 	 (1UL<<1)
-#define	JE_VFILE_OPEN_CREATE	 (1UL<<2)
+// returns for both grVFile_OpenNewSystem and grVFile_Open.
+#define	GR_VFILE_OPEN_READONLY	 (1UL<<0)
+#define	GR_VFILE_OPEN_UPDATE 	 (1UL<<1)
+#define	GR_VFILE_OPEN_CREATE	 (1UL<<2)
 
-#define JE_VFILE_OPEN_DIRECTORY  (1UL<<3)
-#define	JE_VFILE_OPEN_RAW		 (1UL<<4)
+#define GR_VFILE_OPEN_DIRECTORY  (1UL<<3)
+#define	GR_VFILE_OPEN_RAW		 (1UL<<4)
 				// Warning : VFile_Open_Raw is a new flag, 2/14/99 : it is not fully supported yet!
 				//		use at your own risk!
 
-JETAPI jeVFile * JETCC jeVFile_OpenNewSystem(
-	jeVFile *					FS,
-	jeVFile_TypeIdentifier	FileSystemType,  // { DOS, MEMORY, ETC ... },
+GRAPI grVFile * GRCC grVFile_OpenNewSystem(
+	grVFile *					FS,
+	grVFile_TypeIdentifier	FileSystemType,  // { DOS, MEMORY, ETC ... },
 	const char *			Name, 
 	void *					Context, 
 	unsigned int 			OpenModeFlags);
 	// Opens a file / file system.
 
-JETAPI jeBoolean JETCC jeVFile_UpdateContext(jeVFile *FS, void *Context, int ContextSize);
+GRAPI grBoolean GRCC grVFile_UpdateContext(grVFile *FS, void *Context, int ContextSize);
 
-JETAPI jeVFile * JETCC jeVFile_GetContext(const jeVFile *File);
+GRAPI grVFile * GRCC grVFile_GetContext(const grVFile *File);
 	// Returns the outer context in which File was opened.
 
-JETAPI jeVFile * JETCC jeVFile_Open( 
-	jeVFile *			FS,
+GRAPI grVFile * GRCC grVFile_Open( 
+	grVFile *			FS,
 	const char *	Name, 
 	unsigned int 	OpenModeFlags);
 
 #if 0
 // Experimenting:
-JETAPI jeVFile * JETCC jeVFile_GetSystem(jeVFile_TypeIdentifier SystemType);
-JETAPI jeVFile * JETCC jeVFile_Create(
-	jeVFile *		FS,
+GRAPI grVFile * GRCC grVFile_GetSystem(grVFile_TypeIdentifier SystemType);
+GRAPI grVFile * GRCC grVFile_Create(
+	grVFile *		FS,
 	const char *	Name, 
 	unsigned int 	OpenModeFlags);
-JETAPI jeVFile * JETCC jeVFile_SetParameters(jeVFile *File, void *Parameters, int ParameterSize);
-JETAPI jeVFile * JETCC jeVFile_GetParameters(jeVFile *File, void *Parameters, int ParameterSize);
+GRAPI grVFile * GRCC grVFile_SetParameters(grVFile *File, void *Parameters, int ParameterSize);
+GRAPI grVFile * GRCC grVFile_GetParameters(grVFile *File, void *Parameters, int ParameterSize);
 #endif
 
-JETAPI jeBoolean JETCC jeVFile_Destroy(jeVFile **FS);
+GRAPI grBoolean GRCC grVFile_Destroy(grVFile **FS);
 
-JETAPI void		 JETCC jeVFile_CreateRef(jeVFile *File);
+GRAPI void		 GRCC grVFile_CreateRef(grVFile *File);
 
 /*
 typedef	enum
 {
-	jeVFile_AppendPath,
-	jeVFile_PrependPath,
-}	jeVFile_SearchOrder;
+	grVFile_AppendPath,
+	grVFile_PrependPath,
+}	grVFile_SearchOrder;
 */
 
-JETAPI jeBoolean JETCC jeVFile_AddPath(jeVFile *FS1, const jeVFile *FS2, jeBoolean Append);
+GRAPI grBoolean GRCC grVFile_AddPath(grVFile *FS1, const grVFile *FS2, grBoolean Append);
 	// Appends (or prepends) the path associated with FS2 into FS1.
-	//    Append==JE_TRUE   causes the FS2 to be searched AFTER FS1
-	//    Append==JE_FALSE  causes the FS2 to be searched BEFORE FS1
+	//    Append==GR_TRUE   causes the FS2 to be searched AFTER FS1
+	//    Append==GR_FALSE  causes the FS2 to be searched BEFORE FS1
 
-/*  perhaps jeVFile_AppendPath and jeVFile_PrependPath */
+/*  perhaps grVFile_AppendPath and grVFile_PrependPath */
 
 
-JETAPI jeBoolean JETCC jeVFile_DeleteFile(jeVFile *FS, const char *FileName);
-	// Deletes a file within a file system.  Returns JE_TRUE on success, JE_FALSE
+GRAPI grBoolean GRCC grVFile_DeleteFile(grVFile *FS, const char *FileName);
+	// Deletes a file within a file system.  Returns GR_TRUE on success, GR_FALSE
 	// on failure.
 
-JETAPI jeBoolean JETCC jeVFile_RenameFile(jeVFile *FS, const char *FileName, const char *NewName);
-	// Renames a file within a file system.  Returns JE_TRUE on success, JE_FALSE
+GRAPI grBoolean GRCC grVFile_RenameFile(grVFile *FS, const char *FileName, const char *NewName);
+	// Renames a file within a file system.  Returns GR_TRUE on success, GR_FALSE
 	// on failure.
 
-JETAPI jeBoolean JETCC jeVFile_FileExists(jeVFile *FS, const char *FileName);
-	// Returns JE_TRUE if the file FileName exists in FS, JE_FALSE otherwise.
+GRAPI grBoolean GRCC grVFile_FileExists(grVFile *FS, const char *FileName);
+	// Returns GR_TRUE if the file FileName exists in FS, GR_FALSE otherwise.
 	// Does not do any searching (?)
 
-//jeVFile_VFileType jeVFile_Register( all kinds of stuff );
+//grVFile_VFileType grVFile_Register( all kinds of stuff );
 
-JETAPI jeBoolean JETCC jeVFile_Disperse(jeVFile *FS, const char *Directory);
+GRAPI grBoolean GRCC grVFile_Disperse(grVFile *FS, const char *Directory);
 // Always disperses recursively (falls out from implementation).
 
-JETAPI jeBoolean JETCC jeVFile_Close (jeVFile *File);
+GRAPI grBoolean GRCC grVFile_Close (grVFile *File);
 	// closes and destroys the File
 
 //---------- File Specific Operations -----------
 
 typedef	enum
 {
-	JE_VFILE_SEEKCUR	= 0,
-	JE_VFILE_SEEKEND	= 1,
-	JE_VFILE_SEEKSET	= 2
-}	jeVFile_Whence;
+	GR_VFILE_SEEKCUR	= 0,
+	GR_VFILE_SEEKEND	= 1,
+	GR_VFILE_SEEKSET	= 2
+}	grVFile_Whence;
 
-JETAPI jeBoolean JETCC jeVFile_GetS  		 (		jeVFile *File, void *Buff, int MaxLen);
+GRAPI grBoolean GRCC grVFile_GetS  		 (		grVFile *File, void *Buff, int MaxLen);
 												// GetS eats \n\r\0 at the end of a string
-JETAPI jeBoolean JETCC jeVFile_BytesAvailable(		jeVFile *File, long *Count);
+GRAPI grBoolean GRCC grVFile_BytesAvailable(		grVFile *File, long *Count);
 												// returns number of bytes which a Read can perform immediately
-JETAPI jeBoolean JETCC jeVFile_Read  		 (		jeVFile *File, void *Buff, uint32 Count); // cjp modified from int to uint32..
-JETAPI jeBoolean JETCC jeVFile_Write 		 (		jeVFile *File, const void *Buff, int Count);
-JETAPI jeBoolean JETCC jeVFile_Seek  		 (		jeVFile *File, int where, jeVFile_Whence Whence);
+GRAPI grBoolean GRCC grVFile_Read  		 (		grVFile *File, void *Buff, uint32 Count); // cjp modified from int to uint32..
+GRAPI grBoolean GRCC grVFile_Write 		 (		grVFile *File, const void *Buff, int Count);
+GRAPI grBoolean GRCC grVFile_Seek  		 (		grVFile *File, int where, grVFile_Whence Whence);
 												// do NOT seek forward on Internet files!
-JETAPI jeBoolean JETCC jeVFile_Printf		 (		jeVFile *File, const char *Format, ...);
-JETAPI jeBoolean JETCC jeVFile_EOF   		 (const jeVFile *File);
-JETAPI jeBoolean JETCC jeVFile_Tell  		 (const jeVFile *File, long *Position);
-JETAPI jeBoolean JETCC jeVFile_GetProperties (const jeVFile *File, jeVFile_Properties *Properties);
-JETAPI jeBoolean JETCC jeVFile_GetName		 (const jeVFile *File, char *Buff, int MaxBuffLen);
+GRAPI grBoolean GRCC grVFile_Printf		 (		grVFile *File, const char *Format, ...);
+GRAPI grBoolean GRCC grVFile_EOF   		 (const grVFile *File);
+GRAPI grBoolean GRCC grVFile_Tell  		 (const grVFile *File, long *Position);
+GRAPI grBoolean GRCC grVFile_GetProperties (const grVFile *File, grVFile_Properties *Properties);
+GRAPI grBoolean GRCC grVFile_GetName		 (const grVFile *File, char *Buff, int MaxBuffLen);
 
-JETAPI jeBoolean JETCC jeVFile_Size  		 (const jeVFile *File, long *Size);
-JETAPI jeBoolean JETCC jeVFile_SetSize		 (		jeVFile *File, long Size);
-JETAPI jeBoolean JETCC jeVFile_SetAttributes (		jeVFile *File, jeVFile_Attributes Attributes);
-JETAPI jeBoolean JETCC jeVFile_SetTime		 (		jeVFile *File, const jeVFile_Time *Time);
+GRAPI grBoolean GRCC grVFile_Size  		 (const grVFile *File, long *Size);
+GRAPI grBoolean GRCC grVFile_SetSize		 (		grVFile *File, long Size);
+GRAPI grBoolean GRCC grVFile_SetAttributes (		grVFile *File, grVFile_Attributes Attributes);
+GRAPI grBoolean GRCC grVFile_SetTime		 (		grVFile *File, const grVFile_Time *Time);
 
-JETAPI jeBoolean JETCC jeVFile_Rewind		 (		jeVFile *File);
+GRAPI grBoolean GRCC grVFile_Rewind		 (		grVFile *File);
 
-JETAPI jeVFile * JETCC jeVFile_GetHintsFile	 (		jeVFile *File);
+GRAPI grVFile * GRCC grVFile_GetHintsFile	 (		grVFile *File);
 	// GetHintsFile is Deprecated; use CreateHF instead
 
-JETAPI jeVFile * JETCC jeVFile_CreateHintsFile(		jeVFile *File);
+GRAPI grVFile * GRCC grVFile_CreateHintsFile(		grVFile *File);
 							// if there are no hints :
 							//	on a file open for read : returns NULL
 							//  on a file open for write: creates a hints subfile
@@ -251,9 +251,9 @@ JETAPI jeVFile * JETCC jeVFile_CreateHintsFile(		jeVFile *File);
 //---------------------------------------
 
 #ifdef _DEBUG
-JETAPI jeBoolean JETCC jeVFile_IsValid(const jeVFile * File);
+GRAPI grBoolean GRCC grVFile_IsValid(const grVFile * File);
 #else
-#define jeVFile_IsValid(F) (JE_TRUE)
+#define grVFile_IsValid(F) (GR_TRUE)
 #endif
 
 #ifdef _DEBUG
@@ -267,13 +267,13 @@ _declspec(dllimport) void __stdcall OutputDebugStringA(const char * lpOutputStri
 #define OutputDebugString// DEBUGGER
 #endif
 
-#define DebugShowOpenCount() do { char str[1024]; sprintf(str,"vfiles : %d\n",jeVFile_OpenCount()); OutputDebugString(str); } while(0)
+#define DebugShowOpenCount() do { char str[1024]; sprintf(str,"vfiles : %d\n",grVFile_OpenCount()); OutputDebugString(str); } while(0)
 
-JETAPI uint32 JETCC jeVFile_OpenCount(void);
+GRAPI uint32 GRCC grVFile_OpenCount(void);
 
 #else
 
-#define jeVFile_OpenCount() (0)
+#define grVFile_OpenCount() (0)
 #define DebugShowOpenCount()
 
 #endif
@@ -285,45 +285,12 @@ JETAPI uint32 JETCC jeVFile_OpenCount(void);
 #endif
 
 // Genesis3D: Reborn gr* Aliases
-typedef struct jeVFile grVFile;
-typedef struct jeVFile_Finder grVFile_Finder;
-typedef struct jeVFile_Properties grVFile_Properties;
-typedef struct jeVFile_Time grVFile_Time;
-typedef jeVFile_Attributes grVFile_Attributes;
-typedef jeVFile_TypeIdentifier grVFile_TypeIdentifier;
-typedef jeVFile_Whence grVFile_Whence;
+typedef struct grVFile_Properties grVFile_Properties;
+typedef struct grVFile_Time grVFile_Time;
+typedef grVFile_Attributes grVFile_Attributes;
+typedef grVFile_TypeIdentifier grVFile_TypeIdentifier;
+typedef grVFile_Whence grVFile_Whence;
 
-#define GR_VFILE_ATTRIB_READONLY         JE_VFILE_ATTRIB_READONLY
-#define GR_VFILE_ATTRIB_DIRECTORY        JE_VFILE_ATTRIB_DIRECTORY
-#define GR_VFILE_ATTRIB_REMOTE           JE_VFILE_ATTRIB_REMOTE
-#define GR_VFILE_OPEN_READONLY           JE_VFILE_OPEN_READONLY
-#define GR_VFILE_OPEN_UPDATE             JE_VFILE_OPEN_UPDATE
-#define GR_VFILE_OPEN_CREATE             JE_VFILE_OPEN_CREATE
-#define GR_VFILE_OPEN_DIRECTORY          JE_VFILE_OPEN_DIRECTORY
-#define GR_VFILE_OPEN_RAW                JE_VFILE_OPEN_RAW
 
-#define grVFile_Open                     jeVFile_Open
-#define grVFile_OpenNewSystem            jeVFile_OpenNewSystem
-#define grVFile_Close                    jeVFile_Close
-#define grVFile_Destroy                  jeVFile_Destroy
-#define grVFile_CreateRef                jeVFile_CreateRef
-#define grVFile_Read                     jeVFile_Read
-#define grVFile_Write                    jeVFile_Write
-#define grVFile_Seek                     jeVFile_Seek
-#define grVFile_Tell                     jeVFile_Tell
-#define grVFile_EOF                      jeVFile_EOF
-#define grVFile_Size                     jeVFile_Size
-#define grVFile_SetSize                  jeVFile_SetSize
-#define grVFile_Printf                   jeVFile_Printf
-#define grVFile_GetS                     jeVFile_GetS
-#define grVFile_GetName                  jeVFile_GetName
-#define grVFile_GetProperties            jeVFile_GetProperties
-#define grVFile_SetAttributes            jeVFile_SetAttributes
-#define grVFile_SetTime                  jeVFile_SetTime
-#define grVFile_Rewind                   jeVFile_Rewind
-#define grVFile_IsValid                  jeVFile_IsValid
-#define grVFile_FileExists               jeVFile_FileExists
-#define grVFile_DeleteFile               jeVFile_DeleteFile
-#define grVFile_RenameFile               jeVFile_RenameFile
 
 #endif

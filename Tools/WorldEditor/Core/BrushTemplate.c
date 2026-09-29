@@ -25,7 +25,7 @@
 
 #include "../Resource.h"
 #include "ErrorLog.h"
-#include "jet.h"
+#include "Genesis3D.h"
 #include "Ram.h"
 #include "Units.h"
 #include "Util.h"
@@ -78,18 +78,18 @@ typedef struct BrushTemplate {
 typedef struct BoxTemplate 
 {
 	BRUSH_KIND	Kind;
-	jeFloat		XSizeTop;
-	jeFloat		XSizeBot;
-	jeFloat		YSize;
-	jeFloat		ZSizeTop;
-	jeFloat		ZSizeBot;
+	grFloat		XSizeTop;
+	grFloat		XSizeBot;
+	grFloat		YSize;
+	grFloat		ZSizeTop;
+	grFloat		ZSizeBot;
 } BoxTemplate ;
 
 typedef struct SheetTemplate 
 {
 	BRUSH_KIND	Kind;
-	jeFloat		XSize;
-	jeFloat		ZSize;
+	grFloat		XSize;
+	grFloat		ZSize;
 } SheetTemplate ;
 
 typedef struct SphereTemplate 
@@ -97,84 +97,84 @@ typedef struct SphereTemplate
 	BRUSH_KIND	Kind;
 	int			HorizontalBands;
 	int			VerticalBands;
-	jeFloat		Radius;
+	grFloat		Radius;
 } SphereTemplate ;
 
 typedef struct CylinderTemplate 
 {
 	BRUSH_KIND	Kind;
-	jeFloat		BotXOffset;
-	jeFloat		BotXSize;
-	jeFloat		BotZOffset;
-	jeFloat		BotZSize;
-	jeFloat		TopXOffset;
-	jeFloat		TopXSize;
-	jeFloat		TopZOffset;
-	jeFloat		TopZSize;
+	grFloat		BotXOffset;
+	grFloat		BotXSize;
+	grFloat		BotZOffset;
+	grFloat		BotZSize;
+	grFloat		TopXOffset;
+	grFloat		TopXSize;
+	grFloat		TopZOffset;
+	grFloat		TopZSize;
 	int			VerticalStripes;
-	jeFloat		YSize;
+	grFloat		YSize;
 }CylinderTemplate ;
 
 typedef struct ArchTemplate
 {
 	BRUSH_KIND	Kind;
 	int			NumSlits;
-	jeFloat		Thickness;
-	jeFloat		Width;
-	jeFloat		Radius;
-	jeFloat		WallSize;
+	grFloat		Thickness;
+	grFloat		Width;
+	grFloat		Radius;
+	grFloat		WallSize;
 	int			Style;
-	jeFloat		EndAngle;
-	jeFloat		StartAngle;
-	jeBoolean	TCut;
+	grFloat		EndAngle;
+	grFloat		StartAngle;
+	grBoolean	TCut;
 } ArchTemplate;
 
 //STATIC
-static jeBoolean BrushTemplate_CreateFace( jeBrush * Brush, jeVec3d *Verts, int32 nVerts, jeFaceInfo * pFaceInfo)
+static grBoolean BrushTemplate_CreateFace( grBrush * Brush, grVec3d *Verts, int32 nVerts, grFaceInfo * pFaceInfo)
 {
-	jeBrush_Face *Face;
+	grBrush_Face *Face;
 	int i;
 
 	assert( Brush );
 	assert( Verts );
 
-	Face = jeBrush_CreateFace(Brush, nVerts);
+	Face = grBrush_CreateFace(Brush, nVerts);
 	if( Face == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Unable to create brush face." );
-		return(JE_FALSE );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Unable to create brush face." );
+		return(GR_FALSE );
 	}
 	for( i = 0; i < nVerts ; i++)
-		jeBrush_FaceSetVertByIndex(Face, i, &Verts[i] );
-	jeBrush_FaceSetFaceInfo(Face, pFaceInfo);
-	return(JE_TRUE );
+		grBrush_FaceSetVertByIndex(Face, i, &Verts[i] );
+	grBrush_FaceSetFaceInfo(Face, pFaceInfo);
+	return(GR_TRUE );
 }
 
-jeBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  jeFaceInfo * pFaceInfo )
+grBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  grFaceInfo * pFaceInfo )
 {
 	//revisit for error handling when merged
-	jeVec3d		Verts[8];
-	jeVec3d		FaceVerts[4];
-	jeBrush *	Brush;
+	grVec3d		Verts[8];
+	grVec3d		FaceVerts[4];
+	grBrush *	Brush;
 
-	Brush = jeBrush_Create(6);
+	Brush = grBrush_Create(6);
 	if(Brush == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Unable to create jeBrush" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Unable to create grBrush" );
 		return( NULL );
 	}
 
 	// Vertices 0 to 3 are the 4 corners of the top face
-	jeVec3d_Set (&Verts[0], (float)-(pTemplate->XSizeTop/2), (float)(pTemplate->YSize/2), (float)-(pTemplate->ZSizeTop/2));
-	jeVec3d_Set (&Verts[1], (float)-(pTemplate->XSizeTop/2), (float)(pTemplate->YSize/2), (float)(pTemplate->ZSizeTop/2));
-	jeVec3d_Set (&Verts[2], (float)(pTemplate->XSizeTop/2), (float)(pTemplate->YSize/2), (float)(pTemplate->ZSizeTop/2));
-	jeVec3d_Set (&Verts[3], (float)(pTemplate->XSizeTop/2), (float)(pTemplate->YSize/2), (float)-(pTemplate->ZSizeTop/2));
+	grVec3d_Set (&Verts[0], (float)-(pTemplate->XSizeTop/2), (float)(pTemplate->YSize/2), (float)-(pTemplate->ZSizeTop/2));
+	grVec3d_Set (&Verts[1], (float)-(pTemplate->XSizeTop/2), (float)(pTemplate->YSize/2), (float)(pTemplate->ZSizeTop/2));
+	grVec3d_Set (&Verts[2], (float)(pTemplate->XSizeTop/2), (float)(pTemplate->YSize/2), (float)(pTemplate->ZSizeTop/2));
+	grVec3d_Set (&Verts[3], (float)(pTemplate->XSizeTop/2), (float)(pTemplate->YSize/2), (float)-(pTemplate->ZSizeTop/2));
 
 	// Vertices 4 to 7 are the 4 corners of the bottom face
-	jeVec3d_Set (&Verts[4], (float)-(pTemplate->XSizeBot/2), (float)-(pTemplate->YSize/2), (float)-(pTemplate->ZSizeBot/2));
-	jeVec3d_Set (&Verts[5], (float)(pTemplate->XSizeBot/2), (float)-(pTemplate->YSize/2), (float)-(pTemplate->ZSizeBot/2));
-	jeVec3d_Set (&Verts[6], (float)(pTemplate->XSizeBot/2), (float)-(pTemplate->YSize/2), (float)(pTemplate->ZSizeBot/2));
-	jeVec3d_Set (&Verts[7], (float)-(pTemplate->XSizeBot/2), (float)-(pTemplate->YSize/2), (float)(pTemplate->ZSizeBot/2));
+	grVec3d_Set (&Verts[4], (float)-(pTemplate->XSizeBot/2), (float)-(pTemplate->YSize/2), (float)-(pTemplate->ZSizeBot/2));
+	grVec3d_Set (&Verts[5], (float)(pTemplate->XSizeBot/2), (float)-(pTemplate->YSize/2), (float)-(pTemplate->ZSizeBot/2));
+	grVec3d_Set (&Verts[6], (float)(pTemplate->XSizeBot/2), (float)-(pTemplate->YSize/2), (float)(pTemplate->ZSizeBot/2));
+	grVec3d_Set (&Verts[7], (float)-(pTemplate->XSizeBot/2), (float)-(pTemplate->YSize/2), (float)(pTemplate->ZSizeBot/2));
 
 	FaceVerts[3]	=Verts[0];
 	FaceVerts[2]	=Verts[1];
@@ -183,8 +183,8 @@ jeBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  jeFaceInfo
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, pFaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[4];
@@ -194,8 +194,8 @@ jeBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  jeFaceInfo
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, pFaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[1];
@@ -205,8 +205,8 @@ jeBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  jeFaceInfo
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, pFaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[0];
@@ -216,8 +216,8 @@ jeBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  jeFaceInfo
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, pFaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[0];
@@ -227,8 +227,8 @@ jeBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  jeFaceInfo
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, pFaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[3];
@@ -238,54 +238,54 @@ jeBrush *BrushTemplate_CreateBoxBrush (const BoxTemplate *pTemplate,  jeFaceInfo
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, pFaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 
 	return	Brush;
 }
 
-jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
+grBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 {
 	//revisit for error handling when merged
-	jeVec3d		Verts[16];
-	jeVec3d		FaceVerts[4];
-	jeBrush *	Brush;
-	jeFaceInfo  FaceInfo;
+	grVec3d		Verts[16];
+	grVec3d		FaceVerts[4];
+	grBrush *	Brush;
+	grFaceInfo  FaceInfo;
 
 
-	jeFaceInfo_SetDefaults( &FaceInfo );
-	Brush = jeBrush_Create(11);
+	grFaceInfo_SetDefaults( &FaceInfo );
+	Brush = grBrush_Create(11);
 	if(Brush == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Unable to create jeBrush" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Unable to create grBrush" );
 		return( NULL );
 	}
 
 	// Vertices 0 to 3 are the 4 corners of the top face
-	jeVec3d_Set (&Verts[0], (float)-(BoxSize/2), (float)(BoxSize/2), (float)-(BoxSize/2));
-	jeVec3d_Set (&Verts[1], (float)-(BoxSize/2), (float)(BoxSize/2), (float)(BoxSize/2));
-	jeVec3d_Set (&Verts[2], (float)(BoxSize/2), (float)(BoxSize/2), (float)(BoxSize/2));
-	jeVec3d_Set (&Verts[3], (float)(BoxSize/2), (float)(BoxSize/2), (float)-(BoxSize/2));
+	grVec3d_Set (&Verts[0], (float)-(BoxSize/2), (float)(BoxSize/2), (float)-(BoxSize/2));
+	grVec3d_Set (&Verts[1], (float)-(BoxSize/2), (float)(BoxSize/2), (float)(BoxSize/2));
+	grVec3d_Set (&Verts[2], (float)(BoxSize/2), (float)(BoxSize/2), (float)(BoxSize/2));
+	grVec3d_Set (&Verts[3], (float)(BoxSize/2), (float)(BoxSize/2), (float)-(BoxSize/2));
 
 	// Vertices 4 to 7 are the 4 corners of the bottom face
-	jeVec3d_Set (&Verts[4], (float)-(BoxSize/2), (float)-(BoxSize/2), (float)-(BoxSize/2));
-	jeVec3d_Set (&Verts[5], (float)(BoxSize/2), (float)-(BoxSize/2), (float)-(BoxSize/2));
-	jeVec3d_Set (&Verts[6], (float)(BoxSize/2), (float)-(BoxSize/2), (float)(BoxSize/2));
-	jeVec3d_Set (&Verts[7], (float)-(BoxSize/2), (float)-(BoxSize/2), (float)(BoxSize/2));
+	grVec3d_Set (&Verts[4], (float)-(BoxSize/2), (float)-(BoxSize/2), (float)-(BoxSize/2));
+	grVec3d_Set (&Verts[5], (float)(BoxSize/2), (float)-(BoxSize/2), (float)-(BoxSize/2));
+	grVec3d_Set (&Verts[6], (float)(BoxSize/2), (float)-(BoxSize/2), (float)(BoxSize/2));
+	grVec3d_Set (&Verts[7], (float)-(BoxSize/2), (float)-(BoxSize/2), (float)(BoxSize/2));
 
 	// Vertices 8 to 11 are the 4 corners of the Lens bottom
-	jeVec3d_Set (&Verts[8], (float)-(BoxSize/4), (float)-(BoxSize/4), (float)-(BoxSize/2));
-	jeVec3d_Set (&Verts[9], (float)-(BoxSize/4), (float)(BoxSize/4) , (float)-(BoxSize/2));
-	jeVec3d_Set (&Verts[10], (float)(BoxSize/4), (float)(BoxSize/4) , (float)-(BoxSize/2));
-	jeVec3d_Set (&Verts[11], (float)(BoxSize/4), (float)-(BoxSize/4), (float)-(BoxSize/2));
+	grVec3d_Set (&Verts[8], (float)-(BoxSize/4), (float)-(BoxSize/4), (float)-(BoxSize/2));
+	grVec3d_Set (&Verts[9], (float)-(BoxSize/4), (float)(BoxSize/4) , (float)-(BoxSize/2));
+	grVec3d_Set (&Verts[10], (float)(BoxSize/4), (float)(BoxSize/4) , (float)-(BoxSize/2));
+	grVec3d_Set (&Verts[11], (float)(BoxSize/4), (float)-(BoxSize/4), (float)-(BoxSize/2));
 
 	// Vertices 12 to 11 are the 4 corners of the Lens top
-	jeVec3d_Set (&Verts[12], (float)-(BoxSize/3), (float)-(BoxSize/3), (float)-(BoxSize));
-	jeVec3d_Set (&Verts[13], (float)-(BoxSize/3), (float)(BoxSize/3) , (float)-(BoxSize));
-	jeVec3d_Set (&Verts[14], (float)(BoxSize/3) , (float)(BoxSize/3) , (float)-(BoxSize) );
-	jeVec3d_Set (&Verts[15], (float)(BoxSize/3) , (float)-(BoxSize/3), (float)-(BoxSize) );
+	grVec3d_Set (&Verts[12], (float)-(BoxSize/3), (float)-(BoxSize/3), (float)-(BoxSize));
+	grVec3d_Set (&Verts[13], (float)-(BoxSize/3), (float)(BoxSize/3) , (float)-(BoxSize));
+	grVec3d_Set (&Verts[14], (float)(BoxSize/3) , (float)(BoxSize/3) , (float)-(BoxSize) );
+	grVec3d_Set (&Verts[15], (float)(BoxSize/3) , (float)-(BoxSize/3), (float)-(BoxSize) );
 
 	FaceVerts[3]	=Verts[0];
 	FaceVerts[2]	=Verts[1];
@@ -294,8 +294,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[4];
@@ -305,8 +305,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[1];
@@ -316,8 +316,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[0];
@@ -327,8 +327,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[0];
@@ -338,8 +338,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[3];
@@ -349,8 +349,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 
@@ -362,8 +362,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[12];
@@ -373,8 +373,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[9];
@@ -384,8 +384,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[8];
@@ -395,8 +395,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[8];
@@ -406,8 +406,8 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	FaceVerts[3]	=Verts[11];
@@ -417,63 +417,63 @@ jeBrush *BrushTemplate_CreateCameraBrush (int BoxSize  )
 
 	if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, &FaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
 
 	return	Brush;
 }
 
 
-jeBrush *BrushTemplate_CreateSheetBrush (const SheetTemplate *pTemplate,  jeFaceInfo * pFaceInfo )
+grBrush *BrushTemplate_CreateSheetBrush (const SheetTemplate *pTemplate,  grFaceInfo * pFaceInfo )
 {
-	jeVec3d		Verts[4];
+	grVec3d		Verts[4];
 	//void/vizard: changed num of verts from 8 to 4
-	jeBrush *	Brush;
+	grBrush *	Brush;
 
-	Brush = jeBrush_Create(1);
+	Brush = grBrush_Create(1);
 	if(Brush == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Unable to create jeBrush" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Unable to create grBrush" );
 		return( NULL );
 	}
 
 	// Vertices 0 to 3 are the 4 corners of the top face
-	jeVec3d_Set (&Verts[0], (float)-(pTemplate->XSize/2), 0.0f, (float)-(pTemplate->ZSize/2));
-	jeVec3d_Set (&Verts[1], (float)-(pTemplate->XSize/2), 0.0f, (float)(pTemplate->ZSize/2));
-	jeVec3d_Set (&Verts[2], (float)(pTemplate->XSize/2), 0.0f, (float)(pTemplate->ZSize/2));
-	jeVec3d_Set (&Verts[3], (float)(pTemplate->XSize/2), 0.0f, (float)-(pTemplate->ZSize/2));
+	grVec3d_Set (&Verts[0], (float)-(pTemplate->XSize/2), 0.0f, (float)-(pTemplate->ZSize/2));
+	grVec3d_Set (&Verts[1], (float)-(pTemplate->XSize/2), 0.0f, (float)(pTemplate->ZSize/2));
+	grVec3d_Set (&Verts[2], (float)(pTemplate->XSize/2), 0.0f, (float)(pTemplate->ZSize/2));
+	grVec3d_Set (&Verts[3], (float)(pTemplate->XSize/2), 0.0f, (float)-(pTemplate->ZSize/2));
 
 	if( !BrushTemplate_CreateFace( Brush, Verts, 4, pFaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeBrush_Destroy( &Brush);
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grBrush_Destroy( &Brush);
 	}
-	jeBrush_SetContents( Brush, JE_BSP_CONTENTS_SHEET);
+	grBrush_SetContents( Brush, GR_BSP_CONTENTS_SHEET);
 
 	return	Brush;
 }
 
 
-jeBrush	*BrushTemplate_CreateSphereBrush (const SphereTemplate *pTemplate,   jeFaceInfo * pFaceInfo )
+grBrush	*BrushTemplate_CreateSphereBrush (const SphereTemplate *pTemplate,   grFaceInfo * pFaceInfo )
 {
 	double		z, ring_radius, r, dz, t, dt;
 	int			vcnt, HBand, VBand;
-	jeVec3d		*sv = NULL, FaceVerts[4];
-	jeBrush *	Brush;
+	grVec3d		*sv = NULL, FaceVerts[4];
+	grBrush *	Brush;
 
 	assert((pTemplate->HorizontalBands >= 2) && (pTemplate->VerticalBands >= 3));
 	
-	Brush = jeBrush_Create((pTemplate->HorizontalBands)* pTemplate->VerticalBands);
+	Brush = grBrush_Create((pTemplate->HorizontalBands)* pTemplate->VerticalBands);
 	if(Brush == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Unable to create jeBrush" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Unable to create grBrush" );
 		goto SPHERE_ERR;
 	}
-	sv			=(jeVec3d *)jeRam_Allocate(sizeof(jeVec3d) * (((pTemplate->HorizontalBands-1) * pTemplate->VerticalBands)+2));
+	sv			=(grVec3d *)grRam_Allocate(sizeof(grVec3d) * (((pTemplate->HorizontalBands-1) * pTemplate->VerticalBands)+2));
 	r			=pTemplate->Radius;
 	vcnt		=0;
-	jeVec3d_Set (&sv[vcnt], 0.0f, pTemplate->Radius, 0.0f);
+	grVec3d_Set (&sv[vcnt], 0.0f, pTemplate->Radius, 0.0f);
 	vcnt++;
 	dz			=2.0*r/(double)(pTemplate->HorizontalBands-1);
 	for(z=(-r)+dz/2.0; z<(r-dz/2.0+dz/4.0); z+=dz)
@@ -499,7 +499,7 @@ jeBrush	*BrushTemplate_CreateSphereBrush (const SphereTemplate *pTemplate,   jeF
 
 		if( !BrushTemplate_CreateFace( Brush, FaceVerts, 3, pFaceInfo ) )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 			goto SPHERE_ERR;
 		}
 	}
@@ -515,7 +515,7 @@ jeBrush	*BrushTemplate_CreateSphereBrush (const SphereTemplate *pTemplate,   jeF
 
 			if( !BrushTemplate_CreateFace( Brush, FaceVerts, 4, pFaceInfo ) )
 			{
-				jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+				grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 				goto SPHERE_ERR;
 			}
 		}
@@ -529,25 +529,25 @@ jeBrush	*BrushTemplate_CreateSphereBrush (const SphereTemplate *pTemplate,   jeF
 
 		if( !BrushTemplate_CreateFace( Brush, FaceVerts, 3, pFaceInfo ) )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 			goto SPHERE_ERR;
 			
 		}
 	}
-	jeRam_Free(sv);
+	grRam_Free(sv);
 
 	return	Brush;
 
 SPHERE_ERR:
 	if( Brush != NULL )
-		jeBrush_Destroy( &Brush);
+		grBrush_Destroy( &Brush);
 	if( sv != NULL )
-		jeRam_Free(sv);
+		grRam_Free(sv);
 	return( NULL );
 }
 
 
-jeBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,   jeFaceInfo * pFaceInfo)
+grBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,   grFaceInfo * pFaceInfo)
 {
 	double		CurrentXDiameter, CurrentZDiameter;
 	double		DeltaXDiameter, DeltaZDiameter;
@@ -556,37 +556,37 @@ jeBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,  
 	double		EllipseZ;
 	int			NumVerticalBands, HBand, VBand;
 	int			VertexCount=0;
-	jeVec3d		*Verts = NULL, *TopPoints = NULL;
-	jeVec3d		Current, Final, Delta;
-	jeXForm3d	YRotation;
-	jeBrush *	Brush = NULL;
+	grVec3d		*Verts = NULL, *TopPoints = NULL;
+	grVec3d		Current, Final, Delta;
+	grXForm3d	YRotation;
+	grBrush *	Brush = NULL;
 
 	NumVerticalBands	= (int)(pTemplate->VerticalStripes);
 
 	assert (NumVerticalBands >= 3);
 
-	Verts		=(jeVec3d *)jeRam_Allocate(sizeof(jeVec3d)*NumVerticalBands * 2);
+	Verts		=(grVec3d *)grRam_Allocate(sizeof(grVec3d)*NumVerticalBands * 2);
 	if(Verts == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate Verts" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate Verts" );
 		goto CYLND_ERR;
 	}
-	TopPoints	=(jeVec3d *)jeRam_Allocate(sizeof(jeVec3d)*NumVerticalBands);
+	TopPoints	=(grVec3d *)grRam_Allocate(sizeof(grVec3d)*NumVerticalBands);
 	if(TopPoints == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate TopPoints" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate TopPoints" );
 		goto CYLND_ERR;
 	}
-	Brush = jeBrush_Create(NumVerticalBands + 2);
+	Brush = grBrush_Create(NumVerticalBands + 2);
 	if(Brush == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Unable to create jeBrush" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Unable to create grBrush" );
 		goto CYLND_ERR;
 	}
 
 
-	jeXForm3d_SetIdentity(&YRotation);
-	jeXForm3d_SetYRotation(&YRotation, (M_PI * 2.0f)/(jeFloat)NumVerticalBands);
+	grXForm3d_SetIdentity(&YRotation);
+	grXForm3d_SetYRotation(&YRotation, (M_PI * 2.0f)/(grFloat)NumVerticalBands);
 
 	// Start with the top of cylinder
 	CurrentXDiameter	=pTemplate->TopXSize;
@@ -601,8 +601,8 @@ jeBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,  
 	DeltaZOffset	=(pTemplate->BotZOffset - pTemplate->TopZOffset);
 
 	// Get the band positions and deltas
-	jeVec3d_Set(&Current, (float)(pTemplate->TopXSize / 2), (float)(pTemplate->YSize / 2), 0.0);
-	jeVec3d_Set(&Delta, (float)((pTemplate->BotXSize / 2) - Current.X), (float)(-(pTemplate->YSize/2) - Current.Y), 0.0);
+	grVec3d_Set(&Current, (float)(pTemplate->TopXSize / 2), (float)(pTemplate->YSize / 2), 0.0);
+	grVec3d_Set(&Delta, (float)((pTemplate->BotXSize / 2) - Current.X), (float)(-(pTemplate->YSize/2) - Current.Y), 0.0);
 
 	for(HBand = 0;HBand <= 1;HBand++)
 	{
@@ -623,7 +623,7 @@ jeBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,  
 			if(VBand > (NumVerticalBands/2))
 				EllipseZ = -EllipseZ;
 
-			jeVec3d_Set
+			grVec3d_Set
 			(
 				&Verts[VertexCount],
 				(float)(Final.X + CurrentXOffset),
@@ -633,14 +633,14 @@ jeBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,  
 			VertexCount++;
 
 			// Rotate the point around the Y to get the next vertical band
-			jeXForm3d_Rotate(&YRotation, &Final, &Final);
+			grXForm3d_Rotate(&YRotation, &Final, &Final);
 		}
 		CurrentXDiameter	+=DeltaXDiameter;
 		CurrentZDiameter	+=DeltaZDiameter;
 		CurrentXOffset		+=DeltaXOffset;
 		CurrentZOffset		+=DeltaZOffset;
 
-		jeVec3d_Add(&Current, &Delta, &Current);
+		grVec3d_Add(&Current, &Delta, &Current);
 	}
 
 	for(VBand=0;VBand < NumVerticalBands;VBand++)
@@ -649,7 +649,7 @@ jeBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,  
 	}
 	if( !BrushTemplate_CreateFace( Brush, TopPoints, NumVerticalBands, pFaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		goto CYLND_ERR;
 		
 	}
@@ -660,7 +660,7 @@ jeBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,  
 	}
 	if( !BrushTemplate_CreateFace( Brush, TopPoints, HBand, pFaceInfo ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		goto CYLND_ERR;
 		
 	}
@@ -677,39 +677,39 @@ jeBrush *BrushTemplate_CreateCylinderBrush (const CylinderTemplate *pTemplate,  
 			TopPoints[0]	=Verts[((HBand + 1) * NumVerticalBands) + VBand];
 			if( !BrushTemplate_CreateFace( Brush, TopPoints, 4, pFaceInfo ) )
 			{
-				jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+				grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 				goto CYLND_ERR;
 				
 			}
 		}
 	}
-	jeRam_Free(Verts);
-	jeRam_Free(TopPoints);
+	grRam_Free(Verts);
+	grRam_Free(TopPoints);
 	return( Brush );
 
 CYLND_ERR:
 	if( Verts != NULL )
-		jeRam_Free(Verts);
+		grRam_Free(Verts);
 	if( TopPoints != NULL )
-		jeRam_Free(TopPoints);
+		grRam_Free(TopPoints);
 	if( Brush != NULL )
-		jeBrush_Destroy( &Brush );
+		grBrush_Destroy( &Brush );
 	return	NULL;
 }
 
-jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo *FaceInfo)
+grBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, grFaceInfo *FaceInfo)
 {
-	jeBrush		*b;//, *b2;
+	grBrush		*b;//, *b2;
 	//BrushList	*MBList	=BrushList_Create();
 	//FaceList	*fl;
 	//Face		*f;
-	jeVec3d		FaceVerts[4];
+	grVec3d		FaceVerts[4];
 
 	int		i, NumSlits			=pTemplate->NumSlits;
 	int		NumCrossSections	=NumSlits + 2;
-	jeFloat	Thickness			=pTemplate->Thickness;
-	jeFloat	Width				=pTemplate->Width;
-	jeFloat	InnerRadius			=pTemplate->Radius;
+	grFloat	Thickness			=pTemplate->Thickness;
+	grFloat	Width				=pTemplate->Width;
+	grFloat	InnerRadius			=pTemplate->Radius;
 	double	StartAngleDegrees	=pTemplate->StartAngle;
 	double	EndAngleDegrees		=pTemplate->EndAngle;
 	double	AngleDelta			=0;
@@ -717,20 +717,20 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 	double	StartAngle			=Units_DegreesToRadians (StartAngleDegrees);
 	double	EndAngle			=Units_DegreesToRadians (EndAngleDegrees);
 	double	Temp;
-	jeVec3d	TopInnerPoint;
-	jeVec3d	TopOuterPoint;
-	jeVec3d	FinalTopInnerPoint;
-	jeVec3d	FinalTopOuterPoint;
-	jeVec3d	FinalBottomInnerPoint;
-	jeVec3d	FinalBottomOuterPoint;
-	jeVec3d	OldTopInner;
-	jeVec3d	OldTopOuter;
-	jeVec3d	OldBottomInner;
-	jeVec3d	OldBottomOuter;
-	jeXForm3d XForm;
+	grVec3d	TopInnerPoint;
+	grVec3d	TopOuterPoint;
+	grVec3d	FinalTopInnerPoint;
+	grVec3d	FinalTopOuterPoint;
+	grVec3d	FinalBottomInnerPoint;
+	grVec3d	FinalBottomOuterPoint;
+	grVec3d	OldTopInner;
+	grVec3d	OldTopOuter;
+	grVec3d	OldBottomInner;
+	grVec3d	OldBottomOuter;
+	grXForm3d XForm;
 
-	jeXForm3d_SetIdentity(&XForm);
-	jeXForm3d_SetScaling(&XForm, 0.50f, 0.50f, 0.50f);
+	grXForm3d_SetIdentity(&XForm);
+	grXForm3d_SetScaling(&XForm, 0.50f, 0.50f, 0.50f);
 
 	//If angles are equal, we have an empty shape...
 	if(StartAngle==EndAngle)
@@ -746,25 +746,25 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 		EndAngle	=Temp;
 	}
 
-	b = jeBrush_Create(NumCrossSections);
+	b = grBrush_Create(NumCrossSections);
 	if (!b)
 		return NULL;
 
-	jeVec3d_Set(&TopInnerPoint, (float)InnerRadius, 0.0, (float)(Width / 2));
-	jeVec3d_Set(&TopOuterPoint, (float)(InnerRadius + Thickness), 0.0, (float)(Width / 2));
+	grVec3d_Set(&TopInnerPoint, (float)InnerRadius, 0.0, (float)(Width / 2));
+	grVec3d_Set(&TopOuterPoint, (float)(InnerRadius + Thickness), 0.0, (float)(Width / 2));
 
 	AngleDelta	=(EndAngle - StartAngle)/(NumCrossSections - 1);
 	CurAngle	=StartAngle + AngleDelta;
 
 	//	Create first cross section of 4 vertices ( outer face @ start angle)...
-	jeVec3d_Set
+	grVec3d_Set
 	(
 		&FinalTopInnerPoint,
 		(float)(( TopInnerPoint.X * cos( StartAngle ) ) - ( TopInnerPoint.Y * sin( StartAngle ) )),
 		(float)(( TopInnerPoint.X * sin( StartAngle ) ) + ( TopInnerPoint.Y * cos( StartAngle ) )),
 		TopInnerPoint.Z
 	);
-	jeVec3d_Set
+	grVec3d_Set
 	(
 		&FinalTopOuterPoint,
 		(float)(( TopOuterPoint.X * cos( StartAngle ) ) - ( TopInnerPoint.Y * sin( StartAngle ) )),
@@ -783,14 +783,14 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 	//Create the other cross sections and assign verts to polys after each...
 	for(i=0;i < (NumCrossSections-1);i++)
 	{
-		jeVec3d_Set
+		grVec3d_Set
 		(
 			&FinalTopInnerPoint,
 			(float)(( TopInnerPoint.X * cos( CurAngle ) ) - ( TopInnerPoint.Y * sin( CurAngle ) )),
 			(float)(( TopInnerPoint.X * sin( CurAngle ) ) + ( TopInnerPoint.Y * cos( CurAngle ) )),
 			TopInnerPoint.Z
 		);
-		jeVec3d_Set
+		grVec3d_Set
 		(
 			&FinalTopOuterPoint,
 			(float)(( TopOuterPoint.X * cos( CurAngle ) ) - ( TopInnerPoint.Y * sin( CurAngle ) )),
@@ -821,7 +821,7 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 		//}
 		if (!BrushTemplate_CreateFace(b, FaceVerts, 4, FaceInfo))
 		{
-			jeBrush_Destroy(&b);
+			grBrush_Destroy(&b);
 			return NULL;
 		}
 
@@ -837,7 +837,7 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 		//}
 		if (!BrushTemplate_CreateFace(b, FaceVerts, 4, FaceInfo))
 		{
-			jeBrush_Destroy(&b);
+			grBrush_Destroy(&b);
 			return NULL;
 		}
 
@@ -853,7 +853,7 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 		//}
 		if (!BrushTemplate_CreateFace(b, FaceVerts, 4, FaceInfo))
 		{
-			jeBrush_Destroy(&b);
+			grBrush_Destroy(&b);
 			return NULL;
 		}
 
@@ -869,7 +869,7 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 		//}
 		if (!BrushTemplate_CreateFace(b, FaceVerts, 4, FaceInfo))
 		{
-			jeBrush_Destroy(&b);
+			grBrush_Destroy(&b);
 			return NULL;
 		}
 
@@ -897,7 +897,7 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 		}*/
 		if (!BrushTemplate_CreateFace(b, FaceVerts, 4, FaceInfo))
 		{
-			jeBrush_Destroy(&b);
+			grBrush_Destroy(&b);
 			return NULL;
 		}
 
@@ -924,7 +924,7 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 		}*/
 		if (!BrushTemplate_CreateFace(b, FaceVerts, 4, FaceInfo))
 		{
-			jeBrush_Destroy(&b);
+			grBrush_Destroy(&b);
 			return NULL;
 		}
 
@@ -990,7 +990,7 @@ jeBrush *BrushTemplate_CreateArchBrush(const ArchTemplate *pTemplate, jeFaceInfo
 	//	Brush_SetSubtract(b, pTemplate->TCut);
 	//}
 
-	//jeBrush_SetXForm(b, &XForm, JE_FALSE);
+	//grBrush_SetXForm(b, &XForm, GR_FALSE);
 	
 	return	b;
 }
@@ -1001,10 +1001,10 @@ BoxTemplate	* BrushTemplate_CreateBox(  )
 {
 	BoxTemplate * pBoxTemplate ;
 
-	pBoxTemplate = JE_RAM_ALLOCATE_STRUCT( BoxTemplate );
+	pBoxTemplate = GR_RAM_ALLOCATE_STRUCT( BoxTemplate );
 	if( pBoxTemplate == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate BoxTemplate" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate BoxTemplate" );
 		return( NULL );
 	}
 	pBoxTemplate->Kind		= BRUSH_BOX  ;
@@ -1016,35 +1016,35 @@ BoxTemplate	* BrushTemplate_CreateBox(  )
 	return( pBoxTemplate );
 }
 
-jeBoolean BrushTemplate_FillBoxDescriptor( BoxTemplate * pBoxTemplate, jeProperty_List *pPropertyList )
+grBoolean BrushTemplate_FillBoxDescriptor( BoxTemplate * pBoxTemplate, grProperty_List *pPropertyList )
 {
 
-	jeProperty Property;
+	grProperty Property;
 	char * Name;
 
 	Name = Util_LoadLocalRcString( IDS_BOXXRATIO_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, pBoxTemplate->XSizeTop/pBoxTemplate->XSizeBot,	TEMPLATE_BOXXRATIO_FIELD, 0.1f, FLT_MAX, 0.1f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pPropertyList, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, pBoxTemplate->XSizeTop/pBoxTemplate->XSizeBot,	TEMPLATE_BOXXRATIO_FIELD, 0.1f, FLT_MAX, 0.1f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pPropertyList, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_BOXZRATIO_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, pBoxTemplate->ZSizeTop/pBoxTemplate->ZSizeBot,	TEMPLATE_BOXZRATIO_FIELD, 0.1f, FLT_MAX, 0.1f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pPropertyList, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, pBoxTemplate->ZSizeTop/pBoxTemplate->ZSizeBot,	TEMPLATE_BOXZRATIO_FIELD, 0.1f, FLT_MAX, 0.1f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pPropertyList, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-void BrushTemplate_SetBoxProperty( BoxTemplate * pBoxTemplate, int DataId, int DataType, jeProperty_Data * pData )
+void BrushTemplate_SetBoxProperty( BoxTemplate * pBoxTemplate, int DataId, int DataType, grProperty_Data * pData )
 {
 	switch( DataId )
 	{
@@ -1063,10 +1063,10 @@ SheetTemplate *	BrushTemplate_CreateSheet(  )
 {
 	SheetTemplate * pSheetTemplate ;
 
-	pSheetTemplate = JE_RAM_ALLOCATE_STRUCT( SheetTemplate );
+	pSheetTemplate = GR_RAM_ALLOCATE_STRUCT( SheetTemplate );
 	if( pSheetTemplate == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate SheetTemplate" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate SheetTemplate" );
 		return( NULL );
 	}
 	pSheetTemplate->Kind	= BRUSH_SHEET  ;
@@ -1080,10 +1080,10 @@ SphereTemplate * BrushTemplate_CreateSphere(  )
 {
 	SphereTemplate * pSphereTemplate ;
 
-	pSphereTemplate = JE_RAM_ALLOCATE_STRUCT( SphereTemplate );
+	pSphereTemplate = GR_RAM_ALLOCATE_STRUCT( SphereTemplate );
 	if( pSphereTemplate == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate SphereTemplate" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate SphereTemplate" );
 		return( NULL );
 	}
 	pSphereTemplate->Kind				= BRUSH_SPHERE  ;
@@ -1093,35 +1093,35 @@ SphereTemplate * BrushTemplate_CreateSphere(  )
 	return( pSphereTemplate );
 }
 
-jeBoolean BrushTemplate_FillSphereDescriptor( SphereTemplate * pSphereTemplate, jeProperty_List *pPropertyList  )
+grBoolean BrushTemplate_FillSphereDescriptor( SphereTemplate * pSphereTemplate, grProperty_List *pPropertyList  )
 {
 
-	jeProperty Property;
+	grProperty Property;
 	char * Name;
 
 	Name = Util_LoadLocalRcString( IDS_SPHERE_HBANDS_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillInt( &Property, Name, pSphereTemplate->HorizontalBands,	TEMPLATE_HBANDS_FIELD, 2.0f, 12.0f, 1.0f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pPropertyList, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillInt( &Property, Name, pSphereTemplate->HorizontalBands,	TEMPLATE_HBANDS_FIELD, 2.0f, 12.0f, 1.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pPropertyList, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	Name = Util_LoadLocalRcString( IDS_SPHERE_VBANDS_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillInt( &Property, Name, pSphereTemplate->VerticalBands,	TEMPLATE_VBANDS_FIELD, 4.0f, 12.0f, 1.0f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pPropertyList, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillInt( &Property, Name, pSphereTemplate->VerticalBands,	TEMPLATE_VBANDS_FIELD, 4.0f, 12.0f, 1.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pPropertyList, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-void BrushTemplate_SetSphereProperty( SphereTemplate * pSphereTemplate,  int DataId, int DataType, jeProperty_Data * pData )
+void BrushTemplate_SetSphereProperty( SphereTemplate * pSphereTemplate,  int DataId, int DataType, grProperty_Data * pData )
 {
 	switch( DataId )
 	{
@@ -1140,10 +1140,10 @@ CylinderTemplate	*	BrushTemplate_CreateCylinder( )
 {
 	CylinderTemplate * pCylinderTemplate ;
 
-	pCylinderTemplate = JE_RAM_ALLOCATE_STRUCT( CylinderTemplate );
+	pCylinderTemplate = GR_RAM_ALLOCATE_STRUCT( CylinderTemplate );
 	if( pCylinderTemplate == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate CylinderTemplate" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate CylinderTemplate" );
 		return( NULL );
 	}
 	pCylinderTemplate->Kind				= BRUSH_CYLINDER  ;
@@ -1161,45 +1161,45 @@ CylinderTemplate	*	BrushTemplate_CreateCylinder( )
 }
 
 
-jeBoolean BrushTemplate_FillCylinderDescriptor( CylinderTemplate * pCylinderTemplate, jeProperty_List *pPropertyList  )
+grBoolean BrushTemplate_FillCylinderDescriptor( CylinderTemplate * pCylinderTemplate, grProperty_List *pPropertyList  )
 {
 
-	jeProperty Property;
+	grProperty Property;
 	char * Name;
 
 	Name = Util_LoadLocalRcString( IDS_CYLDXRATIO_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, pCylinderTemplate->TopXSize/pCylinderTemplate->BotXSize,	TEMPLATE_CYLDXRATIO_FIELD, 0.1f, FLT_MAX, 0.1f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pPropertyList, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, pCylinderTemplate->TopXSize/pCylinderTemplate->BotXSize,	TEMPLATE_CYLDXRATIO_FIELD, 0.1f, FLT_MAX, 0.1f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pPropertyList, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 /*
 	Name = Util_LoadLocalRcString( IDS_CYLDZRATIO_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillFloat( &Property, Name, pCylinderTemplate->TopZSize/pCylinderTemplate->BotZSize,	TEMPLATE_CYLDZRATIO_FIELD, 0.1f, FLT_MAX, 0.1f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pPropertyList, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillFloat( &Property, Name, pCylinderTemplate->TopZSize/pCylinderTemplate->BotZSize,	TEMPLATE_CYLDZRATIO_FIELD, 0.1f, FLT_MAX, 0.1f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pPropertyList, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 */
 	Name = Util_LoadLocalRcString( IDS_CYLD_STRIPE_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillInt( &Property, Name, pCylinderTemplate->VerticalStripes,	TEMPLATE_STRIPES_FIELD, 4.0f, 12.0f, 1.0f );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pPropertyList, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillInt( &Property, Name, pCylinderTemplate->VerticalStripes,	TEMPLATE_STRIPES_FIELD, 4.0f, 12.0f, 1.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pPropertyList, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-void BrushTemplate_SetCylinderProperty( CylinderTemplate * pCylinderTemplate,  int DataId, int DataType, jeProperty_Data * pData )
+void BrushTemplate_SetCylinderProperty( CylinderTemplate * pCylinderTemplate,  int DataId, int DataType, grProperty_Data * pData )
 {
 	switch( DataId )
 	{
@@ -1224,7 +1224,7 @@ ArchTemplate *BrushTemplate_CreateArch()
 {
 	ArchTemplate				*pArchTemplate = NULL;
 
-	pArchTemplate = JE_RAM_ALLOCATE_STRUCT(ArchTemplate);
+	pArchTemplate = GR_RAM_ALLOCATE_STRUCT(ArchTemplate);
 	if (!pArchTemplate)
 		return NULL;
 
@@ -1239,76 +1239,76 @@ ArchTemplate *BrushTemplate_CreateArch()
 	pArchTemplate->Style		= 0;
 	pArchTemplate->EndAngle		= 180.0f;
 	pArchTemplate->StartAngle	= 0.0f;
-	pArchTemplate->TCut			= JE_FALSE;
+	pArchTemplate->TCut			= GR_FALSE;
 
 	return pArchTemplate;
 }
 
-jeBoolean BrushTemplate_FillArchDescriptor(ArchTemplate *pTemplate, jeProperty_List *PropList)
+grBoolean BrushTemplate_FillArchDescriptor(ArchTemplate *pTemplate, grProperty_List *PropList)
 {
-	jeProperty					Property;
+	grProperty					Property;
 	char						*Name = NULL;
 
 	Name = Util_LoadLocalRcString(IDS_ARCH_STARTANGLE);
 	if (Name == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeProperty_FillFloat(&Property, Name, pTemplate->StartAngle, TEMPLATE_ARCH_STARTANGLE_FIELD, 0.0f, 180.0f, 1.0f);
-	jeRam_Free(Name);
-	jeProperty_Append(PropList, &Property);
+	grProperty_FillFloat(&Property, Name, pTemplate->StartAngle, TEMPLATE_ARCH_STARTANGLE_FIELD, 0.0f, 180.0f, 1.0f);
+	grRam_Free(Name);
+	grProperty_Append(PropList, &Property);
 
 	Name = Util_LoadLocalRcString(IDS_ARCH_ENDANGLE);
 	if (Name == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeProperty_FillFloat(&Property, Name, pTemplate->EndAngle, TEMPLATE_ARCH_ENDANGLE_FIELD, 1.0f, 180.0f, 1.0f);
-	jeRam_Free(Name);
-	jeProperty_Append(PropList, &Property);
+	grProperty_FillFloat(&Property, Name, pTemplate->EndAngle, TEMPLATE_ARCH_ENDANGLE_FIELD, 1.0f, 180.0f, 1.0f);
+	grRam_Free(Name);
+	grProperty_Append(PropList, &Property);
 
 	Name = Util_LoadLocalRcString(IDS_ARCH_THICKNESS);
 	if (Name == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeProperty_FillFloat(&Property, Name, pTemplate->Thickness, TEMPLATE_ARCH_THICKNESS_FIELD, 1.0f, 100.0f, 1.0f);
-	jeRam_Free(Name);
-	jeProperty_Append(PropList, &Property);
+	grProperty_FillFloat(&Property, Name, pTemplate->Thickness, TEMPLATE_ARCH_THICKNESS_FIELD, 1.0f, 100.0f, 1.0f);
+	grRam_Free(Name);
+	grProperty_Append(PropList, &Property);
 
 	Name = Util_LoadLocalRcString(IDS_ARCH_WIDTH);
 	if (Name == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeProperty_FillFloat(&Property, Name, pTemplate->Width, TEMPLATE_ARCH_WIDTH_FIELD, 1.0f, 100.0f, 1.0f);
-	jeRam_Free(Name);
-	jeProperty_Append(PropList, &Property);
+	grProperty_FillFloat(&Property, Name, pTemplate->Width, TEMPLATE_ARCH_WIDTH_FIELD, 1.0f, 100.0f, 1.0f);
+	grRam_Free(Name);
+	grProperty_Append(PropList, &Property);
 
 	Name = Util_LoadLocalRcString(IDS_ARCH_INNERRADIUS);
 	if (Name == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeProperty_FillFloat(&Property, Name, pTemplate->Radius, TEMPLATE_ARCH_INNERRADIUS_FIELD, 1.0f, 360.0f, 1.0f);
-	jeRam_Free(Name);
-	jeProperty_Append(PropList, &Property);
+	grProperty_FillFloat(&Property, Name, pTemplate->Radius, TEMPLATE_ARCH_INNERRADIUS_FIELD, 1.0f, 360.0f, 1.0f);
+	grRam_Free(Name);
+	grProperty_Append(PropList, &Property);
 
 	Name = Util_LoadLocalRcString(IDS_ARCH_HOLLOWWALLSIZE);
 	if (Name == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeProperty_FillFloat(&Property, Name, pTemplate->WallSize, TEMPLATE_ARCH_HOLLOWWALLSIZE_FIELD, 1.0f, 100.0f, 1.0f);
-	jeRam_Free(Name);
-	jeProperty_Append(PropList, &Property);
+	grProperty_FillFloat(&Property, Name, pTemplate->WallSize, TEMPLATE_ARCH_HOLLOWWALLSIZE_FIELD, 1.0f, 100.0f, 1.0f);
+	grRam_Free(Name);
+	grProperty_Append(PropList, &Property);
 
 	Name = Util_LoadLocalRcString(IDS_ARCH_NUMCROSSSECTIONS);
 	if (Name == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeProperty_FillInt(&Property, Name, pTemplate->NumSlits, TEMPLATE_ARCH_NUMCROSSSECTIONS_FIELD, 1.0f, 100.0f, 1.0f);
-	jeRam_Free(Name);
-	jeProperty_Append(PropList, &Property);
+	grProperty_FillInt(&Property, Name, pTemplate->NumSlits, TEMPLATE_ARCH_NUMCROSSSECTIONS_FIELD, 1.0f, 100.0f, 1.0f);
+	grRam_Free(Name);
+	grProperty_Append(PropList, &Property);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-void BrushTemplate_SetArchProperty(ArchTemplate *pTemplate, int DataID, int DataType, jeProperty_Data *Data)
+void BrushTemplate_SetArchProperty(ArchTemplate *pTemplate, int DataID, int DataType, grProperty_Data *Data)
 {
 	switch (DataID)
 	{
@@ -1356,7 +1356,7 @@ void BrushTemplate_Destroy( BrushTemplate ** hBrushTemplate )
 	assert( hBrushTemplate );
 	assert( *hBrushTemplate );
 
-	jeRam_Free( (*hBrushTemplate) );
+	grRam_Free( (*hBrushTemplate) );
 }
 
 //ACCESSOR
@@ -1399,9 +1399,9 @@ BrushTemplate *  BrushTemplate_Create( BRUSH_KIND Kind )
 }
 
 
-jeBrush *BrushTemplate_CreateBrush( const BrushTemplate * pBrushTemplate,  jeFaceInfo * pFaceInfo )
+grBrush *BrushTemplate_CreateBrush( const BrushTemplate * pBrushTemplate,  grFaceInfo * pFaceInfo )
 {
-	jeBrush *pBrush = NULL;
+	grBrush *pBrush = NULL;
 
 
 	switch( pBrushTemplate->Kind )
@@ -1444,27 +1444,27 @@ BrushTemplate *   BrushTemplate_Copy( BrushTemplate * pTemplate )
 	switch( pTemplate->Kind )
 	{
 	case BRUSH_BOX:
-		pNewTemplate = (BrushTemplate *)jeRam_Allocate( sizeof( BoxTemplate) );
+		pNewTemplate = (BrushTemplate *)grRam_Allocate( sizeof( BoxTemplate) );
 		memcpy( pNewTemplate, pTemplate, sizeof( BoxTemplate) );
 		break;
 
 	case BRUSH_SPHERE:
-		pNewTemplate = (BrushTemplate *)jeRam_Allocate( sizeof( SphereTemplate) );
+		pNewTemplate = (BrushTemplate *)grRam_Allocate( sizeof( SphereTemplate) );
 		memcpy( pNewTemplate, pTemplate, sizeof( SphereTemplate) );
 		break;
 
 	case BRUSH_CYLINDER:
-		pNewTemplate = (BrushTemplate *)jeRam_Allocate( sizeof( CylinderTemplate) );
+		pNewTemplate = (BrushTemplate *)grRam_Allocate( sizeof( CylinderTemplate) );
 		memcpy( pNewTemplate, pTemplate, sizeof( CylinderTemplate) );
 		break;
 
 	case BRUSH_SHEET:
-		pNewTemplate = (BrushTemplate *)jeRam_Allocate( sizeof( SheetTemplate) );
+		pNewTemplate = (BrushTemplate *)grRam_Allocate( sizeof( SheetTemplate) );
 		memcpy( pNewTemplate, pTemplate, sizeof( SheetTemplate) );
 		break;
 
 	case BRUSH_ARCH:
-		pNewTemplate = (BrushTemplate*)jeRam_Allocate(sizeof(ArchTemplate));
+		pNewTemplate = (BrushTemplate*)grRam_Allocate(sizeof(ArchTemplate));
 		memcpy(pNewTemplate, pTemplate, sizeof(ArchTemplate));
 
 	default:
@@ -1506,24 +1506,24 @@ int BrushTemplate_GetDescriptorN( BrushTemplate * pTemplate )
 	return DescriptorN;
 }
 
-jeBoolean BrushTemplate_FillTemplateDescriptor( BrushTemplate * pTemplate, jeProperty_List *pPropertyList )
+grBoolean BrushTemplate_FillTemplateDescriptor( BrushTemplate * pTemplate, grProperty_List *pPropertyList )
 {
 	int TypeStringId = 0;
 	char * TypeString;
 	char * TemplateString;
-	jeProperty Property;
-	jeProperty *pGroupProperty;
+	grProperty Property;
+	grProperty *pGroupProperty;
 	char * Name;
 
 
 	Name = Util_LoadLocalRcString( IDS_TEMPLATE_FIELD );
 	if( Name == NULL )
-		return( JE_FALSE );
-	jeProperty_FillGroup( &Property, Name, TEMPLATE_GROUP );
-	jeRam_Free( Name );
-	if( !jeProperty_Append( pPropertyList, &Property ) )
+		return( GR_FALSE );
+	grProperty_FillGroup( &Property, Name, TEMPLATE_GROUP );
+	grRam_Free( Name );
+	if( !grProperty_Append( pPropertyList, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 
 	switch( pTemplate->Kind )
@@ -1556,25 +1556,25 @@ jeBoolean BrushTemplate_FillTemplateDescriptor( BrushTemplate * pTemplate, jePro
 		assert( 0 );
 		break;
 	}
-	pGroupProperty = jeProperty_ListFindByDataId(  pPropertyList, TEMPLATE_GROUP );
+	pGroupProperty = grProperty_ListFindByDataId(  pPropertyList, TEMPLATE_GROUP );
 	if( pGroupProperty == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	TypeString = Util_LoadLocalRcString(TypeStringId);
 	TemplateString = pGroupProperty->FieldName;
-	pGroupProperty->FieldName = jeRam_Allocate( strlen( TypeString) + strlen( TemplateString) +4 );
+	pGroupProperty->FieldName = grRam_Allocate( strlen( TypeString) + strlen( TemplateString) +4 );
 	sprintf( pGroupProperty->FieldName, "%s %s", TemplateString, TypeString );
-	jeRam_Free( TypeString );
-	jeRam_Free( TemplateString );
+	grRam_Free( TypeString );
+	grRam_Free( TemplateString );
 
-	jeProperty_FillGroupEnd( &Property, TEMPLATE_GROUP_END );
-	if( !jeProperty_Append( pPropertyList, &Property ) )
+	grProperty_FillGroupEnd( &Property, TEMPLATE_GROUP_END );
+	if( !grProperty_Append( pPropertyList, &Property ) )
 	{
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-void BrushTemplate_SetProperty( BrushTemplate * pTemplate,  int DataId, int DataType, jeProperty_Data * pData )
+void BrushTemplate_SetProperty( BrushTemplate * pTemplate,  int DataId, int DataType, grProperty_Data * pData )
 {
 
 	switch( pTemplate->Kind )
@@ -1605,174 +1605,174 @@ void BrushTemplate_SetProperty( BrushTemplate * pTemplate,  int DataId, int Data
 }
 
 //FILE
-jeBoolean BrushTemplate_BoxReadFromFile( BoxTemplate * pBoxTemplate, jeVFile * pF )
+grBoolean BrushTemplate_BoxReadFromFile( BoxTemplate * pBoxTemplate, grVFile * pF )
 {
-	if( jeVFile_Read( pF, &pBoxTemplate->XSizeBot, sizeof pBoxTemplate->XSizeBot ) == JE_FALSE )
+	if( grVFile_Read( pF, &pBoxTemplate->XSizeBot, sizeof pBoxTemplate->XSizeBot ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_BoxReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_BoxReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pBoxTemplate->YSize, sizeof pBoxTemplate->YSize ) == JE_FALSE )
+	if( grVFile_Read( pF, &pBoxTemplate->YSize, sizeof pBoxTemplate->YSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_BoxReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_BoxReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pBoxTemplate->ZSizeTop, sizeof pBoxTemplate->ZSizeTop ) == JE_FALSE )
+	if( grVFile_Read( pF, &pBoxTemplate->ZSizeTop, sizeof pBoxTemplate->ZSizeTop ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_BoxReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_BoxReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pBoxTemplate->ZSizeBot, sizeof pBoxTemplate->ZSizeBot ) == JE_FALSE )
+	if( grVFile_Read( pF, &pBoxTemplate->ZSizeBot, sizeof pBoxTemplate->ZSizeBot ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_BoxReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_BoxReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean BrushTemplate_SphereReadFromFile( SphereTemplate * pSphereTemplate, jeVFile * pF )
+grBoolean BrushTemplate_SphereReadFromFile( SphereTemplate * pSphereTemplate, grVFile * pF )
 {
-	if( jeVFile_Read( pF, &pSphereTemplate->HorizontalBands, sizeof pSphereTemplate->HorizontalBands ) == JE_FALSE )
+	if( grVFile_Read( pF, &pSphereTemplate->HorizontalBands, sizeof pSphereTemplate->HorizontalBands ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_SphereReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_SphereReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pSphereTemplate->VerticalBands, sizeof pSphereTemplate->VerticalBands ) == JE_FALSE )
+	if( grVFile_Read( pF, &pSphereTemplate->VerticalBands, sizeof pSphereTemplate->VerticalBands ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_SphereReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_SphereReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pSphereTemplate->Radius, sizeof pSphereTemplate->Radius ) == JE_FALSE )
+	if( grVFile_Read( pF, &pSphereTemplate->Radius, sizeof pSphereTemplate->Radius ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_SphereReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_SphereReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean BrushTemplate_CyldReadFromFile( CylinderTemplate * pCylinderTemplate, jeVFile * pF )
+grBoolean BrushTemplate_CyldReadFromFile( CylinderTemplate * pCylinderTemplate, grVFile * pF )
 {
-	if( jeVFile_Read( pF, &pCylinderTemplate->BotXOffset, sizeof pCylinderTemplate->BotXOffset ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->BotXOffset, sizeof pCylinderTemplate->BotXOffset ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pCylinderTemplate->BotXSize, sizeof pCylinderTemplate->BotXSize ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->BotXSize, sizeof pCylinderTemplate->BotXSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pCylinderTemplate->BotZOffset, sizeof pCylinderTemplate->BotZOffset ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->BotZOffset, sizeof pCylinderTemplate->BotZOffset ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pCylinderTemplate->BotZSize, sizeof pCylinderTemplate->BotZSize ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->BotZSize, sizeof pCylinderTemplate->BotZSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pCylinderTemplate->TopXOffset, sizeof pCylinderTemplate->TopXOffset ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->TopXOffset, sizeof pCylinderTemplate->TopXOffset ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pCylinderTemplate->TopXSize, sizeof pCylinderTemplate->TopXSize ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->TopXSize, sizeof pCylinderTemplate->TopXSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pCylinderTemplate->TopZOffset, sizeof pCylinderTemplate->TopZOffset ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->TopZOffset, sizeof pCylinderTemplate->TopZOffset ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pCylinderTemplate->TopZSize, sizeof pCylinderTemplate->TopZSize ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->TopZSize, sizeof pCylinderTemplate->TopZSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pCylinderTemplate->VerticalStripes, sizeof pCylinderTemplate->VerticalStripes ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->VerticalStripes, sizeof pCylinderTemplate->VerticalStripes ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pCylinderTemplate->YSize, sizeof pCylinderTemplate->YSize ) == JE_FALSE )
+	if( grVFile_Read( pF, &pCylinderTemplate->YSize, sizeof pCylinderTemplate->YSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_CyldReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean BrushTemplate_SheetReadFromFile( SheetTemplate * pSheetTemplate, jeVFile * pF )
+grBoolean BrushTemplate_SheetReadFromFile( SheetTemplate * pSheetTemplate, grVFile * pF )
 {
-	if( jeVFile_Read( pF, &pSheetTemplate->XSize, sizeof pSheetTemplate->XSize ) == JE_FALSE )
+	if( grVFile_Read( pF, &pSheetTemplate->XSize, sizeof pSheetTemplate->XSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_SheetReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_SheetReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Read( pF, &pSheetTemplate->ZSize, sizeof pSheetTemplate->ZSize ) == JE_FALSE )
+	if( grVFile_Read( pF, &pSheetTemplate->ZSize, sizeof pSheetTemplate->ZSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_SheetReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_SheetReadFromFile", NULL);
+		return GR_FALSE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean BrushTemplate_ArchReadFromFile(ArchTemplate *pTemplate, jeVFile *File)
+grBoolean BrushTemplate_ArchReadFromFile(ArchTemplate *pTemplate, grVFile *File)
 {
-	if (!jeVFile_Read(File, &pTemplate->StartAngle, sizeof(jeFloat)))
+	if (!grVFile_Read(File, &pTemplate->StartAngle, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Read(File, &pTemplate->EndAngle, sizeof(jeFloat)))
+	if (!grVFile_Read(File, &pTemplate->EndAngle, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Read(File, &pTemplate->Thickness, sizeof(jeFloat)))
+	if (!grVFile_Read(File, &pTemplate->Thickness, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Read(File, &pTemplate->Width, sizeof(jeFloat)))
+	if (!grVFile_Read(File, &pTemplate->Width, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Read(File, &pTemplate->Radius, sizeof(jeFloat)))
+	if (!grVFile_Read(File, &pTemplate->Radius, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Read(File, &pTemplate->WallSize, sizeof(jeFloat)))
+	if (!grVFile_Read(File, &pTemplate->WallSize, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Read(File, &pTemplate->NumSlits, sizeof(jeFloat)))
+	if (!grVFile_Read(File, &pTemplate->NumSlits, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushTemplate_ArchReadFromFile", NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-BrushTemplate * BrushTemplate_CreateFromFile( jeVFile * pF ) 
+BrushTemplate * BrushTemplate_CreateFromFile( grVFile * pF ) 
 {
 	int Kind;
 	BrushTemplate *pTemplate = NULL;
 
-	if( !jeVFile_Read( pF, &Kind, sizeof Kind ) )
+	if( !grVFile_Read( pF, &Kind, sizeof Kind ) )
 		goto BTCFF_FAILURE ;
   
 	if( Kind == BRUSH_INVALID )
@@ -1818,221 +1818,221 @@ BrushTemplate * BrushTemplate_CreateFromFile( jeVFile * pF )
 
 BTCFF_FAILURE:
 	if( pTemplate != NULL )
-		jeRam_Free( pTemplate );
+		grRam_Free( pTemplate );
 	return( NULL );
 }
 
-jeBoolean BrushTemplate_WriteBoxToFile( BoxTemplate * pBoxTemplate, jeVFile * pF )
+grBoolean BrushTemplate_WriteBoxToFile( BoxTemplate * pBoxTemplate, grVFile * pF )
 {
-	if( jeVFile_Write( pF, &pBoxTemplate->XSizeBot, sizeof pBoxTemplate->XSizeBot ) == JE_FALSE )
+	if( grVFile_Write( pF, &pBoxTemplate->XSizeBot, sizeof pBoxTemplate->XSizeBot ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteBoxToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteBoxToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pBoxTemplate->YSize, sizeof pBoxTemplate->YSize ) == JE_FALSE )
+	if( grVFile_Write( pF, &pBoxTemplate->YSize, sizeof pBoxTemplate->YSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteBoxToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteBoxToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pBoxTemplate->ZSizeTop, sizeof pBoxTemplate->ZSizeTop ) == JE_FALSE )
+	if( grVFile_Write( pF, &pBoxTemplate->ZSizeTop, sizeof pBoxTemplate->ZSizeTop ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteBoxToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteBoxToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pBoxTemplate->ZSizeBot, sizeof pBoxTemplate->ZSizeBot ) == JE_FALSE )
+	if( grVFile_Write( pF, &pBoxTemplate->ZSizeBot, sizeof pBoxTemplate->ZSizeBot ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteBoxToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteBoxToFile", NULL);
+		return GR_FALSE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean BrushTemplate_WriteSphereToFile( SphereTemplate * pSphereTemplate, jeVFile * pF )
+grBoolean BrushTemplate_WriteSphereToFile( SphereTemplate * pSphereTemplate, grVFile * pF )
 {
-	if( jeVFile_Write( pF, &pSphereTemplate->HorizontalBands, sizeof pSphereTemplate->HorizontalBands ) == JE_FALSE )
+	if( grVFile_Write( pF, &pSphereTemplate->HorizontalBands, sizeof pSphereTemplate->HorizontalBands ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteSphereToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteSphereToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pSphereTemplate->VerticalBands, sizeof pSphereTemplate->VerticalBands ) == JE_FALSE )
+	if( grVFile_Write( pF, &pSphereTemplate->VerticalBands, sizeof pSphereTemplate->VerticalBands ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteSphereToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteSphereToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pSphereTemplate->Radius, sizeof pSphereTemplate->Radius ) == JE_FALSE )
+	if( grVFile_Write( pF, &pSphereTemplate->Radius, sizeof pSphereTemplate->Radius ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteSphereToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteSphereToFile", NULL);
+		return GR_FALSE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean BrushTemplate_WriteCylinderToFile( CylinderTemplate * pCylinderTemplate, jeVFile * pF )
+grBoolean BrushTemplate_WriteCylinderToFile( CylinderTemplate * pCylinderTemplate, grVFile * pF )
 {
-	if( jeVFile_Write( pF, &pCylinderTemplate->BotXOffset, sizeof pCylinderTemplate->BotXOffset ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->BotXOffset, sizeof pCylinderTemplate->BotXOffset ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pCylinderTemplate->BotXSize, sizeof pCylinderTemplate->BotXSize ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->BotXSize, sizeof pCylinderTemplate->BotXSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pCylinderTemplate->BotZOffset, sizeof pCylinderTemplate->BotZOffset ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->BotZOffset, sizeof pCylinderTemplate->BotZOffset ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pCylinderTemplate->BotZSize, sizeof pCylinderTemplate->BotZSize ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->BotZSize, sizeof pCylinderTemplate->BotZSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pCylinderTemplate->TopXOffset, sizeof pCylinderTemplate->TopXOffset ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->TopXOffset, sizeof pCylinderTemplate->TopXOffset ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pCylinderTemplate->TopXSize, sizeof pCylinderTemplate->TopXSize ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->TopXSize, sizeof pCylinderTemplate->TopXSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pCylinderTemplate->TopZOffset, sizeof pCylinderTemplate->TopZOffset ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->TopZOffset, sizeof pCylinderTemplate->TopZOffset ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pCylinderTemplate->TopZSize, sizeof pCylinderTemplate->TopZSize ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->TopZSize, sizeof pCylinderTemplate->TopZSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pCylinderTemplate->VerticalStripes, sizeof pCylinderTemplate->VerticalStripes ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->VerticalStripes, sizeof pCylinderTemplate->VerticalStripes ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pCylinderTemplate->YSize, sizeof pCylinderTemplate->YSize ) == JE_FALSE )
+	if( grVFile_Write( pF, &pCylinderTemplate->YSize, sizeof pCylinderTemplate->YSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteCylinderToFile", NULL);
+		return GR_FALSE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean BrushTemplate_WriteSheetToFile( SheetTemplate * pSheetTemplate, jeVFile * pF )
+grBoolean BrushTemplate_WriteSheetToFile( SheetTemplate * pSheetTemplate, grVFile * pF )
 {
-	if( jeVFile_Write( pF, &pSheetTemplate->XSize, sizeof pSheetTemplate->XSize ) == JE_FALSE )
+	if( grVFile_Write( pF, &pSheetTemplate->XSize, sizeof pSheetTemplate->XSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteSheetToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteSheetToFile", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pSheetTemplate->ZSize, sizeof pSheetTemplate->ZSize ) == JE_FALSE )
+	if( grVFile_Write( pF, &pSheetTemplate->ZSize, sizeof pSheetTemplate->ZSize ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteSheetToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteSheetToFile", NULL);
+		return GR_FALSE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean BrushTemplate_WriteArchToFile(ArchTemplate *pTemplate, jeVFile *File)
+grBoolean BrushTemplate_WriteArchToFile(ArchTemplate *pTemplate, grVFile *File)
 {
-	if (!jeVFile_Write(File, &pTemplate->StartAngle, sizeof(jeFloat)))
+	if (!grVFile_Write(File, &pTemplate->StartAngle, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Write(File, &pTemplate->EndAngle, sizeof(jeFloat)))
+	if (!grVFile_Write(File, &pTemplate->EndAngle, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Write(File, &pTemplate->Thickness, sizeof(jeFloat)))
+	if (!grVFile_Write(File, &pTemplate->Thickness, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Write(File, &pTemplate->Width, sizeof(jeFloat)))
+	if (!grVFile_Write(File, &pTemplate->Width, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Write(File, &pTemplate->Radius, sizeof(jeFloat)))
+	if (!grVFile_Write(File, &pTemplate->Radius, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Write(File, &pTemplate->WallSize, sizeof(jeFloat)))
+	if (!grVFile_Write(File, &pTemplate->WallSize, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
+		return GR_FALSE;
 	}
 
-	if (!jeVFile_Write(File, &pTemplate->NumSlits, sizeof(jeFloat)))
+	if (!grVFile_Write(File, &pTemplate->NumSlits, sizeof(grFloat)))
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushTemplate_WriteArchToFile", NULL);
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean BrushTemplate_WriteToFile( BrushTemplate * pTemplate, jeVFile * pF )
+grBoolean BrushTemplate_WriteToFile( BrushTemplate * pTemplate, grVFile * pF )
 {
 	int InvalidKind = BRUSH_INVALID;
 	if( pTemplate == NULL )
 	{
-		if( jeVFile_Write( pF, &InvalidKind, sizeof InvalidKind ) == JE_FALSE )
+		if( grVFile_Write( pF, &InvalidKind, sizeof InvalidKind ) == GR_FALSE )
 		{
-			jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Brush_WriteToFile.\n", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Brush_WriteToFile.\n", NULL);
+			return GR_FALSE;
 		}
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
 
-	if( jeVFile_Write( pF, &pTemplate->Kind, sizeof pTemplate->Kind ) == JE_FALSE )
+	if( grVFile_Write( pF, &pTemplate->Kind, sizeof pTemplate->Kind ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Brush_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Brush_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 
 	switch( pTemplate->Kind )
 	{
 	case BRUSH_BOX:
 		if( !BrushTemplate_WriteBoxToFile((BoxTemplate *) pTemplate, pF ) )
-			return JE_FALSE;
+			return GR_FALSE;
 		break;
 
 	case BRUSH_SPHERE:
 		if( !BrushTemplate_WriteSphereToFile((SphereTemplate *) pTemplate, pF ) )
-			return JE_FALSE;
+			return GR_FALSE;
 		break;
 
 	case BRUSH_CYLINDER:
 		if( !BrushTemplate_WriteCylinderToFile((CylinderTemplate *) pTemplate, pF ) )
-			return JE_FALSE;
+			return GR_FALSE;
 		break;
 
 	case BRUSH_SHEET:
 		if( !BrushTemplate_WriteSheetToFile((SheetTemplate *) pTemplate, pF ) )
-			return JE_FALSE;
+			return GR_FALSE;
 		break;
 
 	case BRUSH_ARCH:
 		if (!BrushTemplate_WriteArchToFile((ArchTemplate*)pTemplate, pF))
-			return JE_FALSE;
+			return GR_FALSE;
 		break;
 
 	default:
 		assert( 0 );
 		break;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }

@@ -82,7 +82,7 @@ typedef struct tagSettings
 	COLORREF	coSelectedFace ;
 	COLORREF	coCutBrush ;
 	COLORREF	coConstructorLine ;
-	jeBoolean	bSelectFullyEncompassed ;
+	grBoolean	bSelectFullyEncompassed ;
 } Settings ;
 
                 
@@ -90,7 +90,7 @@ Settings * Settings_Create( void )
 {
 	Settings * pSettings ;
 
-	pSettings = JE_RAM_ALLOCATE_STRUCT( Settings ) ;
+	pSettings = GR_RAM_ALLOCATE_STRUCT( Settings ) ;
 	if( pSettings == NULL )
 		goto ADC_FAILURE ;
 
@@ -128,7 +128,7 @@ void Settings_Destroy( Settings ** ppSettings )
 	pSettings = *ppSettings ;
 	assert( pSettings != NULL ) ;
 
-	jeRam_Free( *ppSettings ) ;
+	grRam_Free( *ppSettings ) ;
 
 }// Settings_Destroy
 
@@ -200,7 +200,7 @@ uint32 Settings_GetCutBrushColor( void )
 	return (uint32)((CJweApp*)AfxGetApp())->m_pSettings->coCutBrush ;
 }// Settings_GetSelectedFaceColor
 
-jeBoolean Settings_IsSelByEncompass( void )
+grBoolean Settings_IsSelByEncompass( void )
 {
 	//return ((CJweApp*)AfxGetApp())->m_pSettings->bSelectFullyEncompassed ;
 	return (Settings_GetEdit_Selection());
@@ -214,7 +214,7 @@ typedef struct tagMouseSettings
 {
 	eMouseMiddleButton       m_eMiddleButton;  // Middle button state
 	eMouseWheel              m_eWheel;         // Mouse wheel state
-	jeBoolean	             m_bHotSelect;     // Hot select flag
+	grBoolean	             m_bHotSelect;     // Hot select flag
 	eMouseRightButton        m_eRightButton;   // Right button state
 } MouseSettings;
 
@@ -225,7 +225,7 @@ MouseSettings * MouseSettings_Create(void)
 {
 	MouseSettings * pSettings ;
 	
-	pSettings = JE_RAM_ALLOCATE_STRUCT(MouseSettings) ;
+	pSettings = GR_RAM_ALLOCATE_STRUCT(MouseSettings) ;
 	if(pSettings == NULL)
 		goto ADC_FAILURE ;
 
@@ -234,7 +234,7 @@ MouseSettings * MouseSettings_Create(void)
 	// Set default values
 	pSettings->m_eMiddleButton = mbDisabled;
 	pSettings->m_eWheel        = mwDisabled;
-	pSettings->m_bHotSelect    = JE_FALSE;
+	pSettings->m_bHotSelect    = GR_FALSE;
 	return pSettings ;
 
 ADC_FAILURE :
@@ -252,7 +252,7 @@ void MouseSettings_Destroy( MouseSettings ** ppSettings )
 	pSettings = *ppSettings ;
 	assert(pSettings != NULL) ;
 
-	jeRam_Free(*ppSettings) ;
+	grRam_Free(*ppSettings) ;
 
 	// what's the pointer of passin a pointer to pointer
 	// if you don't set the data pointer to NULL?
@@ -260,20 +260,20 @@ void MouseSettings_Destroy( MouseSettings ** ppSettings )
 }
 
 // Save mouse setting to registry
-jeBoolean MouseSettings_Save(void)
+grBoolean MouseSettings_Save(void)
 {
 	MouseSettings *pSettings = ((CJweApp*)AfxGetApp())->m_pMouseSettings;
 	assert(pSettings);
 
 	// Save the mouse settings data to the registry
-	return (jeBoolean)(AfxGetApp()->WriteProfileBinary(s_pszSettingsKey, 
+	return (grBoolean)(AfxGetApp()->WriteProfileBinary(s_pszSettingsKey, 
 	                                                   s_pszMouseSettingsKey, 
 	                                                   (BYTE*)pSettings, 
 	                                                   sizeof(MouseSettings)));
 }
 
 // Restore mouse setting from registry
-jeBoolean MouseSettings_Restore(void) 
+grBoolean MouseSettings_Restore(void) 
 
 { 
 MouseSettings *pSettings = ((CJweApp*)AfxGetApp())->m_pMouseSettings; 
@@ -297,27 +297,27 @@ if (AfxGetApp()->GetProfileBinary(s_pszSettingsKey,
 			pSettings->m_eWheel=(eMouseWheel)Settings_GetMouse_Wheel();
 			pSettings->m_bHotSelect=(eMouseWheel)Settings_GetMouse_HotSelect();
             delete [ ] buffer; 
-            return JE_TRUE; 
+            return GR_TRUE; 
         } 
         else { 
             // Size not right so return FALSE so we rewrite Key 
             delete [ ] buffer; 
-            return JE_FALSE; 
+            return GR_FALSE; 
         } 
     } 
 else 
-        return JE_FALSE; 
+        return GR_FALSE; 
 } 
 
 
 
 // Get hot select setting
-jeBoolean MouseSettings_GetHotSelect(void)
+grBoolean MouseSettings_GetHotSelect(void)
 {
 	return ((CJweApp*)AfxGetApp())->m_pMouseSettings->m_bHotSelect;
 }
 // Set hot select setting
-void MouseSettings_SetHotSelect(jeBoolean bHotSelect)
+void MouseSettings_SetHotSelect(grBoolean bHotSelect)
 {
 	((CJweApp*)AfxGetApp())->m_pMouseSettings->m_bHotSelect = bHotSelect;
 }

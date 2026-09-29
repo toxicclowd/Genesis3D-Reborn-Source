@@ -84,35 +84,35 @@ void *StupidUnusedPointer;
 #endif
 
 // critical allocation stuff...
-static int jeRam_CriticalAllocationCount = 0;
+static int grRam_CriticalAllocationCount = 0;
 
-static jeRam_CriticalCallbackFunction jeRam_CriticalCallback = NULL;
+static grRam_CriticalCallbackFunction grRam_CriticalCallback = NULL;
 
 /*
   increments or decrements a counter.  if the counter is >0
   the critical callback function (if set) is called for a failed memory allocation.
   add is added to the current counter value.  the new counter value is returned.
 */
-JETAPI int JETCC jeRam_EnableCriticalCallback(int add)
+GRAPI int GRCC grRam_EnableCriticalCallback(int add)
 {
-	jeRam_CriticalAllocationCount += add;
-	return jeRam_CriticalAllocationCount;
+	grRam_CriticalAllocationCount += add;
+	return grRam_CriticalAllocationCount;
 }
 
 
 /*
-  Set the critical callback function.  jeRam_Allocate will call this function
+  Set the critical callback function.  grRam_Allocate will call this function
   if it's unable to allocate memory.  Returns the previous critical callback fcn.
 */
-JETAPI jeRam_CriticalCallbackFunction JETCC jeRam_SetCriticalCallback
+GRAPI grRam_CriticalCallbackFunction GRCC grRam_SetCriticalCallback
 	(
-	  jeRam_CriticalCallbackFunction critical_callback
+	  grRam_CriticalCallbackFunction critical_callback
 	)
 {
-	jeRam_CriticalCallbackFunction OldCallback;
+	grRam_CriticalCallbackFunction OldCallback;
 
-	OldCallback = jeRam_CriticalCallback;
-	jeRam_CriticalCallback = critical_callback;
+	OldCallback = grRam_CriticalCallback;
+	grRam_CriticalCallback = critical_callback;
 	return OldCallback;
 }
 
@@ -120,14 +120,14 @@ JETAPI jeRam_CriticalCallbackFunction JETCC jeRam_SetCriticalCallback
   If an allocation fails, this function will be called.  If the critical callback
   function is not NULL, then that function will be called.
 */
-static int jeRam_DoCriticalCallback
+static int grRam_DoCriticalCallback
 	(
 	  void
 	)
 {
-	if ((jeRam_CriticalAllocationCount != 0) && (jeRam_CriticalCallback != NULL))
+	if ((grRam_CriticalAllocationCount != 0) && (grRam_CriticalCallback != NULL))
 	{
-		return jeRam_CriticalCallback ();
+		return grRam_CriticalCallback ();
 	}
 	else
 	{
@@ -135,15 +135,15 @@ static int jeRam_DoCriticalCallback
 	}
 }
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 
 #ifdef MINIMAL_CONFIG
 
-	JETAPI void * JETCC jeRam_AllocateClear(uint32 size)
+	GRAPI void * GRCC grRam_AllocateClear(uint32 size)
 	{
 	void * mem;
 		size = (size + 3)&(~(uint32)3);
-		mem = jeRam_Allocate(size);
+		mem = grRam_Allocate(size);
 		if ( mem )
 		{
 			memset (mem, 0, size);
@@ -154,11 +154,11 @@ static int jeRam_DoCriticalCallback
 
 #else
 
-	JETAPI void * JETCC jeRam_AllocateClear(uint32 size)
+	GRAPI void * GRCC grRam_AllocateClear(uint32 size)
 	{
 	void * mem;
 		size = (size + 3)&(~(uint32)3);
-		mem = jeRam_Allocate(size);
+		mem = grRam_Allocate(size);
 		if ( mem )
 		{
 			memset (mem, 0, size);
@@ -180,7 +180,7 @@ static int jeRam_DoCriticalCallback
 	  Allocate memory of the given size.  In debug mode, the memory is filled
 	  with 0xA5, and we keep track of the amount of memory allocated.
 	*/
-	JETAPI void * JETCC jeRam_Allocate
+	GRAPI void * GRCC grRam_Allocate
 		(
 		  uint32 size
 		)
@@ -192,14 +192,14 @@ static int jeRam_DoCriticalCallback
 		do
 		{
 			p = malloc(size);
-		} while ((p == NULL) && (jeRam_DoCriticalCallback ()));
+		} while ((p == NULL) && (grRam_DoCriticalCallback ()));
 
 
 		return p;
 	}
 
 	// free an allocated block
-	JETAPI void JETCC jeRam_Free_
+	GRAPI void GRCC grRam_Free_
 		(
 		  void *ptr
 		)
@@ -209,7 +209,7 @@ static int jeRam_DoCriticalCallback
 
 	// reallocate a block...
 	// This acts like the standard realloc
-JETAPI	 void * JETCC jeRam_Realloc
+GRAPI	 void * GRCC grRam_Realloc
 		(
 		  void *ptr,
 		  uint32 newsize
@@ -220,13 +220,13 @@ JETAPI	 void * JETCC jeRam_Realloc
 
 		if (ptr == NULL)
 		{
-			return jeRam_Allocate (newsize);
+			return grRam_Allocate (newsize);
 		}
 
 		// if newsize is NULL, then it's a free and return NULL
 		if (newsize == 0)
 		{
-			jeRam_Free (ptr);
+			grRam_Free (ptr);
 			return NULL;
 		}
 
@@ -234,7 +234,7 @@ JETAPI	 void * JETCC jeRam_Realloc
 		do
 		{
 			NewPtr = (char *)realloc (p, newsize);
-		} while ((NewPtr == NULL) && (jeRam_DoCriticalCallback ()));
+		} while ((NewPtr == NULL) && (grRam_DoCriticalCallback ()));
 
 		return NewPtr;
 	}
@@ -246,20 +246,20 @@ JETAPI	 void * JETCC jeRam_Realloc
 	   simple over- and under-run errors.
 	 */
 
-#ifndef JE_DEACTIVATE_JMAI
-	extern void JETCC jeMemAllocInfo_Alloc(uint32 Size, void *Pointer, const char *FName, int LNr);
-	extern void JETCC jeMemAllocInfo_Realloc(uint32 Size, void *Pointer, const char *FName, int LNr);
-	extern void JETCC jeMemAllocInfo_Free(void *Pointer, const char *FName, int LNr);
-	extern jeBoolean JETCC jeMemAllocInfo_BREAK(const void *Data);
-	static int32 jeRam_jMAI_Flag = 1;					// Flag for jMAI-Memory-Calls
+#ifndef GR_DEACTIVATE_JMAI
+	extern void GRCC grMemAllocInfo_Alloc(uint32 Size, void *Pointer, const char *FName, int LNr);
+	extern void GRCC grMemAllocInfo_Realloc(uint32 Size, void *Pointer, const char *FName, int LNr);
+	extern void GRCC grMemAllocInfo_Free(void *Pointer, const char *FName, int LNr);
+	extern grBoolean GRCC grMemAllocInfo_BREAK(const void *Data);
+	static int32 grRam_jMAI_Flag = 1;					// Flag for jMAI-Memory-Calls
 	static const int DataSize = sizeof (uint32);		//Icestorm:Pointer(to respective jMAI_struct)size
 #endif
 
 	// yes, this will break if we use more than 2 gigabytes of RAM...
-	int32 jeRam_CurrentlyUsed	   = 0;  // total ram currently in use
-	int32 jeRam_MaximumUsed		 = 0;  // max total ram allocated at any time
-	int32 jeRam_NumberOfAllocations	 = 0;  // current number of blocks allocated
-	int32 jeRam_MaximumNumberOfAllocations = 0;  // max number of allocations at any time
+	int32 grRam_CurrentlyUsed	   = 0;  // total ram currently in use
+	int32 grRam_MaximumUsed		 = 0;  // max total ram allocated at any time
+	int32 grRam_NumberOfAllocations	 = 0;  // current number of blocks allocated
+	int32 grRam_MaximumNumberOfAllocations = 0;  // max number of allocations at any time
 
 	// header and trailer stuff...
 	static char MemStamp[] = {"!CHECKME!"};
@@ -267,7 +267,7 @@ JETAPI	 void * JETCC jeRam_Realloc
 	static const int SizeSize = sizeof (uint32);
 	
 	// these pads are critical !
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 	#define SIZES_SIZE		(SizeSize+DataSize)		// Icestorm: added DataSize...
 	#define HEADER_SIZE		PAD_SIZE(SIZES_SIZE		+ MemStampSize)	// Icestorm: added DataSize...
 	#define EXTRA_SIZE		PAD_SIZE(HEADER_SIZE	+ MemStampSize)
@@ -279,7 +279,7 @@ JETAPI	 void * JETCC jeRam_Realloc
 	static const unsigned char AllocFillerByte = (unsigned char)0xA5;
 	static const unsigned char FreeFillerByte  = (unsigned char)0xB6;
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 	/*
 	  A memory block is allocated that's size + (2*MemStampSize)+SizeSize+DataSize bytes.
 	  It's then filled with 0xA5.  The size stamp is placed at the head of the block,
@@ -303,23 +303,23 @@ JETAPI	 void * JETCC jeRam_Realloc
 	{
 		DONT_INITIALIZE = 0, 
 		INITIALIZE_MEMORY = 1
-	} jeRam_MemoryInitialization;
+	} grRam_MemoryInitialization;
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 	// jMAI-Breakpoint-function
-	JETAPI void* JETCC _jeRam_DoBreakTest(void *Pointer)
+	GRAPI void* GRCC _grRam_DoBreakTest(void *Pointer)
 	{
-		if (jeMemAllocInfo_BREAK(*(void**)((uint32)Pointer+SizeSize-HEADER_SIZE)) == JE_TRUE)
+		if (grMemAllocInfo_BREAK(*(void**)((uint32)Pointer+SizeSize-HEADER_SIZE)) == GR_TRUE)
 			_asm { int 3h }
 		return Pointer;
 	}
 #endif
 
-	static void jeRam_SetupBlock
+	static void grRam_SetupBlock
 		  (
 			char * p,
 			uint32 size,
-			jeRam_MemoryInitialization InitMem
+			grRam_MemoryInitialization InitMem
 		  )
 	{
 		if (InitMem == INITIALIZE_MEMORY)
@@ -331,7 +331,7 @@ JETAPI	 void * JETCC jeRam_Realloc
 		// add the size at the front
 		*((uint32 *)p) = size;
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 		*(void* *)((uint32)p+SizeSize)=NULL;	// Icestorm : DON'T CHANGE THIS!!!
 												// Init. jMAI_Ptr to NULL, prevents "death-jumps to nowhere"
 		// copy the memstamp to the front of the block
@@ -345,14 +345,14 @@ JETAPI	 void * JETCC jeRam_Realloc
 		memcpy (p+HEADER_SIZE+size, MemStamp, MemStampSize);
 	}
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 #ifndef NDEBUG	// Added File/Line-Support => jMAI can record "real" file/line
 
-JETAPI void * JETCC _jeRam_DebugAllocateClear(uint32 size, const char* pFile, int line)
+GRAPI void * GRCC _grRam_DebugAllocateClear(uint32 size, const char* pFile, int line)
 {
 void * mem;
 	size = (size + 3)&(~(uint32)3);
-	mem = _jeRam_DebugAllocate(size, pFile, line);
+	mem = _grRam_DebugAllocate(size, pFile, line);
 	if ( mem )
 	{
 		memset (mem, 0, size);
@@ -362,11 +362,11 @@ return mem;
 
 #else
 
-JETAPI void * JETCC jeRam_AllocateClear(uint32 size)
+GRAPI void * GRCC grRam_AllocateClear(uint32 size)
 {
 void * mem;
 	size = (size + 3)&(~(uint32)3);
-	mem = jeRam_Allocate(size);
+	mem = grRam_Allocate(size);
 	if ( mem )
 	{
 		memset (mem, 0, size);
@@ -375,16 +375,16 @@ return mem;
 }
 
 #endif
-#endif	// JE_DEACTIVATE_JMAI
+#endif	// GR_DEACTIVATE_JMAI
 /*
-This function, (jeRam_DebugAllocate) is the source of much misery in the Jet3D engine.
+This function, (grRam_DebugAllocate) is the source of much misery in the Jet3D engine.
 It is the cause of fatal exceptions that prevent applications from initializing, or makes them buggy and unstable.
 I wish I could find a way to fix it. -- trilobite dec. 2021.
 */
 
 
 #ifndef NDEBUG
-JETAPI 	void* JETCC _jeRam_DebugAllocate(uint32 size, const char* pFile, int line)
+GRAPI 	void* GRCC _grRam_DebugAllocate(uint32 size, const char* pFile, int line)
 	{
 	  char *p;
 
@@ -394,7 +394,7 @@ JETAPI 	void* JETCC _jeRam_DebugAllocate(uint32 size, const char* pFile, int lin
 	  {
 		 
 		  p = (char*)malloc(size + EXTRA_SIZE);//, _NORMAL_BLOCK, pFile, line);
-	  } while ((p == NULL) && jeRam_DoCriticalCallback ());
+	  } while ((p == NULL) && grRam_DoCriticalCallback ());
 
 	  if (p == NULL)
 	  {
@@ -402,14 +402,14 @@ JETAPI 	void* JETCC _jeRam_DebugAllocate(uint32 size, const char* pFile, int lin
 	  }
 
 	  // setup size stamps and memory overwrite checks
-	  jeRam_SetupBlock (p, size, INITIALIZE_MEMORY);
+	  grRam_SetupBlock (p, size, INITIALIZE_MEMORY);
 
-		jeRam_AddAllocation(1,size);
+		grRam_AddAllocation(1,size);
 
-#ifndef JE_DEACTIVATE_JMAI
-		if (jeRam_jMAI_Flag)
-			jeMemAllocInfo_Alloc(size, p+SizeSize, pFile, line); //Icestorm
-		//NOTE:If this jeRam_Alloc is called from jMAI-Module, jMAI_Ptr is still NULL!!
+#ifndef GR_DEACTIVATE_JMAI
+		if (grRam_jMAI_Flag)
+			grMemAllocInfo_Alloc(size, p+SizeSize, pFile, line); //Icestorm
+		//NOTE:If this grRam_Alloc is called from jMAI-Module, jMAI_Ptr is still NULL!!
 		//     Also deactivated jMAI leave the jMAI_Ptr NULL.
 		//     So registered and unregistered memory can be distinguished
 #endif
@@ -419,7 +419,7 @@ JETAPI 	void* JETCC _jeRam_DebugAllocate(uint32 size, const char* pFile, int lin
 
 #else // NDEBUG
 
-JETAPI	 void * JETCC jeRam_Allocate (uint32 size)
+GRAPI	 void * GRCC grRam_Allocate (uint32 size)
 	{
 	  char *p;
 
@@ -428,7 +428,7 @@ JETAPI	 void * JETCC jeRam_Allocate (uint32 size)
 	  do
 	  {
 		  p = (char*)malloc (size + EXTRA_SIZE);
-	  } while ((p == NULL) && jeRam_DoCriticalCallback ());
+	  } while ((p == NULL) && grRam_DoCriticalCallback ());
 
 	  if (p == NULL)
 	  {
@@ -436,9 +436,9 @@ JETAPI	 void * JETCC jeRam_Allocate (uint32 size)
 	  }
 
 	  // setup size stamps and memory overwrite checks
-	  jeRam_SetupBlock (p, size, INITIALIZE_MEMORY);
+	  grRam_SetupBlock (p, size, INITIALIZE_MEMORY);
 
-		jeRam_AddAllocation(1,size);
+		grRam_AddAllocation(1,size);
 
 	  return p+HEADER_SIZE;
 	}
@@ -464,7 +464,7 @@ JETAPI	 void * JETCC jeRam_Allocate (uint32 size)
 		// get size from block
 		size = *((uint32 *)p);
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 		// check stamp at front
 		if (memcmp (p+SIZES_SIZE, MemStamp, MemStampSize) != 0)
 		{
@@ -490,10 +490,10 @@ JETAPI	 void * JETCC jeRam_Allocate (uint32 size)
 		return p;
 	}
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 
 #ifndef NDEBUG
-JETAPI	 void JETCC jeRam_DebugFree_ (void *ptr, const char* pFile, int line)
+GRAPI	 void GRCC grRam_DebugFree_ (void *ptr, const char* pFile, int line)
 	{
 		char *p;
 		uint32 size;
@@ -525,20 +525,20 @@ JETAPI	 void JETCC jeRam_DebugFree_ (void *ptr, const char* pFile, int line)
 				jMAI_Ptr=(void*)((uint32)jMAI_Ptr+HEADER_SIZE);
 		} 
 
-		jeMemAllocInfo_Free(jMAI_Ptr, pFile, line);
+		grMemAllocInfo_Free(jMAI_Ptr, pFile, line);
 		//Icestorm End
 
 		// update allocations
-		jeRam_NumberOfAllocations--;
-		assert ((jeRam_NumberOfAllocations >= 0) && "free()d more ram than you allocated!");
+		grRam_NumberOfAllocations--;
+		assert ((grRam_NumberOfAllocations >= 0) && "free()d more ram than you allocated!");
 
-		jeRam_CurrentlyUsed -= size;
-		assert ((jeRam_CurrentlyUsed >= 0) && "free()d more ram than you allocated!");
+		grRam_CurrentlyUsed -= size;
+		assert ((grRam_CurrentlyUsed >= 0) && "free()d more ram than you allocated!");
 	}
 
 #else
 
-JETAPI	 void JETCC jeRam_Free_ (void *ptr)
+GRAPI	 void GRCC grRam_Free_ (void *ptr)
 	{
 		char *p;
 		uint32 size;
@@ -560,17 +560,17 @@ JETAPI	 void JETCC jeRam_Free_ (void *ptr)
 		free (p);
 
 		// update allocations
-		jeRam_NumberOfAllocations--;
-		assert ((jeRam_NumberOfAllocations >= 0) && "free()d more ram than you allocated!");
+		grRam_NumberOfAllocations--;
+		assert ((grRam_NumberOfAllocations >= 0) && "free()d more ram than you allocated!");
 
-		jeRam_CurrentlyUsed -= size;
-		assert ((jeRam_CurrentlyUsed >= 0) && "free()d more ram than you allocated!");
+		grRam_CurrentlyUsed -= size;
+		assert ((grRam_CurrentlyUsed >= 0) && "free()d more ram than you allocated!");
 	}
 
 #endif
-#else  //JE_DEACTIVATE_JMAI
+#else  //GR_DEACTIVATE_JMAI
 
-JETAPI	 void JETCC jeRam_Free_ (void *ptr)
+GRAPI	 void GRCC grRam_Free_ (void *ptr)
 	{
 		char *p;
 		uint32 size;
@@ -592,22 +592,22 @@ JETAPI	 void JETCC jeRam_Free_ (void *ptr)
 		free (p);
 
 		// update allocations
-		jeRam_NumberOfAllocations--;
-		assert ((jeRam_NumberOfAllocations >= 0) && "free()d more ram than you allocated!");
+		grRam_NumberOfAllocations--;
+		assert ((grRam_NumberOfAllocations >= 0) && "free()d more ram than you allocated!");
 
-		jeRam_CurrentlyUsed -= size;
-		assert ((jeRam_CurrentlyUsed >= 0) && "free()d more ram than you allocated!");
+		grRam_CurrentlyUsed -= size;
+		assert ((grRam_CurrentlyUsed >= 0) && "free()d more ram than you allocated!");
 	}
 
-#endif  //JE_DEACTIVATE_JMAI
+#endif  //GR_DEACTIVATE_JMAI
 
 #ifndef NDEBUG
 
-JETAPI	 void * JETCC _jeRam_DebugRealloc (void *ptr, uint32 newsize, const char* pFile, int line)
+GRAPI	 void * GRCC _grRam_DebugRealloc (void *ptr, uint32 newsize, const char* pFile, int line)
 	{
 		char *p;
 		char * NewPtr;
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 		void *jMAI_Ptr;	// Icestorm
 #endif
 		uint32 size;
@@ -615,10 +615,10 @@ JETAPI	 void * JETCC _jeRam_DebugRealloc (void *ptr, uint32 newsize, const char*
 		// if realloc is called with NULL, just treat it like an alloc
 		if (ptr == NULL)
 		{
-#ifndef JE_DEACTIVATE_JMAI //Icestorm: added Breakpoint
-			return _jeRam_DoBreakTest(_jeRam_DebugAllocate(newsize, pFile, line));
+#ifndef GR_DEACTIVATE_JMAI //Icestorm: added Breakpoint
+			return _grRam_DoBreakTest(_grRam_DebugAllocate(newsize, pFile, line));
 #else
-			return _jeRam_DebugAllocate(newsize, pFile, line);
+			return _grRam_DebugAllocate(newsize, pFile, line);
 #endif
 		}
 
@@ -632,10 +632,10 @@ JETAPI	 void * JETCC _jeRam_DebugRealloc (void *ptr, uint32 newsize, const char*
 		// if newsize is NULL, then it's a free and return NULL
 		if (newsize == 0)
 		{
-#ifndef JE_DEACTIVATE_JMAI 		// Icestorm: again pFile/line-correction
-			jeRam_DebugFree_(ptr, pFile, line);
+#ifndef GR_DEACTIVATE_JMAI 		// Icestorm: again pFile/line-correction
+			grRam_DebugFree_(ptr, pFile, line);
 #else
-			jeRam_Free (ptr);
+			grRam_Free (ptr);
 #endif
 			return NULL;
 		}
@@ -643,14 +643,14 @@ JETAPI	 void * JETCC _jeRam_DebugRealloc (void *ptr, uint32 newsize, const char*
 		// gotta get the size before I realloc it...
 		size = *((uint32 *)p);
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 		jMAI_Ptr = *(void**)((uint32)p+SizeSize); // Icestorm: Get this jMAI_Ptr
 #endif
 
 		do
 		{
 			NewPtr = (char *)realloc(p, newsize+EXTRA_SIZE);//, _NORMAL_BLOCK, pFile, line);
-		} while ((NewPtr == NULL) && jeRam_DoCriticalCallback ());
+		} while ((NewPtr == NULL) && grRam_DoCriticalCallback ());
 
 		// if allocation failed, return NULL...
 		if (NewPtr == NULL)
@@ -658,11 +658,11 @@ JETAPI	 void * JETCC _jeRam_DebugRealloc (void *ptr, uint32 newsize, const char*
 			return NULL;
 		}
 
-		jeRam_SetupBlock (NewPtr, newsize, DONT_INITIALIZE);
+		grRam_SetupBlock (NewPtr, newsize, DONT_INITIALIZE);
 
-		jeRam_AddAllocation(0,newsize - size);
+		grRam_AddAllocation(0,newsize - size);
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 		if(jMAI_Ptr!=NULL)		// (un)registered?
 		{
 			jMAI_Ptr=ram_verify_block(jMAI_Ptr);	//Check jMAI_Ptr
@@ -671,7 +671,7 @@ JETAPI	 void * JETCC _jeRam_DebugRealloc (void *ptr, uint32 newsize, const char*
 		} 
 
 		*(void* *)((uint32)NewPtr+SizeSize)=jMAI_Ptr;	//Restore jMAI_Ptr or set unregistered-Mark(NULL)
-		jeMemAllocInfo_Realloc(newsize, NewPtr+SizeSize, pFile, line);
+		grMemAllocInfo_Realloc(newsize, NewPtr+SizeSize, pFile, line);
 #endif
 
 		return NewPtr + HEADER_SIZE;
@@ -679,7 +679,7 @@ JETAPI	 void * JETCC _jeRam_DebugRealloc (void *ptr, uint32 newsize, const char*
 
 #else // NDEBUG
 
-JETAPI	 void * jeRam_Realloc (void *ptr, uint32 newsize)
+GRAPI	 void * grRam_Realloc (void *ptr, uint32 newsize)
 	{
 		char *p;
 		char * NewPtr;
@@ -688,7 +688,7 @@ JETAPI	 void * jeRam_Realloc (void *ptr, uint32 newsize)
 		// if realloc is called with NULL, just treat it like an alloc
 		if (ptr == NULL)
 		{
-			return jeRam_Allocate (newsize);
+			return grRam_Allocate (newsize);
 		}
 
 		// verify the block
@@ -701,7 +701,7 @@ JETAPI	 void * jeRam_Realloc (void *ptr, uint32 newsize)
 		// if newsize is NULL, then it's a free and return NULL
 		if (newsize == 0)
 		{
-			jeRam_Free (ptr);
+			grRam_Free (ptr);
 			return NULL;
 		}
 
@@ -711,7 +711,7 @@ JETAPI	 void * jeRam_Realloc (void *ptr, uint32 newsize)
 		do
 		{
 			NewPtr = (char *)realloc (p, newsize+EXTRA_SIZE);
-		} while ((NewPtr == NULL) && jeRam_DoCriticalCallback ());
+		} while ((NewPtr == NULL) && grRam_DoCriticalCallback ());
 
 		// if allocation failed, return NULL...
 		if (NewPtr == NULL)
@@ -719,9 +719,9 @@ JETAPI	 void * jeRam_Realloc (void *ptr, uint32 newsize)
 			return NULL;
 		}
 
-		jeRam_SetupBlock (NewPtr, newsize, DONT_INITIALIZE);
+		grRam_SetupBlock (NewPtr, newsize, DONT_INITIALIZE);
 
-		jeRam_AddAllocation(0,newsize - size);
+		grRam_AddAllocation(0,newsize - size);
 
 		return NewPtr + HEADER_SIZE;
 	}
@@ -730,14 +730,14 @@ JETAPI	 void * jeRam_Realloc (void *ptr, uint32 newsize)
 
 #ifndef NDEBUG
 
-JETAPI void JETCC jeRam_ReportAllocations(void)
+GRAPI void GRCC grRam_ReportAllocations(void)
 {
 //	_CrtDumpMemoryLeaks();
 }
 
 #include <stdio.h>
 
-JETAPI void JETCC jeRam_ShowStats(FILE * ToFile)
+GRAPI void GRCC grRam_ShowStats(FILE * ToFile)
 {
 	if ( ! ToFile ) ToFile = stdin;
 
@@ -747,32 +747,32 @@ JETAPI void JETCC jeRam_ShowStats(FILE * ToFile)
 #endif
 
 	Log_TeeFile(ToFile);
-	Log_Printf("jeRam : Used : Currently = %d, Max = %d\n",
-		jeRam_CurrentlyUsed,jeRam_MaximumUsed);
-	Log_Printf("jeRam : NumAllocs : Currently = %d, Max = %d\n",
-		jeRam_NumberOfAllocations,jeRam_MaximumNumberOfAllocations);
+	Log_Printf("grRam : Used : Currently = %d, Max = %d\n",
+		grRam_CurrentlyUsed,grRam_MaximumUsed);
+	Log_Printf("grRam : NumAllocs : Currently = %d, Max = %d\n",
+		grRam_NumberOfAllocations,grRam_MaximumNumberOfAllocations);
 }
 
 #endif
 
 	// for external programs that allocate memory some other way.
 	// Here they can use ram to keep track of the memory.
-JETAPI	 void JETCC jeRam_AddAllocation (int n, uint32 size)
+GRAPI	 void GRCC grRam_AddAllocation (int n, uint32 size)
 {
 	// and update the allocations stuff
-	jeRam_NumberOfAllocations += n;
-	jeRam_CurrentlyUsed += size;
+	grRam_NumberOfAllocations += n;
+	grRam_CurrentlyUsed += size;
 
-	if (jeRam_NumberOfAllocations > jeRam_MaximumNumberOfAllocations)
+	if (grRam_NumberOfAllocations > grRam_MaximumNumberOfAllocations)
 	{
-		jeRam_MaximumNumberOfAllocations = jeRam_NumberOfAllocations;
+		grRam_MaximumNumberOfAllocations = grRam_NumberOfAllocations;
 	}
-	if (jeRam_CurrentlyUsed > jeRam_MaximumUsed)
+	if (grRam_CurrentlyUsed > grRam_MaximumUsed)
 	{
-		jeRam_MaximumUsed = jeRam_CurrentlyUsed;
+		grRam_MaximumUsed = grRam_CurrentlyUsed;
 	}
 	
-	assert ((jeRam_CurrentlyUsed >= 0) && "free()d more ram than you allocated!");
+	assert ((grRam_CurrentlyUsed >= 0) && "free()d more ram than you allocated!");
 
 #ifdef DO_REPORT
 	{
@@ -786,26 +786,26 @@ JETAPI	 void JETCC jeRam_AddAllocation (int n, uint32 size)
 #endif // MINIMAL_CONFIG
 
 
-#ifndef JE_DEACTIVATE_JMAI
-void jeRam_jMAI_Lock()
+#ifndef GR_DEACTIVATE_JMAI
+void grRam_jMAI_Lock()
 {
-	jeRam_jMAI_Flag=0;
+	grRam_jMAI_Flag=0;
 }
 
-void jeRam_jMAI_UnLock()
+void grRam_jMAI_UnLock()
 {
-	jeRam_jMAI_Flag=1;
+	grRam_jMAI_Flag=1;
 }
-#endif //JE_DEACTIVATE_JMAI
+#endif //GR_DEACTIVATE_JMAI
 
 
 #ifndef NDEBUG
-jeBoolean jeRam_IsValidPtr(const void *ptr)
+grBoolean grRam_IsValidPtr(const void *ptr)
 {
 const char * p = (const char *)ptr;
 uint32 size;
 
-	if (p == NULL) return JE_FALSE;
+	if (p == NULL) return GR_FALSE;
 
 	// make p point to the beginning of the block
 	p -= HEADER_SIZE;
@@ -813,27 +813,27 @@ uint32 size;
 	// get size from block
 	size = *((uint32 *)p);
 
-#ifndef JE_DEACTIVATE_JMAI
+#ifndef GR_DEACTIVATE_JMAI
 	// check stamp at front
 	if (memcmp (p+SIZES_SIZE, MemStamp, MemStampSize) != 0)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 #else
 	// check stamp at front
 	if (memcmp (p+SizeSize, MemStamp, MemStampSize) != 0)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
-#endif // JE_DEACTIVATE_JMAI
+#endif // GR_DEACTIVATE_JMAI
 
 	// and at back
 	if (memcmp (p+HEADER_SIZE+size, MemStamp, MemStampSize) != 0)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 #endif
 

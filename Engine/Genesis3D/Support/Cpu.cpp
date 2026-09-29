@@ -58,10 +58,10 @@ rounding in.  We need to make sure this is accurate enough
 
 /*{**** Externs *********************/
 
-uint32	jeCPU_Features = 0;
-float	jeCPU_PerformanceFreq = 1.0f;
-float	jeCPU_SecondsPerClock = 1.0f;
-uint32	jeCPU_MHZ = 0;
+uint32	grCPU_Features = 0;
+float	grCPU_PerformanceFreq = 1.0f;
+float	grCPU_SecondsPerClock = 1.0f;
+uint32	grCPU_MHZ = 0;
 
 /*}{**** Functions ; related to GetInfo *********************/
 
@@ -431,32 +431,32 @@ static uint32	GetMHZ(void)
 #endif
 
 #ifdef WIN32
-static jeBoolean GetPerformanceFreq(void)
+static grBoolean GetPerformanceFreq(void)
 {
 	LARGE_INTEGER Freq;
 
 	if (!QueryPerformanceFrequency(&Freq))
 	{
-		jeErrorLog_Add(JE_ERR_NO_PERF_FREQ, NULL);
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_NO_PERF_FREQ, NULL);
+		return GR_FALSE;
 	}
 
-	jeCPU_PerformanceFreq = (float) Freq.LowPart;
+	grCPU_PerformanceFreq = (float) Freq.LowPart;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 #endif
 
-jeBoolean jeCPU_GetInfo(void)
+grBoolean grCPU_GetInfo(void)
 {
 	int BrandIdx;
-	static jeBoolean GotInfo = JE_FALSE;
+	static grBoolean GotInfo = GR_FALSE;
 	char * CPUName = NULL;
 	uint32	TypeFlags;
 
 	if ( GotInfo )
-		return JE_TRUE;
-	GotInfo = JE_TRUE;
+		return GR_TRUE;
+	GotInfo = GR_TRUE;
 
 	StartGetMHZ();
 
@@ -469,13 +469,13 @@ jeBoolean jeCPU_GetInfo(void)
 
 		CPUName = "Intel ";
 	
-		jeCPU_Features	=(TypeFlags & (1<<23))? JE_CPU_HAS_MMX : 0;
-		jeCPU_Features	=(TypeFlags & (1<<4))? jeCPU_Features | JE_CPU_HAS_RDTSC : jeCPU_Features;
-		jeCPU_Features	=(TypeFlags & (1<<3))? jeCPU_Features | JE_CPU_HAS_CMOV : jeCPU_Features;
-		jeCPU_Features	=((TypeFlags & ((1<<15) | 1))==((1<<15) | 1))? jeCPU_Features | JE_CPU_HAS_FCMOV : jeCPU_Features;
-		jeCPU_Features	=(TypeFlags & (1<<8))? jeCPU_Features | JE_CPU_HAS_CMPXCHG8B : jeCPU_Features;
-		jeCPU_Features	=(TypeFlags & (1<<25))? jeCPU_Features | JE_CPU_HAS_KATMAI : jeCPU_Features;
-		jeCPU_Features	=(TypeFlags & (1<<25))? jeCPU_Features | JE_CPU_HAS_SSE2 : jeCPU_Features;
+		grCPU_Features	=(TypeFlags & (1<<23))? GR_CPU_HAS_MMX : 0;
+		grCPU_Features	=(TypeFlags & (1<<4))? grCPU_Features | GR_CPU_HAS_RDTSC : grCPU_Features;
+		grCPU_Features	=(TypeFlags & (1<<3))? grCPU_Features | GR_CPU_HAS_CMOV : grCPU_Features;
+		grCPU_Features	=((TypeFlags & ((1<<15) | 1))==((1<<15) | 1))? grCPU_Features | GR_CPU_HAS_FCMOV : grCPU_Features;
+		grCPU_Features	=(TypeFlags & (1<<8))? grCPU_Features | GR_CPU_HAS_CMPXCHG8B : grCPU_Features;
+		grCPU_Features	=(TypeFlags & (1<<25))? grCPU_Features | GR_CPU_HAS_KATMAI : grCPU_Features;
+		grCPU_Features	=(TypeFlags & (1<<25))? grCPU_Features | GR_CPU_HAS_SSE2 : grCPU_Features;
 
 		TypeFlags		=GetCPUIDEAX(1);
 		ProcType		=(TypeFlags>>12)&0x3;
@@ -489,12 +489,12 @@ jeBoolean jeCPU_GetInfo(void)
 
 		TypeFlags = GetCPUIDEDX(0x1);
 
-		jeCPU_Features	=(TypeFlags & (1<<23))? JE_CPU_HAS_MMX : 0;
-      	jeCPU_Features	=(TypeFlags & (1<<4))? jeCPU_Features | JE_CPU_HAS_RDTSC : jeCPU_Features;
-      	jeCPU_Features	=(TypeFlags & (1<<3))? jeCPU_Features | JE_CPU_HAS_CMOV : jeCPU_Features;
-      	jeCPU_Features	=((TypeFlags & (1<<15 | 1))==(1<<15 | 1))? jeCPU_Features | JE_CPU_HAS_FCMOV : jeCPU_Features;
-      	jeCPU_Features	=(TypeFlags & (1<<8))? jeCPU_Features | JE_CPU_HAS_CMPXCHG8B : jeCPU_Features;
-      	jeCPU_Features	=(TypeFlags & (1<<25))? jeCPU_Features | JE_CPU_HAS_KATMAI : jeCPU_Features;
+		grCPU_Features	=(TypeFlags & (1<<23))? GR_CPU_HAS_MMX : 0;
+      	grCPU_Features	=(TypeFlags & (1<<4))? grCPU_Features | GR_CPU_HAS_RDTSC : grCPU_Features;
+      	grCPU_Features	=(TypeFlags & (1<<3))? grCPU_Features | GR_CPU_HAS_CMOV : grCPU_Features;
+      	grCPU_Features	=((TypeFlags & (1<<15 | 1))==(1<<15 | 1))? grCPU_Features | GR_CPU_HAS_FCMOV : grCPU_Features;
+      	grCPU_Features	=(TypeFlags & (1<<8))? grCPU_Features | GR_CPU_HAS_CMPXCHG8B : grCPU_Features;
+      	grCPU_Features	=(TypeFlags & (1<<25))? grCPU_Features | GR_CPU_HAS_KATMAI : grCPU_Features;
 
 		TypeFlags = GetCPUIDEAX(0x80000000);
 		if ( TypeFlags )	//extended functions supported
@@ -504,23 +504,23 @@ jeBoolean jeCPU_GetInfo(void)
 			GetCPUIDStringAMD(0x80000003, ProcName+16);
 			GetCPUIDStringAMD(0x80000004, ProcName+32);
 
-			jeCPU_Features	=(TypeFlags & (1<<23))? JE_CPU_HAS_MMX : 0;
-			jeCPU_Features	=(TypeFlags & (1<<4))? jeCPU_Features | JE_CPU_HAS_RDTSC : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<31))? jeCPU_Features | JE_CPU_HAS_3DNOW : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<15))? jeCPU_Features | JE_CPU_HAS_CMOV : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<16))? jeCPU_Features | JE_CPU_HAS_FCMOV : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<8))? jeCPU_Features | JE_CPU_HAS_CMPXCHG8B : jeCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<23))? GR_CPU_HAS_MMX : 0;
+			grCPU_Features	=(TypeFlags & (1<<4))? grCPU_Features | GR_CPU_HAS_RDTSC : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<31))? grCPU_Features | GR_CPU_HAS_3DNOW : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<15))? grCPU_Features | GR_CPU_HAS_CMOV : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<16))? grCPU_Features | GR_CPU_HAS_FCMOV : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<8))? grCPU_Features | GR_CPU_HAS_CMPXCHG8B : grCPU_Features;
 		}
 		else
 		{
 			TypeFlags = GetCPUIDEDX(0x1);
 
-			jeCPU_Features	=(TypeFlags & (1<<23))? JE_CPU_HAS_MMX : 0;
-			jeCPU_Features	=(TypeFlags & (1<<4))? jeCPU_Features | JE_CPU_HAS_RDTSC : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<3))? jeCPU_Features | JE_CPU_HAS_CMOV : jeCPU_Features;
-			jeCPU_Features	=((TypeFlags & (1<<15 | 1))==(1<<15 | 1))? jeCPU_Features | JE_CPU_HAS_FCMOV : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<8))? jeCPU_Features | JE_CPU_HAS_CMPXCHG8B : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<25))? jeCPU_Features | JE_CPU_HAS_KATMAI : jeCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<23))? GR_CPU_HAS_MMX : 0;
+			grCPU_Features	=(TypeFlags & (1<<4))? grCPU_Features | GR_CPU_HAS_RDTSC : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<3))? grCPU_Features | GR_CPU_HAS_CMOV : grCPU_Features;
+			grCPU_Features	=((TypeFlags & (1<<15 | 1))==(1<<15 | 1))? grCPU_Features | GR_CPU_HAS_FCMOV : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<8))? grCPU_Features | GR_CPU_HAS_CMPXCHG8B : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<25))? grCPU_Features | GR_CPU_HAS_KATMAI : grCPU_Features;
 		}
 
 		TypeFlags		=GetCPUIDEAX(1);
@@ -554,23 +554,23 @@ jeBoolean jeCPU_GetInfo(void)
 			GetCPUIDStringAMD(0x80000003, ProcName+16);
 			GetCPUIDStringAMD(0x80000004, ProcName+32);
 
-			jeCPU_Features	=(TypeFlags & (1<<23))? JE_CPU_HAS_MMX : 0;
-			jeCPU_Features	=(TypeFlags & (1<<4))? jeCPU_Features | JE_CPU_HAS_RDTSC : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<31))? jeCPU_Features | JE_CPU_HAS_3DNOW : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<15))? jeCPU_Features | JE_CPU_HAS_CMOV : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<16))? jeCPU_Features | JE_CPU_HAS_FCMOV : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<8))? jeCPU_Features | JE_CPU_HAS_CMPXCHG8B : jeCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<23))? GR_CPU_HAS_MMX : 0;
+			grCPU_Features	=(TypeFlags & (1<<4))? grCPU_Features | GR_CPU_HAS_RDTSC : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<31))? grCPU_Features | GR_CPU_HAS_3DNOW : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<15))? grCPU_Features | GR_CPU_HAS_CMOV : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<16))? grCPU_Features | GR_CPU_HAS_FCMOV : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<8))? grCPU_Features | GR_CPU_HAS_CMPXCHG8B : grCPU_Features;
 		}
 		else
 		{
 			TypeFlags = GetCPUIDEDX(0x1);
 
-			jeCPU_Features	=(TypeFlags & (1<<23))? JE_CPU_HAS_MMX : 0;
-			jeCPU_Features	=(TypeFlags & (1<<4))? jeCPU_Features | JE_CPU_HAS_RDTSC : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<3))? jeCPU_Features | JE_CPU_HAS_CMOV : jeCPU_Features;
-			jeCPU_Features	=((TypeFlags & (1<<15 | 1))==(1<<15 | 1))? jeCPU_Features | JE_CPU_HAS_FCMOV : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<8))? jeCPU_Features | JE_CPU_HAS_CMPXCHG8B : jeCPU_Features;
-			jeCPU_Features	=(TypeFlags & (1<<25))? jeCPU_Features | JE_CPU_HAS_KATMAI : jeCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<23))? GR_CPU_HAS_MMX : 0;
+			grCPU_Features	=(TypeFlags & (1<<4))? grCPU_Features | GR_CPU_HAS_RDTSC : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<3))? grCPU_Features | GR_CPU_HAS_CMOV : grCPU_Features;
+			grCPU_Features	=((TypeFlags & (1<<15 | 1))==(1<<15 | 1))? grCPU_Features | GR_CPU_HAS_FCMOV : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<8))? grCPU_Features | GR_CPU_HAS_CMPXCHG8B : grCPU_Features;
+			grCPU_Features	=(TypeFlags & (1<<25))? grCPU_Features | GR_CPU_HAS_KATMAI : grCPU_Features;
 		}
 
 		TypeFlags		=GetCPUIDEAX(1);
@@ -584,27 +584,27 @@ jeBoolean jeCPU_GetInfo(void)
 	GetPerformanceFreq();
 #endif
 
-	jeCPU_MHZ = GetMHZ();
-	jeCPU_SecondsPerClock = 1.0f / ( 1000000.0f * jeCPU_MHZ );
+	grCPU_MHZ = GetMHZ();
+	grCPU_SecondsPerClock = 1.0f / ( 1000000.0f * grCPU_MHZ );
 
 	ThreadLog_Initialize();
-	Log_Printf("CPU : %d MHz ",jeCPU_MHZ);
+	Log_Printf("CPU : %d MHz ",grCPU_MHZ);
 	
 	if ( CPUName ) Log_Printf(CPUName);
-	if ( jeCPU_Features & JE_CPU_HAS_MMX ) Log_Printf("MMX ");
-	if ( jeCPU_Features & JE_CPU_HAS_RDTSC )
+	if ( grCPU_Features & GR_CPU_HAS_MMX ) Log_Printf("MMX ");
+	if ( grCPU_Features & GR_CPU_HAS_RDTSC )
 	{
 		Log_Printf("Pentium "); 
-		if ( jeCPU_Features & JE_CPU_HAS_CMOV ) Log_Printf("Pro ");
+		if ( grCPU_Features & GR_CPU_HAS_CMOV ) Log_Printf("Pro ");
 	}
 	else Log_Printf("486 ");
 	Log_Printf("Class ");
-	if ( jeCPU_Features & JE_CPU_HAS_3DNOW ) Log_Printf("with 3DNOW ");
-//	if ( jeCPU_Features & JE_CPU_HAS_KATMAI ) Log_Printf("with Katmai ");
+	if ( grCPU_Features & GR_CPU_HAS_3DNOW ) Log_Printf("with 3DNOW ");
+//	if ( grCPU_Features & GR_CPU_HAS_KATMAI ) Log_Printf("with Katmai ");
 	Log_Printf("\n");
-	jeCPU_Features &= ~JE_CPU_HAS_KATMAI;
+	grCPU_Features &= ~GR_CPU_HAS_KATMAI;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*}{**** Functions : FloatControl related stuff *********************/
@@ -613,7 +613,7 @@ jeBoolean jeCPU_GetInfo(void)
 static uint16 ControlStack[STACK_SIZE];
 static int ControlStackI = 0;
 
-void jeCPU_FloatControl_Push(void)
+void grCPU_FloatControl_Push(void)
 {
 	uint16 control;
 	assert(ControlStackI < STACK_SIZE);
@@ -633,7 +633,7 @@ void jeCPU_FloatControl_Push(void)
 }
 
 
-void jeCPU_FloatControl_Pop(void)
+void grCPU_FloatControl_Pop(void)
 {
 	uint16 control;
 	assert(ControlStackI > 0 );
@@ -656,7 +656,7 @@ void jeCPU_FloatControl_Pop(void)
 	
 }
 
-void jeCPU_FloatControl_RoundDown(void)
+void grCPU_FloatControl_RoundDown(void)
 {
 	uint16 control;
 
@@ -688,7 +688,7 @@ void jeCPU_FloatControl_RoundDown(void)
 #endif
 }
 
-void jeCPU_FloatControl_RoundNearest(void)
+void grCPU_FloatControl_RoundNearest(void)
 {
 	uint16 control;
 #ifdef WIN32
@@ -718,7 +718,7 @@ void jeCPU_FloatControl_RoundNearest(void)
 #endif
 }
 
-void jeCPU_FloatControl_SinglePrecision(void)
+void grCPU_FloatControl_SinglePrecision(void)
 {
 	uint16 control;
 
@@ -749,7 +749,7 @@ void jeCPU_FloatControl_SinglePrecision(void)
 #endif
 }
 
-void jeCPU_FloatControl_DoublePrecision(void)
+void grCPU_FloatControl_DoublePrecision(void)
 {
 	uint16 control;
 #ifdef WIN32
@@ -782,24 +782,24 @@ void jeCPU_FloatControl_DoublePrecision(void)
 
 /*}{**** Functions : MMX related stuff *********************/
 
-static jeBoolean jeCPU_InMMX = JE_FALSE;
-static jeBoolean jeCPU_WasInMMX = JE_FALSE;
+static grBoolean grCPU_InMMX = GR_FALSE;
+static grBoolean grCPU_WasInMMX = GR_FALSE;
 
-void jeCPU_EnterMMX(void)
+void grCPU_EnterMMX(void)
 {
-	if ( ! jeCPU_InMMX )
+	if ( ! grCPU_InMMX )
 	{
-		jeCPU_FloatControl_Push();
-		jeCPU_InMMX = JE_TRUE;
+		grCPU_FloatControl_Push();
+		grCPU_InMMX = GR_TRUE;
 		// as long as there's nothing on the floating point stack, you can enter MMX whenever you want!
 	}
 }
 
-void jeCPU_LeaveMMX(void)
+void grCPU_LeaveMMX(void)
 {
-	if ( jeCPU_InMMX )
+	if ( grCPU_InMMX )
 	{
-		if ( jeCPU_Features & JE_CPU_HAS_MMX )
+		if ( grCPU_Features & GR_CPU_HAS_MMX )
 		{
 #ifdef WIN32
 			__asm { emms }
@@ -808,20 +808,20 @@ void jeCPU_LeaveMMX(void)
 			__asm__ __volatile__ ("emms");
 #endif
 		}
-		jeCPU_FloatControl_Pop();
-		jeCPU_InMMX = JE_FALSE;
+		grCPU_FloatControl_Pop();
+		grCPU_InMMX = GR_FALSE;
 	}
 }
 
 
-void jeCPU_PauseMMX(void)
+void grCPU_PauseMMX(void)
 {	// to temporarily used floats inside an MMX section:
-	jeCPU_WasInMMX = jeCPU_InMMX;
-	jeCPU_LeaveMMX();
+	grCPU_WasInMMX = grCPU_InMMX;
+	grCPU_LeaveMMX();
 }
 
-void jeCPU_ResumeMMX(void)
+void grCPU_ResumeMMX(void)
 {
-	if ( jeCPU_WasInMMX )
-		jeCPU_EnterMMX();
+	if ( grCPU_WasInMMX )
+		grCPU_EnterMMX();
 }

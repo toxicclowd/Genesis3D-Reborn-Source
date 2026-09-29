@@ -131,7 +131,7 @@ CJ3DView::CJ3DView()
 	m_bFullScreen = FALSE;
 
 	m_pEngine = nullptr;
-	m_bEngineEnabled = JE_FALSE;
+	m_bEngineEnabled = GR_FALSE;
 	m_pDriver = nullptr;
 	m_pDriverMode = nullptr;
 
@@ -204,11 +204,11 @@ void CJ3DView::OnDestroy()
 	if(m_pEngine != nullptr)
 	{
 		// Shutting down the driver and then freeing the engine
-		//jeEngine_ShutdownDriver(m_pEngine);
+		//grEngine_ShutdownDriver(m_pEngine);
 
-		jeEngine_Free(m_pEngine);
+		grEngine_Free(m_pEngine);
 		m_pEngine = nullptr;
-		m_bEngineEnabled = JE_FALSE;
+		m_bEngineEnabled = GR_FALSE;
 	}
 }
 
@@ -270,19 +270,19 @@ int CJ3DView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	pPath = ((CJ3DApp*)AfxGetApp())->GetDriverPath();
 	if( (pPath == nullptr) || (strlen(pPath) <= 0) ) // must be something here
 		return(-1);
-	m_pEngine = jeEngine_Create(m_hRenderWnd, "", pPath);
+	m_pEngine = grEngine_Create(m_hRenderWnd, "", pPath);
 	if(m_pEngine == nullptr)
 		return(-1);
-	m_bEngineEnabled = JE_FALSE;
+	m_bEngineEnabled = GR_FALSE;
 	
-	jeEngine_EnableFrameRateCounter(m_pEngine, JE_FALSE );
-    //jeEngine_SetGamma(m_pEngine, 2.5f);	//trilobite orig  
-	jeEngine_SetGamma(m_pEngine, JET3DVIEW_GAMMA);	//trilobite revise	
-	jeEngine_UpdateGamma(m_pEngine);	//trilobite add
+	grEngine_EnableFrameRateCounter(m_pEngine, GR_FALSE );
+    //grEngine_SetGamma(m_pEngine, 2.5f);	//trilobite orig  
+	grEngine_SetGamma(m_pEngine, JET3DVIEW_GAMMA);	//trilobite revise	
+	grEngine_UpdateGamma(m_pEngine);	//trilobite add
 	// Set up the driver and mode
 	ASSERT(m_pDriver == nullptr);
 	ASSERT(m_pDriverMode == nullptr);
-	if(JE_FALSE == ((CJ3DApp*)AfxGetApp())->GetDriverAndMode(m_pEngine, &m_pDriver, &m_pDriverMode))
+	if(GR_FALSE == ((CJ3DApp*)AfxGetApp())->GetDriverAndMode(m_pEngine, &m_pDriver, &m_pDriverMode))
 	{
 		return(-1);
 	}
@@ -292,7 +292,7 @@ int CJ3DView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return(-1);
 
 	// Use "document name : driver name" as default title format
-	if(jeDriver_GetName(m_pDriver, &pDrvName) == JE_FALSE)
+	if(grDriver_GetName(m_pDriver, &pDrvName) == GR_FALSE)
 		return(-1);
 	EnableEngine();
 	return 0;
@@ -393,15 +393,15 @@ void CJ3DView::OnSize(UINT nType, int cx, int cy)
 	}
 }
 
-jeBoolean CJ3DView::EnableEngine()
+grBoolean CJ3DView::EnableEngine()
 {
 	if(!m_bEngineEnabled && (m_pEngine != nullptr) )
 	{
 		ASSERT(m_pEngine != nullptr);
 		TRACE("EnableEngine: Enabling driver\n");
-		if(!jeEngine_SetDriverAndMode(m_pEngine, GetSafeHwnd(), m_pDriver, m_pDriverMode))
+		if(!grEngine_SetDriverAndMode(m_pEngine, GetSafeHwnd(), m_pDriver, m_pDriverMode))
 		{
-			return(JE_FALSE);
+			return(GR_FALSE);
 		}
 		TRACE("EnableEngine: Driver now enabled\n");
 		m_bEngineEnabled = TRUE;
@@ -409,7 +409,7 @@ jeBoolean CJ3DView::EnableEngine()
 		Invalidate(FALSE);
 	}
 
-	return(JE_TRUE);
+	return(GR_TRUE);
 }
 
 LRESULT CJ3DView::OnPrivateMessage(WPARAM wParam, LPARAM)
@@ -421,7 +421,7 @@ LRESULT CJ3DView::OnPrivateMessage(WPARAM wParam, LPARAM)
 
 	if(wParam == J3DVIEW_UPDATEENGINE )
 	{
-		jeEngine_UpdateWindow(m_pEngine);
+		grEngine_UpdateWindow(m_pEngine);
 	}
 
 	if(wParam == J3DVIEW_ENABLE_ENGINE)
@@ -466,7 +466,7 @@ void CJ3DView::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	CView::OnActivate(nState, pWndOther, bMinimized);
 	
-	if( !jeEngine_Activate(m_pEngine, nState & (WA_ACTIVE | WA_CLICKACTIVE) ) )
+	if( !grEngine_Activate(m_pEngine, nState & (WA_ACTIVE | WA_CLICKACTIVE) ) )
 	{
 		DestroyWindow();
 		return;

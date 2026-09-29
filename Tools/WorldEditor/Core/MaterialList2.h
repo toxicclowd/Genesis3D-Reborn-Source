@@ -21,7 +21,7 @@
 #ifndef MATERIALLIST2_H
 #define MATERIALLIST2_H
 
-#include "Jet.h"
+#include "Genesis3D.h"
 
 
 #ifdef __cplusplus

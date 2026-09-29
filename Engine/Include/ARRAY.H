@@ -21,12 +21,12 @@
 	Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           
 */
 
-#ifndef JE_ARRAY_H
-#define JE_ARRAY_H
+#ifndef GR_ARRAY_H
+#define GR_ARRAY_H
 
 #include "BaseType.h"
 #include "VFile.h"
-#include "jePtrMgr.h"
+#include "grPtrMgr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,95 +35,94 @@ extern "C" {
 //-----------------------------------------------------------------------
 // types
 
-/*! @typedef jeArray
+/*! @typedef grArray
     @brief A reference to an Array
 */
-typedef struct jeArray jeArray;
+typedef struct grArray grArray;
 
-/*! @typedef jeArray_Index
-    @brief The jeArray Index type
+/*! @typedef grArray_Index
+    @brief The grArray Index type
 */
-typedef uint32 jeArray_Index;
+typedef uint32 grArray_Index;
 
-/*! @typedef jeArray_Defragmenter
+/*! @typedef grArray_Defragmenter
     @brief A reference to an Array defragmenter
 
 	@ref jearraydefrag
 */
-typedef struct jeArray_Defragmenter jeArray_Defragmenter;
+typedef struct grArray_Defragmenter grArray_Defragmenter;
 
-/*! @def jeArray_MaxIndex
-    @brief The last jeArray Index value
+/*! @def grArray_MaxIndex
+    @brief The last grArray Index value
 */
-#define jeArray_MaxIndex        ((jeArray_Index)((~ ((jeArray_Index)0) )-1))
+#define grArray_MaxIndex        ((grArray_Index)((~ ((grArray_Index)0) )-1))
 
-/*! @def JE_ARRAY_NULL_INDEX
-    @brief The NULL jeArray Index value
+/*! @def GR_ARRAY_NULL_INDEX
+    @brief The NULL grArray Index value
 */
-#define JE_ARRAY_NULL_INDEX     (jeArray_MaxIndex+1)
-#define GR_ARRAY_NULL_INDEX     JE_ARRAY_NULL_INDEX
+#define GR_ARRAY_NULL_INDEX     (grArray_MaxIndex+1)
 
 
-/*! @typedef jeArray_IOFunc
+/*! @typedef grArray_IOFunc
 *   @brief A reference to the Read/Write function to load/save array elements.
 */
-typedef jeBoolean (* jeArray_IOFunc) (jeVFile * File,void * Element,void *Context);
+typedef grBoolean (* grArray_IOFunc) (grVFile * File,void * Element,void *Context);
 
 //-----------------------------------------------------------------------
 // protos
 
-/*! @fn jeArray* jeArray_Create(int32 HunkLength, int32 NumHunks, int32 AutoExtendNumItems)
-    @brief Create a jeArray instance for NumHunks elements of HunkLength bytes.
+/*! @fn grArray* grArray_Create(int32 HunkLength, int32 NumHunks, int32 AutoExtendNumItems)
+    @brief Create a grArray instance for NumHunks elements of HunkLength bytes.
 	@param[in] HunkLength The size of the element
 	@param[in] NumHunks	The count of elements
 	@param[in] AutoExtendNumItems The number to use when need to increase Array size
-	@return The jeArray instance or NULL if failed
+	@return The grArray instance or NULL if failed
 */
-JETAPI jeArray*			JETCC jeArray_Create(int32 HunkLength, int32 NumHunks, int32 AutoExtendNumItems);
+GRAPI grArray*			GRCC grArray_Create(int32 HunkLength, int32 NumHunks, int32 AutoExtendNumItems);
 
-JETAPI void 			JETCC jeArray_CreateRef(		jeArray * Array);
-JETAPI void 			JETCC jeArray_Destroy(		jeArray ** pArray);
-JETAPI jeBoolean		JETCC jeArray_Extend(			jeArray * Array, int32 NumHunks);
-JETAPI void				JETCC jeArray_Reset(			jeArray * Array);
+GRAPI void 			GRCC grArray_CreateRef(		grArray * Array);
+GRAPI void 			GRCC grArray_Destroy(		grArray ** pArray);
+GRAPI grBoolean		GRCC grArray_Extend(			grArray * Array, int32 NumHunks);
+GRAPI void				GRCC grArray_Reset(			grArray * Array);
 
-JETAPI void *			JETCC jeArray_GetNewElement(	jeArray * Array);
-JETAPI jeBoolean		JETCC jeArray_FreeElement(	jeArray * Array,void * Element);
+GRAPI void *			GRCC grArray_GetNewElement(	grArray * Array);
+GRAPI grBoolean		GRCC grArray_FreeElement(	grArray * Array,void * Element);
 	
-JETAPI jeArray_Index	JETCC jeArray_GetElementIndex(void * Element);
+GRAPI grArray_Index	GRCC grArray_GetElementIndex(void * Element);
 							// == (ArrayPtr - Array)/sizeof(Item)
-JETAPI void *			JETCC jeArray_GetElement(jeArray * Array,jeArray_Index Index);
+GRAPI void *			GRCC grArray_GetElement(grArray * Array,grArray_Index Index);
 							// == Array[Index]
 
-JETAPI void *			JETCC jeArray_GetNextElement(jeArray * Array,void * H);
+GRAPI void *			GRCC grArray_GetNextElement(grArray * Array,void * H);
 							// use NULL to get it started
 
-JETAPI jeArray_Index JETCC jeArray_GetNextIndex(jeArray * Array, jeArray_Index Index);
-							// use JE_ARRAY_NULL_INDEX to get it started
-/*! @fn jeArray_Defragmenter* jeArray_DefragmentStart(jeArray * Array)
+GRAPI grArray_Index GRCC grArray_GetNextIndex(grArray * Array, grArray_Index Index);
+							// use GR_ARRAY_NULL_INDEX to get it started
+/*! @fn grArray_Defragmenter* grArray_DefragmentStart(grArray * Array)
 	@brief Create  drefragmenter for the array Array
 	@param[in] Array The array to defragment
 	@return The defragmenter instance or NULL if failed
 	@todo Implement this function in order to return other thing than an empty structure.
 */
-JETAPI jeArray_Defragmenter* JETCC jeArray_DefragmentStart(jeArray * Array);
+GRAPI grArray_Defragmenter* GRCC grArray_DefragmentStart(grArray * Array);
 
-/*! @fn jeArray_Index jeArray_Defragment(jeArray_Defragmenter * D, jeArray_Index I)
+/*! @fn grArray_Index grArray_Defragment(grArray_Defragmenter * D, grArray_Index I)
 	@brief Return the defragmented index of the Ith element
 	@param[in] D The array defragmenter to use
 	@param[in] I The array index to defragment
 	@return The new index of the element
 	@todo Implement body of this function, currently only return I value.
 */
-JETAPI jeArray_Index		JETCC jeArray_Defragment(jeArray_Defragmenter * D, jeArray_Index I);
+GRAPI grArray_Index		GRCC grArray_Defragment(grArray_Defragmenter * D, grArray_Index I);
 
-/*! @fn void jeArray_DefragmentEnd(jeArray_Defragmenter * D)
+/*! @fn void grArray_DefragmentEnd(grArray_Defragmenter * D)
 	@brief End the defragmenter use and destroy its resources
 	@param[in] D The array defragmenter to use
 	@todo Implement body of this function, currently do nothing
 */
-JETAPI void 				JETCC jeArray_DefragmentEnd(jeArray_Defragmenter * D);
+GRAPI void 				GRCC grArray_DefragmentEnd(grArray_Defragmenter * D);
 
-/*! @fn jeArray* jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSizeOffset, jeArray_IOFunc ElementReader,void *ReaderContext)
+/*! @fn grArray* grArray_CreateFromFile(grVFile * File, uint16 lVersionSizeOffset, grArray_IOFunc ElementReader,void *ReaderContext)
 	@brief Create an array from data read from a file
 
 
@@ -133,9 +132,9 @@ JETAPI void 				JETCC jeArray_DefragmentEnd(jeArray_Defragmenter * D);
 	@param[in] ReaderContext The data to pass to the callback.
 	@return An array instance or NULL if failed.
 */
-JETAPI jeArray *		JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSizeOffset, jeArray_IOFunc ElementReader,void *ReaderContext);
+GRAPI grArray *		GRCC grArray_CreateFromFile(grVFile * File, uint16 lVersionSizeOffset, grArray_IOFunc ElementReader,void *ReaderContext);
 
-/*! @fn jeBoolean jeArray_WriteToFile(const jeArray * Array, jeVFile * File, jeArray_IOFunc ElementWriter,void *WriterContext)
+/*! @fn grBoolean grArray_WriteToFile(const grArray * Array, grVFile * File, grArray_IOFunc ElementWriter,void *WriterContext)
 	@brief Write array data to the file.
 
 
@@ -143,38 +142,38 @@ JETAPI jeArray *		JETCC jeArray_CreateFromFile(jeVFile * File, uint16 lVersionSi
 	@param[in] File The file where to write data.
 	@param[in] ElementWriter The element writer callback function.
 	@param[in] WriterContext The data to pass to the callback.
-	@return JE_TRUE if succeed, JE_FALSE otherwise.
+	@return GR_TRUE if succeed, GR_FALSE otherwise.
 */
-JETAPI jeBoolean		JETCC jeArray_WriteToFile(const jeArray * Array, jeVFile * File, jeArray_IOFunc ElementWriter,void *WriterContext);
+GRAPI grBoolean		GRCC grArray_WriteToFile(const grArray * Array, grVFile * File, grArray_IOFunc ElementWriter,void *WriterContext);
 							// you should _Defragment before you WriteToFile if you can !!!!
 
 //-----------------------------------------------------------------------
 // docs
 
-/*! @page jearraydefrag jeArray Defrag Documentation
+/*! @page jearraydefrag grArray Defrag Documentation
 Degfrag sample code:<br>
 <b>The defragmenter code is not implemented yet. No need to use it!</b>
 @code
-void DoMyDefrag(jeArray * A)
+void DoMyDefrag(grArray * A)
 {
-jeArray_Defragmenter * D;
+grArray_Defragmenter * D;
 
-	D = jeArray_DefragmentStart(A);
+	D = grArray_DefragmentStart(A);
 	assert(D);
 
 	while( I have stuff )
 	{
 		// remap an Index
-		MyIndex = jeArray_GetElementIndex(MyData->Pointer);
-		jeArray_Defragment(D, & MyIndex );
+		MyIndex = grArray_GetElementIndex(MyData->Pointer);
+		grArray_Defragment(D, & MyIndex );
 		MyData->Index = MyIndex;
 	}
 
-	jeArray_DefragmentDone(D);
+	grArray_DefragmentDone(D);
 
 	while ( I have stuff )
 	{
-		MyData->Pointer = jeArray_GetElement(A,MyData->Index);
+		MyData->Pointer = grArray_GetElement(A,MyData->Index);
 	}
 
 }

@@ -50,10 +50,10 @@ D3D12PolyCache::~D3D12PolyCache()
 	Shutdown();
 }
 
-jeBoolean D3D12PolyCache::Initialize(int32 MaxVerts)
+grBoolean D3D12PolyCache::Initialize(int32 MaxVerts)
 {
 	if (!g_pDevice || MaxVerts < 3)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Shutdown();
 	m_MaxVerts = MaxVerts;
@@ -62,7 +62,7 @@ jeBoolean D3D12PolyCache::Initialize(int32 MaxVerts)
 	m_Cache.reserve(static_cast<size_t>(MaxVerts / 3));
 	m_bInitialized = true;
 	D3D12Log::GetPtr()->Printf("D3D12 polygon cache initialized for %d vertices", MaxVerts);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void D3D12PolyCache::Shutdown()
@@ -72,7 +72,7 @@ void D3D12PolyCache::Shutdown()
 		Buffer.pVertexBuffer.Reset();
 		delete[] Buffer.Layers;
 		Buffer.Layers = nullptr;
-		Buffer.Active = JE_FALSE;
+		Buffer.Active = GR_FALSE;
 	}
 	m_StaticBuffers.clear();
 
@@ -97,22 +97,22 @@ void D3D12PolyCache::BeginFrame(UINT FrameIndex)
 	m_NumVerts = 0;
 }
 
-jeBoolean D3D12PolyCache::AddPolygon(
-	jeTLVertex* Pnts,
+grBoolean D3D12PolyCache::AddPolygon(
+	grTLVertex* Pnts,
 	int32 NumPoints,
-	jeRDriver_Layer* Layers,
+	grRDriver_Layer* Layers,
 	int32 NumLayers,
 	uint32 Flags,
-	jeBoolean WorldCoordinates)
+	grBoolean WorldCoordinates)
 {
 	if (!m_bInitialized || !g_bInScene || !Pnts || NumPoints < 3)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	const int32 TriangleVertexCount = (NumPoints - 2) * 3;
 	if (m_NumVerts + TriangleVertexCount > m_MaxVerts && !m_Cache.empty())
 	{
 		if (!Flush())
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 	if (TriangleVertexCount > m_MaxVerts)
 		m_MaxVerts = TriangleVertexCount;
@@ -150,7 +150,7 @@ jeBoolean D3D12PolyCache::AddPolygon(
 
 		if (WorldCoordinates && UsableLayers > 0)
 		{
-			const jeRDriver_Layer& TextureLayer = Layers[0];
+			const grRDriver_Layer& TextureLayer = Layers[0];
 			const float TextureScale = static_cast<float>(1u << TextureLayer.THandle->Log);
 			Vertex.u = (Pnts[i].u * SafeReciprocal(TextureLayer.ScaleU) + TextureLayer.ShiftU) /
 				TextureScale;
@@ -159,7 +159,7 @@ jeBoolean D3D12PolyCache::AddPolygon(
 
 			if (UsableLayers > 1)
 			{
-				const jeRDriver_Layer& LightLayer = Layers[1];
+				const grRDriver_Layer& LightLayer = Layers[1];
 				const float LightScale = static_cast<float>((1u << LightLayer.THandle->Log) << 4);
 				Vertex.lu = (Pnts[i].u - LightLayer.ShiftU + 8.0f) / LightScale;
 				Vertex.lv = (Pnts[i].v - LightLayer.ShiftV + 8.0f) / LightScale;
@@ -185,30 +185,30 @@ jeBoolean D3D12PolyCache::AddPolygon(
 	m_NumVerts += TriangleVertexCount;
 	m_Cache.push_back(Entry);
 
-	if (Flags & JE_RENDER_FLAG_FLUSHBATCH)
+	if (Flags & GR_RENDER_FLAG_FLUSHBATCH)
 		return Flush();
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean D3D12PolyCache::AddGouraudPoly(jeTLVertex* Pnts, int32 NumPoints, uint32 Flags)
+grBoolean D3D12PolyCache::AddGouraudPoly(grTLVertex* Pnts, int32 NumPoints, uint32 Flags)
 {
-	return AddPolygon(Pnts, NumPoints, nullptr, 0, Flags, JE_FALSE);
+	return AddPolygon(Pnts, NumPoints, nullptr, 0, Flags, GR_FALSE);
 }
 
-jeBoolean D3D12PolyCache::AddMiscTexturePoly(
-	jeTLVertex* Pnts,
+grBoolean D3D12PolyCache::AddMiscTexturePoly(
+	grTLVertex* Pnts,
 	int32 NumPoints,
-	jeRDriver_Layer* Layers,
+	grRDriver_Layer* Layers,
 	int32 NumLayers,
 	uint32 Flags)
 {
-	return AddPolygon(Pnts, NumPoints, Layers, NumLayers, Flags, JE_FALSE);
+	return AddPolygon(Pnts, NumPoints, Layers, NumLayers, Flags, GR_FALSE);
 }
 
-jeBoolean D3D12PolyCache::AddWorldPoly(
-	jeTLVertex* Pnts,
+grBoolean D3D12PolyCache::AddWorldPoly(
+	grTLVertex* Pnts,
 	int32 NumPoints,
-	jeRDriver_Layer* Layers,
+	grRDriver_Layer* Layers,
 	int32 NumLayers,
 	void* LMapCBContext,
 	uint32 Flags)
@@ -216,7 +216,7 @@ jeBoolean D3D12PolyCache::AddWorldPoly(
 	if (LMapCBContext && Layers && NumLayers > 1 && Layers[1].THandle &&
 		g_D3D12Drv.SetupLightmap)
 	{
-		jeRDriver_LMapCBInfo LightInfo = {};
+		grRDriver_LMapCBInfo LightInfo = {};
 		g_D3D12Drv.SetupLightmap(&LightInfo, LMapCBContext);
 		if (LightInfo.RGBLight[0] && (LightInfo.Dynamic || !Layers[1].THandle->Lightmap))
 		{
@@ -230,15 +230,15 @@ jeBoolean D3D12PolyCache::AddWorldPoly(
 		}
 	}
 
-	return AddPolygon(Pnts, NumPoints, Layers, NumLayers, Flags, JE_TRUE);
+	return AddPolygon(Pnts, NumPoints, Layers, NumLayers, Flags, GR_TRUE);
 }
 
-jeBoolean D3D12PolyCache::UploadVertices(
+grBoolean D3D12PolyCache::UploadVertices(
 	ComPtr<ID3D12Resource>& VertexBuffer,
 	D3D12_VERTEX_BUFFER_VIEW& VertexBufferView)
 {
 	if (m_Vertices.empty())
-		return JE_TRUE;
+		return GR_TRUE;
 
 	const UINT64 BufferSize = static_cast<UINT64>(m_Vertices.size()) * sizeof(PolyVert);
 	D3D12_HEAP_PROPERTIES UploadHeap = {};
@@ -254,14 +254,14 @@ jeBoolean D3D12PolyCache::UploadVertices(
 	if (FAILED(Hr))
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: Vertex upload buffer creation failed - HR: 0x%08X", Hr);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	void* Destination = nullptr;
 	D3D12_RANGE ReadRange = { 0, 0 };
 	Hr = VertexBuffer->Map(0, &ReadRange, &Destination);
 	if (FAILED(Hr))
-		return JE_FALSE;
+		return GR_FALSE;
 	std::memcpy(Destination, m_Vertices.data(), static_cast<size_t>(BufferSize));
 	D3D12_RANGE WrittenRange = { 0, static_cast<SIZE_T>(BufferSize) };
 	VertexBuffer->Unmap(0, &WrittenRange);
@@ -269,20 +269,20 @@ jeBoolean D3D12PolyCache::UploadVertices(
 	VertexBufferView.BufferLocation = VertexBuffer->GetGPUVirtualAddress();
 	VertexBufferView.SizeInBytes = static_cast<UINT>(BufferSize);
 	VertexBufferView.StrideInBytes = sizeof(PolyVert);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean D3D12PolyCache::Flush()
+grBoolean D3D12PolyCache::Flush()
 {
 	if (!m_bInitialized || m_Cache.empty())
-		return JE_TRUE;
+		return GR_TRUE;
 	if (!g_bInScene || !g_pCommandList || !g_pPSOManager)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	ComPtr<ID3D12Resource> VertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView = {};
 	if (!UploadVertices(VertexBuffer, VertexBufferView))
-		return JE_FALSE;
+		return GR_FALSE;
 	m_FrameVertexBuffers[g_nCurrentFrameIndex].push_back(VertexBuffer);
 
 	ID3D12DescriptorHeap* TextureHeap = D3D12_THandle_GetDescriptorHeap();
@@ -317,9 +317,9 @@ jeBoolean D3D12PolyCache::Flush()
 		ID3D12PipelineState* Pipeline = g_pPSOManager->GetPSO(
 			Type,
 			Entry.Flags,
-			g_bWireframe ? JE_TRUE : JE_FALSE);
+			g_bWireframe ? GR_TRUE : GR_FALSE);
 		if (!Pipeline)
-			return JE_FALSE;
+			return GR_FALSE;
 		g_pCommandList->SetPipelineState(Pipeline);
 
 		const DrawConstants Constants = {
@@ -345,16 +345,16 @@ jeBoolean D3D12PolyCache::Flush()
 	m_Cache.clear();
 	m_Vertices.clear();
 	m_NumVerts = 0;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 // Hardware-transformed static meshes are deliberately not advertised in device caps.
 // Returning failure is safer than the old placeholder, which returned a valid-looking
 // handle without ever uploading or drawing its vertex data.
 uint32 D3D12PolyCache::AddStaticBuffer(
-	jeHWVertex*,
+	grHWVertex*,
 	int32,
-	jeRDriver_Layer*,
+	grRDriver_Layer*,
 	int32,
 	uint32)
 {
@@ -362,12 +362,12 @@ uint32 D3D12PolyCache::AddStaticBuffer(
 	return 0;
 }
 
-jeBoolean D3D12PolyCache::RemoveStaticBuffer(uint32)
+grBoolean D3D12PolyCache::RemoveStaticBuffer(uint32)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-jeBoolean D3D12PolyCache::RenderStaticBuffer(uint32, int32, int32, jeXForm3d*)
+grBoolean D3D12PolyCache::RenderStaticBuffer(uint32, int32, int32, grXForm3d*)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }

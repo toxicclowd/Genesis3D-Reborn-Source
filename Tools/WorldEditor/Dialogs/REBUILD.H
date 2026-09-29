@@ -25,7 +25,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "jeModel.h"
+#include "grModel.h"
 
 #define IDBSP 1000
 /////////////////////////////////////////////////////////////////////////////
@@ -40,7 +40,7 @@ public:
 	BOOL GetCSG();
 	BOOL GetSolid();
 	BOOL GetVis();
-	jeBSP_Logic	 GetLogic();
+	grBSP_Logic	 GetLogic();
 	int m_Balance;
 
 

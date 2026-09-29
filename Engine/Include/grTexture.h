@@ -31,19 +31,17 @@
 extern "C" {
 #endif
 
-typedef struct jeEngine grEngine;
-typedef struct jeEngine jeEngine;
+typedef struct grEngine grEngine;
 
-typedef struct jeTexture grTexture;
-typedef struct jeTexture jeTexture;
+typedef struct grTexture grTexture;
 
 #ifndef RDRIVER_PIXELFORMAT_DEFINED
 #define RDRIVER_PIXELFORMAT_DEFINED
-typedef struct jeRDriver_PixelFormat
+typedef struct grRDriver_PixelFormat
 {
-	jePixelFormat	PixelFormat;
+	grPixelFormat	PixelFormat;
 	uint32			Flags;				
-} jeRDriver_PixelFormat;
+} grRDriver_PixelFormat;
 
 #define RDRIVER_THANDLE_HAS_COLORKEY	(1<<0)
 
@@ -54,9 +52,9 @@ typedef enum
 	Rop_MultiplyX2,
 	Rop_MultiplyX4,
 	Rop_Add,
-} jeRDriver_Rop;
+} grRDriver_Rop;
 
-typedef struct jeTexture_Info
+typedef struct grTexture_Info
 {
 	int32					Width;
 	int32					Height;
@@ -64,14 +62,14 @@ typedef struct jeTexture_Info
 	uint32					ColorKey;
 	uint32					Flags;
 	uint8					Log;
-	jeRDriver_PixelFormat	PixelFormat;
+	grRDriver_PixelFormat	PixelFormat;
     void*                   Direct;
-} jeTexture_Info;
+} grTexture_Info;
 #endif
 
-typedef jeRDriver_PixelFormat grRDriver_PixelFormat;
-typedef jeRDriver_Rop grRDriver_Rop;
-typedef jeTexture_Info grTexture_Info;
+typedef grRDriver_PixelFormat grRDriver_PixelFormat;
+typedef grRDriver_Rop grRDriver_Rop;
+typedef grTexture_Info grTexture_Info;
 
 /*!
 	@fn grTexture *grTexture_Create(grEngine *Engine, int32 Width, int32 Height, int32 MipLevels, grRDriver_PixelFormat *Format)
@@ -145,15 +143,5 @@ GRAPI grBoolean GRCC grTexture_GetInfo(grEngine *Engine, grTexture *Texture, int
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeTexture_Create                         grTexture_Create
-#define jeTexture_CreateFromFile                 grTexture_CreateFromFile
-#define jeTexture_Destroy                        grTexture_Destroy
-#define jeTexture_GetInfo                        grTexture_GetInfo
-#define jeTexture_Lock                           grTexture_Lock
-#define jeTexture_Unlock                         grTexture_Unlock
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif // GR_TEXTURE_H

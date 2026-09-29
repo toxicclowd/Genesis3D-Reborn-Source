@@ -21,7 +21,7 @@
 #include "stdafx.h"
 
 #include "Doc.h"
-#include "jeFaceInfo.h"
+#include "grFaceInfo.h"
 #include "jwe.h"
 #include "MainFrm.h"
 #include "MfcUtil.h"
@@ -130,7 +130,7 @@ BOOL CFaces::OnInitDialog()
 
 void CFaces::Update(CJweDoc *pDoc)
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	int32		BlankFieldFlag ;
 	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CJweDoc)) ) ;
 
@@ -140,7 +140,7 @@ void CFaces::Update(CJweDoc *pDoc)
 
 }//Update
 
-void CFaces::FillFields(jeFaceInfo *pFaceInfo, int32 BlankFieldFlag)
+void CFaces::FillFields(grFaceInfo *pFaceInfo, int32 BlankFieldFlag)
 {
 	ASSERT( pFaceInfo != NULL ) ;
 
@@ -224,7 +224,7 @@ void CFaces::FillFields(jeFaceInfo *pFaceInfo, int32 BlankFieldFlag)
 
 void CFaces::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar) 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc ;
 
 	// UP/DOWN (Spin) controls come here as well as scroll-bars
@@ -237,49 +237,49 @@ void CFaces::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		switch( pScrollBar->GetDlgCtrlID() )
 		{
 			case FACE_SP_TEXTUREX :
-				FaceInfo.ShiftU = Increment( (jeFloat)atof( m_csfShiftU ), SHIFTU_MIN, SHIFTU_MAX, SHIFTU_INC, nPos ) ;
+				FaceInfo.ShiftU = Increment( (grFloat)atof( m_csfShiftU ), SHIFTU_MIN, SHIFTU_MAX, SHIFTU_INC, nPos ) ;
 				m_csfShiftU.Format( "%5.2f", FaceInfo.ShiftU ) ;
 				TrimString( m_csfShiftU ) ;
 				pScrollBar->SendMessage( UDM_SETPOS, 0, 0L ) ;
 				pDoc->SetFaceInfo( &FaceInfo, FACE_FIELD_SHIFTU ) ;
 				break ;
 			case FACE_SP_TEXTUREY :
-				FaceInfo.ShiftV = Increment( (jeFloat)atof( m_csfShiftV ), SHIFTU_MIN, SHIFTU_MAX, SHIFTU_INC, nPos ) ;
+				FaceInfo.ShiftV = Increment( (grFloat)atof( m_csfShiftV ), SHIFTU_MIN, SHIFTU_MAX, SHIFTU_INC, nPos ) ;
 				m_csfShiftV.Format( "%5.2f", FaceInfo.ShiftV ) ;
 				TrimString( m_csfShiftV ) ;
 				pScrollBar->SendMessage( UDM_SETPOS, 0, 0L ) ;
 				pDoc->SetFaceInfo( &FaceInfo, FACE_FIELD_SHIFTV ) ;
 				break ;
 			case FACE_SP_DRAWSCALEX :
-				FaceInfo.DrawScaleU = Increment( (jeFloat)atof( m_csfDrawScaleU), DRAWSX_MIN, DRAWSX_MAX, DRAWSX_INC, nPos ) ;
+				FaceInfo.DrawScaleU = Increment( (grFloat)atof( m_csfDrawScaleU), DRAWSX_MIN, DRAWSX_MAX, DRAWSX_INC, nPos ) ;
 				m_csfDrawScaleU.Format( "%5.2f", FaceInfo.DrawScaleU ) ;
 				TrimString( m_csfDrawScaleU ) ;
 				pScrollBar->SendMessage( UDM_SETPOS, 0, 0L ) ;
 				pDoc->SetFaceInfo( &FaceInfo, FACE_FIELD_DRAWSCALEU ) ;
 				break ;
 			case FACE_SP_DRAWSCALEY :
-				FaceInfo.DrawScaleV = Increment( (jeFloat)atof( m_csfDrawScaleV), DRAWSX_MIN, DRAWSX_MAX, DRAWSX_INC, nPos ) ;
+				FaceInfo.DrawScaleV = Increment( (grFloat)atof( m_csfDrawScaleV), DRAWSX_MIN, DRAWSX_MAX, DRAWSX_INC, nPos ) ;
 				m_csfDrawScaleV.Format( "%5.2f", FaceInfo.DrawScaleV ) ;
 				TrimString( m_csfDrawScaleV ) ;
 				pScrollBar->SendMessage( UDM_SETPOS, 0, 0L ) ;
 				pDoc->SetFaceInfo( &FaceInfo, FACE_FIELD_DRAWSCALEV ) ;
 				break ;
 			case FACE_SP_LIGHTMAPX :
-				FaceInfo.LMapScaleU = Increment( (jeFloat)atof( m_csfLMapScaleU), LIGHTMX_MIN, LIGHTMX_MAX, LIGHTMX_INC, nPos ) ;
+				FaceInfo.LMapScaleU = Increment( (grFloat)atof( m_csfLMapScaleU), LIGHTMX_MIN, LIGHTMX_MAX, LIGHTMX_INC, nPos ) ;
 				m_csfLMapScaleU.Format( "%5.2f", FaceInfo.LMapScaleU ) ;
 				TrimString( m_csfLMapScaleU ) ;
 				pScrollBar->SendMessage( UDM_SETPOS, 0, 0L ) ;
 				pDoc->SetFaceInfo( &FaceInfo, FACE_FIELD_LMAPSCALEU ) ;
 				break ;
 			case FACE_SP_LIGHTMAPY :
-				FaceInfo.LMapScaleV = Increment( (jeFloat)atof( m_csfLMapScaleV), LIGHTMX_MIN, LIGHTMX_MAX, LIGHTMX_INC, nPos ) ;
+				FaceInfo.LMapScaleV = Increment( (grFloat)atof( m_csfLMapScaleV), LIGHTMX_MIN, LIGHTMX_MAX, LIGHTMX_INC, nPos ) ;
 				m_csfLMapScaleV.Format( "%5.2f", FaceInfo.LMapScaleV ) ;
 				TrimString( m_csfLMapScaleV ) ;
 				pScrollBar->SendMessage( UDM_SETPOS, 0, 0L ) ;
 				pDoc->SetFaceInfo( &FaceInfo, FACE_FIELD_LMAPSCALEV ) ;
 				break ;
 			case FACE_SP_ANGLE :
-				FaceInfo.Rotate = Increment( (jeFloat)atoi( m_csiAngle ), ROTATE_MIN, ROTATE_MAX, ROTATE_INC, nPos ) ;
+				FaceInfo.Rotate = Increment( (grFloat)atoi( m_csiAngle ), ROTATE_MIN, ROTATE_MAX, ROTATE_INC, nPos ) ;
 				m_csiAngle.Format( "%d", (int)FaceInfo.Rotate ) ;
 				TrimString( m_csiAngle ) ;
 				pScrollBar->SendMessage( UDM_SETPOS, 0, 0L ) ;
@@ -295,7 +295,7 @@ void CFaces::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	}
 }// OnVScroll
 
-jeFloat CFaces::Increment(jeFloat fCur, jeFloat fMin, jeFloat fMax, jeFloat fInc, jeBoolean bDown )
+grFloat CFaces::Increment(grFloat fCur, grFloat fMin, grFloat fMax, grFloat fInc, grBoolean bDown )
 {
 	if( bDown )
 		fCur -= fInc ;
@@ -313,12 +313,12 @@ jeFloat CFaces::Increment(jeFloat fCur, jeFloat fMin, jeFloat fMax, jeFloat fInc
 
 void CFaces::OnKillfocusEdTexturex() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
-	FaceInfo.ShiftU = (jeFloat)atof( m_csfShiftU ) ;
+	FaceInfo.ShiftU = (grFloat)atof( m_csfShiftU ) ;
 	m_csfShiftU.Format( "%5.2f", FaceInfo.ShiftU ) ;
 	TrimString( m_csfShiftU ) ;
 	UpdateData( false ) ;
@@ -328,12 +328,12 @@ void CFaces::OnKillfocusEdTexturex()
 
 void CFaces::OnKillfocusEdTexturey() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
-	FaceInfo.ShiftV = (jeFloat)atof( m_csfShiftV ) ;
+	FaceInfo.ShiftV = (grFloat)atof( m_csfShiftV ) ;
 	m_csfShiftV.Format( "%5.2f", FaceInfo.ShiftV ) ;
 	TrimString( m_csfShiftV ) ;
 	UpdateData( false ) ;
@@ -343,23 +343,23 @@ void CFaces::OnKillfocusEdTexturey()
 
 void CFaces::OnKillfocusEdAngle() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
-	FaceInfo.Rotate = UNITS_DEGREES_TO_RADIANS( (jeFloat)atoi( m_csiAngle ) ) ;
+	FaceInfo.Rotate = UNITS_DEGREES_TO_RADIANS( (grFloat)atoi( m_csiAngle ) ) ;
 	pDoc->SetFaceInfo( &FaceInfo, FACE_FIELD_ROTATE ) ;
 }// OnKillfocusEdAngle
 
 void CFaces::OnKillfocusEdDrawscalex() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
-	FaceInfo.DrawScaleU = (jeFloat)atof( m_csfDrawScaleU ) ;
+	FaceInfo.DrawScaleU = (grFloat)atof( m_csfDrawScaleU ) ;
 	m_csfDrawScaleU.Format( "%5.2f", FaceInfo.DrawScaleU ) ;
 	TrimString( m_csfDrawScaleU) ;
 	UpdateData( false ) ;
@@ -369,12 +369,12 @@ void CFaces::OnKillfocusEdDrawscalex()
 
 void CFaces::OnKillfocusEdDrawscaley() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
-	FaceInfo.DrawScaleV = (jeFloat)atof( m_csfDrawScaleV ) ;
+	FaceInfo.DrawScaleV = (grFloat)atof( m_csfDrawScaleV ) ;
 	m_csfDrawScaleV.Format( "%5.2f", FaceInfo.DrawScaleV ) ;
 	TrimString( m_csfDrawScaleV ) ;
 	UpdateData( false ) ;
@@ -384,12 +384,12 @@ void CFaces::OnKillfocusEdDrawscaley()
 
 void CFaces::OnKillfocusEdLightmapx() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
-	FaceInfo.LMapScaleU = (jeFloat)atof( m_csfLMapScaleU ) ;
+	FaceInfo.LMapScaleU = (grFloat)atof( m_csfLMapScaleU ) ;
 	m_csfLMapScaleU.Format( "%5.2f", FaceInfo.LMapScaleU ) ;
 	TrimString( m_csfLMapScaleU ) ;
 	UpdateData( false ) ;
@@ -399,12 +399,12 @@ void CFaces::OnKillfocusEdLightmapx()
 
 void CFaces::OnKillfocusEdLightmapy() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
 	UpdateData( true ) ;
-	FaceInfo.LMapScaleV = (jeFloat)atof( m_csfLMapScaleV ) ;
+	FaceInfo.LMapScaleV = (grFloat)atof( m_csfLMapScaleV ) ;
 	m_csfLMapScaleV.Format( "%5.2f", FaceInfo.LMapScaleV ) ;
 	TrimString( m_csfLMapScaleV ) ;
 	UpdateData( false ) ;
@@ -416,7 +416,7 @@ void CFaces::OnKillfocusEdLightmapy()
 
 void CFaces::OnCkGouraud() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
@@ -434,7 +434,7 @@ void CFaces::OnCkInvisible()
 
 void CFaces::OnCkPortal() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
@@ -448,7 +448,7 @@ void CFaces::OnCkPortal()
 
 void CFaces::OnKillfocusEdTransparent() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
@@ -463,7 +463,7 @@ void CFaces::OnKillfocusEdTransparent()
 
 void CFaces::OnCkTransparent() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 
@@ -478,7 +478,7 @@ void CFaces::OnCkTransparent()
 
 void CFaces::OnCkMirror() 
 {
-	jeFaceInfo	FaceInfo ;
+	grFaceInfo	FaceInfo ;
 	CJweDoc	*	pDoc = ((CMainFrame*)AfxGetMainWnd())->GetCurrentDocument();
 	ASSERT( pDoc ) ;
 

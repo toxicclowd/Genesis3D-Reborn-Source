@@ -31,130 +31,130 @@
 typedef struct tagMoveBrushInfo
 {
 	Level			*	pLevel ;
-	jeExtBox		*	pWorldBounds ;
-	const jeVec3d	*	pWorldDistance ;
+	grExtBox		*	pWorldBounds ;
+	const grVec3d	*	pWorldDistance ;
 } MoveBrushInfo ;
 
 typedef struct tagRotateBrushInfo
 {
 	Level			*	pLevel ;
-	jeExtBox		*	pWorldBounds ;
+	grExtBox		*	pWorldBounds ;
 	ORTHO_AXIS			RAxis ;
-	jeVec3d				RotationCenter ;
-	jeFloat				fRadianAngle ;
+	grVec3d				RotationCenter ;
+	grFloat				fRadianAngle ;
 } RotateBrushInfo ;
 
 typedef struct tagShearBrushInfo
 {
 	Level			*	pLevel ;
-	jeExtBox		*	pWorldBounds ;
+	grExtBox		*	pWorldBounds ;
 	SELECT_HANDLE		eSizeType;
 	ORTHO_AXIS			HAxis;
 	ORTHO_AXIS			VAxis;
-	const jeVec3d	*	pWorldDistance ;
-	const jeExtBox	*	pSelectedBounds ;
+	const grVec3d	*	pWorldDistance ;
+	const grExtBox	*	pSelectedBounds ;
 } ShearBrushInfo ;
 
 typedef struct tagSizeBrushInfo
 {
 	Level			*	pLevel ;
-	jeExtBox		*	pWorldBounds ;
-	const jeVec3d	*	pWorldDistance ;
+	grExtBox		*	pWorldBounds ;
+	const grVec3d	*	pWorldDistance ;
 	ORTHO_AXIS			HAxis ;
 	ORTHO_AXIS			VAxis ;
 	SELECT_HANDLE		eSizeType ;
-	jeFloat				fHScale ;
-	jeFloat				fVScale ;
-	const jeExtBox	*	pSelectedBounds ;
+	grFloat				fHScale ;
+	grFloat				fVScale ;
+	const grExtBox	*	pSelectedBounds ;
 } SizeBrushInfo ;
 
 
 typedef struct tagSnapBrushInfo
 {
 	Level			*	pLevel ;
-	jeExtBox		*	pWorldBounds ;
-	jeFloat				fSnapSize ;
+	grExtBox		*	pWorldBounds ;
+	grFloat				fSnapSize ;
 } SnapBrushInfo ;
 
 
-static jeBoolean Transform_MoveObject( Object * pObject, void * lParam )
+static grBoolean Transform_MoveObject( Object * pObject, void * lParam )
 {
 	MoveBrushInfo * pmbi ;
-	jeExtBox		WorldBounds ;
+	grExtBox		WorldBounds ;
 	
 	pmbi = (MoveBrushInfo*)lParam ;
 	if( !Object_GetWorldDrawBounds( pObject, &WorldBounds ) )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Util_ExtBox_Union( pmbi->pWorldBounds, &WorldBounds, pmbi->pWorldBounds ) ;
 	Object_Move( pObject, pmbi->pWorldDistance ) ;
 	if( !Object_GetWorldDrawBounds( pObject, &WorldBounds ) )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Util_ExtBox_Union( pmbi->pWorldBounds, &WorldBounds, pmbi->pWorldBounds ) ;
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Select_DeselectBrush
 
-static jeBoolean Transform_ShearObject( Object * pObject, void * lParam )
+static grBoolean Transform_ShearObject( Object * pObject, void * lParam )
 {
 	ShearBrushInfo * psbi ;
-	jeExtBox		WorldBounds ;
+	grExtBox		WorldBounds ;
 	
 	psbi = (ShearBrushInfo*)lParam ;
 	if( !Object_GetWorldDrawBounds( pObject, &WorldBounds ) )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Util_ExtBox_Union( psbi->pWorldBounds, &WorldBounds, psbi->pWorldBounds ) ;
 	Object_Shear( pObject, psbi->pWorldDistance, psbi->eSizeType, psbi->HAxis, 
 		psbi->VAxis, psbi->pSelectedBounds ) ;
 	if( !Object_GetWorldDrawBounds( pObject, &WorldBounds ) )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Util_ExtBox_Union( psbi->pWorldBounds, &WorldBounds, psbi->pWorldBounds ) ;
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Select_DeselectBrush
 
-static jeBoolean Transform_RotateObject( Object * pObject, void * lParam )
+static grBoolean Transform_RotateObject( Object * pObject, void * lParam )
 {
 	RotateBrushInfo * prbi ;
-	jeExtBox		WorldBounds ;
+	grExtBox		WorldBounds ;
 	
 	prbi = (RotateBrushInfo*)lParam ;
 	if( !Object_GetWorldDrawBounds( pObject, &WorldBounds ) )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Util_ExtBox_Union( prbi->pWorldBounds, &WorldBounds, prbi->pWorldBounds ) ;
 	Object_Rotate( pObject, prbi->RAxis, prbi->fRadianAngle, &prbi->RotationCenter ) ;
 	if( !Object_GetWorldDrawBounds( pObject, &WorldBounds ) )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Util_ExtBox_Union( prbi->pWorldBounds, &WorldBounds, prbi->pWorldBounds ) ;
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Transform_RotateBrush
 
 
-static jeBoolean Transform_SizeObject( Object * pObject, void * lParam )
+static grBoolean Transform_SizeObject( Object * pObject, void * lParam )
 {
 	SizeBrushInfo * psbi ;
-	jeExtBox		WorldBounds ;
+	grExtBox		WorldBounds ;
 	
 	psbi = (SizeBrushInfo*)lParam ;
 	if( !Object_GetWorldDrawBounds( pObject, &WorldBounds ) )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Util_ExtBox_Union( psbi->pWorldBounds, &WorldBounds, psbi->pWorldBounds ) ;
 	Object_Size( pObject, psbi->pSelectedBounds, psbi->fHScale, psbi->fVScale, psbi->eSizeType, psbi->HAxis, psbi->VAxis ) ;
 	if( !Object_GetWorldDrawBounds( pObject, &WorldBounds ) )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Util_ExtBox_Union( psbi->pWorldBounds, &WorldBounds, psbi->pWorldBounds ) ;
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Select_DeselectBrush
 
 
 
 // Snap to a multiple of the snap size
-static jeFloat Transform_SnapCoord( jeFloat fCoord, jeFloat fSnapSize )
+static grFloat Transform_SnapCoord( grFloat fCoord, grFloat fSnapSize )
 {
-	jeFloat fRemainder ;
+	grFloat fRemainder ;
 
-	fRemainder = (jeFloat) fmod( fCoord, fSnapSize ) ;
+	fRemainder = (grFloat) fmod( fCoord, fSnapSize ) ;
 	if( fabs( fRemainder ) < (fSnapSize *0.5f) )
 	{
 		return fRemainder ;		
@@ -173,11 +173,11 @@ static jeFloat Transform_SnapCoord( jeFloat fCoord, jeFloat fSnapSize )
 }// Transform_SnapCoord
 
 // Snap to the nearest grid line
-static jeFloat Transform_SnapCoordLR( jeFloat fCoord, jeFloat fSnapSize )
+static grFloat Transform_SnapCoordLR( grFloat fCoord, grFloat fSnapSize )
 {
-	jeFloat fRemainder ;
+	grFloat fRemainder ;
 
-	fRemainder = (jeFloat) fmod( fCoord, fSnapSize ) ;
+	fRemainder = (grFloat) fmod( fCoord, fSnapSize ) ;
 	if( fabs( fRemainder ) < (fSnapSize/2.0f) )
 	{
 		return fRemainder ;		
@@ -197,10 +197,10 @@ static jeFloat Transform_SnapCoordLR( jeFloat fCoord, jeFloat fSnapSize )
 	}
 }// Transform_Snap
 
-static void Transform_Snap( jeFloat fMin, jeFloat fMax, jeFloat fSnapSize, jeFloat * pResult )
+static void Transform_Snap( grFloat fMin, grFloat fMax, grFloat fSnapSize, grFloat * pResult )
 {
-	jeFloat fSide1 ;
-	jeFloat fSide2 ;
+	grFloat fSide1 ;
+	grFloat fSide2 ;
 
 	fSide1 = Transform_SnapCoordLR( fMin, fSnapSize ) ;
 	fSide2 = Transform_SnapCoordLR( fMax, fSnapSize ) ;
@@ -216,7 +216,7 @@ static void Transform_Snap( jeFloat fMin, jeFloat fMax, jeFloat fSnapSize, jeFlo
 // END STATIC
 //
 
-void Transform_MoveSelected( Level * pLevel, const jeVec3d * pWorldDistance, jeExtBox * pWorldBounds )
+void Transform_MoveSelected( Level * pLevel, const grVec3d * pWorldDistance, grExtBox * pWorldBounds )
 {
 	MoveBrushInfo	mbi ;
 
@@ -234,7 +234,7 @@ void Transform_MoveSelected( Level * pLevel, const jeVec3d * pWorldDistance, jeE
 
 }// Transform_MoveSelected
 
-void Transform_MoveSelectedSub( Level * pLevel, const jeVec3d * pWorldDistance, jeExtBox * pWorldBounds )
+void Transform_MoveSelectedSub( Level * pLevel, const grVec3d * pWorldDistance, grExtBox * pWorldBounds )
 {
 	MoveBrushInfo	mbi ;
 
@@ -252,7 +252,7 @@ void Transform_MoveSelectedSub( Level * pLevel, const jeVec3d * pWorldDistance, 
 
 }// Transform_MoveSelectedSub
 
-void Transform_ShearSelected( Level * pLevel, const jeVec3d * pWorldDistance,  SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, jeExtBox * pWorldBounds )
+void Transform_ShearSelected( Level * pLevel, const grVec3d * pWorldDistance,  SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, grExtBox * pWorldBounds )
 {
 	ShearBrushInfo	sbi ;
 
@@ -273,7 +273,7 @@ void Transform_ShearSelected( Level * pLevel, const jeVec3d * pWorldDistance,  S
 
 }// Transform_MoveSelected
 
-void Transform_RotateSelected( Level * pLevel, jeFloat fRadianAngle, ORTHO_AXIS RAxis, jeVec3d *pCenter3d, jeExtBox * pWorldBounds )
+void Transform_RotateSelected( Level * pLevel, grFloat fRadianAngle, ORTHO_AXIS RAxis, grVec3d *pCenter3d, grExtBox * pWorldBounds )
 {
 	RotateBrushInfo	rbi ;
 	assert( pLevel != NULL ) ;
@@ -290,10 +290,10 @@ void Transform_RotateSelected( Level * pLevel, jeFloat fRadianAngle, ORTHO_AXIS 
 	Level_SetModifiedSelection( pLevel ) ;
 }// Transform_RotateSelected
 
-void Transform_RotateSubSelected( Level * pLevel, jeFloat fRadianAngle, ORTHO_AXIS RAxis, jeExtBox * pWorldBounds )
+void Transform_RotateSubSelected( Level * pLevel, grFloat fRadianAngle, ORTHO_AXIS RAxis, grExtBox * pWorldBounds )
 {
 	RotateBrushInfo	rbi ;
-	const jeExtBox * pSubDrawBounds;
+	const grExtBox * pSubDrawBounds;
 
 	assert( pLevel != NULL ) ;
 	assert( pWorldBounds != NULL ) ;
@@ -303,7 +303,7 @@ void Transform_RotateSubSelected( Level * pLevel, jeFloat fRadianAngle, ORTHO_AX
 	rbi.RAxis = RAxis ;
 	rbi.fRadianAngle = fRadianAngle ;
 	pSubDrawBounds = Level_GetSubSelDrawBounds( pLevel );
-	jeExtBox_GetTranslation( pSubDrawBounds, &rbi.RotationCenter ) ; 
+	grExtBox_GetTranslation( pSubDrawBounds, &rbi.RotationCenter ) ; 
 
 	Level_EnumSubSelected( pLevel, &rbi, Transform_RotateObject) ;
 	Level_SetModifiedSelection( pLevel ) ;
@@ -311,10 +311,10 @@ void Transform_RotateSubSelected( Level * pLevel, jeFloat fRadianAngle, ORTHO_AX
 
 #define TRANSFORM_MIN_EXTENT	(0.001f)
 
-static jeFloat Transform_CalcScale( const jeExtBox * pWorldBounds, jeBoolean bHorzAxis, ORTHO_AXIS Axis,  const jeVec3d * pWorldDistance, SELECT_HANDLE eSizeType )
+static grFloat Transform_CalcScale( const grExtBox * pWorldBounds, grBoolean bHorzAxis, ORTHO_AXIS Axis,  const grVec3d * pWorldDistance, SELECT_HANDLE eSizeType )
 {
-	jeFloat fExtent;
-	jeFloat fScale = 1.0;
+	grFloat fExtent;
+	grFloat fScale = 1.0;
 	fExtent = Util_geExtBox_GetExtent( pWorldBounds, Axis ) ;
 	if( fExtent < TRANSFORM_MIN_EXTENT )
 		return 1.0f;
@@ -326,9 +326,9 @@ static jeFloat Transform_CalcScale( const jeExtBox * pWorldBounds, jeBoolean bHo
 			fScale = 1.0f;
 		else
 			if( Axis == Ortho_Axis_Z )
-				fScale = ( fExtent - jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent - grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 			else
-				fScale = ( fExtent + jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent + grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		break ;
 
 	case Select_Bottom :
@@ -336,64 +336,64 @@ static jeFloat Transform_CalcScale( const jeExtBox * pWorldBounds, jeBoolean bHo
 			fScale = 1.0f;
 		else
 			if( Axis == Ortho_Axis_Z )
-				fScale = ( fExtent + jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent + grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 			else
-				fScale = ( fExtent - jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent - grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		break ;
 
 	case Select_Left :
 		if( bHorzAxis )
-			fScale = ( fExtent - jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+			fScale = ( fExtent - grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		else
 			fScale = 1.0f;
 		break ;
 
 	case Select_Right :
 		if( bHorzAxis )
-			fScale = ( fExtent + jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+			fScale = ( fExtent + grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		else
 			fScale = 1.0f;
 		break ;
 
 	case Select_TopLeft :
 		if( bHorzAxis )
-			fScale = ( fExtent - jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+			fScale = ( fExtent - grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		else
 			if( Axis == Ortho_Axis_Z )
-				fScale = ( fExtent - jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent - grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 			else
-				fScale = ( fExtent + jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent + grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		break ;
 
 	case Select_TopRight :
 		if( bHorzAxis )
-			fScale = ( fExtent + jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+			fScale = ( fExtent + grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		else
 			if( Axis == Ortho_Axis_Z )
-				fScale = ( fExtent - jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent - grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 			else
-				fScale = ( fExtent + jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent + grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		break ;
 
 	case Select_BottomLeft :
 		if( bHorzAxis )
-			fScale = ( fExtent - jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+			fScale = ( fExtent - grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		else
 			if( Axis == Ortho_Axis_Z )
-				fScale = ( fExtent + jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent + grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 			else
-				fScale = ( fExtent - jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent - grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		break ;
 
 	
 	case Select_BottomRight :
 		if( bHorzAxis )
-			fScale = ( fExtent + jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+			fScale = ( fExtent + grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		else
 			if( Axis == Ortho_Axis_Z )
-				fScale = ( fExtent + jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent + grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 			else
-				fScale = ( fExtent - jeVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
+				fScale = ( fExtent - grVec3d_GetElement(pWorldDistance,Axis) )/fExtent ;
 		break ;
 
 	}
@@ -402,11 +402,11 @@ static jeFloat Transform_CalcScale( const jeExtBox * pWorldBounds, jeBoolean bHo
 	return( fScale );
 }
 
-void Transform_SizeSelected( Level * pLevel, const jeVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, jeExtBox * pWorldBounds )
+void Transform_SizeSelected( Level * pLevel, const grVec3d * pWorldDistance, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, grExtBox * pWorldBounds )
 {
-	jeFloat				fExtent ;
+	grFloat				fExtent ;
 	SizeBrushInfo		sbi ;
-	const jeExtBox	*	pSelectedBounds ;
+	const grExtBox	*	pSelectedBounds ;
 	assert( pLevel != NULL ) ;
 	assert( pWorldDistance != NULL ) ;
 	assert( pWorldBounds != NULL ) ;
@@ -414,7 +414,7 @@ void Transform_SizeSelected( Level * pLevel, const jeVec3d * pWorldDistance, SEL
 
 	pSelectedBounds = Level_GetSelDrawBounds( pLevel ) ;
 
-	sbi.fHScale = Transform_CalcScale( pSelectedBounds, JE_TRUE, HAxis,  pWorldDistance, eSizeType );
+	sbi.fHScale = Transform_CalcScale( pSelectedBounds, GR_TRUE, HAxis,  pWorldDistance, eSizeType );
 	assert( sbi.fHScale >= 0.0f ) ;
 	if( sbi.fHScale < GEXFORM3D_SCALE_TOLERANCE )
 		sbi.fHScale = GEXFORM3D_SCALE_TOLERANCE ;
@@ -423,7 +423,7 @@ void Transform_SizeSelected( Level * pLevel, const jeVec3d * pWorldDistance, SEL
 	if( fExtent < TRANSFORM_MIN_EXTENT )
 		return ;
 
-	sbi.fVScale = Transform_CalcScale( pSelectedBounds, JE_FALSE, VAxis,  pWorldDistance, eSizeType );
+	sbi.fVScale = Transform_CalcScale( pSelectedBounds, GR_FALSE, VAxis,  pWorldDistance, eSizeType );
 	assert( sbi.fVScale >= 0.0f ) ;
 	if( sbi.fVScale < GEXFORM3D_SCALE_TOLERANCE )
 		sbi.fVScale = GEXFORM3D_SCALE_TOLERANCE ;
@@ -443,30 +443,30 @@ void Transform_SizeSelected( Level * pLevel, const jeVec3d * pWorldDistance, SEL
 
 }// Transform_SizeSelected
 
-void Transform_PlaceSnap( Level * pLevel, jeVec3d *placePt, jeVec3d * pSnapDelta )
+void Transform_PlaceSnap( Level * pLevel, grVec3d *placePt, grVec3d * pSnapDelta )
 {
-	jeFloat				fSnapSize ;
+	grFloat				fSnapSize ;
 
-	fSnapSize = (Level_IsSnapGrid( pLevel )) ? (jeFloat)Level_GetGridSnapSize( pLevel ) : 1.0f ;
+	fSnapSize = (Level_IsSnapGrid( pLevel )) ? (grFloat)Level_GetGridSnapSize( pLevel ) : 1.0f ;
 	Transform_SnapPointLR( placePt, fSnapSize, pSnapDelta ) ;
-	jeVec3d_Inverse( pSnapDelta ) ;
+	grVec3d_Inverse( pSnapDelta ) ;
 }
 
-void Transform_MoveSnapSelected( Level * pLevel, SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, jeExtBox * pWorldBounds, jeVec3d * pSnapDelta )
+void Transform_MoveSnapSelected( Level * pLevel, SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, grExtBox * pWorldBounds, grVec3d * pSnapDelta )
 {
-	const jeExtBox *	pSelBounds ;
-	jeVec3d				Corner ;
-	jeFloat				fSnapSize ;
+	const grExtBox *	pSelBounds ;
+	grVec3d				Corner ;
+	grFloat				fSnapSize ;
 	assert( pLevel != NULL ) ;
 	assert( pWorldBounds != NULL ) ;
 
 	pSelBounds = Level_GetSelBounds( pLevel ) ;
 	Transform_GetHandlePoint( eCorner, HAxis, VAxis, pSelBounds, &Corner ) ;
 
-	fSnapSize = (Level_IsSnapGrid( pLevel )) ? (jeFloat)Level_GetGridSnapSize( pLevel ) : 1.0f ;
+	fSnapSize = (Level_IsSnapGrid( pLevel )) ? (grFloat)Level_GetGridSnapSize( pLevel ) : 1.0f ;
 
 	Transform_SnapPointLR( &Corner, fSnapSize, pSnapDelta ) ;
-	jeVec3d_Inverse( pSnapDelta ) ;
+	grVec3d_Inverse( pSnapDelta ) ;
 	Transform_MoveSelected( pLevel, pSnapDelta, pWorldBounds ) ;
 
 }// Transform_MoveSnapSelected
@@ -477,13 +477,13 @@ void Transform_SizeSnapSelected
 	SELECT_HANDLE		eCorner, 
 	ORTHO_AXIS			HAxis, 
 	ORTHO_AXIS			VAxis,
-	jeExtBox		*	pWorldBounds, 
-	jeVec3d			*	pSnapDelta
+	grExtBox		*	pWorldBounds, 
+	grVec3d			*	pSnapDelta
 )
 {
-	const jeExtBox *	pSelBounds ;
-	jeVec3d				Corner ;
-	jeFloat				fSnapSize ;
+	const grExtBox *	pSelBounds ;
+	grVec3d				Corner ;
+	grFloat				fSnapSize ;
 	assert( pLevel != NULL ) ;
 	assert( pWorldBounds != NULL ) ;
 
@@ -493,22 +493,22 @@ void Transform_SizeSnapSelected
 	pSelBounds = Level_GetSelBounds( pLevel ) ;
 
 	Transform_GetHandlePoint( eCorner, HAxis, VAxis, pSelBounds, &Corner ) ;
-	fSnapSize = (Level_IsSnapGrid( pLevel )) ? (jeFloat)Level_GetGridSnapSize( pLevel ) : 1.0f ;
+	fSnapSize = (Level_IsSnapGrid( pLevel )) ? (grFloat)Level_GetGridSnapSize( pLevel ) : 1.0f ;
 
 	Transform_SnapPointLR( &Corner, fSnapSize, pSnapDelta ) ;
-	jeVec3d_Inverse( pSnapDelta ) ;
+	grVec3d_Inverse( pSnapDelta ) ;
 	Transform_SizeSelected( pLevel, pSnapDelta, eCorner, HAxis, VAxis, pWorldBounds ) ;
 
 }// Transform_SizeSnapSelected
 
-void Transform_SnapBounds( const jeExtBox * pBox, const jeFloat fSnapSize, jeVec3d * pDelta )
+void Transform_SnapBounds( const grExtBox * pBox, const grFloat fSnapSize, grVec3d * pDelta )
 {
 	Transform_Snap( pBox->Min.X, pBox->Max.X, fSnapSize, &pDelta->X ) ;
 	Transform_Snap( pBox->Min.Y, pBox->Max.Y, fSnapSize, &pDelta->Y ) ;
 	Transform_Snap( pBox->Min.Z, pBox->Max.Z, fSnapSize, &pDelta->Z ) ;
 }// Transform_SnapBounds
 
-void Transform_SnapPoint( const jeVec3d * pPoint, const jeFloat fSnapSize, jeVec3d * pDelta )
+void Transform_SnapPoint( const grVec3d * pPoint, const grFloat fSnapSize, grVec3d * pDelta )
 {
 	assert( pPoint != NULL ) ;
 	assert( pDelta != NULL ) ;
@@ -518,7 +518,7 @@ void Transform_SnapPoint( const jeVec3d * pPoint, const jeFloat fSnapSize, jeVec
 	pDelta->Z = Transform_SnapCoord( pPoint->Z, fSnapSize )	;
 }// Transform_SnapPoint
 
-void Transform_SnapPointLR( const jeVec3d * pPoint, const jeFloat fSnapSize, jeVec3d * pDelta )
+void Transform_SnapPointLR( const grVec3d * pPoint, const grFloat fSnapSize, grVec3d * pDelta )
 {
 	assert( pPoint != NULL ) ;
 	assert( pDelta != NULL ) ;
@@ -528,89 +528,89 @@ void Transform_SnapPointLR( const jeVec3d * pPoint, const jeFloat fSnapSize, jeV
 	pDelta->Z = Transform_SnapCoordLR( pPoint->Z, fSnapSize )	;
 }// Transform_SnapPoint
 
-void Transform_PointToGrid( Level * pLevel, const jeVec3d * pPoint,  jeVec3d * pGridPoint )
+void Transform_PointToGrid( Level * pLevel, const grVec3d * pPoint,  grVec3d * pGridPoint )
 {
-	jeFloat		fSnapSize ;
-	jeVec3d		SnapDelta ;
+	grFloat		fSnapSize ;
+	grVec3d		SnapDelta ;
 	assert( pLevel != NULL ) ;
 
-	fSnapSize = (Level_IsSnapGrid( pLevel )) ? (jeFloat)Level_GetGridSnapSize( pLevel ) : 1.0f ;
+	fSnapSize = (Level_IsSnapGrid( pLevel )) ? (grFloat)Level_GetGridSnapSize( pLevel ) : 1.0f ;
 	Transform_SnapPoint( pPoint, fSnapSize, &SnapDelta ) ;
-	jeVec3d_Subtract( pPoint, &SnapDelta, pGridPoint ) ;
+	grVec3d_Subtract( pPoint, &SnapDelta, pGridPoint ) ;
 }// Transform_PointToGrid
 
 
-void Transform_GetHandlePoint( SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const jeExtBox * pBounds, jeVec3d * pPoint )
+void Transform_GetHandlePoint( SELECT_HANDLE eCorner, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis, const grExtBox * pBounds, grVec3d * pPoint )
 {
 	assert( pBounds != NULL ) ;
 	assert( pPoint != NULL ) ;
 	
 	// For this View, fill in the two coordinates of the handle associated with this box
-	jeVec3d_Clear( pPoint ) ;
+	grVec3d_Clear( pPoint ) ;
 
 	// The Z axis is flipped (down is positive)
 	switch( eCorner )
 	{
 	case Select_Top :
 		if( Ortho_Axis_Z == VAxis )
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
 		else
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
 		break ;
 
 	case Select_Bottom :
 		if( Ortho_Axis_Z == VAxis )
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
 		else
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
 		break ;
 
 	case Select_Left :
-		jeVec3d_SetElement( pPoint, HAxis, jeVec3d_GetElement( &pBounds->Min, HAxis ) ) ;
+		grVec3d_SetElement( pPoint, HAxis, grVec3d_GetElement( &pBounds->Min, HAxis ) ) ;
 		break ;
 
 	case Select_Right :
-		jeVec3d_SetElement( pPoint, HAxis, jeVec3d_GetElement( &pBounds->Max, HAxis ) ) ;
+		grVec3d_SetElement( pPoint, HAxis, grVec3d_GetElement( &pBounds->Max, HAxis ) ) ;
 		break ;
 
 	case Select_TopLeft :
 		if( Ortho_Axis_Z == VAxis )
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
 		else
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
-		jeVec3d_SetElement( pPoint, HAxis, jeVec3d_GetElement( &pBounds->Min, HAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
+		grVec3d_SetElement( pPoint, HAxis, grVec3d_GetElement( &pBounds->Min, HAxis ) ) ;
 		break ;		
 
 	case Select_TopRight :
 		if( Ortho_Axis_Z == VAxis )
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
 		else
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
-		jeVec3d_SetElement( pPoint, HAxis, jeVec3d_GetElement( &pBounds->Max, HAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
+		grVec3d_SetElement( pPoint, HAxis, grVec3d_GetElement( &pBounds->Max, HAxis ) ) ;
 		break ;
 
 	case Select_BottomLeft :
 		if( Ortho_Axis_Z == VAxis )
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
 		else
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
-		jeVec3d_SetElement( pPoint, HAxis, jeVec3d_GetElement( &pBounds->Min, HAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
+		grVec3d_SetElement( pPoint, HAxis, grVec3d_GetElement( &pBounds->Min, HAxis ) ) ;
 		break ;
 	
 	case Select_BottomRight :
 		if( Ortho_Axis_Z == VAxis )
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Max, VAxis ) ) ;
 		else
-			jeVec3d_SetElement( pPoint, VAxis, jeVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
-		jeVec3d_SetElement( pPoint, HAxis, jeVec3d_GetElement( &pBounds->Max, HAxis ) ) ;
+			grVec3d_SetElement( pPoint, VAxis, grVec3d_GetElement( &pBounds->Min, VAxis ) ) ;
+		grVec3d_SetElement( pPoint, HAxis, grVec3d_GetElement( &pBounds->Max, HAxis ) ) ;
 		break ;
 	}
 }// Transform_GetHandlePoint
 
-static jeBoolean Transform_AddUndoCB( Object * pObject, void *lParam  )
+static grBoolean Transform_AddUndoCB( Object * pObject, void *lParam  )
 {
-	jeXForm3d			*	XFormContext;
-	jeXForm3d				ObjectXForm;
+	grXForm3d			*	XFormContext;
+	grXForm3d				ObjectXForm;
 	Undo				*	pUndo;
 
 	assert( pObject!= NULL );
@@ -618,19 +618,19 @@ static jeBoolean Transform_AddUndoCB( Object * pObject, void *lParam  )
 
 	pUndo = (Undo*)lParam;
 	if( !Object_GetTransform( pObject, &ObjectXForm ) )
-		return( JE_TRUE );
-	XFormContext = JE_RAM_ALLOCATE_STRUCT( jeXForm3d );
+		return( GR_TRUE );
+	XFormContext = GR_RAM_ALLOCATE_STRUCT( grXForm3d );
 	if( XFormContext  == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Undable to allocate XForm Context" );
-		return( JE_FALSE );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Undable to allocate XForm Context" );
+		return( GR_FALSE );
 	}
 	*XFormContext = ObjectXForm;
 	assert( pUndo!= NULL );
 	return( Undo_AddSubTransaction( pUndo, UNDO_TRANSFORM, pObject, XFormContext ) );
 }// Transform_AddUndoCB
 
-jeBoolean	Transform_AddSelectedUndo( Level * pLevel, UNDO_TYPES Type )
+grBoolean	Transform_AddSelectedUndo( Level * pLevel, UNDO_TYPES Type )
 {
 	Undo *			pUndo;
 
@@ -640,12 +640,12 @@ jeBoolean	Transform_AddSelectedUndo( Level * pLevel, UNDO_TYPES Type )
 	assert( pUndo );
 	Undo_Push( pUndo, Type );
 	Level_EnumSelected( pLevel, pUndo, Transform_AddUndoCB ) ;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Transform_AddSelectedUndo
 
-static jeBoolean Transform_AddShearUndoCB( Object * pObject, void *lParam  )
+static grBoolean Transform_AddShearUndoCB( Object * pObject, void *lParam  )
 {
-	jeBrush			*	pgeBrush;
+	grBrush			*	pgeBrush;
 	Undo				*	pUndo;
 	uint32				Contents;
 
@@ -657,13 +657,13 @@ static jeBoolean Transform_AddShearUndoCB( Object * pObject, void *lParam  )
 
 	pUndo = (Undo*)lParam;
 	pgeBrush = Brush_CopygeBrush( (Brush *)pObject );
-	Contents = jeBrush_GetContents( Brush_GetjeBrush( (Brush *)pObject) ) ;
-	jeBrush_SetContents( pgeBrush, Contents ) ;
+	Contents = grBrush_GetContents( Brush_GetgrBrush( (Brush *)pObject) ) ;
+	grBrush_SetContents( pgeBrush, Contents ) ;
 
 	return( Undo_AddSubTransaction( pUndo, UNDO_BRUSHSHEAR, pObject, pgeBrush ) );
 }// Transform_AddUndoCB
 
-jeBoolean	Transform_AddShearSelectedUndo( Level * pLevel )
+grBoolean	Transform_AddShearSelectedUndo( Level * pLevel )
 {
 	Undo *			pUndo;
 
@@ -673,7 +673,7 @@ jeBoolean	Transform_AddShearSelectedUndo( Level * pLevel )
 	assert( pUndo );
 	Undo_Push( pUndo, UNDO_SHEAR );
 	Level_EnumSelected( pLevel, pUndo, Transform_AddShearUndoCB ) ;
-	return( JE_TRUE );
+	return( GR_TRUE );
 }// Transform_AddSelectedUndo
 
 #pragma warning (disable:4505)	// unreferenced function

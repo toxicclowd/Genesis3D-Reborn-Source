@@ -24,12 +24,12 @@
 #define GROUP_H
 
 #include "BaseType.h"
-#include "jeTypes.h"	// RGBA
+#include "grTypes.h"	// RGBA
 #include "jwObject.h"
 #include "ObjectList.h"
 #include "MaterialIdentList.h"
 
-#include "jeMaterial.h"
+#include "grMaterial.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,36 +51,36 @@ ObjectList *	Group_GetObjectList( const Group * pGroup );
 const uint32	Group_GetColor( const Group * pGroup ) ;
 //Goes up the links and returns the highest level parent
 Group*			Group_GetParent( const Group * pGroup );
-jeBoolean		Group_IsLocked( const Group * pGroup ) ;
+grBoolean		Group_IsLocked( const Group * pGroup ) ;
 Group *			Group_FindLockedParent( Group * pGroup  );
 uint32		 	Group_GetIndexTag( Group * pGroup ) ;
 
 // IS
-jeBoolean		Group_IsVisible( const Group * pGroup ) ;
-jeBoolean		Group_AddGroup( Group * pGroup, Group * pChildGroup );
+grBoolean		Group_IsVisible( const Group * pGroup ) ;
+grBoolean		Group_AddGroup( Group * pGroup, Group * pChildGroup );
 void			Group_RemoveObject( Group * pGroup, Object * pObject );
 void			Group_RemoveGroup( Group * pGroup, Group * pChildGroup  );
 // Krouer: hide/show a group
-void            Group_Show( Group * pGroup, jeBoolean Visible );
+void            Group_Show( Group * pGroup, grBoolean Visible );
 
 // MODIFIERS
 
-jeBoolean		Group_AddObject( Group * pGroup, Object * pObject );
-void			Group_SetLocked( Group * pGroup, jeBoolean bLocked );
+grBoolean		Group_AddObject( Group * pGroup, Object * pObject );
+void			Group_SetLocked( Group * pGroup, grBoolean bLocked );
 void			Group_SetIndexTag( Group * pGroup, const uint32 nIndex ) ;
 
 //FILE
-jeBoolean Group_WriteToFile( const Group * pGroup, jeVFile * pF );
-Group	* Group_CreateFromFile( jeVFile * pF );
+grBoolean Group_WriteToFile( const Group * pGroup, grVFile * pF );
+Group	* Group_CreateFromFile( grVFile * pF );
 
 // DEBUGGING
 #ifdef _DEBUG
-jeBoolean		Group_IsValid( const Group * pGroup ) ;
+grBoolean		Group_IsValid( const Group * pGroup ) ;
 #endif
 
 // KROUER : prefab extension
-jeBoolean Group_WriteToPrefabFile(const Group * pGroup, jeVFile * pF, jePtrMgr* pPtrMgr, jeMaterial_Array* pMatArray);
-Group	* Group_CreateFromPrefabFile(jeVFile * pF, jePtrMgr* pPtrMgr, MaterialIdentList* pMatList);
+grBoolean Group_WriteToPrefabFile(const Group * pGroup, grVFile * pF, grPtrMgr* pPtrMgr, grMaterial_Array* pMatArray);
+Group	* Group_CreateFromPrefabFile(grVFile * pF, grPtrMgr* pPtrMgr, MaterialIdentList* pMatList);
 
 
 #ifdef __cplusplus

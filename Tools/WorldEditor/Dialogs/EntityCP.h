@@ -32,18 +32,18 @@
 
 typedef struct tagFieldInfo
 {
-	jeSymbol	*	pField ;
+	grSymbol	*	pField ;
 	union
 	{
-		jeFloat		Float ;
-		jeVec3d		Vec3d ;
+		grFloat		Float ;
+		grVec3d		Vec3d ;
 		int			Integer ;
-		JE_RGBA		Color ;
+		GR_RGBA		Color ;
 		char	*	pChar ;
 		void	*	pVoid ;
 	} Value ;
-	jeSymbol_Type	Type ;
-	jeBoolean		bInit ;
+	grSymbol_Type	Type ;
+	grBoolean		bInit ;
 } FieldInfo ;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,10 +53,10 @@ class CEntityCP : public CDialog
 {
 // Construction
 public:
-	jeBoolean GetField( FieldInfo * pfi );
+	grBoolean GetField( FieldInfo * pfi );
 	void Update( CJweDoc * pDoc );
-	void SetCurrentDocument( jeSymbol_Table * pEntities );
-	jeSymbol_Table * m_pEntities;
+	void SetCurrentDocument( grSymbol_Table * pEntities );
+	grSymbol_Table * m_pEntities;
 	void FillProperties( void );
 	CEntityCP(CWnd* pParent = NULL);   // standard constructor
 
@@ -123,8 +123,8 @@ protected:
 
 	mutable UINT m_UglyGlobalItemId;
 private:
-	static jeBoolean EnumFieldsCB( jeSymbol *pSymbol, void *lParam );
-	void ShowFieldsBySymbolType( jeSymbol_Type Type ) ;
+	static grBoolean EnumFieldsCB( grSymbol *pSymbol, void *lParam );
+	void ShowFieldsBySymbolType( grSymbol_Type Type ) ;
 	void SetFields( const FieldInfo * pfi ) ;
 };
 

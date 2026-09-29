@@ -33,8 +33,7 @@ extern "C" {
 
 //========================================================================================
 
-typedef struct jeLight grLight;
-typedef struct jeLight jeLight;
+typedef struct grLight grLight;
 
 #define	GR_LIGHT_FLAG_SUN						(1<<0)
 #define	GR_LIGHT_FLAG_PARALLEL					(1<<0) // synonym for sun
@@ -111,31 +110,5 @@ GRAPI grBoolean	GRCC grLight_SetInverseSquaredLight(grLight *Light,
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define JE_LIGHT_FLAG_FAST_LIGHTING_MODEL        GR_LIGHT_FLAG_FAST_LIGHTING_MODEL
-#define JE_LIGHT_FLAG_INVERSE_FALLOFF            GR_LIGHT_FLAG_INVERSE_FALLOFF
-#define JE_LIGHT_FLAG_INVERSE_SQUARE_FALLOFF     GR_LIGHT_FLAG_INVERSE_SQUARE_FALLOFF
-#define JE_LIGHT_FLAG_LINEAR_FALLOFF             GR_LIGHT_FLAG_LINEAR_FALLOFF
-#define JE_LIGHT_FLAG_PARALLEL                   GR_LIGHT_FLAG_PARALLEL
-#define JE_LIGHT_FLAG_SUN                        GR_LIGHT_FLAG_SUN
-#define JE_LIGHT_FLAG_TYPEMASK                   GR_LIGHT_FLAG_TYPEMASK
-#define jeLight_CalculateLighting                grLight_CalculateLighting
-#define jeLight_Create                           grLight_Create
-#define jeLight_CreateFromFile                   grLight_CreateFromFile
-#define jeLight_CreateFromLight                  grLight_CreateFromLight
-#define jeLight_CreateRef                        grLight_CreateRef
-#define jeLight_Destroy                          grLight_Destroy
-#define jeLight_GetAttributes                    grLight_GetAttributes
-#define jeLight_GetFlags                         grLight_GetFlags
-#define jeLight_GetRadius                        grLight_GetRadius
-#define jeLight_IsValid                          grLight_IsValid
-#define jeLight_SetAttributes                    grLight_SetAttributes
-#define jeLight_SetInverseLight                  grLight_SetInverseLight
-#define jeLight_SetInverseSquaredLight           grLight_SetInverseSquaredLight
-#define jeLight_SetSunLight                      grLight_SetSunLight
-#define jeLight_WriteToFile                      grLight_WriteToFile
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

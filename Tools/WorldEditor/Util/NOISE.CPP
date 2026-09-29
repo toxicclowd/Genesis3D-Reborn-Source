@@ -22,7 +22,7 @@ const Noise::HashTable Noise::hTable (14);
 
 Noise::VecTable::VecTable (int32 seed)
 {
-    jeFloat l;
+    grFloat l;
     srand (seed);
     for (int32 m=0; m<256; ++m) {
         do {
@@ -31,24 +31,24 @@ Noise::VecTable::VecTable (int32 seed)
             z[m] = Dblrand (-1, 1);
             o[m] = Dblrand (-0.5, 0.5);
         } while ((l = x[m]*x[m] + y[m]*y[m] + z[m]*z[m]) > 1.0);
-    l = 1.0f/(jeFloat)sqrt (l);
+    l = 1.0f/(grFloat)sqrt (l);
     x[m] *= l; y[m] *= l; z[m] *= l;
     }
 }
 
 const Noise::VecTable  Noise::vTable(14);
 
-const jeVec3d Noise::bigvect = {1000.2f, 1000.5f, 1000.7f};
+const grVec3d Noise::bigvect = {1000.2f, 1000.5f, 1000.7f};
 
-jeFloat Noise::NoiseAt (const jeVec3d &vec) const
+grFloat Noise::NoiseAt (const grVec3d &vec) const
 {
-    jeFloat x=vec.X+1e6f, y=vec.Y+1e6f, z=vec.Z+1e6f;
+    grFloat x=vec.X+1e6f, y=vec.Y+1e6f, z=vec.Z+1e6f;
     int ix=int(x), iy=int(y), iz=int(z);
 
-    jeFloat fx0=x-ix, fx1=fx0-1, fy0=y-iy, fy1=fy0-1, fz0=z-iz, fz1=fz0-1;
-    jeFloat wx = Scurve(fx0), wy = Scurve(fy0), wz = Scurve(fz0);
+    grFloat fx0=x-ix, fx1=fx0-1, fy0=y-iy, fy1=fy0-1, fz0=z-iz, fz1=fz0-1;
+    grFloat wx = Scurve(fx0), wy = Scurve(fy0), wz = Scurve(fz0);
 
-    jeFloat vx0, vx1, vy0, vy1, vz0, vz1;
+    grFloat vx0, vx1, vy0, vy1, vz0, vz1;
     int i;
 
     i = hTable (ix, iy, iz);
@@ -80,51 +80,51 @@ jeFloat Noise::NoiseAt (const jeVec3d &vec) const
     return (vz0 + wz*(vz1-vz0));
 }
 
-jeVec3d Noise::DNoiseAt (const jeVec3d &vec) const
+grVec3d Noise::DNoiseAt (const grVec3d &vec) const
 {
-    jeVec3d diff;
-    jeVec3d_Subtract(&vec,&bigvect,&diff);
-    jeVec3d sum;
-    jeVec3d_Add(&vec,&bigvect,&sum);
-    jeVec3d result;
-    jeVec3d_Set(&result,NoiseAt (diff),NoiseAt (vec),NoiseAt (sum));
+    grVec3d diff;
+    grVec3d_Subtract(&vec,&bigvect,&diff);
+    grVec3d sum;
+    grVec3d_Add(&vec,&bigvect,&sum);
+    grVec3d result;
+    grVec3d_Set(&result,NoiseAt (diff),NoiseAt (vec),NoiseAt (sum));
     return result;
 }
 
-jeFloat Noise::fBm (jeVec3d loc, jeFloat lambda, jeFloat omega, uint32 octaves) const
+grFloat Noise::fBm (grVec3d loc, grFloat lambda, grFloat omega, uint32 octaves) const
 {
-    jeFloat factor=1;
-    jeFloat val = NoiseAt (loc); 
+    grFloat factor=1;
+    grFloat val = NoiseAt (loc); 
     for (uint32 i=0; i<(octaves-1); ++i) {
-        jeVec3d_Scale(&loc,lambda,&loc);
+        grVec3d_Scale(&loc,lambda,&loc);
         factor *= omega;
         val += NoiseAt(loc)*factor;
     }
     return val;
 }
 
-jeVec3d Noise::DfBm (jeVec3d loc, jeFloat lambda, jeFloat omega, uint32 octaves) const
+grVec3d Noise::DfBm (grVec3d loc, grFloat lambda, grFloat omega, uint32 octaves) const
 {
-    jeFloat factor=1;
-    jeVec3d val = DNoiseAt (loc); 
+    grFloat factor=1;
+    grVec3d val = DNoiseAt (loc); 
     for (uint32 i=0; i<(octaves-1); ++i) {
-        jeVec3d_Scale(&loc,lambda,&loc);
+        grVec3d_Scale(&loc,lambda,&loc);
         factor *= omega;
-        jeVec3d tmp = DNoiseAt(loc);
-        jeVec3d_Scale(&tmp,factor,&tmp);
-        jeVec3d_Add(&tmp,&val,&val);
+        grVec3d tmp = DNoiseAt(loc);
+        grVec3d_Scale(&tmp,factor,&tmp);
+        grVec3d_Add(&tmp,&val,&val);
     }
     return val;
 }
 
-jeFloat Noise::Turbulence (jeVec3d loc, jeFloat lambda, jeFloat omega, uint32 octaves) const
+grFloat Noise::Turbulence (grVec3d loc, grFloat lambda, grFloat omega, uint32 octaves) const
 {
-    jeFloat factor=1;
-    jeFloat val = (jeFloat)fabs(NoiseAt (loc)); 
+    grFloat factor=1;
+    grFloat val = (grFloat)fabs(NoiseAt (loc)); 
     for (uint32 i=0; i<(octaves-1); ++i) {
-        jeVec3d_Scale(&loc,lambda,&loc);
+        grVec3d_Scale(&loc,lambda,&loc);
         factor *= omega;
-        val += factor*(jeFloat)fabs(NoiseAt (loc));
+        val += factor*(grFloat)fabs(NoiseAt (loc));
     }
     return val;
 }
@@ -147,7 +147,7 @@ const Noise2::HashTable Noise2::hTable (14);
 
 Noise2::VecTable::VecTable (int32 seed)
 {
-    jeFloat l;
+    grFloat l;
     srand (seed);
     for (int32 m=0; m<256; ++m) {
         do {
@@ -155,23 +155,23 @@ Noise2::VecTable::VecTable (int32 seed)
             y[m] = Dblrand (-1, 1);
             o[m] = Dblrand (-0.5, 0.5);
         } while ((l = x[m]*x[m] + y[m]*y[m]) > 1.0);
-    l = 1.0f / (jeFloat)sqrt (l);
+    l = 1.0f / (grFloat)sqrt (l);
     x[m] *= l; y[m] *= l;
     }
 }
 
 const Noise2::VecTable  Noise2::vTable (14);
 
-jeFloat Noise2::NoiseAt (jeFloat x, jeFloat y) const
+grFloat Noise2::NoiseAt (grFloat x, grFloat y) const
 {
     x+=1e6;
     y+=1e6;
     int ix=int(x), iy=int(y);
 
-    jeFloat fx0=x-ix, fx1=fx0-1, fy0=y-iy, fy1=fy0-1;
-    jeFloat wx = Scurve(fx0), wy = Scurve(fy0);
+    grFloat fx0=x-ix, fx1=fx0-1, fy0=y-iy, fy1=fy0-1;
+    grFloat wx = Scurve(fx0), wy = Scurve(fy0);
 
-    jeFloat vx0, vx1, vy0, vy1;
+    grFloat vx0, vx1, vy0, vy1;
     int i;
 
     i = hTable (ix, iy);
@@ -189,10 +189,10 @@ jeFloat Noise2::NoiseAt (jeFloat x, jeFloat y) const
     return (vy0 + wy*(vy1-vy0));
 }
 
-jeFloat Noise2::fBm (jeFloat x, jeFloat y, jeFloat lambda, jeFloat omega, uint32 octaves) const
+grFloat Noise2::fBm (grFloat x, grFloat y, grFloat lambda, grFloat omega, uint32 octaves) const
 {
-    jeFloat val = NoiseAt (x, y); 
-    jeFloat factor = 1;
+    grFloat val = NoiseAt (x, y); 
+    grFloat factor = 1;
     for (uint32 i=0; i<(octaves-1); ++i) {
         x *= lambda;
         y *= lambda;
@@ -202,15 +202,15 @@ jeFloat Noise2::fBm (jeFloat x, jeFloat y, jeFloat lambda, jeFloat omega, uint32
     return val;
 }
 
-jeFloat Noise2::Turbulence (jeFloat x, jeFloat y, jeFloat lambda, jeFloat omega, uint32 octaves) const
+grFloat Noise2::Turbulence (grFloat x, grFloat y, grFloat lambda, grFloat omega, uint32 octaves) const
 {
-    jeFloat factor = 1;
-    jeFloat val = (jeFloat)fabs(NoiseAt (x, y)); 
+    grFloat factor = 1;
+    grFloat val = (grFloat)fabs(NoiseAt (x, y)); 
     for (uint32 i=0; i<(octaves-1); ++i) {
         x *= lambda;
         y *= lambda;
         factor *= omega;
-        val += factor*(jeFloat)fabs(NoiseAt (x, y));
+        val += factor*(grFloat)fabs(NoiseAt (x, y));
     }
     return val;
 }

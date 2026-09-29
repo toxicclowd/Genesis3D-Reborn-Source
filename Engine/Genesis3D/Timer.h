@@ -47,7 +47,7 @@ extern void Timer_Stop(void);
 #define TIMER_VARS(func)	static double time_##func =0.0;	static tsc_type tsc_##func##1,tsc_##func##2; static int nest_##func = 0
 
 #define TIMER_P(func)	do { readTSC(tsc_##func##1); assert( nest_##func == 0 ); nest_##func ++; } while(0)
-#define TIMER_Q(func)	do { jeCPU_PauseMMX(); readTSC(tsc_##func##2); assert( nest_##func == 1 ); nest_##func --; time_##func += diffTSC(tsc_##func##1,tsc_##func##2); jeCPU_ResumeMMX(); } while(0)
+#define TIMER_Q(func)	do { grCPU_PauseMMX(); readTSC(tsc_##func##2); assert( nest_##func == 1 ); nest_##func --; time_##func += diffTSC(tsc_##func##1,tsc_##func##2); grCPU_ResumeMMX(); } while(0)
 
 #define TIMER_REPORT(func)	fprintf(timerFP,"%-20s : %1.6f : %2.1f %%\n", (#func) , (time_##func)/(double)timerCount , (time_##func)*100.0/(time_Master) )
 
@@ -56,7 +56,7 @@ extern void Timer_Stop(void);
 #define TIMER_VARS(func)	static double time_##func =0.0;	static tsc_type tsc_##func##1,tsc_##func##2
 
 #define TIMER_P(func)	readTSC(tsc_##func##1)
-#define TIMER_Q(func)	do { jeCPU_PauseMMX(); readTSC(tsc_##func##2); time_##func += diffTSC(tsc_##func##1,tsc_##func##2); jeCPU_ResumeMMX(); } while(0)
+#define TIMER_Q(func)	do { grCPU_PauseMMX(); readTSC(tsc_##func##2); time_##func += diffTSC(tsc_##func##1,tsc_##func##2); grCPU_ResumeMMX(); } while(0)
 
 #define TIMER_REPORT(func)	fprintf(timerFP,"%-20s : %1.6f : %2.1f %%\n", (#func) , (time_##func)/(double)timerCount , (time_##func)*100.0/(time_Master) )
 

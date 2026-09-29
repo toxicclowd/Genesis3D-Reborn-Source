@@ -29,16 +29,16 @@
 
 #define EQUAL_DISTANCE 3
 
-jeBoolean reducePal(int * ncolors_ptr,uint8 *palette,int *permutation,int *usage)
+grBoolean reducePal(int * ncolors_ptr,uint8 *palette,int *permutation,int *usage)
 {
 int i,ncolors,d;
 palNode *cur,*vs,*start,*nodes;
-jeBoolean didStuff;
+grBoolean didStuff;
 
 	ncolors = *ncolors_ptr;
 
 	if ( (nodes = initPal(palette,ncolors)) == NULL )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	for(i=0;i<ncolors;i++) {
 		nodes[i].index = i;
@@ -71,7 +71,7 @@ jeBoolean didStuff;
 	**/
 
 	do {
-		didStuff = JE_FALSE;
+		didStuff = GR_FALSE;
 		i=0;
 		for(cur=start;cur;cur = cur->next) {
 			for(vs=cur->next;vs;vs = vs->next) {
@@ -92,17 +92,17 @@ jeBoolean didStuff;
 	if ( ! readOutPal(start,ncolors,palette,permutation) ) {
 		BrandoError("bad linked list");
 		destroy(nodes);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	*ncolors_ptr = ncolors;
 
 	destroy(nodes);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean usePal(int *ncolors_ptr,int new_ncolors,uint8 * palette,int *permutation,int * usage)
+grBoolean usePal(int *ncolors_ptr,int new_ncolors,uint8 * palette,int *permutation,int * usage)
 {
 int i,ncolors;
 palNode *cur,*found,*start,*nodes,*freenodes,*foundnext;
@@ -110,7 +110,7 @@ palNode *cur,*found,*start,*nodes,*freenodes,*foundnext;
 	ncolors = *ncolors_ptr;
 
 	if ( (nodes = initPal(palette,new_ncolors)) == NULL )
-		return JE_FALSE;
+		return GR_FALSE;
 	freenodes = nodes + ncolors;
 
 	for(i=0;i<ncolors;i++) {
@@ -152,13 +152,13 @@ palNode *cur,*found,*start,*nodes,*freenodes,*foundnext;
 	if ( ! readOutPal(start,ncolors,palette,permutation) ) {
 		BrandoError("bad linked list");
 		destroy(nodes);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	*ncolors_ptr = ncolors;
 
 	destroy(nodes);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 

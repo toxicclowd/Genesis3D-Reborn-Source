@@ -38,28 +38,28 @@
 #define CAMERA_MINIMUM_PROJECTION_DISTANCE (0.010f)
 
 //=====================================================================================
-//	jeCamera_Create
+//	grCamera_Create
 //=====================================================================================
-JETAPI jeCamera *JETCC jeCamera_Create(jeFloat FovRadians, const jeRect *Rect)
+GRAPI grCamera *GRCC grCamera_Create(grFloat FovRadians, const grRect *Rect)
 {
-	jeCamera *Camera;
+	grCamera *Camera;
 
 	assert( Rect != NULL );
 
-	Camera = JE_RAM_ALLOCATE_STRUCT_CLEAR(jeCamera);
+	Camera = GR_RAM_ALLOCATE_STRUCT_CLEAR(grCamera);
 
 	if (Camera == NULL)
 	{
-		jeErrorLog_Add(-1, "jeCamera_Create: CreateCamera failed");
+		grErrorLog_Add(-1, "grCamera_Create: CreateCamera failed");
 		return NULL;
 	}
 
 	Camera->ZScale = 0.5f;
 
-	jeCamera_SetAttributes(Camera,FovRadians,Rect);
+	grCamera_SetAttributes(Camera,FovRadians,Rect);
 
 	// BEGIN - Far clip plane - paradoxnj MODIFIED 3/9/2005
-	Camera->ZFarEnable = JE_TRUE;
+	Camera->ZFarEnable = GR_TRUE;
 	Camera->ZFar = 10000.0f;
 	// END - Far clip plane - paradoxnj MODIFIED 3/9/2005
 
@@ -67,27 +67,27 @@ JETAPI jeCamera *JETCC jeCamera_Create(jeFloat FovRadians, const jeRect *Rect)
 }
 
 //=====================================================================================
-//	jeCamera_Destroy
+//	grCamera_Destroy
 //=====================================================================================
-JETAPI void JETCC jeCamera_Destroy(jeCamera **pCamera)
+GRAPI void GRCC grCamera_Destroy(grCamera **pCamera)
 {
 	assert( pCamera  != NULL );
 	if ( *pCamera )
 	{
-	jeCamera * Camera;
+	grCamera * Camera;
 		Camera = *pCamera;
 
 		if ( Camera->XFormStack )
 		{
-		jeXForm3d * pXF;
-			while( pXF = (jeXForm3d *)Stack_Pop(Camera->XFormStack) )
+		grXForm3d * pXF;
+			while( pXF = (grXForm3d *)Stack_Pop(Camera->XFormStack) )
 			{
-				jeRam_Free(pXF);
+				grRam_Free(pXF);
 			}
 			Stack_Destroy(Camera->XFormStack);
 		}
 
-		jeRam_Free(Camera);
+		grRam_Free(Camera);
 	}
 	*pCamera = NULL;
 }
@@ -97,59 +97,59 @@ JETAPI void JETCC jeCamera_Destroy(jeCamera **pCamera)
 //
 
 //=====================================================================================
-//	jeCamera_PushXForm
+//	grCamera_PushXForm
 //=====================================================================================
-JETAPI jeBoolean JETCC jeCamera_PushXForm(jeCamera *Camera)
+GRAPI grBoolean GRCC grCamera_PushXForm(grCamera *Camera)
 {
-jeXForm3d * pXF;
+grXForm3d * pXF;
 	assert( Camera );
 
 	if ( ! List_Start() )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( ! Camera->XFormStack )
 		if ( ! (Camera->XFormStack = Stack_Create()) )
-			return JE_FALSE;
+			return GR_FALSE;
 
-	pXF = (jeXForm3d *)jeRam_Allocate(sizeof(jeXForm3d)*2);
+	pXF = (grXForm3d *)grRam_Allocate(sizeof(grXForm3d)*2);
 	if ( ! pXF )
-		return JE_FALSE;
+		return GR_FALSE;
 	pXF[0] = Camera->TransposeXForm;
 	pXF[1] = Camera->XForm;
 	Stack_Push(Camera->XFormStack,(void *)pXF);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 //=====================================================================================
-//	jeCamera_PopXForm
+//	grCamera_PopXForm
 //=====================================================================================
-JETAPI jeBoolean JETCC jeCamera_PopXForm( jeCamera *Camera)
+GRAPI grBoolean GRCC grCamera_PopXForm( grCamera *Camera)
 {
-jeXForm3d * pXF;
+grXForm3d * pXF;
 	assert( Camera );
 
 	if ( ! Camera->XFormStack )
-		return JE_FALSE;
+		return GR_FALSE;
 
-	pXF = (jeXForm3d *)Stack_Pop(Camera->XFormStack);
+	pXF = (grXForm3d *)Stack_Pop(Camera->XFormStack);
 	if ( ! pXF )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Camera->TransposeXForm = pXF[0];
 	Camera->XForm = pXF[1];
-	jeRam_Free(pXF);
+	grRam_Free(pXF);
 
 	Camera->Pov = Camera->TransposeXForm.Translation;
 
 	List_Stop();
-return JE_TRUE;
+return GR_TRUE;
 }
 
 //========================================================================================
-//	jeCamera_SetTransposeXForm
+//	grCamera_SetTransposeXForm
 //========================================================================================
-JETAPI jeBoolean JETCC jeCamera_SetTransposeXForm(jeCamera *Camera, const jeXForm3d *XForm)
+GRAPI grBoolean GRCC grCamera_SetTransposeXForm(grCamera *Camera, const grXForm3d *XForm)
 {
 	assert(Camera != NULL);
 	assert(XForm != NULL);
@@ -157,24 +157,24 @@ JETAPI jeBoolean JETCC jeCamera_SetTransposeXForm(jeCamera *Camera, const jeXFor
 	Camera->XForm = *XForm;		// Make a copy of the model XForm
 
 	// Convert the model transform into a camera xform...
-	if ( jeXForm3d_IsOrthogonal(XForm) )
+	if ( grXForm3d_IsOrthogonal(XForm) )
 	{
-		jeXForm3d_GetTranspose(XForm, &Camera->TransposeXForm);
+		grXForm3d_GetTranspose(XForm, &Camera->TransposeXForm);
 	}
 	else
 	{
-		jeXForm3d_GetInverse(XForm, &Camera->TransposeXForm);
+		grXForm3d_GetInverse(XForm, &Camera->TransposeXForm);
 	}
 
 	Camera->Pov = Camera->TransposeXForm.Translation;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //========================================================================================
-//	jeCamera_SetXForm
+//	grCamera_SetXForm
 //========================================================================================
-JETAPI jeBoolean JETCC jeCamera_SetXForm(jeCamera *Camera, const jeXForm3d *XForm)
+GRAPI grBoolean GRCC grCamera_SetXForm(grCamera *Camera, const grXForm3d *XForm)
 {
 	assert(Camera != NULL);
 	assert(XForm != NULL);
@@ -182,45 +182,45 @@ JETAPI jeBoolean JETCC jeCamera_SetXForm(jeCamera *Camera, const jeXForm3d *XFor
 	Camera->TransposeXForm = *XForm;		// Make a copy of the model XForm
 	
 	// Convert the model transform into a camera xform...
-	jeXForm3d_GetTranspose(XForm, &Camera->XForm);
+	grXForm3d_GetTranspose(XForm, &Camera->XForm);
 
 	Camera->Pov = XForm->Translation;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 //========================================================================================
-//	jeCamera_GetXForm
+//	grCamera_GetXForm
 // GetXForm returns the same thing passed to _SetXForm
 //========================================================================================
-JETAPI void JETCC jeCamera_GetXForm( const jeCamera *Camera,jeXForm3d *pXForm)
+GRAPI void GRCC grCamera_GetXForm( const grCamera *Camera,grXForm3d *pXForm)
 {
 	assert(Camera && pXForm);
 	*pXForm = Camera->TransposeXForm;
 }
 
 //========================================================================================
-//	jeCamera_GetTransposeXForm
+//	grCamera_GetTransposeXForm
 //========================================================================================
-JETAPI void JETCC jeCamera_GetTransposeXForm( const jeCamera *Camera,jeXForm3d *pXForm)
+GRAPI void GRCC grCamera_GetTransposeXForm( const grCamera *Camera,grXForm3d *pXForm)
 {
 	assert(Camera && pXForm);
 	*pXForm = Camera->XForm;
 }
 
 //========================================================================================
-//	jeCamera_XForm
+//	grCamera_XForm
 //========================================================================================
-const jeXForm3d * JETCF jeCamera_XForm( const jeCamera *Camera)
+const grXForm3d * GRCF grCamera_XForm( const grCamera *Camera)
 {
 	assert(Camera != NULL);
 	return &(Camera->XForm);
 }
 
 //========================================================================================
-//	jeCamera_WorldXForm
+//	grCamera_WorldXForm
 //========================================================================================
-const jeXForm3d * JETCF jeCamera_WorldXForm( const jeCamera *Camera)
+const grXForm3d * GRCF grCamera_WorldXForm( const grCamera *Camera)
 {
 	assert(Camera != NULL);
 	return &(Camera->TransposeXForm);
@@ -231,9 +231,9 @@ const jeXForm3d * JETCF jeCamera_WorldXForm( const jeCamera *Camera)
 //
 
 //=====================================================================================
-//	jeCamera_GetClippingRect
+//	grCamera_GetClippingRect
 //=====================================================================================
-JETAPI void JETCC jeCamera_GetClippingRect(const jeCamera *Camera, jeRect *Rect)
+GRAPI void GRCC grCamera_GetClippingRect(const grCamera *Camera, grRect *Rect)
 {
 	assert( Camera != NULL );
 	assert( Rect != NULL );
@@ -244,24 +244,24 @@ JETAPI void JETCC jeCamera_GetClippingRect(const jeCamera *Camera, jeRect *Rect)
 }
 
 //=====================================================================================
-//	jeCamera_GetPov
+//	grCamera_GetPov
 //=====================================================================================
-const jeVec3d *JETCF jeCamera_GetPov(const jeCamera *Camera)
+const grVec3d *GRCF grCamera_GetPov(const grCamera *Camera)
 {
 	assert( Camera != NULL );
 	return &(Camera->Pov);
 }
 
-JETAPI jeVec3d *JETCC jeCamera_GetPov2(jeCamera *Camera)
+GRAPI grVec3d *GRCC grCamera_GetPov2(grCamera *Camera)
 {
 	assert( Camera != NULL );
 	return &(Camera->Pov);
 }
 
 //=====================================================================================
-//	jeCamera_GetWidthHeight
+//	grCamera_GetWidthHeight
 //=====================================================================================
-void JETCF jeCamera_GetWidthHeight(const jeCamera *Camera,jeFloat *Width,jeFloat *Height)
+void GRCF grCamera_GetWidthHeight(const grCamera *Camera,grFloat *Width,grFloat *Height)
 {
 	assert( Width  != NULL );
 	assert( Height != NULL );
@@ -272,9 +272,9 @@ void JETCF jeCamera_GetWidthHeight(const jeCamera *Camera,jeFloat *Width,jeFloat
 }
 		
 //=====================================================================================
-//	jeCamera_GetScale
+//	grCamera_GetScale
 //=====================================================================================
-float JETCF jeCamera_GetScale(const jeCamera *Camera)
+float GRCF grCamera_GetScale(const grCamera *Camera)
 {
 	assert( Camera != NULL );
 
@@ -283,10 +283,10 @@ float JETCF jeCamera_GetScale(const jeCamera *Camera)
 
 
 //=====================================================================================
-//	jeCamera_GetAttributes - Added by Jeff  02/09/05
+//	grCamera_GetAttributes - Added by Jeff  02/09/05
 //  Returns camera's FOV and Rect
 //=====================================================================================
-JETAPI void JETCC jeCamera_GetAttributes(jeCamera *Camera, jeFloat *FovRadians, jeRect *Rect)
+GRAPI void GRCC grCamera_GetAttributes(grCamera *Camera, grFloat *FovRadians, grRect *Rect)
 {
 
 	assert( Camera != NULL );
@@ -302,20 +302,20 @@ JETAPI void JETCC jeCamera_GetAttributes(jeCamera *Camera, jeFloat *FovRadians, 
 }
 
 //=====================================================================================
-//	jeCamera_SetAttributes
+//	grCamera_SetAttributes
 //=====================================================================================
-JETAPI void JETCC jeCamera_SetAttributes(jeCamera *Camera, jeFloat FovRadians, const jeRect *Rect)
+GRAPI void GRCC grCamera_SetAttributes(grCamera *Camera, grFloat FovRadians, const grRect *Rect)
 {
-	jeFloat	Width, Height;
-	jeFloat	XRatio,YRatio;	
-	jeFloat Fov;
+	grFloat	Width, Height;
+	grFloat	XRatio,YRatio;	
+	grFloat Fov;
 
 	assert (Camera != NULL);
 	assert (Rect != NULL);
-	assert ( FovRadians > 0.0f && FovRadians < JE_PI );
+	assert ( FovRadians > 0.0f && FovRadians < GR_PI );
 
-	Width  = (jeFloat)(Rect->Right - Rect->Left); //+1.0f;
-	Height = (jeFloat)(Rect->Bottom - Rect->Top); //+1.0f;
+	Width  = (grFloat)(Rect->Right - Rect->Left); //+1.0f;
+	Height = (grFloat)(Rect->Bottom - Rect->Top); //+1.0f;
 
 	assert( Width > 0.0f  );
 	assert( Height > 0.0f );
@@ -341,10 +341,10 @@ JETAPI void JETCC jeCamera_SetAttributes(jeCamera *Camera, jeFloat FovRadians, c
 	//Camera->YScale = Camera->XScale;
 
 
-	Camera->Left    = (jeFloat)Rect->Left;
-	Camera->Right   = (jeFloat)Rect->Right; // Jeff: removed -1
-	Camera->Top     = (jeFloat)Rect->Top;
-	Camera->Bottom  = (jeFloat)Rect->Bottom;  // Jeff: removed -1
+	Camera->Left    = (grFloat)Rect->Left;
+	Camera->Right   = (grFloat)Rect->Right; // Jeff: removed -1
+	Camera->Top     = (grFloat)Rect->Top;
+	Camera->Bottom  = (grFloat)Rect->Bottom;  // Jeff: removed -1
 
 	Camera->XCenter = Camera->Left + ( Width  * 0.5f ) - 0.5f;
 	Camera->YCenter = Camera->Top  + ( Height * 0.5f ) - 0.5f;
@@ -374,28 +374,28 @@ by Scale. That means the maximum camera coord is
 		**/
 
 		AngleX =  atan(2.0f * Camera->Scale / Width);
-		Camera->CosViewAngleX = (jeFloat)cos(AngleX);
-		Camera->SinViewAngleX = (jeFloat)sin(AngleX);
+		Camera->CosViewAngleX = (grFloat)cos(AngleX);
+		Camera->SinViewAngleX = (grFloat)sin(AngleX);
 
 		AngleY =  atan(2.0f * Camera->Scale / Height);
-		Camera->CosViewAngleY = (jeFloat)cos(AngleY);
-		Camera->SinViewAngleY = (jeFloat)sin(AngleY);
+		Camera->CosViewAngleY = (grFloat)cos(AngleY);
+		Camera->SinViewAngleY = (grFloat)sin(AngleY);
 	}
 }
 
 //=====================================================================================
-//	jeCamera_SetZScale
+//	grCamera_SetZScale
 //=====================================================================================
-JETAPI void JETCC jeCamera_SetZScale(jeCamera *Camera, jeFloat ZScale)
+GRAPI void GRCC grCamera_SetZScale(grCamera *Camera, grFloat ZScale)
 {
 	assert(Camera);
 	Camera->ZScale = ZScale;
 }
 
 //=====================================================================================
-//	jeCamera_GetZScale
+//	grCamera_GetZScale
 //=====================================================================================
-JETAPI jeFloat JETCC jeCamera_GetZScale(const jeCamera *Camera)
+GRAPI grFloat GRCC grCamera_GetZScale(const grCamera *Camera)
 {
 	assert(Camera);
 	return Camera->ZScale;
@@ -403,9 +403,9 @@ JETAPI jeFloat JETCC jeCamera_GetZScale(const jeCamera *Camera)
 
 // BEGIN - Far clip plane - paradoxnj 2/9/2005
 //=====================================================================================
-//	jeCamera_SetFarClipPlane
+//	grCamera_SetFarClipPlane
 //=====================================================================================
-JETAPI void JETCC jeCamera_SetFarClipPlane(jeCamera *Camera, jeBoolean Enable, jeFloat ZFar)
+GRAPI void GRCC grCamera_SetFarClipPlane(grCamera *Camera, grBoolean Enable, grFloat ZFar)
 {
 	assert(Camera != NULL);
 
@@ -414,9 +414,9 @@ JETAPI void JETCC jeCamera_SetFarClipPlane(jeCamera *Camera, jeBoolean Enable, j
 }
 
 //=====================================================================================
-//	jeCamera_GetFarClipPlane
+//	grCamera_GetFarClipPlane
 //=====================================================================================
-JETAPI void JETCC jeCamera_GetFarClipPlane(const jeCamera *Camera, jeBoolean *Enable, jeFloat *ZFar)
+GRAPI void GRCC grCamera_GetFarClipPlane(const grCamera *Camera, grBoolean *Enable, grFloat *ZFar)
 {
 	assert(Camera != NULL);
 
@@ -430,53 +430,53 @@ JETAPI void JETCC jeCamera_GetFarClipPlane(const jeCamera *Camera, jeBoolean *En
 //
 
 //========================================================================================
-//	jeCamera_ScreenPointToWorld
+//	grCamera_ScreenPointToWorld
 //========================================================================================
-JETAPI void JETCC jeCamera_ScreenPointToWorld(	const jeCamera	*Camera,
+GRAPI void GRCC grCamera_ScreenPointToWorld(	const grCamera	*Camera,
 														int32			 ScreenX,
 														int32			 ScreenY,
-														jeVec3d			*Vector)
+														grVec3d			*Vector)
 // Takes a screen X and Y pair, and a camera and generates a vector pointing
 // in the direction from the camera position to the screen point.
 {
-	jeVec3d In,Left,Up;
-	jeVec3d ScaledIn,ScaledLeft,ScaledUp ;
+	grVec3d In,Left,Up;
+	grVec3d ScaledIn,ScaledLeft,ScaledUp ;
 	float	XCenter ;
 	float	YCenter ;
 	float	Scale ;
-	const jeXForm3d *pM;
+	const grXForm3d *pM;
 
 	pM = &(Camera->TransposeXForm);
 	XCenter = Camera->XCenter ;
 	YCenter = Camera->YCenter ;
 	Scale   = Camera->Scale ;
 
-	jeXForm3d_GetIn( pM, &In ) ;
-	jeXForm3d_GetLeft( pM, &Left ) ;
-	jeXForm3d_GetUp( pM, &Up ) ;
+	grXForm3d_GetIn( pM, &In ) ;
+	grXForm3d_GetLeft( pM, &Left ) ;
+	grXForm3d_GetUp( pM, &Up ) ;
 	
-	jeVec3d_Scale(&In,   Scale, &ScaledIn);
-	jeVec3d_Scale(&Left, XCenter - ((jeFloat)ScreenX), &ScaledLeft );
-	jeVec3d_Scale(&Up,   YCenter - ((jeFloat)ScreenY), &ScaledUp   );
+	grVec3d_Scale(&In,   Scale, &ScaledIn);
+	grVec3d_Scale(&Left, XCenter - ((grFloat)ScreenX), &ScaledLeft );
+	grVec3d_Scale(&Up,   YCenter - ((grFloat)ScreenY), &ScaledUp   );
 
-	jeVec3d_Copy(&ScaledIn, Vector);
-	jeVec3d_Add(Vector,		&ScaledLeft,	Vector );
-	jeVec3d_Add(Vector,		&ScaledUp,		Vector );
-	jeVec3d_Normalize(Vector);
+	grVec3d_Copy(&ScaledIn, Vector);
+	grVec3d_Add(Vector,		&ScaledLeft,	Vector );
+	grVec3d_Add(Vector,		&ScaledUp,		Vector );
+	grVec3d_Normalize(Vector);
 }
 
 
 //========================================================================================
-//	jeCamera_Project
+//	grCamera_Project
 //========================================================================================
-JETAPI void JETCC jeCamera_Project(	const jeCamera	*Camera, 
-											const jeVec3d	*PointInCameraSpace, 
-											jeVec3d			*ProjectedPoint)
+GRAPI void GRCC grCamera_Project(	const grCamera	*Camera, 
+											const grVec3d	*PointInCameraSpace, 
+											grVec3d			*ProjectedPoint)
 	// project from camera space to projected space
 	// projected space is not right-handed.
 	// projection is onto x-y plane  x is right, y is down, z is in
 {
-	jeFloat Z;
+	grFloat Z;
 
 	assert( Camera != NULL );
 	assert( PointInCameraSpace != NULL );
@@ -495,12 +495,12 @@ JETAPI void JETCC jeCamera_Project(	const jeCamera	*Camera,
 }
 
 //========================================================================================
-//	jeCamera_ProjectArray
+//	grCamera_ProjectArray
 //========================================================================================
-JETAPI void JETCC jeCamera_ProjectArray(const jeCamera	*Camera, 
-												const jeVec3d	*FmPoints, 
+GRAPI void GRCC grCamera_ProjectArray(const grCamera	*Camera, 
+												const grVec3d	*FmPoints, 
 												int32			FmStride,
-												jeVec3d			*ToPoints, 
+												grVec3d			*ToPoints, 
 												int32			ToStride, 
 												int32			Count)
 {
@@ -524,8 +524,8 @@ float Z,ZScale;
 		Z = Scale / Z;
 		ToPoints->X = XCenter + ( FmPoints->X * Z );
 		ToPoints->Y = YCenter - ( FmPoints->Y * Z );
-		FmPoints = (const jeVec3d *)(((uint32)FmPoints) + FmStride);
-		ToPoints = (      jeVec3d *)(((uint32)ToPoints) + ToStride);
+		FmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
+		ToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
 	}
 
 	Count >>= 1;	// do two at a time!
@@ -552,8 +552,8 @@ float Z,ZScale;
 		ToPoints->X = XCenter + ( FmPoints->X * Z );
 		ToPoints->Y = YCenter - ( FmPoints->Y * Z );
 
-		FmPoints = (const jeVec3d *)(((uint32)FmPoints) + FmStride);
-		ToPoints = (      jeVec3d *)(((uint32)ToPoints) + ToStride);
+		FmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
+		ToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
 		
 		// AND AGAIN:
 
@@ -563,18 +563,18 @@ float Z,ZScale;
 		Z = Scale / Z;
 		ToPoints->X = XCenter + ( FmPoints->X * Z );
 		ToPoints->Y = YCenter - ( FmPoints->Y * Z );
-		FmPoints = (const jeVec3d *)(((uint32)FmPoints) + FmStride);
-		ToPoints = (      jeVec3d *)(((uint32)ToPoints) + ToStride);
+		FmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
+		ToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
 	}
 }
 
 //========================================================================================
-//	jeCamera_ProjectAndClampArray
+//	grCamera_ProjectAndClampArray
 //========================================================================================
-JETAPI void JETCC jeCamera_ProjectAndClampArray(const jeCamera	*Camera, 
-														const jeVec3d	*FmPoints, 
+GRAPI void GRCC grCamera_ProjectAndClampArray(const grCamera	*Camera, 
+														const grVec3d	*FmPoints, 
 														int32			FmStride,
-														jeVec3d			*ToPoints, 
+														grVec3d			*ToPoints, 
 														int32			ToStride, 
 														int32			Count)
 {
@@ -598,12 +598,12 @@ float X,Y,Z,ZScale;
 		Z = Scale / Z;
 
 		X = XCenter + ( FmPoints->X * Z );
-		ToPoints->X = JE_CLAMP(X,Camera->Left,Camera->Right);
+		ToPoints->X = GR_CLAMP(X,Camera->Left,Camera->Right);
 		Y = YCenter - ( FmPoints->Y * Z );
-		ToPoints->Y = JE_CLAMP(Y,Camera->Top,Camera->Bottom);
+		ToPoints->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
 
-		FmPoints = (const jeVec3d *)(((uint32)FmPoints) + FmStride);
-		ToPoints = (      jeVec3d *)(((uint32)ToPoints) + ToStride);
+		FmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
+		ToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
 	}
 
 	Count >>= 1;	// do two at a time!
@@ -621,13 +621,13 @@ float X,Y,Z,ZScale;
 		Z = Scale / Z;
 
 		X = XCenter + ( FmPoints->X * Z );
-		ToPoints->X = JE_CLAMP(X,Camera->Left,Camera->Right);
+		ToPoints->X = GR_CLAMP(X,Camera->Left,Camera->Right);
 
 		Y = YCenter - ( FmPoints->Y * Z );
-		ToPoints->Y = JE_CLAMP(Y,Camera->Top,Camera->Bottom);
+		ToPoints->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
 
-		FmPoints = (const jeVec3d *)(((uint32)FmPoints) + FmStride);
-		ToPoints = (      jeVec3d *)(((uint32)ToPoints) + ToStride);
+		FmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
+		ToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
 		
 		// AND AGAIN:
 
@@ -636,27 +636,27 @@ float X,Y,Z,ZScale;
 		ToPoints->Z = Z * ZScale;
 		Z = Scale / Z;
 		X = XCenter + ( FmPoints->X * Z );
-		ToPoints->X = JE_CLAMP(X,Camera->Left,Camera->Right);
+		ToPoints->X = GR_CLAMP(X,Camera->Left,Camera->Right);
 		Y = YCenter - ( FmPoints->Y * Z );
-		ToPoints->Y = JE_CLAMP(Y,Camera->Top,Camera->Bottom);
-		FmPoints = (const jeVec3d *)(((uint32)FmPoints) + FmStride);
-		ToPoints = (      jeVec3d *)(((uint32)ToPoints) + ToStride);
+		ToPoints->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
+		FmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
+		ToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
 	}
 }
 //========================================================================================
-//	jeCamera_ProjectZ
+//	grCamera_ProjectZ
 //========================================================================================
-JETAPI void JETCC jeCamera_ProjectZ(const jeCamera	*Camera, 
-											const jeVec3d	*PointInCameraSpace, 
-											jeVec3d			*ProjectedPoint)
+GRAPI void GRCC grCamera_ProjectZ(const grCamera	*Camera, 
+											const grVec3d	*PointInCameraSpace, 
+											grVec3d			*ProjectedPoint)
 	// project from camera space to projected space
 	// projected space is not right-handed.
 	// projection is onto x-y plane  x is right, y is down, z is in
 	// projected point.z is set to 1/Z
 {
-	jeFloat OneOverZ;
-	jeFloat ScaleOverZ;
-	jeFloat Z;
+	grFloat OneOverZ;
+	grFloat ScaleOverZ;
+	grFloat Z;
 	assert( Camera != NULL );
 	assert( PointInCameraSpace != NULL );
 	assert( ProjectedPoint != NULL );
@@ -678,18 +678,18 @@ JETAPI void JETCC jeCamera_ProjectZ(const jeCamera	*Camera,
 
 
 //========================================================================================
-//	jeCamera_ProjectAndClamp
+//	grCamera_ProjectAndClamp
 //========================================================================================
-JETAPI void JETCC jeCamera_ProjectAndClamp(const jeCamera	*Camera, 
-										const jeVec3d	*PointInCameraSpace, 
-										jeVec3d			*ProjectedPoint)
+GRAPI void GRCC grCamera_ProjectAndClamp(const grCamera	*Camera, 
+										const grVec3d	*PointInCameraSpace, 
+										grVec3d			*ProjectedPoint)
 	// project from camera space to projected space
 	// projected space is not right-handed.
 	// projection is onto x-y plane  x is right, y is down, z is in
 	// points outside the clipping rect are clamped to the clipping rect
 {
-	jeFloat ScaleOverZ;
-	jeFloat X,Y,Z;
+	grFloat ScaleOverZ;
+	grFloat X,Y,Z;
 	assert( Camera != NULL );
 	assert( PointInCameraSpace != NULL );
 	assert( ProjectedPoint != NULL );
@@ -707,17 +707,17 @@ JETAPI void JETCC jeCamera_ProjectAndClamp(const jeCamera	*Camera,
 
 	X = ( PointInCameraSpace->X * ScaleOverZ ) + Camera->XCenter;
 	
-	ProjectedPoint->X = JE_CLAMP(X,Camera->Left,Camera->Right);
+	ProjectedPoint->X = GR_CLAMP(X,Camera->Left,Camera->Right);
 	
 	Y = Camera->YCenter - ( PointInCameraSpace->Y * ScaleOverZ );
 
-	ProjectedPoint->Y = JE_CLAMP(Y,Camera->Top,Camera->Bottom);
+	ProjectedPoint->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
 }
 
 //========================================================================================
-//	jeCamera_GetViewAngleXSinCos
+//	grCamera_GetViewAngleXSinCos
 //========================================================================================
-void JETCF jeCamera_GetViewAngleXSinCos( const jeCamera *Camera, jeFloat *SinAngle, jeFloat *CosAngle )
+void GRCF grCamera_GetViewAngleXSinCos( const grCamera *Camera, grFloat *SinAngle, grFloat *CosAngle )
 {
 	assert( Camera != NULL );
 	assert( SinAngle );
@@ -727,9 +727,9 @@ void JETCF jeCamera_GetViewAngleXSinCos( const jeCamera *Camera, jeFloat *SinAng
 }
 
 //========================================================================================
-//	jeCamera_GetViewAngleYSinCos
+//	grCamera_GetViewAngleYSinCos
 //========================================================================================
-void JETCF jeCamera_GetViewAngleYSinCos( const jeCamera *Camera, jeFloat *SinAngle, jeFloat *CosAngle )
+void GRCF grCamera_GetViewAngleYSinCos( const grCamera *Camera, grFloat *SinAngle, grFloat *CosAngle )
 {
 	assert( Camera != NULL );
 	assert( SinAngle );
@@ -739,11 +739,11 @@ void JETCF jeCamera_GetViewAngleYSinCos( const jeCamera *Camera, jeFloat *SinAng
 }
 
 //========================================================================================
-//	jeCamera_Transform
+//	grCamera_Transform
 //========================================================================================
-JETAPI void JETCC jeCamera_Transform(	const jeCamera	*Camera, 
-												const jeVec3d	*WorldSpacePoint, 
-												jeVec3d			*CameraSpacePoint)
+GRAPI void GRCC grCamera_Transform(	const grCamera	*Camera, 
+												const grVec3d	*WorldSpacePoint, 
+												grVec3d			*CameraSpacePoint)
 {
 	assert( Camera );
 	assert( WorldSpacePoint );
@@ -751,52 +751,52 @@ JETAPI void JETCC jeCamera_Transform(	const jeCamera	*Camera,
 
 	// would be better if xform3d_transform was assembly, or a macro, or anything
 
-	jeXForm3d_Transform(&(Camera->XForm),WorldSpacePoint,CameraSpacePoint);
+	grXForm3d_Transform(&(Camera->XForm),WorldSpacePoint,CameraSpacePoint);
 }
 
 
 //========================================================================================
-//	jeCamera_TransformVecArray
+//	grCamera_TransformVecArray
 //========================================================================================
-JETAPI void JETCC jeCamera_TransformVecArray(	const jeCamera	*Camera, 
-														const jeVec3d	*WorldSpacePointPtr, 
-														jeVec3d			*CameraSpacePointPtr,
+GRAPI void GRCC grCamera_TransformVecArray(	const grCamera	*Camera, 
+														const grVec3d	*WorldSpacePointPtr, 
+														grVec3d			*CameraSpacePointPtr,
 														int32			Count)
 {
 	assert( Camera );
 	assert( WorldSpacePointPtr );
 	assert( CameraSpacePointPtr );
 
-	jeXForm3d_TransformVecArray(&(Camera->XForm), WorldSpacePointPtr,CameraSpacePointPtr,Count);
+	grXForm3d_TransformVecArray(&(Camera->XForm), WorldSpacePointPtr,CameraSpacePointPtr,Count);
 }
 
 //========================================================================================
-//	jeCamera_TransformAndProjectVecArray
+//	grCamera_TransformAndProjectVecArray
 //========================================================================================
-JETAPI void JETCC jeCamera_TransformAndProjectVecArray(	const jeCamera *Camera, 
-																const jeVec3d *WorldSpacePointPtr, 
-																jeVec3d *ProjectedSpacePointPtr,
+GRAPI void GRCC grCamera_TransformAndProjectVecArray(	const grCamera *Camera, 
+																const grVec3d *WorldSpacePointPtr, 
+																grVec3d *ProjectedSpacePointPtr,
 																int32 Count)
 {
-	jeCamera_TransformAndProjectArray(	Camera, 
+	grCamera_TransformAndProjectArray(	Camera, 
 										WorldSpacePointPtr, 
-										sizeof(jeVec3d),
+										sizeof(grVec3d),
 										ProjectedSpacePointPtr,
-										sizeof(jeVec3d),
+										sizeof(grVec3d),
 										Count);
 }
 
 //========================================================================================
-//	jeCamera_TransformAndProjectArray
+//	grCamera_TransformAndProjectArray
 //========================================================================================
 
 #if 1	// <> use the assembly XFormArray
 		// can't tell the difference!
 
-JETAPI void JETCC jeCamera_TransformAndProjectArray(const jeCamera	*Camera, 
-															const jeVec3d	*WorldSpacePointPtr, 
+GRAPI void GRCC grCamera_TransformAndProjectArray(const grCamera	*Camera, 
+															const grVec3d	*WorldSpacePointPtr, 
 															int32			WorldStride,
-															jeVec3d			*ProjectedSpacePointPtr, 
+															grVec3d			*ProjectedSpacePointPtr, 
 															int32			ProjectedStride,
 															int32			Count)
 {
@@ -804,12 +804,12 @@ JETAPI void JETCC jeCamera_TransformAndProjectArray(const jeCamera	*Camera,
 	assert( WorldSpacePointPtr );
 	assert( ProjectedSpacePointPtr );
 
-	jeXForm3d_TransformArray(	&(Camera->XForm),
+	grXForm3d_TransformArray(	&(Camera->XForm),
 								WorldSpacePointPtr, WorldStride,
 								ProjectedSpacePointPtr,ProjectedStride,
 								Count);
 
-	jeCamera_ProjectArray(	Camera,
+	grCamera_ProjectArray(	Camera,
 							ProjectedSpacePointPtr,
 							ProjectedStride,
 							ProjectedSpacePointPtr,
@@ -818,12 +818,12 @@ JETAPI void JETCC jeCamera_TransformAndProjectArray(const jeCamera	*Camera,
 }
 
 //========================================================================================================
-//	jeCamera_TransformAndProjectAndClampArray
+//	grCamera_TransformAndProjectAndClampArray
 //========================================================================================================
-JETAPI void JETCC jeCamera_TransformAndProjectAndClampArray(const	jeCamera	*Camera, 
-															const jeVec3d	*WorldSpacePointPtr, 
+GRAPI void GRCC grCamera_TransformAndProjectAndClampArray(const	grCamera	*Camera, 
+															const grVec3d	*WorldSpacePointPtr, 
 															int32			WorldStride,
-															jeVec3d			*ProjectedSpacePointPtr, 
+															grVec3d			*ProjectedSpacePointPtr, 
 															int32			ProjectedStride,
 															int32			Count)
 {
@@ -831,12 +831,12 @@ JETAPI void JETCC jeCamera_TransformAndProjectAndClampArray(const	jeCamera	*Came
 	assert( WorldSpacePointPtr );
 	assert( ProjectedSpacePointPtr );
 
-	jeXForm3d_TransformArray(	&(Camera->XForm),
+	grXForm3d_TransformArray(	&(Camera->XForm),
 								WorldSpacePointPtr, WorldStride,
 								ProjectedSpacePointPtr,ProjectedStride,
 								Count);
 
-	jeCamera_ProjectAndClampArray(	Camera,
+	grCamera_ProjectAndClampArray(	Camera,
 							ProjectedSpacePointPtr,
 							ProjectedStride,
 							ProjectedSpacePointPtr,
@@ -846,19 +846,19 @@ JETAPI void JETCC jeCamera_TransformAndProjectAndClampArray(const	jeCamera	*Came
 #else // let the compiler do its best
 
 //========================================================================================================
-//	jeCamera_TransformAndProjectArray
+//	grCamera_TransformAndProjectArray
 //========================================================================================================
-JETAPI void JETCC jeCamera_TransformAndProjectArray(const jeCamera	*Camera, 
-															const jeVec3d	*InFmPoints, 
+GRAPI void GRCC grCamera_TransformAndProjectArray(const grCamera	*Camera, 
+															const grVec3d	*InFmPoints, 
 															int32			FmStride,
-															jeVec3d			*InToPoints, 
+															grVec3d			*InToPoints, 
 															int32			ToStride,
 															int32			Count)
 {
 float Scale,ZScale,XCenter,YCenter;
-jeXForm3d XF;
-const jeVec3d	*NextFmPoints,*FmPoints; 
-jeVec3d			*NextToPoints,*ToPoints;
+grXForm3d XF;
+const grVec3d	*NextFmPoints,*FmPoints; 
+grVec3d			*NextToPoints,*ToPoints;
 int c;
 
 	assert( Camera );
@@ -876,11 +876,11 @@ int c;
 	c = Count;
 	while(c--)
 	{
-	jeVec3d Point;
+	grVec3d Point;
 	float Z;
 
-		NextFmPoints = (const jeVec3d *)(((uint32)FmPoints) + FmStride);
-		NextToPoints = (      jeVec3d *)(((uint32)ToPoints) + ToStride);
+		NextFmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
+		NextToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
 		// prefetch !
 
 		{
@@ -910,19 +910,19 @@ int c;
 }
 
 //========================================================================================================
-//	jeCamera_TransformAndProjectAndClampArray
+//	grCamera_TransformAndProjectAndClampArray
 //========================================================================================================
-JETAPI void JETCC jeCamera_TransformAndProjectAndClampArray(const jeCamera	*Camera, 
-																	const jeVec3d	*InFmPoints, 
+GRAPI void GRCC grCamera_TransformAndProjectAndClampArray(const grCamera	*Camera, 
+																	const grVec3d	*InFmPoints, 
 																	int32			FmStride,
-																	jeVec3d			*InToPoints, 
+																	grVec3d			*InToPoints, 
 																	int32			ToStride,
 																	int32			Count)
 {
 float Scale,ZScale,XCenter,YCenter;
-jeXForm3d XF;
-const jeVec3d	*NextFmPoints,*FmPoints; 
-jeVec3d			*NextToPoints,*ToPoints;
+grXForm3d XF;
+const grVec3d	*NextFmPoints,*FmPoints; 
+grVec3d			*NextToPoints,*ToPoints;
 int c;
 
 	assert( Camera );
@@ -940,11 +940,11 @@ int c;
 	c = Count;
 	while(c--)
 	{
-	jeVec3d Point;
+	grVec3d Point;
 	float X,Y,Z;
 
-		NextFmPoints = (const jeVec3d *)(((uint32)FmPoints) + FmStride);
-		NextToPoints = (      jeVec3d *)(((uint32)ToPoints) + ToStride);
+		NextFmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
+		NextToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
 		// prefetch !
 
 		{
@@ -968,8 +968,8 @@ int c;
 		X = XCenter + ( Point.X * Z );
 		Y = YCenter - ( Point.Y * Z );
 
-		ToPoints->X = JE_CLAMP(X,Camera->Left,Camera->Right);
-		ToPoints->Y = JE_CLAMP(Y,Camera->Top,Camera->Bottom);
+		ToPoints->X = GR_CLAMP(X,Camera->Left,Camera->Right);
+		ToPoints->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
 
 		FmPoints = NextFmPoints;
 		ToPoints = NextToPoints;
@@ -979,11 +979,11 @@ int c;
 #endif
 
 //========================================================================================
-//	jeCamera_TransformAndProjectLArray
+//	grCamera_TransformAndProjectLArray
 //========================================================================================
-JETAPI void JETCC jeCamera_TransformAndProjectLArray(	const jeCamera	*Camera, 
-																const jeLVertex	*WorldSpacePointPtr, 
-																jeTLVertex		*ProjectedSpacePointPtr,
+GRAPI void GRCC grCamera_TransformAndProjectLArray(	const grCamera	*Camera, 
+																const grLVertex	*WorldSpacePointPtr, 
+																grTLVertex		*ProjectedSpacePointPtr,
 																int32			Count)
 {
 	assert( Camera );
@@ -992,17 +992,17 @@ JETAPI void JETCC jeCamera_TransformAndProjectLArray(	const jeCamera	*Camera,
 
 	while(Count--)
 	{
-		jeCamera_TransformAndProjectL(Camera,WorldSpacePointPtr++,ProjectedSpacePointPtr++);
+		grCamera_TransformAndProjectL(Camera,WorldSpacePointPtr++,ProjectedSpacePointPtr++);
 	}
 }
 
 //========================================================================================
-//	jeCamera_TransformLArray
+//	grCamera_TransformLArray
 //	Tansforms a point to camera space
 //========================================================================================
-JETAPI void JETCC jeCamera_TransformLArray(	const jeCamera	*Camera, 
-													const jeLVertex	*WorldSpacePointPtr, 
-													jeLVertex		*CameraSpacePointPtr,
+GRAPI void GRCC grCamera_TransformLArray(	const grCamera	*Camera, 
+													const grLVertex	*WorldSpacePointPtr, 
+													grLVertex		*CameraSpacePointPtr,
 													int32			Count)
 {
 	assert( Camera );
@@ -1011,17 +1011,17 @@ JETAPI void JETCC jeCamera_TransformLArray(	const jeCamera	*Camera,
 
 	while(Count--)
 	{
-		jeCamera_TransformL(Camera, WorldSpacePointPtr++, CameraSpacePointPtr++);
+		grCamera_TransformL(Camera, WorldSpacePointPtr++, CameraSpacePointPtr++);
 	}
 }
 
 //========================================================================================
-//	jeCamera_ProjectAndClampLArray
+//	grCamera_ProjectAndClampLArray
 //	Take a CameraSpace point array, and projects them flat onto the camera plane
 //========================================================================================
-JETAPI void JETCC jeCamera_ProjectAndClampLArray(	const jeCamera		*Camera, 
-															const jeLVertex		*CameraSpacePointPtr, 
-															jeTLVertex			*ProjectedSpacePointPtr,
+GRAPI void GRCC grCamera_ProjectAndClampLArray(	const grCamera		*Camera, 
+															const grLVertex		*CameraSpacePointPtr, 
+															grTLVertex			*ProjectedSpacePointPtr,
 															int32				Count)
 {
 	assert( Camera );
@@ -1030,16 +1030,16 @@ JETAPI void JETCC jeCamera_ProjectAndClampLArray(	const jeCamera		*Camera,
 
 	while(Count--)
 	{
-		jeCamera_ProjectAndClampL(Camera, CameraSpacePointPtr++,ProjectedSpacePointPtr++);
+		grCamera_ProjectAndClampL(Camera, CameraSpacePointPtr++,ProjectedSpacePointPtr++);
 	}
 }
 
 //========================================================================================
-//	jeCamera_TransformAndProjectAndClampLArray
+//	grCamera_TransformAndProjectAndClampLArray
 //========================================================================================
-JETAPI void JETCC jeCamera_TransformAndProjectAndClampLArray(	const jeCamera		*Camera, 
-																		const jeLVertex		*WorldSpacePointPtr, 
-																		jeTLVertex			*ProjectedSpacePointPtr,
+GRAPI void GRCC grCamera_TransformAndProjectAndClampLArray(	const grCamera		*Camera, 
+																		const grLVertex		*WorldSpacePointPtr, 
+																		grTLVertex			*ProjectedSpacePointPtr,
 																		int32				Count)
 {
 	assert( Camera );
@@ -1048,27 +1048,27 @@ JETAPI void JETCC jeCamera_TransformAndProjectAndClampLArray(	const jeCamera		*C
 
 	while(Count--)
 	{
-		jeCamera_TransformAndProjectAndClampL(Camera,WorldSpacePointPtr++,ProjectedSpacePointPtr++);
+		grCamera_TransformAndProjectAndClampL(Camera,WorldSpacePointPtr++,ProjectedSpacePointPtr++);
 	}
 }
 
 //============================================================================================
-//	jeCamera_TransformAndProject
+//	grCamera_TransformAndProject
 //============================================================================================
-JETAPI void JETCC jeCamera_TransformAndProject(	const	jeCamera *Camera,
-														const	jeVec3d *Point, 
-														jeVec3d	*ProjectedPoint)
+GRAPI void GRCC grCamera_TransformAndProject(	const	grCamera *Camera,
+														const	grVec3d *Point, 
+														grVec3d	*ProjectedPoint)
 	// project from *WORLD* space to projected space
 	// projected space is not right-handed.
 	// projection is onto x-y plane  x is right, y is down, z is in
 {
-	jeFloat Z;
+	grFloat Z;
 
 	assert( Camera );
 	assert( Point );
 	assert( ProjectedPoint );
 
-	jeXForm3d_Transform(&(Camera->XForm),Point,ProjectedPoint);
+	grXForm3d_Transform(&(Camera->XForm),Point,ProjectedPoint);
 
 	Z = - ProjectedPoint->Z;
 
@@ -1082,20 +1082,20 @@ JETAPI void JETCC jeCamera_TransformAndProject(	const	jeCamera *Camera,
 	ProjectedPoint->Y = - ( ProjectedPoint->Y * Z ) + Camera->YCenter;
 }
 
-JETAPI void JETCC jeCamera_TransformAndProjectAndClamp(	const	jeCamera *Camera,
-																const	jeVec3d *Point, 
-																jeVec3d	*ProjectedPoint)
+GRAPI void GRCC grCamera_TransformAndProjectAndClamp(	const	grCamera *Camera,
+																const	grVec3d *Point, 
+																grVec3d	*ProjectedPoint)
 	// project from *WORLD* space to projected space
 	// projected space is not right-handed.
 	// projection is onto x-y plane  x is right, y is down, z is in
 {
-	jeFloat X,Y,Z;
+	grFloat X,Y,Z;
 
 	assert( Camera );
 	assert( Point );
 	assert( ProjectedPoint );
 
-	jeXForm3d_Transform(&(Camera->XForm),Point,ProjectedPoint);
+	grXForm3d_Transform(&(Camera->XForm),Point,ProjectedPoint);
 
 	Z = - ProjectedPoint->Z;
 
@@ -1107,32 +1107,32 @@ JETAPI void JETCC jeCamera_TransformAndProjectAndClamp(	const	jeCamera *Camera,
 
 	X =   ( ProjectedPoint->X * Z ) + Camera->XCenter;
 
-	ProjectedPoint->X = JE_CLAMP(X,Camera->Left,Camera->Right);
+	ProjectedPoint->X = GR_CLAMP(X,Camera->Left,Camera->Right);
 
 	Y = - ( ProjectedPoint->Y * Z ) + Camera->YCenter;
 		
-	ProjectedPoint->Y = JE_CLAMP(Y,Camera->Top,Camera->Bottom);
+	ProjectedPoint->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
 }
 
 
 //============================================================================================
-//	jeCamera_TransformAndProjectL
+//	grCamera_TransformAndProjectL
 //============================================================================================
-JETAPI void JETCC jeCamera_TransformAndProjectL(const		jeCamera *Camera,
-														const		jeLVertex *Point, 
-														jeTLVertex	*ProjectedPoint)
+GRAPI void GRCC grCamera_TransformAndProjectL(const		grCamera *Camera,
+														const		grLVertex *Point, 
+														grTLVertex	*ProjectedPoint)
 	// project from *WORLD* space to projected space
 	// projected space is not right-handed.
 	// projection is onto x-y plane  x is right, y is down, z is in
 {
-	jeFloat ScaleOverZ;
-	jeFloat Z;
+	grFloat ScaleOverZ;
+	grFloat Z;
 
 	assert( Camera );
 	assert( Point );
 	assert( ProjectedPoint );
 
-	jeXForm3d_Transform(&(Camera->XForm),(jeVec3d *)Point,(jeVec3d *)ProjectedPoint);
+	grXForm3d_Transform(&(Camera->XForm),(grVec3d *)Point,(grVec3d *)ProjectedPoint);
 
 	Z = - ProjectedPoint->z;
 
@@ -1154,17 +1154,17 @@ JETAPI void JETCC jeCamera_TransformAndProjectL(const		jeCamera *Camera,
 
 
 //========================================================================================================
-//	jeCamera_TransformL
+//	grCamera_TransformL
 //========================================================================================================
-JETAPI void JETCC jeCamera_TransformL(	const jeCamera	*Camera,
-												const jeLVertex *Point, 
-												jeLVertex		*TransformedPoint)
+GRAPI void GRCC grCamera_TransformL(	const grCamera	*Camera,
+												const grLVertex *Point, 
+												grLVertex		*TransformedPoint)
 {
 	assert( Camera );
 	assert( Point );
 	assert( TransformedPoint );
 
-	jeXForm3d_Transform(&(Camera->XForm),(jeVec3d *)Point,(jeVec3d *)TransformedPoint);
+	grXForm3d_Transform(&(Camera->XForm),(grVec3d *)Point,(grVec3d *)TransformedPoint);
 
 	// This kind of sucks, sigh...
 	TransformedPoint->u = Point->u;
@@ -1177,14 +1177,14 @@ JETAPI void JETCC jeCamera_TransformL(	const jeCamera	*Camera,
 
 
 //========================================================================================================
-//	jeCamera_ProjectAndClampL
+//	grCamera_ProjectAndClampL
 //========================================================================================================
-JETAPI void JETCC jeCamera_ProjectAndClampL(const jeCamera	*Camera,
-													const jeLVertex *Point, 
-													jeTLVertex		*ProjectedPoint)
+GRAPI void GRCC grCamera_ProjectAndClampL(const grCamera	*Camera,
+													const grLVertex *Point, 
+													grTLVertex		*ProjectedPoint)
 {
-	jeFloat ScaleOverZ;
-	jeFloat X,Y,Z;
+	grFloat ScaleOverZ;
+	grFloat X,Y,Z;
 
 	Z = - Point->Z;
 
@@ -1195,10 +1195,10 @@ JETAPI void JETCC jeCamera_ProjectAndClampL(const jeCamera	*Camera,
 	ProjectedPoint->z = Z*Camera->ZScale;
 
 	X =   ( Point->X * ScaleOverZ ) + Camera->XCenter;
-	ProjectedPoint->x = JE_CLAMP(X,Camera->Left,Camera->Right);
+	ProjectedPoint->x = GR_CLAMP(X,Camera->Left,Camera->Right);
 
 	Y = - ( Point->Y * ScaleOverZ ) + Camera->YCenter;
-	ProjectedPoint->y = JE_CLAMP(Y,Camera->Top,Camera->Bottom);
+	ProjectedPoint->y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
 
 	ProjectedPoint->u = Point->u;
 	ProjectedPoint->v = Point->v;
@@ -1209,23 +1209,23 @@ JETAPI void JETCC jeCamera_ProjectAndClampL(const jeCamera	*Camera,
 }
 
 //========================================================================================================
-//	jeCamera_TransformAndProjectAndClampL
+//	grCamera_TransformAndProjectAndClampL
 //========================================================================================================
-JETAPI void JETCC jeCamera_TransformAndProjectAndClampL(const		jeCamera *Camera,
-																const		jeLVertex *Point, 
-																jeTLVertex	*ProjectedPoint)
+GRAPI void GRCC grCamera_TransformAndProjectAndClampL(const		grCamera *Camera,
+																const		grLVertex *Point, 
+																grTLVertex	*ProjectedPoint)
 	// project from *WORLD* space to projected space
 	// projected space is not right-handed.
 	// projection is onto x-y plane  x is right, y is down, z is in
 {
-	jeFloat ScaleOverZ;
-	jeFloat X,Y,Z;
+	grFloat ScaleOverZ;
+	grFloat X,Y,Z;
 
 	assert( Camera );
 	assert( Point );
 	assert( ProjectedPoint );
 
-	jeXForm3d_Transform(&(Camera->XForm),(jeVec3d *)Point,(jeVec3d *)ProjectedPoint);
+	grXForm3d_Transform(&(Camera->XForm),(grVec3d *)Point,(grVec3d *)ProjectedPoint);
 
 	Z = - ProjectedPoint->z;
 
@@ -1236,11 +1236,11 @@ JETAPI void JETCC jeCamera_TransformAndProjectAndClampL(const		jeCamera *Camera,
 	ProjectedPoint->z = Z*Camera->ZScale;
 	X =   ( ProjectedPoint->x * ScaleOverZ ) + Camera->XCenter;
 	
-	ProjectedPoint->x = JE_CLAMP(X,Camera->Left,Camera->Right);
+	ProjectedPoint->x = GR_CLAMP(X,Camera->Left,Camera->Right);
 
 	Y = - ( ProjectedPoint->y * ScaleOverZ ) + Camera->YCenter;
 		
-	ProjectedPoint->y = JE_CLAMP(Y,Camera->Top,Camera->Bottom);
+	ProjectedPoint->y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
 
 	ProjectedPoint->u = Point->u;
 	ProjectedPoint->v = Point->v;

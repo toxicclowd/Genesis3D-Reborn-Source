@@ -31,12 +31,12 @@
 
 #define MAX_FILE_NAME						255
 
-typedef struct jeOGGStream					jeOGGStream;
+typedef struct grOGGStream					grOGGStream;
 
-typedef struct jeOGGStream
+typedef struct grOGGStream
 {
 	char									FileName[MAX_FILE_NAME];
-	jeVFile									*File;
+	grVFile									*File;
 
 	IDirectSoundBuffer8						*pBuffer;
 
@@ -48,18 +48,18 @@ typedef struct jeOGGStream
 	uint32									BufferSize;
 	uint32									NumSamples;
 
-	jeBoolean								IsEOF;
+	grBoolean								IsEOF;
 	WAVEFORMATEX							Format;
 
-} jeOGGStream;
+} grOGGStream;
 
-jeOGGStream									*jeOGGStream_Create(jeVFile *FS, const char *filename);
-void										jeOGGStream_Destroy(jeOGGStream **OGG);
+grOGGStream									*grOGGStream_Create(grVFile *FS, const char *filename);
+void										grOGGStream_Destroy(grOGGStream **OGG);
 
-uint32										jeOGGStream_Read(jeOGGStream *OGG, char *buffer, uint32 size);
-void										jeOGGStream_Reset(jeOGGStream *OGG);
+uint32										grOGGStream_Read(grOGGStream *OGG, char *buffer, uint32 size);
+void										grOGGStream_Reset(grOGGStream *OGG);
 
-uint32										jeOGGStream_GetSize(jeOGGStream *OGG);
-jeBoolean									jeOGGStream_IsEOF(jeOGGStream *OGG);
+uint32										grOGGStream_GetSize(grOGGStream *OGG);
+grBoolean									grOGGStream_IsEOF(grOGGStream *OGG);
 
 #endif

@@ -1,0 +1,101 @@
+/****************************************************************************************/
+/*  grModel._H                                                                          */
+/*                                                                                      */
+/*  Author: John Pollard                                                                */
+/*  Description:                                                                        */
+/*                                                                                      */
+/*  The contents of this file are subject to the Jet3D Public License                   */
+/*  Version 1.02 (the "License"); you may not use this file except in                   */
+/*  compliance with the License. You may obtain a copy of the License at                */
+/*  http://www.jet3d.com                                                                */
+/*                                                                                      */
+/*  Software distributed under the License is distributed on an "AS IS"                 */
+/*  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied.  See                */
+/*  the License for the specific language governing rights and limitations              */
+/*  under the License.                                                                  */
+/*                                                                                      */
+/*  The Original Code is Jet3D, released December 12, 1999.                             */
+/*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
+/*                                                                                      */
+/****************************************************************************************/
+
+#ifndef JEMODELPRIV_H
+#define JEMODELPRIV_H
+
+#include "grBrush.h"
+#include "BaseType.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if 0
+// Clean engine.h up for Jet3D 2.0 so we can inlcude engine.h here in the public eye
+//	and QUIT doing this:
+typedef struct		grEngine		grEngine;
+typedef struct		grCamera		grCamera;
+typedef struct		grFrustum		grFrustum;
+
+typedef struct		grModel			grModel;
+
+grModel		*grModel_Create(void);
+grBoolean	grModel_CreateRef(grModel *Model);
+void		grModel_Destroy(grModel **Model);
+grBoolean	grModel_AddBrush(grModel *Model, grBrush *Brush, grBoolean Update);
+grBoolean	grModel_RemoveBrush(grModel *Model, grBrush *Brush, grBoolean Update);
+grBoolean	grModel_HasBrush(const grModel *Model, const grBrush *Brush);
+grBoolean	grModel_Reset(grModel *Model);
+grBoolean	grModel_RebuildAll(grModel *Model);
+grBoolean	grModel_RebuildBSPFaces(grModel *Model);
+grBoolean	grModel_SetEngine(grModel *Model, grEngine *Engine);
+grBoolean	grModel_Render(grModel *Model, grCamera *Camera, grFrustum *Frustum);
+#endif
+
+/* Krouer: add BSP proxy structure to handle different kind of BSP implementation */
+typedef struct BSP_Proxy
+{
+	grBSP* (*Create)();
+	void  (*Destroy)(grBSP **BSPTree);
+	grBSP* (*RebuildGeometry)(grBSP *BSP, grChain *BrushChain, grBSP_Options Options, grBSP_Logic Logic, grBSP_LogicBalance LogicBalance);
+	grBoolean (*SetArrays)(grBSP *BSP, grFaceInfo_Array *FArray, grMaterial_Array *MArray, grChain *LChain, grChain *DLChain);
+	grBoolean (*AddBrush)(grBSP *BSPTree, grBrush *Brush, grBoolean AutoLight);
+	grBoolean (*HasBrush)(grBSP *BSPTree, grBrush *Brush);
+	grBoolean (*RemoveBrush)(grBSP *BSPTree, grBrush *Brush);
+	grBoolean (*MakeVisAreas)(grBSP *BSPTree);
+	grBoolean (*DestroyVisAreas)(grBSP *BSP);
+	grBoolean (*AddObject)(grBSP *BSP, grObject *Object);
+	grBoolean (*RemoveObject)(grBSP *BSP, grObject *Object);
+	grBoolean (*HasObject)(grBSP *BSP, grObject *Object);
+	grBoolean (*VisFrame)(grBSP *BSPTree, const grCamera *Camera, const grFrustum *ModelSpaceFrustum);
+	grBoolean (*RenderFrontToBack)(grBSP *Tree, grCamera *Camera, grFrustum *CameraSpaceFrustum, grFrustum *ModelSpaceFrustum, grXForm3d *ModelToCameraXForm);
+	grBoolean (*RenderAndVis)(grBSP *Tree, grCamera *Camera, grFrustum *Frustum);
+	grBoolean (*RenderAreas)(grBSP *Tree, grCamera *Camera, grFrustum *CameraSpaceFrustum, grFrustum *ModelSpaceFrustum, grXForm3d *ModelToCameraXForm);
+	grBoolean (*UpdateBrush)(grBSP *BSPTree, grBrush *Brush, grBoolean AutoLight);
+	grBoolean (*UpdateBrushFace)(grBSP *BSP, const grBrush_Face *Face, grBoolean AutoLight);
+	grBoolean (*PatchLighting)(grBSP *Tree);
+	grBoolean (*RebuildLights)(grBSP *Tree);
+	grBoolean (*RebuildLightsFromPoint)(grBSP *Tree, const grVec3d *Pos, grFloat Radius);
+	grBoolean (*UpdateAll)(grBSP *BSP);
+	grBoolean (*RebuildFaces)(grBSP *BSPTree);
+	grBoolean (*SetBrushFaceCB)(grBSP *BSP, grBSPNode_DrawFaceCB *CB, void *Context);
+	grBoolean (*SetBrushFaceCBOnOff)(grBSP *BSP, const grBrush_Face *Face, grBoolean OnOff);
+	grBoolean (*SetXForm)(grBSP *BSP, const grXForm3d *XForm);
+	grBoolean (*SetEngine)(grBSP *Tree, grEngine *Engine);
+	grBoolean (*SetWorld)(grBSP *Tree, grWorld *World);
+	grBoolean (*SetRenderMode)(grBSP *BSP, grBSP_RenderMode RenderMode);
+	grBoolean (*SetDefaultContents)(grBSP *BSP, grBrush_Contents DefaultContents);
+	grBSPNode_Area* (*FindArea)(grBSP * BSP, const grVec3d *Pos);
+	grBoolean (*DoAllAreasInBox)(grBSP *BSP,grExtBox *BBox,grBSP_DoAreaFunc CB,void * Context);
+	grBoolean (*GetModelSpaceBox)(const grBSP *BSP, grExtBox *Box);
+	grBoolean (*GetWorldSpaceBox)(const grBSP *BSP, grExtBox *Box);
+	grBoolean (*Collision)(const grBSP *BSP, const grExtBox *Box, const grVec3d *Front, const grVec3d *Back, grVec3d *Impact, grPlane *Plane);
+	grBoolean (*ChangeBoxCollision)(const grBSP *BSP, const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane);
+	grBoolean (*RayIntersectsBrushes)(const grBSP *BSP, const grVec3d *Front, const grVec3d *Back, grBrushRayInfo *Info);
+	const grBSP_DebugInfo* (*GetDebugInfo)(const grBSP *BSPTree);
+} BSP_Proxy;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

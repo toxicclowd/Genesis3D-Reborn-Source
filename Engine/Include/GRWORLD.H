@@ -45,10 +45,9 @@ extern "C" {
 
 //========================================================================================
 
-typedef struct jeWorld grWorld;
-typedef struct jeWorld jeWorld;
-typedef struct jeActor grActor;
-typedef struct jeCollisionInfo
+typedef struct grWorld grWorld;
+typedef struct grActor grActor;
+typedef struct grCollisionInfo
 {
 	grVec3d		Impact;			// Impact location
 	grPlane		Plane;			// Impact plane
@@ -232,66 +231,5 @@ GRAPI void GRCC grWorld_SetCollisionLevel(grWorld* World, int32 Level);
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-typedef grCollisionInfo jeCollisionInfo;
-typedef grChangeBoxCollisionInfo jeChangeBoxCollisionInfo;
-typedef grWorld_DebugInfo jeWorld_DebugInfo;
-
-#define jeWorld_AddActor                         grWorld_AddActor
-#define jeWorld_AddDLight                        grWorld_AddDLight
-#define jeWorld_AddLight                         grWorld_AddLight
-#define jeWorld_AddModel                         grWorld_AddModel
-#define jeWorld_AddObject                        grWorld_AddObject
-#define jeWorld_AddUserPoly                      grWorld_AddUserPoly
-#define jeWorld_AttachSoundSystem                grWorld_AttachSoundSystem
-#define jeWorld_CanCollide                       grWorld_CanCollide
-#define jeWorld_ChangeBoxCollision               grWorld_ChangeBoxCollision
-#define jeWorld_Collision                        grWorld_Collision
-#define jeWorld_Create                           grWorld_Create
-#define jeWorld_CreateFromEditorFile             grWorld_CreateFromEditorFile
-#define jeWorld_CreateFromFile                   grWorld_CreateFromFile
-#define jeWorld_CreateRef                        grWorld_CreateRef
-#define jeWorld_Destroy                          grWorld_Destroy
-#define jeWorld_DisableCollision                 grWorld_DisableCollision
-#define jeWorld_EnableCollision                  grWorld_EnableCollision
-#define jeWorld_FindObjectByDefName              grWorld_FindObjectByDefName
-#define jeWorld_Frame                            grWorld_Frame
-#define jeWorld_GetCollisionLevel                grWorld_GetCollisionLevel
-#define jeWorld_GetDLightChain                   grWorld_GetDLightChain
-#define jeWorld_GetFaceInfoArray                 grWorld_GetFaceInfoArray
-#define jeWorld_GetLightChain                    grWorld_GetLightChain
-#define jeWorld_GetMaterialArray                 grWorld_GetMaterialArray
-#define jeWorld_GetNextActor                     grWorld_GetNextActor
-#define jeWorld_GetNextCollisionExclusion        grWorld_GetNextCollisionExclusion
-#define jeWorld_GetNextDLight                    grWorld_GetNextDLight
-#define jeWorld_GetNextLight                     grWorld_GetNextLight
-#define jeWorld_GetNextModel                     grWorld_GetNextModel
-#define jeWorld_GetNextObject                    grWorld_GetNextObject
-#define jeWorld_GetRenderRecursion               grWorld_GetRenderRecursion
-#define jeWorld_GetResourceMgr                   grWorld_GetResourceMgr
-#define jeWorld_GetSoundSystem                   grWorld_GetSoundSystem
-#define jeWorld_HasActor                         grWorld_HasActor
-#define jeWorld_HasModel                         grWorld_HasModel
-#define jeWorld_HasObject                        grWorld_HasObject
-#define jeWorld_PatchLighting                    grWorld_PatchLighting
-#define jeWorld_RebuildBSP                       grWorld_RebuildBSP
-#define jeWorld_RebuildLights                    grWorld_RebuildLights
-#define jeWorld_RemoveActor                      grWorld_RemoveActor
-#define jeWorld_RemoveDLight                     grWorld_RemoveDLight
-#define jeWorld_RemoveLight                      grWorld_RemoveLight
-#define jeWorld_RemoveModel                      grWorld_RemoveModel
-#define jeWorld_RemoveObject                     grWorld_RemoveObject
-#define jeWorld_RemoveUserPoly                   grWorld_RemoveUserPoly
-#define jeWorld_Render                           grWorld_Render
-#define jeWorld_ResetCollisionOptions            grWorld_ResetCollisionOptions
-#define jeWorld_SetCollisionLevel                grWorld_SetCollisionLevel
-#define jeWorld_SetCollisionOptions              grWorld_SetCollisionOptions
-#define jeWorld_SetEngine                        grWorld_SetEngine
-#define jeWorld_SetRenderOptions                 grWorld_SetRenderOptions
-#define jeWorld_UpdateLight                      grWorld_UpdateLight
-#define jeWorld_WriteToFile                      grWorld_WriteToFile
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

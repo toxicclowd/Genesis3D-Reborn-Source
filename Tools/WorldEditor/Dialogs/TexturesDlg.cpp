@@ -257,9 +257,9 @@ bool	CTexturesDlg::InitGroupImageList()
 			CBitmap*			pImage = NULL;	
 			HBITMAP				hBitmap = NULL;
 #ifdef _USE_BITMAPS
-			jeBitmap			*pBitmap = NULL;
+			grBitmap			*pBitmap = NULL;
 #else
-			jeMaterialSpec		*pMatSpec = NULL;
+			grMaterialSpec		*pMatSpec = NULL;
 #endif
             HDC					thisHDC = ::GetDC(NULL);
 			int					iIncrementCounter = 0;
@@ -281,7 +281,7 @@ bool	CTexturesDlg::InitGroupImageList()
 				{
 #ifdef _USE_BITMAPS
 					//	get the texture's bitmap
-					pBitmap = (jeBitmap*) Materials_GetBitmap(pMaterial);
+					pBitmap = (grBitmap*) Materials_GetBitmap(pMaterial);
 
 					if (pBitmap)
 					{
@@ -322,12 +322,12 @@ bool	CTexturesDlg::InitGroupImageList()
 					}	//	if (pBitmap)...
 #else
 					// get the material and its thumbnail
-					pMatSpec = (jeMaterialSpec*) Materials_GetMaterialSpec(pMaterial);
+					pMatSpec = (grMaterialSpec*) Materials_GetMaterialSpec(pMaterial);
 					if (pMatSpec) {
 						BITMAPINFOHEADER bitmapInfo;
 						ZeroMemory(&bitmapInfo, sizeof(BITMAPINFOHEADER));
 
-						jeMaterialSpec_Thumbnail* pThumb = jeMaterialSpec_GetThumbnail(pMatSpec);
+						grMaterialSpec_Thumbnail* pThumb = grMaterialSpec_GetThumbnail(pMatSpec);
 						
 						if (pThumb) {
 					        bitmapInfo.biSize = sizeof(BITMAPINFOHEADER);
@@ -467,10 +467,10 @@ bool	CTexturesDlg::InitMasterImageLists()
 			CBitmap		*pImage = NULL;	
 			HBITMAP		hBitmap = NULL;
 #ifdef _USE_BITMAPS
-			jeBitmap	*pBitmap = NULL;
+			grBitmap	*pBitmap = NULL;
 #else
-			jeMaterialSpec* pMatSpec = NULL;
-			jeMaterialSpec_Thumbnail* pThumb = NULL;
+			grMaterialSpec* pMatSpec = NULL;
+			grMaterialSpec_Thumbnail* pThumb = NULL;
 #endif
 
 			CBitmap		*pBitmap32 = NULL;
@@ -500,7 +500,7 @@ bool	CTexturesDlg::InitMasterImageLists()
 				strMaterialName = Materials_GetName(pMaterial);
 #ifdef _USE_BITMAPS
 				//	get the texture's bitmap
-				pBitmap = (jeBitmap*) Materials_GetBitmap(pMaterial);
+				pBitmap = (grBitmap*) Materials_GetBitmap(pMaterial);
 
 				if (pBitmap)
 				{
@@ -555,8 +555,8 @@ bool	CTexturesDlg::InitMasterImageLists()
 				}	//	if (pBitmap)...
 #else
 				//	get the texture's bitmap
-				pMatSpec = (jeMaterialSpec*) Materials_GetMaterialSpec(pMaterial);
-				pThumb = jeMaterialSpec_GetThumbnail(pMatSpec);
+				pMatSpec = (grMaterialSpec*) Materials_GetMaterialSpec(pMaterial);
+				pThumb = grMaterialSpec_GetThumbnail(pMatSpec);
 				if (pThumb)
 				{
 					BITMAPINFOHEADER bitmapInfo;

@@ -55,17 +55,17 @@ typedef struct
 __inline int32 Rect_Width(const Rect* pRect) { return(pRect->Right - pRect->Left); }
 __inline int32 Rect_Height(const Rect* pRect) { return(pRect->Bottom - pRect->Top); }
 
-jeBoolean	Rect_Compare(const Rect* pRect1, const Rect* pRect2);
+grBoolean	Rect_Compare(const Rect* pRect1, const Rect* pRect2);
 
-jeBoolean	Rect_IsContained(const Rect* pRect, const Rect* pQueryRect);
-jeBoolean	Rect_IsEmpty( const Rect * pRect ) ;
-jeBoolean	Rect_IsIntersecting(const Rect* pRect1, const Rect* pRect2);
-jeBoolean	Rect_IsPointIn( const Rect * pRect, const Point * pPoint ) ;
+grBoolean	Rect_IsContained(const Rect* pRect, const Rect* pQueryRect);
+grBoolean	Rect_IsEmpty( const Rect * pRect ) ;
+grBoolean	Rect_IsIntersecting(const Rect* pRect1, const Rect* pRect2);
+grBoolean	Rect_IsPointIn( const Rect * pRect, const Point * pPoint ) ;
 
 
-jeBoolean	Rect_Intersect( Rect * pIntersectedRect, const Rect * pR1, const Rect * pR2 ) ;
+grBoolean	Rect_Intersect( Rect * pIntersectedRect, const Rect * pR1, const Rect * pR2 ) ;
 void		Rect_Normalize( Rect * pRect ) ;
-jeBoolean	Rect_Union( Rect * pDest, const Rect * pR1, const Rect * pR2 ) ;
+grBoolean	Rect_Union( Rect * pDest, const Rect * pR1, const Rect * pR2 ) ;
 void		Rect_Offset( Rect * pRect, int32 dx, int32 dy ) ;
 void		Rect_Inflate( Rect * pRect, int32 dx, int32 dy ) ;
 void		Rect_ExtendToEnclose( Rect * pRect, const Point * pPoint ) ;

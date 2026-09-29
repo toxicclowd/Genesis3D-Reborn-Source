@@ -27,7 +27,7 @@
 
 /////////////////////////////////////////////////////////////////////////////
 // CRender dialog
-#include "jeModel.h"
+#include "grModel.h"
 #include "Doc.h"
 
 class CRender : public CDialog
@@ -35,7 +35,7 @@ class CRender : public CDialog
 // Construction
 public:
 	CRender(CWnd* pParent = NULL);   // standard constructor
-	void SetData( const jeBSP_DebugInfo * pDebugInfo );
+	void SetData( const grBSP_DebugInfo * pDebugInfo );
 	void SetCurrentDocument( CJweDoc *pDoc );
 
 

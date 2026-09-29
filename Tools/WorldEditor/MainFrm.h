@@ -148,8 +148,8 @@ public:
 
 
 	//Property Management
-	void SetProperties( jeProperty_List * pArray );
-	void UpdateProperties( jeProperty_List * pArray );
+	void SetProperties( grProperty_List * pArray );
+	void UpdateProperties( grProperty_List * pArray );
 	void ResetProperties( void );
 	LRESULT OnRebuildProperties( WPARAM wParam, LPARAM lParam ); //Handle Update propery Message
 	void PostUpdateProperties();	//Posts and Updante Property Message
@@ -160,18 +160,18 @@ public:
 	void SubSelectObject( Object * pObject );
 
 	//Misc
-	jeBoolean GetCurUserObjName( CString * Name );
-//	jeBoolean GetCurAnimateState();
-//	void SetCurAnimateState( jeBoolean bAnimate );
+	grBoolean GetCurUserObjName( CString * Name );
+//	grBoolean GetCurAnimateState();
+//	void SetCurAnimateState( grBoolean bAnimate );
 
-	jeSound_System * GetSoundSystem();
-	void SetStats( const jeBSP_DebugInfo * pDebugInfo );
+	grSound_System * GetSoundSystem();
+	void SetStats( const grBSP_DebugInfo * pDebugInfo );
 	void SetStatusText( const char * Text );
 	void UpdateTimeDelta(  float TimeDelta );
 
-	void SetStatusSize(jeFloat X,jeFloat Y,jeFloat Z); // Added JH 4.3.2000
-	void SetStatusPos (jeFloat X,jeFloat Y,jeFloat Z); // Added JH 4.3.2000
-    void Set3DViewStats(jeFloat fps, int32 nbFaces);      // Added Krouer 2006.01.29
+	void SetStatusSize(grFloat X,grFloat Y,grFloat Z); // Added JH 4.3.2000
+	void SetStatusPos (grFloat X,grFloat Y,grFloat Z); // Added JH 4.3.2000
+    void Set3DViewStats(grFloat fps, int32 nbFaces);      // Added Krouer 2006.01.29
 
 	void SetAccelerator(); // Added JH 4.3.2000
 
@@ -287,7 +287,7 @@ private:
 	//CJetTKBar                   m_TKBar;
     //CTkWnd                      m_TKWnd;
 	MAINFRM_COMMANDPANEL_TAB	m_eCurrentTab ;
-	jeSound_System *			m_SoundSystem;
+	grSound_System *			m_SoundSystem;
 
 
 	// Added JH 5.3.2000

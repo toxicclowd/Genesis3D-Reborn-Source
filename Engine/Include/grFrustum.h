@@ -37,7 +37,7 @@ extern "C" {
 
 //================================================================================
 //================================================================================
-typedef struct jeFrustum
+typedef struct grFrustum
 {
 	int32			NumPlanes;
 	grPlane		Planes[GR_FRUSTUM_MAX_PLANES];
@@ -49,7 +49,7 @@ typedef struct jeFrustum
 	int32			FrustumBBoxIndexes[GR_FRUSTUM_MAX_PLANES*6];
 	int32			*pFrustumBBoxIndexes[GR_FRUSTUM_MAX_PLANES];
 } grFrustum;
-typedef struct jeFrustum jeFrustum;
+typedef struct grFrustum grFrustum;
 
 // NOTE - SrcVerts can be the same array as Work1, but SrcVerts cannot be same as Work2!!!
 typedef struct
@@ -67,7 +67,7 @@ typedef struct
 	int32			NumDstVerts;		// Num DstVerts
 	grLVertex	*DstVerts;			// Dest array
 } grFrustum_LClipInfo;
-typedef grFrustum_LClipInfo jeFrustum_LClipInfo;
+typedef grFrustum_LClipInfo grFrustum_LClipInfo;
 
 typedef struct
 {
@@ -84,7 +84,7 @@ typedef struct
 	int32			NumDstVerts;		// Num DstVerts
 	grVec3d		*DstVerts;			// Dest array
 } grFrustum_ClipInfo;
-typedef grFrustum_ClipInfo jeFrustum_ClipInfo;
+typedef grFrustum_ClipInfo grFrustum_ClipInfo;
 
 
 //================================================================================
@@ -152,35 +152,5 @@ GRAPI grBoolean GRCC grFrustum_PointCollision(const grFrustum *Frustum, const gr
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define JE_FRUSTUM_MAX_PLANES                    GR_FRUSTUM_MAX_PLANES
-#define jeFrustum_AddPlane                       grFrustum_AddPlane
-#define jeFrustum_ClipLVertsToPlaneXYZUV         grFrustum_ClipLVertsToPlaneXYZUV
-#define jeFrustum_ClipLVertsToPlaneXYZUVRGB      grFrustum_ClipLVertsToPlaneXYZUVRGB
-#define jeFrustum_ClipLVertsToPlaneXYZUVRGBA     grFrustum_ClipLVertsToPlaneXYZUVRGBA
-#define jeFrustum_ClipLVertsToPlaneXYZUVRGBAS    grFrustum_ClipLVertsToPlaneXYZUVRGBAS
-#define jeFrustum_ClipLVertsXYZUV                grFrustum_ClipLVertsXYZUV
-#define jeFrustum_ClipLVertsXYZUVRGB             grFrustum_ClipLVertsXYZUVRGB
-#define jeFrustum_ClipLVertsXYZUVRGBA            grFrustum_ClipLVertsXYZUVRGBA
-#define jeFrustum_ClipLVertsXYZUVRGBAS           grFrustum_ClipLVertsXYZUVRGBAS
-#define jeFrustum_ClipVerts                      grFrustum_ClipVerts
-#define jeFrustum_ClipVertsToPlane               grFrustum_ClipVertsToPlane
-#define jeFrustum_PointCollision                 grFrustum_PointCollision
-#define jeFrustum_Rotate                         grFrustum_Rotate
-#define jeFrustum_RotateToWorldSpace             grFrustum_RotateToWorldSpace
-#define jeFrustum_SetClipFlagsFromExtBox         grFrustum_SetClipFlagsFromExtBox
-#define jeFrustum_SetFromCamera                  grFrustum_SetFromCamera
-#define jeFrustum_SetFromLVerts                  grFrustum_SetFromLVerts
-#define jeFrustum_SetFromLVerts2                 grFrustum_SetFromLVerts2
-#define jeFrustum_SetFromVerts                   grFrustum_SetFromVerts
-#define jeFrustum_SetFromVerts2                  grFrustum_SetFromVerts2
-#define jeFrustum_SetWorldSpaceFromCamera        grFrustum_SetWorldSpaceFromCamera
-#define jeFrustum_Transform                      grFrustum_Transform
-#define jeFrustum_TransformAnchored              grFrustum_TransformAnchored
-#define jeFrustum_TransformRenorm                grFrustum_TransformRenorm
-#define jeFrustum_TransformToWorldSpace          grFrustum_TransformToWorldSpace
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

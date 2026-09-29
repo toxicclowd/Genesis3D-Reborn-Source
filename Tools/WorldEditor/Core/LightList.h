@@ -24,22 +24,22 @@
 #define LIGHTLIST_H
 
 #include "Light.h"
-#include "jeWorld.h"
-#include "jeList.h"
+#include "grWorld.h"
+#include "grList.h"
 #include "VFile.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef jeBoolean (*LightListCB)( Light *pLight, void * pVoid ) ;
+typedef grBoolean (*LightListCB)( Light *pLight, void * pVoid ) ;
 
 typedef struct		LightList		LightList;
 
 typedef ListIterator LightIterator ;
 typedef List_DestroyCallback LightList_DestroyCallback ;
 
-LightList *		LightList_Create( jeWorld *pWorld ) ;
+LightList *		LightList_Create( grWorld *pWorld ) ;
 void			LightList_Destroy( LightList **ppList ) ;
 
 // ACCESSORS
@@ -58,8 +58,8 @@ void				LightList_DeleteLight( LightList * pList, Light * pLight ) ;
 int32				LightList_EnumLights( LightList * pList, void * pVoid, LightListCB Callback ) ;
 
 // FILE HANDLING
-jeBoolean			LightList_WriteToFile( LightList * pList, jeVFile * pF, jePtrMgr * pPtrMgr ) ;
-LightList *			LightList_CreateFromFile( jeVFile * pF, jeWorld  * pWorld, jePtrMgr * pPtrMgr ) ;
+grBoolean			LightList_WriteToFile( LightList * pList, grVFile * pF, grPtrMgr * pPtrMgr ) ;
+LightList *			LightList_CreateFromFile( grVFile * pF, grWorld  * pWorld, grPtrMgr * pPtrMgr ) ;
 
 #ifdef __cplusplus
 }

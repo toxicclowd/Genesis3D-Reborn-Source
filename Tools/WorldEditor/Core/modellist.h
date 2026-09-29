@@ -22,16 +22,16 @@
 #ifndef MODELLIST_H
 #define MODELLIST_H
 
-#include "jeWorld.h"
-#include "jeList.h"
+#include "grWorld.h"
+#include "grList.h"
 #include "Model.h"
-#include "jePtrMgr.h"
+#include "grPtrMgr.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef jeBoolean (*ModelListCB)( Model *pModel, void * pVoid ) ;
+typedef grBoolean (*ModelListCB)( Model *pModel, void * pVoid ) ;
 
 typedef List ModelList ;
 typedef ListIterator ModelIterator ;
@@ -48,7 +48,7 @@ Model *			ModelList_GetFirst( ModelList * pList, ModelIterator * pMI ) ;
 Model *			ModelList_GetNext( ModelList * pList, ModelIterator * pMI ) ;
 
 // IS
-jeBoolean		ModelList_IsModelVisible( ModelIterator pMI ) ;
+grBoolean		ModelList_IsModelVisible( ModelIterator pMI ) ;
 
 // MODIFIERS
 ModelIterator	ModelList_Append( ModelList * pList, Model * pModel ) ;
@@ -58,13 +58,13 @@ void			ModelList_Remove( ModelList * pList, Model * pModel ) ;
 int32			ModelList_EnumModels( ModelList * pList, void * pVoid, ModelListCB Callback ) ;
 int32			ModelList_EnumBrushes( ModelList * pList, void * pVoid, BrushListCB Callback );
 // CALLBACK
-jeBoolean		ModelList_NumberModelsCB( Model * pModel, void * lParam ) ;
+grBoolean		ModelList_NumberModelsCB( Model * pModel, void * lParam ) ;
 
 // FILE HANDLING
-ModelList *		ModelList_CreateFromFile( jeVFile * pF, jePtrMgr * pPtrMgr) ;
-jeBoolean		ModelList_WriteToFile( ModelList * pList, jeVFile * pF, jePtrMgr * pPtrMgr ) ;
+ModelList *		ModelList_CreateFromFile( grVFile * pF, grPtrMgr * pPtrMgr) ;
+grBoolean		ModelList_WriteToFile( ModelList * pList, grVFile * pF, grPtrMgr * pPtrMgr ) ;
 
-jeBoolean		ModelList_Reattach( ModelList * pList, jeWorld * pWorld ) ;
+grBoolean		ModelList_Reattach( ModelList * pList, grWorld * pWorld ) ;
 
 
 #ifdef __cplusplus

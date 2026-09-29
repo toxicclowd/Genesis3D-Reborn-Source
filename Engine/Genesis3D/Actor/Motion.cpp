@@ -20,7 +20,7 @@
 /****************************************************************************************/
 
 /*
-	This object is a list of (named) jePath objects, 
+	This object is a list of (named) grPath objects, 
 	and an associated event list 
 
 */
@@ -37,102 +37,102 @@
 
 #pragma warning(disable : 4201)		// we're using nameless structures
 
-#define jePath_TimeType jeFloat
+#define grPath_TimeType grFloat
 
 #define MIN(aa,bb)  (( (aa)>(bb) ) ? (bb) : (aa) )
 #define MAX(aa,bb)  (( (aa)>(bb) ) ? (aa) : (bb) )
 
-typedef enum { MOTION_NODE_UNDECIDED, MOTION_NODE_BRANCH, MOTION_NODE_LEAF } jeMotion_NodeType;
+typedef enum { MOTION_NODE_UNDECIDED, MOTION_NODE_BRANCH, MOTION_NODE_LEAF } grMotion_NodeType;
 
 #define MOTION_BLEND_PART_OF_TRANSFORM(TForm)  ((TForm).Translation.X)						
 #define MOTION_BLEND_PART_OF_VECTOR(Vec)  ((Vec).X)						
 
 
-typedef struct jeMotion_Leaf
+typedef struct grMotion_Leaf
 {
 	int			PathCount;		
 	int32		NameChecksum;	// checksum based on names and list order
-	jeTKEvents *Events;
-	jeStrBlock *NameArray;
-	jePath	  **PathArray;
-} jeMotion_Leaf;
+	grTKEvents *Events;
+	grStrBlock *NameArray;
+	grPath	  **PathArray;
+} grMotion_Leaf;
 
 
-typedef struct jeMotion_Mixer
+typedef struct grMotion_Mixer
 {
-	jeFloat   TimeScale;		// multipler for time
-	jeFloat   TimeOffset;		// already scaled.
-	jePath   *Blend;			// path used to interpolate blending amounts. 
-	jeXForm3d Transform;		// base transform for this motion (if TransformUsed==JE_TRUE)
-	jeBoolean TransformUsed;	// JE_FALSE if there is no base transform.
-	jeMotion *Motion;			
-} jeMotion_Mixer;
+	grFloat   TimeScale;		// multipler for time
+	grFloat   TimeOffset;		// already scaled.
+	grPath   *Blend;			// path used to interpolate blending amounts. 
+	grXForm3d Transform;		// base transform for this motion (if TransformUsed==GR_TRUE)
+	grBoolean TransformUsed;	// GR_FALSE if there is no base transform.
+	grMotion *Motion;			
+} grMotion_Mixer;
 
-typedef struct jeMotion_Branch
+typedef struct grMotion_Branch
 {
 	int				MixerCount;
 	int				CurrentEventIterator;
-	jeMotion_Mixer *MixerArray;
-} jeMotion_Branch;
+	grMotion_Mixer *MixerArray;
+} grMotion_Branch;
 
 
-typedef struct jeMotion
+typedef struct grMotion
 {
 	char			 *Name;
 	int				  CloneCount;
-	jeBoolean		  MaintainNames;		
-	jeMotion_NodeType NodeType;
+	grBoolean		  MaintainNames;		
+	grMotion_NodeType NodeType;
 	union 
 		{
-			jeMotion_Leaf   Leaf;
-			jeMotion_Branch Branch;
+			grMotion_Leaf   Leaf;
+			grMotion_Branch Branch;
 		};
-	jeMotion *SanityCheck;
-} jeMotion;
+	grMotion *SanityCheck;
+} grMotion;
 
 
-JETAPI jeBoolean JETCC jeMotion_IsValid(const jeMotion *M)
+GRAPI grBoolean GRCC grMotion_IsValid(const grMotion *M)
 {
 	if (M == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (M->SanityCheck!=M)
-		return JE_FALSE;
-	return JE_TRUE;
+		return GR_FALSE;
+	return GR_TRUE;
 }
 
-JETAPI jeBoolean JETCC jeMotion_SetName(jeMotion *M, const char *Name)
+GRAPI grBoolean GRCC grMotion_SetName(grMotion *M, const char *Name)
 {
 	char *NewName;
 
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
-	NewName = (char *)jeRam_Allocate( strlen(Name)+1 );
+	NewName = (char *)grRam_Allocate( strlen(Name)+1 );
 	if (NewName == NULL )
 		{
-			jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeMotion_SetName.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grMotion_SetName.");
+			return GR_FALSE;
 		}
 	if (M->Name!=NULL)
 		{
-			jeRam_Free(M->Name);
+			grRam_Free(M->Name);
 		}
 	M->Name = NewName;
 	strcpy(M->Name, Name);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI const char * JETCC jeMotion_GetName(const jeMotion *M)
+GRAPI const char * GRCC grMotion_GetName(const grMotion *M)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	return M->Name;
 }
 		
-static jeBoolean JETCF jeMotion_InitNodeAsLeaf(jeMotion *M,jeBoolean SetupStringBlock)
+static grBoolean GRCF grMotion_InitNodeAsLeaf(grMotion *M,grBoolean SetupStringBlock)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	assert( M->NodeType == MOTION_NODE_UNDECIDED );
 
 	M->NodeType = MOTION_NODE_LEAF;
@@ -141,26 +141,26 @@ static jeBoolean JETCF jeMotion_InitNodeAsLeaf(jeMotion *M,jeBoolean SetupString
 	M->Leaf.Events        = NULL;
 	M->Leaf.PathArray     = NULL;
 	M->Leaf.NameChecksum  = 0;
-	if ((M->MaintainNames != JE_FALSE) && (SetupStringBlock!=JE_FALSE))
+	if ((M->MaintainNames != GR_FALSE) && (SetupStringBlock!=GR_FALSE))
 		{
-			M->Leaf.NameArray = jeStrBlock_Create();
+			M->Leaf.NameArray = grStrBlock_Create();
 			if (M->Leaf.NameArray == NULL)	
 				{
-					jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeMotion_InitNodeAsLeaf");
-					return JE_FALSE;
+					grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grMotion_InitNodeAsLeaf");
+					return GR_FALSE;
 				}
 		}
 	else
 		{
 			M->Leaf.NameArray  = NULL;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean JETCF jeMotion_InitNodeAsBranch(jeMotion *M)
+static grBoolean GRCF grMotion_InitNodeAsBranch(grMotion *M)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	assert( M->NodeType == MOTION_NODE_UNDECIDED );
 
 	M->NodeType = MOTION_NODE_BRANCH;
@@ -168,20 +168,20 @@ static jeBoolean JETCF jeMotion_InitNodeAsBranch(jeMotion *M)
 	M->Branch.MixerCount           = 0;
 	M->Branch.CurrentEventIterator = 0;
 	M->Branch.MixerArray           = NULL;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-JETAPI jeMotion * JETCC jeMotion_Create(jeBoolean WithNames)
+GRAPI grMotion * GRCC grMotion_Create(grBoolean WithNames)
 {
-	jeMotion *M;
-	assert( (WithNames==JE_TRUE) || (WithNames==JE_FALSE) );
+	grMotion *M;
+	assert( (WithNames==GR_TRUE) || (WithNames==GR_FALSE) );
 
-	M = JE_RAM_ALLOCATE_STRUCT_CLEAR(jeMotion);
+	M = GR_RAM_ALLOCATE_STRUCT_CLEAR(grMotion);
 
 	if ( M == NULL )
 		{
-			jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeMotion_Create.");
+			grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grMotion_Create.");
 			return NULL;
 		}
 
@@ -194,15 +194,15 @@ JETAPI jeMotion * JETCC jeMotion_Create(jeBoolean WithNames)
 }
 
 
-JETAPI jeBoolean JETCC jeMotion_RemoveNames(jeMotion *M)
+GRAPI grBoolean GRCC grMotion_RemoveNames(grMotion *M)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	if (M->CloneCount > 0)
 		{
-			jeErrorLog_Add(JE_ERR_BAD_PARAMETER,"jeMotion_RemoveNames: Can't remove names from a cloned motion.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_BAD_PARAMETER,"grMotion_RemoveNames: Can't remove names from a cloned motion.");
+			return GR_FALSE;
 		}
 
 	switch (M->NodeType)
@@ -210,15 +210,15 @@ JETAPI jeBoolean JETCC jeMotion_RemoveNames(jeMotion *M)
 			case (MOTION_NODE_UNDECIDED):
 				break;
 			case (MOTION_NODE_BRANCH):
-				jeErrorLog_Add(JE_ERR_BAD_PARAMETER,"jeMotion_RemoveNames: Can't remove names from a compound motion.");
-				return JE_FALSE;
+				grErrorLog_Add(GR_ERR_BAD_PARAMETER,"grMotion_RemoveNames: Can't remove names from a compound motion.");
+				return GR_FALSE;
 				break;
 			case (MOTION_NODE_LEAF):
 				assert( M->Leaf.PathCount >= 0 );
 				
 				if ( M->Leaf.NameArray != NULL )
 					{	
-						jeStrBlock_Destroy(&(M->Leaf.NameArray));
+						grStrBlock_Destroy(&(M->Leaf.NameArray));
 					}
 				M->Leaf.NameArray = NULL;
 				break;
@@ -226,21 +226,21 @@ JETAPI jeBoolean JETCC jeMotion_RemoveNames(jeMotion *M)
 				assert(0);
 		}
 
-	M->MaintainNames = JE_FALSE;
-	return JE_TRUE;
+	M->MaintainNames = GR_FALSE;
+	return GR_TRUE;
 }
 
 
 
-JETAPI void JETCC jeMotion_Destroy(jeMotion **PM)
+GRAPI void GRCC grMotion_Destroy(grMotion **PM)
 {
 	int i;
-	jeMotion *M;
+	grMotion *M;
 	
 	assert(PM   != NULL );
 	assert(*PM  != NULL );
 	M = *PM;
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	if (M->CloneCount > 0 )
 		{
@@ -250,7 +250,7 @@ JETAPI void JETCC jeMotion_Destroy(jeMotion **PM)
 
 	if (M->Name != NULL)
 		{
-			jeRam_Free(M->Name);
+			grRam_Free(M->Name);
 			M->Name = NULL;
 		}
 
@@ -262,75 +262,75 @@ JETAPI void JETCC jeMotion_Destroy(jeMotion **PM)
 				for (i=0; i<M->Branch.MixerCount; i++)
 					{
 						assert( M->Branch.MixerArray[i].Motion != NULL );
-						jeMotion_Destroy( &(M->Branch.MixerArray[i].Motion));
+						grMotion_Destroy( &(M->Branch.MixerArray[i].Motion));
 						M->Branch.MixerArray[i].Motion = NULL;
 
 						if (M->Branch.MixerArray[i].Blend != NULL )
 							{
-								jePath_Destroy( &(M->Branch.MixerArray[i].Blend));
+								grPath_Destroy( &(M->Branch.MixerArray[i].Blend));
 								M->Branch.MixerArray[i].Blend = NULL;
 							}
 						
 					}
 				if (M->Branch.MixerArray != NULL)
 					{
-						jeRam_Free(M->Branch.MixerArray);
+						grRam_Free(M->Branch.MixerArray);
 						M->Branch.MixerArray = NULL;
 					}
 				M->Branch.MixerCount = 0;
 				M->Branch.CurrentEventIterator = 0;
 				break;
 			case (MOTION_NODE_LEAF):
-				if (M->MaintainNames == JE_TRUE)
+				if (M->MaintainNames == GR_TRUE)
 					{	
-						jeBoolean Test=	jeMotion_RemoveNames(M);
-						assert( Test != JE_FALSE );
+						grBoolean Test=	grMotion_RemoveNames(M);
+						assert( Test != GR_FALSE );
 						Test;
 					}
 				for (i=0; i< M->Leaf.PathCount; i++)
 					{
 						assert( M->Leaf.PathArray[i] );
-						jePath_Destroy( &( M->Leaf.PathArray[i] ) );
+						grPath_Destroy( &( M->Leaf.PathArray[i] ) );
 						M->Leaf.PathArray[i] = NULL;
 					}
 				if (M->Leaf.PathArray!=NULL)
 					{
-						jeRam_Free(M->Leaf.PathArray);
+						grRam_Free(M->Leaf.PathArray);
 						M->Leaf.PathArray = NULL;
 					}
 				M->Leaf.PathCount = 0;
 				if ( M->Leaf.Events != NULL )
 					{
-						jeTKEvents_Destroy( &(M->Leaf.Events) );
+						grTKEvents_Destroy( &(M->Leaf.Events) );
 					}
 				break;
 			default:
 				assert(0);
 		}
 	M->NodeType = MOTION_NODE_UNDECIDED;
-	jeRam_Free( *PM );
+	grRam_Free( *PM );
 	*PM = NULL;
 }
 
-JETAPI jeBoolean JETCC jeMotion_AddPath(jeMotion *M,
-	jePath *P,const char *Name,int *PathIndex)
+GRAPI grBoolean GRCC grMotion_AddPath(grMotion *M,
+	grPath *P,const char *Name,int *PathIndex)
 {
 	int PathCount;
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	switch (M->NodeType)
 		{
 			case (MOTION_NODE_UNDECIDED):
-				if (jeMotion_InitNodeAsLeaf(M,JE_TRUE)==JE_FALSE)
+				if (grMotion_InitNodeAsLeaf(M,GR_TRUE)==GR_FALSE)
 					{
-						jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_AddPath.");
-						return JE_FALSE;
+						grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_AddPath.");
+						return GR_FALSE;
 					}
 				break;
 			case (MOTION_NODE_BRANCH):
-				jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeMotion_AddPath.");
-				return JE_FALSE;
+				grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grMotion_AddPath.");
+				return GR_FALSE;
 			case (MOTION_NODE_LEAF):
 				break;
 			default:
@@ -341,56 +341,56 @@ JETAPI jeBoolean JETCC jeMotion_AddPath(jeMotion *M,
 
 	if (Name!=NULL)
 		{
-			if (jeMotion_GetPathNamed( M, Name) != NULL )
+			if (grMotion_GetPathNamed( M, Name) != NULL )
 				{
-					jeErrorLog_AddString(JE_ERR_BAD_PARAMETER,"jeMotion_AddPath: Path already exists with same name.", Name);
-					return JE_FALSE;
+					grErrorLog_AddString(GR_ERR_BAD_PARAMETER,"grMotion_AddPath: Path already exists with same name.", Name);
+					return GR_FALSE;
 				}
 		}
 
 	PathCount = M->Leaf.PathCount;
 
 	{
-		jePath **NewPathArray;
+		grPath **NewPathArray;
 
-		NewPathArray = (jePath**)jeRam_Realloc(M->Leaf.PathArray, (1+PathCount) * sizeof(jePath*) );
+		NewPathArray = (grPath**)grRam_Realloc(M->Leaf.PathArray, (1+PathCount) * sizeof(grPath*) );
 
 		if ( NewPathArray == NULL )
 			{	
-				jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeMotion_AddPath.");
-				return JE_FALSE;
+				grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grMotion_AddPath.");
+				return GR_FALSE;
 			}
 		M->Leaf.PathArray = NewPathArray;
 	}
 
 	M->Leaf.PathArray[PathCount] = P;
 
-	if ( M->MaintainNames == JE_TRUE )
+	if ( M->MaintainNames == GR_TRUE )
 		{
 			
 			assert (M->Leaf.NameArray != NULL);
-			if (jeStrBlock_Append(&(M->Leaf.NameArray),Name)==JE_FALSE)
+			if (grStrBlock_Append(&(M->Leaf.NameArray),Name)==GR_FALSE)
 				{
-					jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_AddPath.");
+					grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_AddPath.");
 					assert(M->Leaf.PathArray[PathCount]);
-					jePath_Destroy(&(M->Leaf.PathArray[PathCount]));
-					return JE_FALSE;
+					grPath_Destroy(&(M->Leaf.PathArray[PathCount]));
+					return GR_FALSE;
 				}
-			M->Leaf.NameChecksum = jeStrBlock_GetChecksum(M->Leaf.NameArray);
+			M->Leaf.NameChecksum = grStrBlock_GetChecksum(M->Leaf.NameArray);
 		}						
 															
 	M->Leaf.PathCount = PathCount+1;
 	*PathIndex = PathCount;
-	jePath_CreateRef(P);
-	return JE_TRUE;
+	grPath_CreateRef(P);
+	return GR_TRUE;
 }
 
 
 // returns 0 if there is no name information... or if children don't all share the same checksum.
-JETAPI int32 JETCC jeMotion_GetNameChecksum(const jeMotion *M)
+GRAPI int32 GRCC grMotion_GetNameChecksum(const grMotion *M)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	switch (M->NodeType)
 		{
 			case (MOTION_NODE_UNDECIDED):
@@ -402,12 +402,12 @@ JETAPI int32 JETCC jeMotion_GetNameChecksum(const jeMotion *M)
 					if (M->Branch.MixerCount<1)
 						return 0;
 					assert( M->Branch.MixerArray[0].Motion );
-					FirstChecksum = jeMotion_GetNameChecksum( M->Branch.MixerArray[0].Motion );
+					FirstChecksum = grMotion_GetNameChecksum( M->Branch.MixerArray[0].Motion );
 					
 					for (i=1; i<M->Branch.MixerCount; i++)
 						{
 							assert( M->Branch.MixerArray[i].Motion );
-							Checksum = jeMotion_GetNameChecksum( M->Branch.MixerArray[i].Motion );
+							Checksum = grMotion_GetNameChecksum( M->Branch.MixerArray[i].Motion );
 							if (Checksum != FirstChecksum)
 								return 0;
 						}
@@ -421,21 +421,21 @@ JETAPI int32 JETCC jeMotion_GetNameChecksum(const jeMotion *M)
 	return 0;
 }	
 
-JETAPI jeBoolean JETCC jeMotion_HasNames(const jeMotion *M)
+GRAPI grBoolean GRCC grMotion_HasNames(const grMotion *M)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
-	assert( (M->MaintainNames == JE_TRUE) || (M->MaintainNames == JE_FALSE) );
+	assert( grMotion_IsValid(M) != GR_FALSE );
+	assert( (M->MaintainNames == GR_TRUE) || (M->MaintainNames == GR_FALSE) );
 	// if M has names, all children of M have names. 
 	return M->MaintainNames;
 }
 
-JETAPI jePath * JETCC jeMotion_GetPathNamed(const jeMotion *M,const char *Name)
+GRAPI grPath * GRCC grMotion_GetPathNamed(const grMotion *M,const char *Name)
 {
 	int i;
 
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	
 	if (M->NodeType != MOTION_NODE_LEAF)
 		{	// not an error condition.
@@ -446,11 +446,11 @@ JETAPI jePath * JETCC jeMotion_GetPathNamed(const jeMotion *M,const char *Name)
 	
 	if (Name != NULL)	
 		{
-			if ( M->MaintainNames == JE_TRUE )
+			if ( M->MaintainNames == GR_TRUE )
 				{
 					for (i=0; i<M->Leaf.PathCount; i++)
 						{
-							if ( strcmp(Name,jeStrBlock_GetString(M->Leaf.NameArray,i))==0 )
+							if ( strcmp(Name,grStrBlock_GetString(M->Leaf.NameArray,i))==0 )
 								{
 									return M->Leaf.PathArray[i];
 								}
@@ -466,26 +466,26 @@ JETAPI jePath * JETCC jeMotion_GetPathNamed(const jeMotion *M,const char *Name)
 
 
 
-JETAPI void JETCC jeMotion_Sample(const jeMotion *M, int PathIndex, jePath_TimeType Time, jeXForm3d *Transform)
+GRAPI void GRCC grMotion_Sample(const grMotion *M, int PathIndex, grPath_TimeType Time, grXForm3d *Transform)
 {
-	jeQuaternion Rotation;
-	jeVec3d		 Translation;
+	grQuaternion Rotation;
+	grVec3d		 Translation;
 	assert( M           != NULL);
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	assert( Transform   != NULL );
 
-	jeMotion_SampleChannels(M,PathIndex,Time,&Rotation,&Translation);
-	jeQuaternion_ToMatrix(&Rotation,Transform);
+	grMotion_SampleChannels(M,PathIndex,Time,&Rotation,&Translation);
+	grQuaternion_ToMatrix(&Rotation,Transform);
 	Transform->Translation = Translation;
 }
 
 
-JETAPI void JETCC jeMotion_SampleChannels(const jeMotion *M, int PathIndex, jePath_TimeType Time, jeQuaternion *Rotation, jeVec3d *Translation)
+GRAPI void GRCC grMotion_SampleChannels(const grMotion *M, int PathIndex, grPath_TimeType Time, grQuaternion *Rotation, grVec3d *Translation)
 {
 	assert( M           != NULL);
 	assert( Rotation    != NULL );
 	assert( Translation != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	switch (M->NodeType)
 		{
@@ -494,15 +494,15 @@ JETAPI void JETCC jeMotion_SampleChannels(const jeMotion *M, int PathIndex, jePa
 				break;
 			case (MOTION_NODE_BRANCH):
 				{
-					jeQuaternion R;
-					jeVec3d      T;
-					jeMotion_Mixer *Mixer;
+					grQuaternion R;
+					grVec3d      T;
+					grMotion_Mixer *Mixer;
 					int i;
 
 					if ( M->Branch.MixerCount == 0 )
 						{
-							jeVec3d_Clear(Translation);
-							jeQuaternion_SetNoRotation(Rotation);
+							grVec3d_Clear(Translation);
+							grQuaternion_SetNoRotation(Rotation);
 							return;
 						}
 
@@ -510,14 +510,14 @@ JETAPI void JETCC jeMotion_SampleChannels(const jeMotion *M, int PathIndex, jePa
 					Mixer = &(M->Branch.MixerArray[0]);
 					
 					assert(Mixer->Motion != NULL );
-					jeMotion_SampleChannels(Mixer->Motion,PathIndex,
+					grMotion_SampleChannels(Mixer->Motion,PathIndex,
 											(Time - Mixer->TimeOffset) * Mixer->TimeScale,
 											Rotation,Translation);
 				
 					for (i=1; i<M->Branch.MixerCount; i++)
 						{
-							jeFloat BlendAmount;
-							jeFloat MixTime;
+							grFloat BlendAmount;
+							grFloat MixTime;
 
 							Mixer = &(M->Branch.MixerArray[i]);
 
@@ -526,14 +526,14 @@ JETAPI void JETCC jeMotion_SampleChannels(const jeMotion *M, int PathIndex, jePa
 
 							MixTime = (Time - Mixer->TimeOffset) * Mixer->TimeScale;
 
-							jeMotion_SampleChannels(Mixer->Motion,PathIndex,MixTime,&R,&T);
+							grMotion_SampleChannels(Mixer->Motion,PathIndex,MixTime,&R,&T);
 							{
-								jeVec3d BlendVector;
-								jeQuaternion Dummy;
-								jePath_SampleChannels(Mixer->Blend,MixTime,&Dummy,&BlendVector);
+								grVec3d BlendVector;
+								grQuaternion Dummy;
+								grPath_SampleChannels(Mixer->Blend,MixTime,&Dummy,&BlendVector);
 								BlendAmount = MOTION_BLEND_PART_OF_VECTOR(BlendVector);
 							}
-							jeQuaternion_Slerp(Rotation,&R,BlendAmount,Rotation);
+							grQuaternion_Slerp(Rotation,&R,BlendAmount,Rotation);
 							Translation->X = LINEAR_BLEND(Translation->X,T.X,BlendAmount);
 							Translation->Y = LINEAR_BLEND(Translation->Y,T.Y,BlendAmount);
 							Translation->Z = LINEAR_BLEND(Translation->Z,T.Z,BlendAmount);
@@ -542,11 +542,11 @@ JETAPI void JETCC jeMotion_SampleChannels(const jeMotion *M, int PathIndex, jePa
 				break;
 			case (MOTION_NODE_LEAF):
 				{
-					jePath *P;
+					grPath *P;
 					assert( ( PathIndex >=0 ) && ( PathIndex < M->Leaf.PathCount ) );
 					P= M->Leaf.PathArray[PathIndex];
 					assert( P != NULL );
-					jePath_SampleChannels(P,Time,Rotation,Translation);
+					grPath_SampleChannels(P,Time,Rotation,Translation);
 				}
 				break;
 			default:
@@ -554,59 +554,59 @@ JETAPI void JETCC jeMotion_SampleChannels(const jeMotion *M, int PathIndex, jePa
 		}
 }		
 
-JETAPI jeBoolean JETCC jeMotion_SampleNamed(const jeMotion *M, const char *PathName, jePath_TimeType Time, jeXForm3d *Transform)
+GRAPI grBoolean GRCC grMotion_SampleNamed(const grMotion *M, const char *PathName, grPath_TimeType Time, grXForm3d *Transform)
 {
-	jeQuaternion Rotation;
-	jeVec3d		 Translation;
+	grQuaternion Rotation;
+	grVec3d		 Translation;
 	assert( M           != NULL);
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	assert( Transform   != NULL );
 
-	if (jeMotion_SampleChannelsNamed(M,PathName,Time,&Rotation,&Translation)==JE_FALSE)
+	if (grMotion_SampleChannelsNamed(M,PathName,Time,&Rotation,&Translation)==GR_FALSE)
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
-	jeQuaternion_ToMatrix(&Rotation,Transform);
+	grQuaternion_ToMatrix(&Rotation,Transform);
 	Transform->Translation = Translation;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
 
-JETAPI jeBoolean JETCC jeMotion_SampleChannelsNamed(const jeMotion *M, const char *PathName, jePath_TimeType Time, jeQuaternion *Rotation, jeVec3d *Translation)
+GRAPI grBoolean GRCC grMotion_SampleChannelsNamed(const grMotion *M, const char *PathName, grPath_TimeType Time, grQuaternion *Rotation, grVec3d *Translation)
 {
-	jeBoolean AnyChannels=JE_FALSE;
+	grBoolean AnyChannels=GR_FALSE;
 	assert( M           != NULL);
 	assert( Rotation    != NULL );
 	assert( Translation != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	switch (M->NodeType)
 		{
 			case (MOTION_NODE_UNDECIDED):
-				return JE_FALSE;
+				return GR_FALSE;
 				break;
 			case (MOTION_NODE_BRANCH):
 				{
 					int i;
-					jeQuaternion R;
-					jeVec3d T;
-					jeMotion_Mixer *Mixer;
+					grQuaternion R;
+					grVec3d T;
+					grMotion_Mixer *Mixer;
 
 					if ( M->Branch.MixerCount == 0 )
 						{
-							jeVec3d_Clear(Translation);
-							jeQuaternion_SetNoRotation(Rotation);
-							return JE_TRUE;
+							grVec3d_Clear(Translation);
+							grQuaternion_SetNoRotation(Rotation);
+							return GR_TRUE;
 						}
 
 					assert( M->Branch.MixerCount > 0 );
 
 					for (i=0; i<M->Branch.MixerCount; i++)
 						{
-							jeFloat BlendAmount;
-							jeFloat MixTime;
+							grFloat BlendAmount;
+							grFloat MixTime;
 
 							Mixer = &(M->Branch.MixerArray[i]);
 
@@ -616,18 +616,18 @@ JETAPI jeBoolean JETCC jeMotion_SampleChannelsNamed(const jeMotion *M, const cha
 							MixTime = (Time - Mixer->TimeOffset) * Mixer->TimeScale;
 
 							// hmm. is BlendAmount still good if there is no path?
-							if ( jeMotion_SampleChannelsNamed(Mixer->Motion,PathName,MixTime,&R,&T)
-								 != JE_FALSE )
+							if ( grMotion_SampleChannelsNamed(Mixer->Motion,PathName,MixTime,&R,&T)
+								 != GR_FALSE )
 								{
-									if (AnyChannels != JE_FALSE)
+									if (AnyChannels != GR_FALSE)
 										{
 											{
-												jeVec3d BlendVector;
-												jeQuaternion Dummy;
-												jePath_SampleChannels(Mixer->Blend,MixTime,&Dummy,&BlendVector);
+												grVec3d BlendVector;
+												grQuaternion Dummy;
+												grPath_SampleChannels(Mixer->Blend,MixTime,&Dummy,&BlendVector);
 												BlendAmount = MOTION_BLEND_PART_OF_VECTOR(BlendVector);
 											}
-											jeQuaternion_Slerp(Rotation,&R,BlendAmount,Rotation);
+											grQuaternion_Slerp(Rotation,&R,BlendAmount,Rotation);
 											Translation->X = LINEAR_BLEND(Translation->X,T.X,BlendAmount);
 											Translation->Y = LINEAR_BLEND(Translation->Y,T.Y,BlendAmount);
 											Translation->Z = LINEAR_BLEND(Translation->Z,T.Z,BlendAmount);
@@ -636,7 +636,7 @@ JETAPI jeBoolean JETCC jeMotion_SampleChannelsNamed(const jeMotion *M, const cha
 										{
 											*Rotation = R;
 											*Translation = T;
-											AnyChannels = JE_TRUE;
+											AnyChannels = GR_TRUE;
 										}
 								}
 						}
@@ -644,14 +644,14 @@ JETAPI jeBoolean JETCC jeMotion_SampleChannelsNamed(const jeMotion *M, const cha
 				break;
 			case (MOTION_NODE_LEAF):
 				{
-					jePath *P;
-					P = jeMotion_GetPathNamed(M, PathName);
+					grPath *P;
+					P = grMotion_GetPathNamed(M, PathName);
 					if (P == NULL)
 						{
-							return JE_FALSE;
+							return GR_FALSE;
 						}
-					jePath_SampleChannels(P,Time,Rotation,Translation);
-					AnyChannels = JE_TRUE;
+					grPath_SampleChannels(P,Time,Rotation,Translation);
+					AnyChannels = GR_TRUE;
 				}
 				break;
 			default:
@@ -661,10 +661,10 @@ JETAPI jeBoolean JETCC jeMotion_SampleChannelsNamed(const jeMotion *M, const cha
 }		
 
 
-JETAPI jePath * JETCC jeMotion_GetPath(const jeMotion *M,int Index)
+GRAPI grPath * GRCC grMotion_GetPath(const grMotion *M,int Index)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
  	
 	if (M->NodeType != MOTION_NODE_LEAF)
 		{	// not an error condition.
@@ -678,37 +678,37 @@ JETAPI jePath * JETCC jeMotion_GetPath(const jeMotion *M,int Index)
 	return M->Leaf.PathArray[Index];
 }
 
-JETAPI const char * JETCC jeMotion_GetNameOfPath(const jeMotion *M, int Index)
+GRAPI const char * GRCC grMotion_GetNameOfPath(const grMotion *M, int Index)
 {
-	jePath *P;
+	grPath *P;
 	assert( M != NULL );
 
 	if (M->NodeType!=MOTION_NODE_LEAF)
 		{
 			return NULL;
 		}
-	if (jeMotion_HasNames(M)==JE_FALSE)
+	if (grMotion_HasNames(M)==GR_FALSE)
 		{
 			return NULL;
 		}
 
-	P = jeMotion_GetPath(M,Index);
+	P = grMotion_GetPath(M,Index);
 	if (P==NULL)
 		{
 			return NULL;
 		}
 	assert( M->Leaf.NameArray!=NULL );
 
-	return jeStrBlock_GetString(M->Leaf.NameArray,Index);
+	return grStrBlock_GetString(M->Leaf.NameArray,Index);
 
 }
 			
 	
 
-JETAPI int JETCC jeMotion_GetPathCount(const jeMotion *M)
+GRAPI int GRCC grMotion_GetPathCount(const grMotion *M)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	if (M->NodeType != MOTION_NODE_LEAF)
 		{	// not an error condition.
@@ -719,14 +719,14 @@ JETAPI int JETCC jeMotion_GetPathCount(const jeMotion *M)
 }
 
 
-JETAPI jeBoolean JETCC jeMotion_GetTimeExtents(const jeMotion *M,jePath_TimeType *StartTime,jePath_TimeType *EndTime)
+GRAPI grBoolean GRCC grMotion_GetTimeExtents(const grMotion *M,grPath_TimeType *StartTime,grPath_TimeType *EndTime)
 {
 	int i,found;
-	jePath_TimeType Start,End;
+	grPath_TimeType Start,End;
 	assert( M != NULL );
 	assert( StartTime != NULL );
 	assert( EndTime != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	found = 0;
 
@@ -737,7 +737,7 @@ JETAPI jeBoolean JETCC jeMotion_GetTimeExtents(const jeMotion *M,jePath_TimeType
 			case (MOTION_NODE_BRANCH):
 				for (i=0; i<M->Branch.MixerCount; i++)
 					{
-						if (jeMotion_GetTimeExtents(M->Branch.MixerArray[i].Motion,&Start,&End)!=JE_FALSE)
+						if (grMotion_GetTimeExtents(M->Branch.MixerArray[i].Motion,&Start,&End)!=GR_FALSE)
 							{
 								found++;
 
@@ -749,7 +749,7 @@ JETAPI jeBoolean JETCC jeMotion_GetTimeExtents(const jeMotion *M,jePath_TimeType
 								// the entire idea of extents.  So we'll swap them.
 								if (End < Start)
 								{
-									jeFloat Temp = Start;
+									grFloat Temp = Start;
 									Start = End;
 									End = Temp;
 								}
@@ -770,7 +770,7 @@ JETAPI jeBoolean JETCC jeMotion_GetTimeExtents(const jeMotion *M,jePath_TimeType
 				found = 0;
 				for (i=0; i<M->Leaf.PathCount; i++)
 					{
-						if (jePath_GetTimeExtents(M->Leaf.PathArray[i],&Start,&End)!=JE_FALSE)
+						if (grPath_GetTimeExtents(M->Leaf.PathArray[i],&Start,&End)!=GR_FALSE)
 							{
 								found++;
 								if (found==1)
@@ -791,16 +791,16 @@ JETAPI jeBoolean JETCC jeMotion_GetTimeExtents(const jeMotion *M,jePath_TimeType
 		}
 	if (found>0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }			
 
 
-JETAPI int JETCC jeMotion_GetSubMotionCount(const jeMotion *M)
+GRAPI int GRCC grMotion_GetSubMotionCount(const grMotion *M)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	if (M->NodeType == MOTION_NODE_BRANCH)
 		{
 			return M->Branch.MixerCount;
@@ -810,10 +810,10 @@ JETAPI int JETCC jeMotion_GetSubMotionCount(const jeMotion *M)
 
 
 #pragma message ("do we want to copy these before returning them?")
-JETAPI jeMotion * JETCC jeMotion_GetSubMotion(const jeMotion *M,int SubMotionIndex)
+GRAPI grMotion * GRCC grMotion_GetSubMotion(const grMotion *M,int SubMotionIndex)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	if (M->NodeType != MOTION_NODE_BRANCH )
 		{
 			return NULL;
@@ -824,12 +824,12 @@ JETAPI jeMotion * JETCC jeMotion_GetSubMotion(const jeMotion *M,int SubMotionInd
 	return M->Branch.MixerArray[SubMotionIndex].Motion;
 }
 
-JETAPI jeMotion * JETCC jeMotion_GetSubMotionNamed(const jeMotion *M,const char *Name)
+GRAPI grMotion * GRCC grMotion_GetSubMotionNamed(const grMotion *M,const char *Name)
 {
 	int i;
 	assert( M != NULL);	
 	assert( Name != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	if (M->NodeType != MOTION_NODE_BRANCH)
 		{
@@ -838,7 +838,7 @@ JETAPI jeMotion * JETCC jeMotion_GetSubMotionNamed(const jeMotion *M,const char 
 	assert( M->Branch.MixerArray != NULL );
 	for (i=0; i<M->Branch.MixerCount; i++)
 		{
-			jeMotion *MI = M->Branch.MixerArray[i].Motion;
+			grMotion *MI = M->Branch.MixerArray[i].Motion;
 			assert( MI != NULL );
 			if (MI->Name!=NULL)
 				{
@@ -851,44 +851,44 @@ JETAPI jeMotion * JETCC jeMotion_GetSubMotionNamed(const jeMotion *M,const char 
 	return NULL;
 }
 
-static jeBoolean JETCF jeMotion_SearchForSubMotion(const jeMotion *Parent, const jeMotion*Child)
+static grBoolean GRCF grMotion_SearchForSubMotion(const grMotion *Parent, const grMotion*Child)
 {
 	int i;
 	assert( Parent != NULL );
 	assert( Child  != NULL );
-	assert( jeMotion_IsValid(Parent) != JE_FALSE );
-	assert( jeMotion_IsValid(Child) != JE_FALSE );
+	assert( grMotion_IsValid(Parent) != GR_FALSE );
+	assert( grMotion_IsValid(Child) != GR_FALSE );
 
 	if (Parent == Child)
-		return JE_TRUE;
+		return GR_TRUE;
 
 	if (Parent->NodeType != MOTION_NODE_BRANCH)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	assert( Parent->Branch.MixerArray != NULL );
 
 	for (i=0; i<Parent->Branch.MixerCount; i++)
 		{
 			assert( Parent->Branch.MixerArray[i].Motion != NULL );
-			if (jeMotion_SearchForSubMotion(Parent->Branch.MixerArray[i].Motion,Child)==JE_TRUE)
-				return JE_TRUE;
+			if (grMotion_SearchForSubMotion(Parent->Branch.MixerArray[i].Motion,Child)==GR_TRUE)
+				return GR_TRUE;
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-JETAPI jeBoolean JETCC jeMotion_AddSubMotion(jeMotion *ParentMotion, 
-								jeFloat TimeScale, 
-								jeFloat TimeOffset,
-								jeMotion *SubMotion, 
-								jeFloat StartTime, jeFloat StartMagnitude,
-								jeFloat EndTime,   jeFloat EndMagnitude,
-								const jeXForm3d *Transform,
+GRAPI grBoolean GRCC grMotion_AddSubMotion(grMotion *ParentMotion, 
+								grFloat TimeScale, 
+								grFloat TimeOffset,
+								grMotion *SubMotion, 
+								grFloat StartTime, grFloat StartMagnitude,
+								grFloat EndTime,   grFloat EndMagnitude,
+								const grXForm3d *Transform,
 								int *Index)
 
 {
 
 	int Count;
-	jeMotion_Mixer *NewMixerArray;
+	grMotion_Mixer *NewMixerArray;
 	assert( ParentMotion != NULL );
 	assert( TimeScale	 != 0.0f );
 	assert( SubMotion    != NULL );
@@ -896,22 +896,22 @@ JETAPI jeBoolean JETCC jeMotion_AddSubMotion(jeMotion *ParentMotion,
 	//assert( Transform    != NULL );
 	assert( ( StartMagnitude >= 0.0f) && ( StartMagnitude <=1.0f ));
 	assert( ( EndMagnitude   >= 0.0f) && ( EndMagnitude   <=1.0f ));
-	assert( jeMotion_IsValid(ParentMotion) != JE_FALSE );
-	assert( jeMotion_IsValid(SubMotion) != JE_FALSE );
+	assert( grMotion_IsValid(ParentMotion) != GR_FALSE );
+	assert( grMotion_IsValid(SubMotion) != GR_FALSE );
 
 	switch (ParentMotion->NodeType)
 		{
 			case (MOTION_NODE_UNDECIDED):
-				if (jeMotion_InitNodeAsBranch(ParentMotion)==JE_FALSE)
+				if (grMotion_InitNodeAsBranch(ParentMotion)==GR_FALSE)
 					{
-						jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_AddSubMotion.");
-						return JE_FALSE;
+						grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_AddSubMotion.");
+						return GR_FALSE;
 					}
 				break;
 			case (MOTION_NODE_LEAF):
 				{
-					jeErrorLog_Add(JE_ERR_BAD_PARAMETER, "jeMotion_AddSubMotion: Can't add a submotion to a Leaf motion.");
-					return JE_FALSE;
+					grErrorLog_Add(GR_ERR_BAD_PARAMETER, "grMotion_AddSubMotion: Can't add a submotion to a Leaf motion.");
+					return GR_FALSE;
 				}
 			case (MOTION_NODE_BRANCH):
 				break;
@@ -921,64 +921,64 @@ JETAPI jeBoolean JETCC jeMotion_AddSubMotion(jeMotion *ParentMotion,
 
 	if (ParentMotion->MaintainNames != SubMotion->MaintainNames)
 		{
-			jeErrorLog_Add(JE_ERR_BAD_PARAMETER, "jeMotion_AddSubMotion: Can't add a submotion with different MaintainNames convention.");  
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_BAD_PARAMETER, "grMotion_AddSubMotion: Can't add a submotion with different MaintainNames convention.");  
+			return GR_FALSE;
 		}
 		
-	if (jeMotion_SearchForSubMotion(SubMotion,ParentMotion)!=JE_FALSE)
+	if (grMotion_SearchForSubMotion(SubMotion,ParentMotion)!=GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_BAD_PARAMETER, "jeMotion_AddSubMotion: Can't add - would create a circular loop of submotions.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_BAD_PARAMETER, "grMotion_AddSubMotion: Can't add - would create a circular loop of submotions.");
+			return GR_FALSE;
 		}
 			
 	Count = ParentMotion->Branch.MixerCount;
-	NewMixerArray = (jeMotion_Mixer *)jeRam_Realloc(ParentMotion->Branch.MixerArray, (1+Count) * sizeof(jeMotion_Mixer) );
+	NewMixerArray = (grMotion_Mixer *)grRam_Realloc(ParentMotion->Branch.MixerArray, (1+Count) * sizeof(grMotion_Mixer) );
 	if ( NewMixerArray == NULL )
 		{	
-			jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeMotion_AddSubMotion.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grMotion_AddSubMotion.");
+			return GR_FALSE;
 		}
 		
 	ParentMotion->Branch.MixerArray = NewMixerArray;
 	{
-		jeMotion_Mixer *Mixer;
-		jeXForm3d BlendKeyTransform;
+		grMotion_Mixer *Mixer;
+		grXForm3d BlendKeyTransform;
 		Mixer = &(ParentMotion->Branch.MixerArray[Count]);
 	
 		Mixer->Motion     = SubMotion;
 		Mixer->TimeScale  = TimeScale;
 		Mixer->TimeOffset = TimeOffset;
 		
-		Mixer->Blend = jePath_Create(JE_PATH_INTERPOLATE_HERMITE_ZERO_DERIV,JE_PATH_INTERPOLATE_SLERP,JE_FALSE);
+		Mixer->Blend = grPath_Create(GR_PATH_INTERPOLATE_HERMITE_ZERO_DERIV,GR_PATH_INTERPOLATE_SLERP,GR_FALSE);
 		if (Mixer->Blend==NULL)
 			{	
-				jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_AddSubMotion.");
-				return JE_FALSE;
+				grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_AddSubMotion.");
+				return GR_FALSE;
 			}
 		MOTION_BLEND_PART_OF_TRANSFORM(BlendKeyTransform) = StartMagnitude;
-		if (jePath_InsertKeyframe(Mixer->Blend,
-						JE_PATH_TRANSLATION_CHANNEL,StartTime,&BlendKeyTransform)==JE_FALSE)
+		if (grPath_InsertKeyframe(Mixer->Blend,
+						GR_PATH_TRANSLATION_CHANNEL,StartTime,&BlendKeyTransform)==GR_FALSE)
 			{
-				jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_AddSubMotion.");
-				jePath_Destroy(&(Mixer->Blend));
-				return JE_FALSE;
+				grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_AddSubMotion.");
+				grPath_Destroy(&(Mixer->Blend));
+				return GR_FALSE;
 			}
 
 		MOTION_BLEND_PART_OF_TRANSFORM(BlendKeyTransform) = EndMagnitude;
-		if (jePath_InsertKeyframe(Mixer->Blend,
-						JE_PATH_TRANSLATION_CHANNEL,EndTime,&BlendKeyTransform)==JE_FALSE)
+		if (grPath_InsertKeyframe(Mixer->Blend,
+						GR_PATH_TRANSLATION_CHANNEL,EndTime,&BlendKeyTransform)==GR_FALSE)
 			{
-				jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_AddSubMotion.");
-				jePath_Destroy(&(Mixer->Blend));
-				return JE_FALSE;
+				grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_AddSubMotion.");
+				grPath_Destroy(&(Mixer->Blend));
+				return GR_FALSE;
 			}
 		if (Transform == NULL)
 			{
-				Mixer->TransformUsed = JE_FALSE;
+				Mixer->TransformUsed = GR_FALSE;
 			}
 		else
 			{
-				Mixer->TransformUsed = JE_TRUE;
+				Mixer->TransformUsed = GR_TRUE;
 				Mixer->Transform = *Transform;
 			}
 	}
@@ -987,15 +987,15 @@ JETAPI jeBoolean JETCC jeMotion_AddSubMotion(jeMotion *ParentMotion,
 	SubMotion->CloneCount++;
 	ParentMotion->Branch.MixerCount++;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeMotion * JETCC jeMotion_RemoveSubMotion(jeMotion *ParentMotion, int SubMotionIndex)
+GRAPI grMotion * GRCC grMotion_RemoveSubMotion(grMotion *ParentMotion, int SubMotionIndex)
 {
 	int Count;
-	jeMotion *M;
+	grMotion *M;
 	assert( ParentMotion != NULL );
-	assert( jeMotion_IsValid(ParentMotion) != JE_FALSE );
+	assert( grMotion_IsValid(ParentMotion) != GR_FALSE );
 
 	if (ParentMotion->NodeType != MOTION_NODE_BRANCH)
 		{
@@ -1007,43 +1007,43 @@ JETAPI jeMotion * JETCC jeMotion_RemoveSubMotion(jeMotion *ParentMotion, int Sub
 	
 	M = ParentMotion->Branch.MixerArray[SubMotionIndex].Motion;
 	assert( ParentMotion->Branch.MixerArray[SubMotionIndex].Blend != NULL );
-	jePath_Destroy( &(ParentMotion->Branch.MixerArray[SubMotionIndex].Blend) );
+	grPath_Destroy( &(ParentMotion->Branch.MixerArray[SubMotionIndex].Blend) );
 	
 	if (Count>1)
 		{
 			memcpy( &(ParentMotion->Branch.MixerArray[SubMotionIndex]),
 					&(ParentMotion->Branch.MixerArray[SubMotionIndex+1]),
-					sizeof(jeMotion_Mixer) * (Count-(SubMotionIndex+1)));
+					sizeof(grMotion_Mixer) * (Count-(SubMotionIndex+1)));
 		}
 	ParentMotion->Branch.MixerCount--;
 
 	{
-		jeMotion_Mixer *NewMixerArray;
+		grMotion_Mixer *NewMixerArray;
 		if (ParentMotion->Branch.MixerCount == 0)
 			{
-				jeRam_Free(ParentMotion->Branch.MixerArray);
+				grRam_Free(ParentMotion->Branch.MixerArray);
 				ParentMotion->Branch.MixerArray = NULL;
 			}
 		else
 			{
-				NewMixerArray = (jeMotion_Mixer *)jeRam_Realloc(ParentMotion->Branch.MixerArray, 
-									(ParentMotion->Branch.MixerCount) * sizeof(jeMotion_Mixer) );
+				NewMixerArray = (grMotion_Mixer *)grRam_Realloc(ParentMotion->Branch.MixerArray, 
+									(ParentMotion->Branch.MixerCount) * sizeof(grMotion_Mixer) );
 				if ( NewMixerArray != NULL )
 					{	
 						ParentMotion->Branch.MixerArray = NewMixerArray;
 					}
 			}
 	}
-	jeMotion_Destroy( &M );
+	grMotion_Destroy( &M );
 	return M;
 }
 	
 
 
-JETAPI jeFloat   JETCC jeMotion_GetTimeOffset( const jeMotion *M,int SubMotionIndex )
+GRAPI grFloat   GRCC grMotion_GetTimeOffset( const grMotion *M,int SubMotionIndex )
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	// wrong node type is neither error nor invalid.  return value is just 0
 
 	if (M->NodeType == MOTION_NODE_BRANCH)
@@ -1054,24 +1054,24 @@ JETAPI jeFloat   JETCC jeMotion_GetTimeOffset( const jeMotion *M,int SubMotionIn
 	return 0.0f;
 }
 
-JETAPI jeBoolean  JETCC jeMotion_SetTimeOffset( jeMotion *M,int SubMotionIndex,jeFloat TimeOffset )
+GRAPI grBoolean  GRCC grMotion_SetTimeOffset( grMotion *M,int SubMotionIndex,grFloat TimeOffset )
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	if (M->NodeType == MOTION_NODE_BRANCH)
 		{
 			assert( (SubMotionIndex>=0) && (SubMotionIndex<M->Branch.MixerCount));
 			M->Branch.MixerArray[SubMotionIndex].TimeOffset = TimeOffset;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-JETAPI jeFloat   JETCC jeMotion_GetTimeScale( const jeMotion *M,int SubMotionIndex )
+GRAPI grFloat   GRCC grMotion_GetTimeScale( const grMotion *M,int SubMotionIndex )
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	// wrong node type is neither error nor invalid.  return value is just 1
 
 	if (M->NodeType == MOTION_NODE_BRANCH)
@@ -1082,36 +1082,36 @@ JETAPI jeFloat   JETCC jeMotion_GetTimeScale( const jeMotion *M,int SubMotionInd
 	return 1.0f;
 }
 
-JETAPI jeBoolean  JETCC jeMotion_SetTimeScale( jeMotion *M,int SubMotionIndex,jeFloat TimeScale )
+GRAPI grBoolean  GRCC grMotion_SetTimeScale( grMotion *M,int SubMotionIndex,grFloat TimeScale )
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	assert( TimeScale != 0.0f);
 
 	if (M->NodeType == MOTION_NODE_BRANCH)
 		{
 			assert( (SubMotionIndex>=0) && (SubMotionIndex<M->Branch.MixerCount));
 			M->Branch.MixerArray[SubMotionIndex].TimeScale = TimeScale;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-JETAPI jeFloat    JETCC jeMotion_GetBlendAmount( const jeMotion *M, int SubMotionIndex, jeFloat Time)
+GRAPI grFloat    GRCC grMotion_GetBlendAmount( const grMotion *M, int SubMotionIndex, grFloat Time)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	// wrong node type is neither error nor invalid.  return value is just 0
 
 	if (M->NodeType == MOTION_NODE_BRANCH)
 		{
-			jeQuaternion Dummy;
-			jeVec3d BlendVector;
-			jeFloat BlendAmount;
+			grQuaternion Dummy;
+			grVec3d BlendVector;
+			grFloat BlendAmount;
 
 			assert( (SubMotionIndex>=0) && (SubMotionIndex<M->Branch.MixerCount));
 			assert( M->Branch.MixerArray[SubMotionIndex].Blend != NULL );
-			jePath_SampleChannels(M->Branch.MixerArray[SubMotionIndex].Blend,
+			grPath_SampleChannels(M->Branch.MixerArray[SubMotionIndex].Blend,
 								  ( Time - M->Branch.MixerArray[SubMotionIndex].TimeOffset )
 								    * M->Branch.MixerArray[SubMotionIndex].TimeScale,
 								   &Dummy,&BlendVector);
@@ -1121,10 +1121,10 @@ JETAPI jeFloat    JETCC jeMotion_GetBlendAmount( const jeMotion *M, int SubMotio
 	return 0.0f;
 }
 
-JETAPI jePath    * JETCC jeMotion_GetBlendPath( const jeMotion *M,int SubMotionIndex )
+GRAPI grPath    * GRCC grMotion_GetBlendPath( const grMotion *M,int SubMotionIndex )
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	// wrong node type is neither error nor invalid.  return value is just NULL
 
 	if (M->NodeType == MOTION_NODE_BRANCH)
@@ -1135,40 +1135,40 @@ JETAPI jePath    * JETCC jeMotion_GetBlendPath( const jeMotion *M,int SubMotionI
 	return NULL;
 }
 
-JETAPI jeBoolean  JETCC jeMotion_SetBlendPath( jeMotion *M,int SubMotionIndex, jePath *Blend )
+GRAPI grBoolean  GRCC grMotion_SetBlendPath( grMotion *M,int SubMotionIndex, grPath *Blend )
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	if (M->NodeType == MOTION_NODE_BRANCH)
 		{
-			jePath *P;
+			grPath *P;
 			assert( (SubMotionIndex>=0) && (SubMotionIndex<M->Branch.MixerCount));
 			assert( Blend != NULL );
 			P = M->Branch.MixerArray[SubMotionIndex].Blend;
-			jePath_Destroy(&P);
-			P = jePath_CreateCopy(Blend);
+			grPath_Destroy(&P);
+			P = grPath_CreateCopy(Blend);
 			if ( P == NULL )
 				{
-					jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_SetBlendPath.");
-					return JE_FALSE;
+					grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_SetBlendPath.");
+					return GR_FALSE;
 				}
 			M->Branch.MixerArray[SubMotionIndex].Blend = P;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 
-JETAPI const jeXForm3d * JETCC jeMotion_GetBaseTransform( const jeMotion *M,int SubMotionIndex )
+GRAPI const grXForm3d * GRCC grMotion_GetBaseTransform( const grMotion *M,int SubMotionIndex )
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	// wrong node type is neither error nor invalid.  return value is just NULL
 
 	if (M->NodeType == MOTION_NODE_BRANCH)
 		{
 			assert( (SubMotionIndex>=0) && (SubMotionIndex<M->Branch.MixerCount));
-			if (M->Branch.MixerArray[SubMotionIndex].TransformUsed != JE_FALSE)
+			if (M->Branch.MixerArray[SubMotionIndex].TransformUsed != GR_FALSE)
 				{
 					return &(M->Branch.MixerArray[SubMotionIndex].Transform);
 				}
@@ -1180,10 +1180,10 @@ JETAPI const jeXForm3d * JETCC jeMotion_GetBaseTransform( const jeMotion *M,int 
 	return NULL;
 }
 
-JETAPI jeBoolean  JETCC jeMotion_SetBaseTransform( jeMotion *M,int SubMotionIndex, jeXForm3d *BaseTransform )
+GRAPI grBoolean  GRCC grMotion_SetBaseTransform( grMotion *M,int SubMotionIndex, grXForm3d *BaseTransform )
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	if (M->NodeType == MOTION_NODE_BRANCH)
 		{
@@ -1192,51 +1192,51 @@ JETAPI jeBoolean  JETCC jeMotion_SetBaseTransform( jeMotion *M,int SubMotionInde
 			if (BaseTransform!=NULL)
 				{
 					M->Branch.MixerArray[SubMotionIndex].Transform     = *BaseTransform;
-					M->Branch.MixerArray[SubMotionIndex].TransformUsed = JE_TRUE;
+					M->Branch.MixerArray[SubMotionIndex].TransformUsed = GR_TRUE;
 				}
 			else
 				{
-					M->Branch.MixerArray[SubMotionIndex].TransformUsed = JE_FALSE;
+					M->Branch.MixerArray[SubMotionIndex].TransformUsed = GR_FALSE;
 				}
 					
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 
 #pragma warning( disable : 4701)	// don't want to set Translation until we are ready
-JETAPI jeBoolean JETCC jeMotion_GetTransform( const jeMotion *M, jeFloat Time, jeXForm3d *Transform)
+GRAPI grBoolean GRCC grMotion_GetTransform( const grMotion *M, grFloat Time, grXForm3d *Transform)
 {
 	assert( M         != NULL);
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	switch (M->NodeType)
 		{
 			case (MOTION_NODE_UNDECIDED):
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 				break;
 			case (MOTION_NODE_BRANCH):
 				{
-					jeQuaternion R,Rotation;
-					jeVec3d      T,Translation;
-					jeMotion_Mixer *Mixer;
-					jeFloat MixTime;
+					grQuaternion R,Rotation;
+					grVec3d      T,Translation;
+					grMotion_Mixer *Mixer;
+					grFloat MixTime;
 					int i;
 					int MixCount=0;
 
 					if ( M->Branch.MixerCount == 0 )
 						{
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					assert( M->Branch.MixerCount > 0 );
 
 					for (i=0; i<M->Branch.MixerCount; i++)
 						{
-							jeFloat BlendAmount;
-							jeBoolean DoMix=JE_FALSE;
+							grFloat BlendAmount;
+							grBoolean DoMix=GR_FALSE;
 
 							Mixer = &(M->Branch.MixerArray[i]);
 
@@ -1244,40 +1244,40 @@ JETAPI jeBoolean JETCC jeMotion_GetTransform( const jeMotion *M, jeFloat Time, j
 							assert( Mixer->Blend  != NULL );
 							
 							MixTime = (Time - Mixer->TimeOffset) * Mixer->TimeScale;
-							if (jeMotion_GetTransform(Mixer->Motion,MixTime,Transform)!=JE_FALSE)
+							if (grMotion_GetTransform(Mixer->Motion,MixTime,Transform)!=GR_FALSE)
 								{
-									DoMix=JE_TRUE;
-									if (Mixer->TransformUsed!=JE_FALSE)
+									DoMix=GR_TRUE;
+									if (Mixer->TransformUsed!=GR_FALSE)
 										{
-											jeXForm3d_Multiply(&(Mixer->Transform),Transform,Transform);
+											grXForm3d_Multiply(&(Mixer->Transform),Transform,Transform);
 										}
 								}
 							else
 								{
-									if (Mixer->TransformUsed!=JE_FALSE)
+									if (Mixer->TransformUsed!=GR_FALSE)
 										{
-											DoMix = JE_TRUE;
+											DoMix = GR_TRUE;
 											*Transform = Mixer->Transform;
 										}
 								}
-							if (DoMix!=JE_FALSE)
+							if (DoMix!=GR_FALSE)
 								{
 									if (MixCount==0)
 										{
-											jeQuaternion_FromMatrix(Transform,&Rotation);
+											grQuaternion_FromMatrix(Transform,&Rotation);
 											Translation = Transform->Translation;
 										}
 									else
 										{
-											jeQuaternion_FromMatrix(Transform,&R);
+											grQuaternion_FromMatrix(Transform,&R);
 											T = Transform->Translation;
 											{
-												jeVec3d BlendVector;
-												jeQuaternion Dummy;
-												jePath_SampleChannels(Mixer->Blend,MixTime,&Dummy,&BlendVector);
+												grVec3d BlendVector;
+												grQuaternion Dummy;
+												grPath_SampleChannels(Mixer->Blend,MixTime,&Dummy,&BlendVector);
 												BlendAmount = MOTION_BLEND_PART_OF_VECTOR(BlendVector);
 											}
-											jeQuaternion_Slerp(&Rotation,&R,BlendAmount,&Rotation);
+											grQuaternion_Slerp(&Rotation,&R,BlendAmount,&Rotation);
 											Translation.X = LINEAR_BLEND(Translation.X,T.X,BlendAmount);
 											Translation.Y = LINEAR_BLEND(Translation.Y,T.Y,BlendAmount);
 											Translation.Z = LINEAR_BLEND(Translation.Z,T.Z,BlendAmount);
@@ -1288,22 +1288,22 @@ JETAPI jeBoolean JETCC jeMotion_GetTransform( const jeMotion *M, jeFloat Time, j
 						}
 					if (MixCount>0)
 						{
-							jeQuaternion_ToMatrix(&Rotation,Transform);
+							grQuaternion_ToMatrix(&Rotation,Transform);
 							Transform->Translation = Translation;
-							return JE_TRUE;
+							return GR_TRUE;
 						}
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 				break;
 			case (MOTION_NODE_LEAF):
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 				break;
 			default:
 				assert(0);
 		}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 #pragma warning( default : 4701)	
 
@@ -1311,84 +1311,84 @@ JETAPI jeBoolean JETCC jeMotion_GetTransform( const jeMotion *M, jeFloat Time, j
 //--------------------------------------------------------------------------------------------
 //   Event Support
 
-JETAPI jeBoolean JETCC jeMotion_GetEventExtents(const jeMotion *M,jeFloat *FirstEventTime,jeFloat *LastEventTime)
+GRAPI grBoolean GRCC grMotion_GetEventExtents(const grMotion *M,grFloat *FirstEventTime,grFloat *LastEventTime)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	assert( FirstEventTime != NULL );
 	assert( LastEventTime != NULL );
 
-	return jeTKEvents_GetExtents(M->Leaf.Events,FirstEventTime,LastEventTime);
+	return grTKEvents_GetExtents(M->Leaf.Events,FirstEventTime,LastEventTime);
 }	
 
 
 	// Inserts the new event and corresponding string.
-JETAPI jeBoolean JETCC jeMotion_InsertEvent(jeMotion *M, jePath_TimeType tKey, const char* String)
+GRAPI grBoolean GRCC grMotion_InsertEvent(grMotion *M, grPath_TimeType tKey, const char* String)
 {
 	assert( M != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	assert( String != NULL );
 
 	if (M->NodeType != MOTION_NODE_LEAF )
 		{
-			jeErrorLog_Add(JE_ERR_BAD_PARAMETER, "jeMotion_InsertEvent: Motion not a leaf - Can only insert events in a leaf.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_BAD_PARAMETER, "grMotion_InsertEvent: Motion not a leaf - Can only insert events in a leaf.");
+			return GR_FALSE;
 		}
 
 	if (M->Leaf.Events == NULL)
 		{
-			M->Leaf.Events = jeTKEvents_Create();
+			M->Leaf.Events = grTKEvents_Create();
 			if ( M->Leaf.Events == NULL )
 				{
-					jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_InsertEvent.");
-					return JE_FALSE;
+					grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_InsertEvent.");
+					return GR_FALSE;
 				}
 		}
-	if (jeTKEvents_Insert(M->Leaf.Events, tKey,String)==JE_FALSE)
+	if (grTKEvents_Insert(M->Leaf.Events, tKey,String)==GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_InsertEvent.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_InsertEvent.");
+			return GR_FALSE;
 		};
-	return JE_TRUE;
+	return GR_TRUE;
 }
 	
 
 			
 	// Deletes the event
-JETAPI jeBoolean JETCC jeMotion_DeleteEvent(jeMotion *M, jePath_TimeType tKey)
+GRAPI grBoolean GRCC grMotion_DeleteEvent(grMotion *M, grPath_TimeType tKey)
 {
 	assert( M != NULL);
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	if (M->NodeType != MOTION_NODE_LEAF )
 		{
-			jeErrorLog_Add(JE_ERR_BAD_PARAMETER, "jeMotion_DeleteEvent: Motion not a leaf - Can only delete events in a leaf.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_BAD_PARAMETER, "grMotion_DeleteEvent: Motion not a leaf - Can only delete events in a leaf.");
+			return GR_FALSE;
 		}
 	if ( M->Leaf.Events == NULL )
 		{
-			jeErrorLog_Add(JE_ERR_SEARCH_FAILURE, "jeMotion_DeleteEvent: no events in motion.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SEARCH_FAILURE, "grMotion_DeleteEvent: no events in motion.");
+			return GR_FALSE;
 		}
-	if (jeTKEvents_Delete(M->Leaf.Events,tKey)==JE_FALSE)
+	if (grTKEvents_Delete(M->Leaf.Events,tKey)==GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_DeleteEvent.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_DeleteEvent.");
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI void JETCC jeMotion_SetupEventIterator(
-	jeMotion *M,
-	jePath_TimeType StartTime,				// Inclusive search start
-	jePath_TimeType EndTime)				// Non-inclusive search stop
+GRAPI void GRCC grMotion_SetupEventIterator(
+	grMotion *M,
+	grPath_TimeType StartTime,				// Inclusive search start
+	grPath_TimeType EndTime)				// Non-inclusive search stop
 	// For searching or querying the array for events between two times
 	// times are compaired [StartTime,EndTime), '[' is inclusive, ')' is 
-	// non-inclusive.  This prepares the jeMotion_GetNextEvent() function.
+	// non-inclusive.  This prepares the grMotion_GetNextEvent() function.
 {
 	int i;
 	assert( M != NULL);
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	switch (M->NodeType)
 		{
@@ -1397,17 +1397,17 @@ JETAPI void JETCC jeMotion_SetupEventIterator(
 			case (MOTION_NODE_LEAF):
 				if ( M->Leaf.Events != NULL )
 					{
-						jeTKEvents_SetupIterator(M->Leaf.Events,StartTime,EndTime);
+						grTKEvents_SetupIterator(M->Leaf.Events,StartTime,EndTime);
 					}	
 				break;
 			case (MOTION_NODE_BRANCH):
 				for (i=0; i<M->Branch.MixerCount; i++)
 					{
-						jeMotion_Mixer *Mixer;
+						grMotion_Mixer *Mixer;
 				
 						Mixer = &(M->Branch.MixerArray[i]);
 
-						jeMotion_SetupEventIterator(Mixer->Motion,
+						grMotion_SetupEventIterator(Mixer->Motion,
 							(StartTime - Mixer->TimeOffset) * Mixer->TimeScale,
 							(EndTime - Mixer->TimeOffset) * Mixer->TimeScale);
 					}
@@ -1419,19 +1419,19 @@ JETAPI void JETCC jeMotion_SetupEventIterator(
 }		
 
 
-JETAPI jeBoolean JETCC jeMotion_GetNextEvent(
-	jeMotion *M,						// Event list to iterate
-	jePath_TimeType *pTime,				// Return time, if found
+GRAPI grBoolean GRCC grMotion_GetNextEvent(
+	grMotion *M,						// Event list to iterate
+	grPath_TimeType *pTime,				// Return time, if found
 	const char **ppEventString)		// Return data, if found
-	// Iterates from StartTime to EndTime as setup in jeMotion_SetupEventIterator()
+	// Iterates from StartTime to EndTime as setup in grMotion_SetupEventIterator()
 	// and for each event between these times [StartTime,EndTime)
 	// this function will return Time and EventString returned for that event
 	// and the iterator will be positioned for the next search.  When there 
-	// are no more events in the range, this function will return JE_FALSE (Time
+	// are no more events in the range, this function will return GR_FALSE (Time
 	// will be 0 and ppEventString will be empty).
 {
 	assert( M != NULL);
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	assert( pTime != NULL );
 	assert( ppEventString != NULL );
@@ -1440,22 +1440,22 @@ JETAPI jeBoolean JETCC jeMotion_GetNextEvent(
 		{
 			case (MOTION_NODE_UNDECIDED):
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 				break;
 			case (MOTION_NODE_LEAF):
 				if ( M->Leaf.Events != NULL )
 					{
-						return jeTKEvents_GetNextEvent(M->Leaf.Events,pTime,ppEventString);
+						return grTKEvents_GetNextEvent(M->Leaf.Events,pTime,ppEventString);
 					}	
 				break;
 			case (MOTION_NODE_BRANCH):
 				while (M->Branch.CurrentEventIterator < M->Branch.MixerCount)
 					{
-						if (jeMotion_GetNextEvent(
+						if (grMotion_GetNextEvent(
 									M->Branch.MixerArray[M->Branch.CurrentEventIterator].Motion,
-									pTime,ppEventString) !=JE_FALSE)
-							return JE_TRUE;
+									pTime,ppEventString) !=GR_FALSE)
+							return GR_TRUE;
 						M->Branch.CurrentEventIterator++;
 					}
 				break;
@@ -1463,7 +1463,7 @@ JETAPI jeBoolean JETCC jeMotion_GetNextEvent(
 				assert(0);
 		}
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 	
 //------------------------------------------------------------------------------------------------------
@@ -1477,49 +1477,49 @@ typedef struct
 	int PathCount;
 	int32 NameChecksum;
 	uint32 Flags;
-} jeMotion_FileLeafHeader;
+} grMotion_FileLeafHeader;
 
-static jeBoolean JETCF jeMotion_ReadBranch(jeMotion *M, jeVFile *pFile)
+static grBoolean GRCF grMotion_ReadBranch(grMotion *M, grVFile *pFile)
 {
 	assert( M != NULL );
 	assert( pFile != NULL );
-	if (jeMotion_InitNodeAsBranch(M)==JE_FALSE)
+	if (grMotion_InitNodeAsBranch(M)==GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE , "jeMotion_ReadBranch.");
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE , "grMotion_ReadBranch.");
+			return GR_FALSE;
 		}
 
 	#pragma message("finish this")
-	jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "jeMotion_ReadBranch: not implemented.");
-	return JE_FALSE;
+	grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "grMotion_ReadBranch: not implemented.");
+	return GR_FALSE;
 }
 
-static jeBoolean JETCF jeMotion_ReadLeaf(jeMotion *M, jeVFile *pFile)
+static grBoolean GRCF grMotion_ReadLeaf(grMotion *M, grVFile *pFile)
 {
 	int i;
-	jeMotion_FileLeafHeader Header;
+	grMotion_FileLeafHeader Header;
 	assert( M != NULL );
 	assert( pFile != NULL );
-	if (jeMotion_InitNodeAsLeaf(M,JE_FALSE)==JE_FALSE)
+	if (grMotion_InitNodeAsLeaf(M,GR_FALSE)==GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE,"jeMotion_ReadLeaf.");
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE,"grMotion_ReadLeaf.");
+			return GR_FALSE;
 		}
 
-	if (jeVFile_Read(pFile, &Header, sizeof(jeMotion_FileLeafHeader)) == JE_FALSE)
+	if (grVFile_Read(pFile, &Header, sizeof(grMotion_FileLeafHeader)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_READ,"jeMotion_ReadLeaf: failed to read leaf header."); 
-			return JE_FALSE; 
+			grErrorLog_Add( GR_ERR_FILEIO_READ,"grMotion_ReadLeaf: failed to read leaf header."); 
+			return GR_FALSE; 
 		}
 	M->Leaf.NameChecksum = Header.NameChecksum;
 	
 	if (Header.Flags & 0x1)
 		{
-			M->Leaf.Events = jeTKEvents_CreateFromFile(pFile);
+			M->Leaf.Events = grTKEvents_CreateFromFile(pFile);
 			if (M->Leaf.Events == NULL )
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE,"jeMotion_ReadLeaf.");
-					return JE_FALSE; 
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE,"grMotion_ReadLeaf.");
+					return GR_FALSE; 
 				}
 		}
 	else
@@ -1529,11 +1529,11 @@ static jeBoolean JETCF jeMotion_ReadLeaf(jeMotion *M, jeVFile *pFile)
 
 	if (Header.Flags & 0x2)
 		{
-			M->Leaf.NameArray = jeStrBlock_CreateFromFile(pFile);
+			M->Leaf.NameArray = grStrBlock_CreateFromFile(pFile);
 			if (M->Leaf.NameArray == NULL)
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE,"jeMotion_ReadLeaf.");
-					return JE_FALSE; 
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE,"grMotion_ReadLeaf.");
+					return GR_FALSE; 
 				}
 		}
 	else
@@ -1542,95 +1542,95 @@ static jeBoolean JETCF jeMotion_ReadLeaf(jeMotion *M, jeVFile *pFile)
 		}
 
 	M->Leaf.PathCount = 0;
-	M->Leaf.PathArray = (jePath **)jeRam_Allocate( Header.PathCount * sizeof(jePath*) );
+	M->Leaf.PathArray = (grPath **)grRam_Allocate( Header.PathCount * sizeof(grPath*) );
 
 	if ( M->Leaf.PathArray == NULL )
 		{	
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE,"jeMotion_ReadLeaf.");
-			return JE_TRUE;
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE,"grMotion_ReadLeaf.");
+			return GR_TRUE;
 		}
 
 	for (i=0; i<Header.PathCount; i++)
 		{
-			M->Leaf.PathArray[i] = jePath_CreateFromFile(pFile);
+			M->Leaf.PathArray[i] = grPath_CreateFromFile(pFile);
 			if (M->Leaf.PathArray[i] == NULL )
 				{
-					jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE,"jeMotion_ReadLeaf: failed to read path.",jeErrorLog_IntToString(i));
-					return JE_FALSE; 
+					grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE,"grMotion_ReadLeaf: failed to read path.",grErrorLog_IntToString(i));
+					return GR_FALSE; 
 				}
 			M->Leaf.PathCount++;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jeMotion* JETCC jeMotion_CreateFromFile(jeVFile* pFile)
+GRAPI grMotion* GRCC grMotion_CreateFromFile(grVFile* pFile)
 {
 	uint32 u;	
-	jeBoolean MaintainNames;
+	grBoolean MaintainNames;
 	int NodeType;
 	int NameLength;
-	jeMotion *M;
+	grMotion *M;
 
 	assert( pFile != NULL );
 
-	if(jeVFile_Read(pFile, &u, sizeof(u)) == JE_FALSE)
+	if(grVFile_Read(pFile, &u, sizeof(u)) == GR_FALSE)
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ , "jeMotion_CreateFromFile: failed to read motion header.");
+		grErrorLog_Add( GR_ERR_FILEIO_READ , "grMotion_CreateFromFile: failed to read motion header.");
 		return NULL;
 	}
 
 	if(u != MOTION_BIN_FILE_TYPE)
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_FORMAT , "jeMotion_CreateFromFile: wrong file type - not a motion.");
+		grErrorLog_Add( GR_ERR_FILEIO_FORMAT , "grMotion_CreateFromFile: wrong file type - not a motion.");
 		return NULL;
 	}
 	
-	if(jeVFile_Read(pFile, &u, sizeof(u)) == JE_FALSE)
+	if(grVFile_Read(pFile, &u, sizeof(u)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_READ , "jeMotion_CreateFromFile: failed to read version number.");
+			grErrorLog_Add( GR_ERR_FILEIO_READ , "grMotion_CreateFromFile: failed to read version number.");
 			return NULL;
 		}
 	if (u!=MOTION_FILE_VERSION)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_VERSION , "jeMotion_CreateFromFile: bad or old version number.");
+			grErrorLog_Add( GR_ERR_FILEIO_VERSION , "grMotion_CreateFromFile: bad or old version number.");
 			return NULL;
 		}
-	if(jeVFile_Read(pFile, &u, sizeof(u)) == JE_FALSE)
+	if(grVFile_Read(pFile, &u, sizeof(u)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_READ , "jeMotion_CreateFromFile: failed to read motion flags.");
+			grErrorLog_Add( GR_ERR_FILEIO_READ , "grMotion_CreateFromFile: failed to read motion flags.");
 			return NULL;
 		}
 
 	if (u & (1<<16)) 
 		{
-			MaintainNames = JE_TRUE;
+			MaintainNames = GR_TRUE;
 		}
 	else
 		{
-			MaintainNames = JE_FALSE;
+			MaintainNames = GR_FALSE;
 		}
 
 	NameLength = (u & 0xFFFF);
 	NodeType   = (u >> 24);
-	M = jeMotion_Create(MaintainNames);
+	M = grMotion_Create(MaintainNames);
 	if ( M == NULL )
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_CreateFromFile.");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grMotion_CreateFromFile.");
 			return NULL;
 		}
 	if (NameLength>0)
 		{
-			M->Name = (char *)jeRam_Allocate(NameLength);
+			M->Name = (char *)grRam_Allocate(NameLength);
 			if ( M->Name == NULL )
 				{
-					jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jeMotion_CreateFromFile.");
-					jeMotion_Destroy(&M);
+					grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grMotion_CreateFromFile.");
+					grMotion_Destroy(&M);
 					return NULL;
 				}
- 			if ( jeVFile_Read (pFile, M->Name, NameLength ) == JE_FALSE )
+ 			if ( grVFile_Read (pFile, M->Name, NameLength ) == GR_FALSE )
 				{
-					jeErrorLog_Add( JE_ERR_FILEIO_READ , "jeMotion_CreateFromFile: failed to read motion name.");
-					jeMotion_Destroy(&M);
+					grErrorLog_Add( GR_ERR_FILEIO_READ , "grMotion_CreateFromFile: failed to read motion name.");
+					grMotion_Destroy(&M);
 					return NULL;
 				}
 		}
@@ -1643,18 +1643,18 @@ JETAPI jeMotion* JETCC jeMotion_CreateFromFile(jeVFile* pFile)
 			case (MOTION_NODE_UNDECIDED):
 				break;
 			case (MOTION_NODE_BRANCH):
-				if (jeMotion_ReadBranch(M,pFile)==JE_FALSE)
+				if (grMotion_ReadBranch(M,pFile)==GR_FALSE)
 					{
-						jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_CreateFromFile.");
-						jeMotion_Destroy(&M);
+						grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "grMotion_CreateFromFile.");
+						grMotion_Destroy(&M);
 						return NULL;
 					}
 				break;
 			case (MOTION_NODE_LEAF):
-				if (jeMotion_ReadLeaf(M,pFile)==JE_FALSE)
+				if (grMotion_ReadLeaf(M,pFile)==GR_FALSE)
 					{
-						jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_CreateFromFile.");
-						jeMotion_Destroy(&M);
+						grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "grMotion_CreateFromFile.");
+						grMotion_Destroy(&M);
 						return NULL;
 					}
 				break;
@@ -1666,10 +1666,10 @@ JETAPI jeMotion* JETCC jeMotion_CreateFromFile(jeVFile* pFile)
 }
 
 
-static jeBoolean JETCF jeMotion_WriteLeaf(const jeMotion *M, jeVFile *pFile)
+static grBoolean GRCF grMotion_WriteLeaf(const grMotion *M, grVFile *pFile)
 {
 	int i;
-	jeMotion_FileLeafHeader Header;
+	grMotion_FileLeafHeader Header;
 
 	#define MOTION_LEAF_EVENTS_FLAG    (1)
 	#define MOTION_LEAF_NAMEARRAY_FLAG (2)
@@ -1677,7 +1677,7 @@ static jeBoolean JETCF jeMotion_WriteLeaf(const jeMotion *M, jeVFile *pFile)
 	assert( M != NULL );
 	assert( pFile != NULL );
 	assert( M->NodeType == MOTION_NODE_LEAF);
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 	Header.PathCount = M->Leaf.PathCount;
 	Header.NameChecksum = M->Leaf.NameChecksum;
@@ -1694,77 +1694,77 @@ static jeBoolean JETCF jeMotion_WriteLeaf(const jeMotion *M, jeVFile *pFile)
 		}
 		
 		
-	if (jeVFile_Write(pFile, &Header, sizeof(jeMotion_FileLeafHeader)) == JE_FALSE)
+	if (grVFile_Write(pFile, &Header, sizeof(grMotion_FileLeafHeader)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "jeMotion_WriteLeaf: failed to write leaf header."); 
-			return JE_FALSE; 
+			grErrorLog_Add( GR_ERR_FILEIO_WRITE, "grMotion_WriteLeaf: failed to write leaf header."); 
+			return GR_FALSE; 
 		}
 			
 
 	if (Header.Flags & MOTION_LEAF_EVENTS_FLAG)
 		{
-			if (jeTKEvents_WriteToFile(M->Leaf.Events,pFile)==JE_FALSE)
+			if (grTKEvents_WriteToFile(M->Leaf.Events,pFile)==GR_FALSE)
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_WriteLeaf."); 
-					return JE_FALSE; 
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "grMotion_WriteLeaf."); 
+					return GR_FALSE; 
 				}
 		}
 
 	
 	if (Header.Flags & MOTION_LEAF_NAMEARRAY_FLAG)
 		{
-			if (jeStrBlock_WriteToFile(M->Leaf.NameArray,pFile)==JE_FALSE)
+			if (grStrBlock_WriteToFile(M->Leaf.NameArray,pFile)==GR_FALSE)
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_WriteLeaf."); 
-					return JE_FALSE; 
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "grMotion_WriteLeaf."); 
+					return GR_FALSE; 
 				}
 		}
 
 	for (i=0; i<M->Leaf.PathCount; i++)
 		{
-			if (jePath_WriteToFile(M->Leaf.PathArray[i],pFile) == JE_FALSE)
+			if (grPath_WriteToFile(M->Leaf.PathArray[i],pFile) == GR_FALSE)
 				{
-					jeErrorLog_AddString( JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_WriteLeaf: failed to write path", jeErrorLog_IntToString(i)); 
-					return JE_FALSE; 
+					grErrorLog_AddString( GR_ERR_SUBSYSTEM_FAILURE, "grMotion_WriteLeaf: failed to write path", grErrorLog_IntToString(i)); 
+					return GR_FALSE; 
 				}
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean JETCF jeMotion_WriteBranch(const jeMotion *M, jeVFile *pFile)
+static grBoolean GRCF grMotion_WriteBranch(const grMotion *M, grVFile *pFile)
 {
 	assert( M != NULL );
 	assert( pFile != NULL );
 	assert( M->NodeType == MOTION_NODE_BRANCH);
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 	#pragma message("finish this")
-	jeErrorLog_Add(JE_ERR_INTERNAL_RESOURCE,"jeMotion_WriteBranch: saving of compound motions not implemented.");
-	return JE_FALSE;
+	grErrorLog_Add(GR_ERR_INTERNAL_RESOURCE,"grMotion_WriteBranch: saving of compound motions not implemented.");
+	return GR_FALSE;
 }
 
 
-JETAPI jeBoolean JETCC jeMotion_WriteToFile(const jeMotion *M,jeVFile *pFile)
+GRAPI grBoolean GRCC grMotion_WriteToFile(const grMotion *M,grVFile *pFile)
 {
 	uint32 u;
 
 	assert( M != NULL );
 	assert( pFile != NULL );
-	assert( jeMotion_IsValid(M) != JE_FALSE );
+	assert( grMotion_IsValid(M) != GR_FALSE );
 
 
 	// Write the format flag
 	u = MOTION_BIN_FILE_TYPE;
-	if(jeVFile_Write(pFile, &u, sizeof(u)) == JE_FALSE)
+	if(grVFile_Write(pFile, &u, sizeof(u)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "jeMotion_WriteToFile: failed to write motion header.");
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_FILEIO_WRITE, "grMotion_WriteToFile: failed to write motion header.");
+			return GR_FALSE;
 		}
 
 	u = MOTION_FILE_VERSION;
-	if (jeVFile_Write(pFile, &u, sizeof(u)) == JE_FALSE)
+	if (grVFile_Write(pFile, &u, sizeof(u)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "jeMotion_WriteToFile: failed to write motion version number.");
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_FILEIO_WRITE, "grMotion_WriteToFile: failed to write motion version number.");
+			return GR_FALSE;
 		}
 	if ( M->Name != NULL )
 		{
@@ -1776,23 +1776,23 @@ JETAPI jeBoolean JETCC jeMotion_WriteToFile(const jeMotion *M,jeVFile *pFile)
 		}
 	assert( u < 0xFFFF );
 	
-	if (M->MaintainNames != JE_FALSE)
+	if (M->MaintainNames != GR_FALSE)
 		{
 			u |= (1<<16);
 		}
 	assert( M->NodeType < 0xFF );
 	u |= (M->NodeType << 24);
-	if (jeVFile_Write(pFile, &u, sizeof(u)) == JE_FALSE)
+	if (grVFile_Write(pFile, &u, sizeof(u)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_WRITE, "jeMotion_WriteToFile: failed to write motion flags.");
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_FILEIO_WRITE, "grMotion_WriteToFile: failed to write motion flags.");
+			return GR_FALSE;
 		}
 	if ((u&0xFFFF) > 0)
 		{
-			if (jeVFile_Write(pFile, M->Name, (u&0xFFFF)) == JE_FALSE)
+			if (grVFile_Write(pFile, M->Name, (u&0xFFFF)) == GR_FALSE)
 				{
-					jeErrorLog_AddString( JE_ERR_FILEIO_WRITE, "jeMotion_WriteToFile: failed to write motion name", M->Name);
-					return JE_FALSE;
+					grErrorLog_AddString( GR_ERR_FILEIO_WRITE, "grMotion_WriteToFile: failed to write motion name", M->Name);
+					return GR_FALSE;
 				}
 		}
 
@@ -1801,22 +1801,22 @@ JETAPI jeBoolean JETCC jeMotion_WriteToFile(const jeMotion *M,jeVFile *pFile)
 			case (MOTION_NODE_UNDECIDED):
 				break;
 			case (MOTION_NODE_BRANCH):
-				if (jeMotion_WriteBranch(M,pFile)==JE_FALSE)
+				if (grMotion_WriteBranch(M,pFile)==GR_FALSE)
 					{
-						jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_WriteToFile.");
-						return JE_FALSE;
+						grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "grMotion_WriteToFile.");
+						return GR_FALSE;
 					}
 				break;
 			case (MOTION_NODE_LEAF):
-				if (jeMotion_WriteLeaf(M,pFile)==JE_FALSE)
+				if (grMotion_WriteLeaf(M,pFile)==GR_FALSE)
 					{
-						jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "jeMotion_WriteToFile.");
-						return JE_FALSE;
+						grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "grMotion_WriteToFile.");
+						return GR_FALSE;
 					}
 				break;
 			default:
 				assert(0);
 				break;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }

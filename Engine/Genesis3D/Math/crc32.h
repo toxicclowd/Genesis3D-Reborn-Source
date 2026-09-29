@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_CRC32_H
-#define JE_CRC32_H
+#ifndef GR_CRC32_H
+#define GR_CRC32_H
 
 #include "BaseType.h"
 

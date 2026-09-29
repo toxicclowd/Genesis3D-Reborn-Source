@@ -39,7 +39,7 @@ struct tag_Array
 
 
 // Initialize an allocated array object
-jeBoolean Array_Init (Array *pArray, int InitialSize, int ItemSize);
+grBoolean Array_Init (Array *pArray, int InitialSize, int ItemSize);
 
 // Free memory allocated by an array's items
 void Array_Uninit (Array *pArray);

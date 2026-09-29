@@ -48,7 +48,7 @@ extern int tune_param;
 
 #define SIGN_CONTEXTS	9
 
-jeBoolean coderBPBFInit(coder *c);
+grBoolean coderBPBFInit(coder *c);
 void coderBPBFFree(coder *c);
 void coderBPBFEncodeBandBP(coderParams *P);
 void coderBPBFDecodeBandBP(coderParams *P);
@@ -70,13 +70,13 @@ typedef struct
 	int stats_pt[NUM_CONTEXTS];
 } bpbfInfo;
 
-jeBoolean coderBPBFInit(coder *c)
+grBoolean coderBPBFInit(coder *c)
 {
 bpbfInfo *d;
 int i;
 
 	if ( (d = (bpbfInfo *)new(bpbfInfo)) == NULL )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	c->data = d;
 
@@ -92,7 +92,7 @@ int i;
 		d->signs_pt[i] = 200;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 void coderBPBFFree(coder *c)

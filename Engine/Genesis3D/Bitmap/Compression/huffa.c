@@ -38,31 +38,31 @@
 
 long MaxIn(long *Array,long Len); /* find max utility */
 
-jeBoolean HuffArray(uint8 *RawArray,uint32 RawLen,
+grBoolean HuffArray(uint8 *RawArray,uint32 RawLen,
 		 uint8 *HuffArray,uint32 * HuffArrayLenPtr,int Type);
 
-jeBoolean O0HuffArray(uint8 *RawArray,uint32 RawLen,
-		 uint8 *HuffArray,uint32 * HuffArrayLenPtr,jeBoolean CompressFlag);
+grBoolean O0HuffArray(uint8 *RawArray,uint32 RawLen,
+		 uint8 *HuffArray,uint32 * HuffArrayLenPtr,grBoolean CompressFlag);
 
-jeBoolean O0HuffArrayNoBlock(uint8 *RawArray,uint32 RawLen,
-							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,jeBoolean CompressFlag);
+grBoolean O0HuffArrayNoBlock(uint8 *RawArray,uint32 RawLen,
+							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,grBoolean CompressFlag);
 
-jeBoolean O0HuffArrayBII_RT(uint8 *rawArray,uint32 rawLen,struct LBitIOInfo * BII,jeBoolean cFlag);
-jeBoolean O0HuffArrayBII(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,jeBoolean CompressFlag);
-jeBoolean O0HuffArrayBII_block(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,jeBoolean CompressFlag);
-jeBoolean O0HuffArrayBII_noblock(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,jeBoolean CompressFlag);
+grBoolean O0HuffArrayBII_RT(uint8 *rawArray,uint32 rawLen,struct LBitIOInfo * BII,grBoolean cFlag);
+grBoolean O0HuffArrayBII(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,grBoolean CompressFlag);
+grBoolean O0HuffArrayBII_block(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,grBoolean CompressFlag);
+grBoolean O0HuffArrayBII_noblock(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,grBoolean CompressFlag);
 
-jeBoolean O1HuffArray(uint8 *RawArray,uint32 RawLen,
-							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,jeBoolean CompressFlag);
+grBoolean O1HuffArray(uint8 *RawArray,uint32 RawLen,
+							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,grBoolean CompressFlag);
 
 /*********************** choose order 0 or 1 or raw ***********/
 
-jeBoolean HuffArray(uint8 *RawArray,uint32 RawLen,
+grBoolean HuffArray(uint8 *RawArray,uint32 RawLen,
 		 uint8 *HuffArray,uint32 * HuffArrayLenPtr,int Type)
 {
 char * HuffExitMess = 0;
 
-if ( RawLen == 0 ) return JE_TRUE;
+if ( RawLen == 0 ) return GR_TRUE;
 
 if ( Type == HUFFA_TYPE_BEST )
 	{
@@ -74,15 +74,15 @@ if ( Type == HUFFA_TYPE_BEST )
 	Type = HUFFA_TYPE_NONE;
 	BestLen = RawLen;
 
-	if ( ! O0HuffArray(RawArray,RawLen,HuffArray,&CurLen,JE_TRUE) ) return(0);
+	if ( ! O0HuffArray(RawArray,RawLen,HuffArray,&CurLen,GR_TRUE) ) return(0);
 
 	if ( CurLen < BestLen ) { BestLen = CurLen; Type = HUFFA_TYPE_O0; }
 
-	if ( ! O0HuffArrayNoBlock(RawArray,RawLen,HuffArray,&CurLen,JE_TRUE) ) return(0);
+	if ( ! O0HuffArrayNoBlock(RawArray,RawLen,HuffArray,&CurLen,GR_TRUE) ) return(0);
 
 	if ( CurLen < BestLen ) { BestLen = CurLen; Type = HUFFA_TYPE_O0NB; }
 
-	if ( ! O1HuffArray(RawArray,RawLen,HuffArray,&CurLen,JE_TRUE) ) return(0);
+	if ( ! O1HuffArray(RawArray,RawLen,HuffArray,&CurLen,GR_TRUE) ) return(0);
 	
 	if ( CurLen < BestLen ) { BestLen = CurLen; Type = HUFFA_TYPE_O1; }
 
@@ -102,12 +102,12 @@ if ( Type == HUFFA_TYPE_BEST )
 	}
 else
 	{
-	jeBoolean success=JE_FALSE,CompressFlag;
+	grBoolean success=GR_FALSE,CompressFlag;
 
 	if ( Type == HUFFA_TYPE_DEC )
-		CompressFlag = JE_FALSE;
+		CompressFlag = GR_FALSE;
 	else
-		CompressFlag = JE_TRUE;
+		CompressFlag = GR_TRUE;
 
 	if ( CompressFlag )
 		*HuffArray++ = Type;
@@ -131,7 +131,7 @@ else
 			else
 				memcpy(RawArray,HuffArray,RawLen);
 			*HuffArrayLenPtr = RawLen;
-			success = JE_TRUE;
+			success = GR_TRUE;
 			break;
 		default:
 			CleanUp("Got invalid type flag");
@@ -148,11 +148,11 @@ EndOfFunc:
 if ( HuffExitMess )
   {
   BrandoError(HuffExitMess);
-  return(JE_FALSE);
+  return(GR_FALSE);
   }
 else
   {
-  return(JE_TRUE);
+  return(GR_TRUE);
   }
 }
 
@@ -160,13 +160,13 @@ else
 
 #define HUFF_MINLEN 8
 
-jeBoolean O0HuffArray(uint8 *RawArray,uint32 RawLen,
-							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,jeBoolean CompressFlag)
+grBoolean O0HuffArray(uint8 *RawArray,uint32 RawLen,
+							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,grBoolean CompressFlag)
 {
 struct LBitIOInfo * BII;
-jeBoolean ret;
+grBoolean ret;
 
-if ( RawLen == 0 ) return JE_TRUE;
+if ( RawLen == 0 ) return GR_TRUE;
 
 if ( (BII = LBitIO_Init(HuffArray)) == NULL )
 	{ BrandoError("LBitIO_Init failed!"); return(0); }
@@ -188,13 +188,13 @@ LBitIO_CleanUp(BII);
 return(ret);
 }
 
-jeBoolean O0HuffArrayNoBlock(uint8 *RawArray,uint32 RawLen,
-							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,jeBoolean CompressFlag)
+grBoolean O0HuffArrayNoBlock(uint8 *RawArray,uint32 RawLen,
+							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,grBoolean CompressFlag)
 {
 struct LBitIOInfo * BII;
-jeBoolean ret;
+grBoolean ret;
 
-if ( RawLen == 0 ) return JE_TRUE;
+if ( RawLen == 0 ) return GR_TRUE;
 
 if ( (BII = LBitIO_Init(HuffArray)) == NULL )
 	{ BrandoError("LBitIO_Init failed!"); return(0); }
@@ -218,14 +218,14 @@ return(ret);
 
 /** kind of a cheezy way to do the _RT **/
 
-jeBoolean O0HuffArrayBII_RT(uint8 *rawArray,uint32 rawLen,struct LBitIOInfo * BII,jeBoolean cFlag)
+grBoolean O0HuffArrayBII_RT(uint8 *rawArray,uint32 rawLen,struct LBitIOInfo * BII,grBoolean cFlag)
 {
 uint8 *runArray;
 uint32 runLen;
-jeBoolean ret;
+grBoolean ret;
 
-	if ( (runArray = (uint8*)jeRam_Allocate(rawLen + (rawLen>>3) + 1024)) == NULL )
-		return JE_FALSE;
+	if ( (runArray = (uint8*)grRam_Allocate(rawLen + (rawLen>>3) + 1024)) == NULL )
+		return GR_FALSE;
 
 	if ( cFlag ) {
 		runLen = doRunTransform(rawArray,rawLen,runArray);
@@ -238,7 +238,7 @@ jeBoolean ret;
 			ret = O0HuffArrayBII(rawArray,rawLen,BII,cFlag);
 		}
 	} else {
-		jeBoolean doRT;
+		grBoolean doRT;
 		LBitIO_ReadBit(BII,doRT);
 		if ( doRT ) {
 			runLen = cu_getExpanding_bii(BII,14,4);
@@ -257,10 +257,10 @@ return ret;
 #define DOBLOCK_MINLEN 1024
 #define DOBLOCK_DIVISOR 4
 
-jeBoolean O0HuffArrayBII(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,jeBoolean CompressFlag)
+grBoolean O0HuffArrayBII(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,grBoolean CompressFlag)
 {
 
-if ( RawLen == 0 ) return JE_TRUE;
+if ( RawLen == 0 ) return GR_TRUE;
 
 if ( RawLen < DOBLOCK_MINLEN )
 	{
@@ -268,15 +268,15 @@ if ( RawLen < DOBLOCK_MINLEN )
 	}
 else
 	{
-	jeBoolean doblock=0;
+	grBoolean doblock=0;
 
 	if ( CompressFlag )
 		{
 		long MaxCount,i;
 		long * CharCounts = NULL;
 
-		if ( (CharCounts = (long *)jeRam_Allocate(256*sizeof(long))) == NULL )
-			{ BrandoError("jeRam_Allocate failed!"); return(0); }
+		if ( (CharCounts = (long *)grRam_Allocate(256*sizeof(long))) == NULL )
+			{ BrandoError("grRam_Allocate failed!"); return(0); }
 
 		memclear(CharCounts,256*sizeof(long));
 		for(i=0;i<RawLen;i++) CharCounts[RawArray[i]] ++;
@@ -300,13 +300,13 @@ return(0);
 /** this is the core routine of it all, the only one that
 		actually does huffman: **/
 
-jeBoolean O0HuffArrayBII_noblock(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,jeBoolean CompressFlag)
+grBoolean O0HuffArrayBII_noblock(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,grBoolean CompressFlag)
 {
 struct Huff2Info * HI = NULL;
 long * CharCounts = NULL;
 char * HuffExitMess = NULL;
 
-if ( RawLen == 0 ) return JE_TRUE;
+if ( RawLen == 0 ) return GR_TRUE;
 
 #ifdef DEBUG
 if ( CompressFlag )
@@ -353,8 +353,8 @@ else //Encode
 	{
 	long i;
 
-	if ( (CharCounts = (long *)jeRam_Allocate(256*sizeof(long))) == NULL )
-		CleanUp("jeRam_Allocate failed!");
+	if ( (CharCounts = (long *)grRam_Allocate(256*sizeof(long))) == NULL )
+		CleanUp("grRam_Allocate failed!");
 
 	memclear(CharCounts,256*sizeof(long));
 	for(i=0;i<RawLen;i++) CharCounts[RawArray[i]] ++;
@@ -396,15 +396,15 @@ if ( HI ) Huff2_CleanUp(HI);
 if ( HuffExitMess )
   {
   BrandoError(HuffExitMess);
-  return(JE_FALSE);
+  return(GR_FALSE);
   }
 else
   {
-  return(JE_TRUE);
+  return(GR_TRUE);
   }
 }
 
-jeBoolean O0HuffArrayBII_block(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,jeBoolean CompressFlag)
+grBoolean O0HuffArrayBII_block(uint8 *RawArray,uint32 RawLen,struct LBitIOInfo * BII,grBoolean CompressFlag)
 {
 long * CharCounts = NULL;
 char * HuffExitMess = NULL;
@@ -413,11 +413,11 @@ uint8 * LitArray = NULL;
 uint32 BlockLen,NumLits;
 uint8 MPS0,MPS1,MPS2;
 
-if ( RawLen == 0 ) return JE_TRUE;
+if ( RawLen == 0 ) return GR_TRUE;
 
 BlockLen = ((RawLen-1)/4) + 1;
-if ( (BlockArray = (uint8*)jeRam_Allocate(BlockLen)) == NULL )
-	CleanUp("block jeRam_Allocate failed");
+if ( (BlockArray = (uint8*)grRam_Allocate(BlockLen)) == NULL )
+	CleanUp("block grRam_Allocate failed");
 
 if ( ! CompressFlag )
 	{
@@ -443,8 +443,8 @@ if ( ! CompressFlag )
 
 	if ( NumLits > 0 )
 		{
-		if ( (LitArray = (uint8*)jeRam_Allocate(NumLits)) == NULL )
-			CleanUp("lits jeRam_Allocate failed");
+		if ( (LitArray = (uint8*)grRam_Allocate(NumLits)) == NULL )
+			CleanUp("lits grRam_Allocate failed");
 
 		if (! O0HuffArrayBII_noblock(LitArray,NumLits,BII,0) )
 			CleanUp("o0_noblock failed");
@@ -477,11 +477,11 @@ else //Encode
 	{
 	long bi,bcnt,v,li,ri,c;
 
-	if ( (LitArray = (uint8*)jeRam_Allocate(RawLen)) == NULL )
-		CleanUp("jeRam_Allocate failed");
+	if ( (LitArray = (uint8*)grRam_Allocate(RawLen)) == NULL )
+		CleanUp("grRam_Allocate failed");
 
-	if ( (CharCounts = (long *)jeRam_AllocateClear(256*sizeof(long))) == NULL )
-		CleanUp("jeRam_Allocate failed!");
+	if ( (CharCounts = (long *)grRam_AllocateClear(256*sizeof(long))) == NULL )
+		CleanUp("grRam_Allocate failed!");
 
 	for(ri=0;ri<RawLen;ri++) CharCounts[RawArray[ri]] ++;
 
@@ -532,11 +532,11 @@ destroy(CharCounts);
 if ( HuffExitMess )
   {
   BrandoError(HuffExitMess);
-  return(JE_FALSE);
+  return(GR_FALSE);
   }
 else
   {
-  return(JE_TRUE);
+  return(GR_TRUE);
   }
 }
 
@@ -606,8 +606,8 @@ else
 
 }
 
-jeBoolean O1HuffArray(uint8 *RawArray,uint32 RawLen,
-							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,jeBoolean CompressFlag)
+grBoolean O1HuffArray(uint8 *RawArray,uint32 RawLen,
+							 uint8 *HuffArray,uint32 * HuffArrayLenPtr,grBoolean CompressFlag)
 {
 struct LBitIOInfo * BII = NULL;
 char * HuffExitMess = NULL;
@@ -618,20 +618,20 @@ int lc;
 uint32 len;
 uint8 *mergePtr;
 
-if ( RawLen == 0 ) return JE_TRUE;
+if ( RawLen == 0 ) return GR_TRUE;
 
 if ( (BII = LBitIO_Init(HuffArray)) == NULL )
 	CleanUp("LBitIO_Init failed!");
 
-if ( (o1Arrays = (uint8**)jeRam_Allocate(257*sizeofpointer)) == NULL )
-	CleanUp("jeRam_Allocate failed!");
+if ( (o1Arrays = (uint8**)grRam_Allocate(257*sizeofpointer)) == NULL )
+	CleanUp("grRam_Allocate failed!");
 for(lc=0;lc<257;lc++) o1Arrays[lc] = NULL;
 
-if ( (o1ArrayPtrs = (uint8**)jeRam_Allocate(257*sizeofpointer)) == NULL )
-	CleanUp("jeRam_Allocate failed!");
+if ( (o1ArrayPtrs = (uint8**)grRam_Allocate(257*sizeofpointer)) == NULL )
+	CleanUp("grRam_Allocate failed!");
 
-if ( (o1ArrayLens = (uint32*)jeRam_Allocate(257*sizeof(uint32))) == NULL )
-	CleanUp("jeRam_Allocate failed!");
+if ( (o1ArrayLens = (uint32*)grRam_Allocate(257*sizeof(uint32))) == NULL )
+	CleanUp("grRam_Allocate failed!");
 
 for(lc=0;lc<257;lc++) o1ArrayLens[lc] = 0;
 
@@ -648,8 +648,8 @@ if ( ! CompressFlag )
 			{
 			if ( lc != 256 ) totlen += len;
 
-			if ( (o1Arrays[lc] = (uint8*)jeRam_Allocate(len)) == NULL )
-				CleanUp("jeRam_Allocate failed!");
+			if ( (o1Arrays[lc] = (uint8*)grRam_Allocate(len)) == NULL )
+				CleanUp("grRam_Allocate failed!");
 			o1ArrayPtrs[lc] = o1Arrays[lc];
 
 			if ( len >= MERJE_LEN || lc == 256 )
@@ -698,8 +698,8 @@ else //Encode
 		{
 		if ( o1ArrayLens[lc] > 0 )
 			{
-			if ( (o1Arrays[lc] = (uint8*)jeRam_Allocate(o1ArrayLens[lc])) == NULL )
-				CleanUp("jeRam_Allocate failed!");
+			if ( (o1Arrays[lc] = (uint8*)grRam_Allocate(o1ArrayLens[lc])) == NULL )
+				CleanUp("grRam_Allocate failed!");
 			}
 		o1ArrayPtrs[lc] = o1Arrays[lc];
 		}
@@ -747,11 +747,11 @@ if ( BII ) LBitIO_CleanUp(BII);
 if ( HuffExitMess )
   {
   BrandoError(HuffExitMess);
-  return(JE_FALSE);
+  return(GR_FALSE);
   }
 else
   {
-  return(JE_TRUE);
+  return(GR_TRUE);
   }
 }
 

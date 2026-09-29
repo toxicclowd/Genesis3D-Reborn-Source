@@ -31,7 +31,7 @@
 #include <time.h>
 #include <string.h>
 #include <direct.h>		// _mkdir
-#include "jet.h"
+#include "Genesis3D.h"
 #include "actor.h"
 #include "body.h"
 #include "motion.h"
@@ -48,7 +48,7 @@
 #pragma message ("Need a force-build flag for each target")
 
 
-//jeBoolean Make_CleanFlag = JE_FALSE;
+//grBoolean Make_CleanFlag = GR_FALSE;
 
 #define BIG (2048)
 
@@ -62,9 +62,9 @@ static void Make_PrintfCallback(const char *Fmt, ...)
 }
 #endif
 
-static jeBoolean Make_GlobalInterruptFlag = JE_FALSE;
+static grBoolean Make_GlobalInterruptFlag = GR_FALSE;
 
-void Make_SetInterruptFlag (jeBoolean State)
+void Make_SetInterruptFlag (grBoolean State)
 {
 	Make_GlobalInterruptFlag = State;
 }
@@ -105,9 +105,9 @@ void MkUtil_AdjustReturnCode(ReturnCode* pToAdjust, ReturnCode AdjustBy)
 }
 
 
-jeBoolean Make_IsTargetOutOfDate( const char *TargetFileName, 
+grBoolean Make_IsTargetOutOfDate( const char *TargetFileName, 
 								  const char *SourceFileName, 
-								  jeBoolean  *OutOfDate,
+								  grBoolean  *OutOfDate,
 								  MkUtil_Printf Printf)
 {
 	long Handle;
@@ -123,10 +123,10 @@ jeBoolean Make_IsTargetOutOfDate( const char *TargetFileName,
 	Handle = (long)_findfirst( SourceFileName, &SourceData );
 	if (Handle == -1)
 		{
-//			if (Make_CleanFlag != JE_FALSE)				
-//				return JE_TRUE;  // always return out of date if in Clean mode;
+//			if (Make_CleanFlag != GR_FALSE)				
+//				return GR_TRUE;  // always return out of date if in Clean mode;
 			Printf("Error: Source file '%s' not found\n",SourceFileName);
-			return JE_FALSE;		
+			return GR_FALSE;		
 		}
 		
 	_findclose(Handle);
@@ -134,39 +134,39 @@ jeBoolean Make_IsTargetOutOfDate( const char *TargetFileName,
 	Handle = (long)_findfirst( TargetFileName, &TargetData );
 	if (Handle == -1)
 		{
-//			if (Make_CleanFlag != JE_FALSE)				
-//				*OutOfDate = JE_TRUE; // always return out of date if in Clean mode
+//			if (Make_CleanFlag != GR_FALSE)				
+//				*OutOfDate = GR_TRUE; // always return out of date if in Clean mode
 //			else
-				*OutOfDate = JE_TRUE; // is out of date if target isn't there.
+				*OutOfDate = GR_TRUE; // is out of date if target isn't there.
 			Printf("'%s' out of date.  (Doesn't exist)\n",TargetFileName,SourceFileName);
-			return JE_TRUE;		
+			return GR_TRUE;		
 		}
 	_findclose(Handle);
 
 	#if 0
-	if (Make_CleanFlag != JE_FALSE)				
+	if (Make_CleanFlag != GR_FALSE)				
 		{									
 			
 			if (unlink(TargetFileName)!=0)
 				{
 					Printf("Error: Unable to clean '%s'\n",TargetFileName);
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 											
-			*OutOfDate = JE_FALSE;		
-			return JE_TRUE;				
+			*OutOfDate = GR_FALSE;		
+			return GR_TRUE;				
 		}
 	#endif
 
 	if (SourceData.time_write >= TargetData.time_write)
 		{
-			*OutOfDate = JE_TRUE;
+			*OutOfDate = GR_TRUE;
 			Printf("'%s' out of date.  (Older than '%s')\n",TargetFileName,SourceFileName);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
-	*OutOfDate = JE_FALSE;
-	return JE_TRUE;
+	*OutOfDate = GR_FALSE;
+	return GR_TRUE;
 }
 
 void Make_TargetFileName( char *TargetFileName, const char *SourceFileName, 
@@ -186,63 +186,63 @@ void Make_TargetFileName( char *TargetFileName, const char *SourceFileName,
 }
 
 
-jeBoolean Make_CopyBodyFile( const char *TargetFileName, 
+grBoolean Make_CopyBodyFile( const char *TargetFileName, 
 						     const char *SourceFileName,
 							 MkUtil_Printf Printf)
 {
-	jeVFile *VF;
-	jeBody* pBody = NULL;
-	jeBoolean Worked;
+	grVFile *VF;
+	grBody* pBody = NULL;
+	grBoolean Worked;
 
 	assert( Printf         != NULL );
 	assert( SourceFileName != NULL );
 	assert( TargetFileName != NULL );
 	Printf("\tCopying Body file '%s' into '%s'\n",SourceFileName,TargetFileName);
 
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,SourceFileName,NULL,JE_VFILE_OPEN_READONLY);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,SourceFileName,NULL,GR_VFILE_OPEN_READONLY);
 	if(VF == NULL)
 	{
 		Printf("ERROR: Could not open source body file '%s'\n", SourceFileName);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	
-	pBody = jeBody_CreateFromFile(VF);
-	jeVFile_Close(VF);
+	pBody = grBody_CreateFromFile(VF);
+	grVFile_Close(VF);
 	if(pBody == NULL)
 		{
 			Printf("ERROR: Failed to load source body from file '%s'\n", SourceFileName);
-			jeVFile_Close(VF);
-			return JE_FALSE;
+			grVFile_Close(VF);
+			return GR_FALSE;
 		}
 
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,TargetFileName,NULL,JE_VFILE_OPEN_CREATE);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,TargetFileName,NULL,GR_VFILE_OPEN_CREATE);
 	if(VF == NULL)
 	{
 		Printf("ERROR: Could not open target body file '%s'\n", TargetFileName);
-		jeBody_Destroy(&pBody);
-		return JE_FALSE;
+		grBody_Destroy(&pBody);
+		return GR_FALSE;
 	}
 
-	Worked = jeBody_WriteToFile(pBody,VF);
-	if (jeVFile_Close(VF)==JE_FALSE)
-		Worked = JE_FALSE;
-	jeBody_Destroy(&pBody);
+	Worked = grBody_WriteToFile(pBody,VF);
+	if (grVFile_Close(VF)==GR_FALSE)
+		Worked = GR_FALSE;
+	grBody_Destroy(&pBody);
 
-	if (Worked == JE_FALSE)
+	if (Worked == GR_FALSE)
 		{
 			Printf("Error:  Failed to write target body to file '%s'",TargetFileName);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean Make_CopyMotionFile( const char *TargetFileName, 
+grBoolean Make_CopyMotionFile( const char *TargetFileName, 
 						     const char *SourceFileName,
 							 MkUtil_Printf Printf)
 {
-	jeVFile *VF;
-	jeMotion* pMotion = NULL;
-	jeBoolean Worked;
+	grVFile *VF;
+	grMotion* pMotion = NULL;
+	grBoolean Worked;
 
 	assert( Printf         != NULL );
 	assert( SourceFileName != NULL );
@@ -250,46 +250,46 @@ jeBoolean Make_CopyMotionFile( const char *TargetFileName,
 
 	Printf("\tCopying Motion file '%s' into '%s'\n",SourceFileName,TargetFileName);
 
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,SourceFileName,NULL,JE_VFILE_OPEN_READONLY);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,SourceFileName,NULL,GR_VFILE_OPEN_READONLY);
 	if(VF == NULL)
 	{
 		Printf("ERROR: Could not open source motion file '%s'\n", SourceFileName);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	
-	pMotion = jeMotion_CreateFromFile(VF);
-	jeVFile_Close(VF);
+	pMotion = grMotion_CreateFromFile(VF);
+	grVFile_Close(VF);
 	if(pMotion == NULL)
 		{
 			Printf("ERROR: Failed to load source motion file '%s'\n", SourceFileName);
-			jeVFile_Close(VF);
-			return JE_FALSE;
+			grVFile_Close(VF);
+			return GR_FALSE;
 		}
 
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,TargetFileName,NULL,JE_VFILE_OPEN_CREATE);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,TargetFileName,NULL,GR_VFILE_OPEN_CREATE);
 	if(VF == NULL)
 	{
 		Printf("ERROR: Could not open target motion file '%s'\n", TargetFileName);
-		jeMotion_Destroy(&pMotion);
-		return JE_FALSE;
+		grMotion_Destroy(&pMotion);
+		return GR_FALSE;
 	}
 
-	Worked = jeMotion_WriteToFile(pMotion,VF);
-	if (jeVFile_Close(VF)==JE_FALSE)
-		Worked = JE_FALSE;
-	jeMotion_Destroy(&pMotion);
+	Worked = grMotion_WriteToFile(pMotion,VF);
+	if (grVFile_Close(VF)==GR_FALSE)
+		Worked = GR_FALSE;
+	grMotion_Destroy(&pMotion);
 
-	if (Worked == JE_FALSE)
+	if (Worked == GR_FALSE)
 		{
 			Printf("Error:  Failed to write target motion file '%s'",TargetFileName);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Make_Body_NFO_OutOfDate( AProject *Prj, 
-			jeBoolean *OutOfDate,
+grBoolean Make_Body_NFO_OutOfDate( AProject *Prj, 
+			grBoolean *OutOfDate,
 			MkUtil_Printf Printf)
 {
 	ApjBodyFormat BodyFmt;
@@ -301,35 +301,35 @@ jeBoolean Make_Body_NFO_OutOfDate( AProject *Prj,
 	assert( OutOfDate != NULL );
 	assert( Printf    != NULL );
 	
-	*OutOfDate = JE_FALSE;
+	*OutOfDate = GR_FALSE;
 
 	BodyFmt = AProject_GetBodyFormat(Prj);
 	if (BodyFmt != ApjBody_Max)
-		return JE_TRUE;
+		return GR_TRUE;
 	
 	ObjDir = AProject_GetObjPath( Prj );
 	if (ObjDir == NULL)
 		{
 			Printf("Error:  Unable to get temporary path\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	
 	SourceName = AProject_GetBodyFilename (Prj);
 	if (SourceName == NULL)
 		{
 			Printf("Error: Can't get source file name for body\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		} 
 	Make_TargetFileName( TargetName, SourceName, ObjDir,"NFO" );
-	if (Make_IsTargetOutOfDate(TargetName, SourceName, OutOfDate,Printf ) == JE_FALSE)
-		return JE_FALSE;
+	if (Make_IsTargetOutOfDate(TargetName, SourceName, OutOfDate,Printf ) == GR_FALSE)
+		return GR_FALSE;
 	
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Make_Body_BDY_OutOfDate(AProject *Prj, 
-							 jeBoolean *OutOfDate,
+grBoolean Make_Body_BDY_OutOfDate(AProject *Prj, 
+							 grBoolean *OutOfDate,
 							 MkUtil_Printf Printf)
 {
 	ApjBodyFormat Fmt;
@@ -346,10 +346,10 @@ jeBoolean Make_Body_BDY_OutOfDate(AProject *Prj,
 	switch (Fmt)
 		{
 			case (ApjBody_Max):	
-				if (Make_Body_NFO_OutOfDate(Prj, OutOfDate, Printf)==JE_FALSE)
-					return JE_FALSE;
-				if (*OutOfDate != JE_FALSE)
-					return JE_TRUE;
+				if (Make_Body_NFO_OutOfDate(Prj, OutOfDate, Printf)==GR_FALSE)
+					return GR_FALSE;
+				if (*OutOfDate != GR_FALSE)
+					return GR_TRUE;
 				break;
 			case (ApjBody_Nfo):
 			case (ApjBody_Bdy):
@@ -359,7 +359,7 @@ jeBoolean Make_Body_BDY_OutOfDate(AProject *Prj,
 			default:
 				{
 					Printf("Error: unrecognized format specifier for body (%d) \n",Fmt);
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 		}
 
@@ -367,27 +367,27 @@ jeBoolean Make_Body_BDY_OutOfDate(AProject *Prj,
 	if (ObjDir == NULL)
 		{
 			Printf("Error: Unable to get temporary path\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	SourceName = AProject_GetBodyFilename (Prj);
 	if (SourceName == NULL)
 		{
 			Printf("Error: Can't get source file name for body\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		} 
 	Make_TargetFileName( TargetName, SourceName, ObjDir, "BDY");
 
-	if (Make_IsTargetOutOfDate( TargetName, SourceName, OutOfDate, Printf) == JE_FALSE)
+	if (Make_IsTargetOutOfDate( TargetName, SourceName, OutOfDate, Printf) == GR_FALSE)
 		{	// already posted
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean Make_SourceOutOfDateFromBDY( AProject *Prj, 
+grBoolean Make_SourceOutOfDateFromBDY( AProject *Prj, 
 			const char *FileName,
-			jeBoolean *OutOfDate,
+			grBoolean *OutOfDate,
 			MkUtil_Printf Printf)
 {
 	char TargetName[BIG];
@@ -400,40 +400,40 @@ jeBoolean Make_SourceOutOfDateFromBDY( AProject *Prj,
 	assert( FileName  != NULL );
 
 	// if body needs to be made, then the source is out-of-date	
-	if (Make_Body_BDY_OutOfDate( Prj, OutOfDate, Printf) == JE_FALSE)
-		return JE_FALSE;
-	if (*OutOfDate == JE_TRUE)
-		return JE_TRUE;
+	if (Make_Body_BDY_OutOfDate( Prj, OutOfDate, Printf) == GR_FALSE)
+		return GR_FALSE;
+	if (*OutOfDate == GR_TRUE)
+		return GR_TRUE;
 	// body doesn't need to be made.  But maybe the source is older than the bdy
 	
 	ObjDir = AProject_GetObjPath( Prj );
 	if (ObjDir == NULL)
 		{
 			Printf("Error: Unable to get temporary path\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	SourceName = AProject_GetBodyFilename (Prj);
 	if (SourceName == NULL)
 		{
 			Printf("Error: Can't get source file name for body\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		} 
 	Make_TargetFileName( TargetName, SourceName, ObjDir, "BDY");
 
-	if (Make_IsTargetOutOfDate( FileName, TargetName, OutOfDate, Printf) == JE_FALSE)
+	if (Make_IsTargetOutOfDate( FileName, TargetName, OutOfDate, Printf) == GR_FALSE)
 		{	// already posted
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	// now lets see if source is out of date 
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Make_Motion_KEY_OutOfDate(AProject *Prj, int MotionIndex,
-				jeBoolean *OutOfDate, MkUtil_Printf Printf)
+grBoolean Make_Motion_KEY_OutOfDate(AProject *Prj, int MotionIndex,
+				grBoolean *OutOfDate, MkUtil_Printf Printf)
 {
 	const char *ObjDir;
 	ApjMotionFormat MotionFmt;
@@ -446,35 +446,35 @@ jeBoolean Make_Motion_KEY_OutOfDate(AProject *Prj, int MotionIndex,
 	assert( MotionIndex >= 0  );
 	assert( MotionIndex < AProject_GetMotionsCount( Prj ) );
 	
-	*OutOfDate = JE_FALSE;
+	*OutOfDate = GR_FALSE;
 	MotionFmt = AProject_GetMotionFormat( Prj, MotionIndex );
 
 	if ( MotionFmt != ApjMotion_Max )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	ObjDir = AProject_GetObjPath( Prj );
 	if (ObjDir == NULL)
 		{
 			Printf("Error:  Unable to get temporary path to check dependencies for motions\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	SourceName = AProject_GetMotionFilename( Prj, MotionIndex );
 	if (SourceName == NULL)
 		{
 			Printf("Error: Can't get source file name for motion %d\n", MotionIndex);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	Make_TargetFileName( TargetName, SourceName, ObjDir,"KEY" );
-	if (Make_IsTargetOutOfDate(TargetName, SourceName, OutOfDate, Printf ) == JE_FALSE )
-		return JE_FALSE;
+	if (Make_IsTargetOutOfDate(TargetName, SourceName, OutOfDate, Printf ) == GR_FALSE )
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Make_Motion_MOT_OutOfDate(AProject *Prj, int MotionIndex, 
-				jeBoolean *OutOfDate, MkUtil_Printf Printf)
+grBoolean Make_Motion_MOT_OutOfDate(AProject *Prj, int MotionIndex, 
+				grBoolean *OutOfDate, MkUtil_Printf Printf)
 {
 	const char *ObjDir;
 	ApjMotionFormat MotionFmt;
@@ -486,42 +486,42 @@ jeBoolean Make_Motion_MOT_OutOfDate(AProject *Prj, int MotionIndex,
 	assert( OutOfDate != NULL );
 
 	
-	*OutOfDate = JE_FALSE;
+	*OutOfDate = GR_FALSE;
 
 	SourceName = AProject_GetMotionFilename( Prj, MotionIndex );
 	if (SourceName == NULL)
 		{
 			Printf("Error: Can't get source file name for motion %d\n", MotionIndex);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	MotionFmt = AProject_GetMotionFormat( Prj, MotionIndex );
 	switch (MotionFmt)
 		{
 			case (ApjMotion_Max):
-				if (*OutOfDate == JE_TRUE)
-					return JE_TRUE;
-				if (Make_Motion_KEY_OutOfDate( Prj, MotionIndex, OutOfDate, Printf)== JE_FALSE)
-					return JE_FALSE;
-				if (*OutOfDate == JE_TRUE)
-					return JE_TRUE;
+				if (*OutOfDate == GR_TRUE)
+					return GR_TRUE;
+				if (Make_Motion_KEY_OutOfDate( Prj, MotionIndex, OutOfDate, Printf)== GR_FALSE)
+					return GR_FALSE;
+				if (*OutOfDate == GR_TRUE)
+					return GR_TRUE;
 				break;
 			case (ApjMotion_Key):
-				if (*OutOfDate == JE_TRUE)
-					return JE_TRUE;
+				if (*OutOfDate == GR_TRUE)
+					return GR_TRUE;
 				break;
 // motions from actors not yet supported
 //			case (ApjMotion_Act):
 			case (ApjMotion_Mot):
 				// body needed for mkmotion
-				if (Make_SourceOutOfDateFromBDY( Prj, SourceName, OutOfDate, Printf) == JE_FALSE)
-					return JE_FALSE;
+				if (Make_SourceOutOfDateFromBDY( Prj, SourceName, OutOfDate, Printf) == GR_FALSE)
+					return GR_FALSE;
 				break;
 			case (ApjMotion_Invalid):
 			default:
 				{
 					Printf("Error: unrecognized format specifier for motion #%d (%d) \n",MotionIndex,MotionFmt);
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 		}
 
@@ -529,21 +529,21 @@ jeBoolean Make_Motion_MOT_OutOfDate(AProject *Prj, int MotionIndex,
 	if (ObjDir == NULL)
 		{
 			Printf("Error:  Unable to get temporary path to check dependencies for motions\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	
 	Make_TargetFileName( TargetName, SourceName, ObjDir, "MOT" );
-	if (Make_IsTargetOutOfDate(TargetName, SourceName, OutOfDate, Printf ) == JE_FALSE )
-		return JE_FALSE;
-	return JE_TRUE;
+	if (Make_IsTargetOutOfDate(TargetName, SourceName, OutOfDate, Printf ) == GR_FALSE )
+		return GR_FALSE;
+	return GR_TRUE;
 }
 
 
 
-jeBoolean Make_AnyMotion_KEY_OutOfDate(AProject *Prj, 
+grBoolean Make_AnyMotion_KEY_OutOfDate(AProject *Prj, 
 				int MotionIndexCount, int *MotionIndexArray, 
-				jeBoolean *OutOfDate,
+				grBoolean *OutOfDate,
 				MkUtil_Printf Printf)
 {
 	int i;
@@ -552,22 +552,22 @@ jeBoolean Make_AnyMotion_KEY_OutOfDate(AProject *Prj,
 	assert( Prj              != NULL );
 	assert( OutOfDate        != NULL );
 
-	*OutOfDate = JE_FALSE;
+	*OutOfDate = GR_FALSE;
 	for (i=0; i<MotionIndexCount; i++)
 		{
 			assert( MotionIndexArray != NULL );
-			if (Make_Motion_KEY_OutOfDate( Prj, MotionIndexArray[i], OutOfDate, Printf )==JE_FALSE)
-				return JE_FALSE;
-			if (*OutOfDate != JE_FALSE)
-				return JE_TRUE;
+			if (Make_Motion_KEY_OutOfDate( Prj, MotionIndexArray[i], OutOfDate, Printf )==GR_FALSE)
+				return GR_FALSE;
+			if (*OutOfDate != GR_FALSE)
+				return GR_TRUE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Make_AnyMotion_MOT_OutOfDate(AProject *Prj, 
+grBoolean Make_AnyMotion_MOT_OutOfDate(AProject *Prj, 
 				int MotionIndexCount, int *MotionIndexArray, 
-				jeBoolean *OutOfDate,
+				grBoolean *OutOfDate,
 				MkUtil_Printf Printf)
 {
 	int i;
@@ -576,21 +576,21 @@ jeBoolean Make_AnyMotion_MOT_OutOfDate(AProject *Prj,
 	assert( Prj              != NULL );
 	assert( OutOfDate        != NULL );
 
-	*OutOfDate = JE_FALSE;
+	*OutOfDate = GR_FALSE;
 	for (i=0; i<MotionIndexCount; i++)
 		{
 			assert( MotionIndexArray != NULL );
-			if (Make_Motion_MOT_OutOfDate( Prj, MotionIndexArray[i], OutOfDate, Printf )==JE_FALSE)
-				return JE_FALSE;
-			if (*OutOfDate != JE_FALSE)
-				return JE_TRUE;
+			if (Make_Motion_MOT_OutOfDate( Prj, MotionIndexArray[i], OutOfDate, Printf )==GR_FALSE)
+				return GR_FALSE;
+			if (*OutOfDate != GR_FALSE)
+				return GR_TRUE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
 
-jeBoolean Make_MaxScript( AProject *Prj, 
+grBoolean Make_MaxScript( AProject *Prj, 
 			AOptions *Options, 
 			int DoBody,
 			int MotionIndexCount, int *MotionIndexArray, 
@@ -608,7 +608,7 @@ jeBoolean Make_MaxScript( AProject *Prj,
 	//int MotionCount;
 	int Times;
 
-	jeBoolean OutOfDate = JE_FALSE;
+	grBoolean OutOfDate = GR_FALSE;
 
 	assert( Prj != NULL );
 	assert( MotionIndexCount >= 0 );
@@ -624,22 +624,22 @@ jeBoolean Make_MaxScript( AProject *Prj,
 		}
 
 	// first, see if we even need to do any exporting:
-	if (DoBody!=JE_FALSE)
+	if (DoBody!=GR_FALSE)
 		{
-			if (Make_Body_NFO_OutOfDate( Prj, &OutOfDate, Printf) == JE_FALSE)
+			if (Make_Body_NFO_OutOfDate( Prj, &OutOfDate, Printf) == GR_FALSE)
 				goto Make_MaxScriptError;
 		}
 
-	if (OutOfDate == JE_FALSE)
+	if (OutOfDate == GR_FALSE)
 		{
 			if (Make_AnyMotion_KEY_OutOfDate(Prj, MotionIndexCount, 
-							MotionIndexArray, &OutOfDate, Printf) == JE_FALSE)
+							MotionIndexArray, &OutOfDate, Printf) == GR_FALSE)
 					goto Make_MaxScriptError;
 		}
 
-	if ( OutOfDate == JE_FALSE)
+	if ( OutOfDate == GR_FALSE)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
 	Max = AOptions_Get3DSMaxPath( Options );
@@ -649,7 +649,7 @@ jeBoolean Make_MaxScript( AProject *Prj,
 			goto Make_MaxScriptError;
 		}
 	
-	if (MXScript_ArePluginsInstalled(Max,Printf)==JE_FALSE)
+	if (MXScript_ArePluginsInstalled(Max,Printf)==GR_FALSE)
 		{
 			Printf("Error: Plugin missing. Max export halted.\n");
 			goto Make_MaxScriptError;
@@ -665,11 +665,11 @@ jeBoolean Make_MaxScript( AProject *Prj,
 			goto Make_MaxScriptError;
 		}
 
-	if (DoBody!=JE_FALSE)
+	if (DoBody!=GR_FALSE)
 		{
-			if (Make_Body_NFO_OutOfDate( Prj, &OutOfDate, Printf) == JE_FALSE)
+			if (Make_Body_NFO_OutOfDate( Prj, &OutOfDate, Printf) == GR_FALSE)
 				goto Make_MaxScriptError;
-			if (OutOfDate!=JE_FALSE)
+			if (OutOfDate!=GR_FALSE)
 				{
 					SourceName = AProject_GetBodyFilename (Prj);
 					if (SourceName == NULL)
@@ -679,7 +679,7 @@ jeBoolean Make_MaxScript( AProject *Prj,
 						} 
 
 					Make_TargetFileName( TargetName, SourceName, ObjDir, "NFO" );
-					if (MXScript_AddExport(Script,SourceName,TargetName,Printf)==JE_FALSE)
+					if (MXScript_AddExport(Script,SourceName,TargetName,Printf)==GR_FALSE)
 						{
 							Printf("Error: Can't add body export to script file\n");
 							goto Make_MaxScriptError;
@@ -690,7 +690,7 @@ jeBoolean Make_MaxScript( AProject *Prj,
 	i=0;
 	Times=1;
 
-	while (i<MotionIndexCount || (DoBody!=JE_FALSE))
+	while (i<MotionIndexCount || (DoBody!=GR_FALSE))
 		{
 			int j;
 			if (Script==NULL)
@@ -709,10 +709,10 @@ jeBoolean Make_MaxScript( AProject *Prj,
 			//MotionCount = AProject_GetMotionsCount( Prj );
 			for (j=0; j<MAXIMUM_MOTIONS_PER_EXPORT && i<MotionIndexCount; i++,j++)
 				{
-					if (Make_Motion_KEY_OutOfDate(Prj, MotionIndexArray[i],&OutOfDate,Printf) == JE_FALSE)
+					if (Make_Motion_KEY_OutOfDate(Prj, MotionIndexArray[i],&OutOfDate,Printf) == GR_FALSE)
 						goto Make_MaxScriptError;
 
-					if (OutOfDate != JE_FALSE)
+					if (OutOfDate != GR_FALSE)
 						{
 							SourceName = AProject_GetMotionFilename( Prj, MotionIndexArray[i] );
 							if (SourceName == NULL)
@@ -721,7 +721,7 @@ jeBoolean Make_MaxScript( AProject *Prj,
 									goto Make_MaxScriptError;
 								}
 							Make_TargetFileName( TargetName, SourceName, ObjDir,"KEY" );
-							if (MXScript_AddExport(Script,SourceName,TargetName,Printf)==JE_FALSE)
+							if (MXScript_AddExport(Script,SourceName,TargetName,Printf)==GR_FALSE)
 								{
 									Printf("Error: Can't add '%s' export to script file\n",SourceName);
 									goto Make_MaxScriptError;
@@ -729,7 +729,7 @@ jeBoolean Make_MaxScript( AProject *Prj,
 						}
 				}
 
-			if (MXScript_EndScript(Script,Printf)==JE_FALSE)
+			if (MXScript_EndScript(Script,Printf)==GR_FALSE)
 				{
 					Printf("Error: Failed to close script file\n");
 					goto Make_MaxScriptError;
@@ -738,7 +738,7 @@ jeBoolean Make_MaxScript( AProject *Prj,
 			// run the script
 			Printf("\tRunning 3DS MAX MAXScript\n");
 
-			if ( MXScript_RunScript( Script, Max, Printf ) == JE_FALSE)
+			if ( MXScript_RunScript( Script, Max, Printf ) == GR_FALSE)
 				{
 					Printf("Error: 3DS MAX export script failed\n");
 					goto Make_MaxScriptError;
@@ -747,22 +747,22 @@ jeBoolean Make_MaxScript( AProject *Prj,
 			MXScript_Destroy( Script );
 			Script = NULL;
 			Times++;
-			DoBody = JE_FALSE;
+			DoBody = GR_FALSE;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 
 
 Make_MaxScriptError:
 	if ( Script != NULL )
 		MXScript_Destroy( Script );
-	return JE_FALSE;
+	return GR_FALSE;
 
 }
 
 
-jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Printf)
+grBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Printf)
 {
 	ApjBodyFormat Fmt;
 	ReturnCode RVal;
@@ -772,17 +772,17 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 	char NFOName[BIG];
 	const char *SourceName;
 	const char *ObjDir;
-	jeBoolean OutOfDate;
+	grBoolean OutOfDate;
 	
 	assert( Prj      != NULL );
 	assert( BuildOptions  != NULL );
 	assert( Printf   != NULL );
 
-	if (Make_Body_BDY_OutOfDate( Prj, &OutOfDate, Printf) == JE_FALSE)
-		return JE_FALSE;
+	if (Make_Body_BDY_OutOfDate( Prj, &OutOfDate, Printf) == GR_FALSE)
+		return GR_FALSE;
 
-	if (OutOfDate == JE_FALSE)
-		return JE_TRUE;
+	if (OutOfDate == GR_FALSE)
+		return GR_TRUE;
 	
 	Printf("\tMaking Body\n");
 	
@@ -790,14 +790,14 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 	if (ObjDir == NULL)
 		{
 			Printf("Error: (Make_Body) Unable to get temporary path\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	
 	SourceName = AProject_GetBodyFilename (Prj);
 	if (SourceName == NULL)
 		{
 			Printf("Error: Can't get source file name for body\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		} 
 
 	Make_TargetFileName( TargetName, SourceName, ObjDir, "BDY");
@@ -807,11 +807,11 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 	switch (Fmt)
 		{
 			case (ApjBody_Max):	
-				if (Make_MaxScript( Prj, BuildOptions, JE_TRUE, 
-									0, NULL, Printf ) == JE_FALSE)
+				if (Make_MaxScript( Prj, BuildOptions, GR_TRUE, 
+									0, NULL, Printf ) == GR_FALSE)
 					{
 						Printf("Error: unable to complete 3DS MAX script and export step for Make_Body\n");
-						return JE_FALSE;
+						return GR_FALSE;
 					}
 				Make_TargetFileName( NFOName, SourceName, ObjDir, "NFO");
 				// fall through
@@ -826,7 +826,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 					if (Options == NULL)
 						{
 							Printf("Error: unable to allocate option block for mkBody\n");
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					sprintf(OptionString,"-R");
 					RVal = MkBody_ParseOptionString(Options,OptionString,MK_FALSE,Printf);
@@ -835,7 +835,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 							Printf("Error: unable to set options into MkBody:\n");
 							Printf(OptionString);
 							MkBody_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 
 					sprintf(OptionString,"-C");
@@ -845,7 +845,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 							Printf("Error: unable to set options into MkBody:\n");
 							Printf(OptionString);
 							MkBody_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					sprintf(OptionString,"-B%s",TargetName);
 					RVal = MkBody_ParseOptionString(Options,OptionString,MK_FALSE,Printf);
@@ -854,7 +854,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 							Printf("Error: unable to set options into MkBody:\n");
 							Printf(OptionString);
 							MkBody_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 
 					sprintf(OptionString,"-N%s",NFOName);
@@ -864,7 +864,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 							Printf("Error: unable to set options into MkBody:\n");
 							Printf(OptionString);
 							MkBody_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					
 					TexturePathName = AProject_GetMaterialsPath(Prj);
@@ -872,7 +872,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 						{
 							Printf("Error: Can't get texture path for body\n");
 							MkBody_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						} 
 					if (TexturePathName[0] == 0)
 						{
@@ -887,7 +887,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 									Printf("Error: unable to set options into MkBody:\n");
 									Printf(OptionString);
 									MkBody_OptionsDestroy(&Options);
-									return JE_FALSE;
+									return GR_FALSE;
 								}
 						}
 					
@@ -898,7 +898,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 						for (i=0; i<MatCnt; i++)
 							{
 								ApjMaterialFormat MatFmt; 
-								JE_RGBA Color;
+								GR_RGBA Color;
 								const char *MatName;
 								const char *MatFileName;
 								MatFmt  = AProject_GetMaterialFormat(Prj,i);
@@ -910,7 +910,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 										Printf("Error: unable to get extra material name %d\n",i);
 										Printf(OptionString);
 										MkBody_OptionsDestroy(&Options);
-										return JE_FALSE;
+										return GR_FALSE;
 									}
 								
 								if (strlen(MatName) == 0)
@@ -918,7 +918,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 										Printf("Error: empty extra material name %d\n",i);
 										Printf(OptionString);
 										MkBody_OptionsDestroy(&Options);
-										return JE_FALSE;
+										return GR_FALSE;
 									}
 								switch (MatFmt)
 									{
@@ -932,14 +932,14 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 													Printf("Error: unable to get extra material filename %d\n",i);
 													Printf(OptionString);
 													MkBody_OptionsDestroy(&Options);
-													return JE_FALSE;
+													return GR_FALSE;
 												}
 											if (strlen(MatFileName) == 0)
 												{
 													Printf("Error: empty extra material filename %d\n",i);
 													Printf(OptionString);
 													MkBody_OptionsDestroy(&Options);
-													return JE_FALSE;
+													return GR_FALSE;
 												}
 											sprintf(OptionString,"-M(MAP) %s: %s",MatName,MatFileName);
 											break;
@@ -952,7 +952,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 											Printf("Error: unable to set extra material %d options into MkBody:\n",i);
 											Printf(OptionString);
 											MkBody_OptionsDestroy(&Options);
-											return JE_FALSE;
+											return GR_FALSE;
 										}
 							}
 					}
@@ -965,7 +965,7 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 						{
 							Printf("Error: Failed to build '%s' file from '%s' file\n",
 										TargetName,NFOName);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					if (RVal == RETURN_WARNING)
 						{
@@ -973,36 +973,36 @@ jeBoolean Make_Body_BDY(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Pri
 										TargetName,NFOName);
 						}
 					Printf("\tBody file '%s' successfully built\n",TargetName);
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 			case (ApjBody_Bdy):
 				{
-					if (Make_CopyBodyFile(TargetName, SourceName,Printf )==JE_FALSE)
+					if (Make_CopyBodyFile(TargetName, SourceName,Printf )==GR_FALSE)
 						{
 							Printf("Error: failed to copy body file '%s' into work file '%s'\n", SourceName,TargetName);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					Printf("\tBody file '%s' successfully prepared\n",TargetName);
-					return JE_TRUE;
+					return GR_TRUE;
 				}
 			case (ApjBody_Act):
 				{
 					Printf("Error: getting body from existing actor file not yet implemented\n");
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 			case (ApjBody_Invalid):
 			default:
 				{
 					Printf("Error: unrecognized format specifier for body\n");
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 		}
 //	Printf("\tBody file '%s' successfully built\n",TargetName);
-	//return JE_TRUE;
+	//return GR_TRUE;
 }
 
 
-jeBoolean Make_Optimize_Motion( char *FromFile, char *ToFile, char *LogFile, int Level, MkUtil_Printf Printf )
+grBoolean Make_Optimize_Motion( char *FromFile, char *ToFile, char *LogFile, int Level, MkUtil_Printf Printf )
 {
 	assert( Printf         != NULL );
 	assert( FromFile       != NULL );
@@ -1021,7 +1021,7 @@ jeBoolean Make_Optimize_Motion( char *FromFile, char *ToFile, char *LogFile, int
 		if (Options == NULL)
 			{
 				Printf("Error: unable to allocate option block for motion optimizer\n");
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		sprintf(OptionString,"-O%d",Level);
 		RVal = MopShell_ParseOptionString(Options,OptionString,MK_FALSE,Printf);
@@ -1030,7 +1030,7 @@ jeBoolean Make_Optimize_Motion( char *FromFile, char *ToFile, char *LogFile, int
 				Printf("Error: unable to set options into motion optimizer:\n");
 				Printf(OptionString);
 				MopShell_OptionsDestroy(&Options);
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		
 		sprintf(OptionString,"-S%s",FromFile);
@@ -1040,7 +1040,7 @@ jeBoolean Make_Optimize_Motion( char *FromFile, char *ToFile, char *LogFile, int
 				Printf("Error: unable to set options into motion optimizer:\n");
 				Printf(OptionString);
 				MopShell_OptionsDestroy(&Options);
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		
 		sprintf(OptionString,"-D%s",ToFile);
@@ -1050,7 +1050,7 @@ jeBoolean Make_Optimize_Motion( char *FromFile, char *ToFile, char *LogFile, int
 				Printf("Error: unable to set options into motion optimizer:\n");
 				Printf(OptionString);
 				MopShell_OptionsDestroy(&Options);
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		sprintf(OptionString,"-L%s",LogFile);
 		RVal = MopShell_ParseOptionString(Options,OptionString,MK_FALSE,Printf);
@@ -1059,7 +1059,7 @@ jeBoolean Make_Optimize_Motion( char *FromFile, char *ToFile, char *LogFile, int
 				Printf("Error: unable to set options into motion optimizer:\n");
 				Printf(OptionString);
 				MopShell_OptionsDestroy(&Options);
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		
 
@@ -1069,7 +1069,7 @@ jeBoolean Make_Optimize_Motion( char *FromFile, char *ToFile, char *LogFile, int
 		if (RVal == RETURN_ERROR )
 			{
 				Printf("Error: motion optimize failed\n");
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		if (RVal == RETURN_WARNING)
 			{
@@ -1077,11 +1077,11 @@ jeBoolean Make_Optimize_Motion( char *FromFile, char *ToFile, char *LogFile, int
 			}
 	}
 	
-	return JE_TRUE;	
+	return GR_TRUE;	
 }
 
 
-jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions, 
+grBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions, 
 							int MotionIndex, MkUtil_Printf Printf)
 // makes MOT from KEY, MOT, or ACT
 {
@@ -1098,7 +1098,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 	const char *Empty = "";
 	ApjMotionFormat Fmt;
 	ReturnCode RVal;
-	jeBoolean OutOfDate;
+	grBoolean OutOfDate;
 	
 	assert( Prj      != NULL );
 	assert( Printf   != NULL );
@@ -1109,26 +1109,26 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 
 	Printf("\tMaking Motion #%d '%s'\n",MotionIndex, MotionName);
 	
-	if (Make_Motion_MOT_OutOfDate( Prj, MotionIndex, &OutOfDate, Printf) == JE_FALSE)
-		return JE_FALSE;
-	if (OutOfDate == JE_FALSE)
+	if (Make_Motion_MOT_OutOfDate( Prj, MotionIndex, &OutOfDate, Printf) == GR_FALSE)
+		return GR_FALSE;
+	if (OutOfDate == GR_FALSE)
 		{
 			Printf("\tMotion #%d '%s' is up to date \n",MotionIndex, MotionName);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
 	ObjDir = AProject_GetObjPath( Prj );
 	if (ObjDir == NULL)
 		{
 			Printf("Error: (Make_Motion) Unable to get temporary path\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	SourceName = AProject_GetBodyFilename (Prj);
 	if (SourceName == NULL)
 		{
 			Printf("Error: Can't get source name for body\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		} 
 
 	Make_TargetFileName( BodyName, SourceName, ObjDir, "BDY");
@@ -1138,7 +1138,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 	if (SourceName == NULL)
 		{
 			Printf("Error: Can't get source file for motion #%d '%s'\n",MotionIndex,MotionName);
-			return JE_FALSE;
+			return GR_FALSE;
 		} 
 	
 	Make_TargetFileName( TargetName, SourceName, ObjDir, "MO1");
@@ -1152,10 +1152,10 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 				{
 					int MotionIndexArray[1];
 					MotionIndexArray[0] = MotionIndex;
-					if (Make_MaxScript( Prj, AOptions, JE_FALSE, 1, MotionIndexArray, Printf ) == JE_FALSE)
+					if (Make_MaxScript( Prj, AOptions, GR_FALSE, 1, MotionIndexArray, Printf ) == GR_FALSE)
 						{
 							Printf("Error: unable to complete 3DS MAX script and export step for Make_Motion\n");
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					Make_TargetFileName( KEYName, SourceName, ObjDir, "KEY");
 				}
@@ -1164,8 +1164,8 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 				{
 					MkMotion_Options *Options;
 	
-					if (Make_Body_BDY( Prj, AOptions, Printf)==JE_FALSE)
-						return JE_FALSE;	
+					if (Make_Body_BDY( Prj, AOptions, Printf)==GR_FALSE)
+						return GR_FALSE;	
 					
 					MotionName = AProject_GetMotionName (Prj,MotionIndex);
 					if (MotionName == NULL) MotionName =Empty;
@@ -1179,7 +1179,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 					if (Options == NULL)
 						{
 							Printf("Error: unable to allocate option block for mkMotion\n");
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					sprintf(OptionString,"-C");
 					RVal = MkMotion_ParseOptionString(Options,OptionString,MK_FALSE,Printf);
@@ -1188,7 +1188,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 							Printf("Error: unable to set options into MkMotion:\n");
 							Printf(OptionString);
 							MkMotion_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					
 					sprintf(OptionString,"-E");
@@ -1198,7 +1198,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 							Printf("Error: unable to set options into MkMotion:\n");
 							Printf(OptionString);
 							MkMotion_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					
 					sprintf(OptionString,"-M%s",TargetName);
@@ -1208,7 +1208,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 							Printf("Error: unable to set options into MkMotion:\n");
 							Printf(OptionString);
 							MkMotion_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					
 					sprintf(OptionString,"-K%s",KEYName);
@@ -1218,7 +1218,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 							Printf("Error: unable to set options into MkMotion:\n");
 							Printf(OptionString);
 							MkMotion_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					sprintf(OptionString,"-B%s",BodyName);
 					RVal = MkMotion_ParseOptionString(Options,OptionString,MK_FALSE,Printf);
@@ -1227,7 +1227,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 							Printf("Error: unable to set options into MkMotion:\n");
 							Printf(OptionString);
 							MkMotion_OptionsDestroy(&Options);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					if (MotionName[0] != 0)
 						{
@@ -1238,7 +1238,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 									Printf("Error: unable to set options into MkMotion:\n");
 									Printf(OptionString);
 									MkMotion_OptionsDestroy(&Options);
-									return JE_FALSE;
+									return GR_FALSE;
 								}
 						}
 									
@@ -1268,7 +1268,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 													Printf("Error: unable to set options into MkMotion:\n");
 													Printf(OptionString);
 													MkMotion_OptionsDestroy(&Options);
-													return JE_FALSE;
+													return GR_FALSE;
 												}
 										}
 									}
@@ -1283,7 +1283,7 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 						{
 							Printf("Error: Failed to build '%s' file from '%s' file\n",
 										TargetName,KEYName);
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					if (RVal == RETURN_WARNING)
 						{
@@ -1293,10 +1293,10 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 				}
 				break;
 			case (ApjMotion_Mot):
-				if (Make_CopyMotionFile(TargetName, SourceName,Printf )==JE_FALSE)
+				if (Make_CopyMotionFile(TargetName, SourceName,Printf )==GR_FALSE)
 					{
 						Printf("Error: failed to copy motion fle '%s' into work file '%s'\n", SourceName,TargetName);
-						return JE_FALSE;
+						return GR_FALSE;
 					}
 				break;
 // Motions from actors not yet implemented
@@ -1304,24 +1304,24 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 			case (ApjMotion_Act):
 				{
 					Printf("Error: getting motion from existing actor file not yet implemented\n");
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 */
 			case (ApjMotion_Invalid):
 			default:
 				{
 					Printf("Error: unrecognized format specifier for motion '%s'\n",SourceName);
-					return JE_FALSE;
+					return GR_FALSE;
 				}				
 		}
 
 
-	if (AProject_GetMotionOptimizationFlag ( Prj, MotionIndex ) == JE_FALSE)
+	if (AProject_GetMotionOptimizationFlag ( Prj, MotionIndex ) == GR_FALSE)
 		{
-			if (Make_CopyMotionFile( FinalTargetName, TargetName, Printf)==JE_FALSE)
+			if (Make_CopyMotionFile( FinalTargetName, TargetName, Printf)==GR_FALSE)
 				{
 					Printf("Error: unable to copy temporary motion file '%s' to final '%s'\n",TargetName, FinalTargetName);
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 		}
 	else
@@ -1331,46 +1331,46 @@ jeBoolean Make_Motion_MOT( AProject *Prj, AOptions *AOptions,
 			Make_TargetFileName( LogName, SourceName, ObjDir, "LOG");
 	
 			if (Make_Optimize_Motion( TargetName, FinalTargetName, LogName, 
-						AProject_GetMotionOptimizationLevel ( Prj, MotionIndex ), Printf)==JE_FALSE)
+						AProject_GetMotionOptimizationLevel ( Prj, MotionIndex ), Printf)==GR_FALSE)
 				{
 					Printf("Error: unable to optimize temporary motion file '%s' to final '%s'\n",TargetName, FinalTargetName);
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 		}
 				
-	return JE_TRUE;	
+	return GR_TRUE;	
 }
 
 
 
-jeBoolean Make_Body(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Printf)
+grBoolean Make_Body(AProject *Prj, AOptions *BuildOptions, MkUtil_Printf Printf)
 {
-	jeBoolean OutOfDate;
+	grBoolean OutOfDate;
 	
 	assert( Prj      != NULL );
 	assert( BuildOptions  != NULL );
 	assert( Printf   != NULL );
 
-	if (Make_Body_BDY_OutOfDate( Prj, &OutOfDate, Printf) == JE_FALSE)
-		return JE_FALSE;
+	if (Make_Body_BDY_OutOfDate( Prj, &OutOfDate, Printf) == GR_FALSE)
+		return GR_FALSE;
 	
-	if (OutOfDate == JE_FALSE)
+	if (OutOfDate == GR_FALSE)
 		{
 			Printf("\tBody is up to date\n");
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
-	if (Make_Body_BDY( Prj, BuildOptions, Printf )==JE_FALSE)
+	if (Make_Body_BDY( Prj, BuildOptions, Printf )==GR_FALSE)
 		{
 			Printf("Error: Failed to make BDY file\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Make_Actor_ACT_OutOfDate( AProject *Prj, jeBoolean *OutOfDate, MkUtil_Printf Printf)
+grBoolean Make_Actor_ACT_OutOfDate( AProject *Prj, grBoolean *OutOfDate, MkUtil_Printf Printf)
 {
 	int MotionCount;
 	int *MotionIndexArray;
@@ -1380,42 +1380,42 @@ jeBoolean Make_Actor_ACT_OutOfDate( AProject *Prj, jeBoolean *OutOfDate, MkUtil_
 	assert( OutOfDate != NULL );
 	assert( Printf    != NULL );
 
-	*OutOfDate = JE_FALSE;
+	*OutOfDate = GR_FALSE;
 
-	if (Make_Body_BDY_OutOfDate( Prj, OutOfDate, Printf )==JE_FALSE)
-		return JE_FALSE;
-	if (*OutOfDate != JE_FALSE)
-		return JE_TRUE;
+	if (Make_Body_BDY_OutOfDate( Prj, OutOfDate, Printf )==GR_FALSE)
+		return GR_FALSE;
+	if (*OutOfDate != GR_FALSE)
+		return GR_TRUE;
 
 	MotionCount = AProject_GetMotionsCount( Prj );
-	MotionIndexArray = JE_RAM_ALLOCATE_ARRAY( int, MotionCount);
+	MotionIndexArray = GR_RAM_ALLOCATE_ARRAY( int, MotionCount);
 	if (MotionIndexArray == NULL)
 		{
 			Printf("Error: unable to get memory for Make Actor step\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	
 	for (i=0; i<MotionCount; i++)
 		MotionIndexArray[i] = i;
 	
-	if (Make_AnyMotion_MOT_OutOfDate( Prj, MotionCount, MotionIndexArray, OutOfDate, Printf )==JE_FALSE)
+	if (Make_AnyMotion_MOT_OutOfDate( Prj, MotionCount, MotionIndexArray, OutOfDate, Printf )==GR_FALSE)
 		{
-			jeRam_Free(MotionIndexArray);
-			return JE_FALSE;
+			grRam_Free(MotionIndexArray);
+			return GR_FALSE;
 		}
 
-	jeRam_Free(MotionIndexArray);
+	grRam_Free(MotionIndexArray);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Make_Motion(AProject *Prj, AOptions *Options, 
+grBoolean Make_Motion(AProject *Prj, AOptions *Options, 
 					  int MotionCount, int *MotionIndexArray, 
 					  MkUtil_Printf Printf)
 {
 	int i;
-	jeBoolean OutOfDate;
+	grBoolean OutOfDate;
 
 	assert( Prj       != NULL );
 	assert( Options   != NULL );
@@ -1423,38 +1423,38 @@ jeBoolean Make_Motion(AProject *Prj, AOptions *Options,
 	assert( MotionIndexArray != NULL );
 
 	Printf("\tMaking Motions\n");			
-	if (Make_MaxScript( Prj, Options, JE_TRUE, 
-					MotionCount, MotionIndexArray, Printf ) == JE_FALSE)
+	if (Make_MaxScript( Prj, Options, GR_TRUE, 
+					MotionCount, MotionIndexArray, Printf ) == GR_FALSE)
 		{
 			Printf("Error: unable to complete 3DS MAX script and export step for Make_Actor\n");
-			jeRam_Free(MotionIndexArray);
-			return JE_FALSE;
+			grRam_Free(MotionIndexArray);
+			return GR_FALSE;
 		}
 
-	if (Make_AnyMotion_MOT_OutOfDate( Prj, MotionCount, MotionIndexArray, &OutOfDate, Printf )==JE_FALSE)
-		return JE_FALSE;
+	if (Make_AnyMotion_MOT_OutOfDate( Prj, MotionCount, MotionIndexArray, &OutOfDate, Printf )==GR_FALSE)
+		return GR_FALSE;
 		
-	if (OutOfDate == JE_FALSE)
+	if (OutOfDate == GR_FALSE)
 		{
 			Printf("\tMotions are up to date\n");
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 	for (i=0; i<MotionCount; i++)
 		{
-			if (Make_Motion_MOT( Prj, Options, i, Printf)==JE_FALSE)
-				return JE_FALSE;
+			if (Make_Motion_MOT( Prj, Options, i, Printf)==GR_FALSE)
+				return GR_FALSE;
 		}
 	Printf("\tFinished making Motions successfully\n");			
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
+grBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 {
 	int MotionCount;
 	int *MotionIndexArray;
 	int i;
-	jeBoolean OutOfDate=JE_FALSE;
+	grBoolean OutOfDate=GR_FALSE;
 	const char *ObjDir;
 	
 	assert( Prj      != NULL );
@@ -1469,7 +1469,7 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 		if (TargetName == NULL)
 			{
 				Printf("Error: Can't get output filename\n");
-				return JE_FALSE;
+				return GR_FALSE;
 			} 
 		#pragma message ("would like to test against date of apj file")
 	
@@ -1477,7 +1477,7 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 		if (Handle == -1)
 			{
 				Printf("Actor doesn't exist:\n",TargetName);
-				OutOfDate = JE_TRUE;
+				OutOfDate = GR_TRUE;
 			}
 		else
 			{
@@ -1492,7 +1492,7 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 	if (ObjDir == NULL)
 		{
 			Printf("Error: Unable to get temporary path\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 	if (_mkdir(ObjDir)==-1)
@@ -1504,59 +1504,59 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 			if (F==NULL)
 				{
 					Printf("Error: Unable to create temporary path '%s'\n",ObjDir);
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 			fclose(F);
 		}
 
-	if (OutOfDate==JE_FALSE)
-		if (Make_Actor_ACT_OutOfDate( Prj, &OutOfDate, Printf )==JE_FALSE)
-			return JE_FALSE;
+	if (OutOfDate==GR_FALSE)
+		if (Make_Actor_ACT_OutOfDate( Prj, &OutOfDate, Printf )==GR_FALSE)
+			return GR_FALSE;
 
-	if (OutOfDate == JE_FALSE)
+	if (OutOfDate == GR_FALSE)
 		{
 			Printf("\tActor is up to date.\n");
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
 	// any script stuff first
 	MotionCount = AProject_GetMotionsCount( Prj );
-	MotionIndexArray = JE_RAM_ALLOCATE_ARRAY( int, MotionCount);
+	MotionIndexArray = GR_RAM_ALLOCATE_ARRAY( int, MotionCount);
 	if (MotionIndexArray == NULL)
 		{
 			Printf("Error: unable to get memory for Make Actor step\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	
 	for (i=0; i<MotionCount; i++)
 		{
 			MotionIndexArray[i] = i;
 		}
-	if (Make_MaxScript( Prj, Options, JE_TRUE, 
-						MotionCount, MotionIndexArray, Printf ) == JE_FALSE)
+	if (Make_MaxScript( Prj, Options, GR_TRUE, 
+						MotionCount, MotionIndexArray, Printf ) == GR_FALSE)
 		{
 			Printf("Error: unable to complete 3DS MAX script and export step for Make_Actor\n");
-			jeRam_Free(MotionIndexArray);
-			return JE_FALSE;
+			grRam_Free(MotionIndexArray);
+			return GR_FALSE;
 		}
 	
 	// body
-	if (Make_Body(Prj,Options,Printf)==JE_FALSE)
+	if (Make_Body(Prj,Options,Printf)==GR_FALSE)
 		{
 			Printf("Error: Failed to build body.  Unable to make Actor.\n");
-			jeRam_Free(MotionIndexArray);
-			return JE_FALSE;
+			grRam_Free(MotionIndexArray);
+			return GR_FALSE;
 		}
 
 	// motions
-	if (Make_Motion(Prj, Options, MotionCount, MotionIndexArray, Printf)==JE_FALSE)
+	if (Make_Motion(Prj, Options, MotionCount, MotionIndexArray, Printf)==GR_FALSE)
 		{
 			Printf("Error: Failed to build motions.  Unable to make Actor.\n");
-			jeRam_Free(MotionIndexArray);
-			return JE_FALSE;
+			grRam_Free(MotionIndexArray);
+			return GR_FALSE;
 		}
 
-	jeRam_Free(MotionIndexArray);
+	grRam_Free(MotionIndexArray);
 
 	Printf("\tCombining components into final Actor...\n");
 	{
@@ -1574,7 +1574,7 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 		if (SourceName == NULL)
 			{
 				Printf("Error: Can't get source name for body\n");
-				return JE_FALSE;
+				return GR_FALSE;
 			} 
 		Make_TargetFileName( BodyName, SourceName, ObjDir, "BDY");
 
@@ -1582,14 +1582,14 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 		if (TargetName == NULL)
 			{
 				Printf("Error: Can't get output filename\n");
-				return JE_FALSE;
+				return GR_FALSE;
 			} 
 		
 		Options = MkActor_OptionsCreate();
 		if (Options == NULL)
 			{
 				Printf("Error: unable to allocate option block for MkActor\n");
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		sprintf(OptionString,"-A%s",TargetName);
 		RVal = MkActor_ParseOptionString(Options,OptionString,MK_FALSE,Printf);
@@ -1598,7 +1598,7 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 				Printf("Error: unable to set options into MkActor:\n");
 				Printf(OptionString);
 				MkActor_OptionsDestroy(&Options);
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		
 		sprintf(OptionString,"-B%s",BodyName);
@@ -1608,7 +1608,7 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 				Printf("Error: unable to set options into MkActor:\n");
 				Printf(OptionString);
 				MkActor_OptionsDestroy(&Options);
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		
 		for (i=0; i<MotionCount; i++)
@@ -1618,7 +1618,7 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 				if (SourceName == NULL)
 					{
 						Printf("Error: Can't get source file for motion #%d '%s'\n",i,MotionName);
-						return JE_FALSE;
+						return GR_FALSE;
 					} 
 			
 				Make_TargetFileName( MotionName, SourceName, ObjDir, "MOT");
@@ -1630,7 +1630,7 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 						Printf("Error: unable to set motion option into MkActor:\n");
 						Printf(OptionString);
 						MkActor_OptionsDestroy(&Options);
-						return JE_FALSE;
+						return GR_FALSE;
 					}
 			}
 						
@@ -1642,7 +1642,7 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 		if (RVal == RETURN_ERROR )
 			{
 				Printf("Error: Final actor compilation failed\n");
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 		if (RVal == RETURN_WARNING)
 			{
@@ -1650,19 +1650,19 @@ jeBoolean Make_Actor(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 			}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 	
 }
 
 
 
 
-jeBoolean Make_Clean(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
+grBoolean Make_Clean(AProject *Prj, AOptions *Options, MkUtil_Printf Printf)
 {
 	const char *TargetName;
 	const char *ObjDir;
 	char DeleteName[BIG];
-//	jeBoolean OutOfDate;
+//	grBoolean OutOfDate;
 	long Handle;
 	struct _finddata_t TargetData;
 	
@@ -1671,15 +1671,15 @@ Options;		// remove unused parameter warning
 	assert( Options  != NULL );
 	assert( Printf   != NULL );
 
-//	Make_CleanFlag = JE_TRUE;
-//	if (Make_Actor_ACT_OutOfDate( Prj, &OutOfDate, Printf )==JE_FALSE)
-//		return JE_FALSE;
+//	Make_CleanFlag = GR_TRUE;
+//	if (Make_Actor_ACT_OutOfDate( Prj, &OutOfDate, Printf )==GR_FALSE)
+//		return GR_FALSE;
 
 	TargetName  = AProject_GetOutputFilename (Prj);
 	if (TargetName == NULL)
 		{
 			Printf("Error: Can't get output filename\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		} 
 	
 	Handle = (long) _findfirst( TargetName, &TargetData );
@@ -1689,7 +1689,7 @@ Options;		// remove unused parameter warning
 			if (unlink(TargetName) != 0)
 				{
 					Printf("Error: Can't delete '%s'\n",TargetName);
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 			Printf("Target Actor file deleted\n");
 		}
@@ -1702,7 +1702,7 @@ Options;		// remove unused parameter warning
 	if (ObjDir == NULL)
 		{
 			Printf("Error: Unable to get temporary path\n");
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	Make_TargetFileName( DeleteName, "*", ObjDir, "*");
 	
@@ -1716,7 +1716,7 @@ Options;		// remove unused parameter warning
 			do 
 				{
 					if (TargetData.name[0]!='.')
-						if (FilePath_AppendName(ObjDir,TargetData.name,DeleteName)!=JE_FALSE)
+						if (FilePath_AppendName(ObjDir,TargetData.name,DeleteName)!=GR_FALSE)
 							{
 								unlink(DeleteName);
 							}
@@ -1728,20 +1728,20 @@ Options;		// remove unused parameter warning
 
 	
 	Printf("Clean complete.  Temporary files deleted\n");
-//	Make_CleanFlag = JE_FALSE;
-	return JE_TRUE;
+//	Make_CleanFlag = GR_FALSE;
+	return GR_TRUE;
 }
 
 
 
-jeBoolean Make_ActorSummary(AProject *Prj, MkUtil_Printf Printf)     
+grBoolean Make_ActorSummary(AProject *Prj, MkUtil_Printf Printf)     
 	{ 
 	const char *TargetName;
-	jeBody *B;
-	jeActor_Def *A;
+	grBody *B;
+	grActor_Def *A;
 	int i;
 	int j;
-	jeVFile *VF;
+	grVFile *VF;
 	long Handle;
 	struct _finddata_t TargetData;
 	
@@ -1752,34 +1752,34 @@ jeBoolean Make_ActorSummary(AProject *Prj, MkUtil_Printf Printf)
 	if (TargetName == NULL)
 		{
 			Printf("Error: Can't get target Actor filename\n"); 
-			return JE_FALSE;
+			return GR_FALSE;
 		} 
 
 	Handle = (long)_findfirst( TargetName, &TargetData );
 	if (Handle == -1)
 		{
 			Printf("Error: Target Actor '%s' is not built\n",TargetName);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	_findclose(Handle);
 	
 	
-	VF = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,TargetName,NULL,JE_VFILE_OPEN_READONLY);
+	VF = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,TargetName,NULL,GR_VFILE_OPEN_READONLY);
 	if (VF==NULL)
 		{
 			Printf("Error: Could not open target Actor file (%s).\n", TargetName);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 	
-	A = jeActor_DefCreateFromFile(VF);
-	jeVFile_Close(VF);
+	A = grActor_DefCreateFromFile(VF);
+	grVFile_Close(VF);
 	if (A==NULL)
 		{
 			Printf("Error: Failed to load actor from target actor file '%s'.\n", TargetName);
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
-	B = jeActor_GetBody(A);
+	B = grActor_GetBody(A);
 	if (B==NULL)
 		{
 			Printf("Actor has no body\n");
@@ -1787,28 +1787,28 @@ jeBoolean Make_ActorSummary(AProject *Prj, MkUtil_Printf Printf)
 	else
 		{
 			Printf("Body:\n");
-			Printf("\t%d Bones\n",jeBody_GetBoneCount(B));
-			for (j=0; j<jeBody_GetBoneCount(B); j++)
+			Printf("\t%d Bones\n",grBody_GetBoneCount(B));
+			for (j=0; j<grBody_GetBoneCount(B); j++)
 				{
-					jeXForm3d A;
+					grXForm3d A;
 					int parent;
 					const char *Name;
-					jeBody_GetBone(B,j,&Name,&A,&parent);
+					grBody_GetBone(B,j,&Name,&A,&parent);
 					Printf("\t\tBone %d Name='%s'\n",j,Name);
 				}
-			Printf("\t%d Materials\n",jeBody_GetMaterialCount(B));
-			for (j=0; j<jeBody_GetMaterialCount(B); j++)
+			Printf("\t%d Materials\n",grBody_GetMaterialCount(B));
+			for (j=0; j<grBody_GetMaterialCount(B); j++)
 				{
-					jeMaterialSpec *MatSpec;
+					grMaterialSpec *MatSpec;
 					const char *n;
-					jeBitmap_Info BmpInfo;
-					jeBitmap *Bmp = NULL;
-					jeFloat r,g,b;
+					grBitmap_Info BmpInfo;
+					grBitmap *Bmp = NULL;
+					grFloat r,g,b;
 					int ir,ig,ib;
-					jeUVMapper Mapper;
+					grUVMapper Mapper;
 
-					jeBody_GetMaterial(B,j,&n,&MatSpec,&r,&g,&b,&Mapper);
-                    Bmp = jeMaterialSpec_GetLayerBitmap(MatSpec, 0);
+					grBody_GetMaterial(B,j,&n,&MatSpec,&r,&g,&b,&Mapper);
+                    Bmp = grMaterialSpec_GetLayerBitmap(MatSpec, 0);
 					
 					ir=(int)r;
 					ig=(int)g;
@@ -1818,9 +1818,9 @@ jeBoolean Make_ActorSummary(AProject *Prj, MkUtil_Printf Printf)
 							
 					if (Bmp!=NULL)
 						{
-							jeBitmap_Info SecondaryInfo;
+							grBitmap_Info SecondaryInfo;
 
-							jeBitmap_GetInfo(Bmp,&BmpInfo,&SecondaryInfo);
+							grBitmap_GetInfo(Bmp,&BmpInfo,&SecondaryInfo);
 							Printf("\t\t         Bitmap Info:  Width=%d   Height=%d   Format ID=%d  \n",
 								BmpInfo.Width,BmpInfo.Height,(int)BmpInfo.Format);
 							Printf("\t\t                       Minimum Mip=%d   Maximum Mip=%d\n",
@@ -1837,43 +1837,43 @@ jeBoolean Make_ActorSummary(AProject *Prj, MkUtil_Printf Printf)
 						}
 					
 				}
-			Printf("\t%d Levels of Detail\n",JE_BODY_NUMBER_OF_LOD);
-			for (j=0; j<JE_BODY_NUMBER_OF_LOD; j++)
+			Printf("\t%d Levels of Detail\n",GR_BODY_NUMBER_OF_LOD);
+			for (j=0; j<GR_BODY_NUMBER_OF_LOD; j++)
 				{
 					int v,n,faces;
-					jeBody_GetGeometryStats(B,j,&v,&faces,&n);
+					grBody_GetGeometryStats(B,j,&v,&faces,&n);
 					Printf("\t\tLOD%d  %d Vertices   %d Normals   %d Faces\n",j,v,n,faces);
 				}
 		}
-	Printf("%d Motions\n",jeActor_GetMotionCount(A));
-	for (i=0; i<jeActor_GetMotionCount(A); i++)
+	Printf("%d Motions\n",grActor_GetMotionCount(A));
+	for (i=0; i<grActor_GetMotionCount(A); i++)
 		{
-			jeMotion *M;
+			grMotion *M;
 			const char *name;
-			M=jeActor_GetMotionByIndex(A,i);
-			name= jeMotion_GetName(M);
+			M=grActor_GetMotionByIndex(A,i);
+			name= grMotion_GetName(M);
 
 			{
 				int Match=0;
 
 				if (B!=NULL)
 					{
-						if (jeBody_GetBoneNameChecksum(B) == jeMotion_GetNameChecksum(M))
+						if (grBody_GetBoneNameChecksum(B) == grMotion_GetNameChecksum(M))
 							Match = 1;
 						else
 							Match = 0;
 					}
 				if (name != NULL)
 					Printf("\tMotion %d Name='%s' (%d Joints)  (%s)\n",i,
-						name,jeMotion_GetPathCount(M),
+						name,grMotion_GetPathCount(M),
 						(Match==1)?"Matches Bones":"Doesn't Match Bones" );
 				else
 					Printf("\tMotion %d (no name) (%d Joints)  (%s)\n",i,
-						jeMotion_GetPathCount(M),
+						grMotion_GetPathCount(M),
 						(Match==1)?"Matches Bones":"Doesn't Match Bones");
 			}
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 

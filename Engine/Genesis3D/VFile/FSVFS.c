@@ -57,7 +57,7 @@ typedef	struct	VFSFileHeader
 {
 	unsigned int	Signature;
 	unsigned short	Version;			// Version number
-	jeBoolean		Dispersed;			// Is this VFS dispersed?
+	grBoolean		Dispersed;			// Is this VFS dispersed?
 //	long			DirectoryOffset;	// File offset to directory
 	long			DataLength;			// Length of all file data, including VFS header
 	long			Stuff;
@@ -67,7 +67,7 @@ typedef	struct	VFSFile
 {
 	unsigned int	Signature;
 
-	jeVFile *		RWOps;				// Parent file for read/write ops
+	grVFile *		RWOps;				// Parent file for read/write ops
 	struct VFSFile *System;				// If we're a child, we need a back pointer
 
 	DirTree *		DirEntry;			// Directory entry for this file
@@ -79,15 +79,15 @@ typedef	struct	VFSFile
 
 	unsigned int	OpenModeFlags;
 
-	jeVFile *		DispersedFile;		// If the file is opened from a dispersed VFS
+	grVFile *		DispersedFile;		// If the file is opened from a dispersed VFS
 										//   this is the file handle to the file data.
 
 	// Things that are specific to the Root node
-	jeBoolean		IsSystem;			// Am I the owner of the Directory?
+	grBoolean		IsSystem;			// Am I the owner of the Directory?
 	long			RWOpsHintsStartPos;
 	long			DataLength;			// Current size of the aggregate including VFS header
-	jeBoolean		Dispersed;			// Is this VFS dispersed?
-//	jeBoolean		CanSetHints;		// Used to keep parallel semantics with the other
+	grBoolean		Dispersed;			// Is this VFS dispersed?
+//	grBoolean		CanSetHints;		// Used to keep parallel semantics with the other
 										//   file systems.
 
 }	VFSFile;
@@ -104,8 +104,8 @@ typedef	struct	VFSFinder
 #define	CHECK_FINDER(F)	assert(F);assert(F->Signature == VFSFINDER_SIGNATURE);
 
 #pragma warning (disable:4100)
-static	void *	JETCC FSVFS_FinderCreate(
-	jeVFile *		FS,
+static	void *	GRCC FSVFS_FinderCreate(
+	grVFile *		FS,
 	void *			Handle,
 	const char *	FileSpec)
 {
@@ -121,7 +121,7 @@ static	void *	JETCC FSVFS_FinderCreate(
 	if	(!File->Directory)
 		return NULL;
 
-	Finder = (VFSFinder *)jeRam_Allocate(sizeof(*Finder));
+	Finder = (VFSFinder *)grRam_Allocate(sizeof(*Finder));
 	if	(!Finder)
 		return NULL;
 
@@ -132,7 +132,7 @@ static	void *	JETCC FSVFS_FinderCreate(
 	Finder->Finder	  = DirTree_CreateFinder(File->Directory, FileSpec);
 	if	(!Finder->Finder)
 	{
-		jeRam_Free(Finder);
+		grRam_Free(Finder);
 		return NULL;
 	}
 
@@ -140,7 +140,7 @@ static	void *	JETCC FSVFS_FinderCreate(
 }
 #pragma warning (default:4100)
 
-static	jeBoolean	JETCC FSVFS_FinderGetNextFile(void *Handle)
+static	grBoolean	GRCC FSVFS_FinderGetNextFile(void *Handle)
 {
 	VFSFinder *	Finder;
 
@@ -150,12 +150,12 @@ static	jeBoolean	JETCC FSVFS_FinderGetNextFile(void *Handle)
 
 	Finder->LastFind = DirTree_FinderGetNextFile(Finder->Finder);
 	if	(Finder->LastFind)
-		return JE_TRUE;
+		return GR_TRUE;
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSVFS_FinderGetProperties(void *Handle, jeVFile_Properties *Properties)
+static	grBoolean	GRCC FSVFS_FinderGetProperties(void *Handle, grVFile_Properties *Properties)
 {
 	VFSFinder *		Finder;
 
@@ -166,7 +166,7 @@ static	jeBoolean	JETCC FSVFS_FinderGetProperties(void *Handle, jeVFile_Propertie
 	CHECK_FINDER(Finder);
 
 	if	(!Finder->LastFind)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	DirTree_GetFileTime(Finder->LastFind, &Properties->Time);
 	DirTree_GetFileAttributes(Finder->LastFind, &Properties->AttributeFlags);
@@ -175,7 +175,7 @@ static	jeBoolean	JETCC FSVFS_FinderGetProperties(void *Handle, jeVFile_Propertie
 	return DirTree_GetName(Finder->LastFind, &Properties->Name[0], sizeof(Properties->Name));
 }
 
-static	void JETCC FSVFS_FinderDestroy(void *Handle)
+static	void GRCC FSVFS_FinderDestroy(void *Handle)
 {
 	VFSFinder *	Finder;
 
@@ -187,12 +187,12 @@ static	void JETCC FSVFS_FinderDestroy(void *Handle)
 
 	Finder->Signature = 0;
 	DirTree_DestroyFinder(Finder->Finder);
-	jeRam_Free(Finder);
+	grRam_Free(Finder);
 }
 
 #pragma warning (disable:4100)
-static	void *	JETCC FSVFS_Open(
-	jeVFile *		FS,
+static	void *	GRCC FSVFS_Open(
+	grVFile *		FS,
 	void *			Handle,
 	const char *	Name,
 	void *			Dummy,
@@ -216,8 +216,8 @@ static	void *	JETCC FSVFS_Open(
 		we might be getting a VFS that has hints in the file, and making the read
 		operations coherent on a RAW request will be difficult.
 	*/
-#pragma message("FSVFS does not support JE_VFILE_OPEN_RAW")
-	if	(OpenModeFlags & JE_VFILE_OPEN_RAW)
+#pragma message("FSVFS does not support GR_VFILE_OPEN_RAW")
+	if	(OpenModeFlags & GR_VFILE_OPEN_RAW)
 		return NULL;
 
 	/*
@@ -226,21 +226,21 @@ static	void *	JETCC FSVFS_Open(
 		or which already exists.  We can also support directory open operations
 		at anytime.
 	*/
-	if	((OpenModeFlags & JE_VFILE_OPEN_UPDATE)   &&
-		 !(OpenModeFlags & JE_VFILE_OPEN_DIRECTORY) &&
-		 !(OpenModeFlags & JE_VFILE_OPEN_CREATE) &&
-		 !(Context->System->OpenModeFlags & JE_VFILE_OPEN_CREATE))
+	if	((OpenModeFlags & GR_VFILE_OPEN_UPDATE)   &&
+		 !(OpenModeFlags & GR_VFILE_OPEN_DIRECTORY) &&
+		 !(OpenModeFlags & GR_VFILE_OPEN_CREATE) &&
+		 !(Context->System->OpenModeFlags & GR_VFILE_OPEN_CREATE))
 		return NULL;
 
 	FileEntry = DirTree_FindExact(Context->Directory, Name);
-	if	(OpenModeFlags & JE_VFILE_OPEN_CREATE)
+	if	(OpenModeFlags & GR_VFILE_OPEN_CREATE)
 	{
 		if	(FileEntry)
 			return NULL;
 
 		FileEntry = DirTree_AddFile(Context->Directory,
 									Name,
-									(OpenModeFlags & JE_VFILE_OPEN_DIRECTORY) ? JE_TRUE : JE_FALSE);
+									(OpenModeFlags & GR_VFILE_OPEN_DIRECTORY) ? GR_TRUE : GR_FALSE);
 		if	(!FileEntry)
 			return NULL;
 	}
@@ -254,7 +254,7 @@ static	void *	JETCC FSVFS_Open(
 			return NULL;
 	}
 
-	NewFile = (VFSFile *)jeRam_Allocate(sizeof(*NewFile));
+	NewFile = (VFSFile *)grRam_Allocate(sizeof(*NewFile));
 	if	(!NewFile)
 		return NewFile;
 
@@ -263,19 +263,19 @@ static	void *	JETCC FSVFS_Open(
 	NewFile->Signature 	  = VFSFILE_SIGNATURE;
 	NewFile->DirEntry  	  = FileEntry;
 	NewFile->RWOps	   	  = Context->RWOps;
-	NewFile->Dispersed	  = JE_FALSE;
+	NewFile->Dispersed	  = GR_FALSE;
 	NewFile->System		  = Context->System;
-//	NewFile->CanSetHints  = JE_FALSE;
+//	NewFile->CanSetHints  = GR_FALSE;
 
 	// If we're a directory, make us a first class operator with the child
-	if	(OpenModeFlags & JE_VFILE_OPEN_DIRECTORY)
+	if	(OpenModeFlags & GR_VFILE_OPEN_DIRECTORY)
 	{
 		NewFile->Directory = FileEntry;
 	}
 	else
 	{
-//		if	(Context->System->OpenModeFlags & JE_VFILE_OPEN_CREATE)
-		if	(OpenModeFlags & JE_VFILE_OPEN_CREATE)
+//		if	(Context->System->OpenModeFlags & GR_VFILE_OPEN_CREATE)
+		if	(OpenModeFlags & GR_VFILE_OPEN_CREATE)
 		{
 			NewFile->RWOpsStartPos = Context->System->DataLength +
 									 Context->System->RWOpsStartPos;
@@ -284,31 +284,31 @@ static	void *	JETCC FSVFS_Open(
 		{
 			// Here's where we open an existing file
 			DirTree_GetFileOffset(FileEntry, &(NewFile->RWOpsStartPos));
-			if	(NewFile->System->Dispersed == JE_TRUE)
+			if	(NewFile->System->Dispersed == GR_TRUE)
 			{
-			jeVFile * DispersedDir;	// <> CB 2/10
+			grVFile * DispersedDir;	// <> CB 2/10
 			char	Buff[_MAX_PATH];
 				// We have to get the file data from elsewhere
-				if	(DirTree_GetFullName(FileEntry, Buff, sizeof(Buff)) == JE_FALSE)
+				if	(DirTree_GetFullName(FileEntry, Buff, sizeof(Buff)) == GR_FALSE)
 				{
-					jeErrorLog_AddString(-1,"DirTree GetFullName failed !",NULL);	
-					jeRam_Free(NewFile);
+					grErrorLog_AddString(-1,"DirTree GetFullName failed !",NULL);	
+					grRam_Free(NewFile);
 					return NULL;
 				}
-				DispersedDir = jeVFile_GetContext(NewFile->RWOps);
+				DispersedDir = grVFile_GetContext(NewFile->RWOps);
 				if ( ! DispersedDir )
 				{
-					jeErrorLog_AddString(-1,"No Context on Dispersed VFS !",NULL);	
-					jeRam_Free(NewFile);
+					grErrorLog_AddString(-1,"No Context on Dispersed VFS !",NULL);	
+					grRam_Free(NewFile);
 					return NULL;
 				}
-				NewFile->DispersedFile = jeVFile_Open(DispersedDir,
+				NewFile->DispersedFile = grVFile_Open(DispersedDir,
 													  Buff,
-													  JE_VFILE_OPEN_READONLY);
+													  GR_VFILE_OPEN_READONLY);
 				if	(!NewFile->DispersedFile)
 				{
-					jeErrorLog_AddString(-1,"File note found in sispersed VFS !",Buff);	
-					jeRam_Free(NewFile);
+					grErrorLog_AddString(-1,"File note found in sispersed VFS !",Buff);	
+					grRam_Free(NewFile);
 					return NULL;	// <> CB 2/10
 				}
 			}
@@ -317,29 +317,29 @@ static	void *	JETCC FSVFS_Open(
 
 	NewFile->OpenModeFlags = OpenModeFlags;
 
-	if	(!(OpenModeFlags & JE_VFILE_OPEN_DIRECTORY))
+	if	(!(OpenModeFlags & GR_VFILE_OPEN_DIRECTORY))
 	{
-		if	(OpenModeFlags & JE_VFILE_OPEN_CREATE)
+		if	(OpenModeFlags & GR_VFILE_OPEN_CREATE)
 		{
 			DirTree_SetFileOffset(FileEntry, NewFile->RWOpsStartPos);
-//			NewFile->CanSetHints = JE_TRUE;
+//			NewFile->CanSetHints = GR_TRUE;
 		}
 		else
 		{
-			assert(!(OpenModeFlags & JE_VFILE_OPEN_UPDATE));
+			assert(!(OpenModeFlags & GR_VFILE_OPEN_UPDATE));
 			DirTree_GetFileSize(FileEntry, &NewFile->Length);
 		}
 	}
 
 	// Only a VFS opened with OpenNewSystem gets to be the owner
-	NewFile->IsSystem = JE_FALSE;
+	NewFile->IsSystem = GR_FALSE;
 
 	return (void *)NewFile;
 }
 #pragma warning (default:4100)
 
-static	void *	JETCC FSVFS_OpenNewSystem(
-	jeVFile *		RWOps,
+static	void *	GRCC FSVFS_OpenNewSystem(
+	grVFile *		RWOps,
 	const char *	Name,
 	void *			Context,
 	unsigned int 	OpenModeFlags)
@@ -347,14 +347,14 @@ static	void *	JETCC FSVFS_OpenNewSystem(
 VFSFile *	NewFS;
 long		RWOpsStartPos;
 VFSFileHeader	Header;
-jeVFile *		HintsFile;
+grVFile *		HintsFile;
 
 	assert(RWOps != NULL);
 	assert(Name == NULL);
 	assert(Context == NULL);
 
 	// All VFS are directories
-	if	(!(OpenModeFlags & JE_VFILE_OPEN_DIRECTORY))
+	if	(!(OpenModeFlags & GR_VFILE_OPEN_DIRECTORY))
 		return NULL;
 
 	/*
@@ -362,7 +362,7 @@ jeVFile *		HintsFile;
 		we might be getting a VFS that has hints in the file, and making the read
 		operations coherent on a RAW request will be difficult.
 	*/
-#pragma message("FSVFS does not support JE_VFILE_OPEN_RAW")
+#pragma message("FSVFS does not support GR_VFILE_OPEN_RAW")
 #ifdef KROUERDEBUG
 	{
 		char msg[80];
@@ -371,42 +371,42 @@ jeVFile *		HintsFile;
 	}
 #endif
 
-	if	(OpenModeFlags & JE_VFILE_OPEN_RAW)
+	if	(OpenModeFlags & GR_VFILE_OPEN_RAW)
 		return NULL;
 
-	if	(jeVFile_Tell(RWOps, &RWOpsStartPos) == JE_FALSE)
+	if	(grVFile_Tell(RWOps, &RWOpsStartPos) == GR_FALSE)
 	{
-		jeErrorLog_AddString(-1,"FSVFS : 1",NULL);
+		grErrorLog_AddString(-1,"FSVFS : 1",NULL);
 		return NULL;
 	}
 
-	HintsFile = jeVFile_GetHintsFile(RWOps);
+	HintsFile = grVFile_GetHintsFile(RWOps);
 	if	(!HintsFile)
 	{
-		jeErrorLog_AddString(-1,"FSVFS : Get Hints failed!",NULL);
+		grErrorLog_AddString(-1,"FSVFS : Get Hints failed!",NULL);
 		return NULL;
 	}
 
-	NewFS = (VFSFile *)jeRam_AllocateClear(sizeof(*NewFS));
+	NewFS = (VFSFile *)grRam_AllocateClear(sizeof(*NewFS));
 	if	(!NewFS)
 		return NewFS;
 
-	jeVFile_Tell(HintsFile,&(NewFS->RWOpsHintsStartPos));
+	grVFile_Tell(HintsFile,&(NewFS->RWOpsHintsStartPos));
 
-	if	(!(OpenModeFlags & JE_VFILE_OPEN_CREATE))
+	if	(!(OpenModeFlags & GR_VFILE_OPEN_CREATE))
 	{
 
-		if	(jeVFile_Read(RWOps, &Header, sizeof(Header)) == JE_FALSE)
+		if	(grVFile_Read(RWOps, &Header, sizeof(Header)) == GR_FALSE)
 		{
-			jeErrorLog_AddString(-1,"FSVFS : Read Header failed!",NULL);
+			grErrorLog_AddString(-1,"FSVFS : Read Header failed!",NULL);
 			return NULL;
 		}
 
 		if( 	(Header.Signature != VFSFILEHEADER_SIGNATURE) || 
 				(Header.Version != HEADER_VERSION) )
 		{
-			jeVFile_Seek(RWOps, RWOpsStartPos, JE_VFILE_SEEKSET);
-			jeErrorLog_AddString(-1,"FSVFS : Bad Signature",NULL);
+			grVFile_Seek(RWOps, RWOpsStartPos, GR_VFILE_SEEKSET);
+			grErrorLog_AddString(-1,"FSVFS : Bad Signature",NULL);
 			return NULL;
 		}
 
@@ -420,9 +420,9 @@ jeVFile *		HintsFile;
 		NewFS->Directory = DirTree_CreateFromFile(HintsFile);
 		if	(!NewFS->Directory)
 		{
-			jeRam_Free(NewFS);
-			jeVFile_Seek(RWOps, RWOpsStartPos, JE_VFILE_SEEKSET);
-			jeErrorLog_AddString(-1,"FSVFS : DirTree_Create failed!",NULL);
+			grRam_Free(NewFS);
+			grVFile_Seek(RWOps, RWOpsStartPos, GR_VFILE_SEEKSET);
+			grErrorLog_AddString(-1,"FSVFS : DirTree_Create failed!",NULL);
 			return NULL;
 		}
 
@@ -437,11 +437,11 @@ jeVFile *		HintsFile;
 		NewFS->DataLength = sizeof(VFSFileHeader);
 
 		memset(&Header,0,sizeof(Header));
-		jeVFile_Write(RWOps,&Header,sizeof(Header));
+		grVFile_Write(RWOps,&Header,sizeof(Header));
 	}
 
 	NewFS->Signature	 = VFSFILE_SIGNATURE;
-	NewFS->IsSystem		 = JE_TRUE;
+	NewFS->IsSystem		 = GR_TRUE;
 	NewFS->System		 = NewFS;
 	NewFS->OpenModeFlags = OpenModeFlags;
 
@@ -449,20 +449,20 @@ jeVFile *		HintsFile;
 }
 
 #pragma warning (disable:4100)
-static	jeBoolean	JETCC FSVFS_UpdateContext(
-	jeVFile *		FS,
+static	grBoolean	GRCC FSVFS_UpdateContext(
+	grVFile *		FS,
 	void *			Handle,
 	void *			Context,
 	int 			ContextSize)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 #pragma warning (default:4100)
 
-static	jeBoolean	JETCC FSVFS_Close(void *Handle)
+static	grBoolean	GRCC FSVFS_Close(void *Handle)
 {
 	VFSFile *	File;
-	jeBoolean	Result;
+	grBoolean	Result;
 
 	File = (VFSFile *)Handle;
 	
@@ -476,7 +476,7 @@ static	jeBoolean	JETCC FSVFS_Close(void *Handle)
 	}
 #endif
 
-	Result = JE_TRUE;
+	Result = GR_TRUE;
 	if	(File->Directory)
 	{
 		if	(File->IsSystem)
@@ -484,14 +484,14 @@ static	jeBoolean	JETCC FSVFS_Close(void *Handle)
 			// Hmmm.  We're the top level
 			assert(File == File->System);
 
-			if	(File->OpenModeFlags & (JE_VFILE_OPEN_CREATE | JE_VFILE_OPEN_UPDATE))
+			if	(File->OpenModeFlags & (GR_VFILE_OPEN_CREATE | GR_VFILE_OPEN_UPDATE))
 			{
 				VFSFileHeader	Header;
-				jeVFile *		HintsFile;
+				grVFile *		HintsFile;
 
-				Result = JE_FALSE;
+				Result = GR_FALSE;
 				// Have to update the directory
-				HintsFile = jeVFile_GetHintsFile(File->RWOps);
+				HintsFile = grVFile_GetHintsFile(File->RWOps);
 				if	(HintsFile)
 				{
 
@@ -500,34 +500,34 @@ static	jeBoolean	JETCC FSVFS_Close(void *Handle)
 
 					// @@
 #pragma message ("Seeking in the directory hints file disallows embedded (not nested) VFS files")
-					jeVFile_Tell(HintsFile,&HintsPos);
+					grVFile_Tell(HintsFile,&HintsPos);
 					if ( HintsPos != File->RWOpsHintsStartPos )
 					{
-						jeErrorLog_AddString(-1,"FSVFS_Close : Hints position changed between Open & Close!",NULL);
-						jeRam_Free(File);
-						return JE_FALSE;
+						grErrorLog_AddString(-1,"FSVFS_Close : Hints position changed between Open & Close!",NULL);
+						grRam_Free(File);
+						return GR_FALSE;
 					}
 
-//					jeVFile_Seek(HintsFile, 0, JE_VFILE_SEEKSET);
+//					grVFile_Seek(HintsFile, 0, GR_VFILE_SEEKSET);
 					*/
 
-					if	(DirTree_WriteToFile(File->Directory, HintsFile) == JE_TRUE)
+					if	(DirTree_WriteToFile(File->Directory, HintsFile) == GR_TRUE)
 					{
 						Header.Signature = VFSFILEHEADER_SIGNATURE;
 						Header.Version = HEADER_VERSION;
-						Header.Dispersed = JE_FALSE;
+						Header.Dispersed = GR_FALSE;
 						Header.DataLength = File->DataLength;
 						Header.Stuff = 0;
 
-						if	(jeVFile_Seek(File->RWOps, File->RWOpsStartPos, JE_VFILE_SEEKSET) == JE_TRUE)
+						if	(grVFile_Seek(File->RWOps, File->RWOpsStartPos, GR_VFILE_SEEKSET) == GR_TRUE)
 						{
-							if	(jeVFile_Write(File->RWOps, &Header, sizeof(Header)) == JE_TRUE)
+							if	(grVFile_Write(File->RWOps, &Header, sizeof(Header)) == GR_TRUE)
 							{
-								Result = JE_TRUE;
+								Result = GR_TRUE;
 							}
 							else
 							{
-								jeErrorLog_AddString(-1,"FSVFS_Close : VFile_Write failed!",NULL);
+								grErrorLog_AddString(-1,"FSVFS_Close : VFile_Write failed!",NULL);
 							}
 						}
 					}
@@ -540,12 +540,12 @@ static	jeBoolean	JETCC FSVFS_Close(void *Handle)
 			// of our data in the RWOps file that we come from.
 
 			// @@ CB changed
-			jeVFile_Seek(File->RWOps, File->RWOpsStartPos + File->DataLength, JE_VFILE_SEEKSET);
+			grVFile_Seek(File->RWOps, File->RWOpsStartPos + File->DataLength, GR_VFILE_SEEKSET);
 		}
 	}
 	else
 	{	
-		if	(File->OpenModeFlags & (JE_VFILE_OPEN_CREATE | JE_VFILE_OPEN_UPDATE)) //@@ CB
+		if	(File->OpenModeFlags & (GR_VFILE_OPEN_CREATE | GR_VFILE_OPEN_UPDATE)) //@@ CB
 		{
 			// Update the system with the length of this file.  Subsequent
 			// file operations will follow this file.
@@ -556,9 +556,9 @@ static	jeBoolean	JETCC FSVFS_Close(void *Handle)
 	}
 
 	if	(File->DispersedFile)
-		jeVFile_Close(File->DispersedFile);
+		grVFile_Close(File->DispersedFile);
 
-	jeRam_Free(File);
+	grRam_Free(File);
 
 	return Result;
 }
@@ -570,14 +570,14 @@ static	uint32			ClampOperationSize(const VFSFile *File, int Size)
 	return min(File->Length - File->CurrentRelPos, Size);
 }
 
-static	void		JETCC UpdateFilePos(VFSFile *File)
+static	void		GRCC UpdateFilePos(VFSFile *File)
 {
 	long	RWOpsPos;
 
 	assert(!File->Directory);
 	assert(File->CurrentRelPos >= 0);
 
-	if ( ! jeVFile_Tell(File->RWOps, &RWOpsPos) )
+	if ( ! grVFile_Tell(File->RWOps, &RWOpsPos) )
 		assert(0);
 
 	File->CurrentRelPos = RWOpsPos - File->RWOpsStartPos;
@@ -587,7 +587,7 @@ static	void		JETCC UpdateFilePos(VFSFile *File)
 	assert(File->CurrentRelPos >= 0);
 }
 
-static	jeBoolean	JETCC ForceFilePos(VFSFile *File)
+static	grBoolean	GRCC ForceFilePos(VFSFile *File)
 {
 #ifdef _DEBUG
 long CurRelPos;
@@ -601,29 +601,29 @@ long CurRelPos;
 
 	CurRelPos = File->CurrentRelPos;
 
-	if ( ! jeVFile_Seek(File->RWOps,
+	if ( ! grVFile_Seek(File->RWOps,
 					  File->RWOpsStartPos + CurRelPos,
-					  JE_VFILE_SEEKSET) )
-		return JE_FALSE;
+					  GR_VFILE_SEEKSET) )
+		return GR_FALSE;
 
 	UpdateFilePos(File);
 
 	assert(CurRelPos == File->CurrentRelPos);
 
-	return JE_TRUE;
+	return GR_TRUE;
 #else
 
-	return jeVFile_Seek(File->RWOps,
+	return grVFile_Seek(File->RWOps,
 					  File->RWOpsStartPos + File->CurrentRelPos,
-					  JE_VFILE_SEEKSET);
+					  GR_VFILE_SEEKSET);
 
 #endif
 }
 
-static	jeBoolean	JETCC FSVFS_GetS(void *Handle, void *Buff, int MaxLen)
+static	grBoolean	GRCC FSVFS_GetS(void *Handle, void *Buff, int MaxLen)
 {
 	VFSFile *	File;
-	jeBoolean	Res;
+	grBoolean	Res;
 
 	assert(Buff);
 	assert(MaxLen != 0);
@@ -633,17 +633,17 @@ static	jeBoolean	JETCC FSVFS_GetS(void *Handle, void *Buff, int MaxLen)
 	CHECK_HANDLE(File);
 
 	if	(File->Directory)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	assert(File->CurrentRelPos >= 0);
 	assert(File->CurrentRelPos <= File->Length);
 
 	if	(!ForceFilePos(File))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	MaxLen = ClampOperationSize(File, MaxLen);
 
-	Res = jeVFile_GetS(File->RWOps, Buff, MaxLen);
+	Res = grVFile_GetS(File->RWOps, Buff, MaxLen);
 
 	UpdateFilePos(File);
 
@@ -651,10 +651,10 @@ static	jeBoolean	JETCC FSVFS_GetS(void *Handle, void *Buff, int MaxLen)
 }
 
 #pragma warning (disable:4100)
-static	jeBoolean	JETCC FSVFS_BytesAvailable(void *Handle, long *Count)
+static	grBoolean	GRCC FSVFS_BytesAvailable(void *Handle, long *Count)
 {
 	VFSFile *	File;
-//	jeBoolean	Res;
+//	grBoolean	Res;
 #ifndef	NDEBUG
 //	int			CurRelPos;
 #endif
@@ -666,26 +666,26 @@ static	jeBoolean	JETCC FSVFS_BytesAvailable(void *Handle, long *Count)
 	CHECK_HANDLE(File);
 
 	if	(File->Directory)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	assert(File->CurrentRelPos >= 0);
 	assert(File->CurrentRelPos <= File->Length);
 
 	if ( File->DispersedFile )
-		return jeVFile_BytesAvailable(File->DispersedFile,Count);
+		return grVFile_BytesAvailable(File->DispersedFile,Count);
 
 	*Count = File->Length - File->CurrentRelPos;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 #pragma warning (default:4100)
 
-jeVFile * Hack_VFS_File = NULL;
+grVFile * Hack_VFS_File = NULL;
 
-static	jeBoolean	JETCC FSVFS_Read(void *Handle, void *Buff, uint32 Count)
+static	grBoolean	GRCC FSVFS_Read(void *Handle, void *Buff, uint32 Count)
 {
 	VFSFile *	File;
-	jeBoolean	Res;
+	grBoolean	Res;
 	long		CurPos;
 #ifndef	NDEBUG
 	int			CurRelPos;
@@ -700,18 +700,18 @@ static	jeBoolean	JETCC FSVFS_Read(void *Handle, void *Buff, uint32 Count)
 	CHECK_HANDLE(File);
 
 	if	(File->Directory)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if	(File->DispersedFile)
 	{
-	jeBoolean Ret;
-	jeVFile * MyFile;
-	extern jeVFile * Hack_File;
+	grBoolean Ret;
+	grVFile * MyFile;
+	extern grVFile * Hack_File;
 		Hack_VFS_File = MyFile = Hack_File;
-		assert(jeVFile_IsValid(Hack_VFS_File));
-		Ret = jeVFile_Read(File->DispersedFile, Buff, Count);
+		assert(grVFile_IsValid(Hack_VFS_File));
+		Ret = grVFile_Read(File->DispersedFile, Buff, Count);
 		assert( MyFile != Hack_File );
-		assert(jeVFile_IsValid(MyFile));
+		assert(grVFile_IsValid(MyFile));
 		Hack_VFS_File = NULL;
 		return Ret;
 	}
@@ -719,7 +719,7 @@ static	jeBoolean	JETCC FSVFS_Read(void *Handle, void *Buff, uint32 Count)
 	assert(File->CurrentRelPos >= 0);
 	assert(File->CurrentRelPos <= File->Length);
 
-	jeVFile_Tell(File->RWOps,&CurPos);
+	grVFile_Tell(File->RWOps,&CurPos);
 
 #ifdef _DEBUG
 {
@@ -727,14 +727,14 @@ static	jeBoolean	JETCC FSVFS_Read(void *Handle, void *Buff, uint32 Count)
 
 	AbsPos = File->RWOpsStartPos + File->CurrentRelPos;
 
-	jeVFile_Seek(File->RWOps, AbsPos, JE_VFILE_SEEKSET);
+	grVFile_Seek(File->RWOps, AbsPos, GR_VFILE_SEEKSET);
 
 	CurRelPos = File->CurrentRelPos;
 	
 	assert(!File->Directory);
 	assert(File->CurrentRelPos >= 0);
 
-	jeVFile_Tell(File->RWOps, &RWOpsPos);
+	grVFile_Tell(File->RWOps, &RWOpsPos);
 
 	assert( AbsPos == RWOpsPos );
 
@@ -747,20 +747,20 @@ static	jeBoolean	JETCC FSVFS_Read(void *Handle, void *Buff, uint32 Count)
 #endif
 
 	if	(!ForceFilePos(File))
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if	(ClampOperationSize(File, Count) != Count)
-		return JE_FALSE;
+		return GR_FALSE;
 
 #ifndef	NDEBUG
 	CurRelPos = File->CurrentRelPos;
 #endif
 #ifdef _DEBUG
-	jeVFile_Tell(File->RWOps,&A);
+	grVFile_Tell(File->RWOps,&A);
 #endif
-	Res = jeVFile_Read(File->RWOps, Buff, Count);
+	Res = grVFile_Read(File->RWOps, Buff, Count);
 #ifdef _DEBUG
-	jeVFile_Tell(File->RWOps,&B);
+	grVFile_Tell(File->RWOps,&B);
 #endif
 
 	assert( B == (A + Count) );
@@ -768,15 +768,15 @@ static	jeBoolean	JETCC FSVFS_Read(void *Handle, void *Buff, uint32 Count)
 	UpdateFilePos(File);
 	assert(File->CurrentRelPos - CurRelPos == (int32)Count);
 
-	jeVFile_Seek(File->RWOps,CurPos,JE_VFILE_SEEKSET);
+	grVFile_Seek(File->RWOps,CurPos,GR_VFILE_SEEKSET);
 
 	return Res;
 }
 
-static	jeBoolean	JETCC FSVFS_Write(void *Handle, const void *Buff, int Count)
+static	grBoolean	GRCC FSVFS_Write(void *Handle, const void *Buff, int Count)
 {
 	VFSFile *	File;
-	jeBoolean	Res;
+	grBoolean	Res;
 	long		CurPos;
 #ifndef	NDEBUG
 	int			CurRelPos;
@@ -790,40 +790,40 @@ static	jeBoolean	JETCC FSVFS_Write(void *Handle, const void *Buff, int Count)
 	CHECK_HANDLE(File);
 
 	if	(File->Directory)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if	(File->OpenModeFlags & JE_VFILE_OPEN_READONLY)
-		return JE_FALSE;
+	if	(File->OpenModeFlags & GR_VFILE_OPEN_READONLY)
+		return GR_FALSE;
 
 	assert(!File->DispersedFile);
 
 	assert(File->CurrentRelPos >= 0);
 	assert(File->CurrentRelPos <= File->Length);
 
-	jeVFile_Tell(File->RWOps,&CurPos);
+	grVFile_Tell(File->RWOps,&CurPos);
 
 	if	(!ForceFilePos(File))
-		return JE_FALSE;
+		return GR_FALSE;
 
 #ifndef	NDEBUG
 	CurRelPos = File->CurrentRelPos;
 #endif
-	Res = jeVFile_Write(File->RWOps, Buff, Count);
+	Res = grVFile_Write(File->RWOps, Buff, Count);
 
 	UpdateFilePos(File);
 	assert(File->CurrentRelPos - CurRelPos == Count);
 
-	jeVFile_Seek(File->RWOps,CurPos,JE_VFILE_SEEKSET);
+	grVFile_Seek(File->RWOps,CurPos,GR_VFILE_SEEKSET);
 
-//	File->CanSetHints = JE_FALSE;
+//	File->CanSetHints = GR_FALSE;
 
 	return Res;
 }
 
-static	jeBoolean	JETCC FSVFS_Seek(void *Handle, int Where, jeVFile_Whence Whence)
+static	grBoolean	GRCC FSVFS_Seek(void *Handle, int Where, grVFile_Whence Whence)
 {
 	VFSFile *	File;
-	jeBoolean	Res;
+	grBoolean	Res;
 	long		AbsolutePos = 0;
 
 	File = (VFSFile *)Handle;
@@ -831,25 +831,25 @@ static	jeBoolean	JETCC FSVFS_Seek(void *Handle, int Where, jeVFile_Whence Whence
 	CHECK_HANDLE(File);
 
 	if	(File->Directory)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if	(File->DispersedFile)
-		return jeVFile_Seek(File->DispersedFile, Where, Whence);
+		return grVFile_Seek(File->DispersedFile, Where, Whence);
 
 	assert(File->CurrentRelPos >= 0);
 	assert(File->CurrentRelPos <= File->Length);
 
 	switch	(Whence)
 	{
-	case	JE_VFILE_SEEKSET:
+	case	GR_VFILE_SEEKSET:
 		AbsolutePos = File->RWOpsStartPos + Where;
 		break;
 
-	case	JE_VFILE_SEEKEND:
+	case	GR_VFILE_SEEKEND:
 		AbsolutePos = File->RWOpsStartPos + File->Length - Where;
 		break;
 
-	case	JE_VFILE_SEEKCUR:
+	case	GR_VFILE_SEEKCUR:
 		AbsolutePos = File->RWOpsStartPos + File->CurrentRelPos + Where;
 		break;
 
@@ -858,18 +858,18 @@ static	jeBoolean	JETCC FSVFS_Seek(void *Handle, int Where, jeVFile_Whence Whence
 	}
 
 	if	(AbsolutePos < File->RWOpsStartPos)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	Res = jeVFile_Seek(File->RWOps, AbsolutePos, JE_VFILE_SEEKSET);
+	Res = grVFile_Seek(File->RWOps, AbsolutePos, GR_VFILE_SEEKSET);
 
 	UpdateFilePos(File);
 
-//	File->CanSetHints = JE_FALSE;
+//	File->CanSetHints = GR_FALSE;
 
 	return Res;
 }
 
-static	jeBoolean	JETCC FSVFS_EOF(const void *Handle)
+static	grBoolean	GRCC FSVFS_EOF(const void *Handle)
 {
 	const VFSFile *	File;
 
@@ -878,21 +878,21 @@ static	jeBoolean	JETCC FSVFS_EOF(const void *Handle)
 	CHECK_HANDLE(File);
 
 	if	(File->Directory)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if	(File->DispersedFile)
-		return jeVFile_EOF(File->DispersedFile);
+		return grVFile_EOF(File->DispersedFile);
 
 	assert(File->CurrentRelPos >= 0);
 	assert(File->CurrentRelPos <= File->Length);
 
 	if	(File->CurrentRelPos == File->Length)
-		return JE_TRUE;
+		return GR_TRUE;
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSVFS_Tell(const void *Handle, long *Position)
+static	grBoolean	GRCC FSVFS_Tell(const void *Handle, long *Position)
 {
 	const VFSFile *	File;
 
@@ -901,20 +901,20 @@ static	jeBoolean	JETCC FSVFS_Tell(const void *Handle, long *Position)
 	CHECK_HANDLE(File);
 
 	if	(File->Directory)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if	(File->DispersedFile)
-		return jeVFile_Tell(File->DispersedFile, Position);
+		return grVFile_Tell(File->DispersedFile, Position);
 
 	assert(File->CurrentRelPos >= 0);
 	assert(File->CurrentRelPos <= File->Length);
 
 	*Position = File->CurrentRelPos;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSVFS_Size(const void *Handle, long *Size)
+static	grBoolean	GRCC FSVFS_Size(const void *Handle, long *Size)
 {
 	const VFSFile *	File;
 
@@ -923,23 +923,23 @@ static	jeBoolean	JETCC FSVFS_Size(const void *Handle, long *Size)
 	CHECK_HANDLE(File);
 
 	if	(File->Directory != NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	assert(File->CurrentRelPos >= 0);
 	assert(File->CurrentRelPos <= File->Length);
 
 	if ( File->DispersedFile )
-		return jeVFile_Size(File->DispersedFile, Size);
+		return grVFile_Size(File->DispersedFile, Size);
 		
 	*Size = File->Length;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSVFS_GetProperties(const void *Handle, jeVFile_Properties *Properties)
+static	grBoolean	GRCC FSVFS_GetProperties(const void *Handle, grVFile_Properties *Properties)
 {
 const VFSFile *	File;
-jeVFile_Attributes AttribRemote;
+grVFile_Attributes AttribRemote;
 
 	File = (VFSFile *)Handle;
 
@@ -947,19 +947,19 @@ jeVFile_Attributes AttribRemote;
 
 	if ( ! File->DirEntry ) // <> CB 2/10
 	{
-		if ( jeVFile_GetProperties(File->RWOps,Properties) )
+		if ( grVFile_GetProperties(File->RWOps,Properties) )
 		{
-			Properties->AttributeFlags |= JE_VFILE_ATTRIB_DIRECTORY;
-			return JE_TRUE;
+			Properties->AttributeFlags |= GR_VFILE_ATTRIB_DIRECTORY;
+			return GR_TRUE;
 		}
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	else
 	{
-		if ( ! jeVFile_GetProperties(File->RWOps,Properties) )
-			return JE_FALSE;
+		if ( ! grVFile_GetProperties(File->RWOps,Properties) )
+			return GR_FALSE;
 
-		AttribRemote = Properties->AttributeFlags &	JE_VFILE_ATTRIB_REMOTE; 
+		AttribRemote = Properties->AttributeFlags &	GR_VFILE_ATTRIB_REMOTE; 
 	}
 
 	DirTree_GetFileTime(File->DirEntry, &Properties->Time);
@@ -973,14 +973,14 @@ jeVFile_Attributes AttribRemote;
 }
 
 #pragma warning (disable:4100)
-static	jeBoolean	JETCC FSVFS_SetSize(void *Handle, long Size)
+static	grBoolean	GRCC FSVFS_SetSize(void *Handle, long Size)
 {
 	assert(!"Not implemented");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 #pragma warning (default:4100)
 
-static	jeBoolean	JETCC FSVFS_SetAttributes(void *Handle, jeVFile_Attributes Attributes)
+static	grBoolean	GRCC FSVFS_SetAttributes(void *Handle, grVFile_Attributes Attributes)
 {
 	const VFSFile *	File;
 
@@ -990,15 +990,15 @@ static	jeBoolean	JETCC FSVFS_SetAttributes(void *Handle, jeVFile_Attributes Attr
 
 	assert(File->DirEntry);
 
-	if	(Attributes & ~JE_VFILE_ATTRIB_READONLY)
-		return JE_FALSE;
+	if	(Attributes & ~GR_VFILE_ATTRIB_READONLY)
+		return GR_FALSE;
 
 	DirTree_SetFileAttributes(File->DirEntry, Attributes);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSVFS_SetTime(void *Handle, const jeVFile_Time *Time)
+static	grBoolean	GRCC FSVFS_SetTime(void *Handle, const grVFile_Time *Time)
 {
 	const VFSFile *	File;
 
@@ -1010,12 +1010,12 @@ static	jeBoolean	JETCC FSVFS_SetTime(void *Handle, const jeVFile_Time *Time)
 
 	DirTree_SetFileTime(File->DirEntry, Time);
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 #if 0
 
-static	jeBoolean	JETCC FSVFS_HintsSize(void *Handle, long * Size)
+static	grBoolean	GRCC FSVFS_HintsSize(void *Handle, long * Size)
 {
 	const VFSFile *	File;
 
@@ -1029,7 +1029,7 @@ static	jeBoolean	JETCC FSVFS_HintsSize(void *Handle, long * Size)
 }
 
 
-static	jeBoolean	JETCC FSVFS_ReadHints(void *Handle, void *Buff, int Count)
+static	grBoolean	GRCC FSVFS_ReadHints(void *Handle, void *Buff, int Count)
 {
 	VFSFile *	File;
 
@@ -1039,16 +1039,16 @@ static	jeBoolean	JETCC FSVFS_ReadHints(void *Handle, void *Buff, int Count)
 
 	assert(File->DirEntry);
 
-//	if	(File->CanSetHints == JE_FALSE || DirTree_HasFileHints(File->DirEntry) == JE_TRUE)
-//		return JE_FALSE;
+//	if	(File->CanSetHints == GR_FALSE || DirTree_HasFileHints(File->DirEntry) == GR_TRUE)
+//		return GR_FALSE;
 
-//	File->CanSetHints = JE_FALSE;
+//	File->CanSetHints = GR_FALSE;
 
 //	return DirTree_SetFileHints(File->DirEntry, Hints);
 	return DirTree_ReadFileHints(File->DirEntry, Buff, Count);
 }
 
-static	jeBoolean	JETCC FSVFS_WriteHints(void *Handle, const void *Buff, int Count)
+static	grBoolean	GRCC FSVFS_WriteHints(void *Handle, const void *Buff, int Count)
 {
 	VFSFile *	File;
 
@@ -1062,7 +1062,7 @@ static	jeBoolean	JETCC FSVFS_WriteHints(void *Handle, const void *Buff, int Coun
 }
 #endif
 
-static	jeVFile *	JETCC FSVFS_GetHintsFile(void *Handle)
+static	grVFile *	GRCC FSVFS_GetHintsFile(void *Handle)
 {
 	VFSFile *	File;
 
@@ -1072,9 +1072,9 @@ static	jeVFile *	JETCC FSVFS_GetHintsFile(void *Handle)
 
 	assert(File->DirEntry);
 
-	if	(File->OpenModeFlags & JE_VFILE_OPEN_READONLY)
+	if	(File->OpenModeFlags & GR_VFILE_OPEN_READONLY)
 	{
-		if	(DirTree_FileHasHints(File->DirEntry) == JE_FALSE)
+		if	(DirTree_FileHasHints(File->DirEntry) == GR_FALSE)
 			return NULL;
 
 	}
@@ -1083,7 +1083,7 @@ static	jeVFile *	JETCC FSVFS_GetHintsFile(void *Handle)
 }
 
 #pragma warning (disable:4100)
-static	jeBoolean	JETCC FSVFS_FileExists(jeVFile *FS, void *Handle, const char *Name)
+static	grBoolean	GRCC FSVFS_FileExists(grVFile *FS, void *Handle, const char *Name)
 {
 	VFSFile *	File;
 
@@ -1092,7 +1092,7 @@ static	jeBoolean	JETCC FSVFS_FileExists(jeVFile *FS, void *Handle, const char *N
 	CHECK_HANDLE(File);
 
 	if	(!File->Directory)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return DirTree_FileExists(File->Directory, Name);
 }
@@ -1125,258 +1125,258 @@ static	void		GetDirectoryName(const char *Path, char *Buff)
 #endif
 }
 
-static	jeBoolean	CopyVFile(jeVFile *Src, jeVFile *Dest)
+static	grBoolean	CopyVFile(grVFile *Src, grVFile *Dest)
 {
 	long	Length;
 	char	Buff[4096];
 
-	if	(jeVFile_Size(Src, &Length) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Size(Src, &Length) == GR_FALSE)
+		return GR_FALSE;
 
 // <> CB 2/14	NO ! That's valid!  Small Bitmaps will be pure Hints
 //	if	(Length == 0)
-//		return JE_FALSE;
+//		return GR_FALSE;
 
 	while	(Length != 0)
 	{
 		long	Count;
 
 		Count = min((long)sizeof(Buff), Length);
-		if	(jeVFile_Read(Src, Buff, Count) == JE_FALSE)
-			return JE_FALSE;
-		if	(jeVFile_Write(Dest, Buff, Count) == JE_FALSE)
-			return JE_FALSE;
+		if	(grVFile_Read(Src, Buff, Count) == GR_FALSE)
+			return GR_FALSE;
+		if	(grVFile_Write(Dest, Buff, Count) == GR_FALSE)
+			return GR_FALSE;
 		Length -= Count;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	CopyOneFile(jeVFile *FSSrc, jeVFile *FSDest, const char *src, const char *dest)
+static	grBoolean	CopyOneFile(grVFile *FSSrc, grVFile *FSDest, const char *src, const char *dest)
 {
-	jeVFile *	SrcFile;
-	jeVFile *   DestFile;
-	jeBoolean	Result;
+	grVFile *	SrcFile;
+	grVFile *   DestFile;
+	grBoolean	Result;
 
-	SrcFile = jeVFile_Open(FSSrc, src, JE_VFILE_OPEN_READONLY);
+	SrcFile = grVFile_Open(FSSrc, src, GR_VFILE_OPEN_READONLY);
 	if	(!SrcFile)
 	{
-		jeErrorLog_AddString(-1,"CopyOneFile : VFile_Open Src failed!",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"CopyOneFile : VFile_Open Src failed!",NULL);
+		return GR_FALSE;
 	}
 	
-	DestFile = jeVFile_Open(FSDest, dest, JE_VFILE_OPEN_CREATE);
+	DestFile = grVFile_Open(FSDest, dest, GR_VFILE_OPEN_CREATE);
 	if	(!DestFile)
 	{
-		jeVFile_Close(SrcFile);
-		jeErrorLog_AddString(-1,"CopyOneFile : VFile_Open Dest failed!",NULL);
-		return JE_FALSE;
+		grVFile_Close(SrcFile);
+		grErrorLog_AddString(-1,"CopyOneFile : VFile_Open Dest failed!",NULL);
+		return GR_FALSE;
 	}
 
 	Result = CopyVFile(SrcFile, DestFile);
 
-	jeVFile_Close(DestFile);
-	jeVFile_Close(SrcFile);
+	grVFile_Close(DestFile);
+	grVFile_Close(SrcFile);
 
 	if ( ! Result )
-		jeErrorLog_AddString(-1,"CopyOneFile : CopyVFile failed!",NULL);
+		grErrorLog_AddString(-1,"CopyOneFile : CopyVFile failed!",NULL);
 
 	return Result;
 }
 
-static	jeBoolean	CopyDir(jeVFile *FSSrcDir, jeVFile *FSDestDir)
+static	grBoolean	CopyDir(grVFile *FSSrcDir, grVFile *FSDestDir)
 {
-	jeVFile_Finder *	Finder;
+	grVFile_Finder *	Finder;
 
-	Finder = jeVFile_CreateFinder(FSSrcDir, "*.*");
+	Finder = grVFile_CreateFinder(FSSrcDir, "*.*");
 	if	(!Finder)
 	{
-		jeErrorLog_AddString(-1,"CopyDir : CreateFinder failed!",NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"CopyDir : CreateFinder failed!",NULL);
+		return GR_FALSE;
 	}
 
-	while	(jeVFile_FinderGetNextFile(Finder) != JE_FALSE)
+	while	(grVFile_FinderGetNextFile(Finder) != GR_FALSE)
 	{
-		jeVFile_Properties	Properties;
+		grVFile_Properties	Properties;
 
-		if	(jeVFile_FinderGetProperties(Finder, &Properties) == JE_FALSE)
+		if	(grVFile_FinderGetProperties(Finder, &Properties) == GR_FALSE)
 		{
-			jeErrorLog_AddString(-1,"CopyDir : FinderGetProps failed!",NULL);
-			jeVFile_DestroyFinder(Finder);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"CopyDir : FinderGetProps failed!",NULL);
+			grVFile_DestroyFinder(Finder);
+			return GR_FALSE;
 		}
 		
-		if	(Properties.AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY)
+		if	(Properties.AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY)
 		{
-			jeVFile *		SrcSubDir;
-			jeVFile *		DestSubDir;
-			jeBoolean	Result;
+			grVFile *		SrcSubDir;
+			grVFile *		DestSubDir;
+			grBoolean	Result;
 
-			SrcSubDir = jeVFile_Open(FSSrcDir,
+			SrcSubDir = grVFile_Open(FSSrcDir,
 									 Properties.Name,
-									 JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY);
+									 GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY);
 			if	(!SrcSubDir)
 			{
-				jeErrorLog_AddString(-1,"CopyDir : VF Open Dir failed!",NULL);
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"CopyDir : VF Open Dir failed!",NULL);
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
-			DestSubDir = jeVFile_Open(FSDestDir,
+			DestSubDir = grVFile_Open(FSDestDir,
 									  Properties.Name,
-									  JE_VFILE_OPEN_CREATE | JE_VFILE_OPEN_DIRECTORY);
+									  GR_VFILE_OPEN_CREATE | GR_VFILE_OPEN_DIRECTORY);
 			if	(!DestSubDir)
 			{
-				jeErrorLog_AddString(-1,"CopyDir : VF Open Dir failed!",NULL);
-				jeVFile_Close(SrcSubDir);
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"CopyDir : VF Open Dir failed!",NULL);
+				grVFile_Close(SrcSubDir);
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
 			Result = CopyDir(SrcSubDir, DestSubDir);
-			jeVFile_Close(DestSubDir);
-			jeVFile_Close(SrcSubDir);
-			if	(Result == JE_FALSE)
+			grVFile_Close(DestSubDir);
+			grVFile_Close(SrcSubDir);
+			if	(Result == GR_FALSE)
 			{
-				jeErrorLog_AddString(-1,"CopyDir : CopyDir failed!",NULL);
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"CopyDir : CopyDir failed!",NULL);
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 		}
 		else
 		{
-			if	(CopyOneFile(FSSrcDir, FSDestDir, Properties.Name, Properties.Name) == JE_FALSE)
+			if	(CopyOneFile(FSSrcDir, FSDestDir, Properties.Name, Properties.Name) == GR_FALSE)
 			{
-				jeErrorLog_AddString(-1,"CopyDir : CopyOneFile failed!",NULL);
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"CopyDir : CopyOneFile failed!",NULL);
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 		}
 	}
 
-	jeVFile_DestroyFinder(Finder);
-return JE_TRUE;
+	grVFile_DestroyFinder(Finder);
+return GR_TRUE;
 }
 
-static	jeBoolean	ExplodeData(jeVFile *VFS, const char *FileSpec, jeVFile *DosFS)
+static	grBoolean	ExplodeData(grVFile *VFS, const char *FileSpec, grVFile *DosFS)
 {
 #if 0
-	jeVFile_Finder *	Finder;
+	grVFile_Finder *	Finder;
 
-	Finder = jeVFile_CreateFinder(VFS, "*.*");
+	Finder = grVFile_CreateFinder(VFS, "*.*");
 	if	(!Finder)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	while	(jeVFile_FinderGetNextFile(Finder))
+	while	(grVFile_FinderGetNextFile(Finder))
 	{
-		jeVFile_Properties	Properties;
-		jeBoolean	Result;
+		grVFile_Properties	Properties;
+		grBoolean	Result;
 
-		Result = JE_FALSE;
-		jeVFile_FinderGetProperties(Finder, &Properties);
-		if	(Properties.AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY)
+		Result = GR_FALSE;
+		grVFile_FinderGetProperties(Finder, &Properties);
+		if	(Properties.AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY)
 		{
 			char		Buff[_MAX_PATH];
-			jeVFile *	SubDir;
+			grVFile *	SubDir;
 
-			Result = JE_FALSE;
-			SubDir = jeVFile_Open(DosFS, Properties.Name, JE_VFILE_OPEN_CREATE | JE_VFILE_OPEN_DIRECTORY);
+			Result = GR_FALSE;
+			SubDir = grVFile_Open(DosFS, Properties.Name, GR_VFILE_OPEN_CREATE | GR_VFILE_OPEN_DIRECTORY);
 			if	(SubDir)
 			{
 				GetDirectoryName(FileSpec, Buff);
 				strcat(Buff, Properties.Name);
 				strcat(Buff, "\\*.*");
 //				Result = ExplodeData(VFS, FileSpec, SubDir);
-				jeVFile_Close(SubDir);
+				grVFile_Close(SubDir);
 			}
 		}
 		else
 		{
-			jeVFile *	DosFile;
-			jeBoolean	Result;
+			grVFile *	DosFile;
+			grBoolean	Result;
 
-			Result = JE_FALSE;
-			DosFile = jeVFile_Open(DosFS, Properties.Name, JE_VFILE_OPEN_CREATE);
+			Result = GR_FALSE;
+			DosFile = grVFile_Open(DosFS, Properties.Name, GR_VFILE_OPEN_CREATE);
 			if	(DosFile)
 			{
 				Result = CopyVFile
 			}
 		}
 
-		if	(Result == JE_FALSE)
+		if	(Result == GR_FALSE)
 		{
-			jeVFile_DestroyFinder(Finder);
-			return JE_FALSE;
+			grVFile_DestroyFinder(Finder);
+			return GR_FALSE;
 		}
 	}
 
-	jeVFile_DestroyFinder(Finder);
-	return JE_TRUE;
+	grVFile_DestroyFinder(Finder);
+	return GR_TRUE;
 #endif
 }
 
-static	jeBoolean	JETCC FSVFS_Disperse(
-	jeVFile *		FS,
+static	grBoolean	GRCC FSVFS_Disperse(
+	grVFile *		FS,
 	void *			Handle,
 	const char *	Directory)
 {
 	VFSFile *			File;
 	VFSFileHeader		Header;
-	jeVFile *			DosFS;
-	jeVFile_Properties	Properties;
-	jeVFile *			DispersedFile;
-	jeVFile *			HintsFile;
+	grVFile *			DosFS;
+	grVFile_Properties	Properties;
+	grVFile *			DispersedFile;
+	grVFile *			HintsFile;
 	char				VFSName[_MAX_PATH];
-	jeBoolean			Result;
+	grBoolean			Result;
 
 	File = (VFSFile *)Handle;
 
 	CHECK_HANDLE(File);
 
-	if	(File->IsSystem == JE_FALSE)
-		return JE_FALSE;
+	if	(File->IsSystem == GR_FALSE)
+		return GR_FALSE;
 
 	assert(File == File->System);
 
-	DosFS = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS, Directory, NULL, JE_VFILE_OPEN_CREATE | JE_VFILE_OPEN_DIRECTORY);
+	DosFS = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS, Directory, NULL, GR_VFILE_OPEN_CREATE | GR_VFILE_OPEN_DIRECTORY);
 	if	(!DosFS)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	jeVFile_GetProperties(File->RWOps, &Properties);
+	grVFile_GetProperties(File->RWOps, &Properties);
 	_splitpath(Properties.Name, NULL, NULL, VFSName, NULL);
 	strcat(VFSName, ".Dispersed");
 	
-	DispersedFile = jeVFile_Open(DosFS, VFSName, JE_VFILE_OPEN_CREATE);
+	DispersedFile = grVFile_Open(DosFS, VFSName, GR_VFILE_OPEN_CREATE);
 	if	(!DispersedFile)
 	{
-		jeVFile_Close(DosFS);
-		return JE_FALSE;
+		grVFile_Close(DosFS);
+		return GR_FALSE;
 	}
 
-	HintsFile = jeVFile_GetHintsFile(DispersedFile);
+	HintsFile = grVFile_GetHintsFile(DispersedFile);
 	if	(!HintsFile)
 	{
-		jeVFile_Close(DispersedFile);
-		jeVFile_Close(DosFS);
-		return JE_FALSE;
+		grVFile_Close(DispersedFile);
+		grVFile_Close(DosFS);
+		return GR_FALSE;
 	}
 
-	Result = JE_FALSE;
+	Result = GR_FALSE;
 	Header.Signature = VFSFILEHEADER_SIGNATURE;
 	Header.Version = HEADER_VERSION;
-	Header.Dispersed = JE_TRUE;
+	Header.Dispersed = GR_TRUE;
 	Header.DataLength = File->DataLength;
 	Header.Stuff = 0;
-	if	(jeVFile_Write(DispersedFile, &Header, sizeof(Header)) == JE_TRUE)
+	if	(grVFile_Write(DispersedFile, &Header, sizeof(Header)) == GR_TRUE)
 	{
-//		if	(DirTree_WriteToFile(File->Directory, DispersedFile) == JE_TRUE)
-		if	(DirTree_WriteToFile(File->Directory, HintsFile) == JE_TRUE)
+//		if	(DirTree_WriteToFile(File->Directory, DispersedFile) == GR_TRUE)
+		if	(DirTree_WriteToFile(File->Directory, HintsFile) == GR_TRUE)
 		{
 			Result = CopyDir(FS, DosFS);
 		}
 	}
-	jeVFile_Close(DispersedFile);
-	jeVFile_Close(DosFS);
+	grVFile_Close(DispersedFile);
+	grVFile_Close(DosFS);
 
 #pragma message("FSVFS : Dispersed bitmaps could be 0 bytes; do we handle this well?")
 
@@ -1385,22 +1385,22 @@ static	jeBoolean	JETCC FSVFS_Disperse(
 #pragma warning (default:4100)
 
 #pragma warning (disable:4100)
-static	jeBoolean	JETCC FSVFS_DeleteFile(jeVFile *FS, void *Handle, const char *Name)
+static	grBoolean	GRCC FSVFS_DeleteFile(grVFile *FS, void *Handle, const char *Name)
 {
 assert(!"Not implemented");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 #pragma warning (default:4100)
 
 #pragma warning (disable:4100)
-static	jeBoolean	JETCC FSVFS_RenameFile(jeVFile *FS, void *Handle, const char *Name, const char *NewName)
+static	grBoolean	GRCC FSVFS_RenameFile(grVFile *FS, void *Handle, const char *Name, const char *NewName)
 {
 assert(!"Not implemented");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 #pragma warning (default:4100)
 
-static	jeVFile_SystemAPIs	FSVFS_APIs =
+static	grVFile_SystemAPIs	FSVFS_APIs =
 {
 	FSVFS_FinderCreate,
 	FSVFS_FinderGetNextFile,
@@ -1439,7 +1439,7 @@ static	jeVFile_SystemAPIs	FSVFS_APIs =
 	FSVFS_GetHintsFile,
 };
 
-const jeVFile_SystemAPIs * JETCC FSVFS_GetAPIs(void)
+const grVFile_SystemAPIs * GRCC FSVFS_GetAPIs(void)
 {
 	return &FSVFS_APIs;
 }

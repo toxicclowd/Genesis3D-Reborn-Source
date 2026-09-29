@@ -57,19 +57,19 @@ typedef	struct	ThreadLog_Entry
 static	ThreadLog_Entry	*	LogEntries = NULL;
 static	ThreadLog_Entry *	CurrentEntry = NULL;
 static	DWORD				StartTime = 0;
-static  jeBoolean			Filling = JE_FALSE;
+static  grBoolean			Filling = GR_FALSE;
 
-jeBoolean ThreadLog_Initialize(void)
+grBoolean ThreadLog_Initialize(void)
 {
 #ifdef	ENABLE_LOGGING
 	if ( LogEntries )
-		return JE_TRUE;
+		return GR_TRUE;
 
 #ifdef WIN32
 	// <> this is a memory leak
 	LogEntries = (ThreadLog_Entry*)VirtualAlloc(NULL, MAXENTRIES * sizeof(ThreadLog_Entry), MEM_COMMIT, PAGE_READWRITE);
 	if	(!LogEntries)
-		return JE_FALSE;
+		return GR_FALSE;
 #endif
 #ifdef BUILD_BE
 	logEntriesArea = create_area("LogEntries Area" , (void **)&LogEntries , B_ANY_ADDRESS, MAXENTRIES * sizeof(ThreadLog_Entry), B_NO_LOCK , B_READ_AREA | B_WRITE_AREA );
@@ -80,7 +80,7 @@ jeBoolean ThreadLog_Initialize(void)
 	StartTime = timeGetTime();
 #endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void	ThreadLog_Printf(const char *Msg, ...)
@@ -120,25 +120,25 @@ void	ThreadLog_Printf(const char *Msg, ...)
 	if ( strrchr(Entry->Msg,'\n') )
 	{
 		CurrentEntry++;
-		Filling = JE_FALSE;
+		Filling = GR_FALSE;
 	}
 	else
-		Filling = JE_TRUE;
+		Filling = GR_TRUE;
 #endif
 }
 
-jeBoolean	ThreadLog_Report(const char *FileName)
+grBoolean	ThreadLog_Report(const char *FileName)
 {
 #ifdef	ENABLE_LOGGING
 	ThreadLog_Entry *	Entry;
-	jeVFile *			Out;
+	grVFile *			Out;
 
 	if	(!LogEntries)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	Out = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS, FileName, NULL, JE_VFILE_OPEN_CREATE);
+	Out = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS, FileName, NULL, GR_VFILE_OPEN_CREATE);
 	if	(!Out)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Entry = LogEntries;
 	while	(Entry < CurrentEntry)
@@ -148,17 +148,17 @@ jeBoolean	ThreadLog_Report(const char *FileName)
 
 		sprintf(Buff, "%8d  %8x:  %s", Entry->TimeStamp, Entry->ThreadId, Entry->Msg);
 		Length = strlen(Buff);
-		if	(jeVFile_Write(Out, Buff, Length) == JE_FALSE)
+		if	(grVFile_Write(Out, Buff, Length) == GR_FALSE)
 		{
-			jeVFile_Close(Out);
-			return JE_FALSE;
+			grVFile_Close(Out);
+			return GR_FALSE;
 		}
 		Entry++;
 	}
 
-	jeVFile_Close(Out);
+	grVFile_Close(Out);
 #endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 

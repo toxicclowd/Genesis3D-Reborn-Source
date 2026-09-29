@@ -38,15 +38,15 @@ Class *			Class_Create( const char * const pszName, int Kind)
 
 	assert( pszName );
 
-	pClass = JE_RAM_ALLOCATE_STRUCT_CLEAR( Class );
+	pClass = GR_RAM_ALLOCATE_STRUCT_CLEAR( Class );
 	if( pClass == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Class_Create" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Class_Create" );
 		return( NULL );
 	}
 	if( !Object_Init( &pClass->ObjectData, NULL, KIND_CLASS, pszName, 0 ) )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Class_Create:Object_Init" );
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Class_Create:Object_Init" );
 		return( NULL );
 	}
 	pClass->ClassKind = Kind;
@@ -55,14 +55,14 @@ Class *			Class_Create( const char * const pszName, int Kind)
 
 void Class_Destroy( Class ** ppClass ) 
 {
-	jeRam_Free( *ppClass );
+	grRam_Free( *ppClass );
 }
 int	Class_GetClassKind( Class * pClass )
 {
 	return( pClass->ClassKind );
 }
 
-jeProperty_List *	Class_BuildDescriptor( Class * pClass )
+grProperty_List *	Class_BuildDescriptor( Class * pClass )
 {
 	assert( pClass );
 
@@ -81,7 +81,7 @@ jeProperty_List *	Class_BuildDescriptor( Class * pClass )
 	return( NULL );
 }
 
-void Class_SetProperty( Class * pClass, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bUpdate )
+void Class_SetProperty( Class * pClass, int DataId, int DataType, grProperty_Data * pData, grBoolean bUpdate )
 {
 	assert( pClass );
 	switch( pClass->ClassKind )

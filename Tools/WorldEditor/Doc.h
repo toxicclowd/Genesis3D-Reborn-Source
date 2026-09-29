@@ -109,21 +109,21 @@ public:
    
    // Implementation
 public:
-   jeBoolean	m_bLoaded;
+   grBoolean	m_bLoaded;
    
    //Selection
-   jeBoolean SelectObject( Object * pObject , LEVEL_STATE eState );
-   jeBoolean SubSelectgeObject( jeObject * pgeObject, 	LEVEL_STATE eState  );
-   jeBoolean MarkSubSelect( jeObject * pgeObject, int32 flag );
+   grBoolean SelectObject( Object * pObject , LEVEL_STATE eState );
+   grBoolean SubSelectgeObject( grObject * pgeObject, 	LEVEL_STATE eState  );
+   grBoolean MarkSubSelect( grObject * pgeObject, int32 flag );
    void SetSelectionName( const char * pName );
    const char * GetSelectionName( int32 * pnNumber );
    LEVEL_SEL GetSelType( void );
-   jeBoolean RectangleSelect( jeExtBox * pBox, jeBoolean bAppend );
-   jeBoolean HasSelections( jeExtBox * pSelBounds );
-   jeBoolean HasSubSelections( jeExtBox * pSelBounds );
+   grBoolean RectangleSelect( grExtBox * pBox, grBoolean bAppend );
+   grBoolean HasSelections( grExtBox * pSelBounds );
+   grBoolean HasSubSelections( grExtBox * pSelBounds );
    int32	  SubSelXFormModFlags();
-   jeBoolean Select( const Ortho * pOrtho, const Point * pViewPt, LEVEL_STATE eState, jeBoolean bControl_Held );
-   jeBoolean Select3d( const jeCamera * pCamera, const Point *pViewPt );
+   grBoolean Select( const Ortho * pOrtho, const Point * pViewPt, LEVEL_STATE eState, grBoolean bControl_Held );
+   grBoolean Select3d( const grCamera * pCamera, const Point *pViewPt );
    void	  DeselectAllSub();
    void	  DeleteSelection();
    
@@ -133,8 +133,8 @@ public:
    ModelList  * GetModelList( void );
    GroupList  * GetGroupList( void );
    ObjectList * GetSelectList( void );
-   jeBoolean EnumSelected( void * lParam, ObjectListCB Callback );
-   jeBoolean EnumObjects( void * lParam, ObjectListCB Callback );
+   grBoolean EnumSelected( void * lParam, ObjectListCB Callback );
+   grBoolean EnumObjects( void * lParam, ObjectListCB Callback );
    
    //misc
    BOOL CreateLevel( void );
@@ -144,9 +144,9 @@ public:
    
    //Vertex Manipulation
    void EndMoveVerts( void );
-   jeBoolean MoveVerts( const Ortho * pOrtho, jeVec3d * pWorldDistance );
-   jeBoolean BeginMoveVerts( const Ortho * pOrtho );
-   jeBoolean IsVertexManipulationMode( void );
+   grBoolean MoveVerts( const Ortho * pOrtho, grVec3d * pWorldDistance );
+   grBoolean BeginMoveVerts( const Ortho * pOrtho );
+   grBoolean IsVertexManipulationMode( void );
    
   	// added by cjp (1/19/00)
   	void JoinSelectedVertices( void );
@@ -154,51 +154,51 @@ public:
    
    //Handles
    void EndMoveHandle( void );
-   jeBoolean BeginMoveHandle( const Ortho * pOrtho, SELECT_HANDLE eHandle, DOC_HANDLE_MODE *Mode );
-   jeBoolean BeginRotateSub( );
+   grBoolean BeginMoveHandle( const Ortho * pOrtho, SELECT_HANDLE eHandle, DOC_HANDLE_MODE *Mode );
+   grBoolean BeginRotateSub( );
    void RotateSelectedSub(const Ortho * pOrtho, Point * pMousePt, Point *pAnchor );
    void EndRotateSub();
-   void BeginMove( const Ortho * pOrtho, SELECT_HANDLE eCorner, jeBoolean bCopy );
+   void BeginMove( const Ortho * pOrtho, SELECT_HANDLE eCorner, grBoolean bCopy );
    void BeginMoveSub(  );
-   void MoveHandle( const Ortho * pOrtho, jeVec3d * pWorldDistance, SELECT_HANDLE eSizeType, Point * pMousePt, Point * pAnchorPt, jeVec3d *Center3d );
+   void MoveHandle( const Ortho * pOrtho, grVec3d * pWorldDistance, SELECT_HANDLE eSizeType, Point * pMousePt, Point * pAnchorPt, grVec3d *Center3d );
    void EndMove( void );
    void EndMoveSub( void );
    
    //Mode
    MODE SetMode( const MODE eMode );
    void SetCursor( Ortho * pOrtho, POINT * pViewPt );
-   void MoveSelected( SELECT_HANDLE eCorner, jeVec3d * pWorldDistance );
-   void MoveSelectedSub( SELECT_HANDLE eCorner, jeVec3d * pWorldDistance );
-   void DeselectAll( jeBoolean UpdatePanel );
+   void MoveSelected( SELECT_HANDLE eCorner, grVec3d * pWorldDistance );
+   void MoveSelectedSub( SELECT_HANDLE eCorner, grVec3d * pWorldDistance );
+   void DeselectAll( grBoolean UpdatePanel );
    void DeselectAllFaces(  );
    //---------------------------------------------------
    // Added DJT
    //---------------------------------------------------
-  	void SelectAll(jeBoolean UpdatePanel, int32 Mask = OBJECT_KINDALL);
+  	void SelectAll(grBoolean UpdatePanel, int32 Mask = OBJECT_KINDALL);
    //---------------------------------------------------
    // End DJT
    //---------------------------------------------------
    
    
-   jeBoolean isPlaceBrushMode();
-   jeBoolean isPlaceLightMode();
+   grBoolean isPlaceBrushMode();
+   grBoolean isPlaceLightMode();
    void GetModeKind( int *Kind, int *SubKind );
    void AbortMode();
    
    
    //Place
-   void PlaceBrush( jeBoolean bSubtract );
-   void PlaceObject(  jeExtBox	*pObjectBounds, jeBoolean bSubtract );
-   void PlaceAtPoint( const Ortho * pOrtho, Point * pPoint,  jeBoolean bSubtract );
+   void PlaceBrush( grBoolean bSubtract );
+   void PlaceObject(  grExtBox	*pObjectBounds, grBoolean bSubtract );
+   void PlaceAtPoint( const Ortho * pOrtho, Point * pPoint,  grBoolean bSubtract );
    void SetNewBrushBound(Ortho * pOrtho, Point * pMousePt, Point *pAnchor );
-   const jeExtBox * GetNewBrushBounds();
+   const grExtBox * GetNewBrushBounds();
    void SetNewBrushHeight( Ortho * pOrtho, Point * pMousePt, Point *pAnchor );  //Sets Doc NewBurshBounds Min to contsuctor and max to Height
    void SetNewBrushBoundInvalid();
    LPCTSTR		GetConstructorCursor(Ortho *pOrtho, POINT *pViewPt);
    void		MoveConstructor( Ortho *pOrtho, DOC_CONSTRUCTORS Constructor, Point * pMousePt, Point *pAnchor );
    
-   SELECT_HANDLE ViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox * pWorldBox );
-   SELECT_HANDLE SubViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox * pWorldBox );
+   SELECT_HANDLE ViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox );
+   SELECT_HANDLE SubViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox );
    DOC_CONSTRUCTORS ViewPointConstructor( Ortho * pOrtho, Point * pViewPt);
    
    //Groups
@@ -210,20 +210,20 @@ public:
    Model *		GetCurrentModel( void );
    void		SetCurrentModel( Model * pModel );
    Model *		CreateModel( const char * pszName );
-   void		ModelLock( Model * pModel, jeBoolean bLock );
+   void		ModelLock( Model * pModel, grBoolean bLock );
    
    //Classes
    Class *		CreateClass( const char * pszName, int Kind );
    
    //Views
-   void		RenderAnimate( jeBoolean bAnimate );
+   void		RenderAnimate( grBoolean bAnimate );
    void		CenterViewsOnSelection( );
-   jeBoolean SetRenderMode( int Mode );
+   grBoolean SetRenderMode( int Mode );
    int      GetRenderMode();
-   BOOL		RenderLights( jeCamera* pCamera );
+   BOOL		RenderLights( grCamera* pCamera );
    void		RenderOrthoView( CDC * pDC, Ortho * pOrtho );
    void		UpdateAllViews(CView* pSender, LPARAM lHint=NULL, CObject* pHint=NULL) ;
-   jeBoolean	GetSelRadiusBox( Ortho *pOrtho, Rect *pBox );
+   grBoolean	GetSelRadiusBox( Ortho *pOrtho, Rect *pBox );
    BOOL		UpdateWindow( int x, int y );
    
    //Draw Routines
@@ -237,7 +237,7 @@ public:
    void DrawSelectAxis( Ortho * pOrtho, HDC hDC );
    
    // Text Functions
-   void PrintRectDimensions( CDC *pDC,const Ortho * pOrtho, const jeExtBox	*pselBox );	// Added JH 3.3.2000
+   void PrintRectDimensions( CDC *pDC,const Ortho * pOrtho, const grExtBox	*pselBox );	// Added JH 3.3.2000
    
    //Update Modes
    int			GetBrushUpdate(  );
@@ -246,22 +246,22 @@ public:
    void		SetBrushLighting( int BrushLighting );
    void		UpdateAll();
    void		UpdateSelection();
-   jeBoolean   GetBrushLighting(  );
+   grBoolean   GetBrushLighting(  );
    void		SetBrushUpdate( int Update );
    void		SetLightUpdate( int Update );
    
    
-   void		SetProperty( int DataId, int DataType, jeProperty_Data * pData );
+   void		SetProperty( int DataId, int DataType, grProperty_Data * pData );
    
    //Camera
    void		RotCurCamX( float Radians );
    void		RotCurCamY( float Radians );
-   void		TranslateCurCam( jeVec3d * Offset );
-   jeObject *	GetCurCamObject( );
+   void		TranslateCurCam( grVec3d * Offset );
+   grObject *	GetCurCamObject( );
    void		GetCurCamXYRot( float *XRot, float *YRot );
    void		SetCurCamXYRot( float XRot, float YRot );
    
-   jeBoolean	HasChanged();
+   grBoolean	HasChanged();
    void		Save();
    void		UpdateStats();
    
@@ -273,11 +273,11 @@ public:
    // End DJT
    //---------------------------------------------------
 	// Krouer: add few accessor
-	inline jeResourceMgr* GetResourceMgr() { return m_pResourceMgr; }
-	jeEngine* GetJetEngine();
+	inline grResourceMgr* GetResourceMgr() { return m_pResourceMgr; }
+	grEngine* GetJetEngine();
 	// end Krouer adds
    
-   virtual BOOL SetDrawFaceCB(jeEngine *Engine, jeBoolean Enable);
+   virtual BOOL SetDrawFaceCB(grEngine *Engine, grBoolean Enable);
    virtual BOOL Render( class CJ3DView * pView );
    virtual ~CJweDoc();
 #ifdef _DEBUG
@@ -403,37 +403,37 @@ public:
     void BeginRotate( void );
     void BeginSize( void );
     
-    jeBitmap *	InitBitmap( WORD Resource );
-    jeMaterialSpec *	InitMaterial( WORD Resource );
-    static void			DrawFaceCB(const jeTLVertex *Verts, int32 NumVerts, void *Context);
-    static jeBoolean	SetModelFaceCB( Model *pModel, void * pVoid );
+    grBitmap *	InitBitmap( WORD Resource );
+    grMaterialSpec *	InitMaterial( WORD Resource );
+    static void			DrawFaceCB(const grTLVertex *Verts, int32 NumVerts, void *Context);
+    static grBoolean	SetModelFaceCB( Model *pModel, void * pVoid );
     CView *		GetJetView();
     CRebuild	*RebuildDlg;
-    jeBoolean	m_bCopying ;
-    jeVec3d		m_DragPoint;
+    grBoolean	m_bCopying ;
+    grVec3d		m_DragPoint;
     MODE		m_Mode;
     MODE		m_PrevMode;
     Level *		m_pLevel;
     float		m_LastFOV;
-    jeFloat		m_LastRotateAngle;
-    jeExtBox	m_NewBrushBounds;
+    grFloat		m_LastRotateAngle;
+    grExtBox	m_NewBrushBounds;
 #ifdef _USE_BITMAPS  //krouer: tempory use of bitmap
-    jeBitmap *	LightBitmap;
+    grBitmap *	LightBitmap;
 #else
-    jeMaterialSpec *	LightBitmap;
+    grMaterialSpec *	LightBitmap;
 #endif
     BOOL     m_RenderMode;
-	jeResourceMgr *	m_pResourceMgr; // krouer
+	grResourceMgr *	m_pResourceMgr; // krouer
 
 	//	tom morris feb 2005
 	const CString	m_strRebuild;
 	//	end tom morris feb 2005
     
-    jeBoolean	m_Anim_State;					// Added JH 7.3.2000
+    grBoolean	m_Anim_State;					// Added JH 7.3.2000
     void		AlignObjects (DOC_ALIGN_MODE Align_Mode );  // Added JH 11.3.2000
     CProperties		*m_pPropsDialog;					// Added JH 16.3.2000
 	CPreferences	*m_pPrefsDialog;
-    void		RotateObjects (jeFloat Angle ); // Added JH 24.3.2000
+    void		RotateObjects (grFloat Angle ); // Added JH 24.3.2000
     void		ObjectsToFront();	// Added JH 25.3.2000
 public:
     afx_msg void OnFileClose();

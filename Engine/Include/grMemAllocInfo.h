@@ -22,14 +22,14 @@
 #define GR_MEMALLOCINFO_H
 
 #define GR_DEACTIVATE_JMAI
-#define JE_DEACTIVATE_JMAI
+#define GR_DEACTIVATE_JMAI
 
 #ifdef NDEBUG
 	#ifndef GR_DEACTIVATE_JMAI
 		#define GR_DEACTIVATE_JMAI
 	#endif
-	#ifndef JE_DEACTIVATE_JMAI
-		#define JE_DEACTIVATE_JMAI
+	#ifndef GR_DEACTIVATE_JMAI
+		#define GR_DEACTIVATE_JMAI
 	#endif
 #endif
 
@@ -69,19 +69,5 @@ GRAPI uint32 GRCC grMemAllocInfo_GetFlags();
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#ifndef JE_DEACTIVATE_JMAI
-#define JE_DEACTIVATE_JMAI                       GR_DEACTIVATE_JMAI
-#endif
-
-#define jeMemAllocInfo_Activate                  grMemAllocInfo_Activate
-#define jeMemAllocInfo_Create                    grMemAllocInfo_Create
-#define jeMemAllocInfo_DeActivate                grMemAllocInfo_DeActivate
-#define jeMemAllocInfo_Destroy                   grMemAllocInfo_Destroy
-#define jeMemAllocInfo_FileReport                grMemAllocInfo_FileReport
-#define jeMemAllocInfo_GetFlags                  grMemAllocInfo_GetFlags
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif // GR_MEMALLOCINFO_H

@@ -19,4 +19,4 @@
 /*                                                                                      */
 /****************************************************************************************/
 
-jeBoolean ReportErrors( jeBoolean bWarning );
+grBoolean ReportErrors( grBoolean bWarning );

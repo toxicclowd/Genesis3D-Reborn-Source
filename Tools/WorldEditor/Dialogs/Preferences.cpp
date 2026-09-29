@@ -719,8 +719,8 @@ void CPreferences::OnPaint()
 	// Setup default View
 	Ortho *Temp=Ortho_Create();
 	
-	jeVec3d	Angles	  = { 0.0f, 0.0f, 0.0f } ;
-	jeVec3d CameraPos = { 0.0f, 0.0f, 0.0f } ;
+	grVec3d	Angles	  = { 0.0f, 0.0f, 0.0f } ;
+	grVec3d CameraPos = { 0.0f, 0.0f, 0.0f } ;
 	
 	Ortho_SetZoom  ( Temp, 0.4f ) ;
 	Ortho_SetAngles( Temp, &Angles ) ;
@@ -781,11 +781,11 @@ void	CPreferences::OnMouse()
 
 void CPreferences::OnEngine_GetWindowMode()
 {
-	jeDriver* LastDriver{};
-	jeDriver_Mode* LastMode{};
-	jeDriver* WindowDriver{};
-	jeDriver_Mode* WindowMode{};
-	jeBoolean		Result{};
+	grDriver* LastDriver{};
+	grDriver_Mode* LastMode{};
+	grDriver* WindowDriver{};
+	grDriver_Mode* WindowMode{};
+	grBoolean		Result{};
 
 	char			VideoName[200];
 	const char* cWindowDriver{};
@@ -812,7 +812,7 @@ void CPreferences::OnEngine_GetWindowMode()
 	if (pView!=nullptr)
 	{
 		// save last driver and mode
-		jeEngine_GetDriverAndMode( ((CJ3DView*)pView)->GetEngine(), &LastDriver, &LastMode );
+		grEngine_GetDriverAndMode( ((CJ3DView*)pView)->GetEngine(), &LastDriver, &LastMode );
 		WindowDriver = LastDriver;
 		WindowMode = LastMode;
 
@@ -822,11 +822,11 @@ void CPreferences::OnEngine_GetWindowMode()
 										((CJ3DView*)pView)->GetEngine(), 
 										&WindowDriver, 
 										&WindowMode,
-										JE_TRUE,
+										GR_TRUE,
 										DRVLIST_SOFTWARE | DRVLIST_HARDWARE |DRVLIST_WINDOW|DRVLIST_ALL);
-		if (Result != JE_FALSE)
-			{ jeDriver_GetName( WindowDriver, &cWindowDriver );
-			  jeDriver_ModeGetName( WindowMode, &cWindowMode );
+		if (Result != GR_FALSE)
+			{ grDriver_GetName( WindowDriver, &cWindowDriver );
+			  grDriver_ModeGetName( WindowMode, &cWindowMode );
 
 			  sprintf_s (VideoName,"%s,%s",cWindowDriver,cWindowMode);
 			  GetDlgItem( IDC_JET_WINDOW )->SetWindowText(VideoName);
@@ -836,11 +836,11 @@ void CPreferences::OnEngine_GetWindowMode()
 
 void CPreferences::OnEngine_GetFullscreenMode()
 {
-	jeDriver* LastDriver{};
-	jeDriver_Mode* LastMode{};
-	jeDriver* WindowDriver{};
-	jeDriver_Mode* WindowMode{};
-	jeBoolean		Result{};
+	grDriver* LastDriver{};
+	grDriver_Mode* LastMode{};
+	grDriver* WindowDriver{};
+	grDriver_Mode* WindowMode{};
+	grBoolean		Result{};
 
 	char			VideoName[200];
 	const char* cWindowDriver{};
@@ -867,7 +867,7 @@ void CPreferences::OnEngine_GetFullscreenMode()
 	if (pView!=nullptr)
 	{
 		// save last driver and mode
-		jeEngine_GetDriverAndMode( ((CJ3DView*)pView)->GetEngine(), &LastDriver, &LastMode );
+		grEngine_GetDriverAndMode( ((CJ3DView*)pView)->GetEngine(), &LastDriver, &LastMode );
 		WindowDriver = LastDriver;
 		WindowMode = LastMode;
 
@@ -877,11 +877,11 @@ void CPreferences::OnEngine_GetFullscreenMode()
 										((CJ3DView*)pView)->GetEngine(), 
 										&WindowDriver, 
 										&WindowMode,
-										JE_TRUE,
+										GR_TRUE,
 										DRVLIST_SOFTWARE | DRVLIST_HARDWARE |DRVLIST_FULLSCREEN);
-		if (Result != JE_FALSE)
-			{ jeDriver_GetName( WindowDriver, &cWindowDriver );
-			  jeDriver_ModeGetName( WindowMode, &cWindowMode );
+		if (Result != GR_FALSE)
+			{ grDriver_GetName( WindowDriver, &cWindowDriver );
+			  grDriver_ModeGetName( WindowMode, &cWindowMode );
 
 			  sprintf_s (VideoName,"%s,%s",cWindowDriver,cWindowMode);
 			  GetDlgItem( IDC_JET_FULLSCREEN )->SetWindowText(VideoName);

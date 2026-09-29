@@ -63,7 +63,7 @@ struct LBitIOInfo * LBitIO_Init(uint8 *Array)
 {
 struct LBitIOInfo * BII;
 
-if ( (BII = (struct LBitIOInfo *)jeRam_Allocate(sizeof(struct LBitIOInfo))) == NULL )
+if ( (BII = (struct LBitIOInfo *)grRam_Allocate(sizeof(struct LBitIOInfo))) == NULL )
 	return(NULL);
 
 LBitIO_ResetArray(BII,Array);

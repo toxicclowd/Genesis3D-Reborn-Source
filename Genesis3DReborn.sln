@@ -78,6 +78,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpoutObj", "Objects\SpoutOb
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StaticMeshObj", "Objects\StaticMeshObj\StaticMesh.vcxproj", "{E91549ED-1B8F-412D-8472-9BCC3CD889DB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DA9C671F-1998-42EC-8D3C-F14AE13AD4AD} = {DA9C671F-1998-42EC-8D3C-F14AE13AD4AD}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "terrainobj", "Objects\TerrainObj\terrainobj.vcxproj", "{9EEFFC03-E0CF-4F05-A4B9-CA0B692F0195}"
 	ProjectSection(ProjectDependencies) = postProject

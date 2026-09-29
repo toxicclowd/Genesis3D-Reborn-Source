@@ -61,14 +61,14 @@ void		rungO1Destroy(rungO1 * ro1)
 	destroy(ro1);
 }
 
-void	rungO1Encode(rungO1 * ro1, int context, jeBoolean bit)
+void	rungO1Encode(rungO1 * ro1, int context, grBoolean bit)
 {
 	assert(ro1);
 	assert( context >= 0 && context < ro1->numContexts );
 	rungModelEncBit(ro1->ari,bit,&(ro1->rungs[context]));
 }
 
-jeBoolean	rungO1Decode(rungO1 * ro1, int context)
+grBoolean	rungO1Decode(rungO1 * ro1, int context)
 {
 	assert(ro1);
 	assert( context >= 0 && context < ro1->numContexts );

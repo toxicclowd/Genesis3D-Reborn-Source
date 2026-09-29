@@ -22,22 +22,22 @@
 #ifndef MATERIALIDENTLIST_H
 #define MATERIALIDENTLIST_H
 
-#include "jeList.h"
+#include "grList.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "jeMaterial.h"
+#include "grMaterial.h"
 
 typedef struct tabMaterialIdent
 {
-	char MaterialName[JE_MATERIAL_MAX_NAME_SIZE];
-	char BitmapName[JE_MATERIAL_MAX_NAME_SIZE];
+	char MaterialName[GR_MATERIAL_MAX_NAME_SIZE];
+	char BitmapName[GR_MATERIAL_MAX_NAME_SIZE];
 	int32 FileMatIdx;
 	int32 WorldMatIdx;
 } MaterialIdent;
 
-typedef jeBoolean (*MaterialIdentListCB)( MaterialIdent *pMaterialIdent, void * pVoid );
+typedef grBoolean (*MaterialIdentListCB)( MaterialIdent *pMaterialIdent, void * pVoid );
 
 typedef List					MaterialIdentList ;
 typedef ListIterator			MaterialIdentIterator ;

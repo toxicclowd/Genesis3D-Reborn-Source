@@ -31,8 +31,8 @@
 #include	"threadlog.h"
 
 #ifdef	__BORLANDC__
-#define jeRam_Allocate malloc
-#define jeRam_Free free
+#define grRam_Allocate malloc
+#define grRam_Free free
 #else
 #include	"ram.h"
 #endif
@@ -61,7 +61,7 @@ typedef	struct	Thread
 	HANDLE				ThreadStallingEvent;
 	Thread_Function		Function;
 	void *				Context;
-	jeBoolean			Terminate;
+	grBoolean			Terminate;
 //	HANDLE				Handle;
 }	Thread;
 
@@ -75,25 +75,25 @@ typedef	struct	ThreadPool
 
 #define JOB_SIGNATURE 0xFEEDFEED
 
-typedef	struct	jeThreadQueue_Job
+typedef	struct	grThreadQueue_Job
 {
 //	HANDLE				ThreadHandle;
 	uint32				Signature;
-	jeThreadQueue_JobStatus	Status;
+	grThreadQueue_JobStatus	Status;
 	int					RefCount;
-//	jeAsyncStatus		Status;
-//	jeBoolean			Active;
+//	grAsyncStatus		Status;
+//	grBoolean			Active;
 
-	jeThreadQueue_JobFunction	Function;
+	grThreadQueue_JobFunction	Function;
 	void *				Context;
-	jeErrorLog *		ErrorLog;
+	grErrorLog *		ErrorLog;
 //	uint32				StackLimit;
 
-	jeThreadQueue_Job *	Next;
-	jeThreadQueue_Job *	Prev;
+	grThreadQueue_Job *	Next;
+	grThreadQueue_Job *	Prev;
 	Thread *			Thread;
 
-}	jeThreadQueue_Job;
+}	grThreadQueue_Job;
 
 
 /*}{******** The Statics that represent the active Pool **********/
@@ -110,11 +110,11 @@ static	ThreadPool *		GlobalThreadPool = NULL;
 		priority.  Jobs at the back are low priority.
 */
 #pragma warning (disable:4152)	// nonstandard extension, function/data pointer conversion in expression
-static	jeThreadQueue_Job 	JobList =
+static	grThreadQueue_Job 	JobList =
 {
 //	(HANDLE)-1,
 	JOB_SIGNATURE,
-	JE_THREADQUEUE_STATUS_COMPLETED,
+	GR_THREADQUEUE_STATUS_COMPLETED,
 	1,
 	//(void *)0xBEEFFACE,
 	//(void *)0xCAFEDEAD,
@@ -129,24 +129,24 @@ static	jeThreadQueue_Job 	JobList =
 		status information.
 */
 static	CRITICAL_SECTION	QueueLock;
-//static	jeBoolean			QueueLockFlag;
+//static	grBoolean			QueueLockFlag;
 
 /*
 		TQInitialized is whether we've initialized the system.
 */
-static	jeBoolean			TQInitialized = JE_FALSE;
+static	grBoolean			TQInitialized = GR_FALSE;
 
 /*}{******** Functions **********/
 
 static	void	LockQueue(void)
 {
 	EnterCriticalSection(&QueueLock);
-//	QueueLockFlag = JE_TRUE;
+//	QueueLockFlag = GR_TRUE;
 }
 
 static	void	UnlockQueue(void)
 {
-//	QueueLockFlag = JE_FALSE;
+//	QueueLockFlag = GR_FALSE;
 	LeaveCriticalSection(&QueueLock);
 }
 
@@ -181,7 +181,7 @@ void	Thread_Run(Thread *T, Thread_Function Function, void *Context)
 	PulseEvent(T->ThreadStallingEvent);
 }
 
-jeBoolean ThreadPool_Destroy(ThreadPool *Pool)
+grBoolean ThreadPool_Destroy(ThreadPool *Pool)
 {
 	int	i;
 
@@ -191,20 +191,20 @@ jeBoolean ThreadPool_Destroy(ThreadPool *Pool)
 	{
 		if	(Pool->Threads[i].State != TS_FREE)
 		{
-			jeErrorLog_AddString(-1,"ThreadQueue : cannot free threadpool : threads still running!",NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(-1,"ThreadQueue : cannot free threadpool : threads still running!",NULL);
+			return GR_FALSE;
 		}
 
 		CloseHandle(Pool->Threads[i].ThreadStallingEvent);
 	}
 
 	DeleteCriticalSection(&Pool->CS);
-	jeRam_Free(Pool);
+	grRam_Free(Pool);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean InitThread(Thread * T)
+grBoolean InitThread(Thread * T)
 {
 	assert(T);
 
@@ -214,23 +214,23 @@ jeBoolean InitThread(Thread * T)
 	T->ThreadStallingEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if ( T->ThreadStallingEvent == NULL )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	if ( _beginthread(ThreadFunction, THREADSTACKSIZE, T) == -1 )
 	{
 		CloseHandle(T->ThreadStallingEvent);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 ThreadPool *	ThreadPool_Create(void)
 {
 ThreadPool *	Pool;
 
-	Pool = (ThreadPool*)jeRam_AllocateClear(sizeof(*Pool));
+	Pool = (ThreadPool*)grRam_AllocateClear(sizeof(*Pool));
 	if	(!Pool)
 		return Pool;
 
@@ -293,25 +293,25 @@ Thread * ThreadPool_GetFreeThread(ThreadPool *Pool)
 	return Result;
 }
 
-static	jeBoolean	InitTQ(void)
+static	grBoolean	InitTQ(void)
 {
-	if ( TQInitialized == JE_FALSE )
+	if ( TQInitialized == GR_FALSE )
 	{
 		JobList.Next = &JobList;
 		JobList.Prev = &JobList;
 		InitializeCriticalSection(&QueueLock);
 
-		TQInitialized = JE_TRUE;
+		TQInitialized = GR_TRUE;
 	}
 
 	if ( ! 	GlobalThreadPool )
 	{
 		GlobalThreadPool = ThreadPool_Create();
 		if ( ! GlobalThreadPool )
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 typedef	enum
@@ -325,41 +325,41 @@ static	void	PutBreakPointHere(void)
 	OutputDebugString("CheckQueue is about to fail\r\n");
 }
 
-static	jeBoolean	CheckLockedQueue(DebugDirection Direction)
+static	grBoolean	CheckLockedQueue(DebugDirection Direction)
 {
-static	jeThreadQueue_Job *	Runner;
-static	jeThreadQueue_Job *	Runner2x;
+static	grThreadQueue_Job *	Runner;
+static	grThreadQueue_Job *	Runner2x;
 
 	/*
 		Some invariants:
 	*/
-	if	(JobList.Status != JE_THREADQUEUE_STATUS_COMPLETED)
+	if	(JobList.Status != GR_THREADQUEUE_STATUS_COMPLETED)
 	{
 		PutBreakPointHere();
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 #if 0
 	if	(JobList.ThreadHandle != (HANDLE)-1)
 	{
 		PutBreakPointHere();
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 #endif
-	if	(JobList.Function != (jeThreadQueue_JobFunction)0xBEEFFACE)
+	if	(JobList.Function != (grThreadQueue_JobFunction)0xBEEFFACE)
 	{
 		PutBreakPointHere();
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	if	(JobList.Context != (void *)0xCAFEDEAD)
 	{
 		PutBreakPointHere();
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 //	if	(JobList.StackLimit != 0)
 //	{
 //		PutBreakPointHere();
-//		return JE_FALSE;
+//		return GR_FALSE;
 //	}
 
 	if	(Direction == CHECK_FORWARD)
@@ -379,25 +379,25 @@ static	jeThreadQueue_Job *	Runner2x;
 		if	(JobList.Prev != &JobList)
 		{
 			PutBreakPointHere();
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	do
 	{
-		if	(Runner->Status < JE_THREADQUEUE_STATUS_WAITINGFORTHREAD ||
-			 Runner->Status > JE_THREADQUEUE_STATUS_COMPLETED)
+		if	(Runner->Status < GR_THREADQUEUE_STATUS_WAITINGFORTHREAD ||
+			 Runner->Status > GR_THREADQUEUE_STATUS_COMPLETED)
 		{
 			PutBreakPointHere();
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		//  Is there a loop?
 		if	(Runner == Runner2x)
 		{
 			PutBreakPointHere();
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		if	(Direction == CHECK_FORWARD)
@@ -413,12 +413,12 @@ static	jeThreadQueue_Job *	Runner2x;
 
 	}	while	(Runner != &JobList && Runner2x != &JobList);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	CheckQueue(DebugDirection Direction)
+static	grBoolean	CheckQueue(DebugDirection Direction)
 {
-	jeBoolean	Result;
+	grBoolean	Result;
 
 	LockQueue();
 	Result = CheckLockedQueue(Direction);
@@ -428,27 +428,27 @@ static	jeBoolean	CheckQueue(DebugDirection Direction)
 
 static	void ThreadStart(void *Context)
 {
-	jeThreadQueue_Job *	Job;
+	grThreadQueue_Job *	Job;
 
-	Job = (jeThreadQueue_Job*)Context;
+	Job = (grThreadQueue_Job*)Context;
 
-	Job->Status = JE_THREADQUEUE_STATUS_RUNNING;
+	Job->Status = GR_THREADQUEUE_STATUS_RUNNING;
 	(Job->Function)(Job, Job->Context);
 	assert(Job->Signature == JOB_SIGNATURE);
-	Job->Status = JE_THREADQUEUE_STATUS_COMPLETED;
+	Job->Status = GR_THREADQUEUE_STATUS_COMPLETED;
 }
 
-JETAPI	void JETCC jeThreadQueue_Sleep(int Milliseconds)
+GRAPI	void GRCC grThreadQueue_Sleep(int Milliseconds)
 {
 	Sleep(Milliseconds);
 }
 
-JETAPI	jeThreadQueue_JobStatus	JETCC jeThreadQueue_JobGetStatus(const jeThreadQueue_Job *Job)
+GRAPI	grThreadQueue_JobStatus	GRCC grThreadQueue_JobGetStatus(const grThreadQueue_Job *Job)
 {
 	return Job->Status;
 }
 
-static	void	ActivateJob(jeThreadQueue_Job *Job)
+static	void	ActivateJob(grThreadQueue_Job *Job)
 {
 	Thread *			T;
 
@@ -456,23 +456,23 @@ static	void	ActivateJob(jeThreadQueue_Job *Job)
 	if	(!T)
 		return;
 
-	Job->Status = JE_THREADQUEUE_STATUS_WAITINGTOBEGIN;
+	Job->Status = GR_THREADQUEUE_STATUS_WAITINGTOBEGIN;
 	Job->Thread = T;
 	Thread_Run(T, ThreadStart, Job);
 }
 
-JETAPI	void JETCC jeThreadQueue_PollJobs(void)
+GRAPI	void GRCC grThreadQueue_PollJobs(void)
 {
-	jeThreadQueue_Job *	Jobs;
+	grThreadQueue_Job *	Jobs;
 
-	if	(InitTQ() == JE_FALSE)
+	if	(InitTQ() == GR_FALSE)
 	{
 #pragma message ("ThreadQueue_PollJobs: Need to be able to propagate err-ors")
 		return;
 	}
 
-	assert(CheckQueue(CHECK_FORWARD ) == JE_TRUE);
-	assert(CheckQueue(CHECK_BACKWARD) == JE_TRUE);
+	assert(CheckQueue(CHECK_FORWARD ) == GR_TRUE);
+	assert(CheckQueue(CHECK_BACKWARD) == GR_TRUE);
 
 #pragma message ("ThreadQueue_PollJobs: I must not be called from multiple threads!")
 
@@ -484,13 +484,13 @@ JETAPI	void JETCC jeThreadQueue_PollJobs(void)
 	while	(Jobs != &JobList && (ActiveJobCount < MaxActiveJobs))
 //	while	(Jobs != &JobList)
 	{
-		if	(Jobs->Status == JE_THREADQUEUE_STATUS_WAITINGTOBEGIN)
+		if	(Jobs->Status == GR_THREADQUEUE_STATUS_WAITINGTOBEGIN)
 		{
 			if	(Jobs->Thread && Jobs->Thread->State == TS_OUGHTTOBERUNNING)
 				PulseEvent(Jobs->Thread->ThreadStallingEvent);
 		}
 
-		if	(Jobs->Status == JE_THREADQUEUE_STATUS_WAITINGFORTHREAD)
+		if	(Jobs->Status == GR_THREADQUEUE_STATUS_WAITINGFORTHREAD)
 		{
 			ActivateJob(Jobs);
 			break;
@@ -500,13 +500,13 @@ JETAPI	void JETCC jeThreadQueue_PollJobs(void)
 	UnlockQueue();
 }
 
-JETAPI jeThreadQueue_Job *	JETCC jeThreadQueue_JobCreate(
-	jeThreadQueue_JobFunction		Function,
+GRAPI grThreadQueue_Job *	GRCC grThreadQueue_JobCreate(
+	grThreadQueue_JobFunction		Function,
 	void *		Context,
-	jeErrorLog *ErrorLog,
+	grErrorLog *ErrorLog,
 	uint32		StackLimit)
 {
-	jeThreadQueue_Job *	Job;
+	grThreadQueue_Job *	Job;
 
 #pragma message("ThreadQueue_JobCreate : remove StackLimit parameter")
 
@@ -514,7 +514,7 @@ JETAPI jeThreadQueue_Job *	JETCC jeThreadQueue_JobCreate(
 
 #pragma message("ThreadQueue : use MemPool for Jobs (?)")
 
-	Job = (jeThreadQueue_Job*)jeRam_AllocateClear(sizeof(*Job));
+	Job = (grThreadQueue_Job*)grRam_AllocateClear(sizeof(*Job));
 	if	(!Job)
 		return Job;
 
@@ -523,7 +523,7 @@ JETAPI jeThreadQueue_Job *	JETCC jeThreadQueue_JobCreate(
 	Job->Context	= Context;
 	Job->ErrorLog	= ErrorLog;
 //	Job->StackLimit	= StackLimit;
-	Job->Status = JE_THREADQUEUE_STATUS_WAITINGFORTHREAD;
+	Job->Status = GR_THREADQUEUE_STATUS_WAITINGFORTHREAD;
 	Job->RefCount = 1;
 
 	/*
@@ -540,7 +540,7 @@ JETAPI jeThreadQueue_Job *	JETCC jeThreadQueue_JobCreate(
 	return Job;
 }
 
-JETAPI	void JETCC jeThreadQueue_JobCreateRef(jeThreadQueue_Job *Job)
+GRAPI	void GRCC grThreadQueue_JobCreateRef(grThreadQueue_Job *Job)
 {
 	assert(Job);
 	LockQueue();
@@ -548,9 +548,9 @@ JETAPI	void JETCC jeThreadQueue_JobCreateRef(jeThreadQueue_Job *Job)
 	UnlockQueue();
 }
 
-JETAPI	void JETCC jeThreadQueue_JobDestroy(jeThreadQueue_Job **pJob)
+GRAPI	void GRCC grThreadQueue_JobDestroy(grThreadQueue_Job **pJob)
 {
-	jeThreadQueue_Job *	Job;
+	grThreadQueue_Job *	Job;
 
 	LockQueue();
 
@@ -573,19 +573,19 @@ JETAPI	void JETCC jeThreadQueue_JobDestroy(jeThreadQueue_Job **pJob)
 	UnlockQueue();
 
 	assert(Job->Signature == JOB_SIGNATURE);
-	assert(Job->Status == JE_THREADQUEUE_STATUS_COMPLETED);
+	assert(Job->Status == GR_THREADQUEUE_STATUS_COMPLETED);
 
-	jeRam_Free(Job);
+	grRam_Free(Job);
 
 	*pJob = NULL;
 }
 
-JETAPI	jeBoolean JETCC jeThreadQueue_JobSetPriority(
-	jeThreadQueue_Job *		Job,
-	jeThreadQueue_Priority	Priority)
+GRAPI	grBoolean GRCC grThreadQueue_JobSetPriority(
+	grThreadQueue_Job *		Job,
+	grThreadQueue_Priority	Priority)
 {
-	if	(Job->Status != JE_THREADQUEUE_STATUS_WAITINGFORTHREAD)
-		return JE_FALSE;
+	if	(Job->Status != GR_THREADQUEUE_STATUS_WAITINGFORTHREAD)
+		return GR_FALSE;
 
 	LockQueue();
 
@@ -593,7 +593,7 @@ JETAPI	jeBoolean JETCC jeThreadQueue_JobSetPriority(
 	Job->Next->Prev = Job->Prev;
 	Job->Prev->Next = Job->Next;
 
-	if	(Priority == JE_THREADQUEUE_PRIORITY_HIGH)
+	if	(Priority == GR_THREADQUEUE_PRIORITY_HIGH)
 	{
 		JobList.Next->Prev = Job;
 		Job->Next = JobList.Next;
@@ -602,7 +602,7 @@ JETAPI	jeBoolean JETCC jeThreadQueue_JobSetPriority(
 	}
 	else
 	{
-		assert(Priority == JE_THREADQUEUE_PRIORITY_LOW);
+		assert(Priority == GR_THREADQUEUE_PRIORITY_LOW);
 		JobList.Prev->Next = Job;
 		Job->Prev = JobList.Prev;
 					JobList.Prev = Job;
@@ -611,14 +611,14 @@ JETAPI	jeBoolean JETCC jeThreadQueue_JobSetPriority(
 
 	UnlockQueue();
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	jeThreadQueue_Priority JETCC jeThreadQueue_JobGetPriority(
-	jeThreadQueue_Job *		Job)
+GRAPI	grThreadQueue_Priority GRCC grThreadQueue_JobGetPriority(
+	grThreadQueue_Job *		Job)
 {
 	int					i;
-	jeThreadQueue_Job *	Jobs;
+	grThreadQueue_Job *	Jobs;
 
 	LockQueue();
 
@@ -629,7 +629,7 @@ JETAPI	jeThreadQueue_Priority JETCC jeThreadQueue_JobGetPriority(
 		if	(Jobs == Job)
 		{
 			UnlockQueue();
-			return JE_THREADQUEUE_PRIORITY_HIGH;
+			return GR_THREADQUEUE_PRIORITY_HIGH;
 		}
 		i++;
 		Jobs = Jobs->Next;
@@ -637,34 +637,34 @@ JETAPI	jeThreadQueue_Priority JETCC jeThreadQueue_JobGetPriority(
 		if	(i >= MaxActiveJobs)
 		{
 			UnlockQueue();
-			return JE_THREADQUEUE_PRIORITY_LOW;
+			return GR_THREADQUEUE_PRIORITY_LOW;
 		}
 #endif
 	}
 
 
 	assert(!"Should never get here");
-	return JE_THREADQUEUE_PRIORITY_LOW;
+	return GR_THREADQUEUE_PRIORITY_LOW;
 }
 
-JETAPI	jeBoolean JETCC jeThreadQueue_SetThreadLimit(int MaxThreads)
+GRAPI	grBoolean GRCC grThreadQueue_SetThreadLimit(int MaxThreads)
 {
 	if ( MaxThreads >= MAX_THREADS )
-		return JE_FALSE;
+		return GR_FALSE;
 	MaxActiveJobs = MaxThreads;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI	int JETCC jeThreadQueue_GetThreadLimit(void)
+GRAPI	int GRCC grThreadQueue_GetThreadLimit(void)
 {
 	return MaxActiveJobs;
 //	return MAX_THREADS;
 }
 
 #ifndef NDEBUG
-JETAPI	void JETCC jeThreadQueue_DumpQueue(void)
+GRAPI	void GRCC grThreadQueue_DumpQueue(void)
 {
-	jeThreadQueue_Job *	Jobs;
+	grThreadQueue_Job *	Jobs;
 
 	printf("ThreadQueue: Dump of threads\n");
 	printf("------------------------------\n");
@@ -672,67 +672,67 @@ JETAPI	void JETCC jeThreadQueue_DumpQueue(void)
 	Jobs = JobList.Next;
 	while	(Jobs != &JobList)
 	{
-		if	(Jobs->Status == JE_THREADQUEUE_STATUS_WAITINGFORTHREAD)
+		if	(Jobs->Status == GR_THREADQUEUE_STATUS_WAITINGFORTHREAD)
 			printf("<%08x> Waiting\n", Jobs);
-		if	(Jobs->Status == JE_THREADQUEUE_STATUS_RUNNING)
+		if	(Jobs->Status == GR_THREADQUEUE_STATUS_RUNNING)
 			printf("<%08x> Running\n", Jobs);
-		if	(Jobs->Status == JE_THREADQUEUE_STATUS_COMPLETED)
+		if	(Jobs->Status == GR_THREADQUEUE_STATUS_COMPLETED)
 			printf("<%08x> Completed\n", Jobs);
 		Jobs = Jobs->Next;
 	}
 }
 #endif
 
-JETAPI jeBoolean JETCC jeThreadQueue_WaitOnJob(jeThreadQueue_Job * Job,
-											jeThreadQueue_JobStatus WaitForStatus)
+GRAPI grBoolean GRCC grThreadQueue_WaitOnJob(grThreadQueue_Job * Job,
+											grThreadQueue_JobStatus WaitForStatus)
 {
-jeThreadQueue_JobStatus Status;
+grThreadQueue_JobStatus Status;
 
 	assert( Job );
 
-	if ( WaitForStatus != JE_THREADQUEUE_STATUS_RUNNING &&
-		 WaitForStatus != JE_THREADQUEUE_STATUS_COMPLETED )
-		return JE_FALSE;
+	if ( WaitForStatus != GR_THREADQUEUE_STATUS_RUNNING &&
+		 WaitForStatus != GR_THREADQUEUE_STATUS_COMPLETED )
+		return GR_FALSE;
 
 	ThreadLog_Printf("WaitOnJob\n");
 
-	Status = jeThreadQueue_JobGetStatus(Job);
+	Status = grThreadQueue_JobGetStatus(Job);
 
 	if ( Status < WaitForStatus )
 	{
 	int Waits1=0,Waits2=0;
 
-		jeThreadQueue_JobSetPriority(Job,JE_THREADQUEUE_PRIORITY_HIGH);
+		grThreadQueue_JobSetPriority(Job,GR_THREADQUEUE_PRIORITY_HIGH);
 
-		while ( Status < JE_THREADQUEUE_STATUS_RUNNING )
+		while ( Status < GR_THREADQUEUE_STATUS_RUNNING )
 		{
 			Waits1++;
 			assert( Waits1 < 999999 );
 
 			#pragma message("ThreadQueue_WaitOnJob : create emergency threads if all running threads are waiting on non-running threads")
 
-			jeThreadQueue_PollJobs();
-			jeThreadQueue_Sleep(1);
-			Status = jeThreadQueue_JobGetStatus(Job);
+			grThreadQueue_PollJobs();
+			grThreadQueue_Sleep(1);
+			Status = grThreadQueue_JobGetStatus(Job);
 		}
 		
 		while ( Status < WaitForStatus )
 		{
 			Waits2++;
 			assert( Waits2 < 999999 );
-			jeThreadQueue_Sleep(1);
-			Status = jeThreadQueue_JobGetStatus(Job);
+			grThreadQueue_Sleep(1);
+			Status = grThreadQueue_JobGetStatus(Job);
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-/* }{ **** jeThreadQueue Semaphore ******/
+/* }{ **** grThreadQueue Semaphore ******/
 
 #define SEMAPHORE_SIGNATURE		((uint32)0xFEEDBABE)
 
-struct jeThreadQueue_Semaphore
+struct grThreadQueue_Semaphore
 {
 	uint32				Signature1;
 	uint32				LockCount;
@@ -743,21 +743,21 @@ struct jeThreadQueue_Semaphore
 static MemPool * SemaphorePool = NULL;
 static int Semaphores = 0;	// @@ check to see if we have leaks!
 
-JETAPI jeThreadQueue_Semaphore * JETCC
-	jeThreadQueue_Semaphore_Create(void)
+GRAPI grThreadQueue_Semaphore * GRCC
+	grThreadQueue_Semaphore_Create(void)
 {
-jeThreadQueue_Semaphore * S;
+grThreadQueue_Semaphore * S;
 
 	assert( Semaphores >= 0 );
 	if ( ! Semaphores )
 	{
 		assert( SemaphorePool == NULL );
-		SemaphorePool = MemPool_Create(sizeof(jeThreadQueue_Semaphore),64,64);
+		SemaphorePool = MemPool_Create(sizeof(grThreadQueue_Semaphore),64,64);
 		if ( ! SemaphorePool )
 			return NULL;
 	}
 
-	S = (jeThreadQueue_Semaphore*)MemPool_GetHunk(SemaphorePool);
+	S = (grThreadQueue_Semaphore*)MemPool_GetHunk(SemaphorePool);
 	if ( ! S )
 		return NULL;
 	#ifndef NDEBUG
@@ -770,7 +770,7 @@ jeThreadQueue_Semaphore * S;
 return S;
 }
 
-JETAPI void JETCC jeThreadQueue_Semaphore_Lock(jeThreadQueue_Semaphore * S)
+GRAPI void GRCC grThreadQueue_Semaphore_Lock(grThreadQueue_Semaphore * S)
 {
 	/* if ( S->LockCount )
 	{
@@ -778,8 +778,8 @@ JETAPI void JETCC jeThreadQueue_Semaphore_Lock(jeThreadQueue_Semaphore * S)
 		//	this is pointless; if our semaphore is locked, it must be locked by
 		//		a running job
 		// there's another problem : the same thread can lcok a semaphore many times!
-		jeThreadQueue_PollJobs();
-		jeThreadQueue_Sleep(1);
+		grThreadQueue_PollJobs();
+		grThreadQueue_Sleep(1);
 	} */
 	assert( S );
 	assert( S->Signature1 == SEMAPHORE_SIGNATURE &&
@@ -790,7 +790,7 @@ JETAPI void JETCC jeThreadQueue_Semaphore_Lock(jeThreadQueue_Semaphore * S)
 	S->LockCount ++;
 }
 
-JETAPI void JETCC jeThreadQueue_Semaphore_UnLock(jeThreadQueue_Semaphore * S)
+GRAPI void GRCC grThreadQueue_Semaphore_UnLock(grThreadQueue_Semaphore * S)
 {
 	assert(S);
 	assert( S->Signature1 == SEMAPHORE_SIGNATURE &&
@@ -800,12 +800,12 @@ JETAPI void JETCC jeThreadQueue_Semaphore_UnLock(jeThreadQueue_Semaphore * S)
 	LeaveCriticalSection(&(S->CS));
 }
 
-JETAPI void JETCC jeThreadQueue_Semaphore_Destroy(jeThreadQueue_Semaphore ** pS)
+GRAPI void GRCC grThreadQueue_Semaphore_Destroy(grThreadQueue_Semaphore ** pS)
 {
 	assert( pS );
 	if ( *pS )
 	{
-	jeThreadQueue_Semaphore * S = *pS;
+	grThreadQueue_Semaphore * S = *pS;
 
 		assert( S->Signature1 == SEMAPHORE_SIGNATURE &&
 				S->Signature2 == SEMAPHORE_SIGNATURE );
@@ -826,7 +826,7 @@ JETAPI void JETCC jeThreadQueue_Semaphore_Destroy(jeThreadQueue_Semaphore ** pS)
 }
 
 #ifndef NDEBUG
-JETAPI void JETCC jeThreadQueue_GetDebugInfo(int * pActiveJobCount,int *pSemaphoreCount, int * pNumThreads)
+GRAPI void GRCC grThreadQueue_GetDebugInfo(int * pActiveJobCount,int *pSemaphoreCount, int * pNumThreads)
 {
 	if ( pActiveJobCount ) *pActiveJobCount = ActiveJobCount;
 	if ( pSemaphoreCount ) *pSemaphoreCount = Semaphores;

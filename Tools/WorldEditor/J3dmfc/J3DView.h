@@ -26,7 +26,7 @@
 #endif // _MSC_VER > 1000
 
 
-#include "Jet.h"
+#include "Genesis3D.h"
 
 class CJ3DDoc;
 
@@ -60,7 +60,7 @@ public:
 
 // Implementation
 public:
-	jeEngine* GetEngine(void) { return(m_pEngine); }
+	grEngine* GetEngine(void) { return(m_pEngine); }
 	void PostEnableEngine(void);
 	void Render();
 protected:
@@ -76,13 +76,13 @@ protected:
 	BOOL CreateFullWnd();
 	HWND m_hFullWnd;
 	HWND m_hRenderWnd;
-	jeBoolean EnableEngine();
+	grBoolean EnableEngine();
 	//-------------------
 	// Jet3D stuff
-	jeEngine* m_pEngine;
-	jeBoolean m_bEngineEnabled;
-	jeDriver* m_pDriver;
-	jeDriver_Mode* m_pDriverMode;
+	grEngine* m_pEngine;
+	grBoolean m_bEngineEnabled;
+	grDriver* m_pDriver;
+	grDriver_Mode* m_pDriverMode;
 	//{{AFX_MSG(CJ3DView)
 	afx_msg void OnDestroy();
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);

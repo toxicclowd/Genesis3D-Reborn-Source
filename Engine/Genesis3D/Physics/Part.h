@@ -28,51 +28,51 @@ extern "C" {
 
 typedef enum
 {
-	JE_PARTICLE_FLAGS_NONE											= 1 << 0,
-	JE_PARTICLE_FLAGS_COLLIDE_RIGIDBODY					= 1 << 1,
-	JE_PARTICLE_FLAGS_COLLIDE_BARRIER						= 1 << 2
+	GR_PARTICLE_FLAGS_NONE											= 1 << 0,
+	GR_PARTICLE_FLAGS_COLLIDE_RIGIDBODY					= 1 << 1,
+	GR_PARTICLE_FLAGS_COLLIDE_BARRIER						= 1 << 2
 
-}jeParticle_Flags;
+}grParticle_Flags;
 
-typedef struct jeParticle jeParticle;
+typedef struct grParticle grParticle;
 
-typedef jeBoolean (*jeParticle_IntegratorFunc)(jeParticle* part, float dt);
+typedef grBoolean (*grParticle_IntegratorFunc)(grParticle* part, float dt);
 
 // built-in integrator functions
-jeBoolean jeParticle_IntegratorFunc_EulerStep(jeParticle* part, float dt);
-jeBoolean jeParticle_IntegratorFunc_EulerMidPoint1(jeParticle* part, float dt);
+grBoolean grParticle_IntegratorFunc_EulerStep(grParticle* part, float dt);
+grBoolean grParticle_IntegratorFunc_EulerMidPoint1(grParticle* part, float dt);
 
 /////////////////////////////////////////////////////////////////////////////////
 // ctor / dtor
-jeParticle* jeParticle_Create(float mass, jeVec3d* p, jeVec3d* v, jeParticle_Flags flags,
-	jeParticle_IntegratorFunc integratorFunc);
-void jeParticle_Destroy(jeParticle** part);
+grParticle* grParticle_Create(float mass, grVec3d* p, grVec3d* v, grParticle_Flags flags,
+	grParticle_IntegratorFunc integratorFunc);
+void grParticle_Destroy(grParticle** part);
 
 /////////////////////////////////////////////////////////////////////////////////
 // accessors
 
-float jeParticle_GetMass(const jeParticle* part);
-float jeParticle_GetOneOverMass(const jeParticle* part);
-jeBoolean jeParticle_GetPos(const jeParticle* part, jeVec3d* pos);
-jeBoolean jeParticle_GetVel(const jeParticle* part, jeVec3d* vel);
-jeBoolean jeParticle_GetAcc(const jeParticle* part, jeVec3d* acc);
-jeParticle_IntegratorFunc jeParticle_GetIntegratorFunc(const jeParticle* part);
-float jeParticle_GetTime(const jeParticle* part);
-jeParticle_Flags jeParticle_GetFlags(const jeParticle* part);
+float grParticle_GetMass(const grParticle* part);
+float grParticle_GetOneOverMass(const grParticle* part);
+grBoolean grParticle_GetPos(const grParticle* part, grVec3d* pos);
+grBoolean grParticle_GetVel(const grParticle* part, grVec3d* vel);
+grBoolean grParticle_GetAcc(const grParticle* part, grVec3d* acc);
+grParticle_IntegratorFunc grParticle_GetIntegratorFunc(const grParticle* part);
+float grParticle_GetTime(const grParticle* part);
+grParticle_Flags grParticle_GetFlags(const grParticle* part);
 
-jeBoolean jeParticle_SetPos(jeParticle* part, const jeVec3d* pos);
-jeBoolean jeParticle_SetMass(jeParticle* part, float mass);
-jeBoolean jeParticle_SetVel(jeParticle* part, const jeVec3d* vel);
-jeBoolean jeParticle_SetIntegratorFunc(jeParticle* part, jeParticle_IntegratorFunc func);
-jeBoolean jeParticle_SetFlags(jeParticle* part, jeParticle_Flags flags);
+grBoolean grParticle_SetPos(grParticle* part, const grVec3d* pos);
+grBoolean grParticle_SetMass(grParticle* part, float mass);
+grBoolean grParticle_SetVel(grParticle* part, const grVec3d* vel);
+grBoolean grParticle_SetIntegratorFunc(grParticle* part, grParticle_IntegratorFunc func);
+grBoolean grParticle_SetFlags(grParticle* part, grParticle_Flags flags);
 
 /////////////////////////////////////////////////////////////////////////////////
 // fns
 
-jeBoolean jeParticle_ClearAcc(jeParticle* part);
-jeBoolean jeParticle_AddForce(jeParticle* part, const jeVec3d* pForce);
-jeBoolean jeParticle_AddAcc(jeParticle* part, const jeVec3d* pAcc);
-jeBoolean jeParticle_UpdateTime(jeParticle* part, float dt);
+grBoolean grParticle_ClearAcc(grParticle* part);
+grBoolean grParticle_AddForce(grParticle* part, const grVec3d* pForce);
+grBoolean grParticle_AddAcc(grParticle* part, const grVec3d* pAcc);
+grBoolean grParticle_UpdateTime(grParticle* part, float dt);
 
 #ifdef __cplusplus
 }

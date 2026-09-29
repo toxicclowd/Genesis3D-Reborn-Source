@@ -23,11 +23,11 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
-#include "jeWorld.h"
-#include "jeLight.h"
+#include "grWorld.h"
+#include "grLight.h"
 #include "defs.h"
 #include "Group.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 
 typedef struct tagLight Light ;
 #define LIGHT_VERSION		(1)
@@ -53,10 +53,10 @@ enum {
 };
 
 typedef struct LightInfo {
-	jeVec3d Pos; 
-	jeVec3d Color; 
-	jeFloat Radius; 
-	jeFloat Brightness; 
+	grVec3d Pos; 
+	grVec3d Color; 
+	grFloat Radius; 
+	grFloat Brightness; 
 	uint32  Flags;
 } LightInfo;
 
@@ -70,55 +70,55 @@ extern "C" {
 #endif
 
 // CREATORS
-Light *				Light_Create( const char * const pszName, Group * pGroup, int32 nNumber, jeWorld * pWorld) ;
+Light *				Light_Create( const char * const pszName, Group * pGroup, int32 nNumber, grWorld * pWorld) ;
 Light *				Light_Copy( Light *	pLight, int32 nNumber );
 void				Light_Destroy( Light ** ppLight ) ;
-Light *				Light_FromTemplate( char * pszName, Group * pGroup, Light *	pLight, int32 nNumber, jeBoolean bUpdate );
+Light *				Light_FromTemplate( char * pszName, Group * pGroup, Light *	pLight, int32 nNumber, grBoolean bUpdate );
 char  *				Light_CreateDefaultName( void );
-Light *				Light_CreateTemplate(  jeWorld * pWorld );
+Light *				Light_CreateTemplate(  grWorld * pWorld );
 
 // MODIFIERS
-jeBoolean			Light_Move( Light * pLight, const jeVec3d * pWorldDistance ) ;
+grBoolean			Light_Move( Light * pLight, const grVec3d * pWorldDistance ) ;
 void				Light_SetIndexTag( Light * pLight, const uint32 nIndex ) ;
 void				Light_SetModified( Light * pLight ) ;
-void				Light_Snap( Light * pLight, jeFloat fSnapSize ) ;
-jeBoolean			Light_SetXForm( Light * pLight, const jeXForm3d * XForm );
+void				Light_Snap( Light * pLight, grFloat fSnapSize ) ;
+grBoolean			Light_SetXForm( Light * pLight, const grXForm3d * XForm );
 void				Light_UpdateBounds( Light * pLight ) ;
-jeBoolean			Light_Size( Light * pLight, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
-jeBoolean			Light_SetInfo( Light * pLight, LightInfo *pLightInfo, int32 BlankFieldFlag );
+grBoolean			Light_Size( Light * pLight, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
+grBoolean			Light_SetInfo( Light * pLight, LightInfo *pLightInfo, int32 BlankFieldFlag );
 void				Light_SetIndexTag( Light * pLight, const uint32 nIndex ) ;
 void				Light_RemoveFromWorld( Light * pLight );
 void				Light_AddToWorld( Light * pLight );
-jeBoolean			Light_UpdateData( Light * pLight );
-jeProperty_List *	Light_BuildDescriptor( Light * pLight );
-void				Light_SetProperty( Light * pLight, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bUpdate );
+grBoolean			Light_UpdateData( Light * pLight );
+grProperty_List *	Light_BuildDescriptor( Light * pLight );
+void				Light_SetProperty( Light * pLight, int DataId, int DataType, grProperty_Data * pData, grBoolean bUpdate );
 void				Light_ChangeToDLight( Light * pLight );
 void				Light_ChangeFromDLight( Light * pLight );
 void				Light_Update( Light * pLight, int Update_Type );
 
 // ACCESSORS
-void				Light_GetXForm( const Light * pLight, jeXForm3d * XForm );
-const jeExtBox *	Light_GetWorldAxialBounds( const Light * pLight ) ;
-void Light_GetWorldDrawBounds( const Light * pLight, jeExtBox *DrawBounds );
+void				Light_GetXForm( const Light * pLight, grXForm3d * XForm );
+const grExtBox *	Light_GetWorldAxialBounds( const Light * pLight ) ;
+void Light_GetWorldDrawBounds( const Light * pLight, grExtBox *DrawBounds );
 void				Light_GetInfo( const Light * pLight, LightInfo *pLightInfo, int32 *BlankFieldFlag );
-jeBoolean			Light_SelectClosest( Light * pLight, FindInfo	*	pFindInfo );
+grBoolean			Light_SelectClosest( Light * pLight, FindInfo	*	pFindInfo );
 
 // IS
-jeBoolean	Light_IsInRect( const Light * pLight, jeExtBox *pSelRect, jeBoolean bSelEncompeses );
+grBoolean	Light_IsInRect( const Light * pLight, grExtBox *pSelRect, grBoolean bSelEncompeses );
 
 // FILE
-Light * Light_CreateFromFile( jeVFile * pF, jeWorld * pWorld, jePtrMgr * pPtrMgr );
-jeBoolean Light_WriteToFile( Light * pLight, jeVFile * pF, jePtrMgr * pPtrMgr );
+Light * Light_CreateFromFile( grVFile * pF, grWorld * pWorld, grPtrMgr * pPtrMgr );
+grBoolean Light_WriteToFile( Light * pLight, grVFile * pF, grPtrMgr * pPtrMgr );
 
 //PRESENTATION
-void Light_RenderOrtho( const Ortho * pOrtho, Light *pLight, int32 hDC, jeBoolean bColorOveride );
+void Light_RenderOrtho( const Ortho * pOrtho, Light *pLight, int32 hDC, grBoolean bColorOveride );
 
 // CALLBACK
-jeBoolean Light_ReattachCB( Light * pLight, void* lParam );
+grBoolean Light_ReattachCB( Light * pLight, void* lParam );
 
 //GLOBAL PROPERTIES
-jeProperty_List *	Light_GlobalPropertyList();
-void				Light_SetGlobalProperty( int DataId, int DataType, jeProperty_Data * pData );
+grProperty_List *	Light_GlobalPropertyList();
+void				Light_SetGlobalProperty( int DataId, int DataType, grProperty_Data * pData );
 
 #ifdef __cplusplus
 }

@@ -47,10 +47,10 @@ we palettize ("inverse colormap") using an octree lookup system
 
 /*******/
 
-#define new(type)		jeRam_AllocateClear(sizeof(type))
-#define allocate(ptr)	ptr = jeRam_AllocateClear(sizeof(*ptr))
+#define new(type)		grRam_AllocateClear(sizeof(type))
+#define allocate(ptr)	ptr = grRam_AllocateClear(sizeof(*ptr))
 #define clear(ptr)		memset(ptr,0,sizeof(*ptr))
-#define destroy(ptr)	if ( ptr ) { jeRam_Free(ptr); (ptr) = NULL; } else
+#define destroy(ptr)	if ( ptr ) { grRam_Free(ptr); (ptr) = NULL; } else
 
 /*******/
 
@@ -63,27 +63,27 @@ void			closestPalFree(palInfo *info);
 
 /******/
 
-jeBoolean palettizePlane(const	jeBitmap_Info * SrcInfo,const	void * SrcBits,
-								jeBitmap_Info * DstInfo,		void * DstBits,
+grBoolean palettizePlane(const	grBitmap_Info * SrcInfo,const	void * SrcBits,
+								grBitmap_Info * DstInfo,		void * DstBits,
 								int SizeX,int SizeY)
 {
 palInfo *palInfo;
 int x,y,xtra,bpp;
-jePixelFormat Format;
+grPixelFormat Format;
 int R,G,B,A;
 uint8 palette[768],*pSrc,*pDst;
 
 	assert( SrcInfo && SrcBits );
 	assert( DstInfo && DstBits );
 
-	assert( DstInfo->Format == JE_PIXELFORMAT_8BIT_PAL );
-	assert( jePixelFormat_IsRaw(SrcInfo->Format) );
+	assert( DstInfo->Format == GR_PIXELFORMAT_8BIT_PAL );
+	assert( grPixelFormat_IsRaw(SrcInfo->Format) );
 
 	if ( ! DstInfo->Palette )
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if ( ! jeBitmap_Palette_GetData(DstInfo->Palette,palette,JE_PIXELFORMAT_24BIT_RGB,256) )
-		return JE_FALSE;
+	if ( ! grBitmap_Palette_GetData(DstInfo->Palette,palette,GR_PIXELFORMAT_24BIT_RGB,256) )
+		return GR_FALSE;
 
 #ifdef _TSC
 	pushTSC();
@@ -93,10 +93,10 @@ uint8 palette[768],*pSrc,*pDst;
 	// palette is 768 bytes
 
 	palInfo = closestPalInit(palette);
-	if ( ! palInfo ) return JE_FALSE;
+	if ( ! palInfo ) return GR_FALSE;
 
 	Format = SrcInfo->Format;
-	bpp = jePixelFormat_BytesPerPel(Format);
+	bpp = grPixelFormat_BytesPerPel(Format);
 	xtra = (SrcInfo->Stride - SizeX) * bpp;
 	pSrc = (uint8 *)SrcBits;
 	pDst = (uint8*)DstBits;
@@ -104,14 +104,14 @@ uint8 palette[768],*pSrc,*pDst;
 	if ( DstInfo->HasColorKey )
 	{
 	int DstCK;
-	const jePixelFormat_Operations * ops;
-		ops = jePixelFormat_GetOperations(Format);
+	const grPixelFormat_Operations * ops;
+		ops = grPixelFormat_GetOperations(Format);
 		assert(ops);
 		DstCK = DstInfo->ColorKey;
 
-		if ( jePixelFormat_HasAlpha(Format) )	
+		if ( grPixelFormat_HasAlpha(Format) )	
 		{
-		jePixelFormat_ColorGetter GetColor;
+		grPixelFormat_ColorGetter GetColor;
 			GetColor = ops->GetColor;
 			for(y=SizeY;y--;)
 			{
@@ -137,8 +137,8 @@ uint8 palette[768],*pSrc,*pDst;
 		else if ( SrcInfo->HasColorKey )
 		{
 		uint32 SrcCK,Pixel;
-		jePixelFormat_PixelGetter GetPixel;
-		jePixelFormat_Decomposer DecomposePixel;
+		grPixelFormat_PixelGetter GetPixel;
+		grPixelFormat_Decomposer DecomposePixel;
 			DecomposePixel = ops->DecomposePixel;
 			GetPixel = ops->GetPixel;
 
@@ -168,7 +168,7 @@ uint8 palette[768],*pSrc,*pDst;
 		}
 		else
 		{
-		jePixelFormat_ColorGetter GetColor;
+		grPixelFormat_ColorGetter GetColor;
 			GetColor = ops->GetColor;
 
 			for(y=SizeY;y--;)
@@ -190,7 +190,7 @@ uint8 palette[768],*pSrc,*pDst;
 	{
 		// dst does not have CK, and can't have alpha in this universe, so ignore src colorkey
 	#if 0 // these special cases just avoid a functional-call overhead
-		if ( Format == JE_PIXELFORMAT_24BIT_RGB )
+		if ( Format == GR_PIXELFORMAT_24BIT_RGB )
 		{
 			for(y=SizeY;y--;)
 			{
@@ -203,7 +203,7 @@ uint8 palette[768],*pSrc,*pDst;
 				pDst += DstInfo->Stride - SizeX;
 			}
 		}
-		else if ( Format == JE_PIXELFORMAT_24BIT_BGR )
+		else if ( Format == GR_PIXELFORMAT_24BIT_BGR )
 		{
 			for(y=SizeY;y--;)
 			{
@@ -219,9 +219,9 @@ uint8 palette[768],*pSrc,*pDst;
 		else
 	#endif
 		{
-		const jePixelFormat_Operations * ops;
-		jePixelFormat_ColorGetter GetColor;
-			ops = jePixelFormat_GetOperations(Format);
+		const grPixelFormat_Operations * ops;
+		grPixelFormat_ColorGetter GetColor;
+			ops = grPixelFormat_GetOperations(Format);
 			assert(ops);
 			GetColor = ops->GetColor;
 			assert(GetColor);
@@ -244,7 +244,7 @@ uint8 palette[768],*pSrc,*pDst;
 
 	closestPalFree(palInfo);
 	
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /***************

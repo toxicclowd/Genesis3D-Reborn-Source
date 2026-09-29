@@ -34,15 +34,15 @@
 #include <stdio.h>
 #include <math.h>
 #include "VFile.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 #include "Ram.h"
-#include "jeResource.h"
-#include "jeWorld.h"
+#include "grResource.h"
+#include "grWorld.h"
 #include "PulsingLight.h"
 #include "Resource.h"
 #include "Errorlog.h"
-#include "jeMaterial.h"
-#include "jeResource.h"
+#include "grMaterial.h"
+#include "grResource.h"
 
 
 
@@ -129,16 +129,16 @@ static HINSTANCE		hClassInstance = NULL;
 static image_id			hClassInstance = NULL;
 #endif
 
-static jeProperty		PulsingLightProperties[PULSINGLIGHT_LAST_INDEX];
-static jeProperty_List	PulsingLightPropertyList = { PULSINGLIGHT_LAST_INDEX, &( PulsingLightProperties[0] ) };
+static grProperty		PulsingLightProperties[PULSINGLIGHT_LAST_INDEX];
+static grProperty_List	PulsingLightPropertyList = { PULSINGLIGHT_LAST_INDEX, &( PulsingLightProperties[0] ) };
 
 //	support for pulse patterns
 char	charNoSelection[10] = "< none >";
 static char		*pStaticNoSelection = charNoSelection;
 
 //	support for world icon
-static 	jeBitmap		*m_pBitmap = NULL;
-static jeMaterialSpec *MatSpec;
+static 	grBitmap		*m_pBitmap = NULL;
+static grMaterialSpec *MatSpec;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //	Defaults
@@ -151,14 +151,14 @@ static jeMaterialSpec *MatSpec;
 #define PULSINGLIGHT_DEFAULT_COLORRED		128.0f
 #define PULSINGLIGHT_DEFAULT_COLORGREEN		128.0f
 #define PULSINGLIGHT_DEFAULT_COLORBLUE		128.0f
-#define PULSINGLIGHT_DEFAULT_CASTSHADOW		JE_FALSE
+#define PULSINGLIGHT_DEFAULT_CASTSHADOW		GR_FALSE
 #define	PULSINGLIGHT_DEFAULT_PULSESPEED		1
 #define	PULSINGLIGHT_DEFAULT_RADIUS_SPEED	2.0f
 
 //	hack to establish the quantity of available pulse patterns
 #define	PULSINGLIGHT_NO_OF_PATTERNS			16
 
-#define	PULSINGLIGHT_DEFAULT_DISPLAY_ICON	JE_FALSE
+#define	PULSINGLIGHT_DEFAULT_DISPLAY_ICON	GR_FALSE
 
 //	pulse pattern strings here correspond 1:1 to pattern Names below.
 //	if you add or subtract from these arrays, you must revise
@@ -215,26 +215,26 @@ static jeMaterialSpec *MatSpec;
 ////////////////////////////////////////////////////////////////////////////////////////
 typedef struct PulsingLight
 {
-	jeWorld			*pWorld;
-	jeResourceMgr	*pResourceMgr;
-	jeEngine		*pEngine;
+	grWorld			*pWorld;
+	grResourceMgr	*pResourceMgr;
+	grEngine		*pEngine;
 	int				RefCount;
-	jeXForm3d		Xf;
-	jeLight			*pLight;
-	jeUserPoly		*pPoly;
-	jeLVertex		Vertex;
+	grXForm3d		Xf;
+	grLight			*pLight;
+	grUserPoly		*pPoly;
+	grLVertex		Vertex;
 	int				iPulsing;
 	float			fRadiusSpeed;
 	int				iPulseSpeed;
 	float			fLastTime;
 	char			*pcharPulsePattern;	
 	char			charPulsePattern[MAX_PATH];
-	jeVec3d			Color;
+	grVec3d			Color;
 	float			Radius;
 	float			Brightness;
-	jeBoolean		CastShadow;
-	jeBoolean		LoadedFromDisk;
-	jeBoolean		bDisplayIcon;
+	grBoolean		CastShadow;
+	grBoolean		LoadedFromDisk;
+	grBoolean		bDisplayIcon;
 } PulsingLight;
 
 
@@ -300,15 +300,15 @@ static char * Util_LoadLibraryString(
 	Size = LoadString( hInstance, ID, StringBuf, MAX_STRING_SIZE );
 	if ( Size <= 0 )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// copy resource string
-	NewString = jeRam_Allocate( Size + 1 );
+	NewString = grRam_Allocate( Size + 1 );
 	if ( NewString == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 	strcpy( NewString, StringBuf );
@@ -364,7 +364,7 @@ static char *Util_LoadLibraryString(image_id libhinst, int32 resid)
 	//
  
 	// Allocate memory for the string
-	rcbuffer = (char*)jeRam_Allocate(strlen(loadedString) + 1);
+	rcbuffer = (char*)grRam_Allocate(strlen(loadedString) + 1);
 	strcpy(rcbuffer, loadedString);
  
 #ifndef NDEBUG
@@ -383,7 +383,7 @@ static char *Util_LoadLibraryString(image_id libhinst, int32 resid)
 //	PulsingLight_Destroy()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean PulsingLight_Destroy(
+static grBoolean PulsingLight_Destroy(
 	PulsingLight	*pObject )	// object from which light will be created
 {
 
@@ -393,22 +393,22 @@ static jeBoolean PulsingLight_Destroy(
 	// remove light from world
 	assert( pObject->pLight != NULL );
 	assert( pObject->pWorld != NULL );
-	if ( jeWorld_RemoveDLight( pObject->pWorld, pObject->pLight ) == JE_FALSE )
+	if ( grWorld_RemoveDLight( pObject->pWorld, pObject->pLight ) == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+		return GR_FALSE;
 	}
 
 	// destroy light
-	jeLight_Destroy( &pObject->pLight );
+	grLight_Destroy( &pObject->pLight );
 
 	if (pObject->pPoly)
 	{
-		jeUserPoly_Destroy(&pObject->pPoly);
+		grUserPoly_Destroy(&pObject->pPoly);
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // PulsingLight_Destroy()
 
@@ -418,12 +418,12 @@ static jeBoolean PulsingLight_Destroy(
 //	PulsingLight_Create()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean PulsingLight_Create(
+static grBoolean PulsingLight_Create(
 									 PulsingLight	*pObject )	// object from which light will be created
 {
 
 	// locals
-	jeBoolean	Result = JE_FALSE;
+	grBoolean	Result = GR_FALSE;
 
 	// ensure valid data
 	assert( pObject != NULL );
@@ -432,43 +432,43 @@ static jeBoolean PulsingLight_Create(
 	{
 		// create light
 		pObject->pLight = NULL;
-		pObject->pLight = jeLight_Create();
+		pObject->pLight = grLight_Create();
 		if ( pObject->pLight == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+			return GR_FALSE;
 		}
 
 		// set light attributes
-		Result = jeLight_SetAttributes(	pObject->pLight,
+		Result = grLight_SetAttributes(	pObject->pLight,
 			&( pObject->Xf.Translation ),
 			&( pObject->Color ),
 			pObject->Radius, 
 			pObject->Brightness, 
-			JE_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone, dont know flags for cast shadow
+			GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone, dont know flags for cast shadow
 #pragma message ("shadow flags")	
 
-		if ( Result == JE_FALSE )
+		if ( Result == GR_FALSE )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-			jeLight_Destroy( &( pObject->pLight ) );
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+			grLight_Destroy( &( pObject->pLight ) );
+			return GR_FALSE;
 		}
 
 		// add it to the world
-		Result = jeWorld_AddDLight( pObject->pWorld, pObject->pLight );
-		if ( Result == JE_FALSE )
+		Result = grWorld_AddDLight( pObject->pWorld, pObject->pLight );
+		if ( Result == GR_FALSE )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-			jeLight_Destroy( &( pObject->pLight ) );
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+			grLight_Destroy( &( pObject->pLight ) );
+			return GR_FALSE;
 		}
 
 		// all done
-		return JE_TRUE;
+		return GR_TRUE;
 
 	}	//	if (pObject)...
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // PulsingLight_Create()
 
@@ -483,13 +483,13 @@ static jeBoolean PulsingLight_Create(
 //	PulsingLight_LoadBmp
 //	
 ////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean PulsingLight_LoadBmp()
+static grBoolean PulsingLight_LoadBmp()
 {
 	// Jeff:  Load PulsingLight bitmap from resources - 8/18/2005
-	jeVFile	*pBmpFile;
+	grVFile	*pBmpFile;
 	HRSRC hFRes; 
     HGLOBAL hRes; 
-    jeVFile_MemoryContext Context; 
+    grVFile_MemoryContext Context; 
     HINSTANCE hInst;
     
 	#ifdef _DEBUG 
@@ -497,27 +497,27 @@ static jeBoolean PulsingLight_LoadBmp()
 	#else
         hInst = LoadLibrary("PulsingLightObj.dll");
     #endif
-    hFRes = FindResource(hInst, MAKEINTRESOURCE(IDR_PULSINGLIGHT) ,"jeBitmap"); 
+    hFRes = FindResource(hInst, MAKEINTRESOURCE(IDR_PULSINGLIGHT) ,"grBitmap"); 
     hRes = LoadResource(hInst, hFRes) ;  
     
     Context.Data  = LockResource(hRes); 
     Context.DataLength = SizeofResource(hInst,hFRes); 
 
-	pBmpFile = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_MEMORY,	NULL,
-		                            &Context,JE_VFILE_OPEN_READONLY  );
+	pBmpFile = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_MEMORY,	NULL,
+		                            &Context,GR_VFILE_OPEN_READONLY  );
 
 	if( pBmpFile == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
-	m_pBitmap = jeBitmap_CreateFromFile( pBmpFile );
+	m_pBitmap = grBitmap_CreateFromFile( pBmpFile );
 	
-	jeVFile_Close( pBmpFile );
+	grVFile_Close( pBmpFile );
 
 	if( m_pBitmap == NULL )
-		return( JE_FALSE );
+		return( GR_FALSE );
 
-	jeBitmap_SetColorKey( m_pBitmap, JE_TRUE, 255, JE_TRUE );
-	return( JE_TRUE );
+	grBitmap_SetColorKey( m_pBitmap, GR_TRUE, 255, GR_TRUE );
+	return( GR_TRUE );
 	
 }
 
@@ -526,7 +526,7 @@ static jeBoolean PulsingLight_LoadBmp()
 //	PulsingLight_InitIcon
 //	
 ////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean PulsingLight_InitIcon( PulsingLight * pObject )
+static grBoolean PulsingLight_InitIcon( PulsingLight * pObject )
 {
 	assert(pObject != NULL);
 
@@ -535,7 +535,7 @@ static jeBoolean PulsingLight_InitIcon( PulsingLight * pObject )
 	/*
 	if( pBitmap == NULL )
 	if( !AmbObject_LoadBmp() )
-	return( JE_FALSE );*/
+	return( GR_FALSE );*/
 	//---
 
 	if (pObject)
@@ -560,20 +560,20 @@ static jeBoolean PulsingLight_InitIcon( PulsingLight * pObject )
 
 			if (!MatSpec)
 	        {
-	            MatSpec = jeMaterialSpec_Create(jeResourceMgr_GetEngine(jeResourceMgr_GetSingleton()), jeResourceMgr_GetSingleton());
+	            MatSpec = grMaterialSpec_Create(grResourceMgr_GetEngine(grResourceMgr_GetSingleton()), grResourceMgr_GetSingleton());
 #pragma message ("Krouer: change NULL to something better next time")
-	            jeMaterialSpec_AddLayerFromBitmap(MatSpec, 0, m_pBitmap, NULL);
+	            grMaterialSpec_AddLayerFromBitmap(MatSpec, 0, m_pBitmap, NULL);
 	        }
-			pObject->pPoly = jeUserPoly_CreateSprite(&pObject->Vertex,
+			pObject->pPoly = grUserPoly_CreateSprite(&pObject->Vertex,
 				MatSpec,
 				1.0f,
-				JE_RENDER_FLAG_ALPHA | JE_RENDER_FLAG_NO_ZWRITE );
+				GR_RENDER_FLAG_ALPHA | GR_RENDER_FLAG_NO_ZWRITE );
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}	//	if (m_pBitmap)...
-		return JE_FALSE;
+		return GR_FALSE;
 	}	//	if (pObject)...
-	return JE_FALSE;
+	return GR_FALSE;
 }				
 
 
@@ -581,7 +581,7 @@ static jeBoolean PulsingLight_InitIcon( PulsingLight * pObject )
 //	PulsingLight_UpdateIcon
 //	
 ////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean PulsingLight_UpdateIcon( PulsingLight * pObject )
+static grBoolean PulsingLight_UpdateIcon( PulsingLight * pObject )
 {
 	assert(pObject != NULL);
 
@@ -599,17 +599,17 @@ static jeBoolean PulsingLight_UpdateIcon( PulsingLight * pObject )
 				{
 					if (!MatSpec)
 	                {
-	                    MatSpec = jeMaterialSpec_Create(jeResourceMgr_GetEngine(jeResourceMgr_GetSingleton()), jeResourceMgr_GetSingleton());
+	                    MatSpec = grMaterialSpec_Create(grResourceMgr_GetEngine(grResourceMgr_GetSingleton()), grResourceMgr_GetSingleton());
 #pragma message ("Krouer: change NULL to something better next time")
-	                    jeMaterialSpec_AddLayerFromBitmap(MatSpec, 0, m_pBitmap, NULL);
+	                    grMaterialSpec_AddLayerFromBitmap(MatSpec, 0, m_pBitmap, NULL);
 	                }
-					jeUserPoly_UpdateSprite(pObject->pPoly, &pObject->Vertex, MatSpec, 1.0f);
+					grUserPoly_UpdateSprite(pObject->pPoly, &pObject->Vertex, MatSpec, 1.0f);
 				}
 			}
 		}	//	if (m_pBitmap)...
-		return JE_TRUE;
+		return GR_TRUE;
 	}	//	if (pObject)...
-	return JE_TRUE;
+	return GR_TRUE;
 }				
 
 
@@ -637,14 +637,14 @@ void Init_Class(
 	hClassInstance = hInstance;
 
 	// setup radius property
-	jeProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_RADIUS_INDEX] ),
+	grProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_RADIUS_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_RADIUS ),
 							PULSINGLIGHT_DEFAULT_RADIUS,
 							PULSINGLIGHT_RADIUS_ID,
 							0.1f, FLT_MAX, 5.0f );
 
 	// setup brightness property
-	jeProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_BRIGHTNESS_INDEX] ),
+	grProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_BRIGHTNESS_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_BRIGHTNESS ),
 							PULSINGLIGHT_DEFAULT_BRIGHTNESS,
 							PULSINGLIGHT_BRIGHTNESS_ID,
@@ -652,31 +652,31 @@ void Init_Class(
 
 
 	// start color group
-	jeProperty_FillGroup(	&( PulsingLightProperties[PULSINGLIGHT_PULSEGROUP_INDEX] ),
+	grProperty_FillGroup(	&( PulsingLightProperties[PULSINGLIGHT_PULSEGROUP_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_PULSEGROUP ),
 							PULSINGLIGHT_PULSEGROUP_INDEX );
 
-	jeProperty_FillCheck(&( PulsingLightProperties[PULSINGLIGHT_PULSING_INDEX] ),
+	grProperty_FillCheck(&( PulsingLightProperties[PULSINGLIGHT_PULSING_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_PULSING_LIGHT ),
 							PULSINGLIGHT_DEFAULT_PULSING,
 							PULSINGLIGHT_PULSING_ID);
 
-	jeProperty_FillInt(	&( PulsingLightProperties[PULSINGLIGHT_PULSESPEED_INDEX] ),
+	grProperty_FillInt(	&( PulsingLightProperties[PULSINGLIGHT_PULSESPEED_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_PULSE_SPEED ),
 							PULSINGLIGHT_DEFAULT_PULSESPEED,
 							PULSINGLIGHT_PULSESPEED_ID,
 							1.0f, 100.0f, 1.0f );
 
-	jeProperty_FillCombo( &( PulsingLightProperties[PULSINGLIGHT_PULSINGCOMBO_INDEX] ),
+	grProperty_FillCombo( &( PulsingLightProperties[PULSINGLIGHT_PULSINGCOMBO_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_PULSE_PATTERN),
 							pStaticNoSelection, PULSINGLIGHT_PULSINGCOMBO_ID, 0, &pStaticNoSelection);
 	// end pulse group
-	jeProperty_FillGroupEnd( &( PulsingLightProperties[PULSINGLIGHT_PULSEGROUPEND_INDEX] ), PULSINGLIGHT_COLORGROUPEND_ID );
+	grProperty_FillGroupEnd( &( PulsingLightProperties[PULSINGLIGHT_PULSEGROUPEND_INDEX] ), PULSINGLIGHT_COLORGROUPEND_ID );
 
 
 
 	// start color group
-	jeProperty_FillGroup(	&( PulsingLightProperties[PULSINGLIGHT_COLORGROUP_INDEX] ),
+	grProperty_FillGroup(	&( PulsingLightProperties[PULSINGLIGHT_COLORGROUP_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORGROUP ),
 							PULSINGLIGHT_COLORGROUP_INDEX );
 
@@ -684,26 +684,26 @@ void Init_Class(
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// start color group
-	jeProperty_FillGroup(	&( PulsingLightProperties[PULSINGLIGHT_COLORGROUP_INDEX] ),
+	grProperty_FillGroup(	&( PulsingLightProperties[PULSINGLIGHT_COLORGROUP_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORGROUP ),
 							PULSINGLIGHT_COLORGROUP_INDEX );
 	
 	// setup color red property
-	jeProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_COLORRED_INDEX] ),
+	grProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_COLORRED_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORRED ),
 							PULSINGLIGHT_DEFAULT_COLORRED,
 							PULSINGLIGHT_COLORRED_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup ambient light green property
-	jeProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_COLORGREEN_INDEX] ),
+	grProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_COLORGREEN_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORGREEN ),
 							PULSINGLIGHT_DEFAULT_COLORGREEN,
 							PULSINGLIGHT_COLORGREEN_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup ambient light blue property
-	jeProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_COLORBLUE_INDEX] ),
+	grProperty_FillFloat(	&( PulsingLightProperties[PULSINGLIGHT_COLORBLUE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORBLUE ),
 							PULSINGLIGHT_DEFAULT_COLORBLUE,
 							PULSINGLIGHT_COLORBLUE_ID,
@@ -711,8 +711,8 @@ void Init_Class(
 
 	// setup color property
 	{
-		jeVec3d	Color = { PULSINGLIGHT_DEFAULT_COLORRED, PULSINGLIGHT_DEFAULT_COLORGREEN, PULSINGLIGHT_DEFAULT_COLORBLUE };
-		jeProperty_FillColorPicker(	&( PulsingLightProperties[PULSINGLIGHT_COLOR_INDEX] ),
+		grVec3d	Color = { PULSINGLIGHT_DEFAULT_COLORRED, PULSINGLIGHT_DEFAULT_COLORGREEN, PULSINGLIGHT_DEFAULT_COLORBLUE };
+		grProperty_FillColorPicker(	&( PulsingLightProperties[PULSINGLIGHT_COLOR_INDEX] ),
 									Util_LoadLibraryString( hClassInstance, IDS_COLOR ),
 									&Color,
 									PULSINGLIGHT_COLOR_ID );
@@ -720,27 +720,27 @@ void Init_Class(
 
 
 	// end color group
-	jeProperty_FillGroupEnd( &( PulsingLightProperties[PULSINGLIGHT_COLORGROUPEND_INDEX] ), PULSINGLIGHT_COLORGROUPEND_ID );
+	grProperty_FillGroupEnd( &( PulsingLightProperties[PULSINGLIGHT_COLORGROUPEND_INDEX] ), PULSINGLIGHT_COLORGROUPEND_ID );
 
 
 	//	Misc properties
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// setup cast shadow flag
-	jeProperty_FillCheck(	&( PulsingLightProperties[PULSINGLIGHT_CASTSHADOW_INDEX] ),
+	grProperty_FillCheck(	&( PulsingLightProperties[PULSINGLIGHT_CASTSHADOW_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_CASTSHADOW ),
 							PULSINGLIGHT_DEFAULT_CASTSHADOW,
 							PULSINGLIGHT_CASTSHADOW_ID );
 
 	// setup display icon flag
-	jeProperty_FillCheck(	&( PulsingLightProperties[PULSINGLIGHT_DISPLAY_ICON_INDEX] ),
+	grProperty_FillCheck(	&( PulsingLightProperties[PULSINGLIGHT_DISPLAY_ICON_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_DISPLAY_ICON ),
 							PULSINGLIGHT_DEFAULT_DISPLAY_ICON,
 							PULSINGLIGHT_DISPLAY_ICON_ID );
 
 
 	// final init
-	PulsingLightPropertyList.jePropertyN = PULSINGLIGHT_LAST_INDEX;
+	PulsingLightPropertyList.grPropertyN = PULSINGLIGHT_LAST_INDEX;
 
 } // Init_Class()
 
@@ -754,7 +754,7 @@ void DeInit_Class(
 {
 	if (m_pBitmap)
 	{
-		jeBitmap_Destroy(&m_pBitmap);
+		grBitmap_Destroy(&m_pBitmap);
 		m_pBitmap = NULL;
 	}
 	// zap instance pointer
@@ -768,7 +768,7 @@ void DeInit_Class(
 //	CreateInstance()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void * JETCC CreateInstance(
+void * GRCC CreateInstance(
 	void )	// no parameters
 {
 
@@ -776,10 +776,10 @@ void * JETCC CreateInstance(
 	PulsingLight	*pObject = NULL;
 
 	// allocate struct
-	pObject = (PulsingLight *)jeRam_AllocateClear( sizeof( *pObject ) );
+	pObject = (PulsingLight *)grRam_AllocateClear( sizeof( *pObject ) );
 	if ( pObject == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 
@@ -804,7 +804,7 @@ void * JETCC CreateInstance(
 	pObject->CastShadow = PULSINGLIGHT_DEFAULT_CASTSHADOW;
 
 	// init remaining fields
-	jeXForm3d_SetIdentity( &pObject->Xf );
+	grXForm3d_SetIdentity( &pObject->Xf );
 	pObject->RefCount = 1;
 
 	// all done
@@ -818,7 +818,7 @@ void * JETCC CreateInstance(
 //	CreateRef()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void JETCC CreateRef(
+void GRCC CreateRef(
 	void	*Instance )	// instance data
 {
 
@@ -842,7 +842,7 @@ void JETCC CreateRef(
 //	Destroy()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Destroy(
+grBoolean GRCC Destroy(
 						void	**Instance )	// pointer to instance data
 {
 
@@ -863,12 +863,12 @@ jeBoolean JETCC Destroy(
 		pObject->RefCount--;
 		if ( pObject->RefCount > 0 )
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		if (pObject->pPoly)
 		{
-			jeUserPoly_Destroy(&pObject->pPoly);
+			grUserPoly_Destroy(&pObject->pPoly);
 			pObject->pPoly = NULL;
 		}
 
@@ -879,16 +879,16 @@ jeBoolean JETCC Destroy(
 		assert( pObject->pLight == NULL );
 
 		// free struct
-		jeRam_Free( pObject );
+		grRam_Free( pObject );
 
 		// zap pointer
 		*Instance = NULL;
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}	//	if (pObject)...
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Destroy()
 
@@ -898,13 +898,13 @@ jeBoolean JETCC Destroy(
 //	Render()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Render(
+grBoolean GRCC Render(
 					   const void				*Instance,	// object instance data
-					   const jeWorld			*World,		// world
-					   const jeEngine			*Engine,	// engine
-					   const jeCamera			*Camera,				// camera
-					   const jeFrustum			*CameraSpaceFrustum, 	// frustum
-					   jeObject_RenderFlags	RenderFlags)
+					   const grWorld			*World,		// world
+					   const grEngine			*Engine,	// engine
+					   const grCamera			*Camera,				// camera
+					   const grFrustum			*CameraSpaceFrustum, 	// frustum
+					   grObject_RenderFlags	RenderFlags)
 {
 
 	PulsingLight	*pObject = NULL;
@@ -935,12 +935,12 @@ jeBoolean JETCC Render(
 		{
 			if (!pObject->iPulsing)
 			{
-				jeLight_SetAttributes(	pObject->pLight,
+				grLight_SetAttributes(	pObject->pLight,
 					&( pObject->Xf.Translation ),
 					&( pObject->Color ),
 					pObject->Radius, 
 					pObject->Brightness, 
-					JE_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags for cast shadow
+					GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags for cast shadow
 			}	//	if (!pObject->iPulsing)...
 			else
 			{
@@ -973,12 +973,12 @@ jeBoolean JETCC Render(
 					}	//	if (iIndex < iNumFunctionValues)...
 					fRadius = fPercentage * (pObject->Radius - fMinRadius) + fMinRadius;
 
-					jeLight_SetAttributes(	pObject->pLight,
+					grLight_SetAttributes(	pObject->pLight,
 						&( pObject->Xf.Translation ),
 						&( pObject->Color ),
 						fRadius, 
 						pObject->Brightness, 
-						JE_LIGHT_FLAG_FAST_LIGHTING_MODEL );
+						GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );
 
 				}	//	if (pObject->fRadiusSpeed >...
 				pObject->fLastTime = (float)fmod(pObject->fLastTime + fPulseSpeed, pObject->fRadiusSpeed);
@@ -987,7 +987,7 @@ jeBoolean JETCC Render(
 			PulsingLight_UpdateIcon(pObject);
 
 			// all done
-			return JE_TRUE;
+			return GR_TRUE;
 
 			// eliminate warnings
 			Instance;
@@ -997,9 +997,9 @@ jeBoolean JETCC Render(
 			CameraSpaceFrustum;
 			RenderFlags;
 		}	//	if (pObject->pLight)...
-		return JE_TRUE;
+		return GR_TRUE;
 	}	//	if (pObject)
-	return JE_FALSE;
+	return GR_FALSE;
 } // Render()
 
 
@@ -1008,9 +1008,9 @@ jeBoolean JETCC Render(
 //	AttachWorld()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachWorld(
+grBoolean GRCC AttachWorld(
 							void	*Instance,	// object instance data
-							jeWorld	*World )	// world
+							grWorld	*World )	// world
 {
 
 	// locals
@@ -1031,16 +1031,16 @@ jeBoolean JETCC AttachWorld(
 			pObject->pWorld = World;
 
 			// save an instance of the resource manager
-			pObject->pResourceMgr = jeWorld_GetResourceMgr( World );
+			pObject->pResourceMgr = grWorld_GetResourceMgr( World );
 			assert( pObject->pResourceMgr != NULL );
 
 			// create light
-			if ( PulsingLight_Create( pObject ) == JE_FALSE )
+			if ( PulsingLight_Create( pObject ) == GR_FALSE )
 			{
-				jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-				jeResource_MgrDestroy( &( pObject->pResourceMgr ) );
+				grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+				grResource_MgrDestroy( &( pObject->pResourceMgr ) );
 				pObject->pWorld = NULL;
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 
 			// add the pAmbObj->Poly to the world
@@ -1048,24 +1048,24 @@ jeBoolean JETCC AttachWorld(
 			{
 				if (PulsingLight_InitIcon(pObject)) 
 				{
-					if ( jeWorld_AddUserPoly( World, pObject->pPoly, JE_FALSE ) == JE_FALSE )
+					if ( grWorld_AddUserPoly( World, pObject->pPoly, GR_FALSE ) == GR_FALSE )
 					{
-						jeUserPoly_Destroy( &( pObject->pPoly ) );
-						return JE_FALSE;
+						grUserPoly_Destroy( &( pObject->pPoly ) );
+						return GR_FALSE;
 					}
 				}
-				else return JE_FALSE;
+				else return GR_FALSE;
 
 				PulsingLight_UpdateIcon(pObject);
 			}	//	if (pObject->bDisplayIcon && ...
 
 			// all done
-			return JE_TRUE;
+			return GR_TRUE;
 		}	//	if (pObject)...
 
-		return JE_FALSE;
+		return GR_FALSE;
 	}	//	if (World)...
-	return JE_FALSE;
+	return GR_FALSE;
 
 
 } // AttachWorld()
@@ -1076,9 +1076,9 @@ jeBoolean JETCC AttachWorld(
 //	DettachWorld()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachWorld(
+grBoolean GRCC DettachWorld(
 							 void	*Instance,	// object instance data
-							 jeWorld	*pWorld )	// world
+							 grWorld	*pWorld )	// world
 {
 
 	// locals
@@ -1097,10 +1097,10 @@ jeBoolean JETCC DettachWorld(
 		if (pObject->pPoly) 
 		{
 			if (pObject->bDisplayIcon) 
-				if ( jeWorld_RemoveUserPoly( pWorld, pObject->pPoly) == JE_FALSE ) 
-					return JE_FALSE;
+				if ( grWorld_RemoveUserPoly( pWorld, pObject->pPoly) == GR_FALSE ) 
+					return GR_FALSE;
 
-			jeUserPoly_Destroy(&(pObject->pPoly));
+			grUserPoly_Destroy(&(pObject->pPoly));
 		}
 
 
@@ -1108,16 +1108,16 @@ jeBoolean JETCC DettachWorld(
 		PulsingLight_Destroy( pObject );
 
 		// destroy our instance of the resource manager
-		jeResource_MgrDestroy( &( pObject->pResourceMgr ) );
+		grResource_MgrDestroy( &( pObject->pResourceMgr ) );
 
 		// zap world pointer
 		pObject->pWorld = NULL;
 
 		// all done
-		return JE_TRUE;
+		return GR_TRUE;
 
 	}	//	if (pObject)...
-	return JE_FALSE;
+	return GR_FALSE;
 	// eliminate warnings
 	pWorld;
 
@@ -1129,9 +1129,9 @@ jeBoolean JETCC DettachWorld(
 //	AttachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachEngine(
+grBoolean GRCC AttachEngine(
 							 void		*Instance,	// object instance data
-							 jeEngine	*Engine )	// engine
+							 grEngine	*Engine )	// engine
 {
 	// locals
 	PulsingLight	*pObject = NULL;
@@ -1149,11 +1149,11 @@ jeBoolean JETCC AttachEngine(
 		pObject->pEngine = Engine;
 
 		if( m_pBitmap )
-			return( jeEngine_AddBitmap( (jeEngine*)Engine, m_pBitmap, JE_ENGINE_BITMAP_TYPE_3D ) );	
+			return( grEngine_AddBitmap( (grEngine*)Engine, m_pBitmap, GR_ENGINE_BITMAP_TYPE_3D ) );	
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}	//	if (pObject)...
-	return JE_FALSE;
+	return GR_FALSE;
 
 } // AttachEngine()
 
@@ -1163,9 +1163,9 @@ jeBoolean JETCC AttachEngine(
 //	DettachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachEngine(
+grBoolean GRCC DettachEngine(
 							  void		*Instance,	// object instance data
-							  jeEngine	*Engine )	// engine
+							  grEngine	*Engine )	// engine
 {
 
 	// locals
@@ -1185,13 +1185,13 @@ jeBoolean JETCC DettachEngine(
 		pObject->pEngine = NULL;
 
 		// all done
-		return JE_TRUE;
+		return GR_TRUE;
 
 	}	//	if (pObject)...
 	// eliminate warnings
 	Engine;
 
-	return JE_FALSE;
+	return GR_FALSE;
 } // DettachEngine()
 
 
@@ -1200,9 +1200,9 @@ jeBoolean JETCC DettachEngine(
 //	AttachSoundSystem()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachSoundSystem(
+grBoolean GRCC AttachSoundSystem(
 	void			*Instance,		// object instance data
-	jeSound_System	*SoundSystem )	// sound system
+	grSound_System	*SoundSystem )	// sound system
 {
 
 	// ensure valid data
@@ -1210,7 +1210,7 @@ jeBoolean JETCC AttachSoundSystem(
 	assert( SoundSystem != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// elminate warnings
 	Instance;
@@ -1224,9 +1224,9 @@ jeBoolean JETCC AttachSoundSystem(
 //	DettachSoundSystem()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachSoundSystem(
+grBoolean GRCC DettachSoundSystem(
 	void			*Instance,		// object instance data
-	jeSound_System	*SoundSystem )	// sound system
+	grSound_System	*SoundSystem )	// sound system
 {
 
 	// ensure valid data
@@ -1234,7 +1234,7 @@ jeBoolean JETCC DettachSoundSystem(
 	assert( SoundSystem != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// elminate warnings
 	Instance;
@@ -1248,13 +1248,13 @@ jeBoolean JETCC DettachSoundSystem(
 //	Collision()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Collision(
-	const jeObject	*Object,
-	const jeExtBox	*Box,
-	const jeVec3d	*Front,
-	const jeVec3d	*Back,
-	jeVec3d			*Impact,
-	jePlane			*Plane )
+grBoolean GRCC Collision(
+	const grObject	*Object,
+	const grExtBox	*Box,
+	const grVec3d	*Front,
+	const grVec3d	*Back,
+	grVec3d			*Impact,
+	grPlane			*Plane )
 {
 
 	// ensure valid data
@@ -1266,7 +1266,7 @@ jeBoolean JETCC Collision(
 	//assert( Plane != NULL );
 
 	// all done
-	return JE_FALSE;
+	return GR_FALSE;
 
 	// eliminate warnings
 	Object;
@@ -1284,14 +1284,14 @@ jeBoolean JETCC Collision(
 //	GetExtBox()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetExtBox(
+grBoolean GRCC GetExtBox(
 	const void	*Instance,	// object instance data
-	jeExtBox	*BBox )		// where to store extent box
+	grExtBox	*BBox )		// where to store extent box
 {
 
 	// locals
 	PulsingLight	*Object;
-	jeVec3d			Pos;
+	grVec3d			Pos;
 
 	// ensure valid data
 	assert( Instance != NULL );
@@ -1302,12 +1302,12 @@ jeBoolean JETCC GetExtBox(
 
 	// save extent box
 	Pos = Object->Xf.Translation;
-	jeExtBox_Set (  BBox, 
+	grExtBox_Set (  BBox, 
 					Pos.X - 5.0f, Pos.Y - 5.0f, Pos.Z - 5.0f,
 					Pos.X + 5.0f, Pos.Y + 5.0f, Pos.Z + 5.0f );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetExtBox()
 
@@ -1318,53 +1318,53 @@ jeBoolean JETCC GetExtBox(
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 #if NEWLOAD_DLT
-void * JETCC CreateFromFile(
-	jeVFile		*File,		// vfile to use
-	jeNameMgr *NM )	// pointer manager
+void * GRCC CreateFromFile(
+	grVFile		*File,		// vfile to use
+	grNameMgr *NM )	// pointer manager
 {
 
 	// locals
 	PulsingLight	*Object;
-	jeBoolean		Result = JE_TRUE;
+	grBoolean		Result = GR_TRUE;
 	int				i,	iNum_of_patterns = PULSINGLIGHT_NO_OF_PATTERNS;
 
 	// ensure valid data
 	assert( File != NULL );
 
 	// allocate struct
-	Object = jeRam_AllocateClear( sizeof( *Object ) );
+	Object = grRam_AllocateClear( sizeof( *Object ) );
 	if ( Object == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// init struct
 	Object->RefCount = 1;
-	Object->LoadedFromDisk = JE_TRUE;
+	Object->LoadedFromDisk = GR_TRUE;
 
 	// read xform
-	Result &= jeVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	Result &= grVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
 
 	// read color
-	Result &= jeVFile_Read( File, &( Object->Color.X ), sizeof( Object->Color.X ) );
-	Result &= jeVFile_Read( File, &( Object->Color.Y ), sizeof( Object->Color.Y ) );
-	Result &= jeVFile_Read( File, &( Object->Color.Z ), sizeof( Object->Color.Z ) );
+	Result &= grVFile_Read( File, &( Object->Color.X ), sizeof( Object->Color.X ) );
+	Result &= grVFile_Read( File, &( Object->Color.Y ), sizeof( Object->Color.Y ) );
+	Result &= grVFile_Read( File, &( Object->Color.Z ), sizeof( Object->Color.Z ) );
 
 	// read radius
-	Result &= jeVFile_Read( File, &( Object->Radius ), sizeof( Object->Radius ) );
+	Result &= grVFile_Read( File, &( Object->Radius ), sizeof( Object->Radius ) );
 
 	// read brightness
-	Result &= jeVFile_Read( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
+	Result &= grVFile_Read( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
 
 	// read pulsing flag
-	Result &= jeVFile_Read( File, &( Object->iPulsing ), sizeof( Object->iPulsing ) );
+	Result &= grVFile_Read( File, &( Object->iPulsing ), sizeof( Object->iPulsing ) );
 
 	// read pulse speed
-	Result &= jeVFile_Read( File, &( Object->iPulseSpeed ), sizeof( Object->iPulseSpeed ) );
+	Result &= grVFile_Read( File, &( Object->iPulseSpeed ), sizeof( Object->iPulseSpeed ) );
 
 	// read pulse pattern
-	Result &= jeVFile_Read( File, &( Object->charPulsePattern), sizeof(Object->charPulsePattern) );
+	Result &= grVFile_Read( File, &( Object->charPulsePattern), sizeof(Object->charPulsePattern) );
 	Object->pcharPulsePattern = &Object->charPulsePattern;
 	Object->fLastTime = 0.0f;
 	Object->fRadiusSpeed = PULSINGLIGHT_DEFAULT_RADIUS_SPEED;
@@ -1379,7 +1379,7 @@ void * JETCC CreateFromFile(
 	}
 	
 	//	we use [i] to set our combobox on the NAME for the current pattern
-	jeProperty_FillCombo(&( PulsingLightPropertyList.pjeProperty[PULSINGLIGHT_PULSINGCOMBO_INDEX] ),
+	grProperty_FillCombo(&( PulsingLightPropertyList.pgrProperty[PULSINGLIGHT_PULSINGCOMBO_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_PULSE_PATTERN ),
 							m_ppPulseName[i],
 							PULSINGLIGHT_PULSINGCOMBO_ID,
@@ -1394,9 +1394,9 @@ void * JETCC CreateFromFile(
 
 
 	// fail if there was an error
-	if ( Result == JE_FALSE )
+	if ( Result == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_SYSTEM_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_SYSTEM_RESOURCE, NULL );
 		goto ERROR_CreateFromFile;
 	}
 
@@ -1407,7 +1407,7 @@ void * JETCC CreateFromFile(
 	ERROR_CreateFromFile:
 
 	// free object
-	jeRam_Free( Object );
+	grRam_Free( Object );
 
 	// return error
 	return NULL;
@@ -1421,14 +1421,14 @@ void * JETCC CreateFromFile(
 //	CreateFromFile()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-void * JETCC CreateFromFile(
-	jeVFile		*File,		// vfile to use
-	jePtrMgr *PtrMgr )	// pointer manager
+void * GRCC CreateFromFile(
+	grVFile		*File,		// vfile to use
+	grPtrMgr *PtrMgr )	// pointer manager
 {
 
 	// locals
 	PulsingLight	*Object = NULL;
-	jeBoolean		Result = JE_TRUE;
+	grBoolean		Result = GR_TRUE;
 	int				i,	iNum_of_patterns = PULSINGLIGHT_NO_OF_PATTERNS;
 	BYTE Version;
 	uint32 Tag;
@@ -1437,29 +1437,29 @@ void * JETCC CreateFromFile(
 	assert( File != NULL );
 
 	// allocate struct
-	Object = (PulsingLight *)jeRam_AllocateClear( sizeof( *Object ) );
+	Object = (PulsingLight *)grRam_AllocateClear( sizeof( *Object ) );
 	if ( Object == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// init struct
 	Object->RefCount = 1;
-	Object->LoadedFromDisk = JE_TRUE;
+	Object->LoadedFromDisk = GR_TRUE;
 
 
-	if(!jeVFile_Read(File, &Tag, sizeof(Tag)))
+	if(!grVFile_Read(File, &Tag, sizeof(Tag)))
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "PulsingLight_CreateFromFile:Tag" );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "PulsingLight_CreateFromFile:Tag" );
 		goto ERROR_CreateFromFile;
 	}
 
 	if (Tag == FILE_UNIQUE_ID)
 	{
-		if (!jeVFile_Read(File, &Version, sizeof(Version)))
+		if (!grVFile_Read(File, &Version, sizeof(Version)))
 		{
-    		jeErrorLog_Add( JE_ERR_FILEIO_READ, "PulsingLight_CreateFromFile:Version" );
+    		grErrorLog_Add( GR_ERR_FILEIO_READ, "PulsingLight_CreateFromFile:Version" );
 	       	goto ERROR_CreateFromFile;
 		}
 	}
@@ -1467,34 +1467,34 @@ void * JETCC CreateFromFile(
 	{
 		//for backwards compatibility with old object format
 		Version = 1;
-		jeVFile_Seek(File,-((int)sizeof(Tag)),JE_VFILE_SEEKCUR);
+		grVFile_Seek(File,-((int)sizeof(Tag)),GR_VFILE_SEEKCUR);
 	}
 
 	if (Version >= 1)
 	{
 
 	    // read xform
-	    Result &= jeVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	    Result &= grVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
 
 	    // read color
-	    Result &= jeVFile_Read( File, &( Object->Color.X ), sizeof( Object->Color.X ) );
-	    Result &= jeVFile_Read( File, &( Object->Color.Y ), sizeof( Object->Color.Y ) );
-	    Result &= jeVFile_Read( File, &( Object->Color.Z ), sizeof( Object->Color.Z ) );
+	    Result &= grVFile_Read( File, &( Object->Color.X ), sizeof( Object->Color.X ) );
+	    Result &= grVFile_Read( File, &( Object->Color.Y ), sizeof( Object->Color.Y ) );
+	    Result &= grVFile_Read( File, &( Object->Color.Z ), sizeof( Object->Color.Z ) );
 
 	    // read radius
-	    Result &= jeVFile_Read( File, &( Object->Radius ), sizeof( Object->Radius ) );
+	    Result &= grVFile_Read( File, &( Object->Radius ), sizeof( Object->Radius ) );
 
 	    // read brightness
-	    Result &= jeVFile_Read( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
+	    Result &= grVFile_Read( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
 
 	    // read pulsing flag
-	    Result &= jeVFile_Read( File, &( Object->iPulsing ), sizeof( Object->iPulsing ) );
+	    Result &= grVFile_Read( File, &( Object->iPulsing ), sizeof( Object->iPulsing ) );
 
 	    // read pulse speed
-	    Result &= jeVFile_Read( File, &( Object->iPulseSpeed ), sizeof( Object->iPulseSpeed ) );
+	    Result &= grVFile_Read( File, &( Object->iPulseSpeed ), sizeof( Object->iPulseSpeed ) );
 
 	    // read pulse pattern
-	    Result &= jeVFile_Read( File, &( Object->charPulsePattern), sizeof(Object->charPulsePattern) );
+	    Result &= grVFile_Read( File, &( Object->charPulsePattern), sizeof(Object->charPulsePattern) );
 	}
 
 	Object->pcharPulsePattern = Object->charPulsePattern;
@@ -1511,7 +1511,7 @@ void * JETCC CreateFromFile(
 	}
 	
 	//	we use [i] to set our combobox on the NAME for the current pattern
-	jeProperty_FillCombo(&( PulsingLightPropertyList.pjeProperty[PULSINGLIGHT_PULSINGCOMBO_INDEX] ),
+	grProperty_FillCombo(&( PulsingLightPropertyList.pgrProperty[PULSINGLIGHT_PULSINGCOMBO_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_PULSE_PATTERN ),
 							m_ppPulseName[i],
 							PULSINGLIGHT_PULSINGCOMBO_ID,
@@ -1525,9 +1525,9 @@ void * JETCC CreateFromFile(
 	}
 
 	// fail if there was an error
-	if ( Result == JE_FALSE )
+	if ( Result == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_SYSTEM_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_SYSTEM_RESOURCE, NULL );
 		goto ERROR_CreateFromFile;
 	}
 
@@ -1538,7 +1538,7 @@ void * JETCC CreateFromFile(
 	ERROR_CreateFromFile:
 
 	// free object
-	jeRam_Free( Object );
+	grRam_Free( Object );
 
 	// return error
 	return NULL;
@@ -1552,15 +1552,15 @@ void * JETCC CreateFromFile(
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 #if NEWSAVE_DLT
-jeBoolean JETCC WriteToFile(
+grBoolean GRCC WriteToFile(
 	const void	*Instance,
-	jeVFile		*File,
-	jeNameMgr *NM )
+	grVFile		*File,
+	grNameMgr *NM )
 {
 
 	// locals
 	PulsingLight	*Object;
-	jeBoolean		Result = JE_TRUE;
+	grBoolean		Result = GR_TRUE;
 	BYTE Version =  PULSINLIGHT_VERSION;
 	uint32 Tag = FILE_UNIQUE_ID;
 
@@ -1572,39 +1572,39 @@ jeBoolean JETCC WriteToFile(
 	Object = (PulsingLight *)Instance;
 
 	//Write Version
-	Result &= jeVFile_Write(File, &Tag, sizeof(Tag));
-	Result &= jeVFile_Write(File,&Version,sizeof(Version));
+	Result &= grVFile_Write(File, &Tag, sizeof(Tag));
+	Result &= grVFile_Write(File,&Version,sizeof(Version));
 
 
 	// write xform
-	Result &= jeVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	Result &= grVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
 
 	// write color
-	Result &= jeVFile_Write( File, &( Object->Color.X ), sizeof( Object->Color.X ) );
-	Result &= jeVFile_Write( File, &( Object->Color.Y ), sizeof( Object->Color.Y ) );
-	Result &= jeVFile_Write( File, &( Object->Color.Z ), sizeof( Object->Color.Z ) );
+	Result &= grVFile_Write( File, &( Object->Color.X ), sizeof( Object->Color.X ) );
+	Result &= grVFile_Write( File, &( Object->Color.Y ), sizeof( Object->Color.Y ) );
+	Result &= grVFile_Write( File, &( Object->Color.Z ), sizeof( Object->Color.Z ) );
 
 	// write radius
-	Result &= jeVFile_Write( File, &( Object->Radius ), sizeof( Object->Radius ) );
+	Result &= grVFile_Write( File, &( Object->Radius ), sizeof( Object->Radius ) );
 
 	// write brightness
-	Result &= jeVFile_Write( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
+	Result &= grVFile_Write( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
 
 	// write pulsing flag
-	Result &= jeVFile_Write( File, &( Object->iPulsing ), sizeof( Object->iPulsing ) );
+	Result &= grVFile_Write( File, &( Object->iPulsing ), sizeof( Object->iPulsing ) );
 
 	// write pulse speed
-	Result &= jeVFile_Write( File, &( Object->iPulseSpeed ), sizeof( Object->iPulseSpeed ) );
+	Result &= grVFile_Write( File, &( Object->iPulseSpeed ), sizeof( Object->iPulseSpeed ) );
 
 	//	write pulse pattern
 	//	first zero out our char string var
 	strcpy(Object->charPulsePattern, Object->pcharPulsePattern);
-	Result &= jeVFile_Write( File, &( Object->charPulsePattern ), sizeof(Object->charPulsePattern ) );
+	Result &= grVFile_Write( File, &( Object->charPulsePattern ), sizeof(Object->charPulsePattern ) );
 
 	// log errors
-	if ( Result != JE_TRUE )
+	if ( Result != GR_TRUE )
 	{
-		jeErrorLog_Add( JE_ERR_SYSTEM_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_SYSTEM_RESOURCE, NULL );
 	}
 
 	// all done
@@ -1615,15 +1615,15 @@ jeBoolean JETCC WriteToFile(
 
 } // WriteToFile()
 #else
-jeBoolean JETCC WriteToFile(
+grBoolean GRCC WriteToFile(
 	const void	*Instance,
-	jeVFile		*File,
-	jePtrMgr *PtrMgr )
+	grVFile		*File,
+	grPtrMgr *PtrMgr )
 {
 
 	// locals
 	PulsingLight	*Object;
-	jeBoolean		Result = JE_TRUE;
+	grBoolean		Result = GR_TRUE;
 
 	// ensure valid data
 	assert( Instance != NULL );
@@ -1633,33 +1633,33 @@ jeBoolean JETCC WriteToFile(
 	Object = (PulsingLight *)Instance;
 
 	// write xform
-	Result &= jeVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	Result &= grVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
 
 	// write color
-	Result &= jeVFile_Write( File, &( Object->Color.X ), sizeof( Object->Color.X ) );
-	Result &= jeVFile_Write( File, &( Object->Color.Y ), sizeof( Object->Color.Y ) );
-	Result &= jeVFile_Write( File, &( Object->Color.Z ), sizeof( Object->Color.Z ) );
+	Result &= grVFile_Write( File, &( Object->Color.X ), sizeof( Object->Color.X ) );
+	Result &= grVFile_Write( File, &( Object->Color.Y ), sizeof( Object->Color.Y ) );
+	Result &= grVFile_Write( File, &( Object->Color.Z ), sizeof( Object->Color.Z ) );
 
 	// write radius
-	Result &= jeVFile_Write( File, &( Object->Radius ), sizeof( Object->Radius ) );
+	Result &= grVFile_Write( File, &( Object->Radius ), sizeof( Object->Radius ) );
 
 	// write brightness
-	Result &= jeVFile_Write( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
+	Result &= grVFile_Write( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
 
 	// write pulsing flag
-	Result &= jeVFile_Write( File, &( Object->iPulsing ), sizeof( Object->iPulsing ) );
+	Result &= grVFile_Write( File, &( Object->iPulsing ), sizeof( Object->iPulsing ) );
 
 	// write pulse speed
-	Result &= jeVFile_Write( File, &( Object->iPulseSpeed ), sizeof( Object->iPulseSpeed ) );
+	Result &= grVFile_Write( File, &( Object->iPulseSpeed ), sizeof( Object->iPulseSpeed ) );
 
 	//	write pulse pattern
 	strcpy(Object->charPulsePattern, Object->pcharPulsePattern);
-	Result &= jeVFile_Write( File, &( Object->charPulsePattern ), sizeof(Object->charPulsePattern ) );
+	Result &= grVFile_Write( File, &( Object->charPulsePattern ), sizeof(Object->charPulsePattern ) );
 
 	// log errors
-	if ( Result != JE_TRUE )
+	if ( Result != GR_TRUE )
 	{
-		jeErrorLog_Add( JE_ERR_SYSTEM_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_SYSTEM_RESOURCE, NULL );
 	}
 
 	// all done
@@ -1676,9 +1676,9 @@ jeBoolean JETCC WriteToFile(
 //	GetPropertyList()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetPropertyList(
+grBoolean GRCC GetPropertyList(
 								void			*Instance,	// object instance data
-								jeProperty_List	**List)		// where to save property list pointer
+								grProperty_List	**List)		// where to save property list pointer
 {
 
 	// locals
@@ -1722,7 +1722,7 @@ jeBoolean JETCC GetPropertyList(
 		}
 
 		//	we use [i] to set our combobox on the NAME for the current pattern
-		jeProperty_FillCombo(&( PulsingLightPropertyList.pjeProperty[PULSINGLIGHT_PULSINGCOMBO_INDEX] ),
+		grProperty_FillCombo(&( PulsingLightPropertyList.pgrProperty[PULSINGLIGHT_PULSINGCOMBO_INDEX] ),
 			Util_LoadLibraryString( hClassInstance, IDS_PULSE_PATTERN ),
 			m_ppPulseName[i],
 			PULSINGLIGHT_PULSINGCOMBO_ID,
@@ -1730,17 +1730,17 @@ jeBoolean JETCC GetPropertyList(
 			m_ppPulseName );
 
 		// copy property list
-		*List = jeProperty_ListCopy( &PulsingLightPropertyList );
+		*List = grProperty_ListCopy( &PulsingLightPropertyList );
 		if ( *List == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+			return GR_FALSE;
 		}
 
 		// all done
-		return JE_TRUE;
+		return GR_TRUE;
 	}
-	return JE_FALSE;
+	return GR_FALSE;
 
 } // GetPropertyList()
 
@@ -1750,17 +1750,17 @@ jeBoolean JETCC GetPropertyList(
 //	SetProperty()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SetProperty(
+grBoolean GRCC SetProperty(
 							void				*Instance,	// object instance data
 							int32				FieldID,	// id of field to be changed
 							PROPERTY_FIELD_TYPE	DataType,	// type of data
-							jeProperty_Data		*pData )	// new data
+							grProperty_Data		*pData )	// new data
 {
 
 	// locals
 	PulsingLight	*pObject = NULL;
-	jeBoolean		AdjustPulsingLightProperties = JE_FALSE;
-	jeBoolean		bPolyAdded;
+	grBoolean		AdjustPulsingLightProperties = GR_FALSE;
+	grBoolean		bPolyAdded;
 	int				i;
 
 	// ensure valid data
@@ -1779,7 +1779,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			pObject->Radius = pData->Float;
-			AdjustPulsingLightProperties = JE_TRUE;
+			AdjustPulsingLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1788,7 +1788,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			pObject->Brightness = pData->Float;
-			AdjustPulsingLightProperties = JE_TRUE;
+			AdjustPulsingLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1798,7 +1798,7 @@ jeBoolean JETCC SetProperty(
 			pObject->iPulsing = pData->Int;
 			//			if (Object->iPulsing)
 			//				Object->iStatic = 0;
-			AdjustPulsingLightProperties = JE_TRUE;
+			AdjustPulsingLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1806,7 +1806,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_INT_TYPE );
 			pObject->iPulseSpeed = pData->Int;
-			AdjustPulsingLightProperties = JE_TRUE;
+			AdjustPulsingLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1835,28 +1835,28 @@ jeBoolean JETCC SetProperty(
 			pObject->Color.X = pData->Vector.X;
 			pObject->Color.Y = pData->Vector.Y;
 			pObject->Color.Z = pData->Vector.Z;
-			AdjustPulsingLightProperties = JE_TRUE;
+			AdjustPulsingLightProperties = GR_TRUE;
 			break;
 		}
 	case PULSINGLIGHT_COLORRED_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			pObject->Color.X = pData->Float;
-			AdjustPulsingLightProperties = JE_TRUE;
+			AdjustPulsingLightProperties = GR_TRUE;
 			break;
 		}
 	case PULSINGLIGHT_COLORGREEN_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			pObject->Color.Y = pData->Float;
-			AdjustPulsingLightProperties = JE_TRUE;
+			AdjustPulsingLightProperties = GR_TRUE;
 			break;
 		}
 	case PULSINGLIGHT_COLORBLUE_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			pObject->Color.Z = pData->Float;
-			AdjustPulsingLightProperties = JE_TRUE;
+			AdjustPulsingLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1865,7 +1865,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_CHECK_TYPE );
 			pObject->CastShadow = pData->Bool;
-			AdjustPulsingLightProperties = JE_TRUE;
+			AdjustPulsingLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1879,7 +1879,7 @@ jeBoolean JETCC SetProperty(
 			{
 				if (pObject->pPoly)
 				{
-					jeWorld_RemoveUserPoly(pObject->pWorld, pObject->pPoly);
+					grWorld_RemoveUserPoly(pObject->pWorld, pObject->pPoly);
 				}
 			}
 			
@@ -1900,11 +1900,11 @@ jeBoolean JETCC SetProperty(
 						{
 					
 						//turn on the sprite
-						bPolyAdded = jeWorld_AddUserPoly( pObject->pWorld, pObject->pPoly, JE_FALSE); 
+						bPolyAdded = grWorld_AddUserPoly( pObject->pWorld, pObject->pPoly, GR_FALSE); 
 						if (!bPolyAdded) 
 						{
-							jeUserPoly_Destroy( &( pObject->pPoly ) );
-							jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to add the Pulsing Light UserPoly to the World.", NULL);
+							grUserPoly_Destroy( &( pObject->pPoly ) );
+							grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to add the Pulsing Light UserPoly to the World.", NULL);
 							//note that the bitmap may still be outstanding
 						}
 
@@ -1922,12 +1922,12 @@ jeBoolean JETCC SetProperty(
 	default:
 		{
 			assert( 0 );
-			return JE_FALSE;
+			return GR_FALSE;
 			break;
 		}
 	}
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	DataType;
@@ -1940,9 +1940,9 @@ jeBoolean JETCC SetProperty(
 //	SetXForm()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SetXForm(
+grBoolean GRCC SetXForm(
 						 void			*Instance,	// object instance data
-						 const jeXForm3d	*Xf )		// new xform
+						 const grXForm3d	*Xf )		// new xform
 {
 
 	// locals
@@ -1963,19 +1963,19 @@ jeBoolean JETCC SetXForm(
 		// adjust light
 		if (pObject->pLight)
 		{
-			return jeLight_SetAttributes( pObject->pLight,
+			return grLight_SetAttributes( pObject->pLight,
 				&( pObject->Xf.Translation ),
 				&( pObject->Color ),
 				pObject->Radius, 
 				pObject->Brightness, 
-				JE_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags
+				GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags
 		}
 
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 #pragma message ("shadow flags")	
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 
 } // SetXForm()
@@ -1986,9 +1986,9 @@ jeBoolean JETCC SetXForm(
 //	GetXForm()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetXForm(
+grBoolean GRCC GetXForm(
 	const void	*Instance,	// object instance data
-	jeXForm3d	*Xf )		// where to store xform
+	grXForm3d	*Xf )		// where to store xform
 {
 
 	// locals
@@ -2005,7 +2005,7 @@ jeBoolean JETCC GetXForm(
 	*Xf = Object->Xf;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetXForm()
 
@@ -2015,12 +2015,12 @@ jeBoolean JETCC GetXForm(
 //	GetXFormModFlags()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-int	JETCC GetXFormModFlags(
+int	GRCC GetXFormModFlags(
 	const void	*Instance )	// object instance data
 {
 
 	// return xform mod flags
-	return JE_OBJECT_XFORM_TRANSLATE;
+	return GR_OBJECT_XFORM_TRANSLATE;
 
 	// eliminate warnings
 	Instance;
@@ -2033,14 +2033,14 @@ int	JETCC GetXFormModFlags(
 //	GetChildren()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetChildren(
+grBoolean GRCC GetChildren(
 	const void	*Instance,
-	jeObject	*Children,
+	grObject	*Children,
 	int			MaxNumChildren )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -2055,13 +2055,13 @@ jeBoolean JETCC GetChildren(
 //	AddChild()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AddChild(
+grBoolean GRCC AddChild(
 	void			*Instance,
-	const jeObject	*Child )
+	const grObject	*Child )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -2075,13 +2075,13 @@ jeBoolean JETCC AddChild(
 //	RemoveChild()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC RemoveChild(
+grBoolean GRCC RemoveChild(
 	void			*Instance,
-	const jeObject	*Child )
+	const grObject	*Child )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -2095,7 +2095,7 @@ jeBoolean JETCC RemoveChild(
 //	EditDialog()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC EditDialog(
+grBoolean GRCC EditDialog(
 	void	*Instance,
 #ifdef WIN32
 	HWND	Parent )
@@ -2105,7 +2105,7 @@ jeBoolean JETCC EditDialog(
 #endif
 {
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -2119,7 +2119,7 @@ jeBoolean JETCC EditDialog(
 //	Frame()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Frame(
+grBoolean GRCC Frame(
 	void	*Instance,
 	float	TimeDelta )
 {
@@ -2128,7 +2128,7 @@ jeBoolean JETCC Frame(
 	assert( Instance != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -2142,14 +2142,14 @@ jeBoolean JETCC Frame(
 //	SendAMessage()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SendAMessage(
+grBoolean GRCC SendAMessage(
 	void	*Instance,	// object instance data
 	int32	Msg,		// message id
 	void	*Data )		// message data
 {
 
 	// all done
-	return JE_FALSE;
+	return GR_FALSE;
 
 	// eliminate warnings
 	Instance;
@@ -2163,83 +2163,83 @@ jeBoolean JETCC SendAMessage(
 //	DuplicateInstance()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-void * JETCC DuplicateInstance(void * Instance)
+void * GRCC DuplicateInstance(void * Instance)
 {
-	jeVFile *ramdisk, *ramfile;
-	jeVFile_MemoryContext vfsmemctx;
-	jeObject* newDLight = NULL;
-	jePtrMgr *ptrMgr = NULL;
+	grVFile *ramdisk, *ramfile;
+	grVFile_MemoryContext vfsmemctx;
+	grObject* newDLight = NULL;
+	grPtrMgr *ptrMgr = NULL;
 
-	vfsmemctx.Data = jeRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
+	vfsmemctx.Data = grRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
 	vfsmemctx.DataLength = OBJ_PERSIST_SIZE;
 
 	if (!vfsmemctx.Data) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
 		return NULL;
 	}
 
-	ramdisk = jeVFile_OpenNewSystem
+	ramdisk = grVFile_OpenNewSystem
 	(
 		NULL, 
-		(jeVFile_TypeIdentifier) (JE_VFILE_TYPE_MEMORY|JE_VFILE_TYPE_VIRTUAL),
+		(grVFile_TypeIdentifier) (GR_VFILE_TYPE_MEMORY|GR_VFILE_TYPE_VIRTUAL),
 		"Memory",
 		NULL,
-		JE_VFILE_OPEN_CREATE|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_CREATE|GR_VFILE_OPEN_DIRECTORY
 	);
 
 	if (!ramdisk) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	ramfile = jeVFile_Open(ramdisk, "tempObject", JE_VFILE_OPEN_CREATE);
+	ramfile = grVFile_Open(ramdisk, "tempObject", GR_VFILE_OPEN_CREATE);
 
 	if (!ramfile) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
-	ptrMgr = jePtrMgr_Create();
+	ptrMgr = grPtrMgr_Create();
 
 	if (!ptrMgr) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!WriteToFile(Instance, ramfile, jePtrMgr_Create())) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!WriteToFile(Instance, ramfile, grPtrMgr_Create())) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!jeVFile_Rewind(ramfile)) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!grVFile_Rewind(ramfile)) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	newDLight = (jeObject *)CreateFromFile(ramfile, ptrMgr);
+	newDLight = (grObject *)CreateFromFile(ramfile, ptrMgr);
 	if (!newDLight) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	jeVFile_Close(ramfile);
-	jeVFile_Close(ramdisk);
+	grVFile_Close(ramfile);
+	grVFile_Close(ramdisk);
 
-	jeRam_Free(vfsmemctx.Data);
+	grRam_Free(vfsmemctx.Data);
 
 	return( newDLight );
 }
@@ -2250,7 +2250,7 @@ void * JETCC DuplicateInstance(void * Instance)
 //	ChangeBoxCollision
 //	
 ////////////////////////////////////////////////////////////////////////////////////
-jeBoolean	JETCC ChangeBoxCollision(const void *Instance,const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane)
+grBoolean	GRCC ChangeBoxCollision(const void *Instance,const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane)
 {
-	return( JE_FALSE );Plane;ImpactBox;BackBox;FrontBox;Pos;Instance;
+	return( GR_FALSE );Plane;ImpactBox;BackBox;FrontBox;Pos;Instance;
 }

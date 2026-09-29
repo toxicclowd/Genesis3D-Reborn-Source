@@ -5,7 +5,7 @@
 #define Mp3MgrH_H
 
 //includes
-#include "jet.h"
+#include "Genesis3D.h"
 #include "Mp3Mgr.h"
 #include <windows.h>
 #include <string.h>
@@ -35,7 +35,7 @@ typedef struct tagMedia
 
 //	FUNCTION PROTOTYPES	=================================================
 
-jeBoolean	InitMedia(HWND mainwindowhandle);
+grBoolean	InitMedia(HWND mainwindowhandle);
 HANDLE		GetGraphEventHandle( void );
 
 
@@ -46,12 +46,12 @@ BOOL	IsInitialized();
 void	DeleteContentsMp3();
 
 // Event handlers
-void		PlayMp3(long volume, jeBoolean loop);
+void		PlayMp3(long volume, grBoolean loop);
 void		OnMediaPause();
 void		StopMp3();
 void		OnMediaAbortStop();
 void		OnGraphNotify();
-jeBoolean	Mp3Playing();
+grBoolean	Mp3Playing();
 
 #ifdef NDEBUG
   #define ASSERT( exp ) ((void)0)

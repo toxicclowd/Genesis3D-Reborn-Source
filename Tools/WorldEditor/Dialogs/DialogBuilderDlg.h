@@ -25,7 +25,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "jeProperty.h"
+#include "grProperty.h"
 #include "Resource.h"
 #include "buildspin.h"
 
@@ -52,10 +52,10 @@ class CDialogBuilderDlg : public CDialog
 // Construction
 public:
 	CDialogBuilderDlg(CWnd* pParent = NULL);	// standard constructor
-	BOOL BuildFromDescriptor( jeProperty_List *pArray );
+	BOOL BuildFromDescriptor( grProperty_List *pArray );
 	void Reset();
-	BOOL UpdateFieldDataById( int Id, jeProperty_Data *pData, int DataSize );
-	BOOL UpdateDataByArray( jeProperty_List *pArray );
+	BOOL UpdateFieldDataById( int Id, grProperty_Data *pData, int DataSize );
+	BOOL UpdateDataByArray( grProperty_List *pArray );
 	BOOL HandleComboMsg( FieldStruct* pField, int nCode );	
 
 // Dialog Data
@@ -108,9 +108,9 @@ private:
 	BOOL AddColorPicker( FieldStruct * pField, char * Name, int Id  );
 	BOOL AddComboField( FieldStruct * pField,  char * Name, int Id, int StringN, char **StringList );
 	BOOL AddStaticField( FieldStruct * pField,  char * Name, int Id, int Type );
-	BOOL SetStringField( FieldStruct *pField, jeVec3d Vector, int DataSize );
+	BOOL SetStringField( FieldStruct *pField, grVec3d Vector, int DataSize );
 	void SetRadioFieldGroup( FieldStruct * pField );
-	BOOL AddField( FieldStruct * pField, char * Name, PROPERTY_FIELD_TYPE Type, int Id, int DataId, jeProperty_TypeInfo *pTypeInfo  );
+	BOOL AddField( FieldStruct * pField, char * Name, PROPERTY_FIELD_TYPE Type, int Id, int DataId, grProperty_TypeInfo *pTypeInfo  );
 	BOOL ShowField( FieldStruct* pField, int nCmdShow  );
 	BOOL FormatField(FieldStruct* pField, int *Height, int Level );	
 	BOOL FormatDialog();
@@ -125,13 +125,13 @@ private:
 	BOOL SetStaticIntField( FieldStruct *pField, int Int, int DataSize );
 	BOOL SetIntField( FieldStruct *pField, int Int, int DataSize );
 	BOOL SetFloatField( FieldStruct *pField, float Float, int DataSize );
-	BOOL SetVec3dGroup( FieldStruct *pField, jeVec3d Vector, int DataSize );
-	BOOL SetColorPickerField(  FieldStruct *pField, jeVec3d Vector, int DataSize );
-	BOOL SetRGBGroup( FieldStruct *pField, jeVec3d Vector, int DataSize );
+	BOOL SetVec3dGroup( FieldStruct *pField, grVec3d Vector, int DataSize );
+	BOOL SetColorPickerField(  FieldStruct *pField, grVec3d Vector, int DataSize );
+	BOOL SetRGBGroup( FieldStruct *pField, grVec3d Vector, int DataSize );
 	BOOL SetComboField( FieldStruct *pField, char * String, int DataSize );
 	BOOL HandleIntMsg( FieldStruct* pField, int nCode );
 	BOOL HandleFloatMsg( FieldStruct* pField, int nCode );
-	BOOL UpdateFieldData( FieldStruct *pField, jeProperty_Data *pData, int DataSize );
+	BOOL UpdateFieldData( FieldStruct *pField, grProperty_Data *pData, int DataSize );
 	void SetScollBar();
 	void DisableField( FieldStruct * pField );
 	FieldStruct * FindFieldById( int Id );

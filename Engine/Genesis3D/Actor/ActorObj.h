@@ -1,7 +1,7 @@
 #ifndef ACTOROBJ_H__
 #define ACTOROBJ_H__
 
-extern jeObjectDef jeActor_ObjectDef;
+extern grObjectDef grActor_ObjectDef;
 
 #endif
 

@@ -22,7 +22,7 @@
 #ifndef MATRARRAY_H
 #define MATRARRAY_H
 
-#include "jeList.h"
+#include "grList.h"
 #include "MatrIdx.h"
 
 #ifdef __cplusplus
@@ -32,7 +32,7 @@ extern "C" {
 typedef struct MatrArray_Struct MatrArray_Struct ;
 typedef ListIterator MatrIdxIterator ;
 
-MatrArray_Struct *		MatrArray_Create( jeMaterial_Array * pMatlArray ) ;
+MatrArray_Struct *		MatrArray_Create( grMaterial_Array * pMatlArray ) ;
 void			MatrArray_Destroy( MatrArray_Struct **ppList ) ;
 
 // ACCESSORS
@@ -44,7 +44,7 @@ MatrIdx_Struct *	MatrArray_GetCurMatrIdx( MatrArray_Struct* MatrArray );
 void				MatrArray_SetCurMatrIdx( MatrArray_Struct* MatrArray, MatrIdx_Struct* MatrIdx );
 
 // MODIFIERS
-MatrIdx_Struct *	MatrArray_Add( MatrArray_Struct * pList, jeBitmap * pBitmap, const char * Name );
+MatrIdx_Struct *	MatrArray_Add( MatrArray_Struct * pList, grBitmap * pBitmap, const char * Name );
 
 // SEARCH
 MatrIdx_Struct *	MatrArray_SearchByName( MatrArray_Struct* MatrArray, MatrIdxIterator * pMI, const char* Name );

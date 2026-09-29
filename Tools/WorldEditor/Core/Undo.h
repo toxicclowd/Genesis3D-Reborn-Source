@@ -67,7 +67,7 @@ typedef enum
 }	UNDO_TYPES;
 
 
-typedef jeBoolean	(*Undo_RestoreCB)(Object *pObject, void *Context );
+typedef grBoolean	(*Undo_RestoreCB)(Object *pObject, void *Context );
 typedef void		(*Undo_DestroyContextCB)( void *Context);
 
 typedef struct tagUndo	Undo ;
@@ -76,10 +76,10 @@ Undo *				Undo_Create( const int32 nLevels ) ;
 
 // Creates a new Transaction and puts it on the top of the stack
 // If list is full the  bottom transaction is deleted to make room.
-jeBoolean			Undo_Push( Undo *pUndo, UNDO_TYPES Function );
+grBoolean			Undo_Push( Undo *pUndo, UNDO_TYPES Function );
 
 //Removes top Transaction and calls restore routine for all of its sub-transactions
-jeBoolean			Undo_Pop( Undo *pUndo, jeBoolean bBrushLighting );
+grBoolean			Undo_Pop( Undo *pUndo, grBoolean bBrushLighting );
 
 //Returns the type of top Transaction
 UNDO_TYPES			Undo_GetTopType( Undo *pUndo );
@@ -87,13 +87,13 @@ UNDO_TYPES			Undo_GetTopType( Undo *pUndo );
 //Returns TRUE if there is a valid Undo in the stack
 //UndoStringID is an ID of res string describing the undo
 //UndoStringID will be valid even on a FALSE ( Containing the id for string "None" )
-jeBoolean			Undo_CanUndo( Undo *pUndo, int32* UndoStringID );
+grBoolean			Undo_CanUndo( Undo *pUndo, int32* UndoStringID );
 
 //Adds a sub-transaction to top Transaction
 //Creates a Ref to the Object and frees it when sub-transaction is deleted
 //Context is assumed to be an allocated block of memory owned by the sub-transaction
 //this block will be freed when the sub-transaction is deleted.
-jeBoolean			Undo_AddSubTransaction( Undo *pUndo, UNDO_FUNCTIONS Function, Object * pObject, void *Context );
+grBoolean			Undo_AddSubTransaction( Undo *pUndo, UNDO_FUNCTIONS Function, Object * pObject, void *Context );
 
 void				Undo_RegisterCallBack( Undo *pUndo, 
 										   UNDO_FUNCTIONS Function, 

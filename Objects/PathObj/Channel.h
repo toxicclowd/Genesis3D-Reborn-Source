@@ -42,12 +42,12 @@ MAX_CHANNELS,
 typedef union ChannelData
 {
 	char		*String;
-	jeXForm3d	XForm;
+	grXForm3d	XForm;
 }ChannelData;
 
 typedef struct Channel
 {
-	jeBoolean	Disabled;
+	grBoolean	Disabled;
 	ChannelData	KeyData[MAX_KEYS];
 	float		KeyList[MAX_KEYS];	// list of key times
 	int			KeyCount;

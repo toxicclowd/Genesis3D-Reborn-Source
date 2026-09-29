@@ -44,7 +44,7 @@ jwePen * Pen_SelectColor( int32 hDC, int32 R, int32 G, int32 B )
 {
 	jwePen *pjwePen;
 
-	pjwePen = JE_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
+	pjwePen = GR_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
 	if( pjwePen == NULL )
 		return( NULL );
 
@@ -61,7 +61,7 @@ jwePen	* Pen_SelectSelectedColor( int32 hDC )
 {
 	jwePen *pjwePen;
 
-	pjwePen = JE_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
+	pjwePen = GR_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
 	if( pjwePen == NULL )
 		return( NULL );
 
@@ -78,7 +78,7 @@ jwePen	*	Pen_SelectSelectedFaceColor( int32 hDC )
 {
 	jwePen *pjwePen;
 
-	pjwePen = JE_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
+	pjwePen = GR_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
 	if( pjwePen == NULL )
 		return( NULL );
 
@@ -95,7 +95,7 @@ jwePen	* Pen_SelectSubtractBrushColor( int32 hDC )
 {
 	jwePen *pjwePen;
 
-	pjwePen = JE_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
+	pjwePen = GR_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
 	if( pjwePen == NULL )
 		return( NULL );
 
@@ -112,7 +112,7 @@ jwePen	* Pen_SelectAddBrushColor( int32 hDC )
 {
 	jwePen *pjwePen;
 
-	pjwePen = JE_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
+	pjwePen = GR_RAM_ALLOCATE_STRUCT_CLEAR( jwePen );
 	if( pjwePen == NULL )
 		return( NULL );
 
@@ -129,10 +129,10 @@ void Pen_Release( jwePen * pPen, int32 hDC )
 {
 		SelectPen( (HDC)hDC, pPen->hOldPen ) ;
 		//DeletePen( pPen->hPen ) ;
-		jeRam_Free( pPen );
+		grRam_Free( pPen );
 }
 
-jeBoolean	Pen_Polyline( int32 hDC, Point * pPoints, int32 nPoints )
+grBoolean	Pen_Polyline( int32 hDC, Point * pPoints, int32 nPoints )
 {
 	return Polyline( (HDC)hDC, (POINT*)pPoints, nPoints ) ;
 }

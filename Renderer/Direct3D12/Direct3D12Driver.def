@@ -2,4 +2,4 @@ LIBRARY "Direct3D12Driver"
 
 EXPORTS
     DriverHook
-    jeEngine_D3D12Driver
+    grEngine_D3D12Driver

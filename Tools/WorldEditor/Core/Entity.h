@@ -43,37 +43,37 @@ extern "C" {
 typedef struct tagEntity Entity ;
 
 // CREATORS
-Entity *			Entity_Create( jeSymbol_Table * pSymbols, Group * pGroup, const char * pszType, const char * pszName, const int32 nNumber );
+Entity *			Entity_Create( grSymbol_Table * pSymbols, Group * pGroup, const char * pszType, const char * pszName, const int32 nNumber );
 Entity *			Entity_Copy( Entity *	pEntity, int32 nNumber );
 void				Entity_Destroy( Entity ** ppEntity ) ;
 Entity *			Entity_FromTemplate( const char * pszName, Group * pGroup, const Entity *	pEntity, int32 nNumber );
-Entity *			Entity_CreateTemplate(  const char * const pszType, jeSymbol_Table * pSymbols );
+Entity *			Entity_CreateTemplate(  const char * const pszType, grSymbol_Table * pSymbols );
 
 // MODIFIERS
-void				Entity_Move( Entity * pEntity, const jeVec3d * pWorldDistance ) ;
+void				Entity_Move( Entity * pEntity, const grVec3d * pWorldDistance ) ;
 void				Entity_SetModified( Entity * pEntity ) ;
-void				Entity_Snap( Entity * pEntity, jeFloat fSnapSize ) ;
-void				Entity_SetXForm( Entity * pEntity, const jeXForm3d * XForm );
+void				Entity_Snap( Entity * pEntity, grFloat fSnapSize ) ;
+void				Entity_SetXForm( Entity * pEntity, const grXForm3d * XForm );
 void				Entity_UpdateBounds( Entity * pEntity ) ;
-void				Entity_Size( Entity * pEntity, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
-void				Enity_SetField( const Entity * pEntity , jeSymbol *FieldSymbol, void *pData, int32 DataSize );
+void				Entity_Size( Entity * pEntity, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
+void				Enity_SetField( const Entity * pEntity , grSymbol *FieldSymbol, void *pData, int32 DataSize );
 
 
 // ACCESSORS
-void				Entity_GetXForm( const Entity * pEntity, jeXForm3d * XForm );
-const jeExtBox	*	Entity_GetWorldAxialBounds( const Entity * pEntity ) ;
-void				Entity_GetWorldDrawBounds( const Entity * pEntity, jeExtBox *DrawBounds );
+void				Entity_GetXForm( const Entity * pEntity, grXForm3d * XForm );
+const grExtBox	*	Entity_GetWorldAxialBounds( const Entity * pEntity ) ;
+void				Entity_GetWorldDrawBounds( const Entity * pEntity, grExtBox *DrawBounds );
 const char		*	Entity_GetType( const Entity * pEntity );
-jeBoolean			Entity_GetField( const Entity * pEntity , jeSymbol *FieldSymbol, void *pData, int32 DataSize, jeBoolean *pDataInited );
-jeBoolean			Enity_SelectClosest(  Entity * pEntity, FindInfo	*	pFindInfo );
+grBoolean			Entity_GetField( const Entity * pEntity , grSymbol *FieldSymbol, void *pData, int32 DataSize, grBoolean *pDataInited );
+grBoolean			Enity_SelectClosest(  Entity * pEntity, FindInfo	*	pFindInfo );
 
 // IS
-jeBoolean			Entity_IsInRect( const Entity * pEntity, jeExtBox *pSelRect, jeBoolean bSelEncompeses );
+grBoolean			Entity_IsInRect( const Entity * pEntity, grExtBox *pSelRect, grBoolean bSelEncompeses );
 
 // FILE
-Entity *			Entity_CreateFromFile( jeVFile * pF, const int32 nVersion, jeSymbol_Table * pEntities ) ;
-jeBoolean			Entity_WriteToFile( Entity * pEntity, jeVFile * pF );
-jeBoolean			Entity_Reattach( Entity * pEntity ) ;
+Entity *			Entity_CreateFromFile( grVFile * pF, const int32 nVersion, grSymbol_Table * pEntities ) ;
+grBoolean			Entity_WriteToFile( Entity * pEntity, grVFile * pF );
+grBoolean			Entity_Reattach( Entity * pEntity ) ;
 
 #ifdef __cplusplus
 }

@@ -28,7 +28,7 @@
 #include <assert.h>				
 #pragma warning(default : 4201 4214 4115; disable : 4514)
 
-#include "ram.h"		// jeRam_Allocate
+#include "ram.h"		// grRam_Allocate
 #include "log.h"
  
  
@@ -141,14 +141,14 @@ void Log_Close(LogType **log)
 {
 	assert(log);
 	assert(*log);
-	jeRam_Free(*log);
+	grRam_Free(*log);
 	*log=NULL;
 }
  
 LogType *Log_Open(Log_DestinationType dest,char *filename,Log_OpenType mode)
 {
 	LogType *log;
-	log = jeRam_Allocate(sizeof(LogType));
+	log = grRam_Allocate(sizeof(LogType));
 	assert(log);
 	assert(filename!=NULL);
 	assert(strlen(filename)<LOG_MAX_FILENAME_LENGTH);

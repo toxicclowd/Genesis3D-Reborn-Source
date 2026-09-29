@@ -22,7 +22,7 @@
 #define MODEL_INSTANCE
 
 typedef struct ModelInstance {
-	jeModel * pModel;
+	grModel * pModel;
 	int32 RefCnt;
 } ModelInstance;
 

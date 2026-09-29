@@ -71,25 +71,20 @@ extern "C" {
 */
 #define GR_MATERIALSPEC_EMISSIVE_INDEX		3
 
-typedef struct jeTexture grTexture;
-typedef struct jeTexture jeTexture;
-typedef struct jeShader grShader;
-typedef struct jeShader jeShader;
-typedef struct jeXForm3d grXForm3d;
-typedef struct jeXForm3d jeXForm3d;
+typedef struct grTexture grTexture;
+typedef struct grShader grShader;
+typedef struct grXForm3d grXForm3d;
 
 typedef enum grMaterialSpec_LayerType
 {
     GR_MATERIAL_LAYER_BASE=0,
     GR_MATERIAL_LAYER_ALPHA
 } grMaterialSpec_LayerType;
-typedef grMaterialSpec_LayerType jeMaterialSpec_LayerType;
-
-#define JE_MATERIAL_LAYER_BASE	GR_MATERIAL_LAYER_BASE
-#define JE_MATERIAL_LAYER_ALPHA	GR_MATERIAL_LAYER_ALPHA
+typedef grMaterialSpec_LayerType grMaterialSpec_LayerType;
 
 
-typedef struct jeMaterialSpec_Thumbnail
+
+typedef struct grMaterialSpec_Thumbnail
 {
 	uint8  width;
 	uint8  height;
@@ -101,8 +96,7 @@ typedef struct jeMaterialSpec_Thumbnail
 *   @see grMaterial
 *	@see grTexture
 */
-typedef struct jeMaterialSpec grMaterialSpec;
-typedef struct jeMaterialSpec jeMaterialSpec;	
+typedef struct grMaterialSpec grMaterialSpec;
 
 /*! @fn grMaterialSpec* grMaterialSpec_Create()
 *   @brief Create an empty grMaterialSpec instance
@@ -229,10 +223,8 @@ GRAPI uint32 GRCC grMaterialSpec_Width(const grMaterialSpec* MatSpec);
 /*! @typedef grMaterial
 *   @brief A reference to a Material used by the Engine
 */
-typedef struct jeMaterial grMaterial;
+typedef struct grMaterial grMaterial;
 typedef uint16 grMaterial_ArrayIndex;
-typedef uint16 jeMaterial_ArrayIndex;
-typedef struct jeMaterial jeMaterial;
 
 /*! @fn void grMaterial_Destroy(grMaterial **ppMaterial)
 *   @brief Destroy the current grMaterial
@@ -288,15 +280,12 @@ GRAPI const grMaterialSpec	* GRCC grMaterial_GetMaterialSpec(const grMaterial *M
 *   @brief An Array of grMaterial struct
 *   @see grArray
 */
-typedef struct jeMaterial_Array grMaterial_Array;
-typedef struct jeMaterial_Array jeMaterial_Array;	
+typedef struct grMaterial_Array grMaterial_Array;
 
 /*! @typedef grMaterial_Array
 *   @brief The index type
 *   @see grArray_Index
 */
-typedef uint16					grMaterial_ArrayIndex;
-typedef uint16					jeMaterial_ArrayIndex;
 
 /*! @fn grMaterial_Array* grMaterial_ArrayCreate(int32 StartMaterials)
 *   @brief Create a material array
@@ -354,58 +343,5 @@ GRAPI grBoolean			GRCC grMaterial_ArraySetMaterialSpec(grMaterial_Array *Array, 
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define JE_MATERIALSPEC_AMBIENT_INDEX            GR_MATERIALSPEC_AMBIENT_INDEX
-#define JE_MATERIALSPEC_DIFFUSE_INDEX            GR_MATERIALSPEC_DIFFUSE_INDEX
-#define JE_MATERIALSPEC_EMISSIVE_INDEX           GR_MATERIALSPEC_EMISSIVE_INDEX
-#define JE_MATERIALSPEC_SPECULAR_INDEX           GR_MATERIALSPEC_SPECULAR_INDEX
-#define JE_MATERIAL_ARRAY_NULL_INDEX             GR_MATERIAL_ARRAY_NULL_INDEX
-#define JE_MATERIAL_MAX_NAME_SIZE                GR_MATERIAL_MAX_NAME_SIZE
-#define jeMaterialSpec_AddLayer                  grMaterialSpec_AddLayer
-#define jeMaterialSpec_AddLayerFromBitmap        grMaterialSpec_AddLayerFromBitmap
-#define jeMaterialSpec_AddLayerFromFile          grMaterialSpec_AddLayerFromFile
-#define jeMaterialSpec_Create                    grMaterialSpec_Create
-#define jeMaterialSpec_CreateFromFile            grMaterialSpec_CreateFromFile
-#define jeMaterialSpec_CreateRef                 grMaterialSpec_CreateRef
-#define jeMaterialSpec_Destroy                   grMaterialSpec_Destroy
-#define jeMaterialSpec_GetColor                  grMaterialSpec_GetColor
-#define jeMaterialSpec_GetColors                 grMaterialSpec_GetColors
-#define jeMaterialSpec_GetLayerBitmap            grMaterialSpec_GetLayerBitmap
-#define jeMaterialSpec_GetLayerCount             grMaterialSpec_GetLayerCount
-#define jeMaterialSpec_GetLayerTexture           grMaterialSpec_GetLayerTexture
-#define jeMaterialSpec_GetLayerTransform         grMaterialSpec_GetLayerTransform
-#define jeMaterialSpec_GetShader                 grMaterialSpec_GetShader
-#define jeMaterialSpec_GetThumbnail              grMaterialSpec_GetThumbnail
-#define jeMaterialSpec_Height                    grMaterialSpec_Height
-#define jeMaterialSpec_RemoveLayer               grMaterialSpec_RemoveLayer
-#define jeMaterialSpec_SetColor                  grMaterialSpec_SetColor
-#define jeMaterialSpec_SetLayerTransform         grMaterialSpec_SetLayerTransform
-#define jeMaterialSpec_SetShader                 grMaterialSpec_SetShader
-#define jeMaterialSpec_SetThumbnail              grMaterialSpec_SetThumbnail
-#define jeMaterialSpec_Width                     grMaterialSpec_Width
-#define jeMaterialSpec_WriteToFile               grMaterialSpec_WriteToFile
-#define jeMaterial_ArrayCreate                   grMaterial_ArrayCreate
-#define jeMaterial_ArrayCreateFromFile           grMaterial_ArrayCreateFromFile
-#define jeMaterial_ArrayCreateMaterial           grMaterial_ArrayCreateMaterial
-#define jeMaterial_ArrayCreateRef                grMaterial_ArrayCreateRef
-#define jeMaterial_ArrayDestroy                  grMaterial_ArrayDestroy
-#define jeMaterial_ArrayDestroyMaterial          grMaterial_ArrayDestroyMaterial
-#define jeMaterial_ArrayGetMaterialByIndex       grMaterial_ArrayGetMaterialByIndex
-#define jeMaterial_ArrayGetMaterialIndex         grMaterial_ArrayGetMaterialIndex
-#define jeMaterial_ArrayGetNextMaterial          grMaterial_ArrayGetNextMaterial
-#define jeMaterial_ArraySetMaterialBitmap        grMaterial_ArraySetMaterialBitmap
-#define jeMaterial_ArraySetMaterialSpec          grMaterial_ArraySetMaterialSpec
-#define jeMaterial_ArrayWriteToFile              grMaterial_ArrayWriteToFile
-#define jeMaterial_Create                        grMaterial_Create
-#define jeMaterial_CreateRef                     grMaterial_CreateRef
-#define jeMaterial_Destroy                       grMaterial_Destroy
-#define jeMaterial_GetBitmap                     grMaterial_GetBitmap
-#define jeMaterial_GetBitmapName                 grMaterial_GetBitmapName
-#define jeMaterial_GetMaterialSpec               grMaterial_GetMaterialSpec
-#define jeMaterial_GetName                       grMaterial_GetName
-#define jeMaterial_SetBitmap                     grMaterial_SetBitmap
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

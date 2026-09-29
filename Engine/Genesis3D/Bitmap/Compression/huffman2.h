@@ -133,16 +133,16 @@ extern void Huff2_CleanUp(struct Huff2Info *HI);
 
 extern void Huff2_GetMaxCharCount(struct Huff2Info *HI,long * CharCounts);
 extern void Huff2_ScaleCounts(struct Huff2Info *HI,long * CharCounts,long MaxVal);
-extern jeBoolean Huff2_BuildCodeLens(struct Huff2Info *HI,long *CharCounts);
+extern grBoolean Huff2_BuildCodeLens(struct Huff2Info *HI,long *CharCounts);
 
-extern jeBoolean Huff2_BuildEncodeTable(struct Huff2Info *HI);
-extern jeBoolean Huff2_BuildDecodeTable(struct Huff2Info *HI);
-extern jeBoolean Huff2_BuildFastDecodeTable(struct Huff2Info *HI);
+extern grBoolean Huff2_BuildEncodeTable(struct Huff2Info *HI);
+extern grBoolean Huff2_BuildDecodeTable(struct Huff2Info *HI);
+extern grBoolean Huff2_BuildFastDecodeTable(struct Huff2Info *HI);
 
 extern void Huff2_EncodeC(struct Huff2Info *HI,uint16 C);
 extern uint16 Huff2_DecodeC(struct Huff2Info *HI);
 extern uint16 Huff2_FastDecodeC(struct Huff2Info *HI);
-extern jeBoolean Huff2_FastDecodeArray(struct Huff2Info *HI,uint8 * Array,long ArrayLen);
+extern grBoolean Huff2_FastDecodeArray(struct Huff2Info *HI,uint8 * Array,long ArrayLen);
 
 extern void Huff2_SetMinMaxCodeLen(struct Huff2Info *HI);
 
@@ -166,11 +166,11 @@ register long * CodeLenTable;                                     	       \
 register struct LBitIOInfo * BII;                                 	       \
 register uint32 CurCode;                                           	       \
 register long CurCodeLen;                                         	       \
-jeBoolean docoding=JE_TRUE;                                                        \
+grBoolean docoding=GR_TRUE;                                                        \
 BII = HI->BII;                                                    	       \
 CodeLenTable = HI->CodeLenTable;                                  	       \
 CharToCodeTable = (uint32 *)HI->EnDe_codeTable;                    	       \
-if ( HI->GotNumSymbols < 2) docoding = JE_FALSE;
+if ( HI->GotNumSymbols < 2) docoding = GR_FALSE;
 /* end Huff2_EncodeC_Macro_Init */
 
 #define Huff2_EncodeC_Macro_Done(HI)                                       \

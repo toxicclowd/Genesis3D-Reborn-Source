@@ -31,7 +31,7 @@ struct tag_AOptions
 {
 	char ViewerPath[MAX_PATH];
 	char MaxPath[MAX_PATH];
-	jeBoolean OptFlag;
+	grBoolean OptFlag;
 	int OptLevel;
 };
 
@@ -43,12 +43,12 @@ static const char OptLevelKey[]	= "OptLevel";
 
 AOptions *AOptions_Create (void)
 {
-	AOptions *Options = JE_RAM_ALLOCATE_STRUCT (AOptions);
+	AOptions *Options = GR_RAM_ALLOCATE_STRUCT (AOptions);
 	if (Options != NULL)
 	{
 		strcpy (Options->ViewerPath, "c:\\Program Files\\Eclipse\\Jet3D\\ActView.exe");
 		strcpy (Options->MaxPath, "c:\\3dsmax2\\3dsmax.exe");
-		Options->OptFlag = JE_TRUE;
+		Options->OptFlag = GR_TRUE;
 		Options->OptLevel = 4;
 	}
 	return Options;
@@ -66,7 +66,7 @@ AOptions *AOptions_CreateFromFile (const char *IniFilename)
 		GetPrivateProfileString (SectionName, ViewerKey, Options->ViewerPath, Options->ViewerPath, MAX_PATH, IniFilename);
 		GetPrivateProfileString (SectionName, MaxKey, Options->MaxPath, Options->MaxPath, MAX_PATH, IniFilename);
 		Flag = GetPrivateProfileInt (SectionName, OptFlagKey, Options->OptFlag, IniFilename);
-		Options->OptFlag = Flag ? JE_TRUE : JE_FALSE;
+		Options->OptFlag = Flag ? GR_TRUE : GR_FALSE;
 		Options->OptLevel = GetPrivateProfileInt (SectionName, OptLevelKey, Options->OptLevel, IniFilename);
 	}
 
@@ -75,10 +75,10 @@ AOptions *AOptions_CreateFromFile (const char *IniFilename)
 
 void AOptions_Destroy (AOptions **pOptions)
 {
-	jeRam_Free (*pOptions);
+	grRam_Free (*pOptions);
 }
 
-jeBoolean AOptions_WriteToFile (const AOptions *Options, const char *IniFilename)
+grBoolean AOptions_WriteToFile (const AOptions *Options, const char *IniFilename)
 {
 	char OptLevelString[2] = "0";
 
@@ -93,7 +93,7 @@ jeBoolean AOptions_WriteToFile (const AOptions *Options, const char *IniFilename
 	}
 	WritePrivateProfileString (SectionName, OptLevelKey, OptLevelString, IniFilename);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
@@ -102,10 +102,10 @@ const char *AOptions_GetViewerPath (const AOptions *Options)
 	return Options->ViewerPath;
 }
 
-jeBoolean AOptions_SetViewerPath (AOptions *Options, const char *ViewerPath)
+grBoolean AOptions_SetViewerPath (AOptions *Options, const char *ViewerPath)
 {
 	strcpy (Options->ViewerPath, ViewerPath);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 const char *AOptions_Get3DSMaxPath (const AOptions *Options)
@@ -113,22 +113,22 @@ const char *AOptions_Get3DSMaxPath (const AOptions *Options)
 	return Options->MaxPath;
 }
 
-jeBoolean AOptions_Set3DSMaxPath (AOptions *Options, const char *MaxPath)
+grBoolean AOptions_Set3DSMaxPath (AOptions *Options, const char *MaxPath)
 {
 	strcpy (Options->MaxPath, MaxPath);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean AOptions_GetMotionOptimizationFlag (const AOptions *Options)
+grBoolean AOptions_GetMotionOptimizationFlag (const AOptions *Options)
 {
 	return Options->OptFlag;
 }
 
-jeBoolean AOptions_SetMotionOptimizationFlag (AOptions *Options, jeBoolean Flag)
+grBoolean AOptions_SetMotionOptimizationFlag (AOptions *Options, grBoolean Flag)
 {
 	Options->OptFlag = Flag;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 int AOptions_GetMotionOptimizationLevel (const AOptions *Options)
@@ -136,11 +136,11 @@ int AOptions_GetMotionOptimizationLevel (const AOptions *Options)
 	return Options->OptLevel;
 }
 
-jeBoolean AOptions_SetMotionOptimizationLevel (AOptions *Options, int OptLevel)
+grBoolean AOptions_SetMotionOptimizationLevel (AOptions *Options, int OptLevel)
 {
 	assert (OptLevel >= 0);
 	assert (OptLevel <= 9);
 
 	Options->OptLevel = OptLevel;
-	return JE_TRUE;
+	return GR_TRUE;
 }

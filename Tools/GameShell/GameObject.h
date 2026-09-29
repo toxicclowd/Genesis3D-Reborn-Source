@@ -7,7 +7,7 @@
 #define GAME_OBJECT_H
 
 #include <windows.h>
-#include "jet.h"
+#include "Genesis3D.h"
 
 #include <map>
 #include <string>
@@ -38,10 +38,10 @@ public:
 	virtual ~CGameObject();
 
 private:
-	jeObject								*m_pObject;
-	jeXForm3d								m_XForm;
+	grObject								*m_pObject;
+	grXForm3d								m_XForm;
 
-	jeVec3d									m_Position, m_Rotation;
+	grVec3d									m_Position, m_Rotation;
 	std::string								m_Name;
 
 	std::map<std::string, Property>			m_Properties;

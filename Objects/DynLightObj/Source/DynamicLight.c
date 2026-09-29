@@ -32,10 +32,10 @@
 #include <assert.h>
 #include <float.h>
 #include "VFile.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 #include "Ram.h"
-#include "jeResource.h"
-#include "jeWorld.h"
+#include "grResource.h"
+#include "grWorld.h"
 #include "DynamicLight.h"
 #include "Resource.h"
 #include "Errorlog.h"
@@ -103,8 +103,8 @@ static HINSTANCE		hClassInstance = NULL;
 static image_id			hClassInstance = NULL;
 #endif
 
-static jeProperty		DynamicLightProperties[DYNAMICLIGHT_LAST_INDEX];
-static jeProperty_List	DynamicLightPropertyList = { DYNAMICLIGHT_LAST_INDEX, &( DynamicLightProperties[0] ) };
+static grProperty		DynamicLightProperties[DYNAMICLIGHT_LAST_INDEX];
+static grProperty_List	DynamicLightPropertyList = { DYNAMICLIGHT_LAST_INDEX, &( DynamicLightProperties[0] ) };
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -115,7 +115,7 @@ static jeProperty_List	DynamicLightPropertyList = { DYNAMICLIGHT_LAST_INDEX, &( 
 #define DYNAMICLIGHT_DEFAULT_COLORRED		128.0f
 #define DYNAMICLIGHT_DEFAULT_COLORGREEN		128.0f
 #define DYNAMICLIGHT_DEFAULT_COLORBLUE		128.0f
-#define DYNAMICLIGHT_DEFAULT_CASTSHADOW		JE_FALSE
+#define DYNAMICLIGHT_DEFAULT_CASTSHADOW		GR_FALSE
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -123,17 +123,17 @@ static jeProperty_List	DynamicLightPropertyList = { DYNAMICLIGHT_LAST_INDEX, &( 
 ////////////////////////////////////////////////////////////////////////////////////////
 typedef struct DynamicLight
 {
-	jeWorld			*World;
-	jeResourceMgr	*ResourceMgr;
-	jeEngine		*Engine;
+	grWorld			*World;
+	grResourceMgr	*ResourceMgr;
+	grEngine		*Engine;
 	int				RefCount;
-	jeXForm3d		Xf;
-	jeLight			*Light;
-	jeVec3d			Color;
+	grXForm3d		Xf;
+	grLight			*Light;
+	grVec3d			Color;
 	float			Radius;
 	float			Brightness;
-	jeBoolean		CastShadow;
-	jeBoolean		LoadedFromDisk;
+	grBoolean		CastShadow;
+	grBoolean		LoadedFromDisk;
 
 } DynamicLight;
 
@@ -144,7 +144,7 @@ typedef struct DynamicLight
 //	DynamicLight_Destroy()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean DynamicLight_Destroy(
+static grBoolean DynamicLight_Destroy(
 	DynamicLight	*Object )	// object from which light will be created
 {
 
@@ -154,17 +154,17 @@ static jeBoolean DynamicLight_Destroy(
 	// remove light from world
 	assert( Object->Light != NULL );
 	assert( Object->World != NULL );
-	if ( jeWorld_RemoveDLight( Object->World, Object->Light ) == JE_FALSE )
+	if ( grWorld_RemoveDLight( Object->World, Object->Light ) == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+		return GR_FALSE;
 	}
 
 	// destroy light
-	jeLight_Destroy( &Object->Light );
+	grLight_Destroy( &Object->Light );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // DynamicLight_Destroy()
 
@@ -175,51 +175,51 @@ static jeBoolean DynamicLight_Destroy(
 //	DynamicLight_Create()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean DynamicLight_Create(
+static grBoolean DynamicLight_Create(
 	DynamicLight	*Object )	// object from which light will be created
 {
 
 	// locals
-	jeBoolean	Result;
+	grBoolean	Result;
 
 	// ensure valid data
 	assert( Object != NULL );
 
 	// create light
-	Object->Light = jeLight_Create();
+	Object->Light = grLight_Create();
 	if ( Object->Light == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+		return GR_FALSE;
 	}
 
 	// set light attributes
-	Result = jeLight_SetAttributes(	Object->Light,
+	Result = grLight_SetAttributes(	Object->Light,
 									&( Object->Xf.Translation ),
 									&( Object->Color ),
 									Object->Radius, 
 									Object->Brightness, 
-									JE_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone, dont know flags for cast shadow
+									GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone, dont know flags for cast shadow
 #pragma message ("shadow flags")	
 
-	if ( Result == JE_FALSE )
+	if ( Result == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-		jeLight_Destroy( &( Object->Light ) );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+		grLight_Destroy( &( Object->Light ) );
+		return GR_FALSE;
 	}
 
 	// add it to the world
-	Result = jeWorld_AddDLight( Object->World, Object->Light );
-	if ( Result == JE_FALSE )
+	Result = grWorld_AddDLight( Object->World, Object->Light );
+	if ( Result == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-		jeLight_Destroy( &( Object->Light ) );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+		grLight_Destroy( &( Object->Light ) );
+		return GR_FALSE;
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // DynamicLight_Create()
 
@@ -252,15 +252,15 @@ static char * Util_LoadLibraryString(
 	Size = LoadString( hInstance, ID, StringBuf, MAX_STRING_SIZE );
 	if ( Size <= 0 )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// copy resource string
-	NewString = jeRam_Allocate( Size + 1 );
+	NewString = grRam_Allocate( Size + 1 );
 	if ( NewString == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 	strcpy( NewString, StringBuf );
@@ -312,7 +312,7 @@ static char *Util_LoadLibraryString(image_id libhinst, int32 resid)
 	//
  
 	// Allocate memory for the string
-	rcbuffer = (char*)jeRam_Allocate(strlen(loadedString) + 1);
+	rcbuffer = (char*)grRam_Allocate(strlen(loadedString) + 1);
 	strcpy(rcbuffer, loadedString);
  
 #ifndef NDEBUG
@@ -352,14 +352,14 @@ void Init_Class(
 	hClassInstance = hInstance;
 
 	// setup radius property
-	jeProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_RADIUS_INDEX] ),
+	grProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_RADIUS_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_RADIUS ),
 							DYNAMICLIGHT_DEFAULT_RADIUS,
 							DYNAMICLIGHT_RADIUS_ID,
 							0.1f, FLT_MAX, 5.0f );
 
 	// setup brightness property
-	jeProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_BRIGHTNESS_INDEX] ),
+	grProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_BRIGHTNESS_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_BRIGHTNESS ),
 							DYNAMICLIGHT_DEFAULT_BRIGHTNESS,
 							DYNAMICLIGHT_BRIGHTNESS_ID,
@@ -371,42 +371,42 @@ void Init_Class(
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// start color group
-	jeProperty_FillGroup(	&( DynamicLightProperties[DYNAMICLIGHT_COLORGROUP_INDEX] ),
+	grProperty_FillGroup(	&( DynamicLightProperties[DYNAMICLIGHT_COLORGROUP_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORGROUP ),
 							DYNAMICLIGHT_COLORGROUP_INDEX );
 
 	// setup color property
 	{
-		jeVec3d	Color = { DYNAMICLIGHT_DEFAULT_COLORRED, DYNAMICLIGHT_DEFAULT_COLORGREEN, DYNAMICLIGHT_DEFAULT_COLORBLUE };
-		jeProperty_FillColorPicker(	&( DynamicLightProperties[DYNAMICLIGHT_COLOR_INDEX] ),
+		grVec3d	Color = { DYNAMICLIGHT_DEFAULT_COLORRED, DYNAMICLIGHT_DEFAULT_COLORGREEN, DYNAMICLIGHT_DEFAULT_COLORBLUE };
+		grProperty_FillColorPicker(	&( DynamicLightProperties[DYNAMICLIGHT_COLOR_INDEX] ),
 									Util_LoadLibraryString( hClassInstance, IDS_COLOR ),
 									&Color,
 									DYNAMICLIGHT_COLOR_ID );
 	}
 
 	// setup color red property
-	jeProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_COLORRED_INDEX] ),
+	grProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_COLORRED_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORRED ),
 							DYNAMICLIGHT_DEFAULT_COLORRED,
 							DYNAMICLIGHT_COLORRED_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup ambient light green property
-	jeProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_COLORGREEN_INDEX] ),
+	grProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_COLORGREEN_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORGREEN ),
 							DYNAMICLIGHT_DEFAULT_COLORGREEN,
 							DYNAMICLIGHT_COLORGREEN_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup ambient light blue property
-	jeProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_COLORBLUE_INDEX] ),
+	grProperty_FillFloat(	&( DynamicLightProperties[DYNAMICLIGHT_COLORBLUE_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_COLORBLUE ),
 							DYNAMICLIGHT_DEFAULT_COLORBLUE,
 							DYNAMICLIGHT_COLORBLUE_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// end color group
-	jeProperty_FillGroupEnd( &( DynamicLightProperties[DYNAMICLIGHT_COLORGROUPEND_INDEX] ), DYNAMICLIGHT_COLORGROUPEND_ID );
+	grProperty_FillGroupEnd( &( DynamicLightProperties[DYNAMICLIGHT_COLORGROUPEND_INDEX] ), DYNAMICLIGHT_COLORGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -414,13 +414,13 @@ void Init_Class(
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// setup cast shadow flag
-	jeProperty_FillCheck(	&( DynamicLightProperties[DYNAMICLIGHT_CASTSHADOW_INDEX] ),
+	grProperty_FillCheck(	&( DynamicLightProperties[DYNAMICLIGHT_CASTSHADOW_INDEX] ),
 							Util_LoadLibraryString( hClassInstance, IDS_CASTSHADOW ),
 							DYNAMICLIGHT_DEFAULT_CASTSHADOW,
 							DYNAMICLIGHT_CASTSHADOW_ID );
 
 	// final init
-	DynamicLightPropertyList.jePropertyN = DYNAMICLIGHT_LAST_INDEX;
+	DynamicLightPropertyList.grPropertyN = DYNAMICLIGHT_LAST_INDEX;
 
 } // Init_Class()
 
@@ -445,7 +445,7 @@ void DeInit_Class(
 //	CreateInstance()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void * JETCC CreateInstance(
+void * GRCC CreateInstance(
 	void )	// no parameters
 {
 
@@ -453,10 +453,10 @@ void * JETCC CreateInstance(
 	DynamicLight	*Object;
 
 	// allocate struct
-	Object = (DynamicLight *)jeRam_AllocateClear( sizeof( *Object ) );
+	Object = (DynamicLight *)grRam_AllocateClear( sizeof( *Object ) );
 	if ( Object == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 
@@ -469,7 +469,7 @@ void * JETCC CreateInstance(
 	Object->CastShadow = DYNAMICLIGHT_DEFAULT_CASTSHADOW;
 
 	// init remaining fields
-	jeXForm3d_SetIdentity( &Object->Xf );
+	grXForm3d_SetIdentity( &Object->Xf );
 	Object->RefCount = 1;
 
 	// all done
@@ -484,7 +484,7 @@ void * JETCC CreateInstance(
 //	CreateRef()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-void JETCC CreateRef(
+void GRCC CreateRef(
 	void	*Instance )	// instance data
 {
 
@@ -507,7 +507,7 @@ void JETCC CreateRef(
 //	Destroy()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Destroy(
+grBoolean GRCC Destroy(
 	void	**Instance )	// pointer to instance data
 {
 
@@ -526,7 +526,7 @@ jeBoolean JETCC Destroy(
 	Object->RefCount--;
 	if ( Object->RefCount > 0 )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// make sure everything has been properly destroyed
@@ -536,13 +536,13 @@ jeBoolean JETCC Destroy(
 	assert( Object->Light == NULL );
 
 	// free struct
-	jeRam_Free( Object );
+	grRam_Free( Object );
 
 	// zap pointer
 	*Instance = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Destroy()
 
@@ -553,17 +553,17 @@ jeBoolean JETCC Destroy(
 //	Render()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Render(
+grBoolean GRCC Render(
 	const void				*Instance,	// object instance data
-	const jeWorld			*World,		// world
-	const jeEngine			*Engine,	// engine
-	const jeCamera			*Camera,				// camera
-	const jeFrustum			*CameraSpaceFrustum, 	// frustum
-	jeObject_RenderFlags	RenderFlags)
+	const grWorld			*World,		// world
+	const grEngine			*Engine,	// engine
+	const grCamera			*Camera,				// camera
+	const grFrustum			*CameraSpaceFrustum, 	// frustum
+	grObject_RenderFlags	RenderFlags)
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -581,9 +581,9 @@ jeBoolean JETCC Render(
 //	AttachWorld()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachWorld(
+grBoolean GRCC AttachWorld(
 	void	*Instance,	// object instance data
-	jeWorld	*World )	// world
+	grWorld	*World )	// world
 {
 
 	// locals
@@ -601,20 +601,20 @@ jeBoolean JETCC AttachWorld(
 	Object->World = World;
 
 	// save an instance of the resource manager
-	Object->ResourceMgr = jeWorld_GetResourceMgr( World );
+	Object->ResourceMgr = grWorld_GetResourceMgr( World );
 	assert( Object->ResourceMgr != NULL );
 
 	// create light
-	if ( DynamicLight_Create( Object ) == JE_FALSE )
+	if ( DynamicLight_Create( Object ) == GR_FALSE )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-		jeResource_MgrDestroy( &( Object->ResourceMgr ) );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+		grResource_MgrDestroy( &( Object->ResourceMgr ) );
 		Object->World = NULL;
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // AttachWorld()
 
@@ -625,9 +625,9 @@ jeBoolean JETCC AttachWorld(
 //	DettachWorld()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachWorld(
+grBoolean GRCC DettachWorld(
 	void	*Instance,	// object instance data
-	jeWorld	*World )	// world
+	grWorld	*World )	// world
 {
 
 	// locals
@@ -645,13 +645,13 @@ jeBoolean JETCC DettachWorld(
 	DynamicLight_Destroy( Object );
 
 	// destroy our instance of the resource manager
-	jeResource_MgrDestroy( &( Object->ResourceMgr ) );
+	grResource_MgrDestroy( &( Object->ResourceMgr ) );
 
 	// zap world pointer
 	Object->World = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	World;
@@ -665,9 +665,9 @@ jeBoolean JETCC DettachWorld(
 //	AttachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachEngine(
+grBoolean GRCC AttachEngine(
 	void		*Instance,	// object instance data
-	jeEngine	*Engine )	// engine
+	grEngine	*Engine )	// engine
 {
 
 	// locals
@@ -684,7 +684,7 @@ jeBoolean JETCC AttachEngine(
 	Object->Engine = Engine;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // AttachEngine()
 
@@ -695,9 +695,9 @@ jeBoolean JETCC AttachEngine(
 //	DettachEngine()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachEngine(
+grBoolean GRCC DettachEngine(
 	void		*Instance,	// object instance data
-	jeEngine	*Engine )	// engine
+	grEngine	*Engine )	// engine
 {
 
 	// locals
@@ -715,7 +715,7 @@ jeBoolean JETCC DettachEngine(
 	Object->Engine = NULL;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Engine;
@@ -729,9 +729,9 @@ jeBoolean JETCC DettachEngine(
 //	AttachSoundSystem()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AttachSoundSystem(
+grBoolean GRCC AttachSoundSystem(
 	void			*Instance,		// object instance data
-	jeSound_System	*SoundSystem )	// sound system
+	grSound_System	*SoundSystem )	// sound system
 {
 
 	// ensure valid data
@@ -739,7 +739,7 @@ jeBoolean JETCC AttachSoundSystem(
 	assert( SoundSystem != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// elminate warnings
 	Instance;
@@ -754,9 +754,9 @@ jeBoolean JETCC AttachSoundSystem(
 //	DettachSoundSystem()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC DettachSoundSystem(
+grBoolean GRCC DettachSoundSystem(
 	void			*Instance,		// object instance data
-	jeSound_System	*SoundSystem )	// sound system
+	grSound_System	*SoundSystem )	// sound system
 {
 
 	// ensure valid data
@@ -764,7 +764,7 @@ jeBoolean JETCC DettachSoundSystem(
 	assert( SoundSystem != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// elminate warnings
 	Instance;
@@ -779,13 +779,13 @@ jeBoolean JETCC DettachSoundSystem(
 //	Collision()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Collision(
-	const jeObject	*Object,
-	const jeExtBox	*Box,
-	const jeVec3d	*Front,
-	const jeVec3d	*Back,
-	jeVec3d			*Impact,
-	jePlane			*Plane )
+grBoolean GRCC Collision(
+	const grObject	*Object,
+	const grExtBox	*Box,
+	const grVec3d	*Front,
+	const grVec3d	*Back,
+	grVec3d			*Impact,
+	grPlane			*Plane )
 {
 
 	// ensure valid data
@@ -797,7 +797,7 @@ jeBoolean JETCC Collision(
 	//assert( Plane != NULL );
 
 	// all done
-	return JE_FALSE;
+	return GR_FALSE;
 
 	// eliminate warnings
 	Object;
@@ -816,14 +816,14 @@ jeBoolean JETCC Collision(
 //	GetExtBox()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetExtBox(
+grBoolean GRCC GetExtBox(
 	const void	*Instance,	// object instance data
-	jeExtBox	*BBox )		// where to store extent box
+	grExtBox	*BBox )		// where to store extent box
 {
 
 	// locals
 	DynamicLight	*Object;
-	jeVec3d			Pos;
+	grVec3d			Pos;
 
 	// ensure valid data
 	assert( Instance != NULL );
@@ -834,12 +834,12 @@ jeBoolean JETCC GetExtBox(
 
 	// save extent box
 	Pos = Object->Xf.Translation;
-	jeExtBox_Set (  BBox, 
+	grExtBox_Set (  BBox, 
 					Pos.X - 5.0f, Pos.Y - 5.0f, Pos.Z - 5.0f,
 					Pos.X + 5.0f, Pos.Y + 5.0f, Pos.Z + 5.0f );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetExtBox()
 
@@ -850,14 +850,14 @@ jeBoolean JETCC GetExtBox(
 //	CreateFromFile()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-void * JETCC CreateFromFile(
-	jeVFile		*File,		// vfile to use
-	jePtrMgr *PtrMgr )	// pointer manager
+void * GRCC CreateFromFile(
+	grVFile		*File,		// vfile to use
+	grPtrMgr *PtrMgr )	// pointer manager
 {
 
 	// locals
 	DynamicLight	*Object;
-	jeBoolean		Result = JE_TRUE;
+	grBoolean		Result = GR_TRUE;
 	BYTE Version;
 	uint32 Tag;
 	
@@ -865,49 +865,49 @@ void * JETCC CreateFromFile(
 	assert( File != NULL );
 
 	// allocate struct
-	Object = (DynamicLight *)jeRam_AllocateClear( sizeof( *Object ) );
+	Object = (DynamicLight *)grRam_AllocateClear( sizeof( *Object ) );
 	if ( Object == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return NULL;
 	}
 
 	// init struct
 	Object->RefCount = 1;
-	Object->LoadedFromDisk = JE_TRUE;
+	Object->LoadedFromDisk = GR_TRUE;
 
-	if(!jeVFile_Read(File, &Tag, sizeof(Tag)))
+	if(!grVFile_Read(File, &Tag, sizeof(Tag)))
 	{
-		jeErrorLog_Add( JE_ERR_SYSTEM_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_SYSTEM_RESOURCE, NULL );
 		goto ERROR_CreateFromFile;
 	}
 
 	if (Tag == FILE_UNIQUE_ID)
 	{
-		if (!jeVFile_Read(File, &Version, sizeof(Version)))
+		if (!grVFile_Read(File, &Version, sizeof(Version)))
 		{
-    		jeErrorLog_Add( JE_ERR_SYSTEM_RESOURCE, NULL );
+    		grErrorLog_Add( GR_ERR_SYSTEM_RESOURCE, NULL );
 		    goto ERROR_CreateFromFile;
 		}
 	}
 	else
 	{
 		Version = 1;
-		jeVFile_Seek(File,-((int)sizeof(Tag)),JE_VFILE_SEEKCUR);
+		grVFile_Seek(File,-((int)sizeof(Tag)),GR_VFILE_SEEKCUR);
 	}
 
 	if (Version >= 1)
 	{
 	    // read data
-	    Result &= jeVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
-	    Result &= jeVFile_Read( File, &( Object->Color ), sizeof( Object->Color ) );
-        Result &= jeVFile_Read( File, &( Object->Radius ), sizeof( Object->Radius ) );
-        Result &= jeVFile_Read( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
+	    Result &= grVFile_Read( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	    Result &= grVFile_Read( File, &( Object->Color ), sizeof( Object->Color ) );
+        Result &= grVFile_Read( File, &( Object->Radius ), sizeof( Object->Radius ) );
+        Result &= grVFile_Read( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
 
 		// fail if there was an error
-	    if ( Result == JE_FALSE )
+	    if ( Result == GR_FALSE )
 		{
-		    jeErrorLog_Add( JE_ERR_SYSTEM_RESOURCE, NULL );
+		    grErrorLog_Add( GR_ERR_SYSTEM_RESOURCE, NULL );
 		    goto ERROR_CreateFromFile;
 		}
 	}
@@ -919,7 +919,7 @@ void * JETCC CreateFromFile(
 	ERROR_CreateFromFile:
 
 	// free object
-	jeRam_Free( Object );
+	grRam_Free( Object );
 
 	// return error
 	return NULL;
@@ -933,15 +933,15 @@ void * JETCC CreateFromFile(
 //	WriteToFile()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC WriteToFile(
+grBoolean GRCC WriteToFile(
 	const void	*Instance,
-	jeVFile		*File,
-	jePtrMgr *PtrMgr )
+	grVFile		*File,
+	grPtrMgr *PtrMgr )
 {
 
 	// locals
 	DynamicLight	*Object;
-	jeBoolean		Result = JE_TRUE;
+	grBoolean		Result = GR_TRUE;
 	BYTE Version = DYNAMICLIGHT_VERSION;
 	uint32 Tag = FILE_UNIQUE_ID;
 
@@ -953,26 +953,26 @@ jeBoolean JETCC WriteToFile(
 	Object = (DynamicLight *)Instance;
 
 	// write Version
-	Result &= jeVFile_Write( File, &Tag, sizeof(Tag));
-	Result &= jeVFile_Write( File, &Version, sizeof(Version) );
+	Result &= grVFile_Write( File, &Tag, sizeof(Tag));
+	Result &= grVFile_Write( File, &Version, sizeof(Version) );
 
 
 	// write xform
-	Result &= jeVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
+	Result &= grVFile_Write( File, &( Object->Xf ), sizeof( Object->Xf ) );
 
 	// write color
-	Result &= jeVFile_Write( File, &( Object->Color ), sizeof( Object->Color ) );
+	Result &= grVFile_Write( File, &( Object->Color ), sizeof( Object->Color ) );
 
 	// write radius
-	Result &= jeVFile_Write( File, &( Object->Radius ), sizeof( Object->Radius ) );
+	Result &= grVFile_Write( File, &( Object->Radius ), sizeof( Object->Radius ) );
 
 	// write brightness
-	Result &= jeVFile_Write( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
+	Result &= grVFile_Write( File, &( Object->Brightness ), sizeof( Object->Brightness ) );
 
 	// log errors
-	if ( Result != JE_TRUE )
+	if ( Result != GR_TRUE )
 	{
-		jeErrorLog_Add( JE_ERR_SYSTEM_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_SYSTEM_RESOURCE, NULL );
 	}
 
 	// all done
@@ -988,9 +988,9 @@ jeBoolean JETCC WriteToFile(
 //	GetPropertyList()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetPropertyList(
+grBoolean GRCC GetPropertyList(
 	void			*Instance,	// object instance data
-	jeProperty_List	**List)		// where to save property list pointer
+	grProperty_List	**List)		// where to save property list pointer
 {
 
 	// locals
@@ -1015,15 +1015,15 @@ jeBoolean JETCC GetPropertyList(
 	DynamicLightProperties[DYNAMICLIGHT_CASTSHADOW_INDEX].Data.Bool = Object->CastShadow;
 
 	// copy property list
-	*List = jeProperty_ListCopy( &DynamicLightPropertyList );
+	*List = grProperty_ListCopy( &DynamicLightPropertyList );
 	if ( *List == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, NULL );
+		return GR_FALSE;
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetPropertyList()
 
@@ -1034,17 +1034,17 @@ jeBoolean JETCC GetPropertyList(
 //	SetProperty()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SetProperty(
+grBoolean GRCC SetProperty(
 	void				*Instance,	// object instance data
 	int32				FieldID,	// id of field to be changed
 	PROPERTY_FIELD_TYPE	DataType,	// type of data
-	jeProperty_Data		*pData )	// new data
+	grProperty_Data		*pData )	// new data
 {
 
 	// locals
 	DynamicLight	*Object;
-	jeBoolean		AdjustDynamicLightProperties = JE_FALSE;
-	jeBoolean		Result = JE_TRUE;
+	grBoolean		AdjustDynamicLightProperties = GR_FALSE;
+	grBoolean		Result = GR_TRUE;
 
 	// ensure valid data
 	assert( Instance != NULL );
@@ -1062,7 +1062,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->Radius = pData->Float;
-			AdjustDynamicLightProperties = JE_TRUE;
+			AdjustDynamicLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1071,7 +1071,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->Brightness = pData->Float;
-			AdjustDynamicLightProperties = JE_TRUE;
+			AdjustDynamicLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1082,28 +1082,28 @@ jeBoolean JETCC SetProperty(
 			Object->Color.X = pData->Vector.X;
 			Object->Color.Y = pData->Vector.Y;
 			Object->Color.Z = pData->Vector.Z;
-			AdjustDynamicLightProperties = JE_TRUE;
+			AdjustDynamicLightProperties = GR_TRUE;
 			break;
 		}
 		case DYNAMICLIGHT_COLORRED_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->Color.X = pData->Float;
-			AdjustDynamicLightProperties = JE_TRUE;
+			AdjustDynamicLightProperties = GR_TRUE;
 			break;
 		}
 		case DYNAMICLIGHT_COLORGREEN_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->Color.Y = pData->Float;
-			AdjustDynamicLightProperties = JE_TRUE;
+			AdjustDynamicLightProperties = GR_TRUE;
 			break;
 		}
 		case DYNAMICLIGHT_COLORBLUE_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->Color.Z = pData->Float;
-			AdjustDynamicLightProperties = JE_TRUE;
+			AdjustDynamicLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1112,7 +1112,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_CHECK_TYPE );
 			Object->CastShadow = pData->Bool;
-			AdjustDynamicLightProperties = JE_TRUE;
+			AdjustDynamicLightProperties = GR_TRUE;
 			break;
 		}
 
@@ -1120,22 +1120,22 @@ jeBoolean JETCC SetProperty(
 		default:
 		{
 			assert( 0 );
-			return JE_FALSE;
+			return GR_FALSE;
 			break;
 		}
 	}
 
 	// adjust dynamic light properties if required
-	if ( AdjustDynamicLightProperties == JE_TRUE )
+	if ( AdjustDynamicLightProperties == GR_TRUE )
 	{
 		if (Object->Light)
 			{
-			Result = jeLight_SetAttributes(	Object->Light,
+			Result = grLight_SetAttributes(	Object->Light,
 											&( Object->Xf.Translation ),
 											&( Object->Color ),
 											Object->Radius, 
 											Object->Brightness, 
-											JE_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags for cast shadow
+											GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags for cast shadow
 			}
 #pragma message ("shadow flags")	
 	}
@@ -1155,9 +1155,9 @@ jeBoolean JETCC SetProperty(
 //	SetXForm()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SetXForm(
+grBoolean GRCC SetXForm(
 	void			*Instance,	// object instance data
-	const jeXForm3d	*Xf )		// new xform
+	const grXForm3d	*Xf )		// new xform
 {
 
 	// locals
@@ -1176,15 +1176,15 @@ jeBoolean JETCC SetXForm(
 	// adjust light
 	if (Object->Light)
 		{
-		return jeLight_SetAttributes( Object->Light,
+		return grLight_SetAttributes( Object->Light,
 									&( Object->Xf.Translation ),
 									&( Object->Color ),
 									Object->Radius, 
 									Object->Brightness, 
-									JE_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags
+									GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 #pragma message ("shadow flags")	
 
 } // SetXForm()
@@ -1196,9 +1196,9 @@ jeBoolean JETCC SetXForm(
 //	GetXForm()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetXForm(
+grBoolean GRCC GetXForm(
 	const void	*Instance,	// object instance data
-	jeXForm3d	*Xf )		// where to store xform
+	grXForm3d	*Xf )		// where to store xform
 {
 
 	// locals
@@ -1215,7 +1215,7 @@ jeBoolean JETCC GetXForm(
 	*Xf = Object->Xf;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetXForm()
 
@@ -1226,12 +1226,12 @@ jeBoolean JETCC GetXForm(
 //	GetXFormModFlags()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-int	JETCC GetXFormModFlags(
+int	GRCC GetXFormModFlags(
 	const void	*Instance )	// object instance data
 {
 
 	// return xform mod flags
-	return JE_OBJECT_XFORM_TRANSLATE;
+	return GR_OBJECT_XFORM_TRANSLATE;
 
 	// eliminate warnings
 	Instance;
@@ -1245,14 +1245,14 @@ int	JETCC GetXFormModFlags(
 //	GetChildren()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetChildren(
+grBoolean GRCC GetChildren(
 	const void	*Instance,
-	jeObject	*Children,
+	grObject	*Children,
 	int			MaxNumChildren )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -1268,13 +1268,13 @@ jeBoolean JETCC GetChildren(
 //	AddChild()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC AddChild(
+grBoolean GRCC AddChild(
 	void			*Instance,
-	const jeObject	*Child )
+	const grObject	*Child )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -1289,13 +1289,13 @@ jeBoolean JETCC AddChild(
 //	RemoveChild()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC RemoveChild(
+grBoolean GRCC RemoveChild(
 	void			*Instance,
-	const jeObject	*Child )
+	const grObject	*Child )
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -1310,7 +1310,7 @@ jeBoolean JETCC RemoveChild(
 //	EditDialog()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC EditDialog(
+grBoolean GRCC EditDialog(
 	void	*Instance,
 #ifdef WIN32
 	HWND	Parent )
@@ -1321,7 +1321,7 @@ jeBoolean JETCC EditDialog(
 {
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -1336,7 +1336,7 @@ jeBoolean JETCC EditDialog(
 //	Frame()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC Frame(
+grBoolean GRCC Frame(
 	void	*Instance,
 	float	TimeDelta )
 {
@@ -1345,7 +1345,7 @@ jeBoolean JETCC Frame(
 	assert( Instance != NULL );
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	Instance;
@@ -1360,14 +1360,14 @@ jeBoolean JETCC Frame(
 //	SendAMessage()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SendAMessage(
+grBoolean GRCC SendAMessage(
 	void	*Instance,	// object instance data
 	int32	Msg,		// message id
 	void	*Data )		// message data
 {
 
 	// all done
-	return JE_FALSE;
+	return GR_FALSE;
 
 	// eliminate warnings
 	Instance;
@@ -1382,90 +1382,90 @@ jeBoolean JETCC SendAMessage(
 //	DuplicateInstance()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-void * JETCC DuplicateInstance(void * Instance)
+void * GRCC DuplicateInstance(void * Instance)
 {
-	jeVFile *ramdisk, *ramfile;
-	jeVFile_MemoryContext vfsmemctx;
-	jeObject* newDLight = NULL;
-	jePtrMgr *ptrMgr = NULL;
+	grVFile *ramdisk, *ramfile;
+	grVFile_MemoryContext vfsmemctx;
+	grObject* newDLight = NULL;
+	grPtrMgr *ptrMgr = NULL;
 
-	vfsmemctx.Data = jeRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
+	vfsmemctx.Data = grRam_Allocate(OBJ_PERSIST_SIZE); //"I dunno, 100K sounds good."
 	vfsmemctx.DataLength = OBJ_PERSIST_SIZE;
 
 	if (!vfsmemctx.Data) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to allocate enough RAM to duplicate this object", NULL);
 		return NULL;
 	}
 
-	ramdisk = jeVFile_OpenNewSystem
+	ramdisk = grVFile_OpenNewSystem
 	(
 		NULL, 
-		(jeVFile_TypeIdentifier) (JE_VFILE_TYPE_MEMORY|JE_VFILE_TYPE_VIRTUAL),
+		(grVFile_TypeIdentifier) (GR_VFILE_TYPE_MEMORY|GR_VFILE_TYPE_VIRTUAL),
 		"Memory",
 		NULL,
-		JE_VFILE_OPEN_CREATE|JE_VFILE_OPEN_DIRECTORY
+		GR_VFILE_OPEN_CREATE|GR_VFILE_OPEN_DIRECTORY
 	);
 
 	if (!ramdisk) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory Directory", NULL);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	ramfile = jeVFile_Open(ramdisk, "tempObject", JE_VFILE_OPEN_CREATE);
+	ramfile = grVFile_Open(ramdisk, "tempObject", GR_VFILE_OPEN_CREATE);
 
 	if (!ramfile) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a VFile Memory File", NULL);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
-	ptrMgr = jePtrMgr_Create();
+	ptrMgr = grPtrMgr_Create();
 
 	if (!ptrMgr) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to create a Pointer Manager", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!WriteToFile(Instance, ramfile, jePtrMgr_Create())) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!WriteToFile(Instance, ramfile, grPtrMgr_Create())) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to write the object to a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	if (!jeVFile_Rewind(ramfile)) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+	if (!grVFile_Rewind(ramfile)) {
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to rewind the temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	newDLight = (jeObject *)CreateFromFile(ramfile, ptrMgr);
+	newDLight = (grObject *)CreateFromFile(ramfile, ptrMgr);
 	if (!newDLight) {
-		jeErrorLog_AddString(JE_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
-		jeVFile_Close(ramfile);
-		jeVFile_Close(ramdisk);
-		jeRam_Free(vfsmemctx.Data);
+		grErrorLog_AddString(GR_ERR_SUBSYSTEM_FAILURE, "Unable to reade the object back from a temp VFile Memory File", NULL);
+		grVFile_Close(ramfile);
+		grVFile_Close(ramdisk);
+		grRam_Free(vfsmemctx.Data);
 		return NULL;
 	}
 
-	jeVFile_Close(ramfile);
-	jeVFile_Close(ramdisk);
+	grVFile_Close(ramfile);
+	grVFile_Close(ramdisk);
 
-	jeRam_Free(vfsmemctx.Data);
+	grRam_Free(vfsmemctx.Data);
 
 	return( newDLight );
 }
 //---
 
 // Icestorm
-jeBoolean	JETCC ChangeBoxCollision(const void *Instance,const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane)
+grBoolean	GRCC ChangeBoxCollision(const void *Instance,const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane)
 {
-	return( JE_FALSE );Plane;ImpactBox;BackBox;FrontBox;Pos;Instance;
+	return( GR_FALSE );Plane;ImpactBox;BackBox;FrontBox;Pos;Instance;
 }

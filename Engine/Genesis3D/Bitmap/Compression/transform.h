@@ -32,16 +32,16 @@ extern "C" {
 typedef struct image image;
 
 extern int nTransforms;
-extern jeBoolean transformMips[];
+extern grBoolean transformMips[];
 extern char * transformNames[];
 
-extern void transformImageInt(image *im,int levels,jeBoolean inverse,int transformN,
-									jeBoolean doLHtranspose,jeBoolean doBlock);
+extern void transformImageInt(image *im,int levels,grBoolean inverse,int transformN,
+									grBoolean doLHtranspose,grBoolean doBlock);
 
 typedef void (*pyramidHook) (void *passback, image *im,int level, int width, int height);
 
 extern void unTransformImageIntToPyramid(image *im,int levels,int transformN,
-				int fullLevel,int lowLevel,pyramidHook hook,void *passback,jeBoolean doLHtranspose);
+				int fullLevel,int lowLevel,pyramidHook hook,void *passback,grBoolean doLHtranspose);
 
 extern void pyramidHook_patchToRaw (void *passback, image *im,int level, int width, int height);
 

@@ -47,7 +47,7 @@ extern int tune_param;
 
 #define SIGN_CONTEXTS	9
 
-jeBoolean coderBPBFRInit(coder *c);
+grBoolean coderBPBFRInit(coder *c);
 void coderBPBFRFree(coder *c);
 void coderBPBFREncodeBandBP(coderParams *P);
 void coderBPBFRDecodeBandBP(coderParams *P);
@@ -67,13 +67,13 @@ typedef struct
 	rung_t stats[NUM_CONTEXTS];
 } BPBFRInfo;
 
-jeBoolean coderBPBFRInit(coder *c)
+grBoolean coderBPBFRInit(coder *c)
 {
 BPBFRInfo *d;
 int i;
 
 	if ( (d = (BPBFRInfo *)new(BPBFRInfo)) == NULL )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	c->data = d;
 
@@ -87,7 +87,7 @@ int i;
 		rungModelInit(&(d->signs[i]));
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 void coderBPBFRFree(coder *c)

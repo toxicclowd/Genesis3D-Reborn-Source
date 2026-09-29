@@ -21,8 +21,8 @@
 #ifndef SND_H
 #define SND_H
 
-#include "Jet.h"
-#include "jeWorld.h"
+#include "Genesis3D.h"
+#include "grWorld.h"
 
 #ifdef __cplusplus
 	extern "C" {
@@ -36,9 +36,9 @@
 
 typedef struct
 {
-	jeWorld			*World;		// world to use
-	jeSound_System	*Sound;		// sound system to use
-	jeCamera		*Camera;	// camera to use
+	grWorld			*World;		// world to use
+	grSound_System	*Sound;		// sound system to use
+	grCamera		*Camera;	// camera to use
 
 } EffectResource;
 
@@ -48,22 +48,22 @@ typedef struct
 typedef struct
 {
 	int			TypeID;				// RESERVED, this MUST be the first item in the struct
-	jeSound		*Sound;				// RESERVED, pointer to the active sound
-	jeBoolean	Paused;				// RESERVED, whether or not the sound is paused
-	jeFloat		LastVolume;			// RESERVED, its volume the last time it was modified
-	jeFloat		LastPan;			// RESERVED, its pan the last time it was modified
-	jeSound_Def	*SoundDef;			// sound def to play from
-	jeVec3d		Pos;				// location of the sound
-	jeFloat		Min;				// min distance whithin which sound is at max volume
-	jeBoolean	Loop;				// whether or not to loop it
-	jeBoolean	LastLoop;			// its loop last time it was modified -- added by tom morris May 2005
-	jeBoolean	IgnoreObstructions;	// if obstructions should be ignored when compting sound data
+	grSound		*Sound;				// RESERVED, pointer to the active sound
+	grBoolean	Paused;				// RESERVED, whether or not the sound is paused
+	grFloat		LastVolume;			// RESERVED, its volume the last time it was modified
+	grFloat		LastPan;			// RESERVED, its pan the last time it was modified
+	grSound_Def	*SoundDef;			// sound def to play from
+	grVec3d		Pos;				// location of the sound
+	grFloat		Min;				// min distance whithin which sound is at max volume
+	grBoolean	Loop;				// whether or not to loop it
+	grBoolean	LastLoop;			// its loop last time it was modified -- added by tom morris May 2005
+	grBoolean	IgnoreObstructions;	// if obstructions should be ignored when compting sound data
 
 } Snd;
 
 
 void		Snd_Remove( EffectResource *Resource, Snd *Data );
-jeBoolean	Snd_Process( EffectResource *Resource, float TimeDelta, jeBoolean bMute, Snd *Data );
+grBoolean	Snd_Process( EffectResource *Resource, float TimeDelta, grBoolean bMute, Snd *Data );
 
 #ifdef __cplusplus
 	}

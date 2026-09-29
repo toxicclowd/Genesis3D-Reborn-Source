@@ -43,25 +43,23 @@ extern "C" {
 
 // This looks like a big mess.  But these guys are sticking together for life.
 // Might as well be in the same file, for speed!!!
-typedef struct jeWorld grWorld;
-typedef struct jeWorld jeWorld;
-typedef struct jeEngine grEngine;
-typedef struct jeEngine jeEngine;
+typedef struct grWorld grWorld;
+typedef struct grEngine grEngine;
 
 /*! @brief Represent the Binary Space Partition data handler */
-typedef struct jeBSP grBSP;
-typedef struct jeBSP jeBSP;				// Tree
+typedef struct grBSP grBSP;
+typedef struct grBSP grBSP;				// Tree
 /*! @brief Represent the Brush representation in the BSP */
-typedef struct jeBSP_Brush			grBSP_Brush;		// Brushes
-typedef struct jeBSP_Side			grBSP_Side;			// Brush sides
-typedef struct jeBSP_TopSide		grBSP_TopSide;		// Top level brush sides
-typedef struct jeBSP_TopBrush		grBSP_TopBrush;		// Top level brushes
+typedef struct grBSP_Brush			grBSP_Brush;		// Brushes
+typedef struct grBSP_Side			grBSP_Side;			// Brush sides
+typedef struct grBSP_TopSide		grBSP_TopSide;		// Top level brush sides
+typedef struct grBSP_TopBrush		grBSP_TopBrush;		// Top level brushes
 
-typedef struct jeBSPNode			grBSPNode;			// Node (subspace seperators)
-typedef struct jeBSPNode_Portal	grBSPNode_Portal;	// Portal (passage from leaf to leaf)
-typedef struct jeBSPNode_Face		grBSPNode_Face;		// Node face during construction
-typedef struct jeBSPNode_DrawFace	grBSPNode_DrawFace;	// Face that gets rendered on nodes
-typedef struct jeBSPNode_Area		grBSPNode_Area;
+typedef struct grBSPNode			grBSPNode;			// Node (subspace seperators)
+typedef struct grBSPNode_Portal	grBSPNode_Portal;	// Portal (passage from leaf to leaf)
+typedef struct grBSPNode_Face		grBSPNode_Face;		// Node face during construction
+typedef struct grBSPNode_DrawFace	grBSPNode_DrawFace;	// Face that gets rendered on nodes
+typedef struct grBSPNode_Area		grBSPNode_Area;
 
 typedef void			grBSPNode_DrawFaceCB(const grTLVertex *Verts, int32 NumVerts, void *Context);
 
@@ -72,7 +70,7 @@ typedef enum
 	Logic_Smart=2,		//!< Does num splits/balance, and test volumes
 	Logic_Super=3		//!< Final, does splits/balance, test voumes, csg, and solid fill
 } grBSP_Logic;
-typedef grBSP_Logic jeBSP_Logic;
+typedef grBSP_Logic grBSP_Logic;
 
 // Render/Build Options
 typedef enum
@@ -83,26 +81,25 @@ typedef enum
 	RenderMode_Textured,				//<! Renders using material assigned/no lighting
 	RenderMode_TexturedAndLit,			//<! Renders using materials assigned, with lighting applied
 } grBSP_RenderMode;
-typedef grBSP_RenderMode jeBSP_RenderMode;
+typedef grBSP_RenderMode grBSP_RenderMode;
 
 typedef int32 grBSP_LogicBalance;		//<! (0...10), 0 = Less splits, 10 = Balanced tree
-typedef grBSP_LogicBalance jeBSP_LogicBalance;
+typedef grBSP_LogicBalance grBSP_LogicBalance;
 
 /*! @typedef grBSP_Options
 	@brief grBSP_Options is the type of Options parameters of function grBSP_RebuildGeometry()<br>
  */
 typedef uint32 grBSP_Options;
-typedef grBSP_Options jeBSP_Options;
+typedef grBSP_Options grBSP_Options;
 
 #define BSP_OPTIONS_MAKE_VIS_AREAS		(1<<0)
 #define BSP_OPTIONS_CSG_BRUSHES			(1<<1)
 #define BSP_OPTIONS_SOLID_FILL			(1<<3)
 
-typedef struct jeBSP_DebugInfo grBSP_DebugInfo;
-typedef struct jeBSP_DebugInfo jeBSP_DebugInfo;
+typedef struct grBSP_DebugInfo grBSP_DebugInfo;
 
 
-struct jeBSP_DebugInfo
+struct grBSP_DebugInfo
 {
 	int32			NumBrushes;				// Total brushes in bsp
 	int32			NumVisibleBrushFaces;
@@ -210,7 +207,7 @@ grBoolean		grBSP_SetDefaultContents(grBSP *BSP, grBrush_Contents DefaultContents
 grBSPNode_Area	*grBSP_FindArea(grBSP * BSP, const grVec3d *Pos);
 
 typedef void (* grBSP_DoAreaFunc) ( grBSPNode_Area * Area, void * Context );
-typedef grBSP_DoAreaFunc jeBSP_DoAreaFunc;
+typedef grBSP_DoAreaFunc grBSP_DoAreaFunc;
 grBoolean		grBSP_DoAllAreasInBox(grBSP *BSP,grExtBox *BBox,grBSP_DoAreaFunc CB,void * Context);
 
 
@@ -245,49 +242,5 @@ const			grBSP_DebugInfo *grBSP_GetDebugInfo(const grBSP *BSPTree);
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeBSPNode_DrawFaceCB                     grBSPNode_DrawFaceCB
-#define jeBSP_AddBrush                           grBSP_AddBrush
-#define jeBSP_AddObject                          grBSP_AddObject
-#define jeBSP_ChangeBoxCollision                 grBSP_ChangeBoxCollision
-#define jeBSP_Collision                          grBSP_Collision
-#define jeBSP_Create                             grBSP_Create
-#define jeBSP_Destroy                            grBSP_Destroy
-#define jeBSP_DestroyVisAreas                    grBSP_DestroyVisAreas
-#define jeBSP_DoAllAreasInBox                    grBSP_DoAllAreasInBox
-#define jeBSP_FindArea                           grBSP_FindArea
-#define jeBSP_GetDebugInfo                       grBSP_GetDebugInfo
-#define jeBSP_GetModelSpaceBox                   grBSP_GetModelSpaceBox
-#define jeBSP_GetWorldSpaceBox                   grBSP_GetWorldSpaceBox
-#define jeBSP_HasBrush                           grBSP_HasBrush
-#define jeBSP_HasObject                          grBSP_HasObject
-#define jeBSP_MakeAreaDrawFaces                  grBSP_MakeAreaDrawFaces
-#define jeBSP_MakeVisAreas                       grBSP_MakeVisAreas
-#define jeBSP_PatchLighting                      grBSP_PatchLighting
-#define jeBSP_RayIntersectsBrushes               grBSP_RayIntersectsBrushes
-#define jeBSP_RebuildFaces                       grBSP_RebuildFaces
-#define jeBSP_RebuildGeometry                    grBSP_RebuildGeometry
-#define jeBSP_RebuildLights                      grBSP_RebuildLights
-#define jeBSP_RebuildLightsFromPoint             grBSP_RebuildLightsFromPoint
-#define jeBSP_RemoveBrush                        grBSP_RemoveBrush
-#define jeBSP_RemoveObject                       grBSP_RemoveObject
-#define jeBSP_RenderAndVis                       grBSP_RenderAndVis
-#define jeBSP_RenderAreas                        grBSP_RenderAreas
-#define jeBSP_RenderFrontToBack                  grBSP_RenderFrontToBack
-#define jeBSP_SetArrays                          grBSP_SetArrays
-#define jeBSP_SetBrushFaceCB                     grBSP_SetBrushFaceCB
-#define jeBSP_SetBrushFaceCBOnOff                grBSP_SetBrushFaceCBOnOff
-#define jeBSP_SetDefaultContents                 grBSP_SetDefaultContents
-#define jeBSP_SetEngine                          grBSP_SetEngine
-#define jeBSP_SetRenderMode                      grBSP_SetRenderMode
-#define jeBSP_SetWorld                           grBSP_SetWorld
-#define jeBSP_SetXForm                           grBSP_SetXForm
-#define jeBSP_UpdateAll                          grBSP_UpdateAll
-#define jeBSP_UpdateBrush                        grBSP_UpdateBrush
-#define jeBSP_UpdateBrushFace                    grBSP_UpdateBrushFace
-#define jeBSP_VisFrame                           grBSP_VisFrame
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

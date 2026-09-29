@@ -24,15 +24,15 @@
 #define BRUSHLIST_H
 
 #include "Brush.h"
-#include "jeWorld.h"
-#include "jeList.h"
+#include "grWorld.h"
+#include "grList.h"
 #include "VFile.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef jeBoolean (*BrushListCB)( Brush *pBrush, void * pVoid ) ;
+typedef grBoolean (*BrushListCB)( Brush *pBrush, void * pVoid ) ;
 
 typedef List BrushList ;
 typedef ListIterator BrushIterator ;
@@ -46,15 +46,15 @@ Brush *			BrushList_GetFirst( BrushList * pList, BrushIterator * pInterator ) ;
 Brush *			BrushList_GetNext( BrushList * pList, BrushIterator * pInterator ) ;
 int32			BrushList_GetNumItems( const BrushList * pList ) ;
 BrushIterator	BrushList_Find( BrushList * pList, Brush * pBrush ) ;
-Brush *			BrushList_FindByGeBrush( BrushList * pList, BrushIterator *Interator, jeBrush * pgeBrush );
-void			BrushList_GetWorldBounds( BrushList * pList, jeExtBox * pWorldBounds ) ;
+Brush *			BrushList_FindByGeBrush( BrushList * pList, BrushIterator *Interator, grBrush * pgeBrush );
+void			BrushList_GetWorldBounds( BrushList * pList, grExtBox * pWorldBounds ) ;
 
 // IS
-//jeBoolean		BrushList_IsVisible( BrushIterator pGI ) ;
+//grBoolean		BrushList_IsVisible( BrushIterator pGI ) ;
 
 // MODIFIERS
 BrushIterator		BrushList_Append( BrushList * pList, Brush * pBrush ) ;
-jeBoolean			BrushList_AppendNoDup( BrushList * pList, Brush * pBrush ) ;
+grBoolean			BrushList_AppendNoDup( BrushList * pList, Brush * pBrush ) ;
 void				BrushList_ClearMiscFlags( BrushList * pList, const uint32 nFlags ) ;
 //					Remove does not _Destroy the brush
 void				BrushList_Remove( BrushList * pList, Brush * pBrush ) ;
@@ -64,10 +64,10 @@ void				BrushList_SetMiscFlags( BrushList * pList, const uint32 nFlags ) ;
 int32				BrushList_EnumBrushes( BrushList * pList, void * pVoid, BrushListCB Callback ) ;
 
 // FILE HANDLING
-jeBoolean			BrushList_WriteToFile( BrushList * pList, Brush_WriteInfo * pWriteInfo ) ;
-BrushList *			BrushList_CreateFromFile( jeVFile * pF, jePtrMgr * pPtrMgr ) ;
+grBoolean			BrushList_WriteToFile( BrushList * pList, Brush_WriteInfo * pWriteInfo ) ;
+BrushList *			BrushList_CreateFromFile( grVFile * pF, grPtrMgr * pPtrMgr ) ;
 
-jeBoolean			BrushList_Reattach( BrushList * pList, Model * pModel, jeWorld * pWorld ) ;
+grBoolean			BrushList_Reattach( BrushList * pList, Model * pModel, grWorld * pWorld ) ;
 
 #ifdef __cplusplus
 }

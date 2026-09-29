@@ -36,20 +36,18 @@
 extern "C" {
 #endif
 
-typedef struct jeEngine grEngine;
-typedef struct jeCamera grCamera;
+typedef struct grEngine grEngine;
+typedef struct grCamera grCamera;
 
 //========================================================================================
 //	Typedefs/#defines
 //========================================================================================
 typedef uint32		grBrush_Contents;
-typedef grBrush_Contents jeBrush_Contents;
+typedef grBrush_Contents grBrush_Contents;
 
 
-typedef struct jeBrush grBrush;
-typedef struct jeBrush jeBrush;
-typedef struct jeBrush_Face grBrush_Face;
-typedef struct jeBrush_Face jeBrush_Face;
+typedef struct grBrush grBrush;
+typedef struct grBrush_Face grBrush_Face;
 
 #define GR_BSP_CONTENTS_FLOCK		(1<<0)
 #define GR_BSP_CONTENTS_SOLID		(1<<1)
@@ -65,10 +63,9 @@ typedef struct jeBrush_Face jeBrush_Face;
 //========================================================================================
 //	Structure defs
 //========================================================================================
-typedef struct jeBrushRayInfo grBrushRayInfo;
-typedef struct jeBrushRayInfo jeBrushRayInfo;
+typedef struct grBrushRayInfo grBrushRayInfo;
 
-struct jeBrushRayInfo
+struct grBrushRayInfo
 {
 	grBrush				*Brush;
 	grBrush_Face		*BrushFace;
@@ -151,52 +148,5 @@ GRAPI grBoolean	GRCC grBrush_Render(const grBrush *Brush, const grEngine *Engine
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define JE_BSP_CONTENTS_AIR                      GR_BSP_CONTENTS_AIR
-#define JE_BSP_CONTENTS_EMPTY                    GR_BSP_CONTENTS_EMPTY
-#define JE_BSP_CONTENTS_EXCLUSIVE                GR_BSP_CONTENTS_EXCLUSIVE
-#define JE_BSP_CONTENTS_FLOCK                    GR_BSP_CONTENTS_FLOCK
-#define JE_BSP_CONTENTS_SHEET                    GR_BSP_CONTENTS_SHEET
-#define JE_BSP_CONTENTS_SOLID                    GR_BSP_CONTENTS_SOLID
-#define JE_BSP_SEP_CONTENTS                      GR_BSP_SEP_CONTENTS
-#define JE_BSP_VISIBLE_CONTENTS                  GR_BSP_VISIBLE_CONTENTS
-#define jeBrush_Create                           grBrush_Create
-#define jeBrush_CreateFace                       grBrush_CreateFace
-#define jeBrush_CreateFaceFromFile               grBrush_CreateFaceFromFile
-#define jeBrush_CreateFromFile                   grBrush_CreateFromFile
-#define jeBrush_CreateRef                        grBrush_CreateRef
-#define jeBrush_Destroy                          grBrush_Destroy
-#define jeBrush_DestroyFace                      grBrush_DestroyFace
-#define jeBrush_FaceCalcPlane                    grBrush_FaceCalcPlane
-#define jeBrush_FaceGetBrush                     grBrush_FaceGetBrush
-#define jeBrush_FaceGetFaceInfo                  grBrush_FaceGetFaceInfo
-#define jeBrush_FaceGetFaceInfoIndex             grBrush_FaceGetFaceInfoIndex
-#define jeBrush_FaceGetNormal                    grBrush_FaceGetNormal
-#define jeBrush_FaceGetVertByIndex               grBrush_FaceGetVertByIndex
-#define jeBrush_FaceGetVertCount                 grBrush_FaceGetVertCount
-#define jeBrush_FaceGetWorldSpaceVertByIndex     grBrush_FaceGetWorldSpaceVertByIndex
-#define jeBrush_FaceMoveVertByIndex              grBrush_FaceMoveVertByIndex
-#define jeBrush_FaceSetFaceInfo                  grBrush_FaceSetFaceInfo
-#define jeBrush_FaceSetVertByIndex               grBrush_FaceSetVertByIndex
-#define jeBrush_GetContents                      grBrush_GetContents
-#define jeBrush_GetFaceByIndex                   grBrush_GetFaceByIndex
-#define jeBrush_GetFaceCount                     grBrush_GetFaceCount
-#define jeBrush_GetLockedToWorldXForm            grBrush_GetLockedToWorldXForm
-#define jeBrush_GetNextFace                      grBrush_GetNextFace
-#define jeBrush_GetPrevFace                      grBrush_GetPrevFace
-#define jeBrush_GetVertArray                     grBrush_GetVertArray
-#define jeBrush_GetWorldToLockedXForm            grBrush_GetWorldToLockedXForm
-#define jeBrush_GetXForm                         grBrush_GetXForm
-#define jeBrush_IsConvex                         grBrush_IsConvex
-#define jeBrush_IsValid                          grBrush_IsValid
-#define jeBrush_Render                           grBrush_Render
-#define jeBrush_SetContents                      grBrush_SetContents
-#define jeBrush_SetFaceInfoArray                 grBrush_SetFaceInfoArray
-#define jeBrush_SetXForm                         grBrush_SetXForm
-#define jeBrush_WriteFaceToFile                  grBrush_WriteFaceToFile
-#define jeBrush_WriteToFile                      grBrush_WriteToFile
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

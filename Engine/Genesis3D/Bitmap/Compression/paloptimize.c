@@ -91,7 +91,7 @@ typedef struct
 
 int stepTable[] = { 1009 , 757, 499, 401, 307, 239, 197, 157, 131, 103, 67, 41, 29, 17, 13, 7, 4, 1 };
 
-void paletteOptimize(const jeBitmap_Info * BmInfo,const void * Bits,uint8 *palette,int palEntries,int maxSamples)
+void paletteOptimize(const grBitmap_Info * BmInfo,const void * Bits,uint8 *palette,int palEntries,int maxSamples)
 {
 palInfo *palInfo;
 int pal,R,G,B,A;
@@ -99,8 +99,8 @@ uint32 mse,last_mse;
 uint8 *palPtr;
 uint8 savePalette[768];
 int extraStepIndex,extraStepSize,extraStepSizeBytes,samples,totSamples;
-jePixelFormat_ColorGetter GetColor;
-const jePixelFormat_Operations * PixelOps;
+grPixelFormat_ColorGetter GetColor;
+const grPixelFormat_Operations * PixelOps;
 uint8 *ptr,*ptrEnd;
 int d;
 palOptInfo optInfo[256];
@@ -121,7 +121,7 @@ palOptInfo optInfo[256];
 		palette[pal*3 + 2] = B;
 	}
 
-	PixelOps = jePixelFormat_GetOperations(BmInfo->Format);
+	PixelOps = grPixelFormat_GetOperations(BmInfo->Format);
 	GetColor = PixelOps->GetColor;
 	ptrEnd = (uint8 *)Bits + BmInfo->Stride * BmInfo->Height * PixelOps->BytesPerPel;
 

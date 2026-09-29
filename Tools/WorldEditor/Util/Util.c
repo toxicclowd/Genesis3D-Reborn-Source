@@ -88,7 +88,7 @@ static char *Util_LoadLibraryString(HINSTANCE libhinst, UINT resid)
 	//
  
 	// Allocate memory for the string
-	rcbuffer = (char*)jeRam_Allocate(strlen(stringbuffer) + 1);
+	rcbuffer = (char*)grRam_Allocate(strlen(stringbuffer) + 1);
 	strcpy(rcbuffer, stringbuffer);
  
 #ifndef NDEBUG
@@ -118,7 +118,7 @@ char * Util_LoadText( unsigned int resid )
 	if( pTextRes  == NULL )
 		return( NULL );
 	ResSize = SizeofResource( hResources, hTextInfo );
-	pTextString = jeRam_Allocate( ResSize + 1 );
+	pTextString = grRam_Allocate( ResSize + 1 );
 	if( pTextString == NULL )
 		return( NULL );
 	memcpy( pTextString, pTextRes, ResSize );
@@ -166,17 +166,17 @@ char *Util_LoadLocalRcString(unsigned int resid)
 	return (Util_LoadLibraryString(hResources, resid));
 }// Util_LoadLocalRcString
 
-jeBoolean Util_IsKeyDown( int vKey )
+grBoolean Util_IsKeyDown( int vKey )
 {
 	short KeyState;
 
 	KeyState = GetAsyncKeyState( vKey ) ;
-	return ( KeyState & 0x8000 ) ? JE_TRUE : JE_FALSE ;
+	return ( KeyState & 0x8000 ) ? GR_TRUE : GR_FALSE ;
 }// Util_IsKeyDown
 
 char * Util_StrDup( const char * const psz )
 {
-	char * p = (char *)jeRam_Allocate( strlen( psz ) + 1 ) ;
+	char * p = (char *)grRam_Allocate( strlen( psz ) + 1 ) ;
 	if( p ) 
 	{
 		strcpy( p, psz ) ;
@@ -185,16 +185,16 @@ char * Util_StrDup( const char * const psz )
 
 }// Util_StrDup
 
-jeBoolean Util_Polyline( int32 hDC, Point * pPoints, int32 nPoints )
+grBoolean Util_Polyline( int32 hDC, Point * pPoints, int32 nPoints )
 {
 	return Polyline( (HDC)hDC, (POINT*)pPoints, nPoints ) ;
 }// Util_Polyline
 
-jeFloat Util_PointToLineDistanceSquared( const Point * pL1, const Point * pL2, const Point * pPoint )
+grFloat Util_PointToLineDistanceSquared( const Point * pL1, const Point * pL2, const Point * pPoint )
 {
 	int32	xkj, ykj ;
-	jeFloat	t ;
-	jeFloat	xfac, yfac ;
+	grFloat	t ;
+	grFloat	xfac, yfac ;
 	int32	denom ;
 	int32	dx, dy ;
 
@@ -212,12 +212,12 @@ jeFloat Util_PointToLineDistanceSquared( const Point * pL1, const Point * pL2, c
 
 	denom = (dx * dx) + (dy * dy) ;
 
-	if( IsFloatZero( (jeFloat)denom ) )
+	if( IsFloatZero( (grFloat)denom ) )
 	{
-		return (jeFloat)(xkj*xkj) + (ykj*ykj) ;
+		return (grFloat)(xkj*xkj) + (ykj*ykj) ;
 	}
 
-	t = (- ((jeFloat)((xkj * dx) + (ykj * dy))) / (jeFloat)denom) ;
+	t = (- ((grFloat)((xkj * dx) + (ykj * dy))) / (grFloat)denom) ;
 	t = min( max(t, 0.0f), 1.0f ) ;
 
 	xfac = xkj + ( t * dx ) ;
@@ -226,23 +226,23 @@ jeFloat Util_PointToLineDistanceSquared( const Point * pL1, const Point * pL2, c
 	return (xfac*xfac) + (yfac*yfac) ;
 }/* Util_PointToLineDistanceSquared */
 
-jeFloat	Util_PointDistanceSquared( const Point * pL1, const Point * pL2 )
+grFloat	Util_PointDistanceSquared( const Point * pL1, const Point * pL2 )
 {
 	int32 dX, dY;
 
 	dX = pL1->X - pL2->X;
 	dY = pL1->Y - pL2->Y;
-	return( (jeFloat)(dX*dX+dY*dY) );
+	return( (grFloat)(dX*dX+dY*dY) );
 }
 
 // This routine exists because insane "validity" checking in Jet3D ruins ExtBox
-void Util_ExtBox_Union( const jeExtBox *B1, const jeExtBox *B2, jeExtBox *Result )
+void Util_ExtBox_Union( const grExtBox *B1, const grExtBox *B2, grExtBox *Result )
 {
 	assert( B1 != NULL ) ;
 	assert( B2 != NULL ) ;
 	assert( Result != NULL );
 
-	jeExtBox_Set (	Result,
+	grExtBox_Set (	Result,
 				MIN (B1->Min.X, B2->Min.X),
 				MIN (B1->Min.Y, B2->Min.Y),
 				MIN (B1->Min.Z, B2->Min.Z),
@@ -253,11 +253,11 @@ void Util_ExtBox_Union( const jeExtBox *B1, const jeExtBox *B2, jeExtBox *Result
 
 // This routine exists because insane "validity" checking in Jet3D ruins ExtBox 
 // Extend a box to encompass the passed point
-void Util_geExtBox_ExtendToEnclose( jeExtBox *B, const jeVec3d *Point )
+void Util_geExtBox_ExtendToEnclose( grExtBox *B, const grVec3d *Point )
 {
 	assert( B != NULL ) ;
 	assert( Point != NULL );
-	assert( jeVec3d_IsValid(Point) != JE_FALSE );
+	assert( grVec3d_IsValid(Point) != GR_FALSE );
 
 	if (Point->X > B->Max.X ) B->Max.X = Point->X;
 	if (Point->Y > B->Max.Y ) B->Max.Y = Point->Y;
@@ -269,17 +269,17 @@ void Util_geExtBox_ExtendToEnclose( jeExtBox *B, const jeVec3d *Point )
 
 }
 
-jeBoolean Util_geExtBox_Intersection ( const jeExtBox *B1, const jeExtBox *B2, jeExtBox *Result	)
+grBoolean Util_geExtBox_Intersection ( const grExtBox *B1, const grExtBox *B2, grExtBox *Result	)
 {
-	if( !jeExtBox_IsValid( B1 ) )
-		return( JE_FALSE );
-	if( !jeExtBox_IsValid( B2 ) )
-		return( JE_FALSE );
-	return( jeExtBox_Intersection( B1, B2, Result ) );
+	if( !grExtBox_IsValid( B1 ) )
+		return( GR_FALSE );
+	if( !grExtBox_IsValid( B2 ) )
+		return( GR_FALSE );
+	return( grExtBox_Intersection( B1, B2, Result ) );
 }
 
 
-void Util_geExtBox_InitFromTwoPoints( jeExtBox * B, const jeVec3d * p1, const jeVec3d * p2 )
+void Util_geExtBox_InitFromTwoPoints( grExtBox * B, const grVec3d * p1, const grVec3d * p2 )
 {
 	assert( B != NULL ) ;
 	assert( p1 != NULL ) ;
@@ -319,22 +319,22 @@ void Util_geExtBox_InitFromTwoPoints( jeExtBox * B, const jeVec3d * p1, const je
 	}
 }// Util_geExtBox_InitFromTwoPoints
 
-jeFloat Util_geExtBox_GetExtent( const jeExtBox *B, int32 nElement )
+grFloat Util_geExtBox_GetExtent( const grExtBox *B, int32 nElement )
 {
 	assert( B != NULL ) ;
 	assert( nElement < 3 ) ;
-	return jeVec3d_GetElement( &B->Max, nElement) - jeVec3d_GetElement( &B->Min, nElement) ;
+	return grVec3d_GetElement( &B->Max, nElement) - grVec3d_GetElement( &B->Min, nElement) ;
 }// Util_geExtBox_GetExtent
 
-void Util_ExtBox_SetInvalid( jeExtBox *B )
+void Util_ExtBox_SetInvalid( grExtBox *B )
 {
 	B->Min.X = B->Min.Y = B->Min.Z = FLT_MAX ;
 	B->Max.X = B->Max.Y = B->Max.Z = -FLT_MAX ;
 }// Util_ExtBox_SetInvalid
 
-void Util_ExtBox_Transform( const jeExtBox *B, const jeXForm3d *XForm, jeExtBox *Result )
+void Util_ExtBox_Transform( const grExtBox *B, const grXForm3d *XForm, grExtBox *Result )
 {
-	static	jeVec3d 	UnitBox[8] = { { -0.5f, -0.5f, -0.5f },
+	static	grVec3d 	UnitBox[8] = { { -0.5f, -0.5f, -0.5f },
 									   { -0.5f, -0.5f,  0.5f },
 									   { -0.5f,  0.5f, -0.5f },
 									   { -0.5f,  0.5f,  0.5f },
@@ -342,17 +342,17 @@ void Util_ExtBox_Transform( const jeExtBox *B, const jeXForm3d *XForm, jeExtBox 
 									   {  0.5f, -0.5f,  0.5f },
 									   {  0.5f,  0.5f, -0.5f },
 									   {  0.5f,  0.5f,  0.5f } };
-	jeVec3d	Box[8];
-	jeVec3d	Diff;
-	jeVec3d	ExtBoxCenter;
+	grVec3d	Box[8];
+	grVec3d	Diff;
+	grVec3d	ExtBoxCenter;
 	int		i;
 
-	assert( jeExtBox_IsValid(B) != JE_FALSE );
-	assert( jeXForm3d_IsValid(XForm) != JE_FALSE );
+	assert( grExtBox_IsValid(B) != GR_FALSE );
+	assert( grXForm3d_IsValid(XForm) != GR_FALSE );
 	assert( Result != NULL );
 
-	jeVec3d_Subtract(&B->Max, &B->Min, &Diff);
-	jeVec3d_Set(&ExtBoxCenter, B->Min.X + Diff.X / 2.0f, 
+	grVec3d_Subtract(&B->Max, &B->Min, &Diff);
+	grVec3d_Set(&ExtBoxCenter, B->Min.X + Diff.X / 2.0f, 
 							   B->Min.Y + Diff.Y / 2.0f, 
 							   B->Min.Z + Diff.Z / 2.0f);
 	for	(i = 0; i < 8; i++)
@@ -362,19 +362,19 @@ void Util_ExtBox_Transform( const jeExtBox *B, const jeXForm3d *XForm, jeExtBox 
 		Box[i].Z = UnitBox[i].Z * Diff.Z + ExtBoxCenter.Z;
 	}
 
-	jeXForm3d_TransformVecArray(XForm, Box, Box, 8);
-	jeExtBox_SetToPoint(Result, &Box[0]);
+	grXForm3d_TransformVecArray(XForm, Box, Box, 8);
+	grExtBox_SetToPoint(Result, &Box[0]);
 	for	(i = 1; i < 8; i++)
-		jeExtBox_ExtendToEnclose(Result, &Box[i]);
+		grExtBox_ExtendToEnclose(Result, &Box[i]);
 }
 
-void Util_ExtBox_TransformJ( const jeExtBox *B, const jeXForm3d *XForm, jeExtBox *Result )
+void Util_ExtBox_TransformJ( const grExtBox *B, const grXForm3d *XForm, grExtBox *Result )
 {
-	jeVec3d				Verts[8] ;
+	grVec3d				Verts[8] ;
 	int					i ;
 
-	assert( jeExtBox_IsValid(B) != JE_FALSE );
-	assert( jeXForm3d_IsValid(XForm) != JE_FALSE );
+	assert( grExtBox_IsValid(B) != GR_FALSE );
+	assert( grXForm3d_IsValid(XForm) != GR_FALSE );
 	assert( Result != NULL );
 	
 	// Setup the 8 corners of the box into an array
@@ -389,10 +389,10 @@ void Util_ExtBox_TransformJ( const jeExtBox *B, const jeXForm3d *XForm, jeExtBox
 	Verts[2].Y = Verts[3].Y = Verts[6].Y = Verts[7].Y ;
 	Verts[4].X = Verts[5].X = Verts[6].X = Verts[7].X ;
 
-	jeXForm3d_TransformVecArray(XForm, Verts, Verts, 8);
-	jeExtBox_SetToPoint(Result, &Verts[0]);
+	grXForm3d_TransformVecArray(XForm, Verts, Verts, 8);
+	grExtBox_SetToPoint(Result, &Verts[0]);
 	for	(i = 1; i < 8; i++)
-		jeExtBox_ExtendToEnclose(Result, &Verts[i]);
+		grExtBox_ExtendToEnclose(Result, &Verts[i]);
 }
 
 int32 Util_Time()
@@ -400,16 +400,16 @@ int32 Util_Time()
 	return( timeGetTime() );
 }
 
-jeFloat Util_log2( jeFloat f )
+grFloat Util_log2( grFloat f )
 {
-	return (jeFloat)(log (f)/log (2.0f));
+	return (grFloat)(log (f)/log (2.0f));
 }// log2
 
-jeFloat Util_NearestLowerPowerOf2( const jeFloat fVal )
+grFloat Util_NearestLowerPowerOf2( const grFloat fVal )
 {
 	// This would likely be faster if you count the bits
 	// and then loop multiplying by 2 for each bit
-	return (jeFloat)pow (2, (int)(Util_log2(fVal) ));
+	return (grFloat)pow (2, (int)(Util_log2(fVal) ));
 }// Util_NearestLowerPowerOf2
 
 
@@ -455,23 +455,23 @@ void Util_NewExtension(char * pszString, const char * pszNewExt)
 	strcat( pszString, pszNewExt ) ;
 }// Util_NewExtension
 
-jeBoolean Util_geVFile_ReadString( jeVFile * pFile, char * pszBuffer, const int32 nMaxChars )
+grBoolean Util_geVFile_ReadString( grVFile * pFile, char * pszBuffer, const int32 nMaxChars )
 {
 	int32		i ;
-	assert( jeVFile_IsValid( pFile ) ) ;
+	assert( grVFile_IsValid( pFile ) ) ;
 	assert( pszBuffer != NULL ) ;
 	assert( nMaxChars >= 1 ) ;
 
 	for( i=0; i<nMaxChars; i++ )
 	{
-		if( !jeVFile_Read( pFile, pszBuffer, 1 ) )
-			return JE_FALSE ;
+		if( !grVFile_Read( pFile, pszBuffer, 1 ) )
+			return GR_FALSE ;
 
 		if( *pszBuffer == 0 )
-			return JE_TRUE ;
+			return GR_TRUE ;
 		pszBuffer++ ;
 	}
-	return JE_FALSE ;
+	return GR_FALSE ;
 
 }// Util_geVFile_ReadString
 

@@ -18,18 +18,18 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_TERRAIN_INTERNAL_H
-#define JE_TERRAIN_INTERNAL_H
+#ifndef GR_TERRAIN_INTERNAL_H
+#define GR_TERRAIN_INTERNAL_H
 
-typedef struct jeTerrain_Light	jeTerrain_Light;
+typedef struct grTerrain_Light	grTerrain_Light;
 
 #include "Terrain.h"
 #include "Quad.h"
-#include "jeProperty.h"
-#include "jeMaterial.h"
+#include "grProperty.h"
+#include "grMaterial.h"
 
 /*}{******************************************************/
-//	jeTerrain struct
+//	grTerrain struct
 
 typedef enum 
 {
@@ -38,14 +38,14 @@ typedef enum
 	TERRAIN_LIGHT_SPHERE,	// Vector is the location of the light
 								// the Radius-squared of a sphere light is just the Color !!!
 	TERRAIN_LIGHT_FLAT,		// no vector; just applies the color everywhere
-} jeTerrain_LightType;
+} grTerrain_LightType;
 
-struct jeTerrain_Light
+struct grTerrain_Light
 {
-	jeTerrain_LightType	Type;
-	jeVec3d				Vector;
-	jeRGBA				Color;
-	jeFloat				MaxColor;	// = max(Color.r,Color.g,Color.b) , computed by jeTerrain
+	grTerrain_LightType	Type;
+	grVec3d				Vector;
+	grRGBA				Color;
+	grFloat				MaxColor;	// = max(Color.r,Color.g,Color.b) , computed by grTerrain
 };
 
 #define TERRAIN_MAX_NUM_LIGHTS	(128)
@@ -53,57 +53,57 @@ struct jeTerrain_Light
 #define MAX_TEXDIM		(1<<MAX_TEXDIM_LOG2)
 #define MAX_TEXTURES		(MAX_TEXDIM*MAX_TEXDIM)
 
-struct jeTerrain
+struct grTerrain
 {
 	int RefCount;
 
 	int HMWidth,HMHeight;
 	float * HM;
-	jeXForm3d XFTerrainToWorld,XFWorldToTerrain;
-	jeVec3d CubeSize,InvCubeSize,Size;
+	grXForm3d XFTerrainToWorld,XFWorldToTerrain;
+	grVec3d CubeSize,InvCubeSize,Size;
 
 	uint32 MaxQuads;
 	float  MinError;
 
 	QuadTree * QT;
 
-	jeVec3d LastTesselatedCameraPos;
-	jeVec3d LastTesselatedCameraVec;
+	grVec3d LastTesselatedCameraPos;
+	grVec3d LastTesselatedCameraVec;
 	
 	int32	NumDynamicLights;
-	jeTerrain_Light DynamicLights[TERRAIN_MAX_NUM_LIGHTS];
+	grTerrain_Light DynamicLights[TERRAIN_MAX_NUM_LIGHTS];
 
-	jeBoolean Changed;
+	grBoolean Changed;
 
-	jeProperty_List * PropertyList;
-	jeBitmap * Heightmap;
+	grProperty_List * PropertyList;
+	grBitmap * Heightmap;
 	char HeightmapName[1024];
 
-	jeWorld * World;	
-	jeEngine * Engine;
+	grWorld * World;	
+	grEngine * Engine;
 
-	jeBoolean TexturesAreLit;
-	jeBitmap * Textures[MAX_TEXTURES];
+	grBoolean TexturesAreLit;
+	grBitmap * Textures[MAX_TEXTURES];
 
-	jeBitmap * PreLightTextures[MAX_TEXTURES];
-	jeBoolean	RegisteredTexture[MAX_TEXTURES];
+	grBitmap * PreLightTextures[MAX_TEXTURES];
+	grBoolean	RegisteredTexture[MAX_TEXTURES];
 	int TexDim;
 
-	jeMaterialSpec* NullMaterial;			// Krouer: start support of jeMaterialSpec
-	jeBitmap *NullTexture;
-	jeBitmap *HiliteTexture;
+	grMaterialSpec* NullMaterial;			// Krouer: start support of grMaterialSpec
+	grBitmap *NullTexture;
+	grBitmap *HiliteTexture;
 
-	jeTerrain * SelfCheck;
+	grTerrain * SelfCheck;
 
-	jeBoolean Untouchable;
+	grBoolean Untouchable;
 	
-	jeBoolean	HasSelection;
-	jeFloat		SelectionX,SelectionY;
+	grBoolean	HasSelection;
+	grFloat		SelectionX,SelectionY;
 	int			SelectionTexX,SelectionTexY;
 	
 	int			LightListSel;
 
-	jeBoolean   RenderNextFlag;
+	grBoolean   RenderNextFlag;
 };
 
-#endif // JE_TERRAIN_INTERNAL_H
+#endif // GR_TERRAIN_INTERNAL_H

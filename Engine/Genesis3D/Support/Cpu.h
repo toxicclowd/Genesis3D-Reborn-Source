@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_CPU_H
-#define JE_CPU_H
+#ifndef GR_CPU_H
+#define GR_CPU_H
 
 #include "BaseType.h"
 
@@ -29,36 +29,36 @@ extern "C" {
 
 //--------
 
-jeBoolean jeCPU_GetInfo(void);
+grBoolean grCPU_GetInfo(void);
 
-void jeCPU_FloatControl_Push(void);
-void jeCPU_FloatControl_Pop(void);
-void jeCPU_FloatControl_RoundDown(void);
-void jeCPU_FloatControl_RoundNearest(void);
-void jeCPU_FloatControl_SinglePrecision(void);
-void jeCPU_FloatControl_DoublePrecision(void);
+void grCPU_FloatControl_Push(void);
+void grCPU_FloatControl_Pop(void);
+void grCPU_FloatControl_RoundDown(void);
+void grCPU_FloatControl_RoundNearest(void);
+void grCPU_FloatControl_SinglePrecision(void);
+void grCPU_FloatControl_DoublePrecision(void);
 
-void jeCPU_EnterMMX(void);	// wrap MMX sections with these:
-void jeCPU_LeaveMMX(void);
+void grCPU_EnterMMX(void);	// wrap MMX sections with these:
+void grCPU_LeaveMMX(void);
 
-void jeCPU_PauseMMX(void);	// to temporarily used floats inside an MMX section:
-void jeCPU_ResumeMMX(void);
+void grCPU_PauseMMX(void);	// to temporarily used floats inside an MMX section:
+void grCPU_ResumeMMX(void);
 
 //-------- CPU Info:
 
-#define	JE_CPU_HAS_RDTSC		0x0001
-#define	JE_CPU_HAS_MMX  		0x0002
-#define	JE_CPU_HAS_3DNOW		0x0004
-#define	JE_CPU_HAS_CMOV 		0x0008
-#define	JE_CPU_HAS_FCMOV		0x0010
-#define	JE_CPU_HAS_KATMAI		0x0020
-#define JE_CPU_HAS_CMPXCHG8B	0x0040
-#define	JE_CPU_HAS_SSE2	        0x0080
+#define	GR_CPU_HAS_RDTSC		0x0001
+#define	GR_CPU_HAS_MMX  		0x0002
+#define	GR_CPU_HAS_3DNOW		0x0004
+#define	GR_CPU_HAS_CMOV 		0x0008
+#define	GR_CPU_HAS_FCMOV		0x0010
+#define	GR_CPU_HAS_KATMAI		0x0020
+#define GR_CPU_HAS_CMPXCHG8B	0x0040
+#define	GR_CPU_HAS_SSE2	        0x0080
 
-extern uint32	jeCPU_Features;			// JE_CPU_HAS bitmasks
-extern uint32	jeCPU_MHZ;
-extern float	jeCPU_SecondsPerClock;	// == 1.0 / HZ
-extern float	jeCPU_PerformanceFreq;	// Number of QueryPerformanceCounter Ticks Per Second
+extern uint32	grCPU_Features;			// GR_CPU_HAS bitmasks
+extern uint32	grCPU_MHZ;
+extern float	grCPU_SecondsPerClock;	// == 1.0 / HZ
+extern float	grCPU_PerformanceFreq;	// Number of QueryPerformanceCounter Ticks Per Second
 
 //--------
 
@@ -66,5 +66,5 @@ extern float	jeCPU_PerformanceFreq;	// Number of QueryPerformanceCounter Ticks P
 }
 #endif
 
-#endif // JE_CPU_H
+#endif // GR_CPU_H
 

@@ -20,26 +20,26 @@
 	Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           
 */
 
-#ifndef JE_TERRAIN_H
-#define JE_TERRAIN_H
+#ifndef GR_TERRAIN_H
+#define GR_TERRAIN_H
 
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "VFile.h"
 #include "Bitmap.h"
-#include "jeFrustum.h"
+#include "grFrustum.h"
 #include "Object.h"
-#include "jePtrMgr.h"
-#include "jeLight.h"
+#include "grPtrMgr.h"
+#include "grLight.h"
 
-//#include "engine.h"  // for jeEngine
-typedef struct jeEngine	jeEngine;
+//#include "engine.h"  // for grEngine
+typedef struct grEngine	grEngine;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-typedef struct jeTerrain		jeTerrain;
+typedef struct grTerrain		grTerrain;
 
 enum
 {
@@ -59,106 +59,106 @@ enum
 
 /*******************************************************/
 
-JETAPI void *	JETCC jeTerrain_Create(void);
-JETAPI void *	JETCC jeTerrain_CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr);
-JETAPI jeTerrain *	JETCC jeTerrain_CreateFromFileExt(jeVFile * File,jeVFile *ResourceBaseFS,jePtrMgr *PtrMgr);
-JETAPI jeBoolean 	JETCC jeTerrain_Destroy(void ** ppTerrain);
-JETAPI void 		JETCC jeTerrain_CreateRef(void * pTerrain);
+GRAPI void *	GRCC grTerrain_Create(void);
+GRAPI void *	GRCC grTerrain_CreateFromFile(grVFile * File, grPtrMgr *PtrMgr);
+GRAPI grTerrain *	GRCC grTerrain_CreateFromFileExt(grVFile * File,grVFile *ResourceBaseFS,grPtrMgr *PtrMgr);
+GRAPI grBoolean 	GRCC grTerrain_Destroy(void ** ppTerrain);
+GRAPI void 		GRCC grTerrain_CreateRef(void * pTerrain);
 
-JETAPI jeBoolean 	JETCC jeTerrain_WriteToFile(const void *pTerrain,jeVFile * File, jePtrMgr *PtrMgr);
+GRAPI grBoolean 	GRCC grTerrain_WriteToFile(const void *pTerrain,grVFile * File, grPtrMgr *PtrMgr);
 
 /*******************************************************/
 
 // NOTEZ : GetHeight and GetNormal are in "Terrain Space", a 1x1x1 cube
 
-JETAPI jeFloat		JETCC jeTerrain_GetHeightAtXY(const jeTerrain *T,jeFloat X,jeFloat Y);
-JETAPI void 		JETCC jeTerrain_GetNormalAtXY(const jeTerrain *T,jeFloat X,jeFloat Y,jeVec3d *pNormal);
+GRAPI grFloat		GRCC grTerrain_GetHeightAtXY(const grTerrain *T,grFloat X,grFloat Y);
+GRAPI void 		GRCC grTerrain_GetNormalAtXY(const grTerrain *T,grFloat X,grFloat Y,grVec3d *pNormal);
 
-JETAPI void			JETCC jeTerrain_GetNormalAtXY_Rough(const jeTerrain *Terrain,jeFloat X,jeFloat Y,jeVec3d *pNormal);
+GRAPI void			GRCC grTerrain_GetNormalAtXY_Rough(const grTerrain *Terrain,grFloat X,grFloat Y,grVec3d *pNormal);
 
-JETAPI jeFloat		JETCC jeTerrain_GetHeightAtWorldSpaceVec(const jeTerrain *Terrain,const jeVec3d *pV);
-JETAPI void			JETCC jeTerrain_GetNormalAtWorldSpaceVec(const jeTerrain *Terrain,const jeVec3d *pV,jeVec3d *pN);
+GRAPI grFloat		GRCC grTerrain_GetHeightAtWorldSpaceVec(const grTerrain *Terrain,const grVec3d *pV);
+GRAPI void			GRCC grTerrain_GetNormalAtWorldSpaceVec(const grTerrain *Terrain,const grVec3d *pV,grVec3d *pN);
 
-JETAPI jeBoolean	JETCC jeTerrain_GetExtBox(const void *T,jeExtBox * pBox);
-
-/*******************************************************/
-
-JETAPI jeBoolean	JETCC jeTerrain_IntersectsRay(const jeTerrain *T,jeVec3d *pStart,jeVec3d *pDirection);
-
-//JETAPI jeBoolean	JETCC jeTerrain_ExtBoxIsVis(const jeTerrain *T,const jeExtBox *pBox,const jeCamera *pCamera);
-
-JETAPI jeBoolean JETCC jeTerrain_SphereCollision(const jeTerrain *T,
-													const jeVec3d *pFrom, const jeVec3d *pTo, jeFloat Radius,
-													jeVec3d *Impact, jePlane *Plane);
-
-JETAPI jeBoolean JETCC jeTerrain_BoxCollision(const void *T, const jeExtBox *Box, 
-													const jeVec3d *Front, const jeVec3d *Back, 
-													jeVec3d *Impact, jePlane *Plane);
+GRAPI grBoolean	GRCC grTerrain_GetExtBox(const void *T,grExtBox * pBox);
 
 /*******************************************************/
 
-JETAPI jeBoolean	JETCC jeTerrain_SetSize(jeTerrain * T,jeVec3d * pSize);
+GRAPI grBoolean	GRCC grTerrain_IntersectsRay(const grTerrain *T,grVec3d *pStart,grVec3d *pDirection);
 
-JETAPI jeBoolean	JETCC jeTerrain_SetXForm(void * T,const jeXForm3d *pXF);
-JETAPI jeBoolean	JETCC jeTerrain_GetXForm(const void * T,jeXForm3d *pXF);
+//GRAPI grBoolean	GRCC grTerrain_ExtBoxIsVis(const grTerrain *T,const grExtBox *pBox,const grCamera *pCamera);
 
-JETAPI jeBoolean	JETCC jeTerrain_SetHeightmap(jeTerrain * T,jeBitmap * Bmp);
-JETAPI jeBoolean	JETCC jeTerrain_GetHeightmap(jeTerrain * T,jeBitmap ** pBmp);
+GRAPI grBoolean GRCC grTerrain_SphereCollision(const grTerrain *T,
+													const grVec3d *pFrom, const grVec3d *pTo, grFloat Radius,
+													grVec3d *Impact, grPlane *Plane);
 
-JETAPI jeBoolean	JETCC jeTerrain_SetParameters(jeTerrain *T,uint32 MaxQuads,float MinError);
+GRAPI grBoolean GRCC grTerrain_BoxCollision(const void *T, const grExtBox *Box, 
+													const grVec3d *Front, const grVec3d *Back, 
+													grVec3d *Impact, grPlane *Plane);
+
+/*******************************************************/
+
+GRAPI grBoolean	GRCC grTerrain_SetSize(grTerrain * T,grVec3d * pSize);
+
+GRAPI grBoolean	GRCC grTerrain_SetXForm(void * T,const grXForm3d *pXF);
+GRAPI grBoolean	GRCC grTerrain_GetXForm(const void * T,grXForm3d *pXF);
+
+GRAPI grBoolean	GRCC grTerrain_SetHeightmap(grTerrain * T,grBitmap * Bmp);
+GRAPI grBoolean	GRCC grTerrain_GetHeightmap(grTerrain * T,grBitmap ** pBmp);
+
+GRAPI grBoolean	GRCC grTerrain_SetParameters(grTerrain *T,uint32 MaxQuads,float MinError);
 														// 250 and 0.005 are reasonable numbers here
 
-JETAPI jeBoolean	JETCC jeTerrain_SetLightsOnVertsFromWorld(jeTerrain *T,jeWorld *World);
+GRAPI grBoolean	GRCC grTerrain_SetLightsOnVertsFromWorld(grTerrain *T,grWorld *World);
 										// LightsOnVerts & DLights are mutually exclusive (DLights overwrite vert lights)
 
-JETAPI jeBoolean JETCC jeTerrain_SetLightsOnVerts(jeTerrain *T, jeLight **SrcLights, int Count);
+GRAPI grBoolean GRCC grTerrain_SetLightsOnVerts(grTerrain *T, grLight **SrcLights, int Count);
 
-JETAPI jeBoolean	JETCC jeTerrain_SetATexture(jeTerrain *T,const jeBitmap * Bmp,int tx,int ty);
+GRAPI grBoolean	GRCC grTerrain_SetATexture(grTerrain *T,const grBitmap * Bmp,int tx,int ty);
 										// tx & ty in [0,TexDim-1]
 
-JETAPI jeBoolean	JETCC jeTerrain_GetTextureAtXY(const jeTerrain *T,jeFloat X,jeFloat Y,const jeBitmap ** pBmp,int *pTX,int *pTY);
-JETAPI jeBoolean	JETCC jeTerrain_GetTextureAtWorldVec(const jeTerrain *T,const jeVec3d *pVec,const jeBitmap ** pBmp,int *pTX,int *pTY);
+GRAPI grBoolean	GRCC grTerrain_GetTextureAtXY(const grTerrain *T,grFloat X,grFloat Y,const grBitmap ** pBmp,int *pTX,int *pTY);
+GRAPI grBoolean	GRCC grTerrain_GetTextureAtWorldVec(const grTerrain *T,const grVec3d *pVec,const grBitmap ** pBmp,int *pTX,int *pTY);
 									// fills out pBmp,pTX,pTY unless null; tx and ty are texture x & t's for use in SetATexture
 
-JETAPI jeBoolean	JETCC jeTerrain_SetTexDim(jeTerrain *T,int TexDim);
+GRAPI grBoolean	GRCC grTerrain_SetTexDim(grTerrain *T,int TexDim);
 									// TexDim must be a power of two <= 8 (eg. 1,2,4,8)
 
 /*******************************************************/
 
-JETAPI jeBoolean	JETCC jeTerrain_RenderPrep(jeTerrain * T,jeEngine *Engine,jeCamera *C);
+GRAPI grBoolean	GRCC grTerrain_RenderPrep(grTerrain * T,grEngine *Engine,grCamera *C);
 
-JETAPI jeBoolean	JETCC jeTerrain_RenderThroughCamera( jeTerrain *T,const jeWorld *World, const jeEngine *E,jeCamera *Camera);
+GRAPI grBoolean	GRCC grTerrain_RenderThroughCamera( grTerrain *T,const grWorld *World, const grEngine *E,grCamera *Camera);
 
-JETAPI jeBoolean	JETCC jeTerrain_RenderThroughFrustum(jeTerrain *T,const jeWorld *World, const jeEngine *E,jeCamera *Camera, const jeFrustum *F);
+GRAPI grBoolean	GRCC grTerrain_RenderThroughFrustum(grTerrain *T,const grWorld *World, const grEngine *E,grCamera *Camera, const grFrustum *F);
 
 // you can render & whatnot without attaching & detaching if you like
-JETAPI jeBoolean	JETCC jeTerrain_AttachEngine(void *T,jeEngine *Engine);
-JETAPI jeBoolean	JETCC jeTerrain_DetachEngine(void *T,jeEngine *Engine);
+GRAPI grBoolean	GRCC grTerrain_AttachEngine(void *T,grEngine *Engine);
+GRAPI grBoolean	GRCC grTerrain_DetachEngine(void *T,grEngine *Engine);
 				   
 /*******************************************************/
 
-JETAPI void			JETCC jeTerrain_InitObject(const jeTerrain *T,jeObject *O);
+GRAPI void			GRCC grTerrain_InitObject(const grTerrain *T,grObject *O);
 
-JETAPI jeBoolean	JETCC jeTerrain_RegisterObjectDef(void);
+GRAPI grBoolean	GRCC grTerrain_RegisterObjectDef(void);
 
 /*******************************************************/
 
 /*!
-	@fn void jeTerrain_SetRenderNextTime(jeTerrain* T, jeBoolean RenderNext)
+	@fn void grTerrain_SetRenderNextTime(grTerrain* T, grBoolean RenderNext)
 	@brief Enable/diable rendering in the next Object render loop
 
 	@param[in] T The terrain object the flag applies
-	@param[in] RenderNext The next rendering flag value (JE_TRUE means rendered, JE_FALSE means ignored)
+	@param[in] RenderNext The next rendering flag value (GR_TRUE means rendered, GR_FALSE means ignored)
 
 	@author Bruno Pettorelli (krouer@jet3d.com)
-    @see jeObject_SetRenderNextPass
+    @see grObject_SetRenderNextPass
 */
-JETAPI void			JETCC jeTerrain_SetRenderNextTime(void* T, jeBoolean RenderNext);
+GRAPI void			GRCC grTerrain_SetRenderNextTime(void* T, grBoolean RenderNext);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // JE_TERRAIN_H
+#endif // GR_TERRAIN_H
 
 

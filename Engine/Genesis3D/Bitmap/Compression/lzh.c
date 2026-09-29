@@ -82,7 +82,7 @@ static int nonGreedy_ratioS10 = (((bitsPerMatch+bitsPerLiteral)<<10)/bitsPerMatc
 // encoder-only
 static long rawOutLen;
 static long lookupHunkNext;
-static jeBoolean lookupFreeFlag;
+static grBoolean lookupFreeFlag;
 
 static struct lookupNode ** lookupTable;
 static struct lookupNode * lookupHunk;
@@ -101,8 +101,8 @@ static int decodeMatchLen(void);
 
 static void codeMatchFlagInit(void);
 void encodeMatchFlagFlush(void);
-static void encodeMatchFlag(jeBoolean bit);
-static jeBoolean decodeMatchFlag(void);
+static void encodeMatchFlag(grBoolean bit);
+static grBoolean decodeMatchFlag(void);
 
 static void encodeOffset(int offset);
 static int  decodeOffset(void);
@@ -121,10 +121,10 @@ void lzhEncode(uint8 *rawArray,int rawLen,uint8 **compArrayPtr,int * compLenPtr)
 uint8 *huffPtr;
 uint8 *compArray;
 uint32 huffLen;
-jeBoolean success;
+grBoolean success;
 
 rawOutLen = lookupHunkNext = 0;
-lookupFreeFlag = JE_FALSE;
+lookupFreeFlag = GR_FALSE;
 
 lookupTable = NULL;
 lookupHunk = NULL;
@@ -135,7 +135,7 @@ numLits = numLens = numOffs = numMats = 0;
 
 assert( (((uint32)rawArray)&3) == 0 );
 
-if ( (compArray = (uint8*)jeRam_Allocate(rawLen + 16384)) == NULL )
+if ( (compArray = (uint8*)grRam_Allocate(rawLen + 16384)) == NULL )
 	CleanUp("AllocMem failed!");
 
 *compArrayPtr = compArray;
@@ -152,10 +152,10 @@ if ( rawLen < MINIMUM_RAW_LEN )
 if ( (lookupTable = (struct lookupNode **)newarray(void *,HASHSIZE)) == NULL )
 	CleanUp("AllocMem failed!");
 
-if ( (lookupHunk = (struct lookupNode *)jeRam_Allocate(sizeof(struct lookupNode)*min(lookupHunkSize,rawLen+10))) == NULL )
+if ( (lookupHunk = (struct lookupNode *)grRam_Allocate(sizeof(struct lookupNode)*min(lookupHunkSize,rawLen+10))) == NULL )
 	CleanUp("AllocMem failed!");
 
-if ( (rawLZArray = (uint8*)jeRam_Allocate(rawLen)) == NULL )
+if ( (rawLZArray = (uint8*)grRam_Allocate(rawLen)) == NULL )
 	CleanUp("AllocMem failed!");
 
 lzhInit(rawLen);
@@ -191,9 +191,9 @@ memcpy(huffPtr,rawLZArray,rawOutLen); huffPtr += rawOutLen;
 
 lzhFree();
 
-jeRam_Free(lookupTable);
-jeRam_Free(lookupHunk);
-jeRam_Free(rawLZArray);
+grRam_Free(lookupTable);
+grRam_Free(lookupHunk);
+grRam_Free(rawLZArray);
 
 }
 
@@ -201,7 +201,7 @@ void lzhDecode(uint8 *compArray,int compLen,uint8 ** rawArrayPtr,int * rawLenPtr
 {
 uint32 huffLen,rawLen;
 uint8 * rawArray,*huffPtr;
-jeBoolean success;
+grBoolean success;
 
 assert( (((uint32)compArray)&3) == 0 );
 
@@ -211,7 +211,7 @@ rawLen = *((uint32 *)huffPtr); huffPtr += 4;
 
 *rawLenPtr = rawLen;
 
-if ( (rawArray = (uint8*)jeRam_Allocate(rawLen+1024)) == NULL )
+if ( (rawArray = (uint8*)grRam_Allocate(rawLen+1024)) == NULL )
 	CleanUp("AllocMem failed!");
 *rawArrayPtr = rawArray;
 
@@ -396,7 +396,7 @@ void encodeMatchFlagFlush(void)
 	Mats[numMats++] = buf;
 }
 
-static void inline encodeMatchFlag(jeBoolean bit)
+static void inline encodeMatchFlag(grBoolean bit)
 {
 	buf += buf + bit;
 	if ( --bcount == 0 )
@@ -408,7 +408,7 @@ static void inline encodeMatchFlag(jeBoolean bit)
 	}
 }
 
-static jeBoolean inline decodeMatchFlag(void)
+static grBoolean inline decodeMatchFlag(void)
 {
 	if ( bcount == 8 )
 	{
@@ -501,7 +501,7 @@ uint32 curFirstFour,hash;
 	if ( lookupHunkNext == lookupHunkSize ) 
 	{
 		lookupHunkNext = 0;
-		lookupFreeFlag = JE_TRUE;
+		lookupFreeFlag = GR_TRUE;
 	}
 	node->ptrPlusFour = rawPtr + 4;
 	node->firstFour = curFirstFour = getuint32(rawPtr);

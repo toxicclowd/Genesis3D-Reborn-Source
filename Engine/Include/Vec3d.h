@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_VEC3D_H
-#define JE_VEC3D_H
+#ifndef GR_VEC3D_H
+#define GR_VEC3D_H
 
 #include "BaseType.h"
 
@@ -27,71 +27,49 @@
 extern "C" {
 #endif
 
-typedef struct jeVec3d
+typedef struct grVec3d
 {
-	jeFloat X, Y, Z, Pad;
-} jeVec3d;
+	grFloat X, Y, Z, Pad;
+} grVec3d;
 
 #ifndef NDEBUG
-JETAPI	jeFloat JETCC   jeVec3d_GetElement(const jeVec3d *V, int32 Index);
-JETAPI	void JETCC		jeVec3d_SetElement(jeVec3d *V, int32 Index, jeFloat Value);
+GRAPI	grFloat GRCC   grVec3d_GetElement(const grVec3d *V, int32 Index);
+GRAPI	void GRCC		grVec3d_SetElement(grVec3d *V, int32 Index, grFloat Value);
 #else
-	#define jeVec3d_GetElement(Vector,Index)  (* ((&((Vector)->X)) +  (Index) ))
-	#define jeVec3d_SetElement(Vector,Index, Value) ((* ((&((Vector)->X)) +  (Index) )) = Value)
+	#define grVec3d_GetElement(Vector,Index)  (* ((&((Vector)->X)) +  (Index) ))
+	#define grVec3d_SetElement(Vector,Index, Value) ((* ((&((Vector)->X)) +  (Index) )) = Value)
 #endif
 
-JETAPI void JETCC		jeVec3d_Set(jeVec3d *V, jeFloat X, jeFloat Y, jeFloat Z);
-JETAPI void JETCC		jeVec3d_Get(const jeVec3d *V, jeFloat *X, jeFloat *Y, jeFloat *Z);
+GRAPI void GRCC		grVec3d_Set(grVec3d *V, grFloat X, grFloat Y, grFloat Z);
+GRAPI void GRCC		grVec3d_Get(const grVec3d *V, grFloat *X, grFloat *Y, grFloat *Z);
 
-JETAPI jeFloat JETCC	jeVec3d_DotProduct(const jeVec3d *V1, const jeVec3d *V2);
-JETAPI void JETCC		jeVec3d_CrossProduct(const jeVec3d *V1, const jeVec3d *V2, jeVec3d *VResult);
-JETAPI jeBoolean JETCC	jeVec3d_Compare(const jeVec3d *V1, const jeVec3d *V2,jeFloat tolarance);
-JETAPI jeFloat JETCC	jeVec3d_Normalize(jeVec3d *V1);
-JETAPI jeBoolean JETCC 	jeVec3d_IsNormalized(const jeVec3d *V);
-JETAPI void JETCC		jeVec3d_Scale(const jeVec3d *VSrc, jeFloat Scale, jeVec3d *VDst);
-JETAPI jeFloat JETCC	jeVec3d_Length(const jeVec3d *V1); 
-JETAPI jeFloat JETCC	jeVec3d_LengthSquared(const jeVec3d *V1); 
-JETAPI void JETCC		jeVec3d_Subtract(const jeVec3d *V1, const jeVec3d *V2, jeVec3d *V1MinusV2);
-JETAPI void JETCC		jeVec3d_Add(const jeVec3d *V1, const jeVec3d *V2,  jeVec3d *VSum);
-JETAPI void JETCC		jeVec3d_Copy(const jeVec3d *Vsrc, jeVec3d *Vdst);
-JETAPI void JETCC		jeVec3d_Clear(jeVec3d *V);
-JETAPI void JETCC		jeVec3d_Inverse(jeVec3d *V);
-JETAPI void JETCC		jeVec3d_MA(jeVec3d *V1, jeFloat Scale, const jeVec3d *V2, jeVec3d *V1PlusV2Scaled);
-JETAPI void JETCC		jeVec3d_AddScaled(const jeVec3d *V1, const jeVec3d *V2, jeFloat Scale, jeVec3d *V1PlusV2Scaled);
+GRAPI grFloat GRCC	grVec3d_DotProduct(const grVec3d *V1, const grVec3d *V2);
+GRAPI void GRCC		grVec3d_CrossProduct(const grVec3d *V1, const grVec3d *V2, grVec3d *VResult);
+GRAPI grBoolean GRCC	grVec3d_Compare(const grVec3d *V1, const grVec3d *V2,grFloat tolarance);
+GRAPI grFloat GRCC	grVec3d_Normalize(grVec3d *V1);
+GRAPI grBoolean GRCC 	grVec3d_IsNormalized(const grVec3d *V);
+GRAPI void GRCC		grVec3d_Scale(const grVec3d *VSrc, grFloat Scale, grVec3d *VDst);
+GRAPI grFloat GRCC	grVec3d_Length(const grVec3d *V1); 
+GRAPI grFloat GRCC	grVec3d_LengthSquared(const grVec3d *V1); 
+GRAPI void GRCC		grVec3d_Subtract(const grVec3d *V1, const grVec3d *V2, grVec3d *V1MinusV2);
+GRAPI void GRCC		grVec3d_Add(const grVec3d *V1, const grVec3d *V2,  grVec3d *VSum);
+GRAPI void GRCC		grVec3d_Copy(const grVec3d *Vsrc, grVec3d *Vdst);
+GRAPI void GRCC		grVec3d_Clear(grVec3d *V);
+GRAPI void GRCC		grVec3d_Inverse(grVec3d *V);
+GRAPI void GRCC		grVec3d_MA(grVec3d *V1, grFloat Scale, const grVec3d *V2, grVec3d *V1PlusV2Scaled);
+GRAPI void GRCC		grVec3d_AddScaled(const grVec3d *V1, const grVec3d *V2, grFloat Scale, grVec3d *V1PlusV2Scaled);
 
-JETAPI jeFloat JETCC	jeVec3d_DistanceBetween(const jeVec3d *V1, const jeVec3d *V2);	// returns length of V1-V2	
-JETAPI jeFloat JETCC	jeVec3d_DistanceBetweenSquared(const jeVec3d *V1, const jeVec3d *V2);
+GRAPI grFloat GRCC	grVec3d_DistanceBetween(const grVec3d *V1, const grVec3d *V2);	// returns length of V1-V2	
+GRAPI grFloat GRCC	grVec3d_DistanceBetweenSquared(const grVec3d *V1, const grVec3d *V2);
 
-JETAPI jeBoolean JETCC jeVec3d_IsValid(const jeVec3d *V);
+GRAPI grBoolean GRCC grVec3d_IsValid(const grVec3d *V);
 
 #ifdef __cplusplus
 }
 #endif
 
 // Genesis3D: Reborn gr* Aliases
-typedef struct jeVec3d grVec3d;
+typedef struct grVec3d grVec3d;
 
-#define grVec3d_GetElement               jeVec3d_GetElement
-#define grVec3d_SetElement               jeVec3d_SetElement
-#define grVec3d_Set                      jeVec3d_Set
-#define grVec3d_Get                      jeVec3d_Get
-#define grVec3d_DotProduct               jeVec3d_DotProduct
-#define grVec3d_CrossProduct             jeVec3d_CrossProduct
-#define grVec3d_Compare                  jeVec3d_Compare
-#define grVec3d_Normalize                jeVec3d_Normalize
-#define grVec3d_IsNormalized             jeVec3d_IsNormalized
-#define grVec3d_Scale                    jeVec3d_Scale
-#define grVec3d_Length                   jeVec3d_Length
-#define grVec3d_LengthSquared            jeVec3d_LengthSquared
-#define grVec3d_Subtract                 jeVec3d_Subtract
-#define grVec3d_Add                      jeVec3d_Add
-#define grVec3d_Copy                     jeVec3d_Copy
-#define grVec3d_Clear                    jeVec3d_Clear
-#define grVec3d_Inverse                  jeVec3d_Inverse
-#define grVec3d_MA                       jeVec3d_MA
-#define grVec3d_AddScaled                jeVec3d_AddScaled
-#define grVec3d_DistanceBetween          jeVec3d_DistanceBetween
-#define grVec3d_DistanceBetweenSquared   jeVec3d_DistanceBetweenSquared
-#define grVec3d_IsValid                  jeVec3d_IsValid
 
 #endif

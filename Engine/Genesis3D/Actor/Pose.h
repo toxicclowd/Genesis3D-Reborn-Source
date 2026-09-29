@@ -18,16 +18,16 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_POSE_H
-#define JE_POSE_H
+#ifndef GR_POSE_H
+#define GR_POSE_H
 
-/*	jePose
+/*	grPose
 
 	This object is a hierarchical set of attached joints.  The joints can have names.
-	A 'jePose' keeps track of which children joints move in the hierarchy when a parent
-	joint moves.  A jePose also remembers the position transform matrices for each joint.
+	A 'grPose' keeps track of which children joints move in the hierarchy when a parent
+	joint moves.  A grPose also remembers the position transform matrices for each joint.
 
-	The jePose is set by applying a motion at a specific time.  This queries the motion
+	The grPose is set by applying a motion at a specific time.  This queries the motion
 	to determine each joint's change and applies them to the hierarchy.  Each joint can
 	then be queried for it's world transform (for drawing, etc.)
 
@@ -38,7 +38,7 @@
 	Something to watch for:  since setting the pose by applying a motion is powerful
 	enough to resolve intentionally mismatched motion-pose sets, this can lead to 
 	problems if the motion UNintentionally does not match the pose.  Use 
-	jePose_MatchesjeMotionExactly() to test for an exact name-based match.
+	grPose_MatchesgrMotionExactly() to test for an exact name-based match.
 	
 
 */
@@ -52,60 +52,60 @@ extern "C" {
 #endif
 
 
-#define JE_POSE_ROOT_JOINT (-1)
+#define GR_POSE_ROOT_JOINT (-1)
 
 typedef enum 
 {
-		JE_POSE_BLEND_LINEAR,
-		JE_POSE_BLEND_HERMITE
-} jePose_BlendingType;
+		GR_POSE_BLEND_LINEAR,
+		GR_POSE_BLEND_HERMITE
+} grPose_BlendingType;
 
-typedef struct jePose jePose;
+typedef struct grPose grPose;
 
 	// Creates a new pose with no joints.
-jePose *JETCF jePose_Create(void);
+grPose *GRCF grPose_Create(void);
 
 	// Destroys an existing pose.
-void JETCF jePose_Destroy(jePose **PM);
+void GRCF grPose_Destroy(grPose **PM);
 
 	// Adds a new joint to a pose.
-jeBoolean JETCF jePose_AddJoint(
-	jePose *P,
+grBoolean GRCF grPose_AddJoint(
+	grPose *P,
 	int ParentJointIndex,
 	const char *JointName,
-	const jeXForm3d *Attachment,
+	const grXForm3d *Attachment,
 	int *JointIndex);
 
 
-void JETCF jePose_GetScale(const jePose *P, jeVec3d *Scale);
+void GRCF grPose_GetScale(const grPose *P, grVec3d *Scale);
 	// Retrieves current joint attachment scaling factors
 
-void JETCF jePose_SetScale(jePose *P, const jeVec3d *Scale);
+void GRCF grPose_SetScale(grPose *P, const grVec3d *Scale);
 	// Scales all joint attachments by component scaling factors in Scale
 
-	// Returns the index of a joint named JointName.  Returns JE_TRUE if it is
-	// located, and Index is set.  Returns JE_FALSE if not, and Index is not changed.
-jeBoolean JETCF jePose_FindNamedJointIndex(const jePose *P, const char *JointName, int *Index);
+	// Returns the index of a joint named JointName.  Returns GR_TRUE if it is
+	// located, and Index is set.  Returns GR_FALSE if not, and Index is not changed.
+grBoolean GRCF grPose_FindNamedJointIndex(const grPose *P, const char *JointName, int *Index);
 
 	// returns the number of joints in the pose
-int JETCF jePose_GetJointCount(const jePose *P);
+int GRCF grPose_GetJointCount(const grPose *P);
 
-jeBoolean JETCF jePose_MatchesMotionExactly(const jePose *P, const jeMotion *M);
+grBoolean GRCF grPose_MatchesMotionExactly(const grPose *P, const grMotion *M);
 
-void JETCF jePose_Clear(jePose *P, const jeXForm3d *Transform);
+void GRCF grPose_Clear(grPose *P, const grXForm3d *Transform);
 
 	// set the pose according to a motion.  Use the motion at time 'Time'.
 	// if the motion does not describe motion for all joints, name-based resolution
 	// will be used to decide which motion to attach to which joints.
 	// joints that are unaffected are unchanged.
 	// if Transform is non-NULL, it is applied to the Motion
-void JETCF jePose_SetMotion(jePose *P, const jeMotion *M,jeFloat Time,const jeXForm3d *Transform);
+void GRCF grPose_SetMotion(grPose *P, const grMotion *M,grFloat Time,const grXForm3d *Transform);
 
 	// optimization:  if this is called, then all pose computations are limited to the BoneIndex'th bone, and
 	// it's parents (including the root bone).  This is true for all queries until an entire motion is set or blended
 	// into the pose.
-void JETCF jePose_SetMotionForABone(jePose *P, const jeMotion *M, jeFloat Time,
-							const jeXForm3d *Transform,int BoneIndex);
+void GRCF grPose_SetMotionForABone(grPose *P, const grMotion *M, grFloat Time,
+							const grXForm3d *Transform,int BoneIndex);
 
 
 	// blend in the pose according to a motion.  Use the motion at time 'Time'.
@@ -116,48 +116,48 @@ void JETCF jePose_SetMotionForABone(jePose *P, const jeMotion *M, jeFloat Time,
 	// will be used to decide which motion to attach to which joints.
 	// joints that are unaffected are unchanged.
 	// if Transform is non-NULL, it is applied to the Motion prior to blending
-void JETCF jePose_BlendMotion(jePose *P, const jeMotion *M, jeFloat Time, 
-					const jeXForm3d *Transform,
-					jeFloat BlendAmount, jePose_BlendingType BlendingType);
+void GRCF grPose_BlendMotion(grPose *P, const grMotion *M, grFloat Time, 
+					const grXForm3d *Transform,
+					grFloat BlendAmount, grPose_BlendingType BlendingType);
 
 	// get a joint's current transform (relative to world space)
-void JETCF jePose_GetJointTransform(const jePose *P, int JointIndex,jeXForm3d *Transform);
+void GRCF grPose_GetJointTransform(const grPose *P, int JointIndex,grXForm3d *Transform);
 
 	// get the transforms for the entire pose. *TransformArray must not be changed.
-const jeXFArray *JETCF jePose_GetAllJointTransforms(const jePose *P);
+const grXFArray *GRCF grPose_GetAllJointTransforms(const grPose *P);
 
 	// query a joint's current transform relative to it's attachment to it's parent.
-void JETCF jePose_GetJointLocalTransform(const jePose *P, int JointIndex,jeXForm3d *Transform);
+void GRCF grPose_GetJointLocalTransform(const grPose *P, int JointIndex,grXForm3d *Transform);
 
 	// adjust a joint's current transform relative to it's attachment to it's parent.
 	//   this is like setting a mini-motion into this joint only:  this will only affect
 	//   the current pose 
-void JETCF jePose_SetJointLocalTransform(jePose *P, int JointIndex,const jeXForm3d *Transform);
+void GRCF grPose_SetJointLocalTransform(grPose *P, int JointIndex,const grXForm3d *Transform);
 
 	// query how a joint is attached to it's parent. (it's base attachment)
-void JETCF jePose_GetJointAttachment(const jePose *P,int JointIndex,jeXForm3d *AttachmentTransform);
+void GRCF grPose_GetJointAttachment(const grPose *P,int JointIndex,grXForm3d *AttachmentTransform);
 
 	// adjust how a joint is attached to it's parent.  These changes are permanent:  all
 	//  future pose motions will incorporate this joint's new relation to it's parent */
-void JETCF jePose_SetJointAttachment(jePose *P,int JointIndex,const jeXForm3d *AttachmentTransform);
+void GRCF grPose_SetJointAttachment(grPose *P,int JointIndex,const grXForm3d *AttachmentTransform);
 
-const char* JETCF jePose_GetJointName(const jePose* P, int JointIndex);
+const char* GRCF grPose_GetJointName(const grPose* P, int JointIndex);
 
-jeBoolean JETCF jePose_Attach(jePose *Slave, int SlaveBoneIndex,
-				  jePose *Master, int MasterBoneIndex, 
-				  const jeXForm3d *Attachment);
+grBoolean GRCF grPose_Attach(grPose *Slave, int SlaveBoneIndex,
+				  grPose *Master, int MasterBoneIndex, 
+				  const grXForm3d *Attachment);
 
-void JETCF jePose_Detach(jePose *P);
+void GRCF grPose_Detach(grPose *P);
 
 	// a pose can also maintain a record of which joints are touched by a given motion.
 	// these funtions set,clear and query the record.
 	// ClearCoverage clears the coverage flag for all joints 
-void JETCF jePose_ClearCoverage(jePose *P, int ClearTo);
+void GRCF grPose_ClearCoverage(grPose *P, int ClearTo);
 	// AccumulateCoverage returns the number of joints that are not already 'covered' 
 	// that will be affected by a motion M,  
-	// if QueryOnly is JE_FALSE, affected joints are tagged as 'covered', otherwise no changes
+	// if QueryOnly is GR_FALSE, affected joints are tagged as 'covered', otherwise no changes
 	// are made to the joint coverage flags.
-int JETCF jePose_AccumulateCoverage(jePose *P, const jeMotion *M, jeBoolean QueryOnly);
+int GRCF grPose_AccumulateCoverage(grPose *P, const grMotion *M, grBoolean QueryOnly);
 
 
 #ifdef __cplusplus

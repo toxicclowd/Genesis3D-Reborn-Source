@@ -33,20 +33,20 @@ typedef struct scontext
 	int escape,total,size;
 	int escmax,totmax,inc;
 	int nzero;
-	jeBoolean noesc;
+	grBoolean noesc;
 	uint16 * tree;
 } scontext;
 
-scontext * scontextCreate(arithInfo * arithinfo,int size,int escmax,int totmax,int inc,jeBoolean noesc);
+scontext * scontextCreate(arithInfo * arithinfo,int size,int escmax,int totmax,int inc,grBoolean noesc);
 void scontextAdd(scontext *sc, int symbol);
-jeBoolean scontextEncode(scontext *sc, int symbol);
+grBoolean scontextEncode(scontext *sc, int symbol);
 int scontextDecode(scontext *sc);
 void scontextHalve(scontext *sc);
 void scontextFree(scontext *sc);
-jeBoolean scontextHas(scontext *sc,int symbol);
+grBoolean scontextHas(scontext *sc,int symbol);
 int scontextGetProb(scontext *sc,int symbol);
 
-scontext * scontextCreate(arithInfo * arithinfo,int size,int escmax,int totmax,int inc,jeBoolean noesc)
+scontext * scontextCreate(arithInfo * arithinfo,int size,int escmax,int totmax,int inc,grBoolean noesc)
 {
 scontext *sc;
 int i;
@@ -102,7 +102,7 @@ while (sc->total > sc->totmax )
 
 }
 
-jeBoolean scontextEncode(scontext *sc, int sym) /** returns flag "coded by me or not" **/
+grBoolean scontextEncode(scontext *sc, int sym) /** returns flag "coded by me or not" **/
 {
 	
 if ( sc->tree[sym] == 0 ) 
@@ -123,7 +123,7 @@ if ( sc->tree[sym] == 0 )
 
 	scontextAdd(sc,sym);
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 else 
 {
@@ -138,7 +138,7 @@ else
 	scontextAdd(sc,sym);
 }
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 
@@ -178,7 +178,7 @@ scontextAdd(sc,sym);
 return sym;
 }
 
-jeBoolean scontextHas(scontext *sc,int symbol)
+grBoolean scontextHas(scontext *sc,int symbol)
 {
 return( scontextGetProb(sc,symbol) );
 }

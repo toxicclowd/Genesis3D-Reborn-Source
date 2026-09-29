@@ -36,7 +36,7 @@ typedef enum
 	TDBODY_IS_DESCENDENT,
 } TDBodyHeritage;
 
-TopDownBody* TopDownBody_CreateFromBody(jeBody* pBody);
+TopDownBody* TopDownBody_CreateFromBody(grBody* pBody);
 
 void TopDownBody_Destroy(TopDownBody** ppTDBody);
 

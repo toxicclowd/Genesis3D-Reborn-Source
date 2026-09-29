@@ -24,8 +24,8 @@
 #include "Bitmap.h"
 #include "VFile.h"
 
-jeBoolean codePal_Write(const jeBitmap_Palette * Pal,jeVFile * File, int * pWroteLen);
-jeBoolean codePal_Read( jeBitmap_Palette * Pal,jeVFile * File);
+grBoolean codePal_Write(const grBitmap_Palette * Pal,grVFile * File, int * pWroteLen);
+grBoolean codePal_Read( grBitmap_Palette * Pal,grVFile * File);
 
 #endif
 

@@ -21,7 +21,7 @@
 #ifndef TRIGGER_H
 #define TRIGGER_H
 
-#include "jeWorld.h"
+#include "grWorld.h"
 #include "Motion.h"
 
 #ifdef __cplusplus
@@ -38,9 +38,9 @@ typedef enum
 	TRIGGER_FROM_OBJECT_XFORM,
 }	TriggerContext;
 
-jeBoolean Trigger_Set();
-void Trigger_ParseEvent(jeWorld *World, TriggerContext Type, void *ContextData, char *EventString);
-void Trigger_ProcessEvents(jeWorld *World, TriggerContext Type, void *ContextData, jeMotion *Motion, float StartTime, float EndTime);
+grBoolean Trigger_Set();
+void Trigger_ParseEvent(grWorld *World, TriggerContext Type, void *ContextData, char *EventString);
+void Trigger_ProcessEvents(grWorld *World, TriggerContext Type, void *ContextData, grMotion *Motion, float StartTime, float EndTime);
 
 #ifdef __cplusplus
 }

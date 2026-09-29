@@ -26,38 +26,38 @@
 extern "C" {
 #endif
 
-typedef struct jeSpring jeSpring;
+typedef struct grSpring grSpring;
 
-typedef jeBoolean (*jeSpring_ForceFunc)(jeSpring* pSpring, float dt);
+typedef grBoolean (*grSpring_ForceFunc)(grSpring* pSpring, float dt);
 
 /////////////////////////////////////////////////////////////////////////////////
 // ctor / dtor
 
-jeSpring* jeSpring_Create(float Ks, float Kd, jeParticle* p1, jeParticle* p2,
-	jeSpring_ForceFunc forceFunc);
-void jeSpring_Destroy(jeSpring** ppSpring);
+grSpring* grSpring_Create(float Ks, float Kd, grParticle* p1, grParticle* p2,
+	grSpring_ForceFunc forceFunc);
+void grSpring_Destroy(grSpring** ppSpring);
 
 /////////////////////////////////////////////////////////////////////////////////
 // accessors
 
-jeParticle* jeSpring_GetPart1(const jeSpring* pSpring);
-jeParticle* jeSpring_GetPart2(const jeSpring* pSpring);
-float jeSpring_GetKs(const jeSpring* pSpring);
-float jeSpring_GetKd(const jeSpring* pSpring);
-float jeSpring_GetR0(const jeSpring* pSpring);
-jeSpring_ForceFunc jeSpring_GetForceFunc(const jeSpring* pSpring);
+grParticle* grSpring_GetPart1(const grSpring* pSpring);
+grParticle* grSpring_GetPart2(const grSpring* pSpring);
+float grSpring_GetKs(const grSpring* pSpring);
+float grSpring_GetKd(const grSpring* pSpring);
+float grSpring_GetR0(const grSpring* pSpring);
+grSpring_ForceFunc grSpring_GetForceFunc(const grSpring* pSpring);
 
-jeBoolean jeSpring_SetPart1(jeSpring* pSpring, const jeParticle* part1);
-jeBoolean jeSpring_SetPart2(jeSpring* pSpring, const jeParticle* part2);
-jeBoolean jeSpring_SetKs(jeSpring* pSpring, float Ks);
-jeBoolean jeSpring_SetKd(jeSpring* pSpring, float Kd);
-jeBoolean jeSpring_SetForceFunc(jeSpring* pSpring, jeSpring_ForceFunc forceFunc);
+grBoolean grSpring_SetPart1(grSpring* pSpring, const grParticle* part1);
+grBoolean grSpring_SetPart2(grSpring* pSpring, const grParticle* part2);
+grBoolean grSpring_SetKs(grSpring* pSpring, float Ks);
+grBoolean grSpring_SetKd(grSpring* pSpring, float Kd);
+grBoolean grSpring_SetForceFunc(grSpring* pSpring, grSpring_ForceFunc forceFunc);
 
 /////////////////////////////////////////////////////////////////////////////////
 // fns
 
-jeBoolean jeSpring_ForceFunc_ComputeDamped(jeSpring* pSpring);
-jeBoolean jeSpring_ForceFunc_ComputeCriticallyDamped(jeSpring* pSpring);
+grBoolean grSpring_ForceFunc_ComputeDamped(grSpring* pSpring);
+grBoolean grSpring_ForceFunc_ComputeCriticallyDamped(grSpring* pSpring);
 
 #ifdef __cplusplus
 }

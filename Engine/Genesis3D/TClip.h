@@ -18,11 +18,11 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_TCLIP_H
-#define JE_TCLIP_H
+#ifndef GR_TCLIP_H
+#define GR_TCLIP_H
 
 #include "BaseType.h"
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "Bitmap.h"
 #include "Engine.h"
 
@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 
-typedef struct jeMaterialSpec		jeMaterialSpec;
+typedef struct grMaterialSpec		grMaterialSpec;
 
 /*******
 
@@ -52,19 +52,19 @@ you should call it like :
 
 ********/
 
-JETAPI void JETCC jeTClip_SetupEdges(
-	jeEngine *Engine,
-	jeFloat	LeftEdge, 
-	jeFloat RightEdge,
-	jeFloat TopEdge ,
-	jeFloat BottomEdge,
-	jeFloat BackEdge);
+GRAPI void GRCC grTClip_SetupEdges(
+	grEngine *Engine,
+	grFloat	LeftEdge, 
+	grFloat RightEdge,
+	grFloat TopEdge ,
+	grFloat BottomEdge,
+	grFloat BackEdge);
 
-JETAPI jeBoolean JETCC jeTClip_Push(void);
-JETAPI jeBoolean JETCC jeTClip_Pop(void);
+GRAPI grBoolean GRCC grTClip_Push(void);
+GRAPI grBoolean GRCC grTClip_Pop(void);
 
-JETAPI jeBoolean JETCC jeTClip_SetTexture(const jeMaterialSpec * Material, int32 RenderFlags);
-JETAPI void JETCC jeTClip_Triangle(const JE_LVertex TriVertex[3]);
+GRAPI grBoolean GRCC grTClip_SetTexture(const grMaterialSpec * Material, int32 RenderFlags);
+GRAPI void GRCC grTClip_Triangle(const GR_LVertex TriVertex[3]);
 
 
 #ifdef __cplusplus

@@ -45,19 +45,19 @@ typedef struct	FakeNetFile
 	double		OpenTime,AvailTime;
 
 	uint32		RefCount;
-	jeVFile *	BaseFile;
+	grVFile *	BaseFile;
 } FakeNetFile;
 
 /*}{******************* Protos ******************************/
 
-static	jeBoolean	JETCC FSFakeNet_Close(void *Handle);
-static	jeBoolean	JETCC FSFakeNet_BytesAvailable(void *Handle, long *pCount);
-static	jeBoolean	JETCC FSFakeNet_Seek(void *Handle, int Where, jeVFile_Whence Whence);
+static	grBoolean	GRCC FSFakeNet_Close(void *Handle);
+static	grBoolean	GRCC FSFakeNet_BytesAvailable(void *Handle, long *pCount);
+static	grBoolean	GRCC FSFakeNet_Seek(void *Handle, int Where, grVFile_Whence Whence);
 
 /*}{******************* Open/Close ******************************/
 
-static	void *	JETCC FSFakeNet_OpenNewSystem(
-	jeVFile *		FS,
+static	void *	GRCC FSFakeNet_OpenNewSystem(
+	grVFile *		FS,
 	const char *	Name,
 	void *			Context,
 	unsigned int	OpenModeFlags)
@@ -67,12 +67,12 @@ FakeNetFile * File;
 	if ( Name || Context || !FS )
 		return NULL;
 
-	File = (FakeNetFile *)jeRam_AllocateClear(sizeof(*File));
+	File = (FakeNetFile *)grRam_AllocateClear(sizeof(*File));
 	if	(!File)
 		return NULL;
 
 	File->BaseFile = FS;
-	jeVFile_CreateRef(File->BaseFile);
+	grVFile_CreateRef(File->BaseFile);
 
 	File->OpenTime = timeTSC();
 	File->AvailTime = File->OpenTime;
@@ -80,7 +80,7 @@ FakeNetFile * File;
 return File;
 }
 
-static	jeBoolean JETCC FSFakeNet_Close(void *Handle)
+static	grBoolean GRCC FSFakeNet_Close(void *Handle)
 {
 FakeNetFile * File;
 	File = (FakeNetFile *)Handle;
@@ -88,20 +88,20 @@ FakeNetFile * File;
 	if ( File->RefCount > 0 )
 	{
 		File->RefCount--;
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	if ( File->BaseFile )
-		jeVFile_Close(File->BaseFile);
+		grVFile_Close(File->BaseFile);
 
-	jeRam_Free(File);
+	grRam_Free(File);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /*}{******************* The Fake Net ******************************/
 
-static	jeBoolean	JETCC FSFakeNet_BytesAvailable(void *Handle, long *pCount)
+static	grBoolean	GRCC FSFakeNet_BytesAvailable(void *Handle, long *pCount)
 {
 FakeNetFile * File;
 int32 AllowLen,CurLen;
@@ -109,8 +109,8 @@ double CurTime,LagTime;
 
 	File = (FakeNetFile *)Handle;
 
-	if ( ! jeVFile_BytesAvailable(File->BaseFile,pCount) )
-		return JE_FALSE;
+	if ( ! grVFile_BytesAvailable(File->BaseFile,pCount) )
+		return GR_FALSE;
 
 	CurTime = timeTSC();
 
@@ -122,11 +122,11 @@ double CurTime,LagTime;
 	if ( CurTime < (File->AvailTime + LagTime) )
 	{
 		*pCount = 0;
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
-	if ( ! jeVFile_Tell(File->BaseFile,(long *)&CurLen) )
-		return JE_FALSE;
+	if ( ! grVFile_Tell(File->BaseFile,(long *)&CurLen) )
+		return GR_FALSE;
 
 	File->AvailTime = CurTime;
 
@@ -135,10 +135,10 @@ double CurTime,LagTime;
 	if ( *pCount > AllowLen )
 		*pCount = AllowLen;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_Read(void *Handle, char *Buff, uint32 Count)
+static	grBoolean	GRCC FSFakeNet_Read(void *Handle, char *Buff, uint32 Count)
 {
 FakeNetFile * File;
 uint32 Avail;
@@ -148,29 +148,29 @@ uint32 Avail;
 	do
 	{
 		if ( ! FSFakeNet_BytesAvailable(Handle,&Avail) )
-			return JE_FALSE;
+			return GR_FALSE;
 
 		if ( Avail == 0 )
-			jeThreadQueue_Sleep(10);
+			grThreadQueue_Sleep(10);
 		else if ( Avail < Count )
 		{
-			if ( ! jeVFile_Read(File->BaseFile,Buff,Avail) )
-				return JE_FALSE;
+			if ( ! grVFile_Read(File->BaseFile,Buff,Avail) )
+				return GR_FALSE;
 			Buff 		+= Avail;
 			Count 		-= Avail;
 
 			Avail = 0;
 
-			if ( jeVFile_EOF(File->BaseFile) )
-				return JE_FALSE;
+			if ( grVFile_EOF(File->BaseFile) )
+				return GR_FALSE;
 		}
 
 	} while( Avail < Count );
 
-return jeVFile_Read(File->BaseFile,Buff,Count);
+return grVFile_Read(File->BaseFile,Buff,Count);
 }
 
-static	int JETCC FSFakeNet_GetC(FakeNetFile * File)
+static	int GRCC FSFakeNet_GetC(FakeNetFile * File)
 {
  char C;
 	if ( ! FSFakeNet_Read(File,&C,1) )
@@ -178,7 +178,7 @@ static	int JETCC FSFakeNet_GetC(FakeNetFile * File)
 return C;
 }
 
-static	jeBoolean	JETCC FSFakeNet_GetS(void *Handle, char *Buff, int MaxLen)
+static	grBoolean	GRCC FSFakeNet_GetS(void *Handle, char *Buff, int MaxLen)
 {
 FakeNetFile *	File;
 int C;
@@ -200,109 +200,109 @@ char * Ptr;
 		if (C == '\n' || C == '\r' || C == 0 )
 			continue;
 
-		if ( ! FSFakeNet_Seek(File,-1,JE_VFILE_SEEKCUR) )
-			return JE_FALSE;
+		if ( ! FSFakeNet_Seek(File,-1,GR_VFILE_SEEKCUR) )
+			return GR_FALSE;
 		break;
 	}
 
 	*Ptr = 0;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_GetProperties(const void *Handle, jeVFile_Properties *Properties)
+static	grBoolean	GRCC FSFakeNet_GetProperties(const void *Handle, grVFile_Properties *Properties)
 {
 const FakeNetFile * File;
 
 	File = (FakeNetFile *)Handle;
 
-	if ( ! jeVFile_GetProperties(File->BaseFile,Properties) )
-		return JE_FALSE;
+	if ( ! grVFile_GetProperties(File->BaseFile,Properties) )
+		return GR_FALSE;
 	
-	Properties->AttributeFlags |= JE_VFILE_ATTRIB_REMOTE;
+	Properties->AttributeFlags |= GR_VFILE_ATTRIB_REMOTE;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /*}{******************* Pass-Throughs ******************************/
 
-static	jeBoolean	JETCC FSFakeNet_Write(void *Handle, const void *Buff, int Count)
+static	grBoolean	GRCC FSFakeNet_Write(void *Handle, const void *Buff, int Count)
 {
 FakeNetFile * File;
 	File = (FakeNetFile *)Handle;
 
-return jeVFile_Write(File->BaseFile,Buff,Count);
+return grVFile_Write(File->BaseFile,Buff,Count);
 }
 
-static	jeBoolean	JETCC FSFakeNet_Seek(void *Handle, int Where, jeVFile_Whence Whence)
+static	grBoolean	GRCC FSFakeNet_Seek(void *Handle, int Where, grVFile_Whence Whence)
 {
 FakeNetFile * File;
 	File = (FakeNetFile *)Handle;
 
-return jeVFile_Seek(File->BaseFile,Where,Whence);
+return grVFile_Seek(File->BaseFile,Where,Whence);
 }
 
-static	jeBoolean	JETCC FSFakeNet_EOF(const void *Handle)
+static	grBoolean	GRCC FSFakeNet_EOF(const void *Handle)
 {
 const FakeNetFile *	File;
 	File = (FakeNetFile *)Handle;
 
-return jeVFile_EOF(File->BaseFile);
+return grVFile_EOF(File->BaseFile);
 }
 
-static	jeBoolean	JETCC FSFakeNet_Tell(const void *Handle, long *pPosition)
+static	grBoolean	GRCC FSFakeNet_Tell(const void *Handle, long *pPosition)
 {
 const FakeNetFile *	File;
 	File = (FakeNetFile *)Handle;
 
-return jeVFile_Tell(File->BaseFile,pPosition);
+return grVFile_Tell(File->BaseFile,pPosition);
 }
 
-static	jeBoolean	JETCC FSFakeNet_Size(const void *Handle, long *pSize)
+static	grBoolean	GRCC FSFakeNet_Size(const void *Handle, long *pSize)
 {
 const FakeNetFile *	File;
 	File = (FakeNetFile *)Handle;
 
-return jeVFile_Size(File->BaseFile,pSize);
+return grVFile_Size(File->BaseFile,pSize);
 }
 
-static	jeVFile *	JETCC FSFakeNet_GetHintsFile(void *Handle)
+static	grVFile *	GRCC FSFakeNet_GetHintsFile(void *Handle)
 {
 FakeNetFile *	File;
 	File = (FakeNetFile *)Handle;
 
-return jeVFile_GetHintsFile(File->BaseFile);
+return grVFile_GetHintsFile(File->BaseFile);
 }
 
 /*}{******************* UnImplemented Bullshit ******************************/
 
-static	void *	JETCC FSFakeNet_FinderCreate(
-	jeVFile *			FS,
+static	void *	GRCC FSFakeNet_FinderCreate(
+	grVFile *			FS,
 	void *			Handle,
 	const char *	FileSpec)
 {
 	return NULL;
 }
 
-static	jeBoolean	JETCC FSFakeNet_FinderGetNextFile(void *Handle)
+static	grBoolean	GRCC FSFakeNet_FinderGetNextFile(void *Handle)
 {
 	assert(!Handle);
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_FinderGetProperties(void *Handle, jeVFile_Properties *Props)
+static	grBoolean	GRCC FSFakeNet_FinderGetProperties(void *Handle, grVFile_Properties *Props)
 {
 	assert(!Handle);
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	void JETCC FSFakeNet_FinderDestroy(void *Handle)
+static	void GRCC FSFakeNet_FinderDestroy(void *Handle)
 {
 	assert(!Handle);
 }
 
-static	void *	JETCC FSFakeNet_Open(
-	jeVFile *		FS,
+static	void *	GRCC FSFakeNet_Open(
+	grVFile *		FS,
 	void *			Handle,
 	const char *	Name,
 	void *			Context,
@@ -312,61 +312,61 @@ static	void *	JETCC FSFakeNet_Open(
 }
 
 
-static	jeBoolean	JETCC FSFakeNet_SetSize(void *Handle, long Size)
+static	grBoolean	GRCC FSFakeNet_SetSize(void *Handle, long Size)
 {
 	assert(!"Not implemented");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_SetAttributes(void *Handle, jeVFile_Attributes Attributes)
+static	grBoolean	GRCC FSFakeNet_SetAttributes(void *Handle, grVFile_Attributes Attributes)
 {
 	assert(!"Not implemented");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_SetTime(void *Handle, const jeVFile_Time *Time)
+static	grBoolean	GRCC FSFakeNet_SetTime(void *Handle, const grVFile_Time *Time)
 {
 	assert(!"Not implemented");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_FileExists(jeVFile *FS, void *Handle, const char *Name)
+static	grBoolean	GRCC FSFakeNet_FileExists(grVFile *FS, void *Handle, const char *Name)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_Disperse(
-	jeVFile *	FS,
+static	grBoolean	GRCC FSFakeNet_Disperse(
+	grVFile *	FS,
 	void *		Handle,
 	const char *Directory)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_DeleteFile(jeVFile *FS, void *Handle, const char *Name)
+static	grBoolean	GRCC FSFakeNet_DeleteFile(grVFile *FS, void *Handle, const char *Name)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_RenameFile(jeVFile *FS, void *Handle, const char *Name, const char *NewName)
+static	grBoolean	GRCC FSFakeNet_RenameFile(grVFile *FS, void *Handle, const char *Name, const char *NewName)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSFakeNet_UpdateContext(
-	jeVFile *		FS,
+static	grBoolean	GRCC FSFakeNet_UpdateContext(
+	grVFile *		FS,
 	void *			Handle,
 	void *			Context,
 	int 			ContextSize)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 /*}{******************* The FSFakeNet Struct ******************************/
 
 #pragma warning (disable : 4113 4028)
 
-static	jeVFile_SystemAPIs	FSFakeNet_APIs =
+static	grVFile_SystemAPIs	FSFakeNet_APIs =
 {
 	FSFakeNet_FinderCreate,
 	FSFakeNet_FinderGetNextFile,
@@ -400,7 +400,7 @@ static	jeVFile_SystemAPIs	FSFakeNet_APIs =
 	FSFakeNet_GetHintsFile,
 };
 
-const jeVFile_SystemAPIs * JETCC FSFakeNet_GetAPIs(void)
+const grVFile_SystemAPIs * GRCC FSFakeNet_GetAPIs(void)
 {
 	return &FSFakeNet_APIs;
 }

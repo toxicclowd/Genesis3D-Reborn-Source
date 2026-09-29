@@ -22,13 +22,13 @@
 #ifndef VERTLIST_H
 #define VERTLIST_H
 
-#include "jeList.h"
-#include "jeBrush.h"
+#include "grList.h"
+#include "grBrush.h"
 
 typedef struct Vert_Struct 
 {
-	jeVertArray_Index Index;
-	jeVec3d			  LastPos;
+	grVertArray_Index Index;
+	grVec3d			  LastPos;
 } Vert_Struct;
 
 #ifdef __cplusplus
@@ -39,7 +39,7 @@ extern "C" {
 typedef List VertList ;
 typedef ListIterator VertIterator ;
 typedef List_DestroyCallback VertList_DestroyCallback ;
-typedef jeBoolean (*VertListCB)( Vert_Struct *pVert, void * pVoid ) ;
+typedef grBoolean (*VertListCB)( Vert_Struct *pVert, void * pVoid ) ;
 
 VertList *		VertList_Create( void ) ;
 void			VertList_Destroy( VertList **ppList, VertList_DestroyCallback DestroyFcn ) ;
@@ -53,11 +53,11 @@ int32				VertList_GetNumVert( VertList * pList );
 
 // MODIFIERS
 VertIterator	VertList_Append( VertList * pList, Vert_Struct	* pVert ) ;
-void			VertList_Remove( VertList * pList, jeVertArray_Index Index, VertList_DestroyCallback Callback) ;
+void			VertList_Remove( VertList * pList, grVertArray_Index Index, VertList_DestroyCallback Callback) ;
 
 // SEARCH
-jeBoolean		VertList_Search( VertList * pList, Vert_Struct	* pVert, VertIterator * vI );
-jeBoolean		VertList_SearchByIndex( VertList * pList, jeVertArray_Index * Index, VertIterator * vI );
+grBoolean		VertList_Search( VertList * pList, Vert_Struct	* pVert, VertIterator * vI );
+grBoolean		VertList_SearchByIndex( VertList * pList, grVertArray_Index * Index, VertIterator * vI );
 
 // ENUMERATION
 int32			VertList_Enum( VertList * pList, void * pVoid, VertListCB Callback ) ;

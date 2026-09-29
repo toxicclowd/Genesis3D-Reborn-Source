@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_ENGINE_PRIVATE_H
-#define JE_ENGINE_PRIVATE_H
+#ifndef GR_ENGINE_PRIVATE_H
+#define GR_ENGINE_PRIVATE_H
 
 #include <stdlib.h>
 
@@ -27,7 +27,7 @@
 #include "Bitmap.h"
 #include "BitmapList.h"
 #include "Dcommon.h"
-#include "jeChain.h"
+#include "grChain.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,13 +58,13 @@ typedef struct
 	int32 size;
 	//int32 r,g,b;
 	uint32			Color;	
-	jeFont			*Font;
+	grFont			*Font;
 }	Engine_String;
 
 typedef struct
 {
-	jeBitmap		*FontBitmap;
-	jeFont			*Font;
+	grBitmap		*FontBitmap;
+	grFont			*Font;
 	
 	uint32			FontLUT1[256];
 	Engine_String	ClientStrings[MAX_CLIENT_STRINGS];
@@ -73,29 +73,29 @@ typedef struct
 	int32			NumDebugStrings;
 } Engine_FontInfo;
 
-typedef struct jeDriver_Mode
+typedef struct grDriver_Mode
 {
 	int32			Id;							// Driver assigned mode id
 	char			Name[512];					// Driver assigned mode name
 	int32			Width,Height,Bpp;
-} jeDriver_Mode;
+} grDriver_Mode;
 
-typedef struct jeDriver
+typedef struct grDriver
 {
 	int32			Id;							// Driver assigned Id
 	char			Name[512];					// Driver assigned name
 	char			FileName[256];				// FileName of driver
 	DRV_Hook *		HookProc;					// Function pointer to hook, if not a DLL
 
-	jeDriver_Mode	Modes[MAX_DRIVER_MODES];	// Modes for this driver
+	grDriver_Mode	Modes[MAX_DRIVER_MODES];	// Modes for this driver
 	int32			NumModes;					// Num modes for this driver
 
-} jeDriver;
+} grDriver;
 
 typedef struct
 {
 	// Info the enuming fills in
-	jeDriver		SubDrivers[MAX_SUB_DRIVERS];
+	grDriver		SubDrivers[MAX_SUB_DRIVERS];
 	int32			NumSubDrivers;
 	char			CurFileName[_MAX_PATH];
 	DRV_Hook *		CurHookProc;
@@ -103,8 +103,8 @@ typedef struct
 	//	Data for current driver
 	int32			DriverHandle;		// CurrentDriver Handle (for DLL)
 	
-	jeDriver		*CurDriver;			// Current driver
-	jeDriver_Mode	*CurMode;			// Current mode
+	grDriver		*CurDriver;			// Current driver
+	grDriver_Mode	*CurMode;			// Current mode
 	DRV_Driver		*RDriver;			// Current driver function hook
 										// ->RDriver doubles as Active boolean
 } Engine_DriverInfo;
@@ -132,15 +132,15 @@ typedef struct
 typedef struct BitmapList BitmapList;
 
 // System globals initialized by module it belongs to...
-struct jeEngine
+struct grEngine
 {
 	int32				RefCount;
 
-	jeEngine			* MySelf1;
+	grEngine			* MySelf1;
 
 	//	System info
 	Engine_DriverInfo	DriverInfo;			// Info about current driver (this should be enumed)
-	jeChain				*ChangeDriverCBChain;
+	grChain				*ChangeDriverCBChain;
 
 	Engine_DebugInfo	DebugInfo;
 
@@ -158,9 +158,9 @@ struct jeEngine
 	// Light module info
 	uint8				StyleLUT1[64][256];	// Style intensity table (StyleLUT1[Intensity][Number]);
 
-	jeBoolean			Changed;			// == JE_TRUE if needs to be updated with Driver
+	grBoolean			Changed;			// == GR_TRUE if needs to be updated with Driver
 
-	jeBoolean			DisplayFrameRateCounter; // Whether or not to display the FPS string
+	grBoolean			DisplayFrameRateCounter; // Whether or not to display the FPS string
 
 	char				*DriverDirectory;	// Path to load driver DLLs from
 
@@ -169,19 +169,19 @@ struct jeEngine
 	float				CurrentGamma;
 	float				BitmapGamma;
 
-	jeEngine_FrameState	FrameState;
+	grEngine_FrameState	FrameState;
 
 	uint32				DefaultRenderFlags;
 
-	jeBoolean			SplashDisplayed;	// Have we already done the splash screen?
+	grBoolean			SplashDisplayed;	// Have we already done the splash screen?
 
 	int32				RenderMode;
 
-	jeEngine			* MySelf2;
+	grEngine			* MySelf2;
 };
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // JE_ENGINE_H
+#endif // GR_ENGINE_H

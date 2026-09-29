@@ -18,14 +18,14 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-/* jeQKFrame   (jeQuaternion - Keyframe)
+/* grQKFrame   (grQuaternion - Keyframe)
 	This module handles interpolation for keyframes that contain a quaternion
 	This is intended to support Path.c
-	jeTKArray supplies general support for a time-keyed array, and this supplements
+	grTKArray supplies general support for a time-keyed array, and this supplements
 	that support to include the specific time-keyed arrays:
-	  An array of jeQuaternion interpolated linearly
-	  An array of jeQuaternion with spherical linear interpolation (SLERP)
-	  An array of jeQuaternion with spherical quadrangle 
+	  An array of grQuaternion interpolated linearly
+	  An array of grQuaternion with spherical linear interpolation (SLERP)
+	  An array of grQuaternion with spherical quadrangle 
 		interpolation (SQUAD) as defined by:
 	    Advanced Animation and Rendering Techniques by Alan Watt and Mark Watt
 
@@ -36,11 +36,11 @@
 	interpolated with different calls, but insertion and queries share a call.
 	
 	Quadrangle interpolation requires additional computation after changes are
-	made to the keyframe list.  Call jeQKFrame_SquadRecompute() to update the
+	made to the keyframe list.  Call grQKFrame_SquadRecompute() to update the
 	calculations.
 */
-#ifndef JE_QKFRAME_H
-#define JE_QKFRAME_H
+#ifndef GR_QKFRAME_H
+#define GR_QKFRAME_H
 
 
 #include "TKArray.h"
@@ -56,86 +56,86 @@ typedef enum
 	QKFRAME_LINEAR,
 	QKFRAME_SLERP,
 	QKFRAME_SQUAD
-} jeQKFrame_InterpolationType;
+} grQKFrame_InterpolationType;
 
 
-jeTKArray *JETCC jeQKFrame_LinearCreate(void);
+grTKArray *GRCC grQKFrame_LinearCreate(void);
 	// creates a frame list for linear interpolation
 
-jeTKArray *JETCC jeQKFrame_SlerpCreate();
+grTKArray *GRCC grQKFrame_SlerpCreate();
 	// creates a frame list for spherical linear interpolation	
 
-jeTKArray *JETCC jeQKFrame_SquadCreate();
+grTKArray *GRCC grQKFrame_SquadCreate();
 	// creates a frame list for spherical linear interpolation	
 
 
-jeBoolean JETCC jeQKFrame_Insert(
-	jeTKArray **KeyList,			// keyframe list to insert into
-	jeTKArray_TimeType Time,		// time of new keyframe
-	const jeQuaternion *Q,			// quaternion at new keyframe
+grBoolean GRCC grQKFrame_Insert(
+	grTKArray **KeyList,			// keyframe list to insert into
+	grTKArray_TimeType Time,		// time of new keyframe
+	const grQuaternion *Q,			// quaternion at new keyframe
 	int *Index);					// index of new frame
 	// inserts a new keyframe with the given time and vector into the list.
 
-void JETCC jeQKFrame_Query(
-	const jeTKArray *KeyList,		// keyframe list
+void GRCC grQKFrame_Query(
+	const grTKArray *KeyList,		// keyframe list
 	int Index,						// index of frame to return
-	jeTKArray_TimeType *Time,		// time of the frame is returned
-	jeQuaternion *V);					// vector from the frame is returned
+	grTKArray_TimeType *Time,		// time of the frame is returned
+	grQuaternion *V);					// vector from the frame is returned
 	// returns the vector and the time at keyframe[index] 
 
-void JETCC jeQKFrame_Modify(
-	jeTKArray *KeyList,				// keyframe list
+void GRCC grQKFrame_Modify(
+	grTKArray *KeyList,				// keyframe list
 	int Index,						// index of frame to change
-	const jeQuaternion *Q);			// vector for the new key
+	const grQuaternion *Q);			// vector for the new key
 	// modifies a vector at keyframe[index]
 
-void JETCC jeQKFrame_LinearInterpolation(
+void GRCC grQKFrame_LinearInterpolation(
 	const void *KF1,		// pointer to first keyframe
 	const void *KF2,		// pointer to second keyframe
-	jeFloat T,				// 0 <= T <= 1   blending parameter
-	void *Result);			// put the result in here (jeQuaternion)
+	grFloat T,				// 0 <= T <= 1   blending parameter
+	void *Result);			// put the result in here (grQuaternion)
 		// interpolates to get a vector between the two vectors at the two
 		// keyframes where T==0 returns the vector for KF1 
 		// and T==1 returns the vector for KF2
 		// interpolates linearly
 	
-void JETCC jeQKFrame_SlerpInterpolation(
+void GRCC grQKFrame_SlerpInterpolation(
 	const void *KF1,		// pointer to first keyframe
 	const void *KF2,		// pointer to second keyframe
-	jeFloat T,				// 0 <= T <= 1   blending parameter
-	void *Result);			// put the result in here (jeQuaternion)
+	grFloat T,				// 0 <= T <= 1   blending parameter
+	void *Result);			// put the result in here (grQuaternion)
 		// interpolates to get a vector between the two vectors at the two
 		// keyframes where T==0 returns the vector for KF1 
 		// and T==1 returns the vector for KF2
 		// interpolates using spherical linear blending
 
-void JETCC jeQKFrame_SquadInterpolation(
+void GRCC grQKFrame_SquadInterpolation(
 	const void *KF1,		// pointer to first keyframe
 	const void *KF2,		// pointer to second keyframe
-	jeFloat T,				// 0 <= T <= 1   blending parameter
-	void *Result);			// put the result in here (jeQuaternion)
+	grFloat T,				// 0 <= T <= 1   blending parameter
+	void *Result);			// put the result in here (grQuaternion)
 		// interpolates to get a vector between the two vectors at the two
 		// keyframes where T==0 returns the vector for KF1 
 		// and T==1 returns the vector for KF2
 		// interpolates using spherical quadratic blending
 
-void JETCC jeQKFrame_SquadRecompute(
+void GRCC grQKFrame_SquadRecompute(
 	int       Looped,			// if keylist has the first key connected to last key
-	jeTKArray *KeyList,			// list of keys to recompute hermite values for
-	jeFloat CutInterval);		// intervals <= CutInterval are to be treated as discontinuous
+	grTKArray *KeyList,			// list of keys to recompute hermite values for
+	grFloat CutInterval);		// intervals <= CutInterval are to be treated as discontinuous
 	// rebuild precomputed data for keyframe list.
 
-void JETCC jeQKFrame_SlerpRecompute(
-	jeTKArray *KeyList);		// list of keys to recompute hermite values for
+void GRCC grQKFrame_SlerpRecompute(
+	grTKArray *KeyList);		// list of keys to recompute hermite values for
 	// rebuild precomputed data for keyframe list.
 
-jeBoolean JETCC jeQKFrame_WriteToFile(jeVFile *pFile, jeTKArray *jeQKFrame, 
-								jeQKFrame_InterpolationType InterpolationType, int Looping);
-jeTKArray *JETCC jeQKFrame_CreateFromFile(	
-	jeVFile						*pFile, 
-	jeQKFrame_InterpolationType *InterpolationType, 
+grBoolean GRCC grQKFrame_WriteToFile(grVFile *pFile, grTKArray *grQKFrame, 
+								grQKFrame_InterpolationType InterpolationType, int Looping);
+grTKArray *GRCC grQKFrame_CreateFromFile(	
+	grVFile						*pFile, 
+	grQKFrame_InterpolationType *InterpolationType, 
 	int							*Looping,
-	jeFloat						CutInterval);	// intervals <= CutInterval are to be treated as discontinuous
+	grFloat						CutInterval);	// intervals <= CutInterval are to be treated as discontinuous
 
 
 

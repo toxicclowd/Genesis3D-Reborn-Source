@@ -69,13 +69,13 @@
 static HINSTANCE		hClassInstance = NULL;
 static char				**ActorDefList = NULL;
 static int				ActorDefListSize = 0;
-static jeProperty		ActorObjProperties[ACTOROBJ_LAST_INDEX];
-static jeProperty_List	ActorObjPropertyList = { ACTOROBJ_LAST_INDEX, &( ActorObjProperties[0] ) };
+static grProperty		ActorObjProperties[ACTOROBJ_LAST_INDEX];
+static grProperty_List	ActorObjPropertyList = { ACTOROBJ_LAST_INDEX, &( ActorObjProperties[0] ) };
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //	UV material mapper setup
 ////////////////////////////////////////////////////////////////////////////////////////
-typedef jeBoolean JETCC UVMAP( const jeXForm3d* pXForm, jeLVertex* pVerts, const jeVec3d* pNormals, int nverts );
+typedef grBoolean GRCC UVMAP( const grXForm3d* pXForm, grLVertex* pVerts, const grVec3d* pNormals, int nverts );
 typedef struct
 {
 	int		Index;
@@ -86,9 +86,9 @@ typedef struct
 static Mapper_Table	MaterialMapperTable[] = 
 {
 	{ 0, "< none >", NULL },
-	{ 1, "Reflection", jeUVMap_Reflection },
-	{ 2, "Refraction", jeUVMap_Refraction },
-	{ 3, "Projection", jeUVMap_Projection }
+	{ 1, "Reflection", grUVMap_Reflection },
+	{ 2, "Refraction", grUVMap_Refraction },
+	{ 3, "Projection", grUVMap_Projection }
 };
 static char ** MaterialMapperNameList = NULL;
 #define MaterialMapperTableSize	( sizeof( MaterialMapperTable ) / sizeof( MaterialMapperTable[0] ) )
@@ -108,12 +108,12 @@ static char ** MaterialMapperNameList = NULL;
 #define ACTOROBJ_DEFAULT_SCALEX							1.0f
 #define ACTOROBJ_DEFAULT_SCALEY							1.0f
 #define ACTOROBJ_DEFAULT_SCALEZ							1.0f
-#define ACTOROBJ_DEFAULT_PERBONELIGHTING				JE_FALSE
-#define ACTOROBJ_DEFAULT_USEFILLLIGHT					JE_TRUE
-#define ACTOROBJ_DEFAULT_FILLLIGHTNORMALACTORRELATIVE	JE_TRUE
-#define ACTOROBJ_DEFAULT_USEAMBFROMFLOOR				JE_FALSE
-#define ACTOROBJ_DEFAULT_COLLISIONEXTBOXDISPLAY			JE_FALSE
-#define ACTOROBJ_DEFAULT_RENDEREXTBOXDISPLAY			JE_FALSE
+#define ACTOROBJ_DEFAULT_PERBONELIGHTING				GR_FALSE
+#define ACTOROBJ_DEFAULT_USEFILLLIGHT					GR_TRUE
+#define ACTOROBJ_DEFAULT_FILLLIGHTNORMALACTORRELATIVE	GR_TRUE
+#define ACTOROBJ_DEFAULT_USEAMBFROMFLOOR				GR_FALSE
+#define ACTOROBJ_DEFAULT_COLLISIONEXTBOXDISPLAY			GR_FALSE
+#define ACTOROBJ_DEFAULT_RENDEREXTBOXDISPLAY			GR_FALSE
 #define ACTOROBJ_DEFAULT_FILLNORMALX					30.0f
 #define ACTOROBJ_DEFAULT_FILLNORMALY					45.0f
 #define ACTOROBJ_DEFAULT_FILLNORMALZ					0.0f
@@ -134,28 +134,28 @@ static char ** MaterialMapperNameList = NULL;
 void FillProperties(void)
 {
 	// setup X scale property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_SCALEX_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_SCALEX_INDEX] ),
 							( IDS_SCALEX ),
 							ACTOROBJ_DEFAULT_SCALEX,
 							ACTOROBJ_SCALEX_ID,
 							0.00005f, FLT_MAX, 0.1f );
 
 	// setup Y scale property
-	/*jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_SCALEY_INDEX] ),
+	/*grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_SCALEY_INDEX] ),
 							( IDS_SCALEY ),
 							ACTOROBJ_DEFAULT_SCALEY,
 							ACTOROBJ_SCALEY_ID,
 							0.00005f, FLT_MAX, 0.1f );
 
 	// setup Z scale property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_SCALEZ_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_SCALEZ_INDEX] ),
 							( IDS_SCALEZ ),
 							ACTOROBJ_DEFAULT_SCALEZ,
 							ACTOROBJ_SCALEZ_ID,
 							0.00005f, FLT_MAX, 0.1f );*/
 
 	// end scale box group
-	//jeProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_SCALEGROUPEND_INDEX] ), ACTOROBJ_SCALEGROUPEND_ID );
+	//grProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_SCALEGROUPEND_INDEX] ), ACTOROBJ_SCALEGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -164,8 +164,8 @@ void FillProperties(void)
 
 	// start fill light group
 	{
-		jeVec3d	Color = { ACTOROBJ_DEFAULT_FILLLIGHTRED, ACTOROBJ_DEFAULT_FILLLIGHTGREEN, ACTOROBJ_DEFAULT_FILLLIGHTBLUE };
-		jeProperty_FillColorGroup(	&( ActorObjProperties[ACTOROBJ_FILLIGHTGROUP_INDEX] ),
+		grVec3d	Color = { ACTOROBJ_DEFAULT_FILLLIGHTRED, ACTOROBJ_DEFAULT_FILLLIGHTGREEN, ACTOROBJ_DEFAULT_FILLLIGHTBLUE };
+		grProperty_FillColorGroup(	&( ActorObjProperties[ACTOROBJ_FILLIGHTGROUP_INDEX] ),
 									( IDS_FILLLIGHTGROUP ),
 									&Color,
 									ACTOROBJ_FILLIGHTGROUP_ID );
@@ -173,41 +173,41 @@ void FillProperties(void)
 
 	// setup fill light property
 	{
-		jeVec3d	Color = { ACTOROBJ_DEFAULT_FILLLIGHTRED, ACTOROBJ_DEFAULT_FILLLIGHTGREEN, ACTOROBJ_DEFAULT_FILLLIGHTBLUE };
-		jeProperty_FillColorPicker(	&( ActorObjProperties[ACTOROBJ_FILLLIGHT_INDEX] ),
+		grVec3d	Color = { ACTOROBJ_DEFAULT_FILLLIGHTRED, ACTOROBJ_DEFAULT_FILLLIGHTGREEN, ACTOROBJ_DEFAULT_FILLLIGHTBLUE };
+		grProperty_FillColorPicker(	&( ActorObjProperties[ACTOROBJ_FILLLIGHT_INDEX] ),
 									( IDS_FILLLIGHT ),
 									&Color,
 									ACTOROBJ_FILLLIGHT_ID );
 	}
 
 	// setup use fill light property
-	jeProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTUSE_INDEX] ),
+	grProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTUSE_INDEX] ),
 							( IDS_USEFILLLIGHT ),
 							ACTOROBJ_DEFAULT_USEFILLLIGHT,
 							ACTOROBJ_FILLLIGHTUSE_ID );
 
 	// setup fill normal actor relative property
-	jeProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALACTORRELATIVE_INDEX] ),
+	grProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALACTORRELATIVE_INDEX] ),
 							( IDS_FILLLIGHTNORNALACTORRELATIVE ),
 							ACTOROBJ_DEFAULT_FILLLIGHTNORMALACTORRELATIVE,
 							ACTOROBJ_FILLLIGHTNORMALACTORRELATIVE_ID );
 
 	// setup fill light red property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTRED_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTRED_INDEX] ),
 							( IDS_FILLLIGHTRED ),
 							ACTOROBJ_DEFAULT_FILLLIGHTRED,
 							ACTOROBJ_FILLLIGHTRED_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup fill light green property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTGREEN_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTGREEN_INDEX] ),
 							( IDS_FILLLIGHTGREEN ),
 							ACTOROBJ_DEFAULT_FILLLIGHTGREEN,
 							ACTOROBJ_FILLLIGHTGREEN_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup fill light blue property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTBLUE_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTBLUE_INDEX] ),
 							( IDS_FILLLIGHTBLUE ),
 							ACTOROBJ_DEFAULT_FILLLIGHTBLUE,
 							ACTOROBJ_FILLLIGHTBLUE_ID,
@@ -215,39 +215,39 @@ void FillProperties(void)
 
 	// setup fill light normal property
 	{
-		jeVec3d	Vect = { ACTOROBJ_DEFAULT_FILLNORMALX, ACTOROBJ_DEFAULT_FILLNORMALY, ACTOROBJ_DEFAULT_FILLNORMALZ };
-		jeProperty_FillVec3dGroup(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMAL_INDEX] ),
+		grVec3d	Vect = { ACTOROBJ_DEFAULT_FILLNORMALX, ACTOROBJ_DEFAULT_FILLNORMALY, ACTOROBJ_DEFAULT_FILLNORMALZ };
+		grProperty_FillVec3dGroup(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMAL_INDEX] ),
 									( IDS_FILLLIGHTNORMAL ),
 									&Vect,
 									ACTOROBJ_FILLLIGHTNORMAL_ID );
 	}
 
 	// setup fill light normal X property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALX_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALX_INDEX] ),
 							( IDS_FILLLIGHTNORMALX ),
 							ACTOROBJ_DEFAULT_FILLNORMALX,
 							ACTOROBJ_FILLLIGHTNORMALX_ID,
 							0.0f, 359.0f, 1.0f );
 
 	// setup fill light normal Y property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALY_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALY_INDEX] ),
 							( IDS_FILLLIGHTNORMALY ),
 							ACTOROBJ_DEFAULT_FILLNORMALY,
 							ACTOROBJ_FILLLIGHTNORMALY_ID,
 							0.0f, 359.0f, 1.0f );
 
 	// setup fill light normal Z property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALZ_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALZ_INDEX] ),
 							( IDS_FILLLIGHTNORMALZ ),
 							ACTOROBJ_DEFAULT_FILLNORMALZ,
 							ACTOROBJ_FILLLIGHTNORMALZ_ID,
 							0.0f, 359.0f, 1.0f );
 
 	// end fill light normal property
-	jeProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALEND_INDEX] ), ACTOROBJ_FILLLIGHTNORMALEND_ID );
+	grProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_FILLLIGHTNORMALEND_INDEX] ), ACTOROBJ_FILLLIGHTNORMALEND_ID );
 
 	// end fill light group
-	jeProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_FILLIGHTGROUPEND_INDEX] ), ACTOROBJ_FILLIGHTGROUPEND_ID );
+	grProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_FILLIGHTGROUPEND_INDEX] ), ACTOROBJ_FILLIGHTGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -256,8 +256,8 @@ void FillProperties(void)
 
 	// start ambient group
 	{
-		jeVec3d	Color = { ACTOROBJ_DEFAULT_AMBIENTLIGHTRED, ACTOROBJ_DEFAULT_AMBIENTLIGHTGREEN, ACTOROBJ_DEFAULT_AMBIENTLIGHTBLUE };
-		jeProperty_FillColorGroup(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTGROUP_INDEX] ),
+		grVec3d	Color = { ACTOROBJ_DEFAULT_AMBIENTLIGHTRED, ACTOROBJ_DEFAULT_AMBIENTLIGHTGREEN, ACTOROBJ_DEFAULT_AMBIENTLIGHTBLUE };
+		grProperty_FillColorGroup(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTGROUP_INDEX] ),
 								( IDS_AMBIENTLIGHTGROUP ),
 								&Color,
 								ACTOROBJ_AMBIENTLIGHTGROUP_ID );
@@ -265,36 +265,36 @@ void FillProperties(void)
 
 	// setup ambient light property
 	{
-		jeVec3d	Color = { ACTOROBJ_DEFAULT_AMBIENTLIGHTRED, ACTOROBJ_DEFAULT_AMBIENTLIGHTGREEN, ACTOROBJ_DEFAULT_AMBIENTLIGHTBLUE };
-		jeProperty_FillColorPicker(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHT_INDEX] ),
+		grVec3d	Color = { ACTOROBJ_DEFAULT_AMBIENTLIGHTRED, ACTOROBJ_DEFAULT_AMBIENTLIGHTGREEN, ACTOROBJ_DEFAULT_AMBIENTLIGHTBLUE };
+		grProperty_FillColorPicker(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHT_INDEX] ),
 									( IDS_AMBIENTLIGHT ),
 									&Color,
 									ACTOROBJ_AMBIENTLIGHT_ID );
 	}
 
 	// setup ambient light red property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTRED_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTRED_INDEX] ),
 							( IDS_AMBIENTLIGHTRED ),
 							ACTOROBJ_DEFAULT_AMBIENTLIGHTRED,
 							ACTOROBJ_AMBIENTLIGHTRED_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup ambient light green property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTGREEN_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTGREEN_INDEX] ),
 							( IDS_AMBIENTLIGHTGREEN ),
 							ACTOROBJ_DEFAULT_AMBIENTLIGHTGREEN,
 							ACTOROBJ_AMBIENTLIGHTGREEN_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// setup ambient light blue property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTBLUE_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTBLUE_INDEX] ),
 							( IDS_AMBIENTLIGHTBLUE ),
 							ACTOROBJ_DEFAULT_AMBIENTLIGHTBLUE,
 							ACTOROBJ_AMBIENTLIGHTBLUE_ID,
 							0.0f, 255.0f, 1.0f );
 
 	// end ambient light group
-	jeProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTGROUPEND_INDEX] ), ACTOROBJ_AMBIENTLIGHTGROUPEND_ID );
+	grProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_AMBIENTLIGHTGROUPEND_INDEX] ), ACTOROBJ_AMBIENTLIGHTGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -302,50 +302,50 @@ void FillProperties(void)
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// start collision box group
-	jeProperty_FillGroup( &( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXGROUP_INDEX] ),
+	grProperty_FillGroup( &( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXGROUP_INDEX] ),
 						( IDS_COLLISIONEXTBOXGROUP ),
 						ACTOROBJ_COLLISIONEXTBOXGROUP_ID );
 
 	// setup collision box display property
-	jeProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXDISPLAY_INDEX] ),
+	grProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXDISPLAY_INDEX] ),
 							( IDS_COLLISIONEXTBOXDISPLAY ),
 							ACTOROBJ_DEFAULT_COLLISIONEXTBOXDISPLAY,
 							ACTOROBJ_COLLISIONEXTBOXDISPLAY_ID );
 
 	// setup collision box properties
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMINX_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMINX_INDEX] ),
 							( IDS_COLLISIONEXTBOXMINX ),
 							ACTOROBJ_DEFAULT_EXTBOXMINX,
 							ACTOROBJ_COLLISIONEXTBOXMINX_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMINY_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMINY_INDEX] ),
 							( IDS_COLLISIONEXTBOXMINY ),
 							ACTOROBJ_DEFAULT_EXTBOXMINY,
 							ACTOROBJ_COLLISIONEXTBOXMINY_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMINZ_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMINZ_INDEX] ),
 							( IDS_COLLISIONEXTBOXMINZ ),
 							ACTOROBJ_DEFAULT_EXTBOXMINZ,
 							ACTOROBJ_COLLISIONEXTBOXMINZ_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMAXX_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMAXX_INDEX] ),
 							( IDS_COLLISIONEXTBOXMAXX ),
 							ACTOROBJ_DEFAULT_EXTBOXMAXX,
 							ACTOROBJ_COLLISIONEXTBOXMAXX_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMAXY_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMAXY_INDEX] ),
 							( IDS_COLLISIONEXTBOXMAXY ),
 							ACTOROBJ_DEFAULT_EXTBOXMAXY,
 							ACTOROBJ_COLLISIONEXTBOXMAXY_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMAXZ_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXMAXZ_INDEX] ),
 							( IDS_COLLISIONEXTBOXMAXZ ),
 							ACTOROBJ_DEFAULT_EXTBOXMAXZ,
 							ACTOROBJ_COLLISIONEXTBOXMAXZ_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
 
 	// end collision box group
-	jeProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXGROUPEND_INDEX] ), ACTOROBJ_COLLISIONEXTBOXGROUPEND_ID );
+	grProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_COLLISIONEXTBOXGROUPEND_INDEX] ), ACTOROBJ_COLLISIONEXTBOXGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -353,50 +353,50 @@ void FillProperties(void)
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// start render box group
-	jeProperty_FillGroup( &( ActorObjProperties[ACTOROBJ_RENDEREXTBOXGROUP_INDEX] ),
+	grProperty_FillGroup( &( ActorObjProperties[ACTOROBJ_RENDEREXTBOXGROUP_INDEX] ),
 						( IDS_RENDEREXTBOXGROUP ),
 						ACTOROBJ_RENDEREXTBOXGROUP_ID );
 
 	// setup render box display property
-	jeProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXDISPLAY_INDEX] ),
+	grProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXDISPLAY_INDEX] ),
 							( IDS_RENDEREXTBOXDISPLAY ),
 							ACTOROBJ_DEFAULT_RENDEREXTBOXDISPLAY,
 							ACTOROBJ_RENDEREXTBOXDISPLAY_ID );
 
 	// setup render box properties
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMINX_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMINX_INDEX] ),
 							( IDS_RENDEREXTBOXMINX ),
 							ACTOROBJ_DEFAULT_EXTBOXMINX,
 							ACTOROBJ_RENDEREXTBOXMINX_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMINY_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMINY_INDEX] ),
 							( IDS_RENDEREXTBOXMINY ),
 							ACTOROBJ_DEFAULT_EXTBOXMINY,
 							ACTOROBJ_RENDEREXTBOXMINY_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMINZ_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMINZ_INDEX] ),
 							( IDS_RENDEREXTBOXMINZ ),
 							ACTOROBJ_DEFAULT_EXTBOXMINZ,
 							ACTOROBJ_RENDEREXTBOXMINZ_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMAXX_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMAXX_INDEX] ),
 							( IDS_RENDEREXTBOXMAXX ),
 							ACTOROBJ_DEFAULT_EXTBOXMAXX,
 							ACTOROBJ_RENDEREXTBOXMAXX_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMAXY_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMAXY_INDEX] ),
 							( IDS_RENDEREXTBOXMAXY ),
 							ACTOROBJ_DEFAULT_EXTBOXMAXY,
 							ACTOROBJ_RENDEREXTBOXMAXY_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMAXZ_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_RENDEREXTBOXMAXZ_INDEX] ),
 							( IDS_RENDEREXTBOXMAXZ ),
 							ACTOROBJ_DEFAULT_EXTBOXMAXZ,
 							ACTOROBJ_RENDEREXTBOXMAXZ_ID,
 							-FLT_MAX, FLT_MAX, 5.0f );
 
 	// end render box group
-	jeProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_RENDEREXTBOXGROUPEND_INDEX] ), ACTOROBJ_RENDEREXTBOXGROUPEND_ID );
+	grProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_RENDEREXTBOXGROUPEND_INDEX] ), ACTOROBJ_RENDEREXTBOXGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -404,29 +404,29 @@ void FillProperties(void)
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// start material group
-	jeProperty_FillGroup(	&( ActorObjProperties[ACTOROBJ_MATERIALGROUP_INDEX] ),
+	grProperty_FillGroup(	&( ActorObjProperties[ACTOROBJ_MATERIALGROUP_INDEX] ),
 							( IDS_MATERIALGROUP ),
 							ACTOROBJ_MATERIALGROUP_ID );
 
 	// setup material color
-	/*jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_MATERIALRED_INDEX] ),
+	/*grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_MATERIALRED_INDEX] ),
 							( IDS_MATERIALRED ),
 							255.0f,
 							ACTOROBJ_MATERIALRED_ID,
 							0.0f, 255.0f, 1.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_MATERIALGREEN_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_MATERIALGREEN_INDEX] ),
 							( IDS_MATERIALGREEN ),
 							255.0f,
 							ACTOROBJ_MATERIALGREEN_ID,
 							0.0f, 255.0f, 1.0f );
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_MATERIALBLUE_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_MATERIALBLUE_INDEX] ),
 							( IDS_MATERIALBLUE ),
 							255.0f,
 							ACTOROBJ_MATERIALBLUE_ID,
 							0.0f, 255.0f, 1.0f );*/
 
 	// end material group
-	jeProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_MATERIALGROUPEND_INDEX] ), ACTOROBJ_MATERIALGROUPEND_ID );
+	grProperty_FillGroupEnd( &( ActorObjProperties[ACTOROBJ_MATERIALGROUPEND_INDEX] ), ACTOROBJ_MATERIALGROUPEND_ID );
 
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -434,35 +434,35 @@ void FillProperties(void)
 	////////////////////////////////////////////////////////////////////////////////////////
 
 	// setup use ambient light from floor property
-	jeProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_USEAMBIENTLIGHTFROMFLOOR_INDEX] ),
+	grProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_USEAMBIENTLIGHTFROMFLOOR_INDEX] ),
 							( IDS_USEAMBIENTLIGHTFROMFLOOR ),
 							ACTOROBJ_DEFAULT_USEAMBFROMFLOOR,
 							ACTOROBJ_USEAMBIENTLIGHTFROMFLOOR_ID );
-	jeProperty_SetDisabled( &( ActorObjProperties[ACTOROBJ_USEAMBIENTLIGHTFROMFLOOR_INDEX] ), JE_TRUE );
+	grProperty_SetDisabled( &( ActorObjProperties[ACTOROBJ_USEAMBIENTLIGHTFROMFLOOR_INDEX] ), GR_TRUE );
 
 
 	// setup maximum dynamic lights to use property
-	jeProperty_FillInt(	&( ActorObjProperties[ACTOROBJ_MAXIMUMDYNAMICLIGHTSTOUSE_INDEX] ),
+	grProperty_FillInt(	&( ActorObjProperties[ACTOROBJ_MAXIMUMDYNAMICLIGHTSTOUSE_INDEX] ),
 						( IDS_MAXIMUMDYNAMICLIGHTSTOUSE ),
 						ACTOROBJ_DEFAULT_MAXDYNAMICLIGHTS,
 						ACTOROBJ_MAXIMUMDYNAMICLIGHTSTOUSE_ID,
 						1.0f, 32.0f, 1.0f );
 
 	// setup maximum static lights to use property
-	jeProperty_FillInt(	&( ActorObjProperties[ACTOROBJ_MAXIMUMSTATICLIGHTSTOUSE_INDEX] ),
+	grProperty_FillInt(	&( ActorObjProperties[ACTOROBJ_MAXIMUMSTATICLIGHTSTOUSE_INDEX] ),
 						( IDS_MAXIMUMSTATICLIGHTSTOUSE ),
 						ACTOROBJ_DEFAULT_MAXSTATICLIGHTS,
 						ACTOROBJ_MAXIMUMSTATICLIGHTSTOUSE_ID,
 						1.0f, 32.0f, 1.0f );
 
 	// setup per bone lighting property
-	jeProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_PERBONELIGHTING_INDEX] ),
+	grProperty_FillCheck(	&( ActorObjProperties[ACTOROBJ_PERBONELIGHTING_INDEX] ),
 							( IDS_PERBONELIGHTING ),
 							ACTOROBJ_DEFAULT_PERBONELIGHTING,
 							ACTOROBJ_PERBONELIGHTING_ID );
 
 	// setup motion time scale property
-	jeProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_MOTIONTIMESCALE_INDEX] ),
+	grProperty_FillFloat(	&( ActorObjProperties[ACTOROBJ_MOTIONTIMESCALE_INDEX] ),
 							( IDS_MOTIONTIMESCALE ),
 							ACTOROBJ_DEFAULT_MOTIONTIMESCALE,
 							ACTOROBJ_MOTIONTIMESCALE_ID,
@@ -470,7 +470,7 @@ void FillProperties(void)
 
 
 	// final init
-	ActorObjPropertyList.jePropertyN = ACTOROBJ_LAST_INDEX;
+	ActorObjPropertyList.grPropertyN = ACTOROBJ_LAST_INDEX;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -478,13 +478,13 @@ void FillProperties(void)
 //	GetPropertyList()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC GetPropertyList(
+grBoolean GRCC GetPropertyList(
 	void* Instance,	// object instance data
-	jeProperty_List	**List)		// where to save property list pointer
+	grProperty_List	**List)		// where to save property list pointer
 {
 
 	// locals	
-	jeActor* Actor;
+	grActor* Actor;
 	ActorObj *Object;
 
 	// ensure valid data
@@ -492,7 +492,7 @@ jeBoolean JETCC GetPropertyList(
 	assert( List != NULL );
 
 	// get object data
-	Actor = (jeActor*)Instance;
+	Actor = (grActor*)Instance;
 	Object = Actor->Object;
 
 	// setup property list
@@ -555,7 +555,7 @@ jeBoolean JETCC GetPropertyList(
 	// setup actor def list
 	assert( ActorDefList != NULL );
 	assert( ActorDefListSize > 0 );
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_LIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_LIST_INDEX] ),
 							IDS_ACTORLIST,
 							Object->ActorDefName,
 							ACTOROBJ_LIST_ID,
@@ -563,7 +563,7 @@ jeBoolean JETCC GetPropertyList(
 							ActorDefList );
 
 	// setup motion list
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MOTIONLIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MOTIONLIST_INDEX] ),
 							IDS_MOTIONLIST,
 							Object->MotionName,
 							ACTOROBJ_MOTIONLIST_ID,
@@ -571,7 +571,7 @@ jeBoolean JETCC GetPropertyList(
 							Object->MotionList );
 
 	// setup bone list
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_LIGHTREFERENCEBONENAMELIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_LIGHTREFERENCEBONENAMELIST_INDEX] ),
 							IDS_BONELIST,
 							Object->LightReferenceBoneName,
 							ACTOROBJ_LIGHTREFERENCEBONENAMELIST_ID,
@@ -579,7 +579,7 @@ jeBoolean JETCC GetPropertyList(
 							Object->BoneList );
 
 	// setup material list
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MATERIALLIST_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MATERIALLIST_INDEX] ),
 							IDS_MATERIALLIST,
 							Object->MaterialList[Object->MaterialCurrent],
 							ACTOROBJ_MATERIALLIST_ID,	
@@ -587,7 +587,7 @@ jeBoolean JETCC GetPropertyList(
 							Object->MaterialList );
 
 	// setup material overide list
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MATERIALOVERIDE_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MATERIALOVERIDE_INDEX] ),
 							IDS_MATERIALOVERIDE,
 							Object->MaterialOverideList[Object->MaterialCurrent],
 							ACTOROBJ_MATERIALOVERIDE_ID,	
@@ -595,7 +595,7 @@ jeBoolean JETCC GetPropertyList(
 							Bitmaps->Name );
 
 	// setup material mapper list
-	jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_MATERIALMAPPER_INDEX] ),
+	grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_MATERIALMAPPER_INDEX] ),
 							IDS_MATERIALMAPPER,
 							Object->MaterialMapperList[Object->MaterialCurrent],
 							ACTOROBJ_MATERIALMAPPER_ID,
@@ -603,18 +603,18 @@ jeBoolean JETCC GetPropertyList(
 							MaterialMapperNameList );
 
 	// copy property list
-	*List = jeProperty_ListCopy( &ActorObjPropertyList );
+	*List = grProperty_ListCopy( &ActorObjPropertyList );
 	if ( *List == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-		return JE_FALSE;
+		grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+		return GR_FALSE;
 	}
 
 	// reset dirty flag
-	ActorObjPropertyList.bDirty = JE_FALSE;
+	ActorObjPropertyList.bDirty = GR_FALSE;
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // GetPropertyList()
 
@@ -623,26 +623,26 @@ jeBoolean JETCC GetPropertyList(
 //	SetProperty()
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-jeBoolean JETCC SetProperty(
+grBoolean GRCC SetProperty(
 	void *Instance,	// object instance data
 	int32				FieldID,	// id of field to be changed
 	PROPERTY_FIELD_TYPE	DataType,	// type of data
-	jeProperty_Data		*pData )	// new data
+	grProperty_Data		*pData )	// new data
 {
 
 	// locals	
-	jeActor* Actor;
+	grActor* Actor;
 	ActorObj* Object;
-	jeBoolean	AdjustActorProperties = JE_FALSE;
+	grBoolean	AdjustActorProperties = GR_FALSE;
 
 	// ensure valid data
 	assert( Instance != NULL );
 	assert( pData != NULL );
 
 	// get object data			
-	Actor = (jeActor*)Instance;
+	Actor = (grActor*)Instance;
 	Object = Actor->Object;
-	if(Object == NULL) return JE_FALSE;
+	if(Object == NULL) return GR_FALSE;
 
 	// process field id
 	switch ( FieldID )
@@ -656,7 +656,7 @@ jeBoolean JETCC SetProperty(
 			Object->ScaleY = pData->Float;
 			Object->ScaleZ = pData->Float;
 
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 		// adjust collision extent box size
@@ -666,7 +666,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->CollisionExtBox.Min.X;
 			Object->CollisionExtBox.Min.X = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->CollisionExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->CollisionExtBox ) ) == GR_FALSE )
 			{
 				Object->CollisionExtBox.Min.X = OldVal;
 			}
@@ -678,7 +678,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->CollisionExtBox.Min.Y;
 			Object->CollisionExtBox.Min.Y = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->CollisionExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->CollisionExtBox ) ) == GR_FALSE )
 			{
 				Object->CollisionExtBox.Min.Y = OldVal;
 			}
@@ -690,7 +690,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->CollisionExtBox.Min.Z;
 			Object->CollisionExtBox.Min.Z = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->CollisionExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->CollisionExtBox ) ) == GR_FALSE )
 			{
 				Object->CollisionExtBox.Min.Z = OldVal;
 			}
@@ -702,7 +702,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->CollisionExtBox.Max.X;
 			Object->CollisionExtBox.Max.X = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->CollisionExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->CollisionExtBox ) ) == GR_FALSE )
 			{
 				Object->CollisionExtBox.Max.X = OldVal;
 			}
@@ -714,7 +714,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->CollisionExtBox.Max.Y;
 			Object->CollisionExtBox.Max.Y = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->CollisionExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->CollisionExtBox ) ) == GR_FALSE )
 			{
 				Object->CollisionExtBox.Max.Y = OldVal;
 			}
@@ -726,7 +726,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->CollisionExtBox.Max.Z;
 			Object->CollisionExtBox.Max.Z = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->CollisionExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->CollisionExtBox ) ) == GR_FALSE )
 			{
 				Object->CollisionExtBox.Max.Z = OldVal;
 			}
@@ -740,7 +740,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->RenderHintExtBox.Min.X;
 			Object->RenderHintExtBox.Min.X = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->RenderHintExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->RenderHintExtBox ) ) == GR_FALSE )
 			{
 				Object->RenderHintExtBox.Min.X = OldVal;
 			}
@@ -752,7 +752,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->RenderHintExtBox.Min.Y;
 			Object->RenderHintExtBox.Min.Y = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->RenderHintExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->RenderHintExtBox ) ) == GR_FALSE )
 			{
 				Object->RenderHintExtBox.Min.Y = OldVal;
 			}
@@ -764,7 +764,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->RenderHintExtBox.Min.Z;
 			Object->RenderHintExtBox.Min.Z = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->RenderHintExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->RenderHintExtBox ) ) == GR_FALSE )
 			{
 				Object->RenderHintExtBox.Min.Z = OldVal;
 			}
@@ -776,7 +776,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->RenderHintExtBox.Max.X;
 			Object->RenderHintExtBox.Max.X = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->RenderHintExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->RenderHintExtBox ) ) == GR_FALSE )
 			{
 				Object->RenderHintExtBox.Max.X = OldVal;
 			}
@@ -788,7 +788,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->RenderHintExtBox.Max.Y;
 			Object->RenderHintExtBox.Max.Y = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->RenderHintExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->RenderHintExtBox ) ) == GR_FALSE )
 			{
 				Object->RenderHintExtBox.Max.Y = OldVal;
 			}
@@ -800,7 +800,7 @@ jeBoolean JETCC SetProperty(
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			OldVal = Object->RenderHintExtBox.Max.Z;
 			Object->RenderHintExtBox.Max.Z = pData->Float;
-			if ( jeExtBox_IsValid( &( Object->RenderHintExtBox ) ) == JE_FALSE )
+			if ( grExtBox_IsValid( &( Object->RenderHintExtBox ) ) == GR_FALSE )
 			{
 				Object->RenderHintExtBox.Max.Z = OldVal;
 			}
@@ -814,21 +814,21 @@ jeBoolean JETCC SetProperty(
 			// save new perbone lightint setting
 			assert( DataType == PROPERTY_CHECK_TYPE );
 			Object->PerBoneLighting = pData->Bool;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 
 			// if per bone lighting is turned on then reset bone lighting combo box
-			if ( pData->Bool == JE_TRUE )
+			if ( pData->Bool == GR_TRUE )
 			{
 
 				// free old bone name
 				assert( Object->LightReferenceBoneName != NULL );
-				jeRam_Free( Object->LightReferenceBoneName );
+				grRam_Free( Object->LightReferenceBoneName );
 
 				// save new bone name
 				Object->LightReferenceBoneName = Util_StrDup( Object->BoneList[0] );
 
 				// set combo box choice
-				jeProperty_FillCombo(	&( ActorObjPropertyList.pjeProperty[ACTOROBJ_LIGHTREFERENCEBONENAMELIST_INDEX] ),
+				grProperty_FillCombo(	&( ActorObjPropertyList.pgrProperty[ACTOROBJ_LIGHTREFERENCEBONENAMELIST_INDEX] ),
 										IDS_BONELIST,
 										Object->LightReferenceBoneName,
 										ACTOROBJ_LIGHTREFERENCEBONENAMELIST_ID,
@@ -851,7 +851,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_CHECK_TYPE );
 			Object->UseFillLight = pData->Bool;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 
@@ -860,7 +860,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_CHECK_TYPE );
 			Object->FillNormalActorRelative = pData->Bool;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 
@@ -869,21 +869,21 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->FillLightNormal.X = pData->Float;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 		case ACTOROBJ_FILLLIGHTNORMALY_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->FillLightNormal.Y = pData->Float;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 		case ACTOROBJ_FILLLIGHTNORMALZ_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->FillLightNormal.Z = pData->Float;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 
@@ -894,28 +894,28 @@ jeBoolean JETCC SetProperty(
 			Object->FillLightRed = pData->Vector.X;
 			Object->FillLightGreen = pData->Vector.Y;
 			Object->FillLightBlue = pData->Vector.Z;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 		case ACTOROBJ_FILLLIGHTRED_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->FillLightRed = pData->Float;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 		case ACTOROBJ_FILLLIGHTGREEN_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->FillLightGreen = pData->Float;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 		case ACTOROBJ_FILLLIGHTBLUE_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->FillLightBlue = pData->Float;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 
@@ -926,28 +926,28 @@ jeBoolean JETCC SetProperty(
 			Object->AmbientLightRed = pData->Vector.X;
 			Object->AmbientLightGreen = pData->Vector.Y;
 			Object->AmbientLightBlue = pData->Vector.Z;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 		case ACTOROBJ_AMBIENTLIGHTRED_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->AmbientLightRed = pData->Float;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 		case ACTOROBJ_AMBIENTLIGHTGREEN_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->AmbientLightGreen = pData->Float;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 		case ACTOROBJ_AMBIENTLIGHTBLUE_ID:
 		{
 			assert( DataType == PROPERTY_FLOAT_TYPE );
 			Object->AmbientLightBlue = pData->Float;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 
@@ -956,7 +956,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_CHECK_TYPE );
 			Object->UseAmbientLightFromFloor = pData->Bool;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 
@@ -981,7 +981,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_INT_TYPE );
 			Object->MaximumDynamicLightsToUse = pData->Int;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 
@@ -990,7 +990,7 @@ jeBoolean JETCC SetProperty(
 		{
 			assert( DataType == PROPERTY_INT_TYPE );
 			Object->MaximumStaticLightsToUse = pData->Int;
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 
@@ -998,9 +998,9 @@ jeBoolean JETCC SetProperty(
 		// adjust actor
 		case ACTOROBJ_LIST_ID:
 		{
-			jeActor_Def* ActorDefinition = NULL;
-			jeVec3d	Pos;
-			jeXForm3d Xf;
+			grActor_Def* ActorDefinition = NULL;
+			grVec3d	Pos;
+			grXForm3d Xf;
 			//ActorObj *pObj = NULL;
 
 			// ensure valid data
@@ -1019,33 +1019,33 @@ jeBoolean JETCC SetProperty(
 			// save new actor def name
 			if ( Object->ActorDefName != NULL )
 			{
-				jeRam_Free( Object->ActorDefName );
+				grRam_Free( Object->ActorDefName );
 			}
 
 			// Save old parameters
-			//jeVec3d_Copy( &( Actor->Xf.Translation ), &Pos );
+			//grVec3d_Copy( &( Actor->Xf.Translation ), &Pos );
 			//pObj = Actor->Object;
 			Xf = Actor->Xf;
 			Pos = Xf.Translation;
-			//jeXForm3d_SetIdentity(&Xf);
-			jeXForm3d_RotateX( &Xf, -JE_HALFPI );
+			//grXForm3d_SetIdentity(&Xf);
+			grXForm3d_RotateX( &Xf, -GR_HALFPI );
 			Xf.Translation = Pos;
 
 			// destroy current actor			
 			if(Actor->ActorDefinition != NULL)
-				jeActor_DetachEngine( Actor, Object->Engine );
+				grActor_DetachEngine( Actor, Object->Engine );
 
-			Actor->CanFree = JE_FALSE;
+			Actor->CanFree = GR_FALSE;
 			Actor->Object = NULL;							
-			jeActor_Destroy( &( Actor ) );
+			grActor_Destroy( &( Actor ) );
 
 			// Restore parameters
-			Actor->CanFree = JE_TRUE;
+			Actor->CanFree = GR_TRUE;
 			//Actor->Object = pObj;
 			Actor->Object = Object;
 			//Actor->Xf = Xf;			
-			//jeXForm3d_SetIdentity( &( Actor->Xf ) );
-			//jeVec3d_Copy( &Pos, &( Actor->Xf.Translation ) );
+			//grXForm3d_SetIdentity( &( Actor->Xf ) );
+			//grVec3d_Copy( &Pos, &( Actor->Xf.Translation ) );
 
 			Object->ActorDefName = Util_StrDup( pData->String );
 
@@ -1056,60 +1056,60 @@ jeBoolean JETCC SetProperty(
 			}
 
 			// get new actor def			
-			ActorDefinition = (jeActor_Def *)jeResource_Get( Object->ResourceMgr, Object->ActorDefName );
+			ActorDefinition = (grActor_Def *)grResource_Get( Object->ResourceMgr, Object->ActorDefName );
 
 			// if it doesn't exist then create it
 			if ( ActorDefinition == NULL )
 			{
 				// locals
-				jeVFile	*FileDir = NULL;
-				jeVFile	*ActorDefFile;
+				grVFile	*FileDir = NULL;
+				grVFile	*ActorDefFile;
 
 				// get vfile dir
-				FileDir = jeResource_GetVFile( Object->ResourceMgr, "Actors" );
+				FileDir = grResource_GetVFile( Object->ResourceMgr, "Actors" );
 				if ( FileDir == NULL )
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-					return JE_FALSE;
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+					return GR_FALSE;
 				}
 
 				// open actor def file
-				ActorDefFile = jeVFile_Open( FileDir, Object->ActorDefName, JE_VFILE_OPEN_READONLY );
+				ActorDefFile = grVFile_Open( FileDir, Object->ActorDefName, GR_VFILE_OPEN_READONLY );
 				if ( ActorDefFile == NULL )
 				{
-					jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "SetProperty(): jeVFile_Open() failed.", Object->ActorDefName);
-					return JE_FALSE;
+					grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "SetProperty(): grVFile_Open() failed.", Object->ActorDefName);
+					return GR_FALSE;
 				}
 
 				// create actor def
-				ActorDefinition = jeActor_DefCreateFromFile( ActorDefFile );
-				jeVFile_Close( ActorDefFile );
+				ActorDefinition = grActor_DefCreateFromFile( ActorDefFile );
+				grVFile_Close( ActorDefFile );
 
 				// close vfile dir
-				if ( jeResource_DeleteVFile( Object->ResourceMgr, "Actors" ) == 0 )
+				if ( grResource_DeleteVFile( Object->ResourceMgr, "Actors" ) == 0 )
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-					jeVFile_Close( FileDir );
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+					grVFile_Close( FileDir );
 				}
 
 				// fail if actor def wasnt created
 				if ( ActorDefinition == NULL )
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-					return JE_FALSE;
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+					return GR_FALSE;
 				}
 
 				// add actor def to the resource manager
 				assert( Object->ActorDefName != NULL );
-				jeResource_Add( Object->ResourceMgr, Object->ActorDefName, JE_RESOURCE_ACTOR, ActorDefinition );
+				grResource_Add( Object->ResourceMgr, Object->ActorDefName, GR_RESOURCE_ACTOR, ActorDefinition );
 			}
 
 			// create actor
 			assert( ActorDefinition != NULL );
-			jeActor_SetActorDef(Actor,ActorDefinition);
+			grActor_SetActorDef(Actor,ActorDefinition);
 
 			// add actor to the engine
-			jeActor_AttachEngine( Actor, Object->Engine );
+			grActor_AttachEngine( Actor, Object->Engine );
 
 			//FillProperties();			
 			//InitObjectProperties(Object->);
@@ -1118,50 +1118,50 @@ jeBoolean JETCC SetProperty(
             if (!Object->LoadedFromDisk)
 			{
 				// locals
-				jeVec3d		tmpPos;
+				grVec3d		tmpPos;
 
 				//SetupGlobalBrush( Object );
 			    tmpPos = Xf.Translation;
-			    jeXForm3d_SetIdentity(&Xf);
-			    jeXForm3d_RotateX( &Xf, -JE_HALFPI );
+			    grXForm3d_SetIdentity(&Xf);
+			    grXForm3d_RotateX( &Xf, -GR_HALFPI );
 			    Xf.Translation = tmpPos;
 
 				// save original position and apply hack rotation
-				jeVec3d_Copy( &( Actor->Xf.Translation ), &tmpPos );
-				jeVec3d_Set( &( Actor->Xf.Translation ), 0.0f, 0.0f, 0.0f );
-				jeXForm3d_RotateX( &( Actor->Xf ), -JE_HALFPI );
-				jeActor_ClearPose( Actor, &( Actor->Xf ) );
+				grVec3d_Copy( &( Actor->Xf.Translation ), &tmpPos );
+				grVec3d_Set( &( Actor->Xf.Translation ), 0.0f, 0.0f, 0.0f );
+				grXForm3d_RotateX( &( Actor->Xf ), -GR_HALFPI );
+				grActor_ClearPose( Actor, &( Actor->Xf ) );
 
 				// setup collision ext box
-				jeActor_GetDynamicExtBox( Actor, &( Object->CollisionExtBox ) );
-				jeActor_SetExtBox( Actor, &( Object->CollisionExtBox ), NULL );
+				grActor_GetDynamicExtBox( Actor, &( Object->CollisionExtBox ) );
+				grActor_SetExtBox( Actor, &( Object->CollisionExtBox ), NULL );
 
 				// setup draw box
-				jeActor_GetDynamicExtBox( Actor, &( Object->RenderHintExtBox ) );
-				jeActor_SetRenderHintExtBox( Actor, &( Object->RenderHintExtBox ), NULL );
+				grActor_GetDynamicExtBox( Actor, &( Object->RenderHintExtBox ) );
+				grActor_SetRenderHintExtBox( Actor, &( Object->RenderHintExtBox ), NULL );
 
 				// restore original position				
-				//jeVec3d_Copy( &Pos, &( Actor->Xf.Translation ) );				
-				jeVec3d_Copy( &tmpPos, &( Xf.Translation ) );				
-				jeActor_SetXForm(Actor,&Xf);
-				jeActor_ClearPose( Actor, &( Actor->Xf ) );
+				//grVec3d_Copy( &Pos, &( Actor->Xf.Translation ) );				
+				grVec3d_Copy( &tmpPos, &( Xf.Translation ) );				
+				grActor_SetXForm(Actor,&Xf);
+				grActor_ClearPose( Actor, &( Actor->Xf ) );
             } else {
                 // reset the position to compute the Collision Bounding and Draw Box
-				jeVec3d_Set( &( Actor->Xf.Translation ), 0.0f, 0.0f, 0.0f );
-			    jeXForm3d_RotateX( &Actor->Xf, -JE_HALFPI );
-				jeActor_ClearPose( Actor, &( Actor->Xf ) );
+				grVec3d_Set( &( Actor->Xf.Translation ), 0.0f, 0.0f, 0.0f );
+			    grXForm3d_RotateX( &Actor->Xf, -GR_HALFPI );
+				grActor_ClearPose( Actor, &( Actor->Xf ) );
 
                 // setup collision ext box
-				jeActor_GetDynamicExtBox( Actor, &( Object->CollisionExtBox ) );
-				jeActor_SetExtBox( Actor, &( Object->CollisionExtBox ), NULL );
+				grActor_GetDynamicExtBox( Actor, &( Object->CollisionExtBox ) );
+				grActor_SetExtBox( Actor, &( Object->CollisionExtBox ), NULL );
 
 				// setup draw box
-				jeActor_GetDynamicExtBox( Actor, &( Object->RenderHintExtBox ) );
-				jeActor_SetRenderHintExtBox( Actor, &( Object->RenderHintExtBox ), NULL );
+				grActor_GetDynamicExtBox( Actor, &( Object->RenderHintExtBox ) );
+				grActor_SetRenderHintExtBox( Actor, &( Object->RenderHintExtBox ), NULL );
 
                 // Reset save XForm to the actor
-				jeActor_SetXForm(Actor,&Xf);
-				jeActor_ClearPose( Actor, &( Actor->Xf ) );
+				grActor_SetXForm(Actor,&Xf);
+				grActor_ClearPose( Actor, &( Actor->Xf ) );
             }
 
 			// create new motion list
@@ -1183,10 +1183,10 @@ jeBoolean JETCC SetProperty(
 			ActorObj_CreateMaterialList( Actor );
 
 			// set adjust flag
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 
 			// make sure the property list gets rebuilt on screen			
-			ActorObjPropertyList.bDirty = JE_TRUE;
+			ActorObjPropertyList.bDirty = GR_TRUE;
 			break;
 		}
 
@@ -1202,7 +1202,7 @@ jeBoolean JETCC SetProperty(
 			// save new motion name
 			if ( Object->MotionName != NULL )
 			{
-				jeRam_Free( Object->MotionName );
+				grRam_Free( Object->MotionName );
 				Object->MotionName = NULL;
 			}
 			Object->MotionName = Util_StrDup( pData->String );
@@ -1211,18 +1211,18 @@ jeBoolean JETCC SetProperty(
 			if ( stricmp( pData->String, NoSelection ) == 0 )
 			{
 				Object->Motion = NULL;
-				jeActor_ClearPose( Actor, &( Actor->Xf ) );
+				grActor_ClearPose( Actor, &( Actor->Xf ) );
 			}
 			// ...or setup motion
 			else
 			{
 				assert( Actor->ActorDefinition != NULL );
-				Object->Motion = jeActor_GetMotionByName( Actor->ActorDefinition, pData->String );
+				Object->Motion = grActor_GetMotionByName( Actor->ActorDefinition, pData->String );
 				if ( Object->Motion != NULL )
 				{
 					Object->MotionTime = 0.0f;
-                    jeActor_AnimationTestStep(Actor, Object->MotionTime);
-			        jeActor_SetPose( Actor, Object->Motion, Object->MotionTime, &Actor->Xf );
+                    grActor_AnimationTestStep(Actor, Object->MotionTime);
+			        grActor_SetPose( Actor, Object->Motion, Object->MotionTime, &Actor->Xf );
 				}
 			}
 			break;
@@ -1239,7 +1239,7 @@ jeBoolean JETCC SetProperty(
 
 			// save new bone name
 			assert( Object->LightReferenceBoneName != NULL );
-			jeRam_Free( Object->LightReferenceBoneName );
+			grRam_Free( Object->LightReferenceBoneName );
 			Object->LightReferenceBoneName = Util_StrDup( pData->String );
 
 			// do nothing more if no selection is made
@@ -1249,13 +1249,13 @@ jeBoolean JETCC SetProperty(
 			}
 
 			// make sure bone exists
-			assert( jeActor_DefHasBoneNamed( Actor->ActorDefinition, pData->String ) == JE_TRUE );
+			assert( grActor_DefHasBoneNamed( Actor->ActorDefinition, pData->String ) == GR_TRUE );
 
 			// uncheck per bone lighting flag
-			Object->PerBoneLighting = JE_FALSE;
+			Object->PerBoneLighting = GR_FALSE;
 
 			// set adjust flag
-			AdjustActorProperties = JE_TRUE;
+			AdjustActorProperties = GR_TRUE;
 			break;
 		}
 
@@ -1289,7 +1289,7 @@ jeBoolean JETCC SetProperty(
 			}
 
 			// make sure the property list gets rebuilt on screen
-			ActorObjPropertyList.bDirty = JE_TRUE;
+			ActorObjPropertyList.bDirty = GR_TRUE;
 			break;
 		}
 
@@ -1299,7 +1299,7 @@ jeBoolean JETCC SetProperty(
 
 			// locals
 			int			i;
-			jeBoolean	MaterialSet = JE_FALSE;
+			grBoolean	MaterialSet = GR_FALSE;
 
 			// ensure valid data
 			assert( DataType == PROPERTY_COMBO_TYPE );
@@ -1320,18 +1320,18 @@ jeBoolean JETCC SetProperty(
 				{
 
 					// locals
-					jeMaterialSpec	*Bitmap;
-					jeFloat		Red, Green, Blue;
-					jeUVMapper	Mapper;
+					grMaterialSpec	*Bitmap;
+					grFloat		Red, Green, Blue;
+					grUVMapper	Mapper;
 
 					// free old overide bitmap
 					if ( Object->MaterialOverideBitmap[Object->MaterialCurrent] != NULL )
 					{
 						//undone
-						/*jeEngine_RemoveBitmap( Object->Engine, Object->MaterialOverideBitmap[Object->MaterialCurrent] );
-						if ( jeResource_Delete( Object->ResourceMgr, Object->MaterialOverideList[Object->MaterialCurrent] ) == 0 )
+						/*grEngine_RemoveBitmap( Object->Engine, Object->MaterialOverideBitmap[Object->MaterialCurrent] );
+						if ( grResource_Delete( Object->ResourceMgr, Object->MaterialOverideList[Object->MaterialCurrent] ) == 0 )
 						{
-							jeBitmap_Destroy( &( Object->MaterialOverideBitmap[Object->MaterialCurrent] ) );
+							grBitmap_Destroy( &( Object->MaterialOverideBitmap[Object->MaterialCurrent] ) );
 						}*/
 						Object->MaterialOverideBitmap[Object->MaterialCurrent] = NULL;
 					}
@@ -1344,22 +1344,22 @@ jeBoolean JETCC SetProperty(
 					{
 
 						// locals
-						jeBody		*Body;
-						jeBoolean	Result;
+						grBody		*Body;
+						grBoolean	Result;
 						const char	*DefaultMaterialName;
 
 						// get actor def body
-						Body = jeActor_GetBody( Actor->ActorDefinition );
+						Body = grActor_GetBody( Actor->ActorDefinition );
 						assert ( Body != NULL );
 
 						// get default material
-						Result = jeBody_GetMaterial(	Body, Object->MaterialCurrent, &DefaultMaterialName,
+						Result = grBody_GetMaterial(	Body, Object->MaterialCurrent, &DefaultMaterialName,
 														&Bitmap, &Red, &Green, &Blue,
 														&Mapper );
-						if ( Result == JE_FALSE )
+						if ( Result == GR_FALSE )
 						{
-							jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Failed to get default actor material" );
-							return JE_FALSE;
+							grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Failed to get default actor material" );
+							return GR_FALSE;
 						}
 
 						// zap overide bitmap pointer
@@ -1375,7 +1375,7 @@ jeBoolean JETCC SetProperty(
 
 						// get bitmap
 						//undone
-						//Bitmap = jeResource_Get( Object->ResourceMgr, Object->MaterialOverideList[Object->MaterialCurrent] );
+						//Bitmap = grResource_Get( Object->ResourceMgr, Object->MaterialOverideList[Object->MaterialCurrent] );
 						Bitmap = NULL;
 
 						// if it doesn't exist then create it
@@ -1383,36 +1383,36 @@ jeBoolean JETCC SetProperty(
 						{
 
 							// locals
-							jeVFile	*FileDir;
+							grVFile	*FileDir;
 
 							// get vfile dir
-							FileDir = jeResource_GetVFile( Object->ResourceMgr, "GlobalMaterials" );
+							FileDir = grResource_GetVFile( Object->ResourceMgr, "GlobalMaterials" );
 							if ( FileDir == NULL )
 							{
-								jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, NULL );
-								return JE_FALSE;
+								grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, NULL );
+								return GR_FALSE;
 							}
 
 							// create new art
 							Bitmap = Util_CreateBitmapFromFileName( FileDir, Object->MaterialOverideList[Object->MaterialCurrent], NULL, Object->ResourceMgr );
 		
 							// close vfile dir
-							if ( jeResource_DeleteVFile( Object->ResourceMgr, "GlobalMaterials" ) == 0 )
+							if ( grResource_DeleteVFile( Object->ResourceMgr, "GlobalMaterials" ) == 0 )
 							{
-								jeVFile_Close( FileDir );
+								grVFile_Close( FileDir );
 							}
 
 							// fail if art wasn't created
 							if ( Bitmap == NULL )
 							{
-								jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Failed to create bitmap" );
-								return JE_FALSE;
+								grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Failed to create bitmap" );
+								return GR_FALSE;
 							}
 
 							// add it to the resource manager and engine
 							//undone
-							//jeResource_Add( Object->ResourceMgr, Object->MaterialOverideList[Object->MaterialCurrent], Bitmap );
-							//jeEngine_AddBitmap( Object->Engine, Bitmap, JE_ENGINE_BITMAP_TYPE_3D );
+							//grResource_Add( Object->ResourceMgr, Object->MaterialOverideList[Object->MaterialCurrent], Bitmap );
+							//grEngine_AddBitmap( Object->Engine, Bitmap, GR_ENGINE_BITMAP_TYPE_3D );
 						}
 
 						// save overide bitmap pointer
@@ -1439,22 +1439,22 @@ jeBoolean JETCC SetProperty(
 						}
 
 						// apply changes
-						MaterialSet = jeActor_SetMaterial(	Actor, Object->MaterialCurrent,
+						MaterialSet = grActor_SetMaterial(	Actor, Object->MaterialCurrent,
 															Bitmap,
 															Red, Green, Blue,
 															Mapper );
 					}
 					else
 					{
-						MaterialSet = JE_TRUE;
+						MaterialSet = GR_TRUE;
 					}
 				}
 			}
 
 			// log errors
-			if ( MaterialSet == JE_FALSE )
+			if ( MaterialSet == GR_FALSE )
 			{
-				jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "Failed to change actor material" );
+				grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "Failed to change actor material" );
 			}
 			break;
 		}
@@ -1479,20 +1479,20 @@ jeBoolean JETCC SetProperty(
 			{
 
 				// locals
-				jeBody		*Body;
-				jeMaterialSpec	*Material;
+				grBody		*Body;
+				grMaterialSpec	*Material;
 				char		*MaterialName;
-				jeFloat		Red, Green, Blue;
-				jeUVMapper	Mapper;
-				jeBoolean	Result;
+				grFloat		Red, Green, Blue;
+				grUVMapper	Mapper;
+				grBoolean	Result;
 				int			MapperIndex;
 
 				// get actor def body
-				Body = jeActor_GetBody( Actor->ActorDefinition );
+				Body = grActor_GetBody( Actor->ActorDefinition );
 				assert ( Body != NULL );
 
 				// get default material info
-				Result = jeBody_GetMaterial(	Body, Object->MaterialCurrent, (const char **)&MaterialName,
+				Result = grBody_GetMaterial(	Body, Object->MaterialCurrent, (const char **)&MaterialName,
 												&Material, &Red, &Green, &Blue,
 												&Mapper );
 
@@ -1505,7 +1505,7 @@ jeBoolean JETCC SetProperty(
 						{
 							Material = Object->MaterialOverideBitmap[Object->MaterialCurrent];
 						}
-						Result = jeActor_SetMaterial(	Actor, Object->MaterialCurrent,
+						Result = grActor_SetMaterial(	Actor, Object->MaterialCurrent,
 														Material,
 														Red, Green, Blue,
 														MaterialMapperTable[MapperIndex].Mapper );
@@ -1519,22 +1519,22 @@ jeBoolean JETCC SetProperty(
 		// if we got to here then its an unsupported field
 		default:
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 			break;
 		}
 	}
 
 	// adjust actor properties if required
-	if ( ( Object != NULL ) && ( AdjustActorProperties == JE_TRUE ) )
+	if ( ( Object != NULL ) && ( AdjustActorProperties == GR_TRUE ) )
 	{				
 		// scale to current settings
 		if(Actor->ActorDefinition)
 		{
 		// locals
 		char	*LightBone;
-		jeVec3d	FillLightNormal;
-			jeExtBox ExtBox;
-			jeVec3d Translation;
+		grVec3d	FillLightNormal;
+			grExtBox ExtBox;
+			grVec3d Translation;
 
 		// if bone name is noselection string then null it
 		LightBone = Object->LightReferenceBoneName;
@@ -1547,49 +1547,49 @@ jeBoolean JETCC SetProperty(
 		{
 
 			// locals
-			jeVec3d		Angles;
-			jeVec3d		TempLightNormal;
-			jeXForm3d	Xf;
+			grVec3d		Angles;
+			grVec3d		TempLightNormal;
+			grXForm3d	Xf;
 
 			// convert each degree to radians
-			Angles.X = jeFloat_DegToRad( Object->FillLightNormal.X );
-			Angles.Y = jeFloat_DegToRad( Object->FillLightNormal.Y );
-			Angles.Z = jeFloat_DegToRad( Object->FillLightNormal.Z );
+			Angles.X = grFloat_DegToRad( Object->FillLightNormal.X );
+			Angles.Y = grFloat_DegToRad( Object->FillLightNormal.Y );
+			Angles.Z = grFloat_DegToRad( Object->FillLightNormal.Z );
 
 			// build matrix from radian angles
-			jeXForm3d_SetEulerAngles( &Xf, &Angles );
+			grXForm3d_SetEulerAngles( &Xf, &Angles );
 
 			// get temporary actor relative normal
-			jeXForm3d_GetIn( &Xf, &TempLightNormal );
+			grXForm3d_GetIn( &Xf, &TempLightNormal );
 
 			// keep it as actor relative normal
-			if ( Object->FillNormalActorRelative == JE_TRUE )
+			if ( Object->FillNormalActorRelative == GR_TRUE )
 			{
-				jeVec3d_Copy( &TempLightNormal, &FillLightNormal );
+				grVec3d_Copy( &TempLightNormal, &FillLightNormal );
 			}
 			// ...or convert it to world relative normal
 			else
 			{
 
 				// locals
-				jeBoolean	Result;
-				jeXForm3d	XfT;
+				grBoolean	Result;
+				grXForm3d	XfT;
 
 				// get actors current xf
-				Result = jeActor_GetBoneTransform( Actor, NULL, &Xf );
-				assert( Result == JE_TRUE );
+				Result = grActor_GetBoneTransform( Actor, NULL, &Xf );
+				assert( Result == GR_TRUE );
 
 				// build new normal
-				jeXForm3d_GetTranspose( &Xf, &XfT );
-				jeXForm3d_Rotate( &XfT, &TempLightNormal, &FillLightNormal );
+				grXForm3d_GetTranspose( &Xf, &XfT );
+				grXForm3d_Rotate( &XfT, &TempLightNormal, &FillLightNormal );
 			}
 
 			// make sure its normalize
-			jeVec3d_Normalize( &FillLightNormal );
+			grVec3d_Normalize( &FillLightNormal );
 		}
 
 		// make lighting adjustments
-		jeActor_SetLightingOptions(	Actor,
+		grActor_SetLightingOptions(	Actor,
 									Object->UseFillLight,
 									&FillLightNormal,
 									Object->FillLightRed,
@@ -1605,22 +1605,22 @@ jeBoolean JETCC SetProperty(
 									Object->PerBoneLighting );
 
 		// Scale
-		jeActor_SetScale( Actor, Object->ScaleX, Object->ScaleY, Object->ScaleZ );
+		grActor_SetScale( Actor, Object->ScaleX, Object->ScaleY, Object->ScaleZ );
 
 		// Update boxes
 		ExtBox = Object->CollisionExtBox;
 		GetBoxTranslation(&ExtBox, Actor, &Translation);
-		jeVec3d_Subtract(&Translation,&Actor->Xf.Translation,&Translation); // Take out actor pos (make relative)
-		jeExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
-		jeExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );			
-		jeActor_SetExtBox( Actor, &ExtBox, NULL );
+		grVec3d_Subtract(&Translation,&Actor->Xf.Translation,&Translation); // Take out actor pos (make relative)
+		grExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
+		grExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );			
+		grActor_SetExtBox( Actor, &ExtBox, NULL );
 
 		ExtBox = Object->RenderHintExtBox;
 		GetBoxTranslation(&ExtBox, Actor, &Translation);
-		jeVec3d_Subtract(&Translation,&Actor->Xf.Translation,&Translation); // Take out actor pos (make relative)
-		jeExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
-		jeExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );
-		jeActor_SetRenderHintExtBox( Actor, &ExtBox, NULL );
+		grVec3d_Subtract(&Translation,&Actor->Xf.Translation,&Translation); // Take out actor pos (make relative)
+		grExtBox_Translate( &ExtBox, Translation.X, Translation.Y, Translation.Z );
+		grExtBox_Scale( &ExtBox, Object->ScaleX, Object->ScaleZ, Object->ScaleY );
+		grActor_SetRenderHintExtBox( Actor, &ExtBox, NULL );
 
 		// restore bone name
 		Object->LightReferenceBoneName = LightBone;
@@ -1630,7 +1630,7 @@ jeBoolean JETCC SetProperty(
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// eliminate warnings
 	DataType;

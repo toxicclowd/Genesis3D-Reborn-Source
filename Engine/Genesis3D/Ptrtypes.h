@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_PTRTYPES_H
-#define JE_PTRTYPES_H
+#ifndef GR_PTRTYPES_H
+#define GR_PTRTYPES_H
 
 #include "BaseType.h"
 
@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 // System.h
-typedef struct	jeEngine			jeEngine;
+typedef struct	grEngine			grEngine;
 
 // Light.h
 typedef struct	Light_LightInfo		Light_LightInfo;
@@ -38,14 +38,14 @@ typedef	struct	Surf_SurfInfo		Surf_SurfInfo;
 typedef	struct	Surf_TexVert		Surf_TexVert;
 
 // World.h
-typedef	struct	jeWorld				jeWorld;
+typedef	struct	grWorld				grWorld;
 
 // Frustum.h
 typedef	struct	Frustum_Info		Frustum_Info;
 
 // World.h
 typedef struct	World_BSP			World_BSP;
-typedef struct	jeWorld_Leaf		jeWorld_Leaf;
+typedef struct	grWorld_Leaf		grWorld_Leaf;
 
 				
 // Mesh.h
@@ -54,11 +54,11 @@ typedef struct	Mesh_MeshDef		Mesh_MeshDef;
 typedef struct	Mesh_RenderQ		Mesh_RenderQ;
 
 // Entities.h
-typedef struct	jeEntity_EntitySet jeEntity_EntitySet;
+typedef struct	grEntity_EntitySet grEntity_EntitySet;
 
 // User.h
 typedef struct	User_Info		User_Info;
-typedef struct  jeUPoly			jeUPoly;
+typedef struct  grUPoly			grUPoly;
 
 #ifdef __cplusplus
 }

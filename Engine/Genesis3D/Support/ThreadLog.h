@@ -27,9 +27,9 @@
 extern "C" {
 #endif
 
-jeBoolean ThreadLog_Initialize(void);
+grBoolean ThreadLog_Initialize(void);
 void		 ThreadLog_Printf(const char *Msg, ...);
-jeBoolean ThreadLog_Report(const char *FileName);
+grBoolean ThreadLog_Report(const char *FileName);
 
 #ifdef	__cplusplus
 }

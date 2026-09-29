@@ -33,7 +33,7 @@ extern "C" {
 #define OBJECT_API						_declspec(dllimport)
 #endif
 
-OBJECT_API jeBoolean					Object_RegisterDef(float Major, float Minor);
+OBJECT_API grBoolean					Object_RegisterDef(float Major, float Minor);
 
 #ifdef __cplusplus
 }

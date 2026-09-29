@@ -22,22 +22,22 @@
 #include "ram.h"
 
 // This will create a 24BIT bgr...
-HBITMAP CreateHBitmapFromgeBitmap (jeBitmap *Bitmap, HDC hdc)
+HBITMAP CreateHBitmapFromgeBitmap (grBitmap *Bitmap, HDC hdc)
 {
-	jeBitmap * Lock;
-	jePixelFormat Format;
-	jeBitmap_Info info;
+	grBitmap * Lock;
+	grPixelFormat Format;
+	grBitmap_Info info;
 	HBITMAP hbm = NULL;
 
 	// <> choose format to be 8,16,or 24, whichever is closest to Bitmap
-	Format = JE_PIXELFORMAT_24BIT_BGR;
+	Format = GR_PIXELFORMAT_24BIT_BGR;
 
-	if ( ! jeBitmap_LockForRead(Bitmap, &Lock, 0, 0, Format, JE_FALSE,0) )
+	if ( ! grBitmap_LockForRead(Bitmap, &Lock, 0, 0, Format, GR_FALSE,0) )
 	{
 		return NULL;
 	}
 
-	jeBitmap_GetInfo(Lock,&info,NULL);
+	grBitmap_GetInfo(Lock,&info,NULL);
 
 	if ( info.Format != Format )
 		return NULL;
@@ -46,8 +46,8 @@ HBITMAP CreateHBitmapFromgeBitmap (jeBitmap *Bitmap, HDC hdc)
 		BITMAPINFOHEADER bmih;
 		int pelbytes;
 
-		pelbytes = jePixelFormat_BytesPerPel(Format);
-		bits = jeBitmap_GetBits(Lock);
+		pelbytes = grPixelFormat_BytesPerPel(Format);
+		bits = grBitmap_GetBits(Lock);
 
 		bmih.biSize = sizeof(bmih);
 		bmih.biHeight = - info.Height;
@@ -70,7 +70,7 @@ HBITMAP CreateHBitmapFromgeBitmap (jeBitmap *Bitmap, HDC hdc)
 
 			bmih.biWidth = info.Width;
 			Stride = (((info.Width*pelbytes)+3)&(~3));
-			newbits = jeRam_Allocate(Stride * info.Height);
+			newbits = grRam_Allocate(Stride * info.Height);
 			if ( newbits )
 			{
 				char *newptr,*oldptr;
@@ -85,12 +85,12 @@ HBITMAP CreateHBitmapFromgeBitmap (jeBitmap *Bitmap, HDC hdc)
 					newptr += Stride;
 				}
 				hbm = CreateDIBitmap( hdc, &bmih , CBM_INIT , newbits, (BITMAPINFO *)&bmih , DIB_RGB_COLORS );
-				jeRam_Free(newbits);
+				grRam_Free(newbits);
 			}
 		}
 	}
 
-	jeBitmap_UnLock (Lock);
+	grBitmap_UnLock (Lock);
 
 	return hbm;
 }
@@ -115,7 +115,7 @@ HBITMAP Bmp_CreateEmpty24BitDIB( HDC hDC, int32 nWidth, int32 nHeight, void * pB
 BITMAPINFO *PrepareRGBBitmapInfo(WORD wWidth, WORD wHeight)
 {
 	//	gets deleted inside calling function
-	BITMAPINFO *pRes = JE_RAM_ALLOCATE_STRUCT(BITMAPINFO);
+	BITMAPINFO *pRes = GR_RAM_ALLOCATE_STRUCT(BITMAPINFO);
 	memset(pRes, 0, sizeof(BITMAPINFO));
 	pRes->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	pRes->bmiHeader.biWidth = wWidth;
@@ -133,7 +133,7 @@ int *CreateCoeffInt(int nLen, int nNewLen, BOOL bShrink)
 {
 	int i;
 	int nSum = 0, nSum2;
-	int *pRes = (int*)jeRam_Allocate(2 * nLen * sizeof(int));
+	int *pRes = (int*)grRam_Allocate(2 * nLen * sizeof(int));
 	int *pCoeff = pRes;
 	int nNorm =  (bShrink) ? (nNewLen << 12) / nLen : 0x1000;
 	int	nDenom = (bShrink) ? nLen : nNewLen;
@@ -180,7 +180,7 @@ void ShrinkDataInt(BYTE *pInBuff,
 	int   *pColCoeff = CreateCoeffInt(wHeight, wNewHeight, TRUE);
 	int   *pXCoeff, *pYCoeff = pColCoeff;
 	DWORD dwBuffLn = 3 * wNewWidth * sizeof(DWORD);
-	DWORD *pdwBuff = (DWORD*) jeRam_Allocate(6 * wNewWidth * sizeof(DWORD));
+	DWORD *pdwBuff = (DWORD*) grRam_Allocate(6 * wNewWidth * sizeof(DWORD));
 	DWORD *pdwCurrLn = pdwBuff, 
 		*pdwCurrPix, 
 		*pdwNextLn = pdwBuff + 3 * wNewWidth;
@@ -253,9 +253,9 @@ void ShrinkDataInt(BYTE *pInBuff,
 		pYCoeff += 2;
 	}
 	
-	jeRam_Free(pRowCoeff);
-	jeRam_Free(pColCoeff);
-	jeRam_Free(pdwBuff);
+	grRam_Free(pRowCoeff);
+	grRam_Free(pColCoeff);
+	grRam_Free(pdwBuff);
 	
 } 
 
@@ -348,12 +348,12 @@ void EnlargeDataInt(BYTE *pInBuff,
 		pYCoeff += 2;
 	}
 	
-	jeRam_Free(pRowCoeff);
-	jeRam_Free(pColCoeff);
+	grRam_Free(pRowCoeff);
+	grRam_Free(pColCoeff);
 }
 
 #define THUMBNAIL_SIZE	64
-jeBoolean CreateThumbnails(jeBitmap* pBmps, jeMaterialSpec_Thumbnail* pThumb)
+grBoolean CreateThumbnails(grBitmap* pBmps, grMaterialSpec_Thumbnail* pThumb)
 {
 	HDC hdc;
 	HBITMAP hBitmap;
@@ -366,22 +366,22 @@ jeBoolean CreateThumbnails(jeBitmap* pBmps, jeMaterialSpec_Thumbnail* pThumb)
 	hBitmap = CreateHBitmapFromgeBitmap(pBmps, hdc);
 
     if (hBitmap == NULL) {
-        return JE_FALSE;
+        return GR_FALSE;
     }
 
 	GetObject(hBitmap, sizeof(BITMAP), &bmp);
 
 	pbi = PrepareRGBBitmapInfo((WORD)bmp.bmWidth, (WORD)bmp.bmHeight);
-	pDataIn = (BYTE*) jeRam_Allocate(pbi->bmiHeader.biSizeImage);
+	pDataIn = (BYTE*) grRam_Allocate(pbi->bmiHeader.biSizeImage);
 	DataInLen = pbi->bmiHeader.biSizeImage;
 	
 	GetDIBits(hdc, hBitmap, 0, bmp.bmHeight, pDataIn, pbi, DIB_RGB_COLORS);
 	
-	jeRam_Free(pbi);
+	grRam_Free(pbi);
 	pbi = NULL;
 	
 	pbi = PrepareRGBBitmapInfo(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
-	pDataOut = (BYTE*) jeRam_Allocate(pbi->bmiHeader.biSizeImage);
+	pDataOut = (BYTE*) grRam_Allocate(pbi->bmiHeader.biSizeImage);
 
 	if (bmp.bmWidth == THUMBNAIL_SIZE && bmp.bmHeight == THUMBNAIL_SIZE) {
 		memcpy(pDataOut, pDataIn, pbi->bmiHeader.biSizeImage);
@@ -404,12 +404,12 @@ jeBoolean CreateThumbnails(jeBitmap* pBmps, jeMaterialSpec_Thumbnail* pThumb)
 	}
 
     DeleteObject(hBitmap);
-	jeRam_Free(pbi);
-	jeRam_Free(pDataIn);
+	grRam_Free(pbi);
+	grRam_Free(pDataIn);
 
 	pThumb->contents = pDataOut;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 

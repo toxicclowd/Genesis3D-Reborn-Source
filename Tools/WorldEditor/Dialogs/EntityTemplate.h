@@ -38,7 +38,7 @@ class CEntityTemplate : public CDialog
 // Construction
 public:
 	DECLARE_DYNCREATE(CEntityTemplate)
-	void SetCurrentDocument( jeSymbol_Table * pEntities, const char * pszType );
+	void SetCurrentDocument( grSymbol_Table * pEntities, const char * pszType );
 	CEntityTemplate(CWnd* pParent = NULL);   // standard constructor
 
 // Dialog Data
@@ -108,13 +108,13 @@ protected:
 	DECLARE_MESSAGE_MAP()
 private:
 	void FillProperties( void );
-	static jeBoolean FillEntityTypesCB( jeSymbol *pSymbol, void *lParam );
-	void FillEntityTypes( jeSymbol *pSelect );
-	void ShowFieldsBySymbolType(jeSymbol_Type Type ) ;
-	void SetFields(jeSymbol *pField) ;
-	jeBoolean GetFieldData(jeSymbol_Type Type, char *pszDefaultValue) ;
-	jeSymbol_Table *	m_pEntities;
-	jeSymbol_Type		m_SymbolType;
+	static grBoolean FillEntityTypesCB( grSymbol *pSymbol, void *lParam );
+	void FillEntityTypes( grSymbol *pSelect );
+	void ShowFieldsBySymbolType(grSymbol_Type Type ) ;
+	void SetFields(grSymbol *pField) ;
+	grBoolean GetFieldData(grSymbol_Type Type, char *pszDefaultValue) ;
+	grSymbol_Table *	m_pEntities;
+	grSymbol_Type		m_SymbolType;
 };
 
 //{{AFX_INSERT_LOCATION}}

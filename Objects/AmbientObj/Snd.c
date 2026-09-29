@@ -20,7 +20,7 @@
 /****************************************************************************************/
 #include <memory.h>
 #include <assert.h>
-#include "jet.h"
+#include "Genesis3D.h"
 #include "Camera.h"
 #include "Ram.h"
 #include "Errorlog.h"
@@ -43,8 +43,8 @@ typedef struct
 ////////////////////////////////////////////////////////////////////////////////////////
 //	Interface setup
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean	Snd_Modify( SndResource *Resource, Snd *Data, Snd *NewData, uint32 Flags );
-static void			Snd_Pause( SndResource *Resource, Snd *Data, jeBoolean Pause );
+static grBoolean	Snd_Modify( SndResource *Resource, Snd *Data, Snd *NewData, uint32 Flags );
+static void			Snd_Pause( SndResource *Resource, Snd *Data, grBoolean Pause );
 
 
 
@@ -67,17 +67,17 @@ static char * Snd_GetName(
 //	Snd_Get3dSoundValues()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean Snd_Get3dSoundValues(
+static grBoolean Snd_Get3dSoundValues(
 	EffectResource	*ExternalResource,	// assorted required external resources
 	Snd				*Data,				// data of effect
-	jeFloat			*Volume,			// where to store the volume
-	jeFloat			*Pan,				// where to store the pan
-	jeFloat			*Frequency )		// where to store the frequency
+	grFloat			*Volume,			// where to store the volume
+	grFloat			*Pan,				// where to store the pan
+	grFloat			*Frequency )		// where to store the frequency
 {
 
 	// locals
-	jeXForm3d	SoundXf;
-	jeFloat			VolDelta, PanDelta;
+	grXForm3d	SoundXf;
+	grFloat			VolDelta, PanDelta;
 
 	// ensure valid data
 	assert( ExternalResource != NULL );
@@ -88,10 +88,10 @@ static jeBoolean Snd_Get3dSoundValues(
 
 	// get the camera xform
 	assert( ExternalResource->Camera != NULL );
-	jeCamera_GetXForm( ExternalResource->Camera, &SoundXf );
+	grCamera_GetXForm( ExternalResource->Camera, &SoundXf );
 
 	// get 3d sound values
-	jeSound3D_GetConfig(
+	grSound3D_GetConfig(
 		ExternalResource->World,
 		&SoundXf, 
 		&( Data->Pos ), 
@@ -114,9 +114,9 @@ static jeBoolean Snd_Get3dSoundValues(
 	}
 	if ( ( VolDelta > 0.03f ) || ( PanDelta > 0.02f ) )
 	{
-		return JE_TRUE;
+		return GR_TRUE;
 	}
-	return JE_FALSE;
+	return GR_FALSE;
 
 } // Snd_Get3dSoundValues()
 
@@ -139,7 +139,7 @@ void Snd_Remove(
 	// stop the sound
 	if ( Data->Sound != NULL )
 	{
-		jeSound_StopSound( Resource->Sound, Data->Sound );
+		grSound_StopSound( Resource->Sound, Data->Sound );
 	}
 
 	Data->Sound = NULL;
@@ -151,21 +151,21 @@ void Snd_Remove(
 //
 //	Snd_Process()
 //
-//	Perform processing on an indivual effect. A return of JE_FALSE means that the
+//	Perform processing on an indivual effect. A return of GR_FALSE means that the
 //	effect needs to be removed.
 //	modified by tom morris May 2005
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean Snd_Process(
+grBoolean Snd_Process(
 					  EffectResource	*Resource,		//	available resources
 					  float				TimeDelta,		//	elapsed time
-					  jeBoolean			bMute,			//	mute the sound
+					  grBoolean			bMute,			//	mute the sound
 					  Snd				*Data )			//	effect data
 {
 	// locals
-	jeBoolean	Result = JE_FALSE;
-	jeFloat		Volume = 0.0f;
-	jeFloat		Pan = 0.0f;
-	jeFloat		Frequency = 1.0f;
+	grBoolean	Result = GR_FALSE;
+	grFloat		Volume = 0.0f;
+	grFloat		Pan = 0.0f;
+	grFloat		Frequency = 1.0f;
 
 	// ensure valid data
 	assert( Resource != NULL );
@@ -179,16 +179,16 @@ jeBoolean Snd_Process(
 		if ( Data->Sound != NULL)
 		{
 			int iResult;
-			iResult = jeSound_GetStatus( Resource->Sound, Data->Sound);
+			iResult = grSound_GetStatus( Resource->Sound, Data->Sound);
 			if (iResult & DSBSTATUS_PLAYING)
 			{
-				jeSound_StopSound( Resource->Sound, Data->Sound );
+				grSound_StopSound( Resource->Sound, Data->Sound );
 				Data->Sound = NULL;
-				return JE_TRUE;
+				return GR_TRUE;
 			}
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-		return JE_TRUE;
+		return GR_TRUE;
 	}	//	if (bMute)...
 
 	if ( Data->Sound != NULL)
@@ -196,10 +196,10 @@ jeBoolean Snd_Process(
 		// if the user wants to change looping status
 		if (Data->Loop == !Data->LastLoop)
 		{
-			jeSound_StopSound( Resource->Sound, Data->Sound );
+			grSound_StopSound( Resource->Sound, Data->Sound );
 			Data->Sound = NULL;
 
-			Data->Sound = jeSound_PlaySoundDef(	Resource->Sound,
+			Data->Sound = grSound_PlaySoundDef(	Resource->Sound,
 				Data->SoundDef,
 				Data->LastVolume, Data->LastPan, Frequency,
 				Data->Loop );
@@ -208,21 +208,21 @@ jeBoolean Snd_Process(
 
 			if( Data->Sound == NULL )
 			{
-				jeErrorLog_AddString( JE_ERR_SOUND_RESOURCE, "Snd_Process: sound def play failed.", NULL );
-				return JE_TRUE;
+				grErrorLog_AddString( GR_ERR_SOUND_RESOURCE, "Snd_Process: sound def play failed.", NULL );
+				return GR_TRUE;
 			}
 
-			return JE_TRUE;
+			return GR_TRUE;
 		}	//	if (Data->Loop == !Data->LastLoop)...
 
 		// adjust the sound if required
-		if ( Snd_Get3dSoundValues( Resource, Data, &Volume, &Pan, &Frequency ) == JE_TRUE )
+		if ( Snd_Get3dSoundValues( Resource, Data, &Volume, &Pan, &Frequency ) == GR_TRUE )
 		{
-			Result = jeSound_ModifySound(Resource->Sound, Data->Sound, Volume, Pan, Frequency );
-			if ( Result == JE_FALSE )
+			Result = grSound_ModifySound(Resource->Sound, Data->Sound, Volume, Pan, Frequency );
+			if ( Result == GR_FALSE )
 			{
-				jeErrorLog_AddString( JE_ERR_SOUND_RESOURCE, "Snd_Process: sound modify failed.", NULL );
-				return JE_TRUE;
+				grErrorLog_AddString( GR_ERR_SOUND_RESOURCE, "Snd_Process: sound modify failed.", NULL );
+				return GR_TRUE;
 			}
 
 			Data->LastVolume = Volume;
@@ -231,29 +231,29 @@ jeBoolean Snd_Process(
 
 		// display debug info
 #ifdef SND_DEBUGINFO
-		jeEngine_Printf( Resource->ExternalResource->Engine, 100, 100, "Last:  Vol:%.2f Pan:%.2f", Data->LastVolume, Data->LastPan );
-		jeEngine_Printf( Resource->ExternalResource->Engine, 100, 120, "Cur:   Vol:%.2f Pan:%.2f", Volume, Pan );
-		jeEngine_Printf( Resource->ExternalResource->Engine, 100, 140, "Delta: Vol:%.2f Pan:%.2f", fabs( Data->LastVolume - Volume ), fabs( Data->LastPan - Pan ) );
+		grEngine_Printf( Resource->ExternalResource->Engine, 100, 100, "Last:  Vol:%.2f Pan:%.2f", Data->LastVolume, Data->LastPan );
+		grEngine_Printf( Resource->ExternalResource->Engine, 100, 120, "Cur:   Vol:%.2f Pan:%.2f", Volume, Pan );
+		grEngine_Printf( Resource->ExternalResource->Engine, 100, 140, "Delta: Vol:%.2f Pan:%.2f", fabs( Data->LastVolume - Volume ), fabs( Data->LastPan - Pan ) );
 #endif
 
 		// stop the sound if its volume is out of hearing range
-		if ( Data->Loop == JE_TRUE)
+		if ( Data->Loop == GR_TRUE)
 		{
 			if ( (Data->LastVolume < SND_MINAUDIBLEVOLUME))
 			{
-				jeSound_StopSound( Resource->Sound, Data->Sound );
+				grSound_StopSound( Resource->Sound, Data->Sound );
 				Data->Sound = NULL;
 				Data->LastVolume = 0;
 				Data->LastPan = 0;
 			}	//	if ( (Data->LastVolume ...
-		}	//	if ( Data->Loop == JE_TRUE)...
+		}	//	if ( Data->Loop == GR_TRUE)...
 	}	//	if ( Data->Sound != NULL)...
 	else	//	sound hasn't started to play yet...
 	{
 		Snd_Get3dSoundValues( Resource, Data, &( Data->LastVolume ), &( Data->LastPan ), &Frequency );
 		if ( Data->LastVolume >= SND_MINAUDIBLEVOLUME )
 		{
-			Data->Sound = jeSound_PlaySoundDef(	Resource->Sound,
+			Data->Sound = grSound_PlaySoundDef(	Resource->Sound,
 				Data->SoundDef,
 				Data->LastVolume, Data->LastPan, Frequency,
 				Data->Loop );
@@ -263,7 +263,7 @@ jeBoolean Snd_Process(
 	}	//	else
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// get rid of warnings
 	TimeDelta;
@@ -273,18 +273,18 @@ jeBoolean Snd_Process(
 
 
 /* //	previous version pre-May 2005 -- inconsistent loop non-loop performance	
-jeBoolean Snd_Process(
+grBoolean Snd_Process(
 	EffectResource	*Resource,		// available resources
 	float		TimeDelta,		// elapsed time
-	jeBoolean	bMute,
+	grBoolean	bMute,
 	Snd			*Data )			// effect data
 {
 
 	// locals
-	jeBoolean	Result;
-	jeFloat		Volume;
-	jeFloat		Pan = 0.0f;
-	jeFloat		Frequency = 1.0f;
+	grBoolean	Result;
+	grFloat		Volume;
+	grFloat		Pan = 0.0f;
+	grFloat		Frequency = 1.0f;
 
 	// ensure valid data
 	assert( Resource != NULL );
@@ -296,44 +296,44 @@ jeBoolean Snd_Process(
 	{
 		if (Data->Sound != NULL)
 		{
-			jeFloat	fMute = 0.0f;
-			Result = jeSound_ModifySound(	Resource->Sound,
+			grFloat	fMute = 0.0f;
+			Result = grSound_ModifySound(	Resource->Sound,
 				Data->Sound,
 				fMute, Pan, Frequency );
-			if ( Result == JE_FALSE )
+			if ( Result == GR_FALSE )
 			{
-				jeErrorLog_AddString( JE_ERR_SOUND_RESOURCE, "Snd_Process: sound modify failed.", NULL );
-				return JE_TRUE;
+				grErrorLog_AddString( GR_ERR_SOUND_RESOURCE, "Snd_Process: sound modify failed.", NULL );
+				return GR_TRUE;
 			}
 
 			Data->LastVolume = fMute;
 			Data->LastPan = Pan;
 
 		}
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	// stop the sound if required...
 	if ( Data->Sound != NULL )
 	{
 		// if the sound is done then zap this effect
-		if (	( Data->Loop == JE_FALSE ) &&
-			( jeSound_SoundIsPlaying( Resource->Sound, Data->Sound ) == JE_FALSE ) )
+		if (	( Data->Loop == GR_FALSE ) &&
+			( grSound_SoundIsPlaying( Resource->Sound, Data->Sound ) == GR_FALSE ) )
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 
 		// adjust the sound if required
-		if ( Snd_Get3dSoundValues( Resource, Data, &Volume, &Pan, &Frequency ) == JE_TRUE )
+		if ( Snd_Get3dSoundValues( Resource, Data, &Volume, &Pan, &Frequency ) == GR_TRUE )
 		{
 
-			Result = jeSound_ModifySound(	Resource->Sound,
+			Result = grSound_ModifySound(	Resource->Sound,
 				Data->Sound,
 				Volume, Pan, Frequency );
-			if ( Result == JE_FALSE )
+			if ( Result == GR_FALSE )
 			{
-				jeErrorLog_AddString( JE_ERR_SOUND_RESOURCE, "Snd_Process: sound modify failed.", NULL );
-				return JE_TRUE;
+				grErrorLog_AddString( GR_ERR_SOUND_RESOURCE, "Snd_Process: sound modify failed.", NULL );
+				return GR_TRUE;
 			}
 
 			Data->LastVolume = Volume;
@@ -342,17 +342,17 @@ jeBoolean Snd_Process(
 
 		// display debug info
 #ifdef SND_DEBUGINFO
-		jeEngine_Printf( Resource->ExternalResource->Engine, 100, 100, "Last:  Vol:%.2f Pan:%.2f", Data->LastVolume, Data->LastPan );
-		jeEngine_Printf( Resource->ExternalResource->Engine, 100, 120, "Cur:   Vol:%.2f Pan:%.2f", Volume, Pan );
-		jeEngine_Printf( Resource->ExternalResource->Engine, 100, 140, "Delta: Vol:%.2f Pan:%.2f", fabs( Data->LastVolume - Volume ), fabs( Data->LastPan - Pan ) );
+		grEngine_Printf( Resource->ExternalResource->Engine, 100, 100, "Last:  Vol:%.2f Pan:%.2f", Data->LastVolume, Data->LastPan );
+		grEngine_Printf( Resource->ExternalResource->Engine, 100, 120, "Cur:   Vol:%.2f Pan:%.2f", Volume, Pan );
+		grEngine_Printf( Resource->ExternalResource->Engine, 100, 140, "Delta: Vol:%.2f Pan:%.2f", fabs( Data->LastVolume - Volume ), fabs( Data->LastPan - Pan ) );
 #endif
 
 		// stop the sound if its volume is out of hearing range
-		if ( Data->Loop == JE_TRUE)
+		if ( Data->Loop == GR_TRUE)
 		{
 			if ( (Data->LastVolume < SND_MINAUDIBLEVOLUME))
 			{
-				jeSound_StopSound( Resource->Sound, Data->Sound );
+				grSound_StopSound( Resource->Sound, Data->Sound );
 				Data->Sound = NULL;
 				Data->LastVolume = 0;
 				Data->LastPan = 0;
@@ -363,22 +363,22 @@ jeBoolean Snd_Process(
 	else
 	{
 		// only restart looping non paused sounds
-		if (	( Data->Loop == JE_TRUE ) &&
-			( Data->Paused == JE_FALSE ) )
+		if (	( Data->Loop == GR_TRUE ) &&
+			( Data->Paused == GR_FALSE ) )
 		{
 
 			// restart it if its volume is now in hearing range
 			Snd_Get3dSoundValues( Resource, Data, &( Data->LastVolume ), &( Data->LastPan ), &Frequency );
 			if ( Data->LastVolume >= SND_MINAUDIBLEVOLUME )
 			{
-				Data->Sound = jeSound_PlaySoundDef(	Resource->Sound,
+				Data->Sound = grSound_PlaySoundDef(	Resource->Sound,
 					Data->SoundDef,
 					Data->LastVolume, Data->LastPan, Frequency,
 					Data->Loop );
 				if( Data->Sound == NULL )
 				{
-					jeErrorLog_AddString( JE_ERR_SOUND_RESOURCE, "Snd_Process: sound def play failed.", NULL );
-					return JE_TRUE;
+					grErrorLog_AddString( GR_ERR_SOUND_RESOURCE, "Snd_Process: sound def play failed.", NULL );
+					return GR_TRUE;
 				}
 
 			}
@@ -391,7 +391,7 @@ jeBoolean Snd_Process(
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// get rid of warnings
 	TimeDelta;
@@ -406,7 +406,7 @@ jeBoolean Snd_Process(
 //	Adjust the effect.
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean Snd_Modify(
+grBoolean Snd_Modify(
 	SndResource	*Resource,	// available resources
 	Snd			*Data,		// effect data
 	Snd			*NewData,	// new data
@@ -423,28 +423,28 @@ jeBoolean Snd_Modify(
 	{
 
 		// save new position
-		jeVec3d_Copy( &( NewData->Pos ), &( Data->Pos ) );
+		grVec3d_Copy( &( NewData->Pos ), &( Data->Pos ) );
 
 		// adjust the sound
 		if ( Data->Sound != NULL )
 		{
 
 			// locals
-			jeBoolean	Result;
-			jeFloat		Volume;
-			jeFloat		Pan;
-			jeFloat		Frequency;
+			grBoolean	Result;
+			grFloat		Volume;
+			grFloat		Pan;
+			grFloat		Frequency;
 
 			// adjust the sound
-			if ( Snd_Get3dSoundValues( Resource->ExternalResource, Data, &Volume, &Pan, &Frequency ) == JE_TRUE )
+			if ( Snd_Get3dSoundValues( Resource->ExternalResource, Data, &Volume, &Pan, &Frequency ) == GR_TRUE )
 			{
-				Result = jeSound_ModifySound(	Resource->ExternalResource->Sound,
+				Result = grSound_ModifySound(	Resource->ExternalResource->Sound,
 												Data->Sound,
 												Volume, Pan, Frequency );
-				if( Result == JE_FALSE )
+				if( Result == GR_FALSE )
 				{
-					jeErrorLog_AddString( JE_ERR_SOUND_RESOURCE, "Snd_Modify: sound modify failed.", NULL );
-					return JE_FALSE;
+					grErrorLog_AddString( GR_ERR_SOUND_RESOURCE, "Snd_Modify: sound modify failed.", NULL );
+					return GR_FALSE;
 				}
 
 				Data->LastVolume = Volume;
@@ -454,7 +454,7 @@ jeBoolean Snd_Modify(
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 } // Snd_Modify()
 
@@ -470,7 +470,7 @@ jeBoolean Snd_Modify(
 void Snd_Pause(
 	SndResource	*Resource,	// available resources
 	Snd			*Data,		// effect data
-	jeBoolean	Pause )		// new pause state
+	grBoolean	Pause )		// new pause state
 {
 
 	// ensure valid data
@@ -478,41 +478,41 @@ void Snd_Pause(
 	assert( Data != NULL );
 
 	// pause the sound...
-	if (	( Pause == JE_TRUE ) &&
-			( Data->Paused == JE_FALSE ) )
+	if (	( Pause == GR_TRUE ) &&
+			( Data->Paused == GR_FALSE ) )
 	{
 		if ( Data->Sound != NULL )
 		{
-			jeSound_StopSound( Resource->ExternalResource->Sound, Data->Sound );
+			grSound_StopSound( Resource->ExternalResource->Sound, Data->Sound );
 			Data->Sound = NULL;
 			Data->LastVolume = 0;
 			Data->LastPan = 0;
 		}
-		Data->Paused = JE_TRUE;
+		Data->Paused = GR_TRUE;
 	}
 	// ...or start it up again
-	else if (	( Pause == JE_FALSE ) &&
-				( Data->Paused == JE_TRUE ) )
+	else if (	( Pause == GR_FALSE ) &&
+				( Data->Paused == GR_TRUE ) )
 	{
 
 		// locals
-		jeFloat	Frequency;
+		grFloat	Frequency;
 
 		// play the sound
 		if (	( Data->Sound == NULL ) ||
-				( jeSound_SoundIsPlaying( Resource->ExternalResource->Sound, Data->Sound ) == JE_FALSE ) )
+				( grSound_SoundIsPlaying( Resource->ExternalResource->Sound, Data->Sound ) == GR_FALSE ) )
 		{
 			Snd_Get3dSoundValues( Resource->ExternalResource, Data, &( Data->LastVolume ), &( Data->LastPan ), &Frequency );
-			Data->Sound = jeSound_PlaySoundDef(	Resource->ExternalResource->Sound,
+			Data->Sound = grSound_PlaySoundDef(	Resource->ExternalResource->Sound,
 												Data->SoundDef,
 												Data->LastVolume, Data->LastPan, Frequency,
 												Data->Loop );
 			if( Data->Sound == NULL )
 			{
-				jeErrorLog_AddString( JE_ERR_SOUND_RESOURCE, "Snd_Pause: sound def play failed.", NULL );
+				grErrorLog_AddString( GR_ERR_SOUND_RESOURCE, "Snd_Pause: sound def play failed.", NULL );
 				return;
 			}
-			Data->Paused = JE_FALSE;
+			Data->Paused = GR_FALSE;
 		}
 	}
 

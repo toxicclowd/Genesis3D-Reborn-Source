@@ -18,13 +18,13 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_TKEVENTS_H
-#define JE_TKEVENTS_H
+#ifndef GR_TKEVENTS_H
+#define GR_TKEVENTS_H
 /* TKEvents
 	(Time-Keyed-Events)
 	This module is designed primarily to support motion.c
 
-	jeTKEvents is a sorted array of times with an identifying descriptor.
+	grTKEvents is a sorted array of times with an identifying descriptor.
 	The descriptors are stored as strings in a separate, packed buffer.
 
 */
@@ -36,55 +36,55 @@
 extern "C" {
 #endif
 
-typedef struct jeTKEvents jeTKEvents;
-typedef jeFloat jeTKEvents_TimeType;
+typedef struct grTKEvents grTKEvents;
+typedef grFloat grTKEvents_TimeType;
 
-jeTKEvents* JETCC jeTKEvents_Create(void);
+grTKEvents* GRCC grTKEvents_Create(void);
 	// Creates a new event array.
 
-void JETCC jeTKEvents_Destroy(jeTKEvents** pEvents);
+void GRCC grTKEvents_Destroy(grTKEvents** pEvents);
 	// Destroys array.
 
-jeBoolean JETCC jeTKEvents_Insert(jeTKEvents* pEvents, jeTKEvents_TimeType tKey, const char* pEventData);
+grBoolean GRCC grTKEvents_Insert(grTKEvents* pEvents, grTKEvents_TimeType tKey, const char* pEventData);
 	// Inserts the new key and corresponding data.
 
-jeBoolean JETCC jeTKEvents_Delete(jeTKEvents* pEvents, jeTKEvents_TimeType tKey);
+grBoolean GRCC grTKEvents_Delete(grTKEvents* pEvents, grTKEvents_TimeType tKey);
 	// Deletes the key 
 
-jeTKEvents* JETCC jeTKEvents_CreateFromFile(
-	jeVFile* pFile);					// stream positioned at array data
+grTKEvents* GRCC grTKEvents_CreateFromFile(
+	grVFile* pFile);					// stream positioned at array data
 	// Creates a new array from the given stream.
 
-jeBoolean JETCC jeTKEvents_WriteToFile(
-	const jeTKEvents* pEvents,		// sorted array to write 
-	jeVFile* pFile);					// stream positioned for writing
+grBoolean GRCC grTKEvents_WriteToFile(
+	const grTKEvents* pEvents,		// sorted array to write 
+	grVFile* pFile);					// stream positioned for writing
 	// Writes the array to the given stream.
 //---------------------------------------------------------------------------
 // Event Iteration
 
-void JETCC jeTKEvents_SetupIterator(
-	jeTKEvents* pEvents,				// Event list to iterate
-	jeTKEvents_TimeType StartTime,				// Inclusive search start
-	jeTKEvents_TimeType EndTime);				// Non-inclusive search stop
+void GRCC grTKEvents_SetupIterator(
+	grTKEvents* pEvents,				// Event list to iterate
+	grTKEvents_TimeType StartTime,				// Inclusive search start
+	grTKEvents_TimeType EndTime);				// Non-inclusive search stop
 	// For searching or querying the array for events between two times
 	// times are compaired [StartTime,EndTime), '[' is inclusive, ')' is 
 	// non-inclusive.  This prepares the PathGetNextEvent() function.
 
-jeBoolean JETCC jeTKEvents_GetNextEvent(
-	jeTKEvents* pEvents,				// Event list to iterate
-	jeTKEvents_TimeType *pTime,				// Return time, if found
+grBoolean GRCC grTKEvents_GetNextEvent(
+	grTKEvents* pEvents,				// Event list to iterate
+	grTKEvents_TimeType *pTime,				// Return time, if found
 	const char **ppEventString);	// Return data, if found
-	// Iterates from StartTime to EndTime as setup in jeTKEvents_CreateIterator()
+	// Iterates from StartTime to EndTime as setup in grTKEvents_CreateIterator()
 	// and for each event between these times [StartTime,EndTime)
 	// this function will return Time and EventString returned for that event
 	// and the iterator will be positioned for the next search.  When there 
-	// are no more events in the range, this function will return JE_FALSE (Time
+	// are no more events in the range, this function will return GR_FALSE (Time
 	// will be 0 and ppEventString will be empty).
 
-JETAPI jeBoolean JETCC jeTKEvents_GetExtents(
-		jeTKEvents *Events,
-		jeTKEvents_TimeType *FirstEventTime,	// time of first event
-		jeTKEvents_TimeType *LastEventTime);	// time of last event
+GRAPI grBoolean GRCC grTKEvents_GetExtents(
+		grTKEvents *Events,
+		grTKEvents_TimeType *FirstEventTime,	// time of first event
+		grTKEvents_TimeType *LastEventTime);	// time of last event
 
 #ifdef __cplusplus
 }

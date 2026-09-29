@@ -22,7 +22,7 @@
 #ifndef UVMAP_H
 #define UVMAP_H
 
-#include "jeTypes.h"
+#include "grTypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,29 +32,29 @@ extern "C" {
 
 	built-in function pointers:
 
-	jeUVMap_Reflection
-	jeUVMap_Refraction
-	jeUVMap_Projection
+	grUVMap_Reflection
+	grUVMap_Refraction
+	grUVMap_Projection
 
 **/
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // CB for an array mapper
 
-typedef jeBoolean (JETCC *jeUVMapper) (const jeXForm3d* pXForm,
-	jeLVertex* pVerts,const jeVec3d* pNormals, int nVerts);
+typedef grBoolean (GRCC *grUVMapper) (const grXForm3d* pXForm,
+	grLVertex* pVerts,const grVec3d* pNormals, int nVerts);
 
-typedef jeBoolean (*jeUVMapVertex) (const jeXForm3d* pXForm,
-	jeVertex* pVerts,int nVerts);
+typedef grBoolean (*grUVMapVertex) (const grXForm3d* pXForm,
+	grVertex* pVerts,int nVerts);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // functions
 
-// these functions take an array of JE_LVertices and normals
-JETAPI jeBoolean JETCC jeUVMap_Reflection(const jeXForm3d* pXForm, jeLVertex* pVerts, const jeVec3d* pNormals, int nverts);
+// these functions take an array of GR_LVertices and normals
+GRAPI grBoolean GRCC grUVMap_Reflection(const grXForm3d* pXForm, grLVertex* pVerts, const grVec3d* pNormals, int nverts);
 									// xform is (transpose of) camera xform
-JETAPI jeBoolean JETCC jeUVMap_Refraction(const jeXForm3d* pXForm, jeLVertex* pVerts, const jeVec3d* pNormals, int nverts);
-JETAPI jeBoolean JETCC jeUVMap_Projection(const jeXForm3d* pXForm, jeLVertex* pVerts, const jeVec3d* pNormals, int nverts);
+GRAPI grBoolean GRCC grUVMap_Refraction(const grXForm3d* pXForm, grLVertex* pVerts, const grVec3d* pNormals, int nverts);
+GRAPI grBoolean GRCC grUVMap_Projection(const grXForm3d* pXForm, grLVertex* pVerts, const grVec3d* pNormals, int nverts);
 
 #ifdef __cplusplus
 }

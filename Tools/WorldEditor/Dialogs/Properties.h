@@ -78,11 +78,11 @@ protected:
 
 	Properties_UserData			*UserData;
 	int				iUserDataEntries;
-	jeBoolean		WriteVariable_String(CString Name, CString Value,jeVFile * pF, jePtrMgr * pPtrMgr);
+	grBoolean		WriteVariable_String(CString Name, CString Value,grVFile * pF, grPtrMgr * pPtrMgr);
 public:
 
-	jeBoolean Properties_ReadFromFile(jeVFile * pF, jePtrMgr * pPtrMgr);
-	jeBoolean Properties_WriteToFile (jeVFile * pF, jePtrMgr * pPtrMgr);
+	grBoolean Properties_ReadFromFile(grVFile * pF, grPtrMgr * pPtrMgr);
+	grBoolean Properties_WriteToFile (grVFile * pF, grPtrMgr * pPtrMgr);
 
 };
 

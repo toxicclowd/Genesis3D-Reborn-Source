@@ -27,14 +27,14 @@
 
 typedef struct tagBrushDrawInfo
 {
-	jeWorld		*	pWorld ;
-	jeCamera	*	pCamera ;
-	jeEngine	*	pEngine ;
+	grWorld		*	pWorld ;
+	grCamera	*	pCamera ;
+	grEngine	*	pEngine ;
 } BrushDragInfo ;
 
 
 
-static jeBoolean Draw3d_BrushDragDraw( Object * pObject, void * lParam )
+static grBoolean Draw3d_BrushDragDraw( Object * pObject, void * lParam )
 {
 	BrushDragInfo	*	pbdi = (BrushDragInfo*)lParam ;
 	Brush			*	pBrush ;
@@ -49,9 +49,9 @@ static jeBoolean Draw3d_BrushDragDraw( Object * pObject, void * lParam )
 	{
 	case KIND_BRUSH :
 		pBrush = (Brush*)pObject ;
-		if( JE_FALSE == Brush_IsInModel( pBrush ) )
+		if( GR_FALSE == Brush_IsInModel( pBrush ) )
 		{
-			jeBrush_Render( Brush_GetjeBrush( pBrush ), pbdi->pEngine, pbdi->pCamera ) ;
+			grBrush_Render( Brush_GetgrBrush( pBrush ), pbdi->pEngine, pbdi->pCamera ) ;
 		}
 		break ;
 
@@ -64,8 +64,8 @@ static jeBoolean Draw3d_BrushDragDraw( Object * pObject, void * lParam )
 
 	case KIND_TERRAIN:
 /*
-		jeTerrain_RenderPrep(Terrain_GetTerrain((Terrain*)pObject), pbdi->pCamera);
-		jeTerrain_RenderThroughCamera( Terrain_GetTerrain((Terrain*)pObject), pbdi->pEngine, pbdi->pCamera, UID);
+		grTerrain_RenderPrep(Terrain_GetTerrain((Terrain*)pObject), pbdi->pCamera);
+		grTerrain_RenderThroughCamera( Terrain_GetTerrain((Terrain*)pObject), pbdi->pEngine, pbdi->pCamera, UID);
 		UID++;
 */
 		break;
@@ -79,10 +79,10 @@ static jeBoolean Draw3d_BrushDragDraw( Object * pObject, void * lParam )
 	default:
 		assert( 0 );
 	}// switch
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Draw3d_BrushDragDraw
 
-void Draw3d_ManipulatedBrushes( Level * pLevel, jeWorld* pWorld, jeCamera* pCamera, jeEngine* pEngine )
+void Draw3d_ManipulatedBrushes( Level * pLevel, grWorld* pWorld, grCamera* pCamera, grEngine* pEngine )
 {
 	BrushDragInfo	bdi ;
 	assert( pLevel != NULL ) ;

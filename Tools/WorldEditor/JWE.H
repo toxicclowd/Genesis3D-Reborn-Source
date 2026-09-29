@@ -73,7 +73,7 @@ public:
 	void EndLogRecord();
 	void StartLogPlay();
 	void EndLogPlay();
-	jeBoolean GetAppPath( char * PathString, int BuffSize );
+	grBoolean GetAppPath( char * PathString, int BuffSize );
 	BOOL InitObjects( char * DllPath);
 	//	by tom morris feb 2005
 	bool	RefreshMaterialList();
@@ -104,14 +104,14 @@ private:
 	//}}AFX_VIRTUAL
 
 public:// Implementation
-	BOOL			GetDriverAndMode(jeEngine* pEngine, jeDriver **ppDriver, jeDriver_Mode **ppMode) ;
+	BOOL			GetDriverAndMode(grEngine* pEngine, grDriver **ppDriver, grDriver_Mode **ppMode) ;
 	const char*		GetDriverPath(void) ;
 
 	// Krouer
 	BOOL  HasInitMaterialList() { return m_bMaterialListInitialised; };
 
 	//	by tom morris feb 2005 - moved to public by Krouer
-	bool	InitMaterialList(jeEngine* pEngine, jeResourceMgr* pResMgr);
+	bool	InitMaterialList(grEngine* pEngine, grResourceMgr* pResMgr);
 	//	end tom morris
 
 	CString m_strDriverPath;

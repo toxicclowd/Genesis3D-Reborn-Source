@@ -28,7 +28,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 #include "MainFrm.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 #include <float.h>
 
 IMPLEMENT_DYNCREATE(CBuilderEdit, CEdit)
@@ -65,7 +65,7 @@ void CBuilderEdit::SetProperty()
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
-	jeProperty_Data Data;
+	grProperty_Data Data;
 	char	  TempBuffer[265];
 
 	GetWindowText(TempBuffer, 256 );
@@ -111,7 +111,7 @@ void CBuilderEdit::SetValueRange( float min, float max, float increment )
 
 void CBuilderEdit::Increment( BOOL bDown )
 {
-	jeProperty_Data Data;
+	grProperty_Data Data;
 	char	  TempBuffer[265];
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;

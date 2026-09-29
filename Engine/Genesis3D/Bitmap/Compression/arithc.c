@@ -368,7 +368,7 @@ ari->code  = code;
 return got;
 }
 
-void arithEncBit(arithInfo * ari,uint32 mid,uint32 tot,jeBoolean bit)
+void arithEncBit(arithInfo * ari,uint32 mid,uint32 tot,grBoolean bit)
 {
 uint32 code,range;
 
@@ -415,9 +415,9 @@ ari->code  = code;
 ari->range = range;
 }
 
-jeBoolean arithDecBit(arithInfo * ari,uint32 mid,uint32 tot)
+grBoolean arithDecBit(arithInfo * ari,uint32 mid,uint32 tot)
 {
-jeBoolean bit;
+grBoolean bit;
 uint32 range,code,r;
 
 	range = ari->range;
@@ -460,7 +460,7 @@ return bit;
 #define BITMODEL_TOTMAX 5000
 #define BITMODEL_INC	30
 
-void arithModelEncBit(arithInfo * ari,uint32 *p0,uint32 *pt,jeBoolean bit)
+void arithModelEncBit(arithInfo * ari,uint32 *p0,uint32 *pt,grBoolean bit)
 {
 uint32 code,range;
 
@@ -515,9 +515,9 @@ ari->code  = code;
 ari->range = range;
 }
 
-jeBoolean arithModelDecBit(arithInfo * ari,uint32 *p0,uint32 *pt)
+grBoolean arithModelDecBit(arithInfo * ari,uint32 *p0,uint32 *pt)
 {
-jeBoolean bit;
+grBoolean bit;
 uint32 range,code,r;
 
 	range = ari->range;
@@ -554,7 +554,7 @@ return bit;
 }
 
 
-void ARITHCC arithEncBitRaw(arithInfo * ari,jeBoolean bit)
+void ARITHCC arithEncBitRaw(arithInfo * ari,grBoolean bit)
 {
 uint32 code,range;
 
@@ -594,9 +594,9 @@ ari->code  = code;
 ari->range = range;
 }
 
-jeBoolean ARITHCC arithDecBitRaw(arithInfo * ari)
+grBoolean ARITHCC arithDecBitRaw(arithInfo * ari)
 {
-jeBoolean bit;
+grBoolean bit;
 uint32 range,code,r;
 
 	range = ari->range;

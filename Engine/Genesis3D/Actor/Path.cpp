@@ -34,14 +34,14 @@
 #define max(aa,bb)  (( (aa)>(bb) ) ? (aa) : (bb) )
 
 
-#define jePath_TimeType jeFloat
+#define grPath_TimeType grFloat
 
 typedef int8 Bool8;
 
-typedef void (JETCC *InterpolationFunction)(
+typedef void (GRCC *InterpolationFunction)(
 	const void *KF1,
 	const void *KF2, 
-	jePath_TimeType T,
+	grPath_TimeType T,
 	void *Result);
 
 
@@ -52,146 +52,146 @@ typedef void (JETCC *InterpolationFunction)(
 
 typedef enum
 {
-	JE_PATH_VK_LINEAR,
-	JE_PATH_VK_HERMITE,
-	JE_PATH_VK_HERMITE_ZERO_DERIV,
-	JE_PATH_QK_LINEAR,
-	JE_PATH_QK_SLERP,
-	JE_PATH_QK_SQUAD,
-	JE_PATH_MANY_INTERPOLATORS
-} jePath_InterpolationType;
+	GR_PATH_VK_LINEAR,
+	GR_PATH_VK_HERMITE,
+	GR_PATH_VK_HERMITE_ZERO_DERIV,
+	GR_PATH_QK_LINEAR,
+	GR_PATH_QK_SLERP,
+	GR_PATH_QK_SQUAD,
+	GR_PATH_MANY_INTERPOLATORS
+} grPath_InterpolationType;
 
 typedef struct
 {
-	jeTKArray *KeyList;
+	grTKArray *KeyList;
 	// was int.. int InterpolationType;				// type of interpolation for channel
-	jePath_InterpolationType InterpolationType;
+	grPath_InterpolationType InterpolationType;
 	
-	jePath_TimeType StartTime;			// First time in channel's path
-	jePath_TimeType EndTime;			// Last time in channel's path
+	grPath_TimeType StartTime;			// First time in channel's path
+	grPath_TimeType EndTime;			// Last time in channel's path
 
 	// --remember keys used for last sample--
 	int32 LastKey1;						// smaller key
 	int32 LastKey2;						// larger key (keys may be equal)
-	jePath_TimeType LastKey1Time;		// Time at LastKey1
-	jePath_TimeType LastKey2Time;		// Time at LastKey2
+	grPath_TimeType LastKey1Time;		// Time at LastKey1
+	grPath_TimeType LastKey2Time;		// Time at LastKey2
 									// if last key is not valid: LastKey1Time > LastKey2Time
-} jePath_Channel;
+} grPath_Channel;
 
 
-typedef struct _jePath
+typedef struct _grPath
 {
-	jePath_Channel Rotation;
-	jePath_Channel Translation;
+	grPath_Channel Rotation;
+	grPath_Channel Translation;
 	unsigned int Dirty    : 1;						
 	unsigned int Looped   : 1;
 	unsigned int AllowCuts: 1;
 	unsigned int RefCount :29;
-} jePath;
+} grPath;
 
 
 typedef struct 
 {
-	InterpolationFunction InterpolationTable[JE_PATH_MANY_INTERPOLATORS];
+	InterpolationFunction InterpolationTable[GR_PATH_MANY_INTERPOLATORS];
 	int32 Flags[2];
-} jePath_StaticType;
+} grPath_StaticType;
 
-jePath_StaticType jePath_Statics = 
+grPath_StaticType grPath_Statics = 
 {
-	{ 	jeVKFrame_LinearInterpolation,
-		jeVKFrame_HermiteInterpolation,
-		jeVKFrame_HermiteInterpolation,
-		jeQKFrame_LinearInterpolation,
-		jeQKFrame_SlerpInterpolation,
-		jeQKFrame_SquadInterpolation
+	{ 	grVKFrame_LinearInterpolation,
+		grVKFrame_HermiteInterpolation,
+		grVKFrame_HermiteInterpolation,
+		grQKFrame_LinearInterpolation,
+		grQKFrame_SlerpInterpolation,
+		grQKFrame_SquadInterpolation
 	},
 	{FLAG_OTHER,FLAG_EMPTY},
 };
 
 
 
-static jeVKFrame_InterpolationType JETCF jePath_PathToVKInterpolation(jePath_InterpolationType I)
+static grVKFrame_InterpolationType GRCF grPath_PathToVKInterpolation(grPath_InterpolationType I)
 {
 	switch (I)
 		{
-			case (JE_PATH_VK_LINEAR):			  return VKFRAME_LINEAR;
-			case (JE_PATH_VK_HERMITE):			  return VKFRAME_HERMITE;
-			case (JE_PATH_VK_HERMITE_ZERO_DERIV): return VKFRAME_HERMITE_ZERO_DERIV;
+			case (GR_PATH_VK_LINEAR):			  return VKFRAME_LINEAR;
+			case (GR_PATH_VK_HERMITE):			  return VKFRAME_HERMITE;
+			case (GR_PATH_VK_HERMITE_ZERO_DERIV): return VKFRAME_HERMITE_ZERO_DERIV;
 			default: assert(0);
 		}
 	return VKFRAME_LINEAR;  // this is just for warning removal
 }
 			
-static jePath_InterpolationType JETCF jePath_VKToPathInterpolation(jeVKFrame_InterpolationType I)
+static grPath_InterpolationType GRCF grPath_VKToPathInterpolation(grVKFrame_InterpolationType I)
 {
 	switch (I)
 		{
-			case (VKFRAME_LINEAR):				return JE_PATH_VK_LINEAR;
-			case (VKFRAME_HERMITE):				return JE_PATH_VK_HERMITE;
-			case (VKFRAME_HERMITE_ZERO_DERIV):  return JE_PATH_VK_HERMITE_ZERO_DERIV;
+			case (VKFRAME_LINEAR):				return GR_PATH_VK_LINEAR;
+			case (VKFRAME_HERMITE):				return GR_PATH_VK_HERMITE;
+			case (VKFRAME_HERMITE_ZERO_DERIV):  return GR_PATH_VK_HERMITE_ZERO_DERIV;
 			default: assert(0);
 		}
-	return JE_PATH_VK_LINEAR; // this is just for warning removal
+	return GR_PATH_VK_LINEAR; // this is just for warning removal
 }
 
-static jeQKFrame_InterpolationType JETCF jePath_PathToQKInterpolation(jePath_InterpolationType I)
+static grQKFrame_InterpolationType GRCF grPath_PathToQKInterpolation(grPath_InterpolationType I)
 {
 	switch (I)
 		{
-			case (JE_PATH_QK_LINEAR):	return QKFRAME_LINEAR;
-			case (JE_PATH_QK_SLERP):	return QKFRAME_SLERP;
-			case (JE_PATH_QK_SQUAD):	return QKFRAME_SQUAD;
+			case (GR_PATH_QK_LINEAR):	return QKFRAME_LINEAR;
+			case (GR_PATH_QK_SLERP):	return QKFRAME_SLERP;
+			case (GR_PATH_QK_SQUAD):	return QKFRAME_SQUAD;
 			default: assert(0);
 		}
 	return QKFRAME_LINEAR;  // this is just for warning removal
 }
 			
-static jePath_InterpolationType JETCF jePath_QKToPathInterpolation(jeQKFrame_InterpolationType I)
+static grPath_InterpolationType GRCF grPath_QKToPathInterpolation(grQKFrame_InterpolationType I)
 {
 	switch (I)
 		{
-			case (QKFRAME_LINEAR):	return JE_PATH_QK_LINEAR;
-			case (QKFRAME_SLERP):	return JE_PATH_QK_SLERP;
-			case (QKFRAME_SQUAD):	return JE_PATH_QK_SQUAD;
+			case (QKFRAME_LINEAR):	return GR_PATH_QK_LINEAR;
+			case (QKFRAME_SLERP):	return GR_PATH_QK_SLERP;
+			case (QKFRAME_SQUAD):	return GR_PATH_QK_SQUAD;
 			default: assert(0);
 		}
-	return JE_PATH_QK_LINEAR; // this is just for warning removal
+	return GR_PATH_QK_LINEAR; // this is just for warning removal
 }
 
 
-JETAPI void JETCC jePath_CreateRef( jePath *P )
+GRAPI void GRCC grPath_CreateRef( grPath *P )
 {
 	assert( P != NULL );
 	P->RefCount++;
 }
 
-JETAPI void JETCC jePath_SetCutMode(jePath *P, jeBoolean Enable)
+GRAPI void GRCC grPath_SetCutMode(grPath *P, grBoolean Enable)
 {
 	assert( P != NULL );
 	P->AllowCuts = Enable;
 	P->Dirty = FLAG_DIRTY;
 }
 
-JETAPI jeBoolean JETCC jePath_GetCutMode(jePath *P)
+GRAPI grBoolean GRCC grPath_GetCutMode(grPath *P)
 {
 	assert( P != NULL );
 	return (P->AllowCuts);
 }
 	
 
-JETAPI jePath *JETCC jePath_Create(
-	jePath_Interpolator TranslationInterpolation,	// type of interpolation for translation channel
-	jePath_Interpolator RotationInterpolation,	// type of interpolation for rotation channel
-	jeBoolean Looped)				// JE_TRUE if end of path is connected to head
+GRAPI grPath *GRCC grPath_Create(
+	grPath_Interpolator TranslationInterpolation,	// type of interpolation for translation channel
+	grPath_Interpolator RotationInterpolation,	// type of interpolation for rotation channel
+	grBoolean Looped)				// GR_TRUE if end of path is connected to head
 	
 {
-	jePath *P;
+	grPath *P;
 
-	P = (jePath *)jeRam_AllocateClear(sizeof(jePath));
+	P = (grPath *)grRam_AllocateClear(sizeof(grPath));
 
 	if ( P == NULL )
 	{
-		jeErrorLog_Add(JE_ERR_MEMORY_RESOURCE, "jePath_Create.");
+		grErrorLog_Add(GR_ERR_MEMORY_RESOURCE, "grPath_Create.");
 		return NULL;
 	}
 
@@ -201,7 +201,7 @@ JETAPI jePath *JETCC jePath_Create(
 	P->RefCount  = 0;
 	P->Dirty     = FLAG_DIRTY;
 
-	if (Looped==JE_TRUE)
+	if (Looped==GR_TRUE)
 		P->Looped = FLAG_LOOPED;
 	else
 		P->Looped = 0;
@@ -209,14 +209,14 @@ JETAPI jePath *JETCC jePath_Create(
 
 	switch (RotationInterpolation)
 		{
-			case (JE_PATH_INTERPOLATE_LINEAR):
-				P->Rotation.InterpolationType = JE_PATH_QK_LINEAR;
+			case (GR_PATH_INTERPOLATE_LINEAR):
+				P->Rotation.InterpolationType = GR_PATH_QK_LINEAR;
 				break;
-			case (JE_PATH_INTERPOLATE_SLERP):
-				P->Rotation.InterpolationType = JE_PATH_QK_SLERP; 
+			case (GR_PATH_INTERPOLATE_SLERP):
+				P->Rotation.InterpolationType = GR_PATH_QK_SLERP; 
 				break;
-			case (JE_PATH_INTERPOLATE_SQUAD):
-				P->Rotation.InterpolationType = JE_PATH_QK_SQUAD;
+			case (GR_PATH_INTERPOLATE_SQUAD):
+				P->Rotation.InterpolationType = GR_PATH_QK_SQUAD;
 				break;
 			default:
 				assert(0);
@@ -226,14 +226,14 @@ JETAPI jePath *JETCC jePath_Create(
 
 	switch (TranslationInterpolation)
 		{
-			case (JE_PATH_INTERPOLATE_LINEAR):
-				P->Translation.InterpolationType = JE_PATH_VK_LINEAR;
+			case (GR_PATH_INTERPOLATE_LINEAR):
+				P->Translation.InterpolationType = GR_PATH_VK_LINEAR;
 				break;
-			case (JE_PATH_INTERPOLATE_HERMITE):
-				P->Translation.InterpolationType = JE_PATH_VK_HERMITE;
+			case (GR_PATH_INTERPOLATE_HERMITE):
+				P->Translation.InterpolationType = GR_PATH_VK_HERMITE;
 				break;
-			case (JE_PATH_INTERPOLATE_HERMITE_ZERO_DERIV):
-				P->Translation.InterpolationType = JE_PATH_VK_HERMITE_ZERO_DERIV;
+			case (GR_PATH_INTERPOLATE_HERMITE_ZERO_DERIV):
+				P->Translation.InterpolationType = GR_PATH_VK_HERMITE_ZERO_DERIV;
 				break;
 			default:
 				assert(0);
@@ -244,76 +244,76 @@ JETAPI jePath *JETCC jePath_Create(
 	return P;
 }
 
-static jeBoolean JETCF jePath_SetupRotationKeyList(jePath *P)
+static grBoolean GRCF grPath_SetupRotationKeyList(grPath *P)
 {
 	assert( P != NULL );
 	switch (P->Rotation.InterpolationType)
 		{
-			case (JE_PATH_QK_LINEAR):
-				P->Rotation.KeyList = jeQKFrame_LinearCreate();
+			case (GR_PATH_QK_LINEAR):
+				P->Rotation.KeyList = grQKFrame_LinearCreate();
 				break;
-			case (JE_PATH_QK_SLERP):
-				P->Rotation.KeyList = jeQKFrame_SlerpCreate();
+			case (GR_PATH_QK_SLERP):
+				P->Rotation.KeyList = grQKFrame_SlerpCreate();
 				break;
-			case (JE_PATH_QK_SQUAD):
-				P->Rotation.KeyList = jeQKFrame_SquadCreate();
+			case (GR_PATH_QK_SQUAD):
+				P->Rotation.KeyList = grQKFrame_SquadCreate();
 				break;
 			default:
 				assert(0);
 		}
 	if (P->Rotation.KeyList == NULL)
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-	return JE_TRUE;	
+	return GR_TRUE;	
 }
 
-static jeBoolean JETCF jePath_SetupTranslationKeyList(jePath *P)
+static grBoolean GRCF grPath_SetupTranslationKeyList(grPath *P)
 {
 	assert( P != NULL );
 	switch (P->Translation.InterpolationType)
 		{
-			case (JE_PATH_VK_LINEAR):
-				P->Translation.KeyList = jeVKFrame_LinearCreate();
+			case (GR_PATH_VK_LINEAR):
+				P->Translation.KeyList = grVKFrame_LinearCreate();
 				break;
-			case (JE_PATH_VK_HERMITE):
-				P->Translation.KeyList = jeVKFrame_HermiteCreate();
+			case (GR_PATH_VK_HERMITE):
+				P->Translation.KeyList = grVKFrame_HermiteCreate();
 				break;
-			case (JE_PATH_VK_HERMITE_ZERO_DERIV):
-				P->Translation.KeyList = jeVKFrame_HermiteCreate();
+			case (GR_PATH_VK_HERMITE_ZERO_DERIV):
+				P->Translation.KeyList = grVKFrame_HermiteCreate();
 				break;
 			default:
 				assert(0);
 		}
 	if (P->Translation.KeyList == NULL)
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-JETAPI jePath *JETCC jePath_CreateCopy(const jePath *Src)
+GRAPI grPath *GRCC grPath_CreateCopy(const grPath *Src)
 {
-	jePath *P;
-	jePath_TimeType Time;
-	jeBoolean Looped;
+	grPath *P;
+	grPath_TimeType Time;
+	grBoolean Looped;
 
 	int i,Count;
-	jePath_Interpolator RInterp;
-	jePath_Interpolator TInterp;
+	grPath_Interpolator RInterp;
+	grPath_Interpolator TInterp;
 
 	assert ( Src != NULL );
 
 	switch (Src->Rotation.InterpolationType)
 		{
-			case (JE_PATH_QK_LINEAR):
-				RInterp = JE_PATH_INTERPOLATE_LINEAR;
+			case (GR_PATH_QK_LINEAR):
+				RInterp = GR_PATH_INTERPOLATE_LINEAR;
 				break;
-			case (JE_PATH_QK_SLERP):
-				RInterp = JE_PATH_INTERPOLATE_SLERP;
+			case (GR_PATH_QK_SLERP):
+				RInterp = GR_PATH_INTERPOLATE_SLERP;
 				break;
-			case (JE_PATH_QK_SQUAD):
-				RInterp = JE_PATH_INTERPOLATE_SQUAD;
+			case (GR_PATH_QK_SQUAD):
+				RInterp = GR_PATH_INTERPOLATE_SQUAD;
 				break;
 			default:
 				assert(0);
@@ -321,55 +321,55 @@ JETAPI jePath *JETCC jePath_CreateCopy(const jePath *Src)
 	
 	switch (Src->Translation.InterpolationType)
 		{
-			case (JE_PATH_VK_LINEAR):
-				TInterp = JE_PATH_INTERPOLATE_LINEAR;
+			case (GR_PATH_VK_LINEAR):
+				TInterp = GR_PATH_INTERPOLATE_LINEAR;
 				break;
-			case (JE_PATH_VK_HERMITE):
-				TInterp = JE_PATH_INTERPOLATE_HERMITE;
+			case (GR_PATH_VK_HERMITE):
+				TInterp = GR_PATH_INTERPOLATE_HERMITE;
 				break;
-			case (JE_PATH_VK_HERMITE_ZERO_DERIV):
-				TInterp = JE_PATH_INTERPOLATE_HERMITE_ZERO_DERIV;
+			case (GR_PATH_VK_HERMITE_ZERO_DERIV):
+				TInterp = GR_PATH_INTERPOLATE_HERMITE_ZERO_DERIV;
 				break;
 			default:
 				assert(0);
 		}
 	
 	if (Src->Looped)
-		Looped = JE_TRUE;
+		Looped = GR_TRUE;
 	else
-		Looped = JE_FALSE;
+		Looped = GR_FALSE;
 
-	P = jePath_Create(TInterp, RInterp, Looped);	
+	P = grPath_Create(TInterp, RInterp, Looped);	
 	if (P == NULL)
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_CreateCopy.");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_CreateCopy.");
 			return NULL;
 		}
 
 	{
-		jeVec3d V;
+		grVec3d V;
 		Count = 0;
 		if (Src->Translation.KeyList != NULL)
 			{
-				Count = jeTKArray_NumElements(Src->Translation.KeyList);
+				Count = grTKArray_NumElements(Src->Translation.KeyList);
 			}
 		if (Count>0)
 			{
-				if (jePath_SetupTranslationKeyList(P)==JE_FALSE)
+				if (grPath_SetupTranslationKeyList(P)==GR_FALSE)
 					{
-						jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_CreateCopy.");
-						jePath_Destroy(&P);
+						grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_CreateCopy.");
+						grPath_Destroy(&P);
 						return NULL;
 					}
 
 				for (i=0; i<Count; i++)
 					{
 						int Index;
-						jeVKFrame_Query(Src->Translation.KeyList, i, &Time, &V);
-						if (jeVKFrame_Insert(&(P->Translation.KeyList), Time, &V,&Index) == JE_FALSE)
+						grVKFrame_Query(Src->Translation.KeyList, i, &Time, &V);
+						if (grVKFrame_Insert(&(P->Translation.KeyList), Time, &V,&Index) == GR_FALSE)
 							{
-								jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_CreateCopy.");
-								jePath_Destroy(&P);
+								grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_CreateCopy.");
+								grPath_Destroy(&P);
 								return NULL;
 							}
 					}
@@ -377,29 +377,29 @@ JETAPI jePath *JETCC jePath_CreateCopy(const jePath *Src)
 	}
 
 	{
-		jeQuaternion Q;
+		grQuaternion Q;
 		Count = 0;
 		if (Src->Rotation.KeyList != NULL)
 			{
-				Count = jeTKArray_NumElements(Src->Rotation.KeyList);
+				Count = grTKArray_NumElements(Src->Rotation.KeyList);
 			}
 		if (Count>0)
 			{
-				if (jePath_SetupRotationKeyList(P)==JE_FALSE)
+				if (grPath_SetupRotationKeyList(P)==GR_FALSE)
 					{
-						jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_CreateCopy.");
-						jePath_Destroy(&P);
+						grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_CreateCopy.");
+						grPath_Destroy(&P);
 						return NULL;
 					}
 
 				for (i=0; i<Count; i++)
 					{
 						int Index;
-						jeQKFrame_Query(Src->Rotation.KeyList, i, &Time, &Q);
-						if (jeQKFrame_Insert(&(P->Rotation.KeyList), Time, &Q, &Index) == JE_FALSE)
+						grQKFrame_Query(Src->Rotation.KeyList, i, &Time, &Q);
+						if (grQKFrame_Insert(&(P->Rotation.KeyList), Time, &Q, &Index) == GR_FALSE)
 							{
-								jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_CreateCopy.");
-								jePath_Destroy(&P);
+								grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_CreateCopy.");
+								grPath_Destroy(&P);
 								return NULL;
 							}
 					}
@@ -410,9 +410,9 @@ JETAPI jePath *JETCC jePath_CreateCopy(const jePath *Src)
 	
 
 
-JETAPI void JETCC jePath_Destroy(jePath **PP)
+GRAPI void GRCC grPath_Destroy(grPath **PP)
 {
-	jePath *P;
+	grPath *P;
 	
 	assert( PP  != NULL );
 	assert( *PP != NULL );
@@ -426,26 +426,26 @@ JETAPI void JETCC jePath_Destroy(jePath **PP)
 		}
 	if ( P->Rotation.KeyList != NULL)
 	{
-		jeTKArray_Destroy(&(P->Rotation.KeyList));
+		grTKArray_Destroy(&(P->Rotation.KeyList));
 		P->Rotation.KeyList = NULL;
 	}
 
 	if ( P->Translation.KeyList != NULL)
 	{
-		jeTKArray_Destroy(&(P->Translation.KeyList));
+		grTKArray_Destroy(&(P->Translation.KeyList));
 		P->Translation.KeyList = NULL;
 	}
 
-	jeRam_Free(*PP);
+	grRam_Free(*PP);
 
 	*PP = NULL;
 }
 
 
-static void JETCF jePath_Recompute(jePath *P)
+static void GRCF grPath_Recompute(grPath *P)
 	// Recompute any pre-computed constants for the current path.
 {
-	jeBoolean Looped;
+	grBoolean Looped;
 	assert(P);
 
 	P->Dirty = 0;
@@ -453,22 +453,22 @@ static void JETCF jePath_Recompute(jePath *P)
 	P->Translation.LastKey1Time = 0.0f;
 	P->Translation.LastKey2Time = -1.0f;
 	if (P->Looped)
-		Looped = JE_TRUE;
+		Looped = GR_TRUE;
 	else
-		Looped = JE_FALSE;
+		Looped = GR_FALSE;
 
 	if (P->Translation.KeyList != NULL)
 	{
-		if (jeTKArray_NumElements(P->Translation.KeyList) > 0 )
+		if (grTKArray_NumElements(P->Translation.KeyList) > 0 )
 		{
-			P->Translation.StartTime =	jeTKArray_ElementTime(P->Translation.KeyList,0);
-			P->Translation.EndTime   =	jeTKArray_ElementTime(P->Translation.KeyList,
-										jeTKArray_NumElements(P->Translation.KeyList) - 1);
+			P->Translation.StartTime =	grTKArray_ElementTime(P->Translation.KeyList,0);
+			P->Translation.EndTime   =	grTKArray_ElementTime(P->Translation.KeyList,
+										grTKArray_NumElements(P->Translation.KeyList) - 1);
 		}
-		if(P->Translation.InterpolationType == JE_PATH_VK_HERMITE)
-			jeVKFrame_HermiteRecompute(Looped, JE_FALSE, P->Translation.KeyList,JE_PATH_MAXIMUM_CUT_TIME);
-		else if (P->Translation.InterpolationType == JE_PATH_VK_HERMITE_ZERO_DERIV)
-			jeVKFrame_HermiteRecompute(Looped, JE_TRUE, P->Translation.KeyList,JE_PATH_MAXIMUM_CUT_TIME);
+		if(P->Translation.InterpolationType == GR_PATH_VK_HERMITE)
+			grVKFrame_HermiteRecompute(Looped, GR_FALSE, P->Translation.KeyList,GR_PATH_MAXIMUM_CUT_TIME);
+		else if (P->Translation.InterpolationType == GR_PATH_VK_HERMITE_ZERO_DERIV)
+			grVKFrame_HermiteRecompute(Looped, GR_TRUE, P->Translation.KeyList,GR_PATH_MAXIMUM_CUT_TIME);
 	}
 	
 	P->Rotation.LastKey1Time = 0.0f;
@@ -476,119 +476,119 @@ static void JETCF jePath_Recompute(jePath *P)
 
 	if (P->Rotation.KeyList != NULL)
 	{
-		if (jeTKArray_NumElements(P->Rotation.KeyList) > 0 )
+		if (grTKArray_NumElements(P->Rotation.KeyList) > 0 )
 		{
-			P->Rotation.StartTime = jeTKArray_ElementTime(P->Rotation.KeyList,0);
-			P->Rotation.EndTime   = jeTKArray_ElementTime(P->Rotation.KeyList,
-									jeTKArray_NumElements(P->Rotation.KeyList) - 1);
+			P->Rotation.StartTime = grTKArray_ElementTime(P->Rotation.KeyList,0);
+			P->Rotation.EndTime   = grTKArray_ElementTime(P->Rotation.KeyList,
+									grTKArray_NumElements(P->Rotation.KeyList) - 1);
 		}
-		if (P->Rotation.InterpolationType == JE_PATH_QK_SQUAD)
-			jeQKFrame_SquadRecompute(Looped, P->Rotation.KeyList,JE_PATH_MAXIMUM_CUT_TIME);
-		else if (P->Rotation.InterpolationType == JE_PATH_QK_SLERP)
-			jeQKFrame_SlerpRecompute(P->Rotation.KeyList);
+		if (P->Rotation.InterpolationType == GR_PATH_QK_SQUAD)
+			grQKFrame_SquadRecompute(Looped, P->Rotation.KeyList,GR_PATH_MAXIMUM_CUT_TIME);
+		else if (P->Rotation.InterpolationType == GR_PATH_QK_SLERP)
+			grQKFrame_SlerpRecompute(P->Rotation.KeyList);
 
 	}
 }	
 
 //------------------ time based keyframe operations
-JETAPI jeBoolean JETCC jePath_InsertKeyframe(
-	jePath *P, 
+GRAPI grBoolean GRCC grPath_InsertKeyframe(
+	grPath *P, 
 	int ChannelMask, 
-	jePath_TimeType Time, 
-	const jeXForm3d *Matrix)
+	grPath_TimeType Time, 
+	const grXForm3d *Matrix)
 {
 	int VIndex;
 	int QIndex = 0;
 	assert( P != NULL );
 	assert( Matrix != NULL );
-	assert( ( ChannelMask & JE_PATH_ROTATION_CHANNEL    ) ||
-			( ChannelMask & JE_PATH_TRANSLATION_CHANNEL ) );
+	assert( ( ChannelMask & GR_PATH_ROTATION_CHANNEL    ) ||
+			( ChannelMask & GR_PATH_TRANSLATION_CHANNEL ) );
 	
-	if (ChannelMask & JE_PATH_ROTATION_CHANNEL)
+	if (ChannelMask & GR_PATH_ROTATION_CHANNEL)
 	{	
-		jeQuaternion Q;
-		jeQuaternion_FromMatrix(Matrix, &Q);
-		jeQuaternion_Normalize(&Q);
+		grQuaternion Q;
+		grQuaternion_FromMatrix(Matrix, &Q);
+		grQuaternion_Normalize(&Q);
 		if (P->Rotation.KeyList==NULL)
 		{
-			if (jePath_SetupRotationKeyList(P)==JE_FALSE)
+			if (grPath_SetupRotationKeyList(P)==GR_FALSE)
 				{
-					jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_InsertKeyframe.");
-					return JE_FALSE;
+					grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_InsertKeyframe.");
+					return GR_FALSE;
 				}
 		}
-		if (jeQKFrame_Insert(&(P->Rotation.KeyList), Time, &Q, &QIndex) == JE_FALSE)
+		if (grQKFrame_Insert(&(P->Rotation.KeyList), Time, &Q, &QIndex) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_InsertKeyframe.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_InsertKeyframe.");
+			return GR_FALSE;
 		}
 	}
 
 	
-	if (ChannelMask & JE_PATH_TRANSLATION_CHANNEL)
+	if (ChannelMask & GR_PATH_TRANSLATION_CHANNEL)
 	{
-		jeBoolean ErrorOccured = JE_FALSE;
+		grBoolean ErrorOccured = GR_FALSE;
 		if (P->Translation.KeyList == NULL)
 			{
-				if (jePath_SetupTranslationKeyList(P)==JE_FALSE)
+				if (grPath_SetupTranslationKeyList(P)==GR_FALSE)
 					{
-						jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_InsertKeyframe.");
-						ErrorOccured = JE_TRUE;
+						grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_InsertKeyframe.");
+						ErrorOccured = GR_TRUE;
 					}
 			}
-		if (ErrorOccured == JE_FALSE)
+		if (ErrorOccured == GR_FALSE)
 			{
-				if (jeVKFrame_Insert( &(P->Translation.KeyList), Time, &(Matrix->Translation), &VIndex) == JE_FALSE)
+				if (grVKFrame_Insert( &(P->Translation.KeyList), Time, &(Matrix->Translation), &VIndex) == GR_FALSE)
 					{
-						jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_InsertKeyframe.");
-						ErrorOccured = JE_TRUE;
+						grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_InsertKeyframe.");
+						ErrorOccured = GR_TRUE;
 					}
 			}
-		if (ErrorOccured != JE_FALSE)
+		if (ErrorOccured != GR_FALSE)
 			{
-				if (ChannelMask & JE_PATH_ROTATION_CHANNEL)
+				if (ChannelMask & GR_PATH_ROTATION_CHANNEL)
 					{	// clean up previously inserted rotation
-						if (jeTKArray_DeleteElement(&(P->Rotation.KeyList),QIndex)==JE_FALSE)
+						if (grTKArray_DeleteElement(&(P->Rotation.KeyList),QIndex)==GR_FALSE)
 							{
-								jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_InsertKeyframe.");
+								grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_InsertKeyframe.");
 							}
 					}
 				P->Dirty = FLAG_DIRTY;
-				return JE_FALSE;
+				return GR_FALSE;
 			}
 	}
 
 	P->Dirty = FLAG_DIRTY;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 	
-JETAPI jeBoolean JETCC jePath_DeleteKeyframe(
-	jePath *P,
+GRAPI grBoolean GRCC grPath_DeleteKeyframe(
+	grPath *P,
 	int Index,
 	int ChannelMask)
 {
 	int ErrorOccured= 0;
 
 	assert( P != NULL );
-	assert( ( ChannelMask & JE_PATH_ROTATION_CHANNEL    ) ||
-			( ChannelMask & JE_PATH_TRANSLATION_CHANNEL ) );
+	assert( ( ChannelMask & GR_PATH_ROTATION_CHANNEL    ) ||
+			( ChannelMask & GR_PATH_TRANSLATION_CHANNEL ) );
 
-	if (ChannelMask & JE_PATH_ROTATION_CHANNEL)
+	if (ChannelMask & GR_PATH_ROTATION_CHANNEL)
 	{
-		if (jeTKArray_DeleteElement( &(P->Rotation.KeyList), Index) == JE_FALSE)
+		if (grTKArray_DeleteElement( &(P->Rotation.KeyList), Index) == GR_FALSE)
 		{
 			ErrorOccured = 1;
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_DeleteKeyframe.");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_DeleteKeyframe.");
 		}
 	}
 			
-	if (ChannelMask & JE_PATH_TRANSLATION_CHANNEL)
+	if (ChannelMask & GR_PATH_TRANSLATION_CHANNEL)
 	{
-		if (jeTKArray_DeleteElement( &(P->Translation.KeyList), Index) == JE_FALSE)
+		if (grTKArray_DeleteElement( &(P->Translation.KeyList), Index) == GR_FALSE)
 		{
 			ErrorOccured = 1;
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jePath_DeleteKeyframe.");
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grPath_DeleteKeyframe.");
 		}
 	}
 
@@ -597,42 +597,42 @@ JETAPI jeBoolean JETCC jePath_DeleteKeyframe(
 
 	if (ErrorOccured)
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-JETAPI void JETCC jePath_GetKeyframe(
-	const jePath *P, 
+GRAPI void GRCC grPath_GetKeyframe(
+	const grPath *P, 
 	int Index,				// gets keyframe[index]
 	int Channel,			// for this channel
-	jePath_TimeType *Time,	// returns the time of the keyframe
-	jeXForm3d *Matrix) 		// returns the matrix of the keyframe
+	grPath_TimeType *Time,	// returns the time of the keyframe
+	grXForm3d *Matrix) 		// returns the matrix of the keyframe
 {
 	assert( P != NULL );
 	assert( Index >= 0 );
 	assert( Time != NULL );
 	assert( Matrix != NULL );
 
-	jeXForm3d_SetIdentity(Matrix);
+	grXForm3d_SetIdentity(Matrix);
 
 	switch (Channel)
 	{
-	case (JE_PATH_ROTATION_CHANNEL):
+	case (GR_PATH_ROTATION_CHANNEL):
 		{
-			jeQuaternion Q;
-			assert( Index < jeTKArray_NumElements(P->Rotation.KeyList) );
-			jeQKFrame_Query(P->Rotation.KeyList, Index, Time, &Q);
-			jeQuaternion_ToMatrix(&Q, Matrix);
+			grQuaternion Q;
+			assert( Index < grTKArray_NumElements(P->Rotation.KeyList) );
+			grQKFrame_Query(P->Rotation.KeyList, Index, Time, &Q);
+			grQuaternion_ToMatrix(&Q, Matrix);
 		}
 		break;
 
-	case (JE_PATH_TRANSLATION_CHANNEL):
+	case (GR_PATH_TRANSLATION_CHANNEL):
 		{
-			assert( Index < jeTKArray_NumElements(P->Translation.KeyList) );
-			jeVKFrame_Query(P->Translation.KeyList, Index, Time, &(Matrix->Translation));
+			assert( Index < grTKArray_NumElements(P->Translation.KeyList) );
+			grVKFrame_Query(P->Translation.KeyList, Index, Time, &(Matrix->Translation));
 		}
 		break;
 
@@ -641,49 +641,49 @@ JETAPI void JETCC jePath_GetKeyframe(
 	}
 }
 
-JETAPI jeBoolean JETCC jePath_ModifyKeyframe(
-	jePath *P, 
+GRAPI grBoolean GRCC grPath_ModifyKeyframe(
+	grPath *P, 
 	int Index,						// keyframe[index]
 	int ChannelMask,				// for this channel
-	const jeXForm3d *Matrix) 		// new matrix for the keyframe
+	const grXForm3d *Matrix) 		// new matrix for the keyframe
 {
 	assert( P != NULL );
 	assert( Index >= 0 );
 	assert( Matrix != NULL );
-	assert( ( ChannelMask & JE_PATH_ROTATION_CHANNEL    ) ||
-			( ChannelMask & JE_PATH_TRANSLATION_CHANNEL ) );
+	assert( ( ChannelMask & GR_PATH_ROTATION_CHANNEL    ) ||
+			( ChannelMask & GR_PATH_TRANSLATION_CHANNEL ) );
 
 
-	if (ChannelMask & JE_PATH_ROTATION_CHANNEL)
+	if (ChannelMask & GR_PATH_ROTATION_CHANNEL)
 		{
-			jeQuaternion Q;
-			assert( Index < jeTKArray_NumElements(P->Rotation.KeyList) );
-			jeQuaternion_FromMatrix(Matrix, &Q);
-			jeQuaternion_Normalize(&Q);
-			jeQKFrame_Modify(P->Rotation.KeyList, Index, &Q);
+			grQuaternion Q;
+			assert( Index < grTKArray_NumElements(P->Rotation.KeyList) );
+			grQuaternion_FromMatrix(Matrix, &Q);
+			grQuaternion_Normalize(&Q);
+			grQKFrame_Modify(P->Rotation.KeyList, Index, &Q);
 		}
 
-	if (ChannelMask & JE_PATH_TRANSLATION_CHANNEL)
+	if (ChannelMask & GR_PATH_TRANSLATION_CHANNEL)
 		{
-			assert( Index < jeTKArray_NumElements(P->Translation.KeyList) );
-			jeVKFrame_Modify(P->Translation.KeyList, Index, &(Matrix->Translation));
+			assert( Index < grTKArray_NumElements(P->Translation.KeyList) );
+			grVKFrame_Modify(P->Translation.KeyList, Index, &(Matrix->Translation));
 		}
 
 	P->Dirty = FLAG_DIRTY;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-JETAPI int JETCC jePath_GetKeyframeCount(const jePath *P, int Channel)
+GRAPI int GRCC grPath_GetKeyframeCount(const grPath *P, int Channel)
 {
 	assert( P != NULL );
 
 	switch (Channel)
 	{
-		case (JE_PATH_ROTATION_CHANNEL):
+		case (GR_PATH_ROTATION_CHANNEL):
 			if (P->Rotation.KeyList!=NULL)
 				{
-					return jeTKArray_NumElements(P->Rotation.KeyList);
+					return grTKArray_NumElements(P->Rotation.KeyList);
 				}
 			else
 				{
@@ -691,10 +691,10 @@ JETAPI int JETCC jePath_GetKeyframeCount(const jePath *P, int Channel)
 				}
 			break;
 
-		case (JE_PATH_TRANSLATION_CHANNEL):
+		case (GR_PATH_TRANSLATION_CHANNEL):
 			if (P->Translation.KeyList!=NULL)
 				{
-					return jeTKArray_NumElements(P->Translation.KeyList);
+					return grTKArray_NumElements(P->Translation.KeyList);
 				}
 			else
 				{
@@ -708,33 +708,33 @@ JETAPI int JETCC jePath_GetKeyframeCount(const jePath *P, int Channel)
 	return 0; // this is just for warning removal
 }
 
-JETAPI int JETCC jePath_GetKeyframeIndex(const jePath *P, int Channel, jeFloat Time)
+GRAPI int GRCC grPath_GetKeyframeIndex(const grPath *P, int Channel, grFloat Time)
 	// retrieves the index of the keyframe at a specific time for a specific channel
 {
 	int KeyIndex;
-	jeTKArray *Array = NULL;
+	grTKArray *Array = NULL;
 
-	assert ((Channel == JE_PATH_TRANSLATION_CHANNEL) ||
-			(Channel == JE_PATH_ROTATION_CHANNEL));
+	assert ((Channel == GR_PATH_TRANSLATION_CHANNEL) ||
+			(Channel == GR_PATH_ROTATION_CHANNEL));
 
 	switch (Channel)
 	{
-		case JE_PATH_ROTATION_CHANNEL :
+		case GR_PATH_ROTATION_CHANNEL :
 			Array = P->Rotation.KeyList;
 			break;
 
-		case JE_PATH_TRANSLATION_CHANNEL :
+		case GR_PATH_TRANSLATION_CHANNEL :
 			Array = P->Translation.KeyList;
 			break;
 	}
 
 	// find the time in the channel's array
-	KeyIndex = jeTKArray_BSearch (Array, Time);
+	KeyIndex = grTKArray_BSearch (Array, Time);
 	if (KeyIndex != -1)
 	{
-		// since jeTKArray_BSearch will return the "closest" key,
+		// since grTKArray_BSearch will return the "closest" key,
 		// I need to make sure that it's exact...
-		if (fabs (Time - jeTKArray_ElementTime (Array, KeyIndex)) > JE_TKA_TIME_TOLERANCE)
+		if (fabs (Time - grTKArray_ElementTime (Array, KeyIndex)) > GR_TKA_TIME_TOLERANCE)
 		{
 			KeyIndex = -1;
 		}
@@ -744,26 +744,26 @@ JETAPI int JETCC jePath_GetKeyframeIndex(const jePath *P, int Channel, jeFloat T
 }
 
 
-static jePath_TimeType JETCF jePath_AdjustTimeForLooping(
-	jeBoolean Looped,
-	jePath_TimeType Time, 
-	jePath_TimeType TStart, 
-	jePath_TimeType TEnd)
+static grPath_TimeType GRCF grPath_AdjustTimeForLooping(
+	grBoolean Looped,
+	grPath_TimeType Time, 
+	grPath_TimeType TStart, 
+	grPath_TimeType TEnd)
 {
-	if (Looped!=JE_FALSE)
+	if (Looped!=GR_FALSE)
 	{
 		if (Time < TStart)
 		{
-			return (jePath_TimeType)fmod(Time - TStart, TEnd - TStart) + TStart + TEnd;
+			return (grPath_TimeType)fmod(Time - TStart, TEnd - TStart) + TStart + TEnd;
 		}
 		else
 		{
 			if (Time >= TEnd)
 			{
-				if(TStart + JE_TKA_TIME_TOLERANCE > TEnd)
+				if(TStart + GR_TKA_TIME_TOLERANCE > TEnd)
 					return TStart;
 
-				return (jePath_TimeType)fmod(Time - TStart, TEnd - TStart) + TStart;
+				return (grPath_TimeType)fmod(Time - TStart, TEnd - TStart) + TStart;
 			}
 			else
 			{
@@ -778,36 +778,36 @@ static jePath_TimeType JETCF jePath_AdjustTimeForLooping(
 }
 
 
-static jeBoolean JETCF jePath_SampleChannel(
-	const jePath_Channel *Channel,			// channel to sample
-	jeBoolean Looped,
-	jeBoolean AllowCuts,
-	jePath_TimeType Time, 
+static grBoolean GRCF grPath_SampleChannel(
+	const grPath_Channel *Channel,			// channel to sample
+	grBoolean Looped,
+	grBoolean AllowCuts,
+	grPath_TimeType Time, 
 	void *Result)
-				// return JE_TRUE if sample was made,
-				// return JE_FALSE if no sample was made (no keyframes)
+				// return GR_TRUE if sample was made,
+				// return GR_FALSE if no sample was made (no keyframes)
 {
 	int Index1,Index2;				// index of keyframe just before and after Time
-	jePath_TimeType Time1, Time2;	// Times in those keyframes	
-	jePath_TimeType T;				// 0..1 blending factor
-	jePath_TimeType AdjTime;		// parameter Time adjusted for looping.
+	grPath_TimeType Time1, Time2;	// Times in those keyframes	
+	grPath_TimeType T;				// 0..1 blending factor
+	grPath_TimeType AdjTime;		// parameter Time adjusted for looping.
 	int Length;
 	
 	assert( Channel != NULL );
 	assert( Result != NULL );
 
 	if (Channel->KeyList == NULL)	
-		return JE_FALSE;
+		return GR_FALSE;
 	
-	Length = jeTKArray_NumElements( Channel->KeyList );
+	Length = grTKArray_NumElements( Channel->KeyList );
 			
 	if ( Length == 0 )
 	{
 		//Interpolate(Channel,NULL,NULL,Time,Result);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	AdjTime = jePath_AdjustTimeForLooping(Looped,Time,
+	AdjTime = grPath_AdjustTimeForLooping(Looped,Time,
 			Channel->StartTime,Channel->EndTime);
 
 	if (	( Channel->LastKey1Time <= AdjTime ) && 
@@ -820,14 +820,14 @@ static jeBoolean JETCF jePath_SampleChannel(
 	}
 	else
 	{
-		Index1 = jeTKArray_BSearch( Channel->KeyList,
+		Index1 = grTKArray_BSearch( Channel->KeyList,
 								AdjTime);
 		Index2 = Index1 + 1;
 
 		// edje conditions: if Time is off end of path's time, use end point twice
 		if ( Index1 < 0 )	
 		{
-			if (Looped!=JE_FALSE) 
+			if (Looped!=GR_FALSE) 
 			{
 				Index1 = Length -1;
 			}
@@ -838,7 +838,7 @@ static jeBoolean JETCF jePath_SampleChannel(
 		}
 		if ( Index2 >= Length )
 		{
-			if (Looped!=JE_FALSE)
+			if (Looped!=GR_FALSE)
 			{
 				Index2 = 0;
 			}
@@ -847,17 +847,17 @@ static jeBoolean JETCF jePath_SampleChannel(
 				Index2 = Length - 1;
 			}
 		}
-		((jePath_Channel *)Channel)->LastKey1 = Index1;
-		((jePath_Channel *)Channel)->LastKey2 = Index2;
-		Time1 = ((jePath_Channel *)Channel)->LastKey1Time = jeTKArray_ElementTime(Channel->KeyList, Index1);
-		Time2 = ((jePath_Channel *)Channel)->LastKey2Time = jeTKArray_ElementTime(Channel->KeyList, Index2);
+		((grPath_Channel *)Channel)->LastKey1 = Index1;
+		((grPath_Channel *)Channel)->LastKey2 = Index2;
+		Time1 = ((grPath_Channel *)Channel)->LastKey1Time = grTKArray_ElementTime(Channel->KeyList, Index1);
+		Time2 = ((grPath_Channel *)Channel)->LastKey2Time = grTKArray_ElementTime(Channel->KeyList, Index2);
 	}
 	
 	if (Index1 == Index2)
 		T=0.0f;			// Time2 == Time1 !
 	else
 		{
-			if (AllowCuts && ((Time2-Time1)<JE_PATH_MAXIMUM_CUT_TIME))
+			if (AllowCuts && ((Time2-Time1)<GR_PATH_MAXIMUM_CUT_TIME))
 				{
 					T=0.0f;
 				}
@@ -867,19 +867,19 @@ static jeBoolean JETCF jePath_SampleChannel(
 				}
 		}
 	
-	jePath_Statics.InterpolationTable[Channel->InterpolationType](
-				jeTKArray_Element(Channel->KeyList,Index1),
-				jeTKArray_Element(Channel->KeyList,Index2),
+	grPath_Statics.InterpolationTable[Channel->InterpolationType](
+				grTKArray_Element(Channel->KeyList,Index1),
+				grTKArray_Element(Channel->KeyList,Index2),
 				T,Result);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-JETAPI void JETCC jePath_Sample(const jePath *P, jePath_TimeType Time, jeXForm3d *Matrix)
+GRAPI void GRCC grPath_Sample(const grPath *P, grPath_TimeType Time, grXForm3d *Matrix)
 {
-	jeQuaternion	Rotation;
-	jeVec3d		Translation;
+	grQuaternion	Rotation;
+	grVec3d		Translation;
 
 	assert( P != NULL );
 	assert( Matrix != NULL );
@@ -887,19 +887,19 @@ JETAPI void JETCC jePath_Sample(const jePath *P, jePath_TimeType Time, jeXForm3d
 
 	if (P->Dirty)
 		{
-			jePath_Recompute((jePath *)P);
+			grPath_Recompute((grPath *)P);
 		}
 
-	if(jePath_SampleChannel(&(P->Rotation), P->Looped, P->AllowCuts, Time, (void*)&Rotation) == JE_TRUE)
+	if(grPath_SampleChannel(&(P->Rotation), P->Looped, P->AllowCuts, Time, (void*)&Rotation) == GR_TRUE)
 	{
-		jeQuaternion_ToMatrix(&Rotation, Matrix);
+		grQuaternion_ToMatrix(&Rotation, Matrix);
 	}
 	else
 	{
-		jeXForm3d_SetIdentity(Matrix);
+		grXForm3d_SetIdentity(Matrix);
 	}
 
-	if(jePath_SampleChannel(&(P->Translation), P->Looped, P->AllowCuts, Time, (void*)&Translation) == JE_TRUE)
+	if(grPath_SampleChannel(&(P->Translation), P->Looped, P->AllowCuts, Time, (void*)&Translation) == GR_TRUE)
 	{
 		Matrix->Translation = Translation;
 	}
@@ -910,39 +910,39 @@ JETAPI void JETCC jePath_Sample(const jePath *P, jePath_TimeType Time, jeXForm3d
 
 }
 
-JETAPI void JETCC jePath_SampleChannels(const jePath *P, jePath_TimeType Time, jeQuaternion *Rotation, jeVec3d *Translation)
+GRAPI void GRCC grPath_SampleChannels(const grPath *P, grPath_TimeType Time, grQuaternion *Rotation, grVec3d *Translation)
 {
-	jeBoolean Looped;
+	grBoolean Looped;
 	assert( P != NULL );
 	assert( Rotation != NULL );
 	assert( Translation != NULL );
 
 	if (P->Dirty)
 		{
-			jePath_Recompute((jePath *)P);
+			grPath_Recompute((grPath *)P);
 		}
 
 	if (P->Looped)
-		Looped = JE_TRUE;
+		Looped = GR_TRUE;
 	else
-		Looped = JE_FALSE;
+		Looped = GR_FALSE;
 	
-	if(jePath_SampleChannel(&(P->Rotation), Looped, P->AllowCuts, Time, (void*)Rotation) == JE_FALSE)
+	if(grPath_SampleChannel(&(P->Rotation), Looped, P->AllowCuts, Time, (void*)Rotation) == GR_FALSE)
 	{
-		jeQuaternion_SetNoRotation(Rotation);
+		grQuaternion_SetNoRotation(Rotation);
 	}
 
-	if(jePath_SampleChannel(&(P->Translation), Looped, P->AllowCuts, Time, (void*)Translation) == JE_FALSE)
+	if(grPath_SampleChannel(&(P->Translation), Looped, P->AllowCuts, Time, (void*)Translation) == GR_FALSE)
 	{
 		Translation->X  = Translation->Y = Translation->Z = 0.0f;
 	}
 }
 
 
-JETAPI jeBoolean JETCC jePath_GetTimeExtents(const jePath *P, jePath_TimeType *StartTime, jePath_TimeType *EndTime)
+GRAPI grBoolean GRCC grPath_GetTimeExtents(const grPath *P, grPath_TimeType *StartTime, grPath_TimeType *EndTime)
 	// returns false and times are unchanged if there is no extent (no keys)
 {
-	jePath_TimeType TransStart,TransEnd,RotStart,RotEnd;
+	grPath_TimeType TransStart,TransEnd,RotStart,RotEnd;
 
 	int RCount,TCount;
 	assert( P != NULL );
@@ -951,21 +951,21 @@ JETAPI jeBoolean JETCC jePath_GetTimeExtents(const jePath *P, jePath_TimeType *S
 	// this is a pain because each channel may have 0,1, or more keys
 	
 	if (P->Rotation.KeyList!=NULL)
-		RCount = jeTKArray_NumElements( P->Rotation.KeyList );
+		RCount = grTKArray_NumElements( P->Rotation.KeyList );
 	else
 		RCount = 0;
 
 	if (P->Translation.KeyList!=NULL)
-		TCount = jeTKArray_NumElements( P->Translation.KeyList );
+		TCount = grTKArray_NumElements( P->Translation.KeyList );
 	else
 		TCount = 0;
 	
 	if (RCount>0)
 		{	
-			RotStart = jeTKArray_ElementTime(P->Rotation.KeyList, 0);
+			RotStart = grTKArray_ElementTime(P->Rotation.KeyList, 0);
 			if (RCount>1)
 				{
-					RotEnd = jeTKArray_ElementTime(P->Rotation.KeyList, RCount-1);
+					RotEnd = grTKArray_ElementTime(P->Rotation.KeyList, RCount-1);
 				}
 			else
 				{
@@ -973,10 +973,10 @@ JETAPI jeBoolean JETCC jePath_GetTimeExtents(const jePath *P, jePath_TimeType *S
 				}
 			if (TCount>0)
 				{	// Rotation and Translation keys
-					TransStart = jeTKArray_ElementTime(P->Translation.KeyList, 0);
+					TransStart = grTKArray_ElementTime(P->Translation.KeyList, 0);
 					if (TCount>1)
 						{
-							TransEnd = jeTKArray_ElementTime(P->Translation.KeyList,TCount-1);
+							TransEnd = grTKArray_ElementTime(P->Translation.KeyList,TCount-1);
 						}
 					else
 						{
@@ -996,10 +996,10 @@ JETAPI jeBoolean JETCC jePath_GetTimeExtents(const jePath *P, jePath_TimeType *S
 		{  // No Rotation Keys
 			if (TCount>0)
 				{
-					*StartTime = jeTKArray_ElementTime(P->Translation.KeyList, 0);
+					*StartTime = grTKArray_ElementTime(P->Translation.KeyList, 0);
 					if (TCount>1)
 						{
-							*EndTime = jeTKArray_ElementTime(P->Translation.KeyList,TCount-1);
+							*EndTime = grTKArray_ElementTime(P->Translation.KeyList,TCount-1);
 						}
 					else
 						{
@@ -1008,14 +1008,14 @@ JETAPI jeBoolean JETCC jePath_GetTimeExtents(const jePath *P, jePath_TimeType *S
 				}
 			else
 				{	// No Rotation or Translation keys
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 		}
-	return JE_TRUE;	
+	return GR_TRUE;	
 }
 
 
-#define JE_PATH_FILE_VERSION 0x1002		//15 bits!
+#define GR_PATH_FILE_VERSION 0x1002		//15 bits!
 
 /*
 	file header:
@@ -1026,34 +1026,34 @@ JETAPI jeBoolean JETCC jePath_GetTimeExtents(const jePath *P, jePath_TimeType *S
 	 1 bit for rotation keys exist
 	 1 bit for allow cuts
 */
-#define JE_PATH_MAX_INT_TYPE_COUNT      (127)		// 7 bits 
-#define JE_PATH_TRANS_SHIFT_INTO_HEADER (10)		// 7 bits shifted into bits 10..
-#define JE_PATH_ROT_SHIFT_INTO_HEADER   (3)			// 7 bits shifted into bits 3..
+#define GR_PATH_MAX_INT_TYPE_COUNT      (127)		// 7 bits 
+#define GR_PATH_TRANS_SHIFT_INTO_HEADER (10)		// 7 bits shifted into bits 10..
+#define GR_PATH_ROT_SHIFT_INTO_HEADER   (3)			// 7 bits shifted into bits 3..
 
-JETAPI jeBoolean JETCC jePath_WriteToFile(const jePath *P, jeVFile *F)
+GRAPI grBoolean GRCC grPath_WriteToFile(const grPath *P, grVFile *F)
 {
 	uint32 Header;
 	int C,R,T,Looped;
 
 	assert( F != NULL );
 	assert( P != NULL );
-	assert( JE_PATH_FILE_VERSION < 0xFFFF );
+	assert( GR_PATH_FILE_VERSION < 0xFFFF );
 
 	C=R=T=0;
 
 	if (P->Rotation.KeyList != NULL)
 		{
-			if (jeTKArray_NumElements(P->Rotation.KeyList)>0)
+			if (grTKArray_NumElements(P->Rotation.KeyList)>0)
 				{
-					R = JE_TRUE;
+					R = GR_TRUE;
 				}
 		}
 				
 	if (P->Translation.KeyList != NULL)
 		{
-			if (jeTKArray_NumElements(P->Translation.KeyList)>0)
+			if (grTKArray_NumElements(P->Translation.KeyList)>0)
 				{
-					T = JE_TRUE;
+					T = GR_TRUE;
 				}
 		}
 
@@ -1064,81 +1064,81 @@ JETAPI jeBoolean JETCC jePath_WriteToFile(const jePath *P, jeVFile *F)
 		Looped = 1;
 	else
 		Looped = 0;
-	assert( P->Translation.InterpolationType <= JE_PATH_MAX_INT_TYPE_COUNT);	
-	assert( P->Rotation.InterpolationType <= JE_PATH_MAX_INT_TYPE_COUNT);		
+	assert( P->Translation.InterpolationType <= GR_PATH_MAX_INT_TYPE_COUNT);	
+	assert( P->Rotation.InterpolationType <= GR_PATH_MAX_INT_TYPE_COUNT);		
 
 	Header = 
-		(JE_PATH_FILE_VERSION << 17) |
+		(GR_PATH_FILE_VERSION << 17) |
 		(C)     | 
 		(T<<1)  | 
 		(R<<2) 	| 
-		(P->Translation.InterpolationType << JE_PATH_TRANS_SHIFT_INTO_HEADER) | 
-		(P->Rotation.InterpolationType    << JE_PATH_ROT_SHIFT_INTO_HEADER  );
+		(P->Translation.InterpolationType << GR_PATH_TRANS_SHIFT_INTO_HEADER) | 
+		(P->Rotation.InterpolationType    << GR_PATH_ROT_SHIFT_INTO_HEADER  );
 
-	if	(jeVFile_Write(F, &Header,sizeof(uint32)) == JE_FALSE)
+	if	(grVFile_Write(F, &Header,sizeof(uint32)) == GR_FALSE)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_WRITE ,"jePath_WriteToFile: Failure to write Path File Header.");
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_FILEIO_WRITE ,"grPath_WriteToFile: Failure to write Path File Header.");
+			return GR_FALSE;
 		}
 
 	if (T==1)
 		{
-			if (jeVKFrame_WriteToFile( F, P->Translation.KeyList, 
-										jePath_PathToVKInterpolation(P->Translation.InterpolationType),
-										Looped)==JE_FALSE)
+			if (grVKFrame_WriteToFile( F, P->Translation.KeyList, 
+										grPath_PathToVKInterpolation(P->Translation.InterpolationType),
+										Looped)==GR_FALSE)
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE ,"jePath_WriteToFile.");
-					return JE_FALSE;
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE ,"grPath_WriteToFile.");
+					return GR_FALSE;
 				}
 		}
 	if (R==1)
 		{
-			if (jeQKFrame_WriteToFile( F, P->Rotation.KeyList, 
-										jePath_PathToQKInterpolation(P->Rotation.InterpolationType),
-										Looped)==JE_FALSE)
+			if (grQKFrame_WriteToFile( F, P->Rotation.KeyList, 
+										grPath_PathToQKInterpolation(P->Rotation.InterpolationType),
+										Looped)==GR_FALSE)
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE ,"jePath_WriteToFile.");
-					return JE_FALSE;
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE ,"grPath_WriteToFile.");
+					return GR_FALSE;
 				}
 		}
 	
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-JETAPI jePath* JETCC jePath_CreateFromFile(jeVFile* F)
+GRAPI grPath* GRCC grPath_CreateFromFile(grVFile* F)
 {
-	jePath *P;
+	grPath *P;
 	int Looping;//int Interp,Looping;
-	jeVKFrame_InterpolationType Interp;
+	grVKFrame_InterpolationType Interp;
 	
 	uint32 Header;
 
 	assert( F != NULL );
 	
-	if(jeVFile_Read(F, &Header, sizeof(Header)) == JE_FALSE)
+	if(grVFile_Read(F, &Header, sizeof(Header)) == GR_FALSE)
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ , "jePath_CreateFromFile.");
+		grErrorLog_Add( GR_ERR_FILEIO_READ , "grPath_CreateFromFile.");
 		return NULL;
 	}
 
-	if ((Header>>17) != JE_PATH_FILE_VERSION)
+	if ((Header>>17) != GR_PATH_FILE_VERSION)
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_VERSION, "jePath_CreateFromFile: Bad path file version.");
+			grErrorLog_Add( GR_ERR_FILEIO_VERSION, "grPath_CreateFromFile: Bad path file version.");
 			return NULL;
 		}
 
-	P = (jePath *)jeRam_AllocateClear(sizeof(jePath));
+	P = (grPath *)grRam_AllocateClear(sizeof(grPath));
 	if (P == NULL)
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "jePath_CreateFromFile.");
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "grPath_CreateFromFile.");
 			return NULL;
 		}
 	P->Translation.KeyList = NULL;
 	P->Rotation.KeyList = NULL;
 	
-	P->Translation.InterpolationType = (jePath_InterpolationType) ((int)(Header >> JE_PATH_TRANS_SHIFT_INTO_HEADER) & JE_PATH_MAX_INT_TYPE_COUNT);
-	P->Rotation.InterpolationType    = (jePath_InterpolationType) ((int)(Header >> JE_PATH_ROT_SHIFT_INTO_HEADER) & JE_PATH_MAX_INT_TYPE_COUNT);
+	P->Translation.InterpolationType = (grPath_InterpolationType) ((int)(Header >> GR_PATH_TRANS_SHIFT_INTO_HEADER) & GR_PATH_MAX_INT_TYPE_COUNT);
+	P->Rotation.InterpolationType    = (grPath_InterpolationType) ((int)(Header >> GR_PATH_ROT_SHIFT_INTO_HEADER) & GR_PATH_MAX_INT_TYPE_COUNT);
 	// this will be replaced by the path reader (if the path has keys)
 
 	P->Translation.LastKey1Time = 0.0f;
@@ -1152,32 +1152,32 @@ JETAPI jePath* JETCC jePath_CreateFromFile(jeVFile* F)
 
 	if ((Header >> 1) & 0x1)
 		{
-			P->Translation.KeyList = jeVKFrame_CreateFromFile(F,&Interp,&Looping,JE_PATH_MAXIMUM_CUT_TIME);
+			P->Translation.KeyList = grVKFrame_CreateFromFile(F,&Interp,&Looping,GR_PATH_MAXIMUM_CUT_TIME);
 			if (P->Translation.KeyList == NULL)
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "jePath_CreateFromFile.");
-					jeRam_Free(P);
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "grPath_CreateFromFile.");
+					grRam_Free(P);
 					return NULL;
 				}
-			P->Translation.InterpolationType = jePath_VKToPathInterpolation(Interp);
+			P->Translation.InterpolationType = grPath_VKToPathInterpolation(Interp);
 			if( Looping != 0 )
 				P->Looped = FLAG_LOOPED;
 		}
 
 	if ((Header >> 2) & 0x1)
 		{
-			P->Rotation.KeyList = jeQKFrame_CreateFromFile(F,(jeQKFrame_InterpolationType *)&Interp,&Looping,JE_PATH_MAXIMUM_CUT_TIME);
+			P->Rotation.KeyList = grQKFrame_CreateFromFile(F,(grQKFrame_InterpolationType *)&Interp,&Looping,GR_PATH_MAXIMUM_CUT_TIME);
 			if (P->Rotation.KeyList == NULL)
 				{
-					jeErrorLog_Add( JE_ERR_SUBSYSTEM_FAILURE, "jePath_CreateFromFile.");
+					grErrorLog_Add( GR_ERR_SUBSYSTEM_FAILURE, "grPath_CreateFromFile.");
 					if (P->Translation.KeyList != NULL)
 						{
-							jeTKArray_Destroy(&P->Translation.KeyList);
+							grTKArray_Destroy(&P->Translation.KeyList);
 						}
-					jeRam_Free(P);
+					grRam_Free(P);
 					return NULL;
 				}
-			P->Rotation.InterpolationType = jePath_QKToPathInterpolation((jeQKFrame_InterpolationType)Interp);
+			P->Rotation.InterpolationType = grPath_QKToPathInterpolation((grQKFrame_InterpolationType)Interp);
 			if( Looping != 0 )
 				P->Looped = FLAG_LOOPED;
 

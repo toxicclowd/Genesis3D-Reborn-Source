@@ -18,13 +18,13 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef jeCAMERA_H
-#define jeCAMERA_H
+#ifndef grCAMERA_H
+#define grCAMERA_H
 
 #include "BaseType.h"
 #include "Vec3d.h"
 #include "Xform3d.h"
-#include "jeTypes.h"
+#include "grTypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,7 +33,7 @@ extern "C" {
 //================================================================================
 //	Structure defines
 //================================================================================
-typedef struct jeCamera	jeCamera;
+typedef struct grCamera	grCamera;
 
 
 //================================================================================
@@ -44,130 +44,130 @@ typedef struct jeCamera	jeCamera;
 //	Create/Destroy
 //
 
-JETAPI jeCamera *	JETCC jeCamera_Create(jeFloat FovRadians, const jeRect *Rect);
-JETAPI void			JETCC jeCamera_Destroy(jeCamera **pCamera);
+GRAPI grCamera *	GRCC grCamera_Create(grFloat FovRadians, const grRect *Rect);
+GRAPI void			GRCC grCamera_Destroy(grCamera **pCamera);
 
 //-----------------------------------------------------
 //	Camera XForm's
 //
 
-JETAPI jeBoolean	JETCC jeCamera_SetXForm(jeCamera *Camera, const jeXForm3d *XForm);
-JETAPI void			JETCC jeCamera_GetXForm( const jeCamera *Camera,jeXForm3d *pXForm);
-JETAPI jeBoolean	JETCC jeCamera_SetTransposeXForm(jeCamera *Camera, const jeXForm3d *XForm);
-JETAPI void			JETCC jeCamera_GetTransposeXForm( const jeCamera *Camera,jeXForm3d *pXForm);
+GRAPI grBoolean	GRCC grCamera_SetXForm(grCamera *Camera, const grXForm3d *XForm);
+GRAPI void			GRCC grCamera_GetXForm( const grCamera *Camera,grXForm3d *pXForm);
+GRAPI grBoolean	GRCC grCamera_SetTransposeXForm(grCamera *Camera, const grXForm3d *XForm);
+GRAPI void			GRCC grCamera_GetTransposeXForm( const grCamera *Camera,grXForm3d *pXForm);
 
-JETAPI jeBoolean	JETCC jeCamera_PushXForm(jeCamera *Camera);
-JETAPI jeBoolean	JETCC jeCamera_PopXForm( jeCamera *Camera);
+GRAPI grBoolean	GRCC grCamera_PushXForm(grCamera *Camera);
+GRAPI grBoolean	GRCC grCamera_PopXForm( grCamera *Camera);
 
 //-----------------------------------------------------
 //	Misc Get/Set
 //
 
-JETAPI void		JETCC jeCamera_GetClippingRect(const jeCamera *Camera, jeRect *Rect);
+GRAPI void		GRCC grCamera_GetClippingRect(const grCamera *Camera, grRect *Rect);
 
 // Added by Jeff 02/09/05:  Returns Camera's FOV and Rect
-JETAPI void     JETCC jeCamera_GetAttributes(jeCamera *Camera, jeFloat *FovRadians, jeRect *Rect);
+GRAPI void     GRCC grCamera_GetAttributes(grCamera *Camera, grFloat *FovRadians, grRect *Rect);
 
-JETAPI void		JETCC jeCamera_SetAttributes(jeCamera *Camera, jeFloat FovRadians, const jeRect *Rect);
-JETAPI void		JETCC jeCamera_SetZScale(jeCamera *Camera, jeFloat ZScale);
-JETAPI jeFloat	JETCC jeCamera_GetZScale(const jeCamera *Camera);
+GRAPI void		GRCC grCamera_SetAttributes(grCamera *Camera, grFloat FovRadians, const grRect *Rect);
+GRAPI void		GRCC grCamera_SetZScale(grCamera *Camera, grFloat ZScale);
+GRAPI grFloat	GRCC grCamera_GetZScale(const grCamera *Camera);
 
 // BEGIN - Far clip plane - paradoxnj 2/9/2005
-JETAPI void		JETCC jeCamera_SetFarClipPlane(jeCamera *Camera, jeBoolean Enable, jeFloat ZFar);
-JETAPI void		JETCC jeCamera_GetFarClipPlane(const jeCamera *Camera, jeBoolean *Enable, jeFloat *ZFar);
+GRAPI void		GRCC grCamera_SetFarClipPlane(grCamera *Camera, grBoolean Enable, grFloat ZFar);
+GRAPI void		GRCC grCamera_GetFarClipPlane(const grCamera *Camera, grBoolean *Enable, grFloat *ZFar);
 // END - Far clip plane - paradoxnj 2/9/2005
 
 //-----------------------------------------------------
 //	Transform/Project :
 //
-JETAPI void JETCC jeCamera_ScreenPointToWorld(	const jeCamera	*Camera,
+GRAPI void GRCC grCamera_ScreenPointToWorld(	const grCamera	*Camera,
 														int32			 ScreenX,
 														int32			 ScreenY,
-														jeVec3d			*Vector);
-JETAPI void JETCC jeCamera_Project(	const jeCamera	*Camera, 
-											const jeVec3d	*PointInCameraSpace, 
-											jeVec3d			*ProjectedPoint);
-JETAPI void JETCC jeCamera_ProjectArray(const jeCamera	*Camera, 
-												const jeVec3d	*FmPoints, 
+														grVec3d			*Vector);
+GRAPI void GRCC grCamera_Project(	const grCamera	*Camera, 
+											const grVec3d	*PointInCameraSpace, 
+											grVec3d			*ProjectedPoint);
+GRAPI void GRCC grCamera_ProjectArray(const grCamera	*Camera, 
+												const grVec3d	*FmPoints, 
 												int32			FmStride,
-												jeVec3d			*ToPoints, 
+												grVec3d			*ToPoints, 
 												int32			ToStride, 
 												int32			Count);
-JETAPI void JETCC jeCamera_ProjectAndClampArray(const jeCamera	*Camera, 
-												const jeVec3d	*FmPoints, 
+GRAPI void GRCC grCamera_ProjectAndClampArray(const grCamera	*Camera, 
+												const grVec3d	*FmPoints, 
 												int32			FmStride,
-												jeVec3d			*ToPoints, 
+												grVec3d			*ToPoints, 
 												int32			ToStride, 
 												int32			Count);
-JETAPI void JETCC jeCamera_ProjectZ(const jeCamera	*Camera, 
-											const jeVec3d	*PointInCameraSpace, 
-											jeVec3d			*ProjectedPoint);
+GRAPI void GRCC grCamera_ProjectZ(const grCamera	*Camera, 
+											const grVec3d	*PointInCameraSpace, 
+											grVec3d			*ProjectedPoint);
 											
-JETAPI void JETCC jeCamera_ProjectAndClamp(const jeCamera	*Camera, 
-										const jeVec3d	*PointInCameraSpace, 
-										jeVec3d			*ProjectedPoint);
+GRAPI void GRCC grCamera_ProjectAndClamp(const grCamera	*Camera, 
+										const grVec3d	*PointInCameraSpace, 
+										grVec3d			*ProjectedPoint);
 
-JETAPI void JETCC jeCamera_Transform(	const jeCamera	*Camera, 
-												const jeVec3d	*WorldSpacePoint, 
-												jeVec3d			*CameraSpacePoint);
-JETAPI void JETCC jeCamera_TransformVecArray(	const jeCamera	*Camera, 
-														const jeVec3d	*WorldSpacePointPtr, 
-														jeVec3d			*CameraSpacePointPtr,
+GRAPI void GRCC grCamera_Transform(	const grCamera	*Camera, 
+												const grVec3d	*WorldSpacePoint, 
+												grVec3d			*CameraSpacePoint);
+GRAPI void GRCC grCamera_TransformVecArray(	const grCamera	*Camera, 
+														const grVec3d	*WorldSpacePointPtr, 
+														grVec3d			*CameraSpacePointPtr,
 														int32			Count);
 
-JETAPI void JETCC jeCamera_TransformAndProjectVecArray(	const jeCamera *Camera, 
-																const jeVec3d *WorldSpacePointPtr, 
-																jeVec3d *ProjectedSpacePointPtr,
+GRAPI void GRCC grCamera_TransformAndProjectVecArray(	const grCamera *Camera, 
+																const grVec3d *WorldSpacePointPtr, 
+																grVec3d *ProjectedSpacePointPtr,
 																int32 Count);
-JETAPI void JETCC jeCamera_TransformAndProjectArray(const jeCamera	*Camera, 
-															const jeVec3d	*WorldSpacePointPtr, 
+GRAPI void GRCC grCamera_TransformAndProjectArray(const grCamera	*Camera, 
+															const grVec3d	*WorldSpacePointPtr, 
 															int32			WorldStride,
-															jeVec3d			*ProjectedSpacePointPtr, 
+															grVec3d			*ProjectedSpacePointPtr, 
 															int32			ProjectedStride,
 															int32			Count);
-JETAPI void JETCC jeCamera_TransformAndProjectLArray(	const jeCamera		*Camera, 
-																const jeLVertex	*WorldSpacePointPtr, 
-																jeTLVertex			*ProjectedSpacePointPtr,
+GRAPI void GRCC grCamera_TransformAndProjectLArray(	const grCamera		*Camera, 
+																const grLVertex	*WorldSpacePointPtr, 
+																grTLVertex			*ProjectedSpacePointPtr,
 																int32				Count);
-JETAPI void JETCC jeCamera_TransformAndProject(	const	jeCamera *Camera,
-														const	jeVec3d *Point, 
-														jeVec3d	*ProjectedPoint);
-JETAPI void JETCC jeCamera_TransformAndProjectL(const jeCamera *Camera,
-														const jeLVertex *Point, 
-														jeTLVertex *ProjectedPoint);
+GRAPI void GRCC grCamera_TransformAndProject(	const	grCamera *Camera,
+														const	grVec3d *Point, 
+														grVec3d	*ProjectedPoint);
+GRAPI void GRCC grCamera_TransformAndProjectL(const grCamera *Camera,
+														const grLVertex *Point, 
+														grTLVertex *ProjectedPoint);
 
-JETAPI void JETCC jeCamera_TransformAndProjectAndClampArray(const jeCamera	*Camera, 
-															const jeVec3d	*WorldSpacePointPtr, 
+GRAPI void GRCC grCamera_TransformAndProjectAndClampArray(const grCamera	*Camera, 
+															const grVec3d	*WorldSpacePointPtr, 
 															int32			WorldStride,
-															jeVec3d			*ProjectedSpacePointPtr, 
+															grVec3d			*ProjectedSpacePointPtr, 
 															int32			ProjectedStride,
 															int32			Count);
-JETAPI void JETCC jeCamera_TransformLArray(	const jeCamera	*Camera, 
-																	const jeLVertex		*WorldSpacePointPtr, 
-																	jeLVertex			*CameraSpacePointPtr,
+GRAPI void GRCC grCamera_TransformLArray(	const grCamera	*Camera, 
+																	const grLVertex		*WorldSpacePointPtr, 
+																	grLVertex			*CameraSpacePointPtr,
 																	int32				Count);
-JETAPI void JETCC jeCamera_ProjectAndClampLArray(	const jeCamera		*Camera, 
-															const jeLVertex		*CameraSpacePointPtr, 
-															jeTLVertex			*ProjectedSpacePointPtr,
+GRAPI void GRCC grCamera_ProjectAndClampLArray(	const grCamera		*Camera, 
+															const grLVertex		*CameraSpacePointPtr, 
+															grTLVertex			*ProjectedSpacePointPtr,
 															int32				Count);
-JETAPI void JETCC jeCamera_TransformAndProjectAndClampLArray(	const jeCamera		*Camera, 
-																const jeLVertex	*WorldSpacePointPtr, 
-																jeTLVertex			*ProjectedSpacePointPtr,
+GRAPI void GRCC grCamera_TransformAndProjectAndClampLArray(	const grCamera		*Camera, 
+																const grLVertex	*WorldSpacePointPtr, 
+																grTLVertex			*ProjectedSpacePointPtr,
 																int32				Count);
-JETAPI void JETCC jeCamera_TransformAndProjectAndClamp(	const	jeCamera *Camera,
-														const	jeVec3d *Point, 
-														jeVec3d	*ProjectedPoint);
-JETAPI void JETCC jeCamera_TransformL(	const jeCamera	*Camera,
-												const jeLVertex *Point, 
-												jeLVertex		*TransformedPoint);
-JETAPI void JETCC jeCamera_ProjectAndClampL(const jeCamera	*Camera,
-													const jeLVertex *Point, 
-													jeTLVertex		*ProjectedPoint);
-JETAPI void JETCC jeCamera_TransformAndProjectAndClampL(const jeCamera *Camera,
-														const jeLVertex *Point, 
-														jeTLVertex *ProjectedPoint);
+GRAPI void GRCC grCamera_TransformAndProjectAndClamp(	const	grCamera *Camera,
+														const	grVec3d *Point, 
+														grVec3d	*ProjectedPoint);
+GRAPI void GRCC grCamera_TransformL(	const grCamera	*Camera,
+												const grLVertex *Point, 
+												grLVertex		*TransformedPoint);
+GRAPI void GRCC grCamera_ProjectAndClampL(const grCamera	*Camera,
+													const grLVertex *Point, 
+													grTLVertex		*ProjectedPoint);
+GRAPI void GRCC grCamera_TransformAndProjectAndClampL(const grCamera *Camera,
+														const grLVertex *Point, 
+														grTLVertex *ProjectedPoint);
 
-JETAPI jeVec3d *JETCC jeCamera_GetPov2(jeCamera *Camera);
+GRAPI grVec3d *GRCC grCamera_GetPov2(grCamera *Camera);
 
 //-----------------------------------------------------
 
@@ -176,28 +176,6 @@ JETAPI jeVec3d *JETCC jeCamera_GetPov2(jeCamera *Camera);
 #endif
 
 // Genesis3D: Reborn gr* Aliases
-typedef struct jeCamera grCamera;
 
-#define grCamera_Create                  jeCamera_Create
-#define grCamera_Destroy                 jeCamera_Destroy
-#define grCamera_SetXForm                jeCamera_SetXForm
-#define grCamera_GetXForm                jeCamera_GetXForm
-#define grCamera_SetAttributes           jeCamera_SetAttributes
-#define grCamera_GetAttributes           jeCamera_GetAttributes
-#define grCamera_SetZScale               jeCamera_SetZScale
-#define grCamera_GetZScale               jeCamera_GetZScale
-#define grCamera_SetZFar                 jeCamera_SetZFar
-#define grCamera_GetZFar                 jeCamera_GetZFar
-#define grCamera_SetPov                  jeCamera_SetPov
-#define grCamera_GetPov                  jeCamera_GetPov
-#define grCamera_ScreenPointToWorld      jeCamera_ScreenPointToWorld
-#define grCamera_WorldPointToScreen      jeCamera_WorldPointToScreen
-#define grCamera_SetYaw                  jeCamera_SetYaw
-#define grCamera_SetPitch                jeCamera_SetPitch
-#define grCamera_SetRoll                 jeCamera_SetRoll
-#define grCamera_GetYaw                  jeCamera_GetYaw
-#define grCamera_GetPitch                jeCamera_GetPitch
-#define grCamera_GetRoll                 jeCamera_GetRoll
-#define grCamera_GetPov2                 jeCamera_GetPov2
 
 #endif

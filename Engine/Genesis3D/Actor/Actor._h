@@ -30,29 +30,29 @@ extern "C" {
 
 typedef struct ActorObj
 {
-	jeWorld			*World;
-	jeResourceMgr	*ResourceMgr;
-	jeEngine		*Engine;
-	//jeXForm3d		Xf;
+	grWorld			*World;
+	grResourceMgr	*ResourceMgr;
+	grEngine		*Engine;
+	//grXForm3d		Xf;
 	char			*ActorDefName;	
 	int				RefCount;
-	jeBoolean		FillNormalActorRelative;
-	jeBoolean		CollisionExtBoxDisplay, RenderExtBoxDisplay;
-	jeExtBox		CollisionExtBox, RenderHintExtBox;
+	grBoolean		FillNormalActorRelative;
+	grBoolean		CollisionExtBoxDisplay, RenderExtBoxDisplay;
+	grExtBox		CollisionExtBox, RenderHintExtBox;
 	float			ScaleX, ScaleY, ScaleZ;
-	jeBoolean		UseFillLight;
-	jeVec3d			FillLightNormal;
-	jeFloat			FillLightRed;
-	jeFloat			FillLightGreen;
-	jeFloat			FillLightBlue;
-	jeFloat			AmbientLightRed;
-	jeFloat			AmbientLightGreen;
-	jeFloat			AmbientLightBlue;
-	jeBoolean		UseAmbientLightFromFloor;
+	grBoolean		UseFillLight;
+	grVec3d			FillLightNormal;
+	grFloat			FillLightRed;
+	grFloat			FillLightGreen;
+	grFloat			FillLightBlue;
+	grFloat			AmbientLightRed;
+	grFloat			AmbientLightGreen;
+	grFloat			AmbientLightBlue;
+	grBoolean		UseAmbientLightFromFloor;
 	int				MaximumDynamicLightsToUse;
 	int				MaximumStaticLightsToUse;
-	jeBoolean		PerBoneLighting;
-	jeMotion		*Motion;
+	grBoolean		PerBoneLighting;
+	grMotion		*Motion;
 	char			**MotionList;
 	int				MotionListSize;
 	float			MotionTime;
@@ -64,82 +64,82 @@ typedef struct ActorObj
 	char			**MaterialOverideList;
 	char			**MaterialMapperList;
 	int				MaterialListSize;
-	jeMaterialSpec	**MaterialOverideBitmap;
+	grMaterialSpec	**MaterialOverideBitmap;
 	int				MaterialCurrent;
 	char			**LoadMaterialOverideList;
 	int				LoadMaterialListSize;
 	char			*LightReferenceBoneName;
-	jeBoolean		LoadedFromDisk;
+	grBoolean		LoadedFromDisk;
 
 	//Editor Brush support
-	jeLVertex	Vertex[8];
+	grLVertex	Vertex[8];
 
 } ActorObj;
 
 // Icestorm Begin: bone-extbox&name-structure for BoneCollisionChain
-typedef struct jeCollisionBone
+typedef struct grCollisionBone
 {
 	char		*BoneName;
 	int			BoneIndex;
-	jeExtBox	*CurrExtBox;
-	jeExtBox	*PrevExtBox;
-} jeCollisionBone;
+	grExtBox	*CurrExtBox;
+	grExtBox	*PrevExtBox;
+} grCollisionBone;
 // Icestorm End
 
-typedef struct jeActor
+typedef struct grActor
 {
 	ActorObj *Object;		
-	jeXForm3d Xf;
-	jeBoolean CanFree;
+	grXForm3d Xf;
+	grBoolean CanFree;
 
 	int32				 RefCount;				// this is the number of owners.
-	jePuppet			*Puppet;
-	jePose				*Pose;
-	jeActor_BlendingType BlendingType;
-	jeActor_Def			*ActorDefinition;		// actor definition this is an instance of
+	grPuppet			*Puppet;
+	grPose				*Pose;
+	grActor_BlendingType BlendingType;
+	grActor_Def			*ActorDefinition;		// actor definition this is an instance of
 	
-	jeMotion			*CueMotion;
-	jeExtBox			CollisionExtBox;	
+	grMotion			*CueMotion;
+	grExtBox			CollisionExtBox;	
 	int					BoundingBoxCenterBoneIndex;
 	int					StepBoneIndex;			// used for single-bone motion optimization.
 	void *				UserData;
 
-	jeExtBox			RenderHintExtBox;
+	grExtBox			RenderHintExtBox;
 	int					RenderHintExtBoxCenterBoneIndex;
-	jeBoolean			RenderHintExtBoxEnabled;
+	grBoolean			RenderHintExtBoxEnabled;
 	
 	// Incarnadine Begin
-	jeChain				*BoneCollisionChain;  // Added to allow for bone level collisions
+	grChain				*BoneCollisionChain;  // Added to allow for bone level collisions
 	// Icestorm Begin : Faster linear coll.bone search
 	char*				LastUsedCollisionBoneName;
-	jeChain_Link		*LastUsedCollisionBone;
+	grChain_Link		*LastUsedCollisionBone;
 	// Icestorm End
 	uint32				CollisionFlags;  // Added to further control collisions
 	char				*CollidedBone;
 	// Incarnadine End
 
 // @@
-	jeBoolean			needsRelighting; // flag indicating whether static lighting needs to be recomputed
+	grBoolean			needsRelighting; // flag indicating whether static lighting needs to be recomputed
 
-	jeBoolean			RenderNextTime;  //<! Next render pass flag
+	grBoolean			RenderNextTime;  //<! Next render pass flag
 
 	CRITICAL_SECTION	RenderLock;
 
-} jeActor;
+} grActor;
 
 
-typedef struct jeActor_Def
+typedef struct grActor_Def
 {
-	jeBody				*Body;
-	jeVFile *			 TextureFileContext;
+	grBody				*Body;
+	grVFile *			 TextureFileContext;
 	
 	int32				 MotionCount;
-	jeMotion		   **MotionArray;
+	grMotion		   **MotionArray;
 
 	int32				 RefCount;				// this is the number of owners.
 
-	jeActor_Def			*ValidityCheck;
-} jeActor_Def;
+	grActor_Def			*ValidityCheck;
+} grActor_Def;
 
 #ifdef __cplusplus
 }

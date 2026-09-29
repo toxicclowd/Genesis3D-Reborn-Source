@@ -126,7 +126,7 @@ void CModel::SetCurrentDocument(CJweDoc *pDoc)
 		if( Name )
 		{
 			ComboItem = m_CBList.SelectString( 0, Name );
-			jeRam_Free( Name );
+			grRam_Free( Name );
 		}
 		UpdateData( true ) ;
 		m_Lock= Model_IsLocked( pModel );
@@ -134,7 +134,7 @@ void CModel::SetCurrentDocument(CJweDoc *pDoc)
 	}
 }// SetCurrentDocument
 
-jeBoolean CModel::BrushCB( Brush *pBrush, void *lParam)
+grBoolean CModel::BrushCB( Brush *pBrush, void *lParam)
 {
 	HTREEITEM			hItem = NULL ;
 	ModelInfo		*	pModelInfo = (ModelInfo*)lParam ;
@@ -150,12 +150,12 @@ jeBoolean CModel::BrushCB( Brush *pBrush, void *lParam)
 			pModelInfo->pList->SetItemData( hItem, (DWORD)(Object*)pBrush ) ;
 			Object_AddRef( (Object*)pBrush );
 		}
-		jeRam_Free( pszDisplayName ) ;
+		grRam_Free( pszDisplayName ) ;
 	}
-	return ( hItem == NULL ) ? JE_FALSE : JE_TRUE ;
+	return ( hItem == NULL ) ? GR_FALSE : GR_TRUE ;
 }// BrushCB
 
-jeBoolean CModel::ModelListCB( Model *pModel, void *lParam)
+grBoolean CModel::ModelListCB( Model *pModel, void *lParam)
 {
 	HTREEITEM			hItem = NULL ;
 	CTreeCtrlEx		*	pList = (CTreeCtrlEx*)lParam ;
@@ -173,15 +173,15 @@ jeBoolean CModel::ModelListCB( Model *pModel, void *lParam)
 			ModelInfoData.pList = pList;
 			pList->SetItemData( hItem, (DWORD)pModel ) ;
 			Object_AddRef( (Object*)pModel );
-			if( Model_EnumBrushes( pModel, &ModelInfoData, CModel::BrushCB ) == JE_FALSE )
+			if( Model_EnumBrushes( pModel, &ModelInfoData, CModel::BrushCB ) == GR_FALSE )
 				hItem = NULL ;
 		}
-		jeRam_Free( pszDisplayName );
+		grRam_Free( pszDisplayName );
 	}
-	return ( hItem == NULL ) ? JE_FALSE : JE_TRUE ;
+	return ( hItem == NULL ) ? GR_FALSE : GR_TRUE ;
 }// ModelListCB
 
-jeBoolean CModel::ModelComboCB( Model *pModel, void *lParam)
+grBoolean CModel::ModelComboCB( Model *pModel, void *lParam)
 {
 	int					nIndex = CB_ERR ;
 	CComboBox			*pCBList = (CComboBox*)lParam ;
@@ -195,13 +195,13 @@ jeBoolean CModel::ModelComboCB( Model *pModel, void *lParam)
 		nIndex = pCBList->FindString( 0, pszDisplayName );
 		if( nIndex != CB_ERR )
 			pCBList->SetItemDataPtr( nIndex, pModel );
-		jeRam_Free( pszDisplayName );
+		grRam_Free( pszDisplayName );
 
 	}
-	return ( nIndex != CB_ERR ) ? JE_FALSE : JE_TRUE ;
+	return ( nIndex != CB_ERR ) ? GR_FALSE : GR_TRUE ;
 }// GroupCB
 
-jeBoolean CModel::AddObject( Object* pObject )
+grBoolean CModel::AddObject( Object* pObject )
 {
 	HTREEITEM hItem;
 	HTREEITEM hObjectItem;
@@ -212,7 +212,7 @@ jeBoolean CModel::AddObject( Object* pObject )
 	ASSERT( pObject );
 
 	if( Object_GetKind( pObject ) != KIND_BRUSH )
-		return( JE_TRUE );
+		return( GR_TRUE );
 	pBrush = (Brush*)pObject;
 
 	hItem = m_List.GetRootItem();
@@ -225,18 +225,18 @@ jeBoolean CModel::AddObject( Object* pObject )
 		{
 			pszDisplayName = Object_GetNameAndTag( (Object*)pBrush ) ;
 			if( pszDisplayName == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			hObjectItem	= m_List.InsertItem( pszDisplayName, hItem, TVI_SORT );
-			jeRam_Free( pszDisplayName );
+			grRam_Free( pszDisplayName );
 			if( hObjectItem == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			m_List.SetItemData( hObjectItem, (DWORD)pBrush ) ;
 
-			return( JE_TRUE );
+			return( GR_TRUE );
 		}
 		hItem = m_List.GetNextSiblingItem(hItem );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
 HTREEITEM CModel::GetObjectItem( CTreeCtrl *pList, Object *pObject )
@@ -297,12 +297,12 @@ void CModel::RenameObject( Object *pObject )
 	if( pszDisplayName != NULL )
 	{
 		m_List.SetItemText( hItem, pszDisplayName );
-		jeRam_Free( pszDisplayName ) ;
+		grRam_Free( pszDisplayName ) ;
 	}
 
 }
 
-jeBoolean CModel::AddSelectionCB(Object *pObject, void *lParam)
+grBoolean CModel::AddSelectionCB(Object *pObject, void *lParam)
 {
 	HTREEITEM hItem;
 	HTREEITEM hObjectItem;
@@ -315,7 +315,7 @@ jeBoolean CModel::AddSelectionCB(Object *pObject, void *lParam)
 	ASSERT( pList );
 
 	if( Object_GetKind( pObject ) != KIND_BRUSH )
-		return( JE_TRUE );
+		return( GR_TRUE );
 	pBrush = (Brush*)pObject;
 
 	hItem = pList->GetRootItem();
@@ -328,18 +328,18 @@ jeBoolean CModel::AddSelectionCB(Object *pObject, void *lParam)
 		{
 			pszDisplayName = Object_GetNameAndTag( pObject ) ;
 			if( pszDisplayName == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			hObjectItem	= pList->InsertItem( pszDisplayName, hItem, TVI_SORT );
-			jeRam_Free( pszDisplayName );
+			grRam_Free( pszDisplayName );
 			if( hObjectItem == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			pList->SetItemData( hObjectItem, (DWORD)pObject ) ;
 			Object_AddRef( pObject );
-			return( JE_TRUE );
+			return( GR_TRUE );
 		}
 		hItem = pList->GetNextSiblingItem(hItem );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
 void CModel::AddSelection(CJweDoc *pDoc)
@@ -365,7 +365,7 @@ void CModel::UpdateCurModel()
 		if( pName )
 		{
 			m_CBList.SelectString( 0, pName );
-			jeRam_Free( pName );
+			grRam_Free( pName );
 		}
 	}
 }
@@ -410,7 +410,7 @@ void CModel::RemoveDeleted( )
 				index = m_CBList.FindString( -1, Name );
 				if( index >=0 )
 					m_CBList.DeleteString( index );
-				jeRam_Free( Name );
+				grRam_Free( Name );
 			}
 		}
 		hGroupItem = hNextGroupItem;
@@ -444,11 +444,11 @@ void CModel::ChangeModels( HTREEITEM hItem )
 	pDoc->SelectObject( (Object*)pBrush, LEVEL_DESELECT);
 	Model_RemoveBrush( pOldModel, pBrush ) ;
 	Model_AddBrush( pModel, pBrush ) ;
-	Model_AddBrushWorld( pModel, pBrush, JE_FALSE, JE_FALSE );
+	Model_AddBrushWorld( pModel, pBrush, GR_FALSE, GR_FALSE );
 	pDoc->UpdateAll();
 }
 
-void CModel::SelectGroup( HTREEITEM hGroupItem, jeBoolean bSelect )
+void CModel::SelectGroup( HTREEITEM hGroupItem, grBoolean bSelect )
 {
 	HTREEITEM		hItem;
 	LEVEL_STATE		State;
@@ -496,7 +496,7 @@ void CModel::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 	// I'm still not getting correct multi-sel messages
 	
 	if( !Util_IsKeyDown( VK_CONTROL ) )
-		pDoc->DeselectAll( JE_FALSE );
+		pDoc->DeselectAll( GR_FALSE );
 	hItem = pNMTreeView->itemNew.hItem ;
 	if( hItem != NULL )
 	{
@@ -515,7 +515,7 @@ void CModel::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
-jeBoolean CModel::SelectCB(Object *pObject, void *lParam)
+grBoolean CModel::SelectCB(Object *pObject, void *lParam)
 {
 	HTREEITEM hObjectItem;
 	CTreeCtrlEx	*pList = (CTreeCtrlEx	*)lParam;
@@ -526,14 +526,14 @@ jeBoolean CModel::SelectCB(Object *pObject, void *lParam)
 
 	Kind = Object_GetKind( pObject );
 	if(  !(Kind == KIND_BRUSH ||  Kind == KIND_MODEL) )
-		return( JE_TRUE );
+		return( GR_TRUE );
 	hObjectItem = GetObjectItem( pList, pObject );
 	if( hObjectItem )
 	{
 		pList->SelectItemEx( hObjectItem );
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 // SELECTION has changed
 
@@ -595,8 +595,8 @@ void CModel::OnAddmodel()
 	pMainFrm = (CMainFrame*)AfxGetMainWnd();
 	pDoc = pMainFrm->GetCurrentDocument();
 
-	pDoc->RenderAnimate( JE_FALSE );
-//	pMainFrm->SetCurAnimateState( JE_FALSE );	
+	pDoc->RenderAnimate( GR_FALSE );
+//	pMainFrm->SetCurAnimateState( GR_FALSE );	
 	#pragma message ("[Small bug - 7.3.2000 JH] When adding a model, animation is turned off, but the state of the toolbar-anim-button is unchanged....[EOFBUG]\n")
 
 	AddModelDialog.m_nTitleID = IDS_NEWGROUP ;
@@ -617,7 +617,7 @@ void CModel::OnAddmodel()
 			if( Name )
 			{
 				hItem = m_List.InsertItem( Name, TVI_ROOT, TVI_SORT ) ;
-				jeRam_Free( Name );
+				grRam_Free( Name );
 
 				Object_AddRef( (Object*)pModel );
 				if( hItem != NULL )
@@ -628,7 +628,7 @@ void CModel::OnAddmodel()
 		}
 
 		ModelComboCB( pModel, &m_CBList );
-		Model_SetLocked( pModel, JE_TRUE );
+		Model_SetLocked( pModel, GR_TRUE );
 		//m_CBList.SelectString( 0, AddModelDialog.m_csName );
 		//pDoc->SetCurrentModel( pModel );
 	}

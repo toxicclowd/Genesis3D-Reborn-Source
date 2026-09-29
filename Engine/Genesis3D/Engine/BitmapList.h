@@ -21,7 +21,7 @@
 #ifndef BITMAPLIST_H
 #define BITMAPLIST_H
 
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "Dcommon.h"
 #include "Bitmap.h"
 
@@ -32,19 +32,19 @@ extern "C" {
 #endif
 
 BitmapList *BitmapList_Create(void);
-jeBoolean BitmapList_Destroy(BitmapList *pList);
+grBoolean BitmapList_Destroy(BitmapList *pList);
 
-jeBoolean BitmapList_SetGamma(BitmapList *pList, jeFloat Gamma);
+grBoolean BitmapList_SetGamma(BitmapList *pList, grFloat Gamma);
 
-jeBoolean BitmapList_AttachAll(BitmapList *pList, DRV_Driver *Drivera, jeFloat Gamma);
-jeBoolean BitmapList_DetachAll(BitmapList *pList);
+grBoolean BitmapList_AttachAll(BitmapList *pList, DRV_Driver *Drivera, grFloat Gamma);
+grBoolean BitmapList_DetachAll(BitmapList *pList);
 
 	// _Add & _Remove do NOT return Ok/NOk	
-jeBoolean BitmapList_Add(BitmapList *pList, jeBitmap *Bitmap);	// returns Was It New ?
-jeBoolean BitmapList_Remove(BitmapList *pList,jeBitmap *Bitmap);// returns Was It Removed ?
+grBoolean BitmapList_Add(BitmapList *pList, grBitmap *Bitmap);	// returns Was It New ?
+grBoolean BitmapList_Remove(BitmapList *pList,grBitmap *Bitmap);// returns Was It Removed ?
 	// _Add & _Remove also do not do any Attach or Detach
 
-jeBoolean BitmapList_Has(BitmapList *pList, jeBitmap *Bitmap);
+grBoolean BitmapList_Has(BitmapList *pList, grBitmap *Bitmap);
 
 #ifndef NDEBUG
 int			BitmapList_CountMembers(BitmapList *pList);

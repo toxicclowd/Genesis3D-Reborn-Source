@@ -29,7 +29,7 @@
 #define max(a,b) (((a)>(b))?(a):(b))
 #endif
 
-void jeVec2d_Set( jeVec2d * V, jeFloat X, jeFloat Y )
+void grVec2d_Set( grVec2d * V, grFloat X, grFloat Y )
 {
 	assert( V ) ;
 
@@ -37,7 +37,7 @@ void jeVec2d_Set( jeVec2d * V, jeFloat X, jeFloat Y )
 	V->Y = Y ;
 }
 
-void jeVec2d_Add( const jeVec2d * pV1, const jeVec2d * pV2, jeVec2d * pV1PlusV2 )
+void grVec2d_Add( const grVec2d * pV1, const grVec2d * pV2, grVec2d * pV1PlusV2 )
 {
 	assert ( pV1 );
 	assert ( pV2 );
@@ -45,49 +45,49 @@ void jeVec2d_Add( const jeVec2d * pV1, const jeVec2d * pV2, jeVec2d * pV1PlusV2 
 	
 	pV1PlusV2->X = pV1->X + pV2->X;
 	pV1PlusV2->Y = pV1->Y + pV2->Y;
-}/* jeVec2d_Add */
+}/* grVec2d_Add */
 
-void jeVec2d_Copy(const jeVec2d *VSrc, jeVec2d *VDst)
+void grVec2d_Copy(const grVec2d *VSrc, grVec2d *VDst)
 {
 	assert ( VSrc );
 	assert ( VDst );
 	
 	*VDst = *VSrc;
-}//jeVec2d_Copy
+}//grVec2d_Copy
 
-void jeVec2d_Clear( jeVec2d *V)
+void grVec2d_Clear( grVec2d *V)
 {
 	assert ( V );
 	
 	V->X = 0.0f;
 	V->Y = 0.0f;
-}//jeVec2d_Clear
+}//grVec2d_Clear
 
 
-jeFloat jeVec2d_DotProduct(const jeVec2d *V1, const jeVec2d *V2)
+grFloat grVec2d_DotProduct(const grVec2d *V1, const grVec2d *V2)
 {
 	assert ( V1 );
 	assert ( V2 );
 	
 	return(V1->X*V2->X + V1->Y*V2->Y);
-}//jeVec2d_DotProduct
+}//grVec2d_DotProduct
 
 
-jeFloat jeVec2d_DistanceBetween(const jeVec2d *V1, const jeVec2d *V2)	// returns length of V1-V2	
+grFloat grVec2d_DistanceBetween(const grVec2d *V1, const grVec2d *V2)	// returns length of V1-V2	
 {
-	jeVec2d B;
+	grVec2d B;
 	
 	assert( V1 );
 	assert( V2 );
 
-	jeVec2d_Subtract(V1,V2,&B);
-	return jeVec2d_Length(&B);
-}// jeVec2d_DistanceBetween
+	grVec2d_Subtract(V1,V2,&B);
+	return grVec2d_Length(&B);
+}// grVec2d_DistanceBetween
 
 // returns length of V1-V2 Squared
-jeFloat jeVec2d_DistBetweenSquared(const jeVec2d *V1, const jeVec2d *V2)
+grFloat grVec2d_DistBetweenSquared(const grVec2d *V1, const grVec2d *V2)
 {
-	jeFloat f, d;
+	grFloat f, d;
 	
 	assert( V1 );
 	assert( V2 );
@@ -100,10 +100,10 @@ jeFloat jeVec2d_DistBetweenSquared(const jeVec2d *V1, const jeVec2d *V2)
 
 	return(d);
 
-} // jeVec2d_DistanceBetween
+} // grVec2d_DistanceBetween
 
 
-jeFloat jeVec2d_Length(const jeVec2d *V1)
+grFloat grVec2d_Length(const grVec2d *V1)
 {	
 float Len;
 
@@ -150,14 +150,14 @@ return Len;
 //Vec2d_Length
 
 
-jeFloat jeVec2d_Normalize( jeVec2d *V1 )
+grFloat grVec2d_Normalize( grVec2d *V1 )
 {
-	jeFloat	OneOverDist;
-	jeFloat	Dist;
+	grFloat	OneOverDist;
+	grFloat	Dist;
 
 	assert( V1 );
 
-	Dist = jeVec2d_Length(V1);
+	Dist = grVec2d_Length(V1);
 
 	OneOverDist = 1.0f/( Dist + 0.000000001f);
 	
@@ -165,19 +165,19 @@ jeFloat jeVec2d_Normalize( jeVec2d *V1 )
 	V1->Y *= OneOverDist;
 
 	return Dist;
-}// jeVec2d_Normalize
+}// grVec2d_Normalize
 
-void jeVec2d_Scale( const jeVec2d *VSrc, jeFloat fScale, jeVec2d *VDst)
+void grVec2d_Scale( const grVec2d *VSrc, grFloat fScale, grVec2d *VDst)
 {
 	assert ( VSrc );
 	assert ( VDst );
 
 	VDst->X = VSrc->X * fScale;
 	VDst->Y = VSrc->Y * fScale;
-}// jeVec2d_Scale
+}// grVec2d_Scale
 
 
-void jeVec2d_Subtract(const jeVec2d *V1, const jeVec2d *V2, jeVec2d *V1MinusV2)
+void grVec2d_Subtract(const grVec2d *V1, const grVec2d *V2, grVec2d *V1MinusV2)
 {
 	assert ( V1 );
 	assert ( V2 );
@@ -185,11 +185,11 @@ void jeVec2d_Subtract(const jeVec2d *V1, const jeVec2d *V2, jeVec2d *V1MinusV2)
 
 	V1MinusV2->X = V1->X - V2->X;
 	V1MinusV2->Y = V1->Y - V2->Y;
-}// jeVec2d_Subtract
+}// grVec2d_Subtract
 
-void	jeVec2d_Perp_Clockwise( const jeVec2d *pVec, jeVec2d *pDest)
+void	grVec2d_Perp_Clockwise( const grVec2d *pVec, grVec2d *pDest)
 {
-jeVec2d Vec;
+grVec2d Vec;
 	// rotates by 90 clockwise:
 	assert(pVec && pDest);
 	Vec = *pVec;
@@ -197,9 +197,9 @@ jeVec2d Vec;
 	pDest->Y = - Vec.X;
 }
 
-void	jeVec2d_Perp_CClockwise( const jeVec2d *pVec, jeVec2d *pDest)
+void	grVec2d_Perp_CClockwise( const grVec2d *pVec, grVec2d *pDest)
 {
-jeVec2d Vec;
+grVec2d Vec;
 	assert(pVec && pDest);
 	Vec = *pVec;
 	// rotates by 90 counterclockwise:
@@ -207,10 +207,10 @@ jeVec2d Vec;
 	pDest->Y =   Vec.X;
 }
 
-void	jeVec2d_Rotate( const jeVec2d *pVec, jeFloat Radians, jeVec2d *pDest)
+void	grVec2d_Rotate( const grVec2d *pVec, grFloat Radians, grVec2d *pDest)
 {
-jeVec2d Vec;
-jeFloat c,s;
+grVec2d Vec;
+grFloat c,s;
 	
 	assert(pVec);
 	Vec = *pVec;
@@ -218,16 +218,16 @@ jeFloat c,s;
 	// rotates clockwise:
 	//	(really? seems true)
 
-	c = jeFloat_Cos(Radians);
-	s = jeFloat_Sin(Radians);
+	c = grFloat_Cos(Radians);
+	s = grFloat_Sin(Radians);
 
 	pDest->X = + c * Vec.X + s * Vec.Y;
 	pDest->Y = - s * Vec.X + c * Vec.Y;
 }
 
-int		jeVec2d_SideX(const jeVec2d *pSeg1,const jeVec2d *pSeg2,const jeVec2d *pPoint)
+int		grVec2d_SideX(const grVec2d *pSeg1,const grVec2d *pSeg2,const grVec2d *pPoint)
 {
-jeFloat minY,maxY,minX,maxX;
+grFloat minY,maxY,minX,maxX;
 	assert( pSeg1 && pSeg2 && pPoint );
 
 	minY = min(pSeg1->Y,pSeg2->Y);
@@ -244,7 +244,7 @@ jeFloat minY,maxY,minX,maxX;
 		return +1;
 
 	{
-	jeFloat testX;
+	grFloat testX;
 
 	// y = mx + b	(with x and y swapped)
 
@@ -258,4 +258,4 @@ jeFloat minY,maxY,minX,maxX;
 
 }
 
-/* EOF: jeVec2d.c */
+/* EOF: grVec2d.c */

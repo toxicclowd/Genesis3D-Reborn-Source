@@ -29,12 +29,12 @@
 #include "XForm3d.h"
 #include "Vec3d.h"
 #include "PixelFormat.h"
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "VFile.h"
 #include "Camera.h"
-#include "jeStaticMesh.h"
-#include "jeChain.h"
-#include "jeLight.h"
+#include "grStaticMesh.h"
+#include "grChain.h"
+#include "grLight.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,7 +71,7 @@ typedef char *PSZ;
 #endif  /* !BASETYPES */
 
 typedef unsigned long       DWORD;
-typedef int                 jeBoolean;
+typedef int                 grBoolean;
 typedef unsigned char       BYTE;
 typedef unsigned short      WORD;
 typedef float               FLOAT;
@@ -116,30 +116,30 @@ typedef struct tagRECT
 #endif
 
 //===
-// BEGIN - jeTexture implementation - paradoxnj 5/12/2005
-//typedef struct jeTexture	jeTexture;
-typedef struct jeTexture			jeTexture;
-// END - jeTexture implementation - paradoxnj 5/12/2005
+// BEGIN - grTexture implementation - paradoxnj 5/12/2005
+//typedef struct grTexture	grTexture;
+typedef struct grTexture			grTexture;
+// END - grTexture implementation - paradoxnj 5/12/2005
 
 // BEGIN - Shaders - paradoxnj 6/8/2005
-typedef struct jeShader				jeShader;
+typedef struct grShader				grShader;
 // END - Shaders - paradoxnj 6/8/2005
 
 // BEGIN - Hardware True Type Fonts - paradoxnj 8/3/2005
-typedef struct jeFont				jeFont;
+typedef struct grFont				grFont;
 // END - Hardware True Type Fonts - paradoxnj 8/3/2005
 
 // BEGIN - Rendering Data sections - krouer 6/21/2005
-typedef struct jeMaterialSpec		jeMaterialSpec;
+typedef struct grMaterialSpec		grMaterialSpec;
 typedef struct
 {
-	jeMaterialSpec	*Material;		// The MaterialSpec of the Render
+	grMaterialSpec	*Material;		// The MaterialSpec of the Render
 
 	uint32			StartIndex;		// The index from where to start
 	uint32			StartVertex;	// The vertex from where to start
 	uint32			IndexCount;		// The number of index to use
 	uint32			VertexCount;	// The number of vertex to use
-} jeRenderSectionData;
+} grRenderSectionData;
 // END - Rendering Data sections - krouer 6/21/2005
 
 // BEGIN - Material layer type enumerations - krouer 8/16/2005
@@ -178,11 +178,11 @@ typedef struct
 
 #ifndef RDRIVER_PIXELFORMAT_DEFINED
 #define RDRIVER_PIXELFORMAT_DEFINED
-typedef struct jeRDriver_PixelFormat
+typedef struct grRDriver_PixelFormat
 {
-	jePixelFormat	PixelFormat;
+	grPixelFormat	PixelFormat;
 	uint32			Flags;				
-} jeRDriver_PixelFormat;
+} grRDriver_PixelFormat;
 
 #define RDRIVER_THANDLE_HAS_COLORKEY	(1<<0)		// The thandle is using color keying
 
@@ -193,10 +193,10 @@ typedef enum
 	Rop_MultiplyX2,			// P' = P1*P2*2+Clamp (To allow for overbright lightmaps, looks more vibrant)
 	Rop_MultiplyX4,			// P' = P1*P2*4+Clamp (To allow for overbright lightmaps, looks more vibrant)
 	Rop_Add,				// P' = P1+P2+Clamp
-} jeRDriver_Rop;
+} grRDriver_Rop;
 
-// BEGIN - jeTexture implementation - paradoxnj 5/12/2005
-typedef struct jeTexture_Info
+// BEGIN - grTexture implementation - paradoxnj 5/12/2005
+typedef struct grTexture_Info
 {
 	int32					Width;
 	int32					Height;
@@ -204,38 +204,38 @@ typedef struct jeTexture_Info
 	uint32					ColorKey;
 	uint32					Flags;
 	uint8					Log;
-	jeRDriver_PixelFormat	PixelFormat;
+	grRDriver_PixelFormat	PixelFormat;
     void*                   Direct;
-} jeTexture_Info;
+} grTexture_Info;
 #endif
 
 typedef struct
 {
-	// BEGIN - jeTexture implementation - paradoxnj 5/12/2005
-	//jeTexture	*THandle;		// THandle for this layer
-	jeTexture			*THandle;
-	// END - jeTexture implementation - paradoxnj 5/12/2005
+	// BEGIN - grTexture implementation - paradoxnj 5/12/2005
+	//grTexture	*THandle;		// THandle for this layer
+	grTexture			*THandle;
+	// END - grTexture implementation - paradoxnj 5/12/2005
 
-	jeRDriver_Rop		Rop;			// Blend mode to next THandle in the layer cascade
+	grRDriver_Rop		Rop;			// Blend mode to next THandle in the layer cascade
 	
 	// Shift and Scale values for this layer (based off the base UV set for the poly)
-	jeFloat				ShiftU;
-	jeFloat				ShiftV;
-	jeFloat				ScaleU;
-	jeFloat				ScaleV;
-} jeRDriver_Layer;
+	grFloat				ShiftU;
+	grFloat				ShiftV;
+	grFloat				ScaleU;
+	grFloat				ScaleV;
+} grRDriver_Layer;
 
 typedef struct 
 {
 	void				*RGBLight[2];
-	jeBoolean			Dynamic;
-} jeRDriver_LMapCBInfo;
+	grBoolean			Dynamic;
+} grRDriver_LMapCBInfo;
 
-typedef jeRDriver_PixelFormat grRDriver_PixelFormat;
-typedef jeRDriver_Rop grRDriver_Rop;
-typedef jeTexture_Info grTexture_Info;
-typedef jeRDriver_Layer grRDriver_Layer;
-typedef jeRDriver_LMapCBInfo grRDriver_LMapCBInfo;
+typedef grRDriver_PixelFormat grRDriver_PixelFormat;
+typedef grRDriver_Rop grRDriver_Rop;
+typedef grTexture_Info grTexture_Info;
+typedef grRDriver_Layer grRDriver_Layer;
+typedef grRDriver_LMapCBInfo grRDriver_LMapCBInfo;
 
 //===
 
@@ -319,10 +319,10 @@ typedef struct
 
 	// Driver sets these in register functions
 	//S32		Id;								// Bitmap handle for hardware...
-	// BEGIN - jeTexture implementation - paradoxnj 5/12/2005
-	//jeTexture	*THandle;
-	jeTexture			*THandle;
-	// END - jeTexture implementation - paradoxnj 5/12/2005
+	// BEGIN - grTexture implementation - paradoxnj 5/12/2005
+	//grTexture	*THandle;
+	grTexture			*THandle;
+	// END - grTexture implementation - paradoxnj 5/12/2005
 
 } DRV_Bitmap;
 //===========================================================================================
@@ -345,8 +345,8 @@ typedef struct
 typedef struct
 {
 	// Texture info
-	jeVec3d		VecU;
-	jeVec3d		VecV;
+	grVec3d		VecU;
+	grVec3d		VecV;
 	int32		TexMinsX;
 	int32		TexMinsY;
 	int32		TexWidth;
@@ -355,8 +355,8 @@ typedef struct
 	float		TexShiftY;
 
 	// Camera info
-	jeXForm3d	CXForm;
-	jeVec3d		CPov;
+	grXForm3d	CXForm;
+	grVec3d		CPov;
 
 	float		XCenter;
 	float		YCenter;
@@ -367,10 +367,10 @@ typedef struct
 	float		YScaleInv;			// 1 / YScale;
 
 
-	jeVec3d		PlaneNormal;		// Face normal
+	grVec3d		PlaneNormal;		// Face normal
 	float		PlaneDist;
-	jeVec3d		RPlaneNormal;		// Rotated Face normal
-	jeVec3d		Pov;
+	grVec3d		RPlaneNormal;		// Rotated Face normal
+	grVec3d		Pov;
 } GInfo;
 
 // FIXME:  Move this into the GetDeviceCaps stuff
@@ -394,97 +394,97 @@ typedef struct DRV_EngineSettings
 } DRV_EngineSettings;
 
 // BEGIN - Hardware T&L - paradoxnj 4/5/2005
-enum jeXFormType
+enum grXFormType
 {
-	JE_XFORM_TYPE_VIEW = 0,
-	JE_XFORM_TYPE_WORLD,
-	JE_XFORM_TYPE_PROJECTION
+	GR_XFORM_TYPE_VIEW = 0,
+	GR_XFORM_TYPE_WORLD,
+	GR_XFORM_TYPE_PROJECTION
 };
 
 // END - Hardware T&L - paradoxnj 4/5/2005
 
 // Enumeration defines
-typedef jeBoolean DRV_ENUM_MODES_CB( S32 Mode, char *ModeName, S32 Width, S32 Height, S32 BPP, void *Context);
-typedef jeBoolean DRV_ENUM_DRV_CB( S32 Driver, char *DriverName, void *Context);
+typedef grBoolean DRV_ENUM_MODES_CB( S32 Mode, char *ModeName, S32 Width, S32 Height, S32 BPP, void *Context);
+typedef grBoolean DRV_ENUM_DRV_CB( S32 Driver, char *DriverName, void *Context);
 
-typedef jeBoolean DRIVERCC DRV_ENUM_DRIVER(DRV_ENUM_DRV_CB *Cb, void *Context); 
-typedef jeBoolean DRIVERCC DRV_ENUM_MODES(S32 Driver, char *DriverName, DRV_ENUM_MODES_CB *Cb, void *Context); 
+typedef grBoolean DRIVERCC DRV_ENUM_DRIVER(DRV_ENUM_DRV_CB *Cb, void *Context); 
+typedef grBoolean DRIVERCC DRV_ENUM_MODES(S32 Driver, char *DriverName, DRV_ENUM_MODES_CB *Cb, void *Context); 
 
-typedef jeBoolean DRV_ENUM_PFORMAT_CB(jeRDriver_PixelFormat *Format, void *Context);
-typedef jeBoolean DRIVERCC DRV_ENUM_PFORMAT(DRV_ENUM_PFORMAT_CB *Cb, void *Context); 
+typedef grBoolean DRV_ENUM_PFORMAT_CB(grRDriver_PixelFormat *Format, void *Context);
+typedef grBoolean DRIVERCC DRV_ENUM_PFORMAT(DRV_ENUM_PFORMAT_CB *Cb, void *Context); 
 
-typedef jeBoolean DRIVERCC DRV_GET_DEVICE_CAPS(jeDeviceCaps *DeviceCaps);
+typedef grBoolean DRIVERCC DRV_GET_DEVICE_CAPS(grDeviceCaps *DeviceCaps);
 
 // Create/Destroy/Etc Driver functions
-typedef jeBoolean DRIVERCC DRV_INIT(DRV_DriverHook *Hook);
-typedef jeBoolean DRIVERCC DRV_SHUTDOWN(void);
-typedef jeBoolean DRIVERCC DRV_RESET(void);
-typedef jeBoolean DRIVERCC DRV_UPDATE_WINDOW(void);
-typedef jeBoolean DRIVERCC DRV_SET_ACTIVE(jeBoolean Active);
+typedef grBoolean DRIVERCC DRV_INIT(DRV_DriverHook *Hook);
+typedef grBoolean DRIVERCC DRV_SHUTDOWN(void);
+typedef grBoolean DRIVERCC DRV_RESET(void);
+typedef grBoolean DRIVERCC DRV_UPDATE_WINDOW(void);
+typedef grBoolean DRIVERCC DRV_SET_ACTIVE(grBoolean Active);
 
-// BEGIN - jeTexture implementation - paradoxnj 5/12/2005
+// BEGIN - grTexture implementation - paradoxnj 5/12/2005
 // Texture surface functions
-typedef jeTexture *DRIVERCC CREATE_TEXTURE(int32 Width, int32 Height, int32 NumMipLevels, const jeRDriver_PixelFormat *PixelFormat);
-typedef jeTexture *DRIVERCC CREATE_TEXTURE_FROM_FILE(jeVFile *File);
+typedef grTexture *DRIVERCC CREATE_TEXTURE(int32 Width, int32 Height, int32 NumMipLevels, const grRDriver_PixelFormat *PixelFormat);
+typedef grTexture *DRIVERCC CREATE_TEXTURE_FROM_FILE(grVFile *File);
 
-typedef jeBoolean DRIVERCC DESTROY_TEXTURE(jeTexture *THandle);
+typedef grBoolean DRIVERCC DESTROY_TEXTURE(grTexture *THandle);
 
-typedef jeBoolean DRIVERCC LOCK_THANDLE(jeTexture *THandle, int32 MipLevel, void **Data);
-typedef jeBoolean DRIVERCC UNLOCK_THANDLE(jeTexture *THandle, int32 MipLevel);
+typedef grBoolean DRIVERCC LOCK_THANDLE(grTexture *THandle, int32 MipLevel, void **Data);
+typedef grBoolean DRIVERCC UNLOCK_THANDLE(grTexture *THandle, int32 MipLevel);
 
-typedef jeBoolean DRIVERCC SET_PALETTE(jeTexture *THandle, jeTexture *PalHandle);
-typedef jeTexture *DRIVERCC GET_PALETTE(jeTexture *THandle);
+typedef grBoolean DRIVERCC SET_PALETTE(grTexture *THandle, grTexture *PalHandle);
+typedef grTexture *DRIVERCC GET_PALETTE(grTexture *THandle);
 
-typedef jeBoolean DRIVERCC SET_ALPHA(jeTexture *THandle, jeTexture *PalHandle);
-typedef jeTexture *DRIVERCC GET_ALPHA(jeTexture *THandle);
+typedef grBoolean DRIVERCC SET_ALPHA(grTexture *THandle, grTexture *PalHandle);
+typedef grTexture *DRIVERCC GET_ALPHA(grTexture *THandle);
 
-typedef jeBoolean DRIVERCC THANDLE_GET_INFO(jeTexture *THandle, int32 MipLevel, jeTexture_Info *Info);
-// END - jeTexture implementation - paradoxnj 5/12/2005
+typedef grBoolean DRIVERCC THANDLE_GET_INFO(grTexture *THandle, int32 MipLevel, grTexture_Info *Info);
+// END - grTexture implementation - paradoxnj 5/12/2005
 
 // Scene management functions
-typedef jeBoolean DRIVERCC BEGIN_SCENE(jeBoolean Clear, jeBoolean ClearZ, RECT *WorldRect, jeBoolean Wireframe);
-typedef jeBoolean DRIVERCC END_SCENE(void);
-typedef jeBoolean DRIVERCC BEGIN_BATCH(void);
-typedef jeBoolean DRIVERCC END_BATCH(void);
+typedef grBoolean DRIVERCC BEGIN_SCENE(grBoolean Clear, grBoolean ClearZ, RECT *WorldRect, grBoolean Wireframe);
+typedef grBoolean DRIVERCC END_SCENE(void);
+typedef grBoolean DRIVERCC BEGIN_BATCH(void);
+typedef grBoolean DRIVERCC END_BATCH(void);
 
 // Render functions
-typedef jeBoolean DRIVERCC RENDER_G_POLY(jeTLVertex *Pnts, int32 NumPoints, uint32 Flags);
-typedef jeBoolean DRIVERCC RENDER_W_POLY(jeTLVertex *Pnts, int32 NumPoints, jeRDriver_Layer *Layers, int32 NumLayers, void *LMapCBContext, uint32 Flags);
-typedef jeBoolean DRIVERCC RENDER_MT_POLY(jeTLVertex *Pnts, int32 NumPoints, jeRDriver_Layer *Layers, int32 NumLayers, uint32 Flags);
+typedef grBoolean DRIVERCC RENDER_G_POLY(grTLVertex *Pnts, int32 NumPoints, uint32 Flags);
+typedef grBoolean DRIVERCC RENDER_W_POLY(grTLVertex *Pnts, int32 NumPoints, grRDriver_Layer *Layers, int32 NumLayers, void *LMapCBContext, uint32 Flags);
+typedef grBoolean DRIVERCC RENDER_MT_POLY(grTLVertex *Pnts, int32 NumPoints, grRDriver_Layer *Layers, int32 NumLayers, uint32 Flags);
 
-typedef jeBoolean DRIVERCC DRAW_DECAL(jeTexture *THandle, RECT *SRect, int32 x, int32 y);
+typedef grBoolean DRIVERCC DRAW_DECAL(grTexture *THandle, RECT *SRect, int32 x, int32 y);
 
-typedef jeBoolean DRIVERCC SCREEN_SHOT(const char *Name);
-typedef jeBoolean DRIVERCC DRAW_TEXT(char *text, int x, int y, uint32 color);
+typedef grBoolean DRIVERCC SCREEN_SHOT(const char *Name);
+typedef grBoolean DRIVERCC DRAW_TEXT(char *text, int x, int y, uint32 color);
 
-typedef jeBoolean DRIVERCC SET_FOG(float r, float g, float b, float start, float endi, jeBoolean enable);
+typedef grBoolean DRIVERCC SET_FOG(float r, float g, float b, float start, float endi, grBoolean enable);
 
-typedef jeBoolean DRIVERCC SET_GAMMA(float Gamma);
-typedef jeBoolean DRIVERCC GET_GAMMA(float *Gamma);
+typedef grBoolean DRIVERCC SET_GAMMA(float Gamma);
+typedef grBoolean DRIVERCC GET_GAMMA(float *Gamma);
 
 // BEGIN - Hardware T&L - paradoxnj 4/5/2005
-typedef jeBoolean DRIVERCC SET_MATRIX(uint32 type, jeXForm3d *XForm);
-typedef jeBoolean DRIVERCC GET_MATRIX(uint32 type, jeXForm3d *XForm);
-typedef jeBoolean DRIVERCC SET_CAMERA(jeCamera *Camera);
+typedef grBoolean DRIVERCC SET_MATRIX(uint32 type, grXForm3d *XForm);
+typedef grBoolean DRIVERCC GET_MATRIX(uint32 type, grXForm3d *XForm);
+typedef grBoolean DRIVERCC SET_CAMERA(grCamera *Camera);
 // END - Hardware T&L - paradoxnj 4/5/2005
 
 // Static Meshes - paradoxnj 8/1/2005
-typedef uint32 DRIVERCC ADD_STATIC_MESH(jeHWVertex *Points, int32 NumPoints, jeRDriver_Layer *Layers, int32 NumLayers, uint32 Flags);
-typedef jeBoolean DRIVERCC REMOVE_STATIC_MESH(uint32 id);
-typedef jeBoolean DRIVERCC RENDER_STATIC_MESH(uint32 id, int32 StartVertex, int32 NumPolys, jeXForm3d *XForm);
+typedef uint32 DRIVERCC ADD_STATIC_MESH(grHWVertex *Points, int32 NumPoints, grRDriver_Layer *Layers, int32 NumLayers, uint32 Flags);
+typedef grBoolean DRIVERCC REMOVE_STATIC_MESH(uint32 id);
+typedef grBoolean DRIVERCC RENDER_STATIC_MESH(uint32 id, int32 StartVertex, int32 NumPolys, grXForm3d *XForm);
 // Static Meshes - paradoxnj 8/1/2005
 
 // BEGIN - Hardware True Type Fonts - paradoxnj 8/3/2005
-typedef jeFont * DRIVERCC CREATE_FONT(int32 Height, int32 Width, uint32 Weight, jeBoolean Italic, const char *facename);
-typedef jeBoolean DRIVERCC DRAW_FONT(jeFont *Font, int32 x, int32 y, uint32 Color, const char *text);
-typedef jeBoolean DRIVERCC DESTROY_FONT(jeFont **Font);
+typedef grFont * DRIVERCC CREATE_FONT(int32 Height, int32 Width, uint32 Weight, grBoolean Italic, const char *facename);
+typedef grBoolean DRIVERCC DRAW_FONT(grFont *Font, int32 x, int32 y, uint32 Color, const char *text);
+typedef grBoolean DRIVERCC DESTROY_FONT(grFont **Font);
 // END - Hardware True Type Fonts - paradoxnj 8/3/2005
 
 // BEGIN - Render state access - paradoxnj 12/25/2005
-typedef jeBoolean DRIVERCC SET_RENDER_STATE(uint32 state, uint32 value);
+typedef grBoolean DRIVERCC SET_RENDER_STATE(uint32 state, uint32 value);
 // END - Render state access - paradoxnj 12/25/2005
 
-typedef void JETCC SETUP_LIGHTMAP_CB(jeRDriver_LMapCBInfo *LMapCBInfo, void *Context);
+typedef void GRCC SETUP_LIGHTMAP_CB(grRDriver_LMapCBInfo *LMapCBInfo, void *Context);
 
 typedef struct
 {
@@ -515,9 +515,9 @@ typedef struct
 	// Create/Destroy texture functions
 	CREATE_TEXTURE		*THandle_Create;
 	
-	// BEGIN - jeTexture implementation - paradoxnj 5/12/2005
+	// BEGIN - grTexture implementation - paradoxnj 5/12/2005
 	CREATE_TEXTURE_FROM_FILE	*THandle_CreateFromFile;
-	// END - jeTexture implementation - paradoxnj 5/12/2005
+	// END - grTexture implementation - paradoxnj 5/12/2005
 
 	DESTROY_TEXTURE		*THandle_Destroy;
 
@@ -594,100 +594,100 @@ typedef struct
 	// END - Render state access - paradoxnj 12/25/2005
 } DRV_Driver;
 
-enum jeRenderState
+enum grRenderState
 {
-	JE_RENDERSTATE_ENABLE_ZBUFFER = 0,
-	JE_RENDERSTATE_ENABLE_ZWRITES,
-	JE_RENDERSTATE_ENABLE_ALPHABLENDING,
-	JE_RENDERSTATE_ALPHAREF,
-	JE_RENDERSTATE_ALPHAFUNC,
-	JE_RENDERSTATE_ENABLE_ALPHATESTING,
-	JE_RENDERSTATE_DEPTHFUNC,
-	JE_RENDERSTATE_FILLMODE,
-	JE_RENDERSTATE_SHADEMODE,
-	JE_RENDERSTATE_CULLMODE,
-	JE_RENDERSTATE_ENABLE_FOG,
-	JE_RENDERSTATE_FOGCOLOR,
-	JE_RENDERSTATE_FOGSTART,
-	JE_RENDERSTATE_FOGEND,
-	JE_RENDERSTATE_HWLIGHTINGENABLE,
-	JE_RENDERSTATE_AMBIENTLIGHT,
-	JE_RENDERSTATE_ENABLE_STENCIL,
-	JE_RENDERSTATE_STENCILREF,
-	JE_RENDERSTATE_STENCILMASK,
-	JE_RENDERSTATE_STENCILWRITEMASK,
-	JE_RENDERSTATE_STENCILFUNC,
-	JE_RENDERSTATE_STENCILFAIL,
-	JE_RENDERSTATE_STENCILZFAIL,
-	JE_RENDERSTATE_STENCILPASS
+	GR_RENDERSTATE_ENABLE_ZBUFFER = 0,
+	GR_RENDERSTATE_ENABLE_ZWRITES,
+	GR_RENDERSTATE_ENABLE_ALPHABLENDING,
+	GR_RENDERSTATE_ALPHAREF,
+	GR_RENDERSTATE_ALPHAFUNC,
+	GR_RENDERSTATE_ENABLE_ALPHATESTING,
+	GR_RENDERSTATE_DEPTHFUNC,
+	GR_RENDERSTATE_FILLMODE,
+	GR_RENDERSTATE_SHADEMODE,
+	GR_RENDERSTATE_CULLMODE,
+	GR_RENDERSTATE_ENABLE_FOG,
+	GR_RENDERSTATE_FOGCOLOR,
+	GR_RENDERSTATE_FOGSTART,
+	GR_RENDERSTATE_FOGEND,
+	GR_RENDERSTATE_HWLIGHTINGENABLE,
+	GR_RENDERSTATE_AMBIENTLIGHT,
+	GR_RENDERSTATE_ENABLE_STENCIL,
+	GR_RENDERSTATE_STENCILREF,
+	GR_RENDERSTATE_STENCILMASK,
+	GR_RENDERSTATE_STENCILWRITEMASK,
+	GR_RENDERSTATE_STENCILFUNC,
+	GR_RENDERSTATE_STENCILFAIL,
+	GR_RENDERSTATE_STENCILZFAIL,
+	GR_RENDERSTATE_STENCILPASS
 };
 
-enum jeFill
+enum grFill
 {
-	JE_FILL_POINT = 0,
-	JE_FILL_WIREFRAME,
-	JE_FILL_SOLID
+	GR_FILL_POINT = 0,
+	GR_FILL_WIREFRAME,
+	GR_FILL_SOLID
 };
 
-enum jeCullMode
+enum grCullMode
 {
-	JE_CULL_NONE = 0,
-	JE_CULL_CW,
-	JE_CULL_CCW
+	GR_CULL_NONE = 0,
+	GR_CULL_CW,
+	GR_CULL_CCW
 };
 
-enum jeShadeMode
+enum grShadeMode
 {
-	JE_SHADE_FLAT = 0,
-	JE_SHADE_GOURAUD,
-	JE_SHADE_PHONG
+	GR_SHADE_FLAT = 0,
+	GR_SHADE_GOURAUD,
+	GR_SHADE_PHONG
 };
 
-enum jeRenderCmpFunc
+enum grRenderCmpFunc
 {
-	JE_CMP_NEVER = 0,
-	JE_CMP_LESS,
-	JE_CMP_EQUAL,
-	JE_CMP_LEQUAL,
-	JE_CMP_GREATER,
-	JE_CMP_GEQUAL,
-	JE_CMP_NEQUAL,
-	JE_CMP_ALWAYS
+	GR_CMP_NEVER = 0,
+	GR_CMP_LESS,
+	GR_CMP_EQUAL,
+	GR_CMP_LEQUAL,
+	GR_CMP_GREATER,
+	GR_CMP_GEQUAL,
+	GR_CMP_NEQUAL,
+	GR_CMP_ALWAYS
 };
 
-enum jeStencilOp
+enum grStencilOp
 {
-	JE_STENCILOP_KEEP = 0,
-	JE_STENCILOP_ZERO,
-	JE_STENCILOP_REPLACE,
-	JE_STENCILOP_INCRWRAP,
-	JE_STENCILOP_DECRWRAP,
-	JE_STENCILOP_INVERT,
-	JE_STENCILOP_INCR,
-	JE_STENCILOP_DECR
+	GR_STENCILOP_KEEP = 0,
+	GR_STENCILOP_ZERO,
+	GR_STENCILOP_REPLACE,
+	GR_STENCILOP_INCRWRAP,
+	GR_STENCILOP_DECRWRAP,
+	GR_STENCILOP_INVERT,
+	GR_STENCILOP_INCR,
+	GR_STENCILOP_DECR
 };
 
-enum jeBlendOp
+enum grBlendOp
 {
-	JE_BLEND_ZERO = 0,
-	JE_BLEND_ONE,
-	JE_BLEND_SOURCE,
-	JE_BLEND_INVERSESOURCE,
-	JE_BLEND_SOURCEALPHA,
-	JE_BLEND_INVERSESOURCEALPHA,
-	JE_BLEND_DEST,
-	JE_BLEND_INVERSEDEST,
-	JE_BLEND_DESTALPHA,
-	JE_BLEND_INVERSEDESTALPHA,
-	JE_BLEND_SOURCEALPHASAT
+	GR_BLEND_ZERO = 0,
+	GR_BLEND_ONE,
+	GR_BLEND_SOURCE,
+	GR_BLEND_INVERSESOURCE,
+	GR_BLEND_SOURCEALPHA,
+	GR_BLEND_INVERSESOURCEALPHA,
+	GR_BLEND_DEST,
+	GR_BLEND_INVERSEDEST,
+	GR_BLEND_DESTALPHA,
+	GR_BLEND_INVERSEDESTALPHA,
+	GR_BLEND_SOURCEALPHASAT
 };
 
-typedef struct jeDriverStats
+typedef struct grDriverStats
 {
 	int32								NumPolysRendered;
 	int32								NumVertexBuffersRendered;
 	int32								NumDecalsRendered;
-} jeDriverStats;
+} grDriverStats;
 
 #ifdef __cplusplus
 class CDRV_Driver
@@ -696,43 +696,43 @@ protected:
 	virtual ~CDRV_Driver()						{}
 
 public:
-	virtual jeBoolean					GetName(char *Name) = 0;
-	virtual jeBoolean					GetDriverStats(jeDriverStats *Stats) = 0;
+	virtual grBoolean					GetName(char *Name) = 0;
+	virtual grBoolean					GetDriverStats(grDriverStats *Stats) = 0;
 
-	virtual jeBoolean					EnumSubDrivers(DRV_ENUM_DRV_CB *Cb, void *Context) = 0;
-	virtual jeBoolean					EnumModes(int32 Driver, char *DriverName, DRV_ENUM_MODES_CB *Cb, void *Context) = 0;
+	virtual grBoolean					EnumSubDrivers(DRV_ENUM_DRV_CB *Cb, void *Context) = 0;
+	virtual grBoolean					EnumModes(int32 Driver, char *DriverName, DRV_ENUM_MODES_CB *Cb, void *Context) = 0;
 
-	virtual jeBoolean					GetDeviceCaps(jeDeviceCaps *Caps) = 0;
+	virtual grBoolean					GetDeviceCaps(grDeviceCaps *Caps) = 0;
 
-	virtual jeBoolean					Initialize(DRV_DriverHook *Hook) = 0;
-	virtual jeBoolean					Shutdown() = 0;
+	virtual grBoolean					Initialize(DRV_DriverHook *Hook) = 0;
+	virtual grBoolean					Shutdown() = 0;
 	
-	virtual jeTexture					*THandle_Create(int32 Width, int32 Height, int32 NumMipLevels, const jeRDriver_PixelFormat *Format) = 0;
-	virtual jeTexture					*THandle_CreateFromFile(jeVFile *File) = 0;
+	virtual grTexture					*THandle_Create(int32 Width, int32 Height, int32 NumMipLevels, const grRDriver_PixelFormat *Format) = 0;
+	virtual grTexture					*THandle_CreateFromFile(grVFile *File) = 0;
 
-	virtual jeBoolean					SetRenderState(uint32 state, uint32 value) = 0;
+	virtual grBoolean					SetRenderState(uint32 state, uint32 value) = 0;
 
-	virtual jeBoolean					BeginScene(uint32 ClearFlags) = 0;
-	virtual jeBoolean					EndScene() = 0;
+	virtual grBoolean					BeginScene(uint32 ClearFlags) = 0;
+	virtual grBoolean					EndScene() = 0;
 	
-	virtual jeBoolean					SetOrtho(int32 Left, int32 Right, int32 Width, int32 Height) = 0;
-	virtual jeBoolean					SetPerspective(float fov, float aspect, float znear, float zfar) = 0;
+	virtual grBoolean					SetOrtho(int32 Left, int32 Right, int32 Width, int32 Height) = 0;
+	virtual grBoolean					SetPerspective(float fov, float aspect, float znear, float zfar) = 0;
 
-	virtual jeBoolean					EnableLight(int32 id, jeLight *Light) = 0;
+	virtual grBoolean					EnableLight(int32 id, grLight *Light) = 0;
 
-//	virtual jeBoolean					RenderVertexBuffer(jeVertexBuffer *VB, int16 StartVertex, jeVec3d *Position, jeVec3d *Rotation, uint32 Flags) = 0;
-	virtual jeBoolean					DrawBitmap(jeTexture *THandle, RECT *SRect, int32 x, int32 y) = 0;
+//	virtual grBoolean					RenderVertexBuffer(grVertexBuffer *VB, int16 StartVertex, grVec3d *Position, grVec3d *Rotation, uint32 Flags) = 0;
+	virtual grBoolean					DrawBitmap(grTexture *THandle, RECT *SRect, int32 x, int32 y) = 0;
 
-	virtual jeBoolean					Screenshot(const char *filename) = 0;
+	virtual grBoolean					Screenshot(const char *filename) = 0;
 
-	virtual jeBoolean					SetGamma(float Gamma) = 0;
-	virtual jeBoolean					GetGamma(float *Gamma) = 0;
+	virtual grBoolean					SetGamma(float Gamma) = 0;
+	virtual grBoolean					GetGamma(float *Gamma) = 0;
 
-	virtual jeBoolean					DrawText(char *Text, int x, int y, uint32 Color) = 0;
+	virtual grBoolean					DrawText(char *Text, int x, int y, uint32 Color) = 0;
 };
 #endif
 
-typedef jeBoolean DRV_Hook(DRV_Driver **Hook);
+typedef grBoolean DRV_Hook(DRV_Driver **Hook);
 
 //
 //	Error defines set by the driver.  These will be in the LastError member of AFX_DRIVER

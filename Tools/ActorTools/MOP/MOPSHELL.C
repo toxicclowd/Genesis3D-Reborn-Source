@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "jet.h"
+#include "Genesis3D.h"
 #include "mkutil.h"
 #include "motion.h"
 #include "ram.h"
@@ -58,12 +58,12 @@ const static MopShell_Options DefaultOptions =
 	
 	
 
-jeMotion *MopShell_Optimize(jeMotion *M, jeFloat Tolerance,char *LogName,MkUtil_Printf Printf)
+grMotion *MopShell_Optimize(grMotion *M, grFloat Tolerance,char *LogName,MkUtil_Printf Printf)
 {
 	int i; 
 	int Count;
 	unsigned int LastTime;
-	jeMotion *MO;
+	grMotion *MO;
 	char *EmptyName="";
 	const char *Name;
 	LogType *Log=NULL;
@@ -78,16 +78,16 @@ jeMotion *MopShell_Optimize(jeMotion *M, jeFloat Tolerance,char *LogName,MkUtil_
 			else Printf("warning: unable to write log file '%s'\n",LogName);
 		}
 	
-	MO = jeMotion_Create(jeMotion_HasNames(M));
+	MO = grMotion_Create(grMotion_HasNames(M));
 	if (MO == NULL)
 		{
 			return NULL;
 		}
 
-	Name = jeMotion_GetName(M);
+	Name = grMotion_GetName(M);
 	if (Name != NULL) 
 		{
-			jeMotion_SetName(MO,Name);
+			grMotion_SetName(MO,Name);
 			if (Log) Log_Output(Log,"Motion '%s'",Name);
 		}
 	else
@@ -96,13 +96,13 @@ jeMotion *MopShell_Optimize(jeMotion *M, jeFloat Tolerance,char *LogName,MkUtil_
 			if (Log) Log_Output(Log,"Motion");
 		}
 
-	Count = jeMotion_GetPathCount(M);
+	Count = grMotion_GetPathCount(M);
 	LastTime = timeGetTime();
 			
 	for (i=0; i<Count; i++)
 		{
-			jePath *P;
-			jePath *PO;
+			grPath *P;
+			grPath *PO;
 			int Index;
 			const char *name;
 			const char *emptyname="";
@@ -114,14 +114,14 @@ jeMotion *MopShell_Optimize(jeMotion *M, jeFloat Tolerance,char *LogName,MkUtil_
 				}
 		
 
-			P = jeMotion_GetPath(M,i);
+			P = grMotion_GetPath(M,i);
 			if (P == NULL)
 				{
-					jeMotion_Destroy(&MO);
+					grMotion_Destroy(&MO);
 					return NULL;
 				}
 
-			name = jeMotion_GetNameOfPath(M, i);
+			name = grMotion_GetNameOfPath(M, i);
 			if (name==NULL)
 				name = emptyname;
 
@@ -137,7 +137,7 @@ jeMotion *MopShell_Optimize(jeMotion *M, jeFloat Tolerance,char *LogName,MkUtil_
 				{
 					Printf("Interrupted\n");
 					if (PO != NULL)
-						jePath_Destroy(&PO);
+						grPath_Destroy(&PO);
 					return NULL;
 				}
 		
@@ -146,10 +146,10 @@ jeMotion *MopShell_Optimize(jeMotion *M, jeFloat Tolerance,char *LogName,MkUtil_
 					int TKeyCount,TKeyCountO;
 					int RKeyCount,RKeyCountO;
 					
-					TKeyCount  = jePath_GetKeyframeCount(P,JE_PATH_TRANSLATION_CHANNEL);
-					TKeyCountO = jePath_GetKeyframeCount(PO,JE_PATH_TRANSLATION_CHANNEL);
-					RKeyCount  = jePath_GetKeyframeCount(P,JE_PATH_ROTATION_CHANNEL);
-					RKeyCountO = jePath_GetKeyframeCount(PO,JE_PATH_ROTATION_CHANNEL);
+					TKeyCount  = grPath_GetKeyframeCount(P,GR_PATH_TRANSLATION_CHANNEL);
+					TKeyCountO = grPath_GetKeyframeCount(PO,GR_PATH_TRANSLATION_CHANNEL);
+					RKeyCount  = grPath_GetKeyframeCount(P,GR_PATH_ROTATION_CHANNEL);
+					RKeyCountO = grPath_GetKeyframeCount(PO,GR_PATH_ROTATION_CHANNEL);
 					if (Log) Log_Output(Log,"Path %4d: Translation: %4d keys to %4d keys (%4d keys saved)",
 							i,
 							TKeyCount, TKeyCountO, (TKeyCount-TKeyCountO) );
@@ -157,56 +157,56 @@ jeMotion *MopShell_Optimize(jeMotion *M, jeFloat Tolerance,char *LogName,MkUtil_
 							i,
 							RKeyCount, RKeyCountO, (RKeyCount-RKeyCountO) );
 					if (Log) Log_Output(Log,"-");
-					if (jeMotion_AddPath(MO,PO,jeMotion_GetNameOfPath(M,i),&Index)==JE_FALSE)
+					if (grMotion_AddPath(MO,PO,grMotion_GetNameOfPath(M,i),&Index)==GR_FALSE)
 						{
-							jeMotion_Destroy(&MO);
+							grMotion_Destroy(&MO);
 							return NULL;
 						}
-					jePath_Destroy(&PO);
+					grPath_Destroy(&PO);
 
 				}
 			else
 				{
 					if (Log) Log_Output(Log,"Unable to optimize Path %4d: Name='%s'",i,name);
-					PO = jePath_CreateCopy(P);
+					PO = grPath_CreateCopy(P);
 					if (PO==NULL)
 						{
-							jeMotion_Destroy(&MO);
+							grMotion_Destroy(&MO);
 							return NULL;
 						}
-					if (jeMotion_AddPath(MO,PO,jeMotion_GetNameOfPath(M,i),&Index)==JE_FALSE)
+					if (grMotion_AddPath(MO,PO,grMotion_GetNameOfPath(M,i),&Index)==GR_FALSE)
 						{
-							jeMotion_Destroy(&MO);
+							grMotion_Destroy(&MO);
 							return NULL;
 						}
-					jePath_Destroy(&PO);
+					grPath_Destroy(&PO);
 				}
 		}
 	{
-		jeFloat T1,T2,T;
+		grFloat T1,T2,T;
 		const char *EventString;
-		if (jeMotion_GetTimeExtents(M,&T1,&T2)==JE_FALSE)
+		if (grMotion_GetTimeExtents(M,&T1,&T2)==GR_FALSE)
 			{
-				jeMotion_Destroy(&MO);
+				grMotion_Destroy(&MO);
 				return NULL;
 			}
 		T1-=1.0f;
 		T2+=1.0f;		// just make sure to avoid fp weirdnesses.
 
-		jeMotion_SetupEventIterator(M,T1,T2);
-		while (jeMotion_GetNextEvent(M,&T,&EventString)==JE_TRUE)
+		grMotion_SetupEventIterator(M,T1,T2);
+		while (grMotion_GetNextEvent(M,&T,&EventString)==GR_TRUE)
 			{
 				if (Log) Log_Output(Log,"Event...%f '%s'",T,EventString);
-				if (jeMotion_InsertEvent(MO,T,EventString)==JE_FALSE)
+				if (grMotion_InsertEvent(MO,T,EventString)==GR_FALSE)
 					{
-						jeMotion_Destroy(&MO);
+						grMotion_Destroy(&MO);
 						return NULL;
 					}	
 			}
 
 	}
 	if (Log) Log_Close(&Log);					
-	jeMotion_Destroy(&M);
+	grMotion_Destroy(&M);
 	return MO;
 }
 
@@ -214,11 +214,11 @@ jeMotion *MopShell_Optimize(jeMotion *M, jeFloat Tolerance,char *LogName,MkUtil_
 ReturnCode MopShell_DoMake(MopShell_Options* options,MkUtil_Printf Printf)
 {
 	ReturnCode retValue = RETURN_SUCCESS;
-	jeVFile *sf;
-	jeVFile *df;
-	jeBoolean ok;
-	jeMotion* M = NULL;
-	jeFloat Tolerance;
+	grVFile *sf;
+	grVFile *df;
+	grBoolean ok;
+	grMotion* M = NULL;
+	grFloat Tolerance;
 
 	// Motion files must be specified
 	if(options->SourceMotionFile[0] == 0)
@@ -244,15 +244,15 @@ ReturnCode MopShell_DoMake(MopShell_Options* options,MkUtil_Printf Printf)
 			Printf("Optimization level default = 4\n");
 		}
 
-	sf = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->SourceMotionFile,NULL,JE_VFILE_OPEN_READONLY);
+	sf = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->SourceMotionFile,NULL,GR_VFILE_OPEN_READONLY);
 	if (sf==NULL)
 		{
 			Printf("ERROR: Could not open source motion file '%s'.\n", options->SourceMotionFile);
 			MkUtil_AdjustReturnCode(&retValue, RETURN_ERROR);
 			return retValue;
 		}
-	M = jeMotion_CreateFromFile(sf);
-	jeVFile_Close(sf);
+	M = grMotion_CreateFromFile(sf);
+	grVFile_Close(sf);
 	if (M==NULL)
 		{
 			Printf("ERROR: Failed to create motion from source motion file '%s'.\n", options->SourceMotionFile);
@@ -308,7 +308,7 @@ ReturnCode MopShell_DoMake(MopShell_Options* options,MkUtil_Printf Printf)
 			return retValue;
 		}
 
-	df = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_DOS,options->DestinationMotionFile,NULL,JE_VFILE_OPEN_CREATE);
+	df = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_DOS,options->DestinationMotionFile,NULL,GR_VFILE_OPEN_CREATE);
 	if (df==NULL)
 		{
 			Printf("ERROR: Could not open destination motion file '%s'.\n", options->DestinationMotionFile);
@@ -317,13 +317,13 @@ ReturnCode MopShell_DoMake(MopShell_Options* options,MkUtil_Printf Printf)
 			return retValue;
 		} 
 	
-	ok = jeMotion_WriteToFile(M,df);
-	if (ok == JE_TRUE)
+	ok = grMotion_WriteToFile(M,df);
+	if (ok == GR_TRUE)
 		{
-			ok = jeVFile_Close(df);
+			ok = grVFile_Close(df);
 		}
-	jeMotion_Destroy(&M);
-	if (ok == JE_FALSE)
+	grMotion_Destroy(&M);
+	if (ok == GR_FALSE)
 		{
 			Printf("ERROR: Failed to write destination motion file '%s'.\n", options->DestinationMotionFile);
 			unlink(options->DestinationMotionFile);
@@ -361,7 +361,7 @@ MopShell_Options* MopShell_OptionsCreate()
 {
 	MopShell_Options* pOptions;
 
-	pOptions = JE_RAM_ALLOCATE_STRUCT(MopShell_Options);
+	pOptions = GR_RAM_ALLOCATE_STRUCT(MopShell_Options);
 	if(pOptions != NULL)
 		{
 			*pOptions = DefaultOptions;
@@ -379,7 +379,7 @@ void MopShell_OptionsDestroy(MopShell_Options** ppOptions)
 
 	p = *ppOptions;
 
-	jeRam_Free(*ppOptions);
+	grRam_Free(*ppOptions);
 
 	*ppOptions = NULL;
 }

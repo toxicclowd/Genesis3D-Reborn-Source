@@ -23,7 +23,7 @@
 #include "errorlog.h"
 #include "ram.h"
 #include "MaterialList2.h"
-#include "jeList.h"
+#include "grList.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@
 typedef struct
 {
 	char		*Name;
-	jeBitmap	*Preview;
+	grBitmap	*Preview;
 
 } Material;
 
@@ -134,18 +134,18 @@ static MaterialDirectory * MaterialList_CreateDirectory(
 	assert( strlen( DirectoryName ) > 0 );
 
 	// create new material directory struct
-	NewMaterialDirectory = (MaterialDirectory *)jeRam_AllocateClear( sizeof( *NewMaterialDirectory ) );
+	NewMaterialDirectory = (MaterialDirectory *)grRam_AllocateClear( sizeof( *NewMaterialDirectory ) );
 	if ( NewMaterialDirectory == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Could not create material directory struct" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Could not create material directory struct" );
 		goto ERROR_MaterialList_CreateDirectory;
 	}
 
 	// save directory name
-	NewMaterialDirectory->Name = (char *)jeRam_Allocate( strlen( DirectoryName ) + 1 );
+	NewMaterialDirectory->Name = (char *)grRam_Allocate( strlen( DirectoryName ) + 1 );
 	if ( NewMaterialDirectory->Name == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Could not create material directory name" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Could not create material directory name" );
 		goto ERROR_MaterialList_CreateDirectory;
 	}
 	strcpy( NewMaterialDirectory->Name, DirectoryName );
@@ -163,10 +163,10 @@ static MaterialDirectory * MaterialList_CreateDirectory(
 
 		// allocate complete path string
 		assert( strlen( ParentPath ) > 0 );
-		NewMaterialDirectory->PathName = (char *)jeRam_Allocate( strlen( ParentPath ) + strlen( DirectoryName ) + 2 );
+		NewMaterialDirectory->PathName = (char *)grRam_Allocate( strlen( ParentPath ) + strlen( DirectoryName ) + 2 );
 		if ( NewMaterialDirectory->PathName == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Could not create material directory name" );
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Could not create material directory name" );
 			goto ERROR_MaterialList_CreateDirectory;
 		}
 
@@ -179,10 +179,10 @@ static MaterialDirectory * MaterialList_CreateDirectory(
 	{
 
 		// allocate complete path string
-		NewMaterialDirectory->PathName = (char *)jeRam_Allocate( strlen( DirectoryName ) + 1 );
+		NewMaterialDirectory->PathName = (char *)grRam_Allocate( strlen( DirectoryName ) + 1 );
 		if ( NewMaterialDirectory->PathName == NULL )
 		{
-			jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Could not create material directory name" );
+			grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Could not create material directory name" );
 			goto ERROR_MaterialList_CreateDirectory;
 		}
 
@@ -194,7 +194,7 @@ static MaterialDirectory * MaterialList_CreateDirectory(
 	NewMaterialDirectory->ChildDirectories = List_Create();
 	if ( NewMaterialDirectory->ChildDirectories == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Could not create child directory list" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Could not create child directory list" );
 		goto ERROR_MaterialList_CreateDirectory;
 	}
 
@@ -202,7 +202,7 @@ static MaterialDirectory * MaterialList_CreateDirectory(
 	NewMaterialDirectory->Materials = List_Create();
 	if ( NewMaterialDirectory->Materials == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Could not create materials list" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Could not create materials list" );
 		goto ERROR_MaterialList_CreateDirectory;
 	}
 
@@ -218,13 +218,13 @@ static MaterialDirectory * MaterialList_CreateDirectory(
 	// destroy complete path name
 	if ( NewMaterialDirectory->PathName != NULL )
 	{
-		jeRam_Free( NewMaterialDirectory->PathName );
+		grRam_Free( NewMaterialDirectory->PathName );
 	}
 
 	// destroy directory name
 	if ( NewMaterialDirectory->Name != NULL )
 	{
-		jeRam_Free( NewMaterialDirectory->Name );
+		grRam_Free( NewMaterialDirectory->Name );
 	}
 
 	// destroy child directory list
@@ -240,7 +240,7 @@ static MaterialDirectory * MaterialList_CreateDirectory(
 	}
 
 	// destroy the material directoty structure
-	jeRam_Free( NewMaterialDirectory );
+	grRam_Free( NewMaterialDirectory );
 
 	// return failure
 	return NULL;
@@ -254,45 +254,45 @@ static MaterialDirectory * MaterialList_CreateDirectory(
 //	MaterialList_ProcessDirectory()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-static jeBoolean MaterialList_ProcessDirectory(
+static grBoolean MaterialList_ProcessDirectory(
 	MaterialDirectory	*CurDirectory,	// current directory whose materials and child directories will be processed
-	jeVFile_Finder		*CurFinder )	// finder info for the current directory
+	grVFile_Finder		*CurFinder )	// finder info for the current directory
 {
 
 	// locals
-	jeVFile_Properties	Properties;
+	grVFile_Properties	Properties;
 
 	// ensure valid data
 	assert( CurDirectory != NULL );
 	assert( CurFinder != NULL );
 
 	// start processing files
-	while ( jeVFile_FinderGetNextFile( CurFinder ) == JE_TRUE )
+	while ( grVFile_FinderGetNextFile( CurFinder ) == GR_TRUE )
 	{
 
 		// get properties of current file
-		if( jeVFile_FinderGetProperties( CurFinder, &Properties ) == JE_FALSE )
+		if( grVFile_FinderGetProperties( CurFinder, &Properties ) == GR_FALSE )
 		{
-			jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to get file properties" );
-			return JE_FALSE;
+			grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to get file properties" );
+			return GR_FALSE;
 		}
 
 		// if its a directory then process it...
-		if ( Properties.AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY )
+		if ( Properties.AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY )
 		{
 
 			// locals
 			MaterialDirectory	*NewMaterialDirectory;
-			jeVFile				*NewVFile;
-			jeVFile_Finder		*NewFinder;
-			jeBoolean			Result;
+			grVFile				*NewVFile;
+			grVFile_Finder		*NewFinder;
+			grBoolean			Result;
 			char				*PathName;
 
 			// create new material directory struct
 			NewMaterialDirectory = MaterialList_CreateDirectory( Properties.Name, CurDirectory );
 			if ( NewMaterialDirectory == NULL )
 			{
-				jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Could not create material directory struct" );
+				grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Could not create material directory struct" );
 				goto ERROR_MaterialList_ProcessDirectory;
 			}
 
@@ -300,24 +300,24 @@ static jeBoolean MaterialList_ProcessDirectory(
 			PathName = MaterialList_GetDirectoryPathName( NewMaterialDirectory );
 
 			// open a file system for the new directory to be processed
-			NewVFile = jeVFile_OpenNewSystem(
+			NewVFile = grVFile_OpenNewSystem(
 				NULL,
-				JE_VFILE_TYPE_DOS,
+				GR_VFILE_TYPE_DOS,
 				PathName,
 				NULL,
-				JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY );
+				GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY );
 			if( NewVFile == NULL )
 			{
-				jeErrorLog_Add( JE_ERR_FILEIO_OPEN, "Unable to open materials directory" );
+				grErrorLog_Add( GR_ERR_FILEIO_OPEN, "Unable to open materials directory" );
 				goto ERROR_MaterialList_ProcessDirectory;
 			}
 
 			// create directory finder for the new directory to be processed
-			NewFinder =  jeVFile_CreateFinder( NewVFile, "*.*" );
+			NewFinder =  grVFile_CreateFinder( NewVFile, "*.*" );
 			if( NewFinder == NULL )
 			{
-				jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to search materials directory" );
-				jeVFile_Close( NewVFile );
+				grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to search materials directory" );
+				grVFile_Close( NewVFile );
 				goto ERROR_MaterialList_ProcessDirectory;
 			}
 
@@ -325,11 +325,11 @@ static jeBoolean MaterialList_ProcessDirectory(
 			Result = MaterialList_ProcessDirectory( NewMaterialDirectory, NewFinder );
 
 			// destroy the newly created finder and file system
-			jeVFile_DestroyFinder( NewFinder );
-			jeVFile_Close( NewVFile );
+			grVFile_DestroyFinder( NewFinder );
+			grVFile_Close( NewVFile );
 
 			// fail if the directory was not succesfully processed
-			if ( Result == JE_FALSE )
+			if ( Result == GR_FALSE )
 			{
 				goto ERROR_MaterialList_ProcessDirectory;
 			}
@@ -345,18 +345,18 @@ static jeBoolean MaterialList_ProcessDirectory(
 			Material	*NewMaterial;
 
 			// create new material
-			NewMaterial = (Material *)jeRam_AllocateClear( sizeof( *NewMaterial ) );
+			NewMaterial = (Material *)grRam_AllocateClear( sizeof( *NewMaterial ) );
 			if ( NewMaterial == NULL )
 			{
-				jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Could not create material struct" );
+				grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Could not create material struct" );
 				goto ERROR_MaterialList_ProcessDirectory;
 			}
 
 			// setup material name
-			NewMaterial->Name = (char *)jeRam_Allocate( strlen( Properties.Name ) + 1 );
+			NewMaterial->Name = (char *)grRam_Allocate( strlen( Properties.Name ) + 1 );
 			if ( NewMaterial->Name == NULL )
 			{
-				jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Could not create material name" );
+				grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Could not create material name" );
 				goto ERROR_MaterialList_ProcessDirectory;
 			}
 			strcpy( NewMaterial->Name, Properties.Name );
@@ -367,14 +367,14 @@ static jeBoolean MaterialList_ProcessDirectory(
 	}
 
 	// all done
-	return JE_TRUE;
+	return GR_TRUE;
 
 	// handle errors here
 	//undone, doesnt cleanup
 	ERROR_MaterialList_ProcessDirectory:
 
 	// return failure
-	return JE_FALSE;
+	return GR_FALSE;
 
 } // MaterialList_ProcessDirectory()
 
@@ -390,31 +390,31 @@ MaterialDirectory * MaterialList2_Create(
 {
 
 	// locals
-	jeVFile				*MaterialsRootDir;
-	jeVFile_Finder		*Finder;
+	grVFile				*MaterialsRootDir;
+	grVFile_Finder		*Finder;
 	MaterialDirectory	*RootMaterialDirectory;
 
 	// ensure valid data
 	assert( MaterialsPath != NULL );
 
 	// open root materials directory
-	MaterialsRootDir = jeVFile_OpenNewSystem(
+	MaterialsRootDir = grVFile_OpenNewSystem(
 		NULL,
-		JE_VFILE_TYPE_DOS,
+		GR_VFILE_TYPE_DOS,
 		MaterialsPath,
 		NULL,
-		JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY );
+		GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY );
 	if( MaterialsRootDir == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_OPEN, "Unable to open materials directory" );
+		grErrorLog_Add( GR_ERR_FILEIO_OPEN, "Unable to open materials directory" );
 		return NULL;
 	}
 
 	// create our directory finder
-	Finder =  jeVFile_CreateFinder( MaterialsRootDir, "*.*" );
+	Finder =  grVFile_CreateFinder( MaterialsRootDir, "*.*" );
 	if( Finder == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_FILEIO_READ, "Unable to search materials directory" );
+		grErrorLog_Add( GR_ERR_FILEIO_READ, "Unable to search materials directory" );
 		return NULL;
 	}
 
@@ -422,7 +422,7 @@ MaterialDirectory * MaterialList2_Create(
 	RootMaterialDirectory = MaterialList_CreateDirectory( MaterialsPath, NULL );
 	if ( RootMaterialDirectory == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Could not create root material directory struct" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Could not create root material directory struct" );
 		return NULL;
 	}
 
@@ -430,8 +430,8 @@ MaterialDirectory * MaterialList2_Create(
 	MaterialList_ProcessDirectory( RootMaterialDirectory, Finder );
 
 	// close the root materials directory
-	jeVFile_DestroyFinder( Finder );
-	jeVFile_Close( MaterialsRootDir );
+	grVFile_DestroyFinder( Finder );
+	grVFile_Close( MaterialsRootDir );
 
 	// all done
 	return RootMaterialDirectory;

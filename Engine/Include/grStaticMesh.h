@@ -34,18 +34,17 @@
 extern "C" {
 #endif
 
-typedef struct jeCamera grCamera;
-typedef struct jeEngine grEngine;
-typedef struct jeFrustum							grFrustum;
-typedef struct jeExtBox grExtBox;
-typedef struct jePlane								grPlane;
+typedef struct grCamera grCamera;
+typedef struct grEngine grEngine;
+typedef struct grFrustum							grFrustum;
+typedef struct grExtBox grExtBox;
+typedef struct grPlane								grPlane;
 
 /*!
 	@typedef grStaticMesh
 	@brief A static mesh
 */
-typedef struct jeStaticMesh grStaticMesh;
-typedef struct jeStaticMesh jeStaticMesh;
+typedef struct grStaticMesh grStaticMesh;
 
 /*!
 	@fn grStaticMesh *grStaticMesh_Create(const char *Name)
@@ -124,16 +123,5 @@ GRAPI grBoolean GRCC grStaticMesh_Collision(grStaticMesh *Mesh, grExtBox *BBox, 
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeStaticMesh_Collision                   grStaticMesh_Collision
-#define jeStaticMesh_Create                      grStaticMesh_Create
-#define jeStaticMesh_CreateRef                   grStaticMesh_CreateRef
-#define jeStaticMesh_Destroy                     grStaticMesh_Destroy
-#define jeStaticMesh_GetExtBox                   grStaticMesh_GetExtBox
-#define jeStaticMesh_Render                      grStaticMesh_Render
-#define jeStaticMesh_SetExtBox                   grStaticMesh_SetExtBox
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

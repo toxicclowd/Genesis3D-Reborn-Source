@@ -167,7 +167,7 @@ else we just send sign raw
 
 static int signs_p0,signs_pt;
 
-void coderEncodesign(arithInfo *ari,jeBoolean sign,jeBoolean W,jeBoolean N)
+void coderEncodesign(arithInfo *ari,grBoolean sign,grBoolean W,grBoolean N)
 {
 	if ( N == W ) 
 	{
@@ -179,11 +179,11 @@ void coderEncodesign(arithInfo *ari,jeBoolean sign,jeBoolean W,jeBoolean N)
 		arithEncBitRaw(ari,sign);
 	}
 }
-jeBoolean coderDecodesign(arithInfo *ari,jeBoolean W,jeBoolean N)
+grBoolean coderDecodesign(arithInfo *ari,grBoolean W,grBoolean N)
 {
 	if ( N == W ) 
 	{
-		jeBoolean sign;
+		grBoolean sign;
 		bitDec(sign,ari,signs_p0,signs_pt);
 		return sign ? N : !N;
 	}
@@ -361,7 +361,7 @@ int *ptr,*pline;
 }
 
 
-void coderCodeDPCM1d(coder *c,int *plane,int width,jeBoolean Decode)
+void coderCodeDPCM1d(coder *c,int *plane,int width,grBoolean Decode)
 {
 int x;
 int pred,grad,val,sign;

@@ -134,7 +134,7 @@ END_MESSAGE_MAP()
 typedef struct tagPropertyListInfo
 {
 	CListBox	*	pLB ;
-	jeSymbol	*	pSelect ;
+	grSymbol	*	pSelect ;
 	CJweDoc		*	pDoc  ;
 } PropertyListInfo ;
 
@@ -154,7 +154,7 @@ BOOL CEntityCP::OnInitDialog()
 
 	m_Properties.ResetContent() ;
 
-	ShowFieldsBySymbolType( JE_SYMBOL_TYPE_INT ) ;
+	ShowFieldsBySymbolType( GR_SYMBOL_TYPE_INT ) ;
 	// Restrict edit control to alpha--from MSDN::CTRLTEST
 	m_edit1.SubclassEdit( ENTY_ED_NAME, this, PES_LETTERS|PES_SPACE ) ;
 
@@ -187,7 +187,7 @@ void CEntityCP::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 	char			szName[ENTITY_MAXNAMELENGTH] ;
 	char			szValue[ENTITY_MAXSTRINGLENGTH] ;
 	HBRUSH			hOldBrush ;
-	jeSymbol	*	pField ;
+	grSymbol	*	pField ;
 	FieldInfo	*	pfi ;
 
 
@@ -225,26 +225,26 @@ void CEntityCP::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 		OldBk = ::SetBkColor( lpDrawItemStruct->hDC, GetSysColor( COLOR_WINDOW ) ) ;
 	}
 	
-	strcpy( szName, jeSymbol_GetName( pField ) ) ;
+	strcpy( szName, grSymbol_GetName( pField ) ) ;
 	TrimStringByPixelCount( lpDrawItemStruct->hDC, szName, nNameWidth ) ;
 
-	if( pfi->bInit == JE_TRUE )
+	if( pfi->bInit == GR_TRUE )
 	{
 		switch( pfi->Type )
 		{
-			case JE_SYMBOL_TYPE_VEC3D :
+			case GR_SYMBOL_TYPE_VEC3D :
 				sprintf( szValue, "%4.2f %4.2f %4.2f", pfi->Value.Vec3d.X, pfi->Value.Vec3d.Y, pfi->Value.Vec3d.Z ) ;
 				break ;
-			case JE_SYMBOL_TYPE_INT :
+			case GR_SYMBOL_TYPE_INT :
 				sprintf( szValue, "%d", pfi->Value.Integer ) ;
 				break ;
-			case JE_SYMBOL_TYPE_FLOAT :
+			case GR_SYMBOL_TYPE_FLOAT :
 				sprintf( szValue, "%4.2f", pfi->Value.Float ) ;
 				break ;
-			case JE_SYMBOL_TYPE_COLOR :
+			case GR_SYMBOL_TYPE_COLOR :
 				sprintf( szValue, "R:%d G:%d B:%d", (int)pfi->Value.Color.r, (int)pfi->Value.Color.g, (int)pfi->Value.Color.b ) ;
 				break ;
-			case JE_SYMBOL_TYPE_STRING :
+			case GR_SYMBOL_TYPE_STRING :
 				strcpy( szValue, pfi->Value.pChar ) ;
 				break ;
 		}
@@ -346,7 +346,7 @@ LRESULT CEntityCP::MyPostMessage (WPARAM wParam, LPARAM lParam)
 }
 #endif
 
-void CEntityCP::SetCurrentDocument(jeSymbol_Table *pEntities)
+void CEntityCP::SetCurrentDocument(grSymbol_Table *pEntities)
 {
 	if( m_pEntities != pEntities )
 	{
@@ -360,7 +360,7 @@ void CEntityCP::Update(CJweDoc *pDoc)
 	const char		*	pszType ;
 	const char		*	pszName ;
 	int32				nNumber ;
-	jeSymbol_Table	*	pEntities ;
+	grSymbol_Table	*	pEntities ;
 	PropertyListInfo	pli ;
 
 	ASSERT( pDoc->IsKindOf( RUNTIME_CLASS(CJweDoc)) ) ;
@@ -406,48 +406,48 @@ void CEntityCP::Update(CJweDoc *pDoc)
 	}
 }//Update
 
-jeBoolean CEntityCP::EnumFieldsCB(jeSymbol *pSymbol, void *lParam)
+grBoolean CEntityCP::EnumFieldsCB(grSymbol *pSymbol, void *lParam)
 {
 	int					nIndex ;
 	PropertyListInfo *	ppli = (PropertyListInfo*)lParam ;	
 	FieldInfo		 *	pfi ;
 	char			 *	pChar ;
 
-	pfi = JE_RAM_ALLOCATE_STRUCT( FieldInfo ) ;	
+	pfi = GR_RAM_ALLOCATE_STRUCT( FieldInfo ) ;	
 	if( pfi == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 	pfi->pField = pSymbol ;
-	pfi->Type = jeSymbol_GetType( pSymbol ) ;
+	pfi->Type = grSymbol_GetType( pSymbol ) ;
 	switch( pfi->Type )
 	{
-		case JE_SYMBOL_TYPE_VEC3D :	
+		case GR_SYMBOL_TYPE_VEC3D :	
 			pfi->bInit = ppli->pDoc->GetEntityField( pSymbol, &pfi->Value.Vec3d, sizeof pfi->Value.Vec3d ) ;	
 			break ;
-		case JE_SYMBOL_TYPE_INT :	
+		case GR_SYMBOL_TYPE_INT :	
 			pfi->bInit = ppli->pDoc->GetEntityField( pSymbol, &pfi->Value.Integer, sizeof pfi->Value.Integer ) ;	
 			break ;
-		case JE_SYMBOL_TYPE_FLOAT :	
+		case GR_SYMBOL_TYPE_FLOAT :	
 			pfi->bInit = ppli->pDoc->GetEntityField( pSymbol, &pfi->Value.Float, sizeof pfi->Value.Float ) ;	
 			break ;
-		case JE_SYMBOL_TYPE_COLOR :	
+		case GR_SYMBOL_TYPE_COLOR :	
 			pfi->bInit = ppli->pDoc->GetEntityField( pSymbol, &pfi->Value.Color, sizeof pfi->Value.Color ) ;		
 			break ;
-		case JE_SYMBOL_TYPE_STRING :
+		case GR_SYMBOL_TYPE_STRING :
 			pfi->bInit = ppli->pDoc->GetEntityField( pSymbol, &pChar, sizeof pChar ) ;
 			pfi->Value.pChar = Util_StrDup( pChar ) ;
 			if( pfi->Value.pChar == NULL ) 
 			{
-				jeRam_Free( pfi ) ;
-				return JE_FALSE ;
+				grRam_Free( pfi ) ;
+				return GR_FALSE ;
 			}
 			break ;
 	}
-	nIndex = ppli->pLB->AddString( jeSymbol_GetName( pSymbol ) ) ;
+	nIndex = ppli->pLB->AddString( grSymbol_GetName( pSymbol ) ) ;
 	if( nIndex != CB_ERR && nIndex != CB_ERRSPACE )
 	{
 		ppli->pLB->SetItemData( nIndex, (DWORD)pfi ) ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// EnumFieldsCB
 
 void CEntityCP::OnDeleteItem(int nIDCtl, LPDELETEITEMSTRUCT lpDeleteItemStruct) 
@@ -460,12 +460,12 @@ void CEntityCP::OnDeleteItem(int nIDCtl, LPDELETEITEMSTRUCT lpDeleteItemStruct)
 		ASSERT( pfi != NULL ) ;
 		switch( pfi->Type )
 		{
-			case JE_SYMBOL_TYPE_STRING :
+			case GR_SYMBOL_TYPE_STRING :
 				ASSERT( pfi->Value.pChar != NULL );
-				jeRam_Free( pfi->Value.pChar ) ;
+				grRam_Free( pfi->Value.pChar ) ;
 				break ;
 		}
-		jeRam_Free( pfi ) ;
+		grRam_Free( pfi ) ;
 		lpDeleteItemStruct->itemData = NULL ;
 	}
 	CDialog::OnDeleteItem(nIDCtl, lpDeleteItemStruct);
@@ -485,7 +485,7 @@ void CEntityCP::OnSelchangeLbProperties()
 	}
 }// OnSelchangeLbProperties
 
-void CEntityCP::ShowFieldsBySymbolType(jeSymbol_Type Type )
+void CEntityCP::ShowFieldsBySymbolType(grSymbol_Type Type )
 {
 	CString	cstr ;
 	int		nIndex ;
@@ -506,36 +506,36 @@ void CEntityCP::ShowFieldsBySymbolType(jeSymbol_Type Type )
 
 	switch( Type )
 	{
-	case JE_SYMBOL_TYPE_VEC3D :
+	case GR_SYMBOL_TYPE_VEC3D :
 		GetDlgItem( ENTY_ED_DEFV3 )->ShowWindow( true ) ;
 		GetDlgItem( ENTY_ED_DEFV2 )->ShowWindow( true ) ;
 		// Fall Thru
 
-	case JE_SYMBOL_TYPE_INT :
-	case JE_SYMBOL_TYPE_FLOAT :
+	case GR_SYMBOL_TYPE_INT :
+	case GR_SYMBOL_TYPE_FLOAT :
 		GetDlgItem( ENTY_ED_DEFV1 )->ShowWindow( true ) ;
 		GetDlgItem( ENTY_ED_DEFV1 )->SetFocus() ;
 		break ;
 
-	case JE_SYMBOL_TYPE_ENUM :
-	case JE_SYMBOL_TYPE_STRING :
+	case GR_SYMBOL_TYPE_ENUM :
+	case GR_SYMBOL_TYPE_STRING :
 		GetDlgItem( ENTY_ED_DEFSTRING )->ShowWindow( true ) ;
 		GetDlgItem( ENTY_ED_DEFSTRING )->SetFocus() ;
 		break ;
 
-	case JE_SYMBOL_TYPE_COLOR :
+	case GR_SYMBOL_TYPE_COLOR :
 		GetDlgItem( ENTY_BN_COLOR1 )->ShowWindow( true ) ;
 		GetDlgItem( ENTY_BN_COLOR1 )->SetFocus() ;
 		break ;	
 	
-	case JE_SYMBOL_TYPE_BOOLEAN :
+	case GR_SYMBOL_TYPE_BOOLEAN :
 		m_DefEnumCB.ResetContent() ;
 		cstr.LoadString( IDS_TRUE ) ;
 		nIndex = m_DefEnumCB.AddString( cstr ) ;
-		m_DefEnumCB.SetItemData( nIndex, JE_TRUE ) ;
+		m_DefEnumCB.SetItemData( nIndex, GR_TRUE ) ;
 		cstr.LoadString( IDS_FALSE ) ;
 		nIndex = m_DefEnumCB.AddString( cstr ) ;
-		m_DefEnumCB.SetItemData( nIndex, JE_FALSE ) ;
+		m_DefEnumCB.SetItemData( nIndex, GR_FALSE ) ;
 		m_DefEnumCB.SetCurSel( 0 ) ;
 		GetDlgItem( ENTY_CB_DEFTF )->ShowWindow( true ) ;
 		GetDlgItem( ENTY_CB_DEFTF )->SetFocus() ;
@@ -550,11 +550,11 @@ void CEntityCP::SetFields( const FieldInfo * pfi )
 {
 	UpdateData( true ) ;
 
-	if( pfi->bInit == JE_TRUE )
+	if( pfi->bInit == GR_TRUE )
 	{
 		switch( pfi->Type )
 		{
-			case JE_SYMBOL_TYPE_VEC3D :
+			case GR_SYMBOL_TYPE_VEC3D :
 				m_csDef3.Format( "%5.2f", pfi->Value.Vec3d.Z ) ;
 				m_csDef2.Format( "%5.2f", pfi->Value.Vec3d.Y ) ;
 				m_csDef1.Format( "%5.2f", pfi->Value.Vec3d.X ) ;
@@ -562,17 +562,17 @@ void CEntityCP::SetFields( const FieldInfo * pfi )
 				TrimString( m_csDef2 ) ;
 				TrimString( m_csDef1 ) ;
 				break ;
-			case JE_SYMBOL_TYPE_INT :
+			case GR_SYMBOL_TYPE_INT :
 				m_csDef1.Format( "%d", pfi->Value.Integer ) ;
 				break ;
-			case JE_SYMBOL_TYPE_FLOAT :
+			case GR_SYMBOL_TYPE_FLOAT :
 				m_csDef1.Format( "%5.2f", pfi->Value.Float ) ;
 				TrimString( m_csDef1 ) ;
 				break ;
-			case JE_SYMBOL_TYPE_COLOR :
+			case GR_SYMBOL_TYPE_COLOR :
 				m_csDef1.Format( "R:%d G:%d B:%d", (int)pfi->Value.Color.r, (int)pfi->Value.Color.g, (int)pfi->Value.Color.b ) ;
 				break ;
-			case JE_SYMBOL_TYPE_STRING :
+			case GR_SYMBOL_TYPE_STRING :
 				m_csDefString = pfi->Value.pChar ;
 				break ;
 		}// end fill inited fields
@@ -581,21 +581,21 @@ void CEntityCP::SetFields( const FieldInfo * pfi )
 	{
 		switch( pfi->Type )
 		{
-			case JE_SYMBOL_TYPE_VEC3D :
+			case GR_SYMBOL_TYPE_VEC3D :
 				m_csDef3 = _T("") ;
 				m_csDef2 = _T("") ;
 				m_csDef1 = _T("") ;
 				break ;
-			case JE_SYMBOL_TYPE_INT :
+			case GR_SYMBOL_TYPE_INT :
 				m_csDef1 = _T("") ;
 				break ;
-			case JE_SYMBOL_TYPE_FLOAT :
+			case GR_SYMBOL_TYPE_FLOAT :
 				m_csDef1 = _T("") ;
 				break ;
-			case JE_SYMBOL_TYPE_COLOR :
+			case GR_SYMBOL_TYPE_COLOR :
 				m_csDef1 = _T("") ;
 				break ;
-			case JE_SYMBOL_TYPE_STRING :
+			case GR_SYMBOL_TYPE_STRING :
 				m_csDefString = _T("") ;
 				break ;
 		}// end fill inited fields
@@ -617,7 +617,7 @@ void CEntityCP::OnBnApply()
 	if( iIndex != -1 && pDoc != NULL )
 	{
 		pfi = (FieldInfo*)m_Properties.GetItemData( iIndex ) ;
-		if( GetField( pfi )	== JE_FALSE )
+		if( GetField( pfi )	== GR_FALSE )
 		{
 			AfxMessageBox( IDS_OUTOFMEMORY, MB_OK, 0 ) ;
 			return ;
@@ -625,24 +625,24 @@ void CEntityCP::OnBnApply()
 		
 		switch( pfi->Type )
 		{
-		case JE_SYMBOL_TYPE_VEC3D :
+		case GR_SYMBOL_TYPE_VEC3D :
 			nDataSize = sizeof pfi->Value.Vec3d ;	break ;
-		case JE_SYMBOL_TYPE_INT :
+		case GR_SYMBOL_TYPE_INT :
 			nDataSize = sizeof pfi->Value.Integer ;	break ;
 			break ;
-		case JE_SYMBOL_TYPE_FLOAT :
+		case GR_SYMBOL_TYPE_FLOAT :
 			nDataSize = sizeof pfi->Value.Float ;	break ;
 			break ;
-		case JE_SYMBOL_TYPE_COLOR :
+		case GR_SYMBOL_TYPE_COLOR :
 			nDataSize = sizeof pfi->Value.Color ;	break ;
 			break ;
-		case JE_SYMBOL_TYPE_STRING :
+		case GR_SYMBOL_TYPE_STRING :
 			nDataSize = sizeof pfi->Value.pChar ;	break ;
 		default :
 			ASSERT( 0 ) ;
 			break ;
 		}
-		pfi->bInit = JE_TRUE ;
+		pfi->bInit = GR_TRUE ;
 		pDoc->SetEntityField( pfi->pField, &pfi->Value, nDataSize ) ;
 
 		m_Properties.Invalidate( true ) ;
@@ -650,44 +650,44 @@ void CEntityCP::OnBnApply()
 }// OnBnApply
 
 #pragma message( "Handle Color, Enum, List, etc." ) 
-jeBoolean CEntityCP::GetField(FieldInfo *pfi)
+grBoolean CEntityCP::GetField(FieldInfo *pfi)
 {
 	char	* pszNewStr ;
-	jeBoolean	bSuccess = JE_TRUE ;
+	grBoolean	bSuccess = GR_TRUE ;
 	
 	UpdateData( true ) ;
 	switch( pfi->Type )
 	{
-		case JE_SYMBOL_TYPE_VEC3D :
+		case GR_SYMBOL_TYPE_VEC3D :
 			TrimString( m_csDef1 ) ;
 			TrimString( m_csDef2 ) ;
 			TrimString( m_csDef3 ) ;
-			pfi->Value.Vec3d.X = (jeFloat)atof(m_csDef1);
-			pfi->Value.Vec3d.Y = (jeFloat)atof(m_csDef2);
-			pfi->Value.Vec3d.Z = (jeFloat)atof(m_csDef3);
+			pfi->Value.Vec3d.X = (grFloat)atof(m_csDef1);
+			pfi->Value.Vec3d.Y = (grFloat)atof(m_csDef2);
+			pfi->Value.Vec3d.Z = (grFloat)atof(m_csDef3);
 			break ;
 
-		case JE_SYMBOL_TYPE_INT :
+		case GR_SYMBOL_TYPE_INT :
 			TrimString( m_csDef1 ) ;
 			pfi->Value.Integer = atoi(m_csDef1);
 			break ;
-		case JE_SYMBOL_TYPE_FLOAT :
+		case GR_SYMBOL_TYPE_FLOAT :
 			TrimString( m_csDef1 ) ;
-			pfi->Value.Float = (jeFloat)atof(m_csDef1) ;
+			pfi->Value.Float = (grFloat)atof(m_csDef1) ;
 			break ;
-		case JE_SYMBOL_TYPE_COLOR :
+		case GR_SYMBOL_TYPE_COLOR :
 //			m_csDef1.Format( "R:%d G:%d B:%d", (int)pfi->Value.Color.r, (int)pfi->Value.Color.g, (int)pfi->Value.Color.b ) ;
 			break ;
-		case JE_SYMBOL_TYPE_STRING :
+		case GR_SYMBOL_TYPE_STRING :
 			TrimString( m_csDefString ) ;
 			pszNewStr = Util_StrDup( m_csDefString ) ;
 			if( pszNewStr == NULL )
 			{
-				bSuccess = JE_FALSE ;
+				bSuccess = GR_FALSE ;
 			}
 			else
 			{
-				jeRam_Free( pfi->Value.pChar ) ;
+				grRam_Free( pfi->Value.pChar ) ;
 				pfi->Value.pChar = pszNewStr ;
 			}
 			break ;
@@ -707,11 +707,11 @@ LRESULT CEntityCP::OnChangeColor( WPARAM wParam, LPARAM lParam )
 	if( iIndex != -1 && pDoc != NULL )
 	{
 		pfi = (FieldInfo*)m_Properties.GetItemData( iIndex ) ;
-		ASSERT( pfi->Type == JE_SYMBOL_TYPE_COLOR ) ;
+		ASSERT( pfi->Type == GR_SYMBOL_TYPE_COLOR ) ;
 		
-		pfi->Value.Color.r = (jeFloat)GetRValue( Color ) ; 
-		pfi->Value.Color.g = (jeFloat)GetGValue( Color ) ;
-		pfi->Value.Color.b = (jeFloat)GetBValue( Color ) ;
+		pfi->Value.Color.r = (grFloat)GetRValue( Color ) ; 
+		pfi->Value.Color.g = (grFloat)GetGValue( Color ) ;
+		pfi->Value.Color.b = (grFloat)GetBValue( Color ) ;
 		pDoc->SetEntityField( pfi->pField, &pfi->Value.Color, sizeof pfi->Value.Color ) ;
 		m_Properties.Invalidate( true ) ;
 	}

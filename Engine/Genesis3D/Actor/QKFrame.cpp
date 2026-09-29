@@ -18,14 +18,14 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-/* jeQKFrame   (jeQuaternion - Keyframe)
+/* grQKFrame   (grQuaternion - Keyframe)
 	This module handles interpolation for keyframes that contain a quaternion
 	This is intended to support Path.c
-	jeTKArray supplies general support for a time-keyed array, and this supplements
+	grTKArray supplies general support for a time-keyed array, and this supplements
 	that support to include the specific time-keyed arrays:
-	  An array of jeQuaternion interpolated linearly
-	  An array of jeQuaternion with spherical linear interpolation (SLERP)
-	  An array of jeQuaternion with spherical quadrangle 
+	  An array of grQuaternion interpolated linearly
+	  An array of grQuaternion with spherical linear interpolation (SLERP)
+	  An array of grQuaternion with spherical quadrangle 
 		interpolation (SQUAD) as defined by:
 	    Advanced Animation and Rendering Techniques by Alan Watt and Mark Watt
 
@@ -36,7 +36,7 @@
 	interpolated with different calls, but insertion and queries share a call.
 	
 	Quadrangle interpolation requires additional computation after changes are
-	made to the keyframe list.  Call jeQKFrame_SquadRecompute() to update the
+	made to the keyframe list.  Call grQKFrame_SquadRecompute() to update the
 	calculations.
 */
 #include <assert.h>
@@ -51,264 +51,264 @@
 
 typedef struct
 {
-	jeTKArray_TimeType	Time;				// Time for this keyframe
-	jeQuaternion	Q;					// quaternion for this keyframe
+	grTKArray_TimeType	Time;				// Time for this keyframe
+	grQuaternion	Q;					// quaternion for this keyframe
 }  QKeyframe;		
-	// This is the root structure that jeQKFrame supports
+	// This is the root structure that grQKFrame supports
 	// all keyframe types must begin with this structure.  Time is first, so
-	// that this structure can be manipulated by jeTKArray
+	// that this structure can be manipulated by grTKArray
 
 typedef struct
 {
 	QKeyframe Key;				// key values for this keyframe
-}	jeQKFrame_Linear;
+}	grQKFrame_Linear;
 	// keyframe data for linear interpolation
 	// The structure includes no additional information.
 
 typedef struct
 {
 	QKeyframe Key;				// key values for this keyframe
-}	jeQKFrame_Slerp;
+}	grQKFrame_Slerp;
 	// keyframe data for spherical linear interpolation
 	// The structure includes no additional information.
 
 typedef struct
 {
 	QKeyframe Key;				// key values for this keyframe
-	jeQuaternion  QuadrangleCorner;	
-}	jeQKFrame_Squad;
+	grQuaternion  QuadrangleCorner;	
+}	grQKFrame_Squad;
 	// keyframe data for spherical quadratic interpolation
 
 
-jeTKArray *JETCC jeQKFrame_LinearCreate()
+grTKArray *GRCC grQKFrame_LinearCreate()
 	// creates a frame list for linear interpolation
 {
-	return jeTKArray_Create(sizeof(jeQKFrame_Linear) );
+	return grTKArray_Create(sizeof(grQKFrame_Linear) );
 }
 
 
-jeTKArray *JETCC jeQKFrame_SlerpCreate()
+grTKArray *GRCC grQKFrame_SlerpCreate()
 	// creates a frame list for spherical linear interpolation	
 {
-	return jeTKArray_Create(sizeof(jeQKFrame_Slerp) );
+	return grTKArray_Create(sizeof(grQKFrame_Slerp) );
 }
 
-jeTKArray *JETCC jeQKFrame_SquadCreate()
+grTKArray *GRCC grQKFrame_SquadCreate()
 	// creates a frame list for spherical linear interpolation	
 {
-	return jeTKArray_Create(sizeof(jeQKFrame_Squad) );
+	return grTKArray_Create(sizeof(grQKFrame_Squad) );
 }
 
 
-jeBoolean JETCC jeQKFrame_Insert(
-	jeTKArray **KeyList,			// keyframe list to insert into
-	jeTKArray_TimeType Time,		// time of new keyframe
-	const jeQuaternion *Q,			// quaternion at new keyframe
+grBoolean GRCC grQKFrame_Insert(
+	grTKArray **KeyList,			// keyframe list to insert into
+	grTKArray_TimeType Time,		// time of new keyframe
+	const grQuaternion *Q,			// quaternion at new keyframe
 	int *Index)						// index of new key
 	// inserts a new keyframe with the given time and vector into the list.
 {
 	assert( KeyList != NULL );
 	assert( *KeyList != NULL );
 	assert( Q != NULL );
-	assert(   sizeof(jeQKFrame_Squad) == jeTKArray_ElementSize(*KeyList) 
-	       || sizeof(jeQKFrame_Slerp) == jeTKArray_ElementSize(*KeyList) 
-		   || sizeof(jeQKFrame_Linear) == jeTKArray_ElementSize(*KeyList) );
+	assert(   sizeof(grQKFrame_Squad) == grTKArray_ElementSize(*KeyList) 
+	       || sizeof(grQKFrame_Slerp) == grTKArray_ElementSize(*KeyList) 
+		   || sizeof(grQKFrame_Linear) == grTKArray_ElementSize(*KeyList) );
 
-	if (jeTKArray_Insert(KeyList, Time, Index) == JE_FALSE)
+	if (grTKArray_Insert(KeyList, Time, Index) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"jeQKFrame_Insert: jeTKArray_Insert failed.");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"grQKFrame_Insert: grTKArray_Insert failed.");
+			return GR_FALSE;
 		}
 	else
 		{
 			QKeyframe *KF;
-			KF = (QKeyframe *)jeTKArray_Element(*KeyList,*Index);
+			KF = (QKeyframe *)grTKArray_Element(*KeyList,*Index);
 			KF->Q = *Q;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 }
 
-void JETCC jeQKFrame_Query(
-	const jeTKArray *KeyList,		// keyframe list
+void GRCC grQKFrame_Query(
+	const grTKArray *KeyList,		// keyframe list
 	int Index,						// index of frame to return
-	jeTKArray_TimeType *Time,		// time of the frame is returned
-	jeQuaternion *Q)					// vector from the frame is returned
+	grTKArray_TimeType *Time,		// time of the frame is returned
+	grQuaternion *Q)					// vector from the frame is returned
 	// returns the vector and the time at keyframe[index] 
 {
 	QKeyframe *KF;
 	assert( KeyList != NULL );
 	assert( Time != NULL );
 	assert( Q != NULL );
-	assert( Index < jeTKArray_NumElements(KeyList) );
+	assert( Index < grTKArray_NumElements(KeyList) );
 	assert( Index >= 0 );
-	assert(   sizeof(jeQKFrame_Squad) == jeTKArray_ElementSize(KeyList) 
-	       || sizeof(jeQKFrame_Slerp) == jeTKArray_ElementSize(KeyList) 
-		   || sizeof(jeQKFrame_Linear) == jeTKArray_ElementSize(KeyList) );
+	assert(   sizeof(grQKFrame_Squad) == grTKArray_ElementSize(KeyList) 
+	       || sizeof(grQKFrame_Slerp) == grTKArray_ElementSize(KeyList) 
+		   || sizeof(grQKFrame_Linear) == grTKArray_ElementSize(KeyList) );
 	
-	KF = (QKeyframe *)jeTKArray_Element(KeyList,Index);
+	KF = (QKeyframe *)grTKArray_Element(KeyList,Index);
 	*Time = KF->Time;
 	*Q    = KF->Q;
 }
 
-void JETCC jeQKFrame_Modify(
-	jeTKArray *KeyList,				// keyframe list
+void GRCC grQKFrame_Modify(
+	grTKArray *KeyList,				// keyframe list
 	int Index,						// index of frame to change
-	const jeQuaternion *Q)			// vector for the new key
+	const grQuaternion *Q)			// vector for the new key
 {
 	QKeyframe *KF;
 	assert( KeyList != NULL );
 	assert( Q != NULL );
-	assert( Index < jeTKArray_NumElements(KeyList) );
+	assert( Index < grTKArray_NumElements(KeyList) );
 	assert( Index >= 0 );
-	assert(   sizeof(jeQKFrame_Squad) == jeTKArray_ElementSize(KeyList) 
-	       || sizeof(jeQKFrame_Slerp) == jeTKArray_ElementSize(KeyList) 
-		   || sizeof(jeQKFrame_Linear) == jeTKArray_ElementSize(KeyList) );
+	assert(   sizeof(grQKFrame_Squad) == grTKArray_ElementSize(KeyList) 
+	       || sizeof(grQKFrame_Slerp) == grTKArray_ElementSize(KeyList) 
+		   || sizeof(grQKFrame_Linear) == grTKArray_ElementSize(KeyList) );
 	
-	KF = (QKeyframe *)jeTKArray_Element(KeyList,Index);
+	KF = (QKeyframe *)grTKArray_Element(KeyList,Index);
 	KF->Q  = *Q;
 }
 
 
 
-void JETCC jeQKFrame_LinearInterpolation(
+void GRCC grQKFrame_LinearInterpolation(
 	const void *KF1,		// pointer to first keyframe
 	const void *KF2,		// pointer to second keyframe
-	jeFloat T,				// 0 <= T <= 1   blending parameter
-	void *Result)			// put the result in here (jeQuaternion)
+	grFloat T,				// 0 <= T <= 1   blending parameter
+	void *Result)			// put the result in here (grQuaternion)
 		// interpolates to get a vector between the two vectors at the two
 		// keyframes where T==0 returns the vector for KF1 
 		// and T==1 returns the vector for KF2
 		// interpolates linearly
 {
-	jeQuaternion *Q1,*Q2;
-	jeQuaternion *QNew = (jeQuaternion *)Result;
+	grQuaternion *Q1,*Q2;
+	grQuaternion *QNew = (grQuaternion *)Result;
 	
 	assert( Result != NULL );
 	assert( KF1 != NULL );
 	assert( KF2 != NULL );
 	
-	assert( T >= (jeFloat)0.0f );
-	assert( T <= (jeFloat)1.0f );
+	assert( T >= (grFloat)0.0f );
+	assert( T <= (grFloat)1.0f );
 	
 	if ( KF1 == KF2 )
 		{
-			*QNew = ((jeQKFrame_Linear *)KF1)->Key.Q;
+			*QNew = ((grQKFrame_Linear *)KF1)->Key.Q;
 			return;
 		}
 
-	Q1 = &( ((jeQKFrame_Linear *)KF1)->Key.Q);
-	Q2 = &( ((jeQKFrame_Linear *)KF2)->Key.Q);
+	Q1 = &( ((grQKFrame_Linear *)KF1)->Key.Q);
+	Q2 = &( ((grQKFrame_Linear *)KF2)->Key.Q);
 	
 	QNew->X = LINEAR_BLEND(Q1->X,Q2->X,T);
 	QNew->Y = LINEAR_BLEND(Q1->Y,Q2->Y,T);
 	QNew->Z = LINEAR_BLEND(Q1->Z,Q2->Z,T);
 	QNew->W = LINEAR_BLEND(Q1->W,Q2->W,T);
-	if (jeQuaternion_Normalize(QNew)==0.0f)
+	if (grQuaternion_Normalize(QNew)==0.0f)
 		{
-			jeQuaternion_SetNoRotation(QNew);
+			grQuaternion_SetNoRotation(QNew);
 		}
 
 }
 
 
 
-void JETCC jeQKFrame_SlerpInterpolation(
+void GRCC grQKFrame_SlerpInterpolation(
 	const void *KF1,		// pointer to first keyframe
 	const void *KF2,		// pointer to second keyframe
-	jeFloat T,				// 0 <= T <= 1   blending parameter
-	void *Result)			// put the result in here (jeQuaternion)
+	grFloat T,				// 0 <= T <= 1   blending parameter
+	void *Result)			// put the result in here (grQuaternion)
 		// interpolates to get a vector between the two vectors at the two
 		// keyframes where T==0 returns the vector for KF1 
 		// and T==1 returns the vector for KF2
 		// interpolates using spherical linear blending
 {
-	jeQuaternion *Q1,*Q2;
-	jeQuaternion *QNew = (jeQuaternion *)Result;
+	grQuaternion *Q1,*Q2;
+	grQuaternion *QNew = (grQuaternion *)Result;
 	
 	assert( Result != NULL );
 	assert( KF1 != NULL );
 	assert( KF2 != NULL );
 	
-	assert( T >= (jeFloat)0.0f );
-	assert( T <= (jeFloat)1.0f );
+	assert( T >= (grFloat)0.0f );
+	assert( T <= (grFloat)1.0f );
 	
 	if ( KF1 == KF2 )
 		{
-			*QNew = ((jeQKFrame_Slerp *)KF1)->Key.Q;
+			*QNew = ((grQKFrame_Slerp *)KF1)->Key.Q;
 			return;
 		}
  
-	Q1 = &( ((jeQKFrame_Slerp *)KF1)->Key.Q);
-	Q2 = &( ((jeQKFrame_Slerp *)KF2)->Key.Q);
-	jeQuaternion_SlerpNotShortest(Q1,Q2,T,QNew);
+	Q1 = &( ((grQKFrame_Slerp *)KF1)->Key.Q);
+	Q2 = &( ((grQKFrame_Slerp *)KF2)->Key.Q);
+	grQuaternion_SlerpNotShortest(Q1,Q2,T,QNew);
 }
 
 
 
 
-void JETCC jeQKFrame_SquadInterpolation(
+void GRCC grQKFrame_SquadInterpolation(
 	const void *KF1,		// pointer to first keyframe
 	const void *KF2,		// pointer to second keyframe
-	jeFloat T,				// 0 <= T <= 1   blending parameter
-	void *Result)			// put the result in here (jeQuaternion)
+	grFloat T,				// 0 <= T <= 1   blending parameter
+	void *Result)			// put the result in here (grQuaternion)
 		// interpolates to get a vector between the two vectors at the two
 		// keyframes where T==0 returns the vector for KF1 
 		// and T==1 returns the vector for KF2
 		// interpolates using spherical quadratic blending
 {
-	jeQuaternion *Q1,*Q2;
-	jeQuaternion *QNew = (jeQuaternion *)Result;
+	grQuaternion *Q1,*Q2;
+	grQuaternion *QNew = (grQuaternion *)Result;
 	
 	assert( Result != NULL );
 	assert( KF1 != NULL );
 	assert( KF2 != NULL );
 	
-	assert( T >= (jeFloat)0.0f );
-	assert( T <= (jeFloat)1.0f );
+	assert( T >= (grFloat)0.0f );
+	assert( T <= (grFloat)1.0f );
 	
 	if ( KF1 == KF2 )
 		{
-			*QNew = ((jeQKFrame_Squad *)KF1)->Key.Q;
+			*QNew = ((grQKFrame_Squad *)KF1)->Key.Q;
 			return;
 		}
 
-	Q1 = &( ((jeQKFrame_Squad *)KF1)->Key.Q);
-	Q2 = &( ((jeQKFrame_Squad *)KF2)->Key.Q);
+	Q1 = &( ((grQKFrame_Squad *)KF1)->Key.Q);
+	Q2 = &( ((grQKFrame_Squad *)KF2)->Key.Q);
 	
 	{
-		jeQuaternion *A1,*B2;
-		jeQuaternion SL1,SL2;
+		grQuaternion *A1,*B2;
+		grQuaternion SL1,SL2;
 				
-		A1 = &( ((jeQKFrame_Squad *)KF1)->QuadrangleCorner);
-		B2 = &( ((jeQKFrame_Squad *)KF2)->QuadrangleCorner);
+		A1 = &( ((grQKFrame_Squad *)KF1)->QuadrangleCorner);
+		B2 = &( ((grQKFrame_Squad *)KF2)->QuadrangleCorner);
 
-		jeQuaternion_SlerpNotShortest(Q1,   Q2,   T, &SL1);
-				assert( jeQuaternion_IsUnit(&SL1) == JE_TRUE);
-		jeQuaternion_SlerpNotShortest(A1,   B2,   T, &SL2);
-				assert( jeQuaternion_IsUnit(&SL2) == JE_TRUE);
-		jeQuaternion_SlerpNotShortest(&SL1, &SL2, (2.0f*T*(1.0f-T)), QNew);
-				assert( jeQuaternion_IsUnit(QNew) == JE_TRUE);
+		grQuaternion_SlerpNotShortest(Q1,   Q2,   T, &SL1);
+				assert( grQuaternion_IsUnit(&SL1) == GR_TRUE);
+		grQuaternion_SlerpNotShortest(A1,   B2,   T, &SL2);
+				assert( grQuaternion_IsUnit(&SL2) == GR_TRUE);
+		grQuaternion_SlerpNotShortest(&SL1, &SL2, (2.0f*T*(1.0f-T)), QNew);
+				assert( grQuaternion_IsUnit(QNew) == GR_TRUE);
 	}
 }
 
 
-static void JETCC jeQKFrame_QuadrangleCorner(
-	const jeQuaternion *Q0,
-	const jeQuaternion *Q1,
-	const jeQuaternion *Q2,
-	jeQuaternion *Corner)
+static void GRCC grQKFrame_QuadrangleCorner(
+	const grQuaternion *Q0,
+	const grQuaternion *Q1,
+	const grQuaternion *Q2,
+	grQuaternion *Corner)
 	// compute quadrangle corner for a keyframe containing Q1.
 	//  Q0 and Q2 are the quaternions for the previous and next keyframes 
 	// corner is the newly computed quaternion
 {
-	jeQuaternion Q1Inv,LnSum;
+	grQuaternion Q1Inv,LnSum;
 
 	assert( Q0 != NULL );
 	assert( Q1 != NULL );
 	assert( Q2 != NULL );
 	assert( Corner != NULL );
 
-	assert( jeQuaternion_IsUnit(Q1) == JE_TRUE );
+	assert( grQuaternion_IsUnit(Q1) == GR_TRUE );
 
 	Q1Inv.W = Q1->W;
 	Q1Inv.X = -Q1->X;
@@ -316,36 +316,36 @@ static void JETCC jeQKFrame_QuadrangleCorner(
 	Q1Inv.Z = -Q1->Z;
 				
 	{
-		jeQuaternion Q1InvQ2, Q1InvQ0;
-		jeQuaternion Ln1,Ln2;
+		grQuaternion Q1InvQ2, Q1InvQ0;
+		grQuaternion Ln1,Ln2;
 
-		jeQuaternion_Multiply(&Q1Inv,Q2,&Q1InvQ2);
-		jeQuaternion_Multiply(&Q1Inv,Q0,&Q1InvQ0);
-		jeQuaternion_Ln(&Q1InvQ0,&Ln1);
-		jeQuaternion_Ln(&Q1InvQ2,&Ln2);
-		jeQuaternion_Add(&Ln1,&Ln2,&LnSum);
-		jeQuaternion_Scale(&LnSum,-0.25f,&LnSum);
+		grQuaternion_Multiply(&Q1Inv,Q2,&Q1InvQ2);
+		grQuaternion_Multiply(&Q1Inv,Q0,&Q1InvQ0);
+		grQuaternion_Ln(&Q1InvQ0,&Ln1);
+		grQuaternion_Ln(&Q1InvQ2,&Ln2);
+		grQuaternion_Add(&Ln1,&Ln2,&LnSum);
+		grQuaternion_Scale(&LnSum,-0.25f,&LnSum);
 	}
 
-	jeQuaternion_Exp(&LnSum,Corner);
-	jeQuaternion_Multiply(Q1,Corner,Corner);
+	grQuaternion_Exp(&LnSum,Corner);
+	grQuaternion_Multiply(Q1,Corner,Corner);
 }
 
-static void JETCC jeQKFrame_ChooseBestQuat(const jeQuaternion *Q0,jeQuaternion *Q1)
+static void GRCC grQKFrame_ChooseBestQuat(const grQuaternion *Q0,grQuaternion *Q1)
 	// adjusts the sign of Q1:  to either Q1 or -Q1
 	// adjusts Q1 such that Q1 is the 'closest' of the two choices to Q0.
 {
-	jeQuaternion pLessQ,pPlusQ;
-	jeFloat MagpLessQ,MagpPlusQ;
+	grQuaternion pLessQ,pPlusQ;
+	grFloat MagpLessQ,MagpPlusQ;
 
 	assert( Q0 != NULL );
 	assert( Q1 != NULL );
 	
-	jeQuaternion_Add(Q0,Q1,&pPlusQ);
-	jeQuaternion_Subtract(Q0,Q1,&pLessQ);
+	grQuaternion_Add(Q0,Q1,&pPlusQ);
+	grQuaternion_Subtract(Q0,Q1,&pLessQ);
 		
-	jeQuaternion_Multiply(&pPlusQ,&pPlusQ,&pPlusQ);
-	jeQuaternion_Multiply(&pLessQ,&pLessQ,&pLessQ);
+	grQuaternion_Multiply(&pPlusQ,&pPlusQ,&pPlusQ);
+	grQuaternion_Multiply(&pLessQ,&pLessQ,&pLessQ);
 
 	MagpLessQ=   (pLessQ.W * pLessQ.W) + (pLessQ.X * pLessQ.X) 
 					  + (pLessQ.Y * pLessQ.Y) + (pLessQ.Z * pLessQ.Z);
@@ -365,10 +365,10 @@ static void JETCC jeQKFrame_ChooseBestQuat(const jeQuaternion *Q0,jeQuaternion *
 
 
 
-void JETCC jeQKFrame_SquadRecompute(
+void GRCC grQKFrame_SquadRecompute(
 	int Looped,				// if keylist has the first key connected to last key
-	jeTKArray *KeyList,		// list of keys to recompute hermite values for
-	jeFloat CutInterval)	// intervals <= CutInterval are to be treated as discontinuous
+	grTKArray *KeyList,		// list of keys to recompute hermite values for
+	grFloat CutInterval)	// intervals <= CutInterval are to be treated as discontinuous
 	// rebuild precomputed data for keyframe list.
 {
 
@@ -376,21 +376,21 @@ void JETCC jeQKFrame_SquadRecompute(
 	// see Advanced Animation and Rendering Techniques 
 	//     by Alan Watt and Mark Watt, pg 366
 	int i;
-	jeQKFrame_Squad *QList=NULL;
+	grQKFrame_Squad *QList=NULL;
 	int count;
-	jeFloat T0,T1,T2;
+	grFloat T0,T1,T2;
 	int Index0,Index1,Index2;
 	assert( KeyList != NULL );
 
-	count = jeTKArray_NumElements(KeyList);
+	count = grTKArray_NumElements(KeyList);
 
 	if (count > 0)
 		{
-			QList = (jeQKFrame_Squad *)jeTKArray_Element(KeyList,0);
+			QList = (grQKFrame_Squad *)grTKArray_Element(KeyList,0);
 
 			for (i =0; i< count-1; i++)
 				{
-					jeQKFrame_ChooseBestQuat(&(QList[i].Key.Q),&(QList[i+1].Key.Q) );
+					grQKFrame_ChooseBestQuat(&(QList[i].Key.Q),&(QList[i+1].Key.Q) );
 				}
 		}
 
@@ -408,7 +408,7 @@ void JETCC jeQKFrame_SquadRecompute(
 
 			if (Index1 == 0)
 				{
-					if (Looped != JE_TRUE)
+					if (Looped != GR_TRUE)
 						{
 							Index0 = 0;
 						}
@@ -420,7 +420,7 @@ void JETCC jeQKFrame_SquadRecompute(
 
 			if (Index2 == count)
 				{
-					if (Looped != JE_TRUE)
+					if (Looped != GR_TRUE)
 						{
 							Index2 = count-1;
 						}
@@ -434,21 +434,21 @@ void JETCC jeQKFrame_SquadRecompute(
 			T1=QList[Index1].Key.Time;
 			T2=QList[Index2].Key.Time;
 
-			if (( Looped != JE_TRUE) && (Index1 == 0) || (T1-T0 <= CutInterval) )
+			if (( Looped != GR_TRUE) && (Index1 == 0) || (T1-T0 <= CutInterval) )
 				{
-					jeQuaternion_Copy(
+					grQuaternion_Copy(
 						&(QList[i].Key.Q),
 						&(QList[i].QuadrangleCorner) );
 				}
-			else if ((( Looped != JE_TRUE) && (Index1 == count-1)) || (T2-T1 <= CutInterval) )
+			else if ((( Looped != GR_TRUE) && (Index1 == count-1)) || (T2-T1 <= CutInterval) )
 				{
-					jeQuaternion_Copy(
+					grQuaternion_Copy(
 						&(QList[i].Key.Q),
 						&(QList[i].QuadrangleCorner) );
 				}
 			else
 			{
-				jeQKFrame_QuadrangleCorner( 
+				grQKFrame_QuadrangleCorner( 
 					&(QList[Index0].Key.Q),
 					&(QList[Index1].Key.Q),
 					&(QList[Index2].Key.Q),
@@ -460,8 +460,8 @@ void JETCC jeQKFrame_SquadRecompute(
 
 
 
-void JETCC jeQKFrame_SlerpRecompute(
-	jeTKArray *KeyList)			// list of keys to recompute hermite values for
+void GRCC grQKFrame_SlerpRecompute(
+	grTKArray *KeyList)			// list of keys to recompute hermite values for
 
 	// rebuild precomputed data for keyframe list.
 	// also make sure that each successive key is the 'closest' quaternion choice
@@ -469,18 +469,18 @@ void JETCC jeQKFrame_SlerpRecompute(
 {
 
 	int i;
-	jeQKFrame_Slerp *QList;
+	grQKFrame_Slerp *QList;
 	int count;
 	assert( KeyList != NULL );
 
-	count = jeTKArray_NumElements(KeyList);
+	count = grTKArray_NumElements(KeyList);
 
 	if (count > 0)
 		{
-			QList = (jeQKFrame_Slerp  *)jeTKArray_Element(KeyList,0);
+			QList = (grQKFrame_Slerp  *)grTKArray_Element(KeyList,0);
 			for (i =0; i< count-1; i++)
 				{
-					jeQKFrame_ChooseBestQuat(&(QList[i].Key.Q),&(QList[i+1].Key.Q) );
+					grQKFrame_ChooseBestQuat(&(QList[i].Key.Q),&(QList[i+1].Key.Q) );
 				}
 		}
 }
@@ -493,55 +493,55 @@ void JETCC jeQKFrame_SlerpRecompute(
 #define HINGE_TOLERANCE (0.0001f)
 #define LINEARTIME_TOLERANCE (0.0001f)
 
-static jeBoolean JETCC jeQKFrame_PathIsHinged(jeTKArray *KeyList, jeFloat Tolerance)
+static grBoolean GRCC grQKFrame_PathIsHinged(grTKArray *KeyList, grFloat Tolerance)
 {
 	int i,Count;
-	jeVec3d Axis;
-	jeVec3d NextAxis;
-	jeFloat Angle; 
-	jeQKFrame_Linear* pLinear;
+	grVec3d Axis;
+	grVec3d NextAxis;
+	grFloat Angle; 
+	grQKFrame_Linear* pLinear;
 
 	assert( KeyList != NULL );
 
-	Count = jeTKArray_NumElements(KeyList);
+	Count = grTKArray_NumElements(KeyList);
 	
 	if (Count<2)
-		return JE_FALSE;
-	pLinear = (jeQKFrame_Linear*)jeTKArray_Element(KeyList, 0);
-	if (jeQuaternion_GetAxisAngle(&(pLinear->Key.Q),&Axis,&Angle)==JE_FALSE)
+		return GR_FALSE;
+	pLinear = (grQKFrame_Linear*)grTKArray_Element(KeyList, 0);
+	if (grQuaternion_GetAxisAngle(&(pLinear->Key.Q),&Axis,&Angle)==GR_FALSE)
 		{
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		
 	for (i=1; i<Count; i++)
 		{
-			pLinear = (jeQKFrame_Linear*)jeTKArray_Element(KeyList, i);
-			if (jeQuaternion_GetAxisAngle(&(pLinear->Key.Q),&NextAxis,&Angle)==JE_FALSE)
+			pLinear = (grQKFrame_Linear*)grTKArray_Element(KeyList, i);
+			if (grQuaternion_GetAxisAngle(&(pLinear->Key.Q),&NextAxis,&Angle)==GR_FALSE)
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 				
-			if (jeVec3d_Compare(&Axis,&NextAxis,Tolerance) == JE_FALSE)
+			if (grVec3d_Compare(&Axis,&NextAxis,Tolerance) == GR_FALSE)
 				{	
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-static int JETCC jeQKFrame_DetermineCompressionType(jeTKArray *KeyList)
+static int GRCC grQKFrame_DetermineCompressionType(grTKArray *KeyList)
 {
 	int Compression=0;
 	int NumElements=0;
 
 	assert( KeyList != NULL );
 
-	NumElements = jeTKArray_NumElements(KeyList);
+	NumElements = grTKArray_NumElements(KeyList);
 
 	if (NumElements>2)
 		{
-			if ( jeTKArray_SamplesAreTimeLinear(KeyList,LINEARTIME_TOLERANCE) != JE_FALSE )
+			if ( grTKArray_SamplesAreTimeLinear(KeyList,LINEARTIME_TOLERANCE) != GR_FALSE )
 				{
 					Compression |= QKFRAME_LINEARTIME_COMPRESSION;
 				}
@@ -550,7 +550,7 @@ static int JETCC jeQKFrame_DetermineCompressionType(jeTKArray *KeyList)
 
 	if (NumElements>3)
 		{
-			 if ( jeQKFrame_PathIsHinged(KeyList,HINGE_TOLERANCE)!=JE_FALSE )
+			 if ( grQKFrame_PathIsHinged(KeyList,HINGE_TOLERANCE)!=GR_FALSE )
 				{
 					Compression |= QKFRAME_HINGE_COMPRESSION;
 				}
@@ -563,34 +563,34 @@ static int JETCC jeQKFrame_DetermineCompressionType(jeTKArray *KeyList)
 
 
 
-uint32 JETCC jeQKFrame_ComputeBlockSize(jeTKArray *KeyList, int Compression)
+uint32 GRCC grQKFrame_ComputeBlockSize(grTKArray *KeyList, int Compression)
 {
 	uint32 Size=0;
 	int Count;
 	assert( KeyList != NULL );
 	assert( Compression < 0xFF);
 	
-	Count = jeTKArray_NumElements(KeyList);
+	Count = grTKArray_NumElements(KeyList);
 
 	Size += sizeof(uint32);		// flags
 	Size += sizeof(uint32);		// count
 
 	if (Compression & QKFRAME_LINEARTIME_COMPRESSION)
 		{
-			Size += sizeof(jeFloat) * 2;
+			Size += sizeof(grFloat) * 2;
 		}
 	else
 		{
-			Size += sizeof(jeFloat) * Count;
+			Size += sizeof(grFloat) * Count;
 		}
 
 	switch (Compression & (~QKFRAME_LINEARTIME_COMPRESSION) )
 		{
 			case 0:
-				Size += sizeof(jeQuaternion) * Count;
+				Size += sizeof(grQuaternion) * Count;
 				break;
 			case QKFRAME_HINGE_COMPRESSION:
-				Size += (sizeof(jeFloat) * 3) + sizeof(jeFloat) * Count;
+				Size += (sizeof(grFloat) * 3) + sizeof(grFloat) * Count;
 				break;
 			default:
 				assert(0);
@@ -598,11 +598,11 @@ uint32 JETCC jeQKFrame_ComputeBlockSize(jeTKArray *KeyList, int Compression)
 	return Size;
 }
 
-jeTKArray *JETCC jeQKFrame_CreateFromFile(
-			jeVFile	*pFile, 
-			jeQKFrame_InterpolationType		*InterpolationType, 
+grTKArray *GRCC grQKFrame_CreateFromFile(
+			grVFile	*pFile, 
+			grQKFrame_InterpolationType		*InterpolationType, 
 			int		*Looping,
-			jeFloat	CutInterval)
+			grFloat	CutInterval)
 {
 	uint32 u;
 	int BlockSize;
@@ -610,30 +610,30 @@ jeTKArray *JETCC jeQKFrame_CreateFromFile(
 	int Count,i;
 	int FieldSize;
 	char *Block;
-	jeFloat *Data;
-	jeTKArray *KeyList;
-	jeQKFrame_Linear* pLinear0;
-	jeQKFrame_Linear* pLinear;
+	grFloat *Data;
+	grTKArray *KeyList;
+	grQKFrame_Linear* pLinear0;
+	grQKFrame_Linear* pLinear;
 
 	assert( pFile != NULL );
 	assert( InterpolationType != NULL );
 	assert( Looping != NULL );
 	
-	if (jeVFile_Read(pFile, &BlockSize, sizeof(int)) == JE_FALSE)
+	if (grVFile_Read(pFile, &BlockSize, sizeof(int)) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_FILEIO_READ,"jeQKFrame_CreateFromFile: Failed to read header.");
+			grErrorLog_Add(GR_ERR_FILEIO_READ,"grQKFrame_CreateFromFile: Failed to read header.");
 			return NULL;
 		}
 	if (BlockSize<0)
 		{
-			jeErrorLog_Add(JE_ERR_FILEIO_FORMAT,"jeQKFrame_CreateFromFile: Bad Blocksize.");
+			grErrorLog_Add(GR_ERR_FILEIO_FORMAT,"grQKFrame_CreateFromFile: Bad Blocksize.");
 			return NULL;
 		}
 			
-	Block = (char *)jeRam_AllocateClear(BlockSize);
-	if(jeVFile_Read(pFile, Block, BlockSize) == JE_FALSE)
+	Block = (char *)grRam_AllocateClear(BlockSize);
+	if(grVFile_Read(pFile, Block, BlockSize) == GR_FALSE)
 		{
-			jeErrorLog_Add(JE_ERR_FILEIO_READ,"jeQKFrame_CreateFromFile.");
+			grErrorLog_Add(GR_ERR_FILEIO_READ,"grQKFrame_CreateFromFile.");
 			return NULL;
 		}
 	u = *(uint32 *)Block;
@@ -644,52 +644,52 @@ jeTKArray *JETCC jeQKFrame_CreateFromFile(
 	
 	if (Compression > 0xFF)
 		{
-			jeRam_Free(Block);	
-			jeErrorLog_Add(JE_ERR_FILEIO_VERSION,"jeQKFrame_CreateFromFile: Bad Compression Flag.");
+			grRam_Free(Block);	
+			grErrorLog_Add(GR_ERR_FILEIO_VERSION,"grQKFrame_CreateFromFile: Bad Compression Flag.");
 			return NULL;
 		}
 	switch (*InterpolationType)
 		{
 			case (QKFRAME_LINEAR):
-				FieldSize = sizeof(jeQKFrame_Linear);
+				FieldSize = sizeof(grQKFrame_Linear);
 				break;
 			case (QKFRAME_SLERP):
-				FieldSize = sizeof(jeQKFrame_Slerp);
+				FieldSize = sizeof(grQKFrame_Slerp);
 				break;
 			case (QKFRAME_SQUAD):
-				FieldSize = sizeof(jeQKFrame_Squad);
+				FieldSize = sizeof(grQKFrame_Squad);
 				break;
 			default:
-				jeRam_Free(Block);
-				jeErrorLog_Add(JE_ERR_FILEIO_VERSION,"jeQKFrame_CreateFromFile: Bad InterpolationType");
+				grRam_Free(Block);
+				grErrorLog_Add(GR_ERR_FILEIO_VERSION,"grQKFrame_CreateFromFile: Bad InterpolationType");
 				return NULL;
 		}
 	
-	KeyList = jeTKArray_CreateEmpty(FieldSize,Count);
+	KeyList = grTKArray_CreateEmpty(FieldSize,Count);
 	if (KeyList == NULL)
 		{
-			jeRam_Free(Block);	
-			jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE, "jeQKFrame_CreateFromFile.");
+			grRam_Free(Block);	
+			grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE, "grQKFrame_CreateFromFile.");
 			return NULL;
 		}
 
-	Data = (jeFloat *)(Block + sizeof(uint32)*2);
+	Data = (grFloat *)(Block + sizeof(uint32)*2);
 			
-	pLinear0 = (jeQKFrame_Linear*)jeTKArray_Element(KeyList, 0);
+	pLinear0 = (grQKFrame_Linear*)grTKArray_Element(KeyList, 0);
 
 	pLinear = pLinear0;
 
 	if (Compression & QKFRAME_LINEARTIME_COMPRESSION)
 		{
-			jeFloat fi;
-			jeFloat fCount = (jeFloat)Count;
-			jeFloat Time,DeltaTime;
+			grFloat fi;
+			grFloat fCount = (grFloat)Count;
+			grFloat Time,DeltaTime;
 			Time = *(Data++);
 			DeltaTime = *(Data++);
 			for(fi=0.0f;fi<fCount;fi+=1.0f)
 				{
 					pLinear->Key.Time = Time + fi*DeltaTime;
-					pLinear = (jeQKFrame_Linear *)  ( ((char *)pLinear) + FieldSize );
+					pLinear = (grQKFrame_Linear *)  ( ((char *)pLinear) + FieldSize );
 				}
 		}
 	else
@@ -697,7 +697,7 @@ jeTKArray *JETCC jeQKFrame_CreateFromFile(
 			for(i=0;i<Count;i++)
 				{
 					pLinear->Key.Time = *(Data++);
-					pLinear = (jeQKFrame_Linear *)  ( ((char *)pLinear) + FieldSize );
+					pLinear = (grQKFrame_Linear *)  ( ((char *)pLinear) + FieldSize );
 				}
 		}
 
@@ -705,24 +705,24 @@ jeTKArray *JETCC jeQKFrame_CreateFromFile(
 
 	if (Compression & QKFRAME_HINGE_COMPRESSION)
 		{
-			jeVec3d Hinge;
+			grVec3d Hinge;
 			Hinge.X = *(Data++);
 			Hinge.Y = *(Data++);
 			Hinge.Z = *(Data++);
 
 			for(i=0;i<Count;i++)
 				{
-					jeQuaternion_SetFromAxisAngle(&(pLinear->Key.Q),&Hinge,*(Data++));
-					pLinear = (jeQKFrame_Linear *)  ( ((char *)pLinear) + FieldSize );
+					grQuaternion_SetFromAxisAngle(&(pLinear->Key.Q),&Hinge,*(Data++));
+					pLinear = (grQKFrame_Linear *)  ( ((char *)pLinear) + FieldSize );
 				}
 		}
 	else
 		{
 			for(i=0;i<Count;i++)
 				{
-					pLinear->Key.Q = *(jeQuaternion *)Data;
-					Data += sizeof(jeQuaternion)/sizeof(jeFloat);
-					pLinear = (jeQKFrame_Linear *)  ( ((char *)pLinear) + FieldSize );
+					pLinear->Key.Q = *(grQuaternion *)Data;
+					Data += sizeof(grQuaternion)/sizeof(grFloat);
+					pLinear = (grQKFrame_Linear *)  ( ((char *)pLinear) + FieldSize );
 				}
 		}
 	
@@ -731,85 +731,85 @@ jeTKArray *JETCC jeQKFrame_CreateFromFile(
 			case (QKFRAME_LINEAR):
 					break;
 			case (QKFRAME_SLERP):
-				jeQKFrame_SlerpRecompute( KeyList);
+				grQKFrame_SlerpRecompute( KeyList);
 					break;
 			case (QKFRAME_SQUAD):
-				jeQKFrame_SquadRecompute( *Looping, KeyList, CutInterval);
+				grQKFrame_SquadRecompute( *Looping, KeyList, CutInterval);
 					break;
 			default:
 				assert(0);
 		}
-	jeRam_Free(Block);	
+	grRam_Free(Block);	
 	return KeyList;						
 }
 
-jeBoolean JETCC jeQKFrame_WriteToFile(jeVFile *pFile, jeTKArray *KeyList, 
-		jeQKFrame_InterpolationType InterpolationType, int Looping)
+grBoolean GRCC grQKFrame_WriteToFile(grVFile *pFile, grTKArray *KeyList, 
+		grQKFrame_InterpolationType InterpolationType, int Looping)
 {
-	#define WBERREXIT  {jeErrorLog_Add( JE_ERR_FILEIO_WRITE,"jeQKFrame_WriteToFile.");return JE_FALSE;}
+	#define WBERREXIT  {grErrorLog_Add( GR_ERR_FILEIO_WRITE,"grQKFrame_WriteToFile.");return GR_FALSE;}
 	uint32 u,BlockSize;
 	int Compression;
 	int Count,i;
-	jeFloat Time,DeltaTime;
+	grFloat Time,DeltaTime;
 	assert( pFile != NULL );
 	assert( InterpolationType < 0xFF);
 	assert( (Looping == 0) || (Looping == 1) );
 
 
-	Compression = jeQKFrame_DetermineCompressionType(KeyList);
+	Compression = grQKFrame_DetermineCompressionType(KeyList);
 	u = (InterpolationType << 16) | (Compression << 8) |  Looping;
 	
-	BlockSize = jeQKFrame_ComputeBlockSize(KeyList,Compression);
+	BlockSize = grQKFrame_ComputeBlockSize(KeyList,Compression);
 
-	if (jeVFile_Write(pFile, &BlockSize,sizeof(uint32)) == JE_FALSE)
+	if (grVFile_Write(pFile, &BlockSize,sizeof(uint32)) == GR_FALSE)
 		WBERREXIT;
 	
-	if (jeVFile_Write(pFile, &u, sizeof(uint32)) == JE_FALSE)
+	if (grVFile_Write(pFile, &u, sizeof(uint32)) == GR_FALSE)
 		WBERREXIT;
 	
-	Count = jeTKArray_NumElements(KeyList);
-	if (jeVFile_Write(pFile, &Count, sizeof(uint32)) == JE_FALSE)
+	Count = grTKArray_NumElements(KeyList);
+	if (grVFile_Write(pFile, &Count, sizeof(uint32)) == GR_FALSE)
 		WBERREXIT;
 	
 	if (Compression & QKFRAME_LINEARTIME_COMPRESSION)
 		{
-			Time = jeTKArray_ElementTime(KeyList, 0);
-			DeltaTime = jeTKArray_ElementTime(KeyList, 1)- Time;
-			if (jeVFile_Write(pFile, &Time,sizeof(jeFloat)) == JE_FALSE)
+			Time = grTKArray_ElementTime(KeyList, 0);
+			DeltaTime = grTKArray_ElementTime(KeyList, 1)- Time;
+			if (grVFile_Write(pFile, &Time,sizeof(grFloat)) == GR_FALSE)
 				WBERREXIT;
-			if (jeVFile_Write(pFile, &DeltaTime,sizeof(jeFloat)) == JE_FALSE)
+			if (grVFile_Write(pFile, &DeltaTime,sizeof(grFloat)) == GR_FALSE)
 				WBERREXIT;
 		}
 	else
 		{
 			for(i=0;i<Count;i++)
 				{
-					Time = jeTKArray_ElementTime(KeyList, i);
-					if (jeVFile_Write(pFile, &Time,sizeof(jeFloat)) == JE_FALSE)
+					Time = grTKArray_ElementTime(KeyList, i);
+					if (grVFile_Write(pFile, &Time,sizeof(grFloat)) == GR_FALSE)
 						WBERREXIT;
 				}
 		}
 
 	if (Compression & QKFRAME_HINGE_COMPRESSION)
 		{
-			jeVec3d Hinge;
-			jeFloat Angle;
+			grVec3d Hinge;
+			grFloat Angle;
 
-			jeQKFrame_Linear* pLinear = (jeQKFrame_Linear*)jeTKArray_Element(KeyList, 0);
-			jeQuaternion_GetAxisAngle(&(pLinear->Key.Q),&Hinge,&Angle);
-			jeVec3d_Normalize(&Hinge);
-			if (jeVFile_Write(pFile, &Hinge.X,sizeof(jeFloat)) == JE_FALSE)
+			grQKFrame_Linear* pLinear = (grQKFrame_Linear*)grTKArray_Element(KeyList, 0);
+			grQuaternion_GetAxisAngle(&(pLinear->Key.Q),&Hinge,&Angle);
+			grVec3d_Normalize(&Hinge);
+			if (grVFile_Write(pFile, &Hinge.X,sizeof(grFloat)) == GR_FALSE)
 				WBERREXIT;
-			if (jeVFile_Write(pFile, &Hinge.Y,sizeof(jeFloat)) == JE_FALSE)
+			if (grVFile_Write(pFile, &Hinge.Y,sizeof(grFloat)) == GR_FALSE)
 				WBERREXIT;
-			if (jeVFile_Write(pFile, &Hinge.Z,sizeof(jeFloat)) == JE_FALSE)
+			if (grVFile_Write(pFile, &Hinge.Z,sizeof(grFloat)) == GR_FALSE)
 				WBERREXIT;
 
 			for(i=0;i<Count;i++)
 				{
-					jeQKFrame_Linear* pLinear = (jeQKFrame_Linear*)jeTKArray_Element(KeyList, i);
-					jeQuaternion_GetAxisAngle(&(pLinear->Key.Q),&Hinge,&Angle);
-					if (jeVFile_Write(pFile, &Angle,sizeof(jeFloat)) == JE_FALSE)
+					grQKFrame_Linear* pLinear = (grQKFrame_Linear*)grTKArray_Element(KeyList, i);
+					grQuaternion_GetAxisAngle(&(pLinear->Key.Q),&Hinge,&Angle);
+					if (grVFile_Write(pFile, &Angle,sizeof(grFloat)) == GR_FALSE)
 						WBERREXIT;
 				}
 		}
@@ -817,11 +817,11 @@ jeBoolean JETCC jeQKFrame_WriteToFile(jeVFile *pFile, jeTKArray *KeyList,
 		{
 			for(i=0;i<Count;i++)
 				{
-					jeQKFrame_Linear* pLinear = (jeQKFrame_Linear*)jeTKArray_Element(KeyList, i);
-					if (jeVFile_Write(pFile, &(pLinear->Key.Q),sizeof(jeQuaternion)) == JE_FALSE)
+					grQKFrame_Linear* pLinear = (grQKFrame_Linear*)grTKArray_Element(KeyList, i);
+					if (grVFile_Write(pFile, &(pLinear->Key.Q),sizeof(grQuaternion)) == GR_FALSE)
 						WBERREXIT;
 				}
 		}
 		
-	return JE_TRUE;
+	return GR_TRUE;
 }

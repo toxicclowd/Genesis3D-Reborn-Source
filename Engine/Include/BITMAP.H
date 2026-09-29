@@ -23,32 +23,32 @@
 
 #include "BaseType.h"
 #include "PixelFormat.h"
-#include "jePtrMgr.h"
+#include "grPtrMgr.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // from vfile.h
-typedef	struct jeVFile jeVFile;
+typedef	struct grVFile grVFile;
 
 /***********************************************************************************/
 
-typedef struct jeBitmap			jeBitmap;
-typedef struct jeBitmap_Palette	jeBitmap_Palette;
+typedef struct grBitmap			grBitmap;
+typedef struct grBitmap_Palette	grBitmap_Palette;
 
-typedef struct jeBitmap_Info
+typedef struct grBitmap_Info
 {
 	int32					Width;
 	int32					Height;
 	int32					Stride;		// stride is in *pixels* ; it is the step to the next line : Stride >= Width
-	jePixelFormat			Format;
+	grPixelFormat			Format;
 	int32					MinimumMip;	//*including* minimumMip == 0 often
 	int32					MaximumMip;	//*including* maximumMip == nummips-1
-	jeBoolean				HasColorKey;
+	grBoolean				HasColorKey;
 	uint32					ColorKey;	// meaningless unless HasColorKey ; the ColorKey is a Pixel in Format
-	jeBitmap_Palette *		Palette;
-} jeBitmap_Info;
+	grBitmap_Palette *		Palette;
+} grBitmap_Info;
 
 /***********************************************************************************/		
 // Bitmap methods
@@ -57,108 +57,108 @@ typedef struct jeBitmap_Info
 
 /************************************************************************/
 
-JETAPI jeBitmap *	JETCC	jeBitmap_Create(int32 Width, int32 Height, int32 MipCount, jePixelFormat Format ); 
-JETAPI void			JETCC	jeBitmap_CreateRef(jeBitmap *Bmp);
-JETAPI jeBitmap *	JETCC	jeBitmap_CreateCopy(const jeBitmap * Src);
-JETAPI jeBitmap *	JETCC	jeBitmap_CreateFromInfo(const jeBitmap_Info * pInfo);
+GRAPI grBitmap *	GRCC	grBitmap_Create(int32 Width, int32 Height, int32 MipCount, grPixelFormat Format ); 
+GRAPI void			GRCC	grBitmap_CreateRef(grBitmap *Bmp);
+GRAPI grBitmap *	GRCC	grBitmap_CreateCopy(const grBitmap * Src);
+GRAPI grBitmap *	GRCC	grBitmap_CreateFromInfo(const grBitmap_Info * pInfo);
 
-JETAPI jeBitmap *	JETCC	jeBitmap_CreateFromFile( jeVFile *F );
-JETAPI jeBitmap *	JETCC	jeBitmap_CreateFromFileName(const jeVFile *BaseFS,const char *Name);
-JETAPI jeBoolean 	JETCC	jeBitmap_WriteToFile( const jeBitmap *Bmp, jeVFile *F );
-JETAPI jeBoolean	JETCC	jeBitmap_WriteToFileName(const jeBitmap * Bmp,const jeVFile *BaseFS,const char *Name);
+GRAPI grBitmap *	GRCC	grBitmap_CreateFromFile( grVFile *F );
+GRAPI grBitmap *	GRCC	grBitmap_CreateFromFileName(const grVFile *BaseFS,const char *Name);
+GRAPI grBoolean 	GRCC	grBitmap_WriteToFile( const grBitmap *Bmp, grVFile *F );
+GRAPI grBoolean	GRCC	grBitmap_WriteToFileName(const grBitmap * Bmp,const grVFile *BaseFS,const char *Name);
 										// BaseFS is not really const if it is a virtual file;
 										//  it *is* const if it is a dos directory
-JETAPI jeBitmap *	JETCC	jeBitmap_CreateFromFile2(jeVFile *VFile,jeVFile *ResourceBaseFS,jePtrMgr *PtrMgr);
-JETAPI jeBoolean	JETCC	jeBitmap_WriteToFile2(const jeBitmap *Bmp,jeVFile *VFile,jePtrMgr *PtrMgr);
-JETAPI jeBitmap *	JETCC	jeBitmap_CreateFromFileName2(const jeVFile *BaseFS,const char *Name,jePtrMgr *PtrMgr);
-JETAPI jeBoolean	JETCC	jeBitmap_WriteToFileName2(const jeBitmap * Bmp,const jeVFile *BaseFS,const char *Name,jePtrMgr *PtrMgr);
+GRAPI grBitmap *	GRCC	grBitmap_CreateFromFile2(grVFile *VFile,grVFile *ResourceBaseFS,grPtrMgr *PtrMgr);
+GRAPI grBoolean	GRCC	grBitmap_WriteToFile2(const grBitmap *Bmp,grVFile *VFile,grPtrMgr *PtrMgr);
+GRAPI grBitmap *	GRCC	grBitmap_CreateFromFileName2(const grVFile *BaseFS,const char *Name,grPtrMgr *PtrMgr);
+GRAPI grBoolean	GRCC	grBitmap_WriteToFileName2(const grBitmap * Bmp,const grVFile *BaseFS,const char *Name,grPtrMgr *PtrMgr);
 										// the '2' functions try to write a minimal bitmap, either using the PtrMgr
 										//	or writing a file name; they are NOT compatible with the original File IO funcs
 
-JETAPI jeBoolean 	JETCC	jeBitmap_Destroy(jeBitmap **Bmp);
+GRAPI grBoolean 	GRCC	grBitmap_Destroy(grBitmap **Bmp);
 	// returns whether Bmp was actually destroyed : not success/failure
 
-JETAPI jeBoolean	JETCC	jeBitmap_GetPersistableName(const jeBitmap *Bmp, jeVFile ** pBaseFS, char ** pName);
+GRAPI grBoolean	GRCC	grBitmap_GetPersistableName(const grBitmap *Bmp, grVFile ** pBaseFS, char ** pName);
 
-JETAPI jeBoolean 	JETCC	jeBitmap_GetInfo(const jeBitmap *Bmp, jeBitmap_Info *Info, jeBitmap_Info *SecondaryInfo);
+GRAPI grBoolean 	GRCC	grBitmap_GetInfo(const grBitmap *Bmp, grBitmap_Info *Info, grBitmap_Info *SecondaryInfo);
 	//LockForWrite returns data in Info's format
 
-JETAPI jeBoolean 	JETCC	jeBitmap_Blit(const	jeBitmap *Src, int32 SrcPositionX, int32 SrcPositionY,
-										jeBitmap *Dst, int32 DstPositionX, int32 DstPositionY,
+GRAPI grBoolean 	GRCC	grBitmap_Blit(const	grBitmap *Src, int32 SrcPositionX, int32 SrcPositionY,
+										grBitmap *Dst, int32 DstPositionX, int32 DstPositionY,
 										int32 SizeX, int32 SizeY );
 
-JETAPI jeBoolean 	JETCC	jeBitmap_BlitMip(const jeBitmap * Src, int32 SrcMip, jeBitmap * Dst, int32 DstMip );
+GRAPI grBoolean 	GRCC	grBitmap_BlitMip(const grBitmap * Src, int32 SrcMip, grBitmap * Dst, int32 DstMip );
 										// don't use this with Src == Dst, use UpdateMips instead !
 
-JETAPI jeBoolean 	JETCC	jeBitmap_BlitBitmap(const jeBitmap * Src, jeBitmap * Dst);
+GRAPI grBoolean 	GRCC	grBitmap_BlitBitmap(const grBitmap * Src, grBitmap * Dst);
 
-JETAPI jeBoolean 	JETCC	jeBitmap_BlitBestMip(const jeBitmap * Src, jeBitmap * Dst);
+GRAPI grBoolean 	GRCC	grBitmap_BlitBestMip(const grBitmap * Src, grBitmap * Dst);
 										// blits the largest mip from Src that fits in Dst
 
-JETAPI jeBoolean 	JETCC	jeBitmap_LockForRead(		// a non-exclusive lock
-	const jeBitmap *	Bmp,
-	jeBitmap **			Target,
+GRAPI grBoolean 	GRCC	grBitmap_LockForRead(		// a non-exclusive lock
+	const grBitmap *	Bmp,
+	grBitmap **			Target,
 	int32				MinimumMip,
 	int32				MaximumMip,
-	jePixelFormat 		Format,
-	jeBoolean			RespectColorKey,
+	grPixelFormat 		Format,
+	grBoolean			RespectColorKey,
 	uint32				ColorKey);
 									// not really const, stores lock-count, but *data* is const
 									// will do a format conversion!
 
-JETAPI jeBoolean	JETCC	jeBitmap_LockForReadNative(
-	const jeBitmap *	Bmp,
-	jeBitmap **			Target,
+GRAPI grBoolean	GRCC	grBitmap_LockForReadNative(
+	const grBitmap *	Bmp,
+	grBitmap **			Target,
 	int32				MinimumMip,
 	int32				MaximumMip);
 									// lock for read in a format that gaurantee no conversions
 									// then do GetInfo on the locks to see what you have!
 
-JETAPI jeBoolean 	JETCC	jeBitmap_LockForWrite(	// an exclusive lock
-	jeBitmap *			Bmp,
-	jeBitmap **			Target,
+GRAPI grBoolean 	GRCC	grBitmap_LockForWrite(	// an exclusive lock
+	grBitmap *			Bmp,
+	grBitmap **			Target,
 	int32				MinimumMip,
 	int32				MaximumMip);
 
-JETAPI jeBoolean 	JETCC	jeBitmap_LockForWriteFormat(
-	jeBitmap *			Bmp,
-	jeBitmap **			Target,
+GRAPI grBoolean 	GRCC	grBitmap_LockForWriteFormat(
+	grBitmap *			Bmp,
+	grBitmap **			Target,
 	int32				MinimumMip,
 	int32				MaximumMip,
-	jePixelFormat 		Format);
+	grPixelFormat 		Format);
 									// Format must be one of the two returned in GetInfo !!
 
-JETAPI jeBoolean 	JETCC	jeBitmap_UnLock(jeBitmap *Bmp);	// must be done on All locked mips
-JETAPI jeBoolean 	JETCC	jeBitmap_UnLockArray(jeBitmap **Locks, int32 Size);
+GRAPI grBoolean 	GRCC	grBitmap_UnLock(grBitmap *Bmp);	// must be done on All locked mips
+GRAPI grBoolean 	GRCC	grBitmap_UnLockArray(grBitmap **Locks, int32 Size);
 
-JETAPI jeBoolean 	JETCC	jeBitmap_SetFormat(jeBitmap *Bmp, 
-							jePixelFormat NewFormat, 
-							jeBoolean RespectColorKey, uint32 ColorKey,
-							const jeBitmap_Palette * Palette);
+GRAPI grBoolean 	GRCC	grBitmap_SetFormat(grBitmap *Bmp, 
+							grPixelFormat NewFormat, 
+							grBoolean RespectColorKey, uint32 ColorKey,
+							const grBitmap_Palette * Palette);
 	// _SetFormat may cause you to lose color information!
 	// SetFormat does a conversion!
 	// if NewFormat is palettized and Palette is NULL, we create a palette for the bitmap!
 
-JETAPI jeBoolean 	JETCC	jeBitmap_SetFormatMin(jeBitmap *Bmp,jePixelFormat NewFormat);
+GRAPI grBoolean 	GRCC	grBitmap_SetFormatMin(grBitmap *Bmp,grPixelFormat NewFormat);
 								// the Min version keeps colorkey & palette from the old format
 
-JETAPI jeBoolean	JETCC	jeBitmap_SetColorKey(jeBitmap *Bmp, jeBoolean HasColorKey, uint32 ColorKey, jeBoolean Smart);
+GRAPI grBoolean	GRCC	grBitmap_SetColorKey(grBitmap *Bmp, grBoolean HasColorKey, uint32 ColorKey, grBoolean Smart);
 	// SetColorKey discards old colorkey information!
 	//	does not do a conversion (changes the colorkey in the current data
 	// if 'Smart' is on, we don't set HasColorKey to true unless it is actually used!
 
-JETAPI jeBoolean	JETCC	jeBitmap_GetAverageColor(const jeBitmap *Bmp,int32 *pR, int32 *pG, int32 *pB);
+GRAPI grBoolean	GRCC	grBitmap_GetAverageColor(const grBitmap *Bmp,int32 *pR, int32 *pG, int32 *pB);
 	// tells you the average color; computes it and caches it out
 
-JETAPI jeBoolean	JETCC	jeBitmap_SetCompressionOptions(jeBitmap * Bmp, int32 CompressionLevel, jeBoolean NeedMips, jeFloat ratio);
+GRAPI grBoolean	GRCC	grBitmap_SetCompressionOptions(grBitmap * Bmp, int32 CompressionLevel, grBoolean NeedMips, grFloat ratio);
 	// CompressionOptions to be used in any later compression (not written to file)
 	// level is 0-10	for 0 = fastest , 10 = most compression
 	// NeedMips tells the coder whether to provide for fast mip creation in decompression
 	// ratio is the *minimum* compression ratio (In_Len/Out_Len); higher ratios create loss
-JETAPI jeBoolean	JETCC	jeBitmap_SetCompressionOptionsExpert(jeBitmap * Bmp,jeFloat Ratio,int32 TransformN,int32 CoderN,jeBoolean TransposeLHs,jeBoolean Block);
+GRAPI grBoolean	GRCC	grBitmap_SetCompressionOptionsExpert(grBitmap * Bmp,grFloat Ratio,int32 TransformN,int32 CoderN,grBoolean TransposeLHs,grBoolean Block);
 
-JETAPI jeBitmap_Palette * 	JETCC	jeBitmap_GetPalette(const jeBitmap *Bmp);
-JETAPI jeBoolean			JETCC	jeBitmap_SetPalette(jeBitmap *Bmp, const jeBitmap_Palette *Palette);
+GRAPI grBitmap_Palette * 	GRCC	grBitmap_GetPalette(const grBitmap *Bmp);
+GRAPI grBoolean			GRCC	grBitmap_SetPalette(grBitmap *Bmp, const grBitmap_Palette *Palette);
 	// _SetPal tries to _CreateRef your Palette, so no copy occurs & palettes may be shared
 	// you may _Destroy() palette after using it to set (though its bits may not be freed)
 	//	(hence Palette is *not* const)
@@ -167,44 +167,44 @@ JETAPI jeBoolean			JETCC	jeBitmap_SetPalette(jeBitmap *Bmp, const jeBitmap_Palet
 	// _SetPal destroys the bitmap's original palette and refs the new one, 
 	//		so if you setpal with the bitmap's palette, there is no net change in ref counts (good!)
 
-JETAPI jeBoolean	JETCC	jeBitmap_HasAlpha(const jeBitmap * Bmp);
+GRAPI grBoolean	GRCC	grBitmap_HasAlpha(const grBitmap * Bmp);
 	// returns true if bitmap has *any* type of alpha
 
-JETAPI jeBitmap *	JETCC	jeBitmap_GetAlpha(const jeBitmap *Bmp);
-JETAPI jeBoolean 	JETCC	jeBitmap_SetAlpha(jeBitmap *Bmp, const jeBitmap *AlphaBmp);
+GRAPI grBitmap *	GRCC	grBitmap_GetAlpha(const grBitmap *Bmp);
+GRAPI grBoolean 	GRCC	grBitmap_SetAlpha(grBitmap *Bmp, const grBitmap *AlphaBmp);
 	// we Ref the AlphaBmp, so you may destroy it after calling Set()
 	// it may be NULL
 	// there's only one Alpha per bitmap (for the top Mip) right now
 
-JETAPI jeBoolean	JETCC	jeBitmap_SetGammaCorrection(jeBitmap *Bmp,jeFloat Gamma,jeBoolean Apply);
+GRAPI grBoolean	GRCC	grBitmap_SetGammaCorrection(grBitmap *Bmp,grFloat Gamma,grBoolean Apply);
 	// this Gamma does not change the *original* (system/secondary) bits
 	//	it only affects the appearance when drawn
 	// note : if you write to the gamma corrected bits, you must gamma correct manually if you
 	//	wish to fit in smoothly with the previous data
 	// warning : if you use this function with many different gammas, performance will suffer!
 	//	use one global gamma for all bitmaps!  try to let the engine manage gamma for you,
-	//	via jeEngine_SetGamma !
+	//	via grEngine_SetGamma !
 
-JETAPI jeBoolean		JETCC	jeBitmap_SetPreferredFormat(jeBitmap *Bmp,jePixelFormat Format);
-JETAPI jePixelFormat	JETCC	jeBitmap_GetPreferredFormat(const jeBitmap *Bmp);
+GRAPI grBoolean		GRCC	grBitmap_SetPreferredFormat(grBitmap *Bmp,grPixelFormat Format);
+GRAPI grPixelFormat	GRCC	grBitmap_GetPreferredFormat(const grBitmap *Bmp);
 
-JETAPI void *		JETCC	jeBitmap_GetBits(jeBitmap *Bmp);	// works only on a Lock()
+GRAPI void *		GRCC	grBitmap_GetBits(grBitmap *Bmp);	// works only on a Lock()
 
-JETAPI jeBoolean 	JETCC	jeBitmap_RefreshMips(jeBitmap *Bmp);	// rebuilds mips; *tries* to be smart & not overwrite manually-fixed mips
+GRAPI grBoolean 	GRCC	grBitmap_RefreshMips(grBitmap *Bmp);	// rebuilds mips; *tries* to be smart & not overwrite manually-fixed mips
 												// RefreshMips does *not* build mips that don't exist
-JETAPI jeBoolean 	JETCC	jeBitmap_UpdateMips(jeBitmap *Bmp,int32 SourceMip,int32 TargetMip);	
+GRAPI grBoolean 	GRCC	grBitmap_UpdateMips(grBitmap *Bmp,int32 SourceMip,int32 TargetMip);	
 												// will create the target if it doesn't exist;
 												// will overwrite manually-fixed mips!
-JETAPI jeBoolean 	JETCC	jeBitmap_SetMipCount(jeBitmap *Bmp,int32 Count);
+GRAPI grBoolean 	GRCC	grBitmap_SetMipCount(grBitmap *Bmp,int32 Count);
 												// creates or destroys to match the new count
 
-JETAPI jeBoolean 	JETCC	jeBitmap_ClearMips(jeBitmap *Bmp);	// Destroy all mips (except the first) !
+GRAPI grBoolean 	GRCC	grBitmap_ClearMips(grBitmap *Bmp);	// Destroy all mips (except the first) !
 												// use with care! this is not polite!
 
 // Shortcuts
-JETAPI int32		JETCC	jeBitmap_Width(const jeBitmap *Bitmap);
-JETAPI int32		JETCC	jeBitmap_Height(const jeBitmap *Bitmap);
-JETAPI uint32		JETCC	jeBitmap_MipBytes(const jeBitmap * Bitmap, int32 mip);
+GRAPI int32		GRCC	grBitmap_Width(const grBitmap *Bitmap);
+GRAPI int32		GRCC	grBitmap_Height(const grBitmap *Bitmap);
+GRAPI uint32		GRCC	grBitmap_MipBytes(const grBitmap * Bitmap, int32 mip);
 
 /**
 *
@@ -220,7 +220,7 @@ JETAPI uint32		JETCC	jeBitmap_MipBytes(const jeBitmap * Bitmap, int32 mip);
 **/
 
 #ifdef _DEBUG
-JETAPI uint32		JETCC	jeBitmap_Debug_GetCount(void);
+GRAPI uint32		GRCC	grBitmap_Debug_GetCount(void);
 
 	// assert this is zero before you shutdown !
 
@@ -230,32 +230,32 @@ JETAPI uint32		JETCC	jeBitmap_Debug_GetCount(void);
 
 typedef enum
 {
-	JE_BITMAP_STREAMING_ERROR=0,
-	JE_BITMAP_STREAMING_NOT,
-	JE_BITMAP_STREAMING_STARTED,
-	JE_BITMAP_STREAMING_IDLE,
-	JE_BITMAP_STREAMING_CHANGED,
-	JE_BITMAP_STREAMING_DATADONE,
-	JE_BITMAP_STREAMING_DONE,
-} jeBitmap_StreamingStatus;
+	GR_BITMAP_STREAMING_ERROR=0,
+	GR_BITMAP_STREAMING_NOT,
+	GR_BITMAP_STREAMING_STARTED,
+	GR_BITMAP_STREAMING_IDLE,
+	GR_BITMAP_STREAMING_CHANGED,
+	GR_BITMAP_STREAMING_DATADONE,
+	GR_BITMAP_STREAMING_DONE,
+} grBitmap_StreamingStatus;
 
-JETAPI jeBitmap_StreamingStatus JETCC jeBitmap_GetStreamingStatus(const jeBitmap *Bmp);
+GRAPI grBitmap_StreamingStatus GRCC grBitmap_GetStreamingStatus(const grBitmap *Bmp);
 
 		/** on a file which is streaming, the sequence of returns looks like :
 
-			JE_BITMAP_STREAMING_IDLE
-			JE_BITMAP_STREAMING_CHANGED
-			JE_BITMAP_STREAMING_IDLE
-			JE_BITMAP_STREAMING_IDLE
-			JE_BITMAP_STREAMING_CHANGED
+			GR_BITMAP_STREAMING_IDLE
+			GR_BITMAP_STREAMING_CHANGED
+			GR_BITMAP_STREAMING_IDLE
+			GR_BITMAP_STREAMING_IDLE
+			GR_BITMAP_STREAMING_CHANGED
 			...
-			JE_BITMAP_STREAMING_DONE
-			JE_BITMAP_STREAMING_NOT
-			JE_BITMAP_STREAMING_NOT
-			JE_BITMAP_STREAMING_NOT
+			GR_BITMAP_STREAMING_DONE
+			GR_BITMAP_STREAMING_NOT
+			GR_BITMAP_STREAMING_NOT
+			GR_BITMAP_STREAMING_NOT
 			...
 
-		Status >= JE_BITMAP_STREAMING_STARTED means streaming has started & is in progress
+		Status >= GR_BITMAP_STREAMING_STARTED means streaming has started & is in progress
 
 		the user should never see _STARTED or _DATADONE
 
@@ -265,54 +265,54 @@ JETAPI jeBitmap_StreamingStatus JETCC jeBitmap_GetStreamingStatus(const jeBitmap
 
 // palette methods :
 
-JETAPI jeBitmap_Palette * 	JETCC	jeBitmap_Palette_Create(jePixelFormat Format, int32 Size);
+GRAPI grBitmap_Palette * 	GRCC	grBitmap_Palette_Create(grPixelFormat Format, int32 Size);
 
-JETAPI jeBitmap_Palette * 	JETCC	jeBitmap_Palette_CreateCopy(const jeBitmap_Palette *Palette);
+GRAPI grBitmap_Palette * 	GRCC	grBitmap_Palette_CreateCopy(const grBitmap_Palette *Palette);
 
-JETAPI jeBitmap_Palette *	JETCC	jeBitmap_Palette_CreateFromFile(jeVFile *F);
+GRAPI grBitmap_Palette *	GRCC	grBitmap_Palette_CreateFromFile(grVFile *F);
 
-JETAPI jeBitmap_Palette *	JETCC	jeBitmap_Palette_CreateFromBitmap(jeBitmap * Bmp,jeBoolean Slow);
+GRAPI grBitmap_Palette *	GRCC	grBitmap_Palette_CreateFromBitmap(grBitmap * Bmp,grBoolean Slow);
 												// does GetPalette, and if NULL, then
 												// it create an optimal palette for a
 												//	non-palettized bitmap
 												//	(this is a create, you must destroy later!)
 												// put Slow == TRUE for higher quality & slower
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_SortColors(jeBitmap_Palette * P,jeBoolean Slower);
+GRAPI grBoolean		GRCC	grBitmap_Palette_SortColors(grBitmap_Palette * P,grBoolean Slower);
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_CreateRef(jeBitmap_Palette *Palette);
+GRAPI grBoolean		GRCC	grBitmap_Palette_CreateRef(grBitmap_Palette *Palette);
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_Destroy(jeBitmap_Palette ** ppPalette);
+GRAPI grBoolean		GRCC	grBitmap_Palette_Destroy(grBitmap_Palette ** ppPalette);
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_WriteToFile(const jeBitmap_Palette *Palette,jeVFile *F);
+GRAPI grBoolean		GRCC	grBitmap_Palette_WriteToFile(const grBitmap_Palette *Palette,grVFile *F);
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_SetFormat(jeBitmap_Palette * Palette,jePixelFormat Format);
+GRAPI grBoolean		GRCC	grBitmap_Palette_SetFormat(grBitmap_Palette * Palette,grPixelFormat Format);
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_Copy(const jeBitmap_Palette * Src,jeBitmap_Palette * Target);
+GRAPI grBoolean		GRCC	grBitmap_Palette_Copy(const grBitmap_Palette * Src,grBitmap_Palette * Target);
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_GetInfo(const	jeBitmap_Palette *P,jeBitmap_Info *Into);
+GRAPI grBoolean		GRCC	grBitmap_Palette_GetInfo(const	grBitmap_Palette *P,grBitmap_Info *Into);
 												// get the info as if it were a bitmap; Into->Height == 1
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_Lock(jeBitmap_Palette *Palette, void **pBits, jePixelFormat *pFormat, int32 *pSize);
+GRAPI grBoolean		GRCC	grBitmap_Palette_Lock(grBitmap_Palette *Palette, void **pBits, grPixelFormat *pFormat, int32 *pSize);
 												// pFormat & pSize are optional
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_UnLock(jeBitmap_Palette *Palette);
+GRAPI grBoolean		GRCC	grBitmap_Palette_UnLock(grBitmap_Palette *Palette);
 											// palette unlock does NOT notify the bitmap that the palette has changed.
 											// call Bitmap_SetPalette() with the same palette pointer 
 											// 	to tell the bitmap that it must to some processing
 											// (don't worry, it won't duplicate it or copy it onto itself)
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_GetData(const jeBitmap_Palette *P,      void *Into,jePixelFormat Format, int32 Colors);
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_SetData(      jeBitmap_Palette *P,const void *From,jePixelFormat Format, int32 Colors);
+GRAPI grBoolean		GRCC	grBitmap_Palette_GetData(const grBitmap_Palette *P,      void *Into,grPixelFormat Format, int32 Colors);
+GRAPI grBoolean		GRCC	grBitmap_Palette_SetData(      grBitmap_Palette *P,const void *From,grPixelFormat Format, int32 Colors);
 											// does Lock/UnLock for you
-											// From and Into are arrays of Colors*jePixelFormat_BytesPerPel bytes
+											// From and Into are arrays of Colors*grPixelFormat_BytesPerPel bytes
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_SetEntryColor(      jeBitmap_Palette *P, int32 Color, int32 R, int32 G, int32 B, int32 A);
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_GetEntryColor(const jeBitmap_Palette *P, int32 Color, int32 *R, int32 *G, int32 *B, int32 *A);
+GRAPI grBoolean		GRCC	grBitmap_Palette_SetEntryColor(      grBitmap_Palette *P, int32 Color, int32 R, int32 G, int32 B, int32 A);
+GRAPI grBoolean		GRCC	grBitmap_Palette_GetEntryColor(const grBitmap_Palette *P, int32 Color, int32 *R, int32 *G, int32 *B, int32 *A);
 											// Set/Get does Lock/Unlock for you ; these are slow! do not use these to work on all the colors!
 
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_SetEntry(      jeBitmap_Palette *P, int32 Color, uint32 Pixel);
-JETAPI jeBoolean		JETCC	jeBitmap_Palette_GetEntry(const jeBitmap_Palette *P, int32 Color, uint32 *Pixel);
+GRAPI grBoolean		GRCC	grBitmap_Palette_SetEntry(      grBitmap_Palette *P, int32 Color, uint32 Pixel);
+GRAPI grBoolean		GRCC	grBitmap_Palette_GetEntry(const grBitmap_Palette *P, int32 Color, uint32 *Pixel);
 
 /***********************************************************************************/
 
@@ -342,23 +342,23 @@ Jet3D Engine, and then blit some interactive stuff into it.
 // {
 //-----------------------------------------------------------------------------
 
-void Init(jeEngine * Engine);
+void Init(grEngine * Engine);
 void Shutdown(void);
 void Draw(void);
 void DrawPolite(void);
 
-static jeBitmap * myBM = NULL;
-static jeEngine * myEngine = NULL;
+static grBitmap * myBM = NULL;
+static grEngine * myEngine = NULL;
 
-void Init(jeEngine * Engine)
+void Init(grEngine * Engine)
 {
-jeBoolean success;
-jeBitmap_Info Info;
+grBoolean success;
+grBitmap_Info Info;
 
 	myEngine = Engine;	// this is not looked well upon; for ease of demonstration only!
 	assert(Engine);
 
-	myBM = jeBitmap_CreateFromFileName(NULL,"mybitmap.bmp");
+	myBM = grBitmap_CreateFromFileName(NULL,"mybitmap.bmp");
 
 	// CreateFromFile can load windows BMP files, or custom GeBm files.
 
@@ -366,27 +366,27 @@ jeBitmap_Info Info;
 
 	// get the main info; I don't care about the secondary, so leave it NULL
 
-	success = jeBitmap_GetInfo(myBM,&Info,NULL);
+	success = grBitmap_GetInfo(myBM,&Info,NULL);
 	assert(success);
 
 	// make sure I loaded a bitmap in the format I understand !
 
-	if ( Info.Format == JE_PIXELFORMAT_8BIT_PAL )
+	if ( Info.Format == GR_PIXELFORMAT_8BIT_PAL )
 	{
 		// I want palette index 255 to act as transparency, so I must use SetColorKey
 
-		success = jeBitmap_SetColorKey(myBM,JE_TRUE,255);
+		success = grBitmap_SetColorKey(myBM,GR_TRUE,255);
 		assert(success);
 
 		// just for fun, let's modify the palette:
 		if (1)
 		{
-		jeBitmap_Palette * Pal;
+		grBitmap_Palette * Pal;
 
 			// get the palette ; I don't care if its primary or secondary, so
 			/// I don't use the Info.Palette field
 
-			Pal = jeBitmap_GetPalette(myBM);
+			Pal = grBitmap_GetPalette(myBM);
 			assert(Pal);
 
 			// I'm only fiddling one entry, so don't bother with a full Lock() UnLock()
@@ -394,13 +394,13 @@ jeBitmap_Info Info;
 
 			// make palette index zero bright red; we use alpha = 255 for opaque
 
-			success = jeBitmap_Palette_SetEntryColor(Pal,0,255,0,0,255);
+			success = grBitmap_Palette_SetEntryColor(Pal,0,255,0,0,255);
 			assert(success);
 
 			// tell the bitmap system you've changed the palette; this function
 			//  is smart enough to not do unecessary copies or whatever.
 
-			success = jeBitmap_SetPalette(myBM,Pal);
+			success = grBitmap_SetPalette(myBM,Pal);
 			assert(success);
 		}
 
@@ -409,7 +409,7 @@ jeBitmap_Info Info;
 	{
 		// otherwise, treat black as transparent, in whatever format I have
 
-		success = jeBitmap_SetColorKey(myBM,JE_TRUE,jePixelFormat_ComposePixel(Info.Format,0,0,0,0));
+		success = grBitmap_SetColorKey(myBM,GR_TRUE,grPixelFormat_ComposePixel(Info.Format,0,0,0,0));
 		assert(success);
 	}	
 
@@ -421,26 +421,26 @@ jeBitmap_Info Info;
 
 	// I want to fiddle the fast format in 565 later, so cue the bitmap to try to give me that format.
 
-	success = jeBitmap_SetPreferredFormat(myBM,JE_PIXELFORMAT_16BIT_565_RGB);
+	success = grBitmap_SetPreferredFormat(myBM,GR_PIXELFORMAT_16BIT_565_RGB);
 	assert(success);
 
 	// Add it to the engine so it can be used for drawing.
 
-	success = jeEngine_AddBitmap(myEngine,myBM);
+	success = grEngine_AddBitmap(myEngine,myBM);
 	assert(success);
 }
 
 void Shutdown(void)
 {
-jeBoolean WasDestroyed;
+grBoolean WasDestroyed;
 
 	assert(myBM);
 	
 	// clean up
 
-	jeEngine_RemoveBitmap(myEngine,myBM);
+	grEngine_RemoveBitmap(myEngine,myBM);
 
-	WasDestroyed = jeBitmap_Destroy(&myBM);
+	WasDestroyed = grBitmap_Destroy(&myBM);
 
 	// someone else might have done _CreateRef on our bitmap,
 	//  so we can't be sure it's actually destroyed.
@@ -454,9 +454,9 @@ jeBoolean WasDestroyed;
 
 void Draw(void)
 {
-jeBitmap * Lock;
-jeBoolean success;
-jeBitmap_Info Info;
+grBitmap * Lock;
+grBoolean success;
+grBitmap_Info Info;
 uint16 *bits,*bptr;
 int x,y;
 
@@ -465,7 +465,7 @@ int x,y;
 	//	LockForWrite is an exclusive lock, unlike LockForRead which is non-blocking
 	// request our favorite format, and only lock Mip 0 (the full size bitmap)
 
-	success = jeBitmap_LockForWriteFormat(myBM,&Lock,0,0,JE_PIXELFORMAT_16BIT_565_RGB);
+	success = grBitmap_LockForWriteFormat(myBM,&Lock,0,0,GR_PIXELFORMAT_16BIT_565_RGB);
 	if ( ! success )
 	{
 		// well, we tried to be nice; if we were very polite, we would do a LockForWrite
@@ -475,7 +475,7 @@ int x,y;
 		// note that we are destroying the original bitmap by changing its format
 		// we should only do this if we are going to draw into the bitmap
 
-		success = jeBitmap_SetFormat(myBM,JE_PIXELFORMAT_16BIT_565_RGB,JE_TRUE,0,NULL);
+		success = grBitmap_SetFormat(myBM,GR_PIXELFORMAT_16BIT_565_RGB,GR_TRUE,0,NULL);
 		assert(success);
 
 		// now we should be able to get the bits we want, *but* they may not be the
@@ -483,7 +483,7 @@ int x,y;
 		// (if you must have the fastest bits, then use only _LockForWrite, never LockForWriteFormat,
 		// which might have to do a conversion)
 
-		success = jeBitmap_LockForWriteFormat(myBM,&Lock,0,0,JE_PIXELFORMAT_16BIT_565_RGB);
+		success = grBitmap_LockForWriteFormat(myBM,&Lock,0,0,GR_PIXELFORMAT_16BIT_565_RGB);
 		assert(success);
 	}
 
@@ -491,12 +491,12 @@ int x,y;
 	// we do a GetInfo because the Lock's info could be different than
 	//	the original bitmap's (particularly the Palette & the Stride)
 
-	success = jeBitmap_GetInfo(Lock,&Info,NULL);
+	success = grBitmap_GetInfo(Lock,&Info,NULL);
 	assert(success);
 
 	// you can only call _GetBits on a locked bitmap
 
-	bits = jeBitmap_GetBits(Lock);
+	bits = grBitmap_GetBits(Lock);
 	assert( bits );
 
 	bptr = bits;
@@ -521,28 +521,28 @@ int x,y;
 
 	// you call Unlock on all the mips you locked - not on the original bitmap!
 
-	success = jeBitmap_UnLock(Lock);
+	success = grBitmap_UnLock(Lock);
 	assert(success);
 
 	// now, we only fiddled the full-size Mip, and there might be more,
 	//  so lets percolate the changes into the smaller mips:
 
-	success = jeBitmap_RefreshMips(myBM);
+	success = grBitmap_RefreshMips(myBM);
 	assert(success);
 
 	// a null rect means use the whole bitmap;
 	// Engine_DrawBitmap blits a 2d decal to the framebuffer (fast)
 
-	success = jeEngine_DrawBitmap(myEngine,myBM,NULL,0,0);
+	success = grEngine_DrawBitmap(myEngine,myBM,NULL,0,0);
 	assert(success);
 
 }
 
 void DrawPolite(void)
 {
-jeBitmap * Lock;
-jeBoolean success;
-jeBitmap_Info Info;
+grBitmap * Lock;
+grBoolean success;
+grBitmap_Info Info;
 void *bits;
 int x,y;
 
@@ -550,16 +550,16 @@ int x,y;
 	// lock in the fastest format (whatever it is)
 	// because we did SetPreferred, this should be 565_RGB, but might not be
 
-	success = jeBitmap_LockForWrite(myBM,&Lock,0,0);
+	success = grBitmap_LockForWrite(myBM,&Lock,0,0);
 	assert(success);
 
-	success = jeBitmap_GetInfo(Lock,&Info,NULL);
+	success = grBitmap_GetInfo(Lock,&Info,NULL);
 	assert(success);
 
-	bits = jeBitmap_GetBits(Lock);
+	bits = grBitmap_GetBits(Lock);
 	assert( bits );
 
-	if ( Info.Format == JE_PIXELFORMAT_16BIT_565_RGB )
+	if ( Info.Format == GR_PIXELFORMAT_16BIT_565_RGB )
 	{
 	uint16 *wptr;
 
@@ -603,23 +603,23 @@ int x,y;
 
 				// we use alpha of 255 for opaque
 
-				jePixelFormat_PutColor(Info.Format,&bptr,R,G,B,255);
+				grPixelFormat_PutColor(Info.Format,&bptr,R,G,B,255);
 			}
 
-			bptr += (Info.Stride -  Info.Width) * jePixelFormat_BytesPerPel(Info.Format);
+			bptr += (Info.Stride -  Info.Width) * grPixelFormat_BytesPerPel(Info.Format);
 		}
 	}
 	bits = NULL;
 
 	// same as before:
 
-	success = jeBitmap_UnLock(Lock);
+	success = grBitmap_UnLock(Lock);
 	assert(success);
 
-	success = jeBitmap_RefreshMips(myBM);
+	success = grBitmap_RefreshMips(myBM);
 	assert(success);
 
-	success = jeEngine_DrawBitmap(myEngine,myBM,NULL,0,0);
+	success = grEngine_DrawBitmap(myEngine,myBM,NULL,0,0);
 	assert(success);
 
 }
@@ -636,41 +636,7 @@ int x,y;
 #endif
 
 // Genesis3D: Reborn gr* Aliases
-typedef struct jeBitmap grBitmap;
-typedef struct jeBitmap_Palette grBitmap_Palette;
-typedef struct jeBitmap_Info grBitmap_Info;
+typedef struct grBitmap_Info grBitmap_Info;
 
-#define grBitmap_Create                  jeBitmap_Create
-#define grBitmap_CreateFromFile          jeBitmap_CreateFromFile
-#define grBitmap_Destroy                 jeBitmap_Destroy
-#define grBitmap_CreateRef               jeBitmap_CreateRef
-#define grBitmap_SetPalette              jeBitmap_SetPalette
-#define grBitmap_GetPalette              jeBitmap_GetPalette
-#define grBitmap_GetInfo                 jeBitmap_GetInfo
-#define grBitmap_LockForRead             jeBitmap_LockForRead
-#define grBitmap_LockForWrite            jeBitmap_LockForWrite
-#define grBitmap_LockForReadNative       jeBitmap_LockForReadNative
-#define grBitmap_LockForWriteNative      jeBitmap_LockForWriteNative
-#define grBitmap_UnLock                  jeBitmap_UnLock
-#define grBitmap_SetColorKey             jeBitmap_SetColorKey
-#define grBitmap_ClearColorKey           jeBitmap_ClearColorKey
-#define grBitmap_GetColorKey             jeBitmap_GetColorKey
-#define grBitmap_HasColorKey             jeBitmap_HasColorKey
-#define grBitmap_SetAlpha                jeBitmap_SetAlpha
-#define grBitmap_GetAlpha                jeBitmap_GetAlpha
-#define grBitmap_HasAlpha                jeBitmap_HasAlpha
-#define grBitmap_SetGamma                jeBitmap_SetGamma
-#define grBitmap_GetGamma                jeBitmap_GetGamma
-#define grBitmap_IsValid                 jeBitmap_IsValid
-#define grBitmap_Palette_Create          jeBitmap_Palette_Create
-#define grBitmap_Palette_CreateFromFile  jeBitmap_Palette_CreateFromFile
-#define grBitmap_Palette_Destroy         jeBitmap_Palette_Destroy
-#define grBitmap_Palette_CreateRef       jeBitmap_Palette_CreateRef
-#define grBitmap_Palette_LockForRead     jeBitmap_Palette_LockForRead
-#define grBitmap_Palette_LockForWrite    jeBitmap_Palette_LockForWrite
-#define grBitmap_Palette_UnLock          jeBitmap_Palette_UnLock
-#define grBitmap_Palette_GetData         jeBitmap_Palette_GetData
-#define grBitmap_Palette_SetData         jeBitmap_Palette_SetData
-#define grBitmap_Palette_IsValid         jeBitmap_Palette_IsValid
 
 #endif

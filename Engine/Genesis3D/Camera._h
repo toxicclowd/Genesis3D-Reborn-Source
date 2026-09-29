@@ -24,7 +24,7 @@
 #include "BaseType.h"
 #include "Vec3d.h"
 #include "Xform3d.h"
-#include "jeTypes.h"
+#include "grTypes.h"
 
 #include "List.h"
 
@@ -32,51 +32,51 @@
 extern "C" {
 #endif
 
-typedef struct jeCamera 
+typedef struct grCamera 
 {
-	jeFloat		FovRadians;					// Field of View for Camera
-	jeFloat		Width;						// Width of viewport
-	jeFloat		Height;						// Height of viewport
-	jeFloat		Left,Right,Top,Bottom;		// Clipping rect
+	grFloat		FovRadians;					// Field of View for Camera
+	grFloat		Width;						// Width of viewport
+	grFloat		Height;						// Height of viewport
+	grFloat		Left,Right,Top,Bottom;		// Clipping rect
 
-	jeFloat		Scale;						// X and Y Scale based on Fov
-	jeFloat		XCenter;					// Screen Width/2
-	jeFloat		YCenter;					// Screen Height/2
+	grFloat		Scale;						// X and Y Scale based on Fov
+	grFloat		XCenter;					// Screen Width/2
+	grFloat		YCenter;					// Screen Height/2
 
-	jeXForm3d	XForm;						// View transform
+	grXForm3d	XForm;						// View transform
 
-	jeXForm3d	TransposeXForm;				// Original World xform...
+	grXForm3d	TransposeXForm;				// Original World xform...
 	
-	jeVec3d		Pov;						// Un rotated Pov in XForm
+	grVec3d		Pov;						// Un rotated Pov in XForm
 
 	// the camera points along Z in camera space,
 	// these trigs define the viewing pyramid frustum
-	jeFloat		SinViewAngleX;				
-	jeFloat		CosViewAngleX;				
-	jeFloat		SinViewAngleY;				
-	jeFloat		CosViewAngleY;				
+	grFloat		SinViewAngleX;				
+	grFloat		CosViewAngleX;				
+	grFloat		SinViewAngleY;				
+	grFloat		CosViewAngleY;				
 	
 	Stack		*XFormStack;
 
-	jeFloat		ZScale;						// Z Project scalar
+	grFloat		ZScale;						// Z Project scalar
 	
 	// BEGIN - Far clip plane - paradoxnj 2/9/2005
-	jeBoolean	ZFarEnable;
-	jeFloat		ZFar;
+	grBoolean	ZFarEnable;
+	grFloat		ZFar;
 	// END - Far clip plane - paradoxnj 2/9/2005
-} jeCamera;
+} grCamera;
 
 // foward definition
-void	JETCF jeCamera_GetWidthHeight(const jeCamera *Camera,jeFloat *Width,jeFloat *Height);
-float	JETCF jeCamera_GetScale(const jeCamera *Camera);
+void	GRCF grCamera_GetWidthHeight(const grCamera *Camera,grFloat *Width,grFloat *Height);
+float	GRCF grCamera_GetScale(const grCamera *Camera);
 
-const jeXForm3d *		JETCF jeCamera_XForm( const jeCamera *Camera);
-const jeXForm3d *		JETCF jeCamera_WorldXForm( const jeCamera *Camera);
-const jeVec3d *		JETCF jeCamera_GetPov(const jeCamera *Camera);
-void  jeCamera_FillDriverInfo(jeCamera *Camera);
+const grXForm3d *		GRCF grCamera_XForm( const grCamera *Camera);
+const grXForm3d *		GRCF grCamera_WorldXForm( const grCamera *Camera);
+const grVec3d *		GRCF grCamera_GetPov(const grCamera *Camera);
+void  grCamera_FillDriverInfo(grCamera *Camera);
 
-void JETCF jeCamera_GetViewAngleXSinCos( const jeCamera *Camera, jeFloat *SinAngle, jeFloat *CosAngle );
-void JETCF jeCamera_GetViewAngleYSinCos( const jeCamera *Camera, jeFloat *SinAngle, jeFloat *CosAngle );
+void GRCF grCamera_GetViewAngleXSinCos( const grCamera *Camera, grFloat *SinAngle, grFloat *CosAngle );
+void GRCF grCamera_GetViewAngleYSinCos( const grCamera *Camera, grFloat *SinAngle, grFloat *CosAngle );
 
 //-----------------------------------------------------
 

@@ -29,17 +29,17 @@
 
 #define xxSUPERSAMPLE
 
-jeBoolean Pop_RotationCompare( const jePath *PLong, const jePath *PShort, jeFloat Tolerance)
+grBoolean Pop_RotationCompare( const grPath *PLong, const grPath *PShort, grFloat Tolerance)
 {
-	jeXForm3d M1;
-	jeFloat T;
+	grXForm3d M1;
+	grFloat T;
 	#ifdef SUPERSAMPLE
-		jeFloat StartTime,EndTime;
-		jeFloat LastT=0.0f;
-		jeFloat DT=0.0f;
+		grFloat StartTime,EndTime;
+		grFloat LastT=0.0f;
+		grFloat DT=0.0f;
 	#endif
-	jeQuaternion Q1,Q2;
-	jeVec3d V1,V2;
+	grQuaternion Q1,Q2;
+	grVec3d V1,V2;
 
 	int Count;
 	int i;
@@ -47,20 +47,20 @@ jeBoolean Pop_RotationCompare( const jePath *PLong, const jePath *PShort, jeFloa
 	assert( PLong != NULL );
 	assert( PShort != NULL );
 	
-	Count = jePath_GetKeyframeCount(PLong,JE_PATH_ROTATION_CHANNEL);
+	Count = grPath_GetKeyframeCount(PLong,GR_PATH_ROTATION_CHANNEL);
 	if (Count == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	assert( jePath_GetKeyframeCount(PShort,JE_PATH_ROTATION_CHANNEL) <= Count );
+	assert( grPath_GetKeyframeCount(PShort,GR_PATH_ROTATION_CHANNEL) <= Count );
 
 	for (i=0; i<Count; i++)
 		{
-			jePath_GetKeyframe(PLong,i,JE_PATH_ROTATION_CHANNEL, &T, &M1);
-			jePath_SampleChannels(PShort, T,&Q1,&V1);
-			jePath_SampleChannels(PLong , T,&Q2,&V2);
-			if (jeQuaternion_Compare(&Q1,&Q2,Tolerance) == JE_FALSE)
-				return JE_FALSE; 
+			grPath_GetKeyframe(PLong,i,GR_PATH_ROTATION_CHANNEL, &T, &M1);
+			grPath_SampleChannels(PShort, T,&Q1,&V1);
+			grPath_SampleChannels(PLong , T,&Q2,&V2);
+			if (grQuaternion_Compare(&Q1,&Q2,Tolerance) == GR_FALSE)
+				return GR_FALSE; 
 			#ifdef SUPERSAMPLE
 				if (i>0)
 					{
@@ -85,11 +85,11 @@ jeBoolean Pop_RotationCompare( const jePath *PLong, const jePath *PShort, jeFloa
 
 		if (Count>0)
 			{
-				jePath_GetKeyframe(PLong,0,JE_PATH_ROTATION_CHANNEL, &StartTime, &M1);
+				grPath_GetKeyframe(PLong,0,GR_PATH_ROTATION_CHANNEL, &StartTime, &M1);
 			}
 		if (Count>1)
 			{
-				jePath_GetKeyframe(PLong,Count-1,JE_PATH_ROTATION_CHANNEL, &EndTime, &M1);
+				grPath_GetKeyframe(PLong,Count-1,GR_PATH_ROTATION_CHANNEL, &EndTime, &M1);
 			}
 		else
 			{
@@ -98,25 +98,25 @@ jeBoolean Pop_RotationCompare( const jePath *PLong, const jePath *PShort, jeFloa
 
 		for (T=StartTime; T<=EndTime; T+=DT)
 			{
-				jePath_SampleChannels(PLong,  T, &Q1, &V1);
-				jePath_SampleChannels(PShort, T, &Q2, &V2);
-				if (jeQuaternion_Compare(&Q1,&Q2,Tolerance) == JE_FALSE)
+				grPath_SampleChannels(PLong,  T, &Q1, &V1);
+				grPath_SampleChannels(PShort, T, &Q2, &V2);
+				if (grQuaternion_Compare(&Q1,&Q2,Tolerance) == GR_FALSE)
 					{
-						return JE_FALSE; 
+						return GR_FALSE; 
 					}
 			}
 	#endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean Pop_ZapRotationsIfAllKeysEqual( jePath *P, jeFloat Tolerance, jeBoolean *AllEqual )
+grBoolean Pop_ZapRotationsIfAllKeysEqual( grPath *P, grFloat Tolerance, grBoolean *AllEqual )
 {
-	jeXForm3d M1;
-	jeFloat T;
-	jeQuaternion Q1,Q2;
-	jeVec3d V1,V2;
+	grXForm3d M1;
+	grFloat T;
+	grQuaternion Q1,Q2;
+	grVec3d V1,V2;
 
 	int Count;
 	int i;
@@ -124,51 +124,51 @@ jeBoolean Pop_ZapRotationsIfAllKeysEqual( jePath *P, jeFloat Tolerance, jeBoolea
 	assert( AllEqual != NULL );
 	assert( P != NULL );
 
-	*AllEqual = JE_FALSE;
+	*AllEqual = GR_FALSE;
 
-	Count = jePath_GetKeyframeCount(P,JE_PATH_ROTATION_CHANNEL);
+	Count = grPath_GetKeyframeCount(P,GR_PATH_ROTATION_CHANNEL);
 	if (Count == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	jePath_GetKeyframe(P,0,JE_PATH_ROTATION_CHANNEL, &T, &M1);
-	jePath_SampleChannels(P, T,&Q1,&V1);
+	grPath_GetKeyframe(P,0,GR_PATH_ROTATION_CHANNEL, &T, &M1);
+	grPath_SampleChannels(P, T,&Q1,&V1);
 
 	for (i=1; i<Count; i++)
 		{
-			jePath_GetKeyframe(P,i,JE_PATH_ROTATION_CHANNEL, &T, &M1);
-			jePath_SampleChannels(P , T,&Q2,&V2);
-			if (jeQuaternion_Compare(&Q1,&Q2,Tolerance) == JE_FALSE)
-				return JE_TRUE; 
+			grPath_GetKeyframe(P,i,GR_PATH_ROTATION_CHANNEL, &T, &M1);
+			grPath_SampleChannels(P , T,&Q2,&V2);
+			if (grQuaternion_Compare(&Q1,&Q2,Tolerance) == GR_FALSE)
+				return GR_TRUE; 
 		}
 
 	// if we get to here, all keys are equal.  (delete all but first and last)
 	for (i=Count-2; i>0; i--)
 		{
-			//jePath_GetKeyframe(P,i,JE_PATH_ROTATION_CHANNEL, &T, &M1);
-			if (jePath_DeleteKeyframe(P,i,JE_PATH_ROTATION_CHANNEL) == JE_FALSE)
+			//grPath_GetKeyframe(P,i,GR_PATH_ROTATION_CHANNEL, &T, &M1);
+			if (grPath_DeleteKeyframe(P,i,GR_PATH_ROTATION_CHANNEL) == GR_FALSE)
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 		}
 
-	*AllEqual = JE_TRUE;
-	return JE_TRUE;
+	*AllEqual = GR_TRUE;
+	return GR_TRUE;
 }
 
 
 #if 0
-jeBoolean Pop_RotationComparePortion( jePath *PLong, jePath *PShort, jeFloat Tolerance,int StartIndex,int EndIndex)
+grBoolean Pop_RotationComparePortion( grPath *PLong, grPath *PShort, grFloat Tolerance,int StartIndex,int EndIndex)
 {
-	jeXForm3d M1;
-	jeFloat T;
+	grXForm3d M1;
+	grFloat T;
 	#ifdef SUPERSAMPLE
-		jeFloat StartTime,EndTime;
-		jeFloat LastT=-9e29f;
-		jeFloat DT=9e29f;
+		grFloat StartTime,EndTime;
+		grFloat LastT=-9e29f;
+		grFloat DT=9e29f;
 	#endif
-	jeQuaternion Q1,Q2;
-	jeVec3d V1,V2;
+	grQuaternion Q1,Q2;
+	grVec3d V1,V2;
 
 	int Count;
 	int i,n;
@@ -176,12 +176,12 @@ jeBoolean Pop_RotationComparePortion( jePath *PLong, jePath *PShort, jeFloat Tol
 	assert( PLong != NULL );
 	assert( PShort != NULL );
 	
-	Count = jePath_GetKeyframeCount(PLong,JE_PATH_ROTATION_CHANNEL);
+	Count = grPath_GetKeyframeCount(PLong,GR_PATH_ROTATION_CHANNEL);
 	if (Count == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	assert( jePath_GetKeyframeCount(PShort,JE_PATH_ROTATION_CHANNEL) <= Count );
+	assert( grPath_GetKeyframeCount(PShort,GR_PATH_ROTATION_CHANNEL) <= Count );
 
 
 	for (i=StartIndex; i<EndIndex; i++)
@@ -196,16 +196,16 @@ jeBoolean Pop_RotationComparePortion( jePath *PLong, jePath *PShort, jeFloat Tol
 					n = n-Count;
 				}
 
-			jePath_GetKeyframe(PLong,n,JE_PATH_ROTATION_CHANNEL, &T, &M1);
-			//jeQuaternion_FromMatrix(&M1,&Q1);
-			jePath_SampleChannels(PShort, T,&Q1,&V1);
-			jePath_SampleChannels(PLong , T,&Q2,&V2);
-			if (jeQuaternion_Compare(&Q1,&Q2,Tolerance) == JE_FALSE)
-				return JE_FALSE; 
+			grPath_GetKeyframe(PLong,n,GR_PATH_ROTATION_CHANNEL, &T, &M1);
+			//grQuaternion_FromMatrix(&M1,&Q1);
+			grPath_SampleChannels(PShort, T,&Q1,&V1);
+			grPath_SampleChannels(PLong , T,&Q2,&V2);
+			if (grQuaternion_Compare(&Q1,&Q2,Tolerance) == GR_FALSE)
+				return GR_FALSE; 
 			#ifdef SUPERSAMPLE
 				if (fabs(T-LastT) < DT)
 					{
-						DT = (jeFloat)fabs(T-LastT);
+						DT = (grFloat)fabs(T-LastT);
 					}
 				LastT = T;
 			#endif
@@ -235,66 +235,66 @@ jeBoolean Pop_RotationComparePortion( jePath *PLong, jePath *PShort, jeFloat Tol
 		if (Count==1)
 			{		// if count is 0, it didn't get here
 					// if count is 1, there is only one possible return value, and that is checked in above loop.
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 
-		jePath_GetKeyframe(PLong,StartIndex,JE_PATH_ROTATION_CHANNEL, &StartTime, &M1);
-		jePath_GetKeyframe(PLong,EndIndex,JE_PATH_ROTATION_CHANNEL, &EndTime, &M1);
+		grPath_GetKeyframe(PLong,StartIndex,GR_PATH_ROTATION_CHANNEL, &StartTime, &M1);
+		grPath_GetKeyframe(PLong,EndIndex,GR_PATH_ROTATION_CHANNEL, &EndTime, &M1);
 
 		if (EndTime>StartTime)
 			{
 				for (T=StartTime; T<=EndTime; T+=DT)
 					{
-						jePath_SampleChannels(PLong,  T, &Q1, &V1);
-						jePath_SampleChannels(PShort, T, &Q2, &V2);
-						if (jeQuaternion_Compare(&Q1,&Q2,Tolerance) == JE_FALSE)
+						grPath_SampleChannels(PLong,  T, &Q1, &V1);
+						grPath_SampleChannels(PShort, T, &Q2, &V2);
+						if (grQuaternion_Compare(&Q1,&Q2,Tolerance) == GR_FALSE)
 							{
-								return JE_FALSE; 
+								return GR_FALSE; 
 							}
 					}
 			}
 		else
 			{
-				jeFloat LastTime;
-				jePath_GetKeyframe(PLong,Count-1,JE_PATH_ROTATION_CHANNEL, &LastTime, &M1);
+				grFloat LastTime;
+				grPath_GetKeyframe(PLong,Count-1,GR_PATH_ROTATION_CHANNEL, &LastTime, &M1);
 				for (T=0.0f; T<=EndTime; T+=DT)
 					{
-						jePath_SampleChannels(PLong,  T, &Q1, &V1);
-						jePath_SampleChannels(PShort, T, &Q2, &V2);
-						if (jeQuaternion_Compare(&Q1,&Q2,Tolerance) == JE_FALSE)
+						grPath_SampleChannels(PLong,  T, &Q1, &V1);
+						grPath_SampleChannels(PShort, T, &Q2, &V2);
+						if (grQuaternion_Compare(&Q1,&Q2,Tolerance) == GR_FALSE)
 							{
-								return JE_FALSE; 
+								return GR_FALSE; 
 							}
 					}
 				for (T=StartTime; T<=LastTime; T+=DT)
 					{
-						jePath_SampleChannels(PLong,  T, &Q1, &V1);
-						jePath_SampleChannels(PShort, T, &Q2, &V2);
-						if (jeQuaternion_Compare(&Q1,&Q2,Tolerance) == JE_FALSE)
+						grPath_SampleChannels(PLong,  T, &Q1, &V1);
+						grPath_SampleChannels(PShort, T, &Q2, &V2);
+						if (grQuaternion_Compare(&Q1,&Q2,Tolerance) == GR_FALSE)
 							{
-								return JE_FALSE; 
+								return GR_FALSE; 
 							}
 					}
 			}
 	#endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 #endif
 
 
-jeBoolean Pop_TranslationCompare( const jePath *PLong, const jePath *PShort, jeFloat Tolerance)
+grBoolean Pop_TranslationCompare( const grPath *PLong, const grPath *PShort, grFloat Tolerance)
 {
-	jeXForm3d M1;
-	jeFloat T;
+	grXForm3d M1;
+	grFloat T;
 	#ifdef SUPERSAMPLE
-		jeFloat StartTime,EndTime;
-		jeFloat LastT=0.0f;
-		jeFloat DT=0.0f;
+		grFloat StartTime,EndTime;
+		grFloat LastT=0.0f;
+		grFloat DT=0.0f;
 	#endif
-	jeQuaternion Q1;
-	//jeQuaternion Q2;
-	jeVec3d V1;
+	grQuaternion Q1;
+	//grQuaternion Q2;
+	grVec3d V1;
 	//veVec3d V2;
 
 	int Count;
@@ -303,21 +303,21 @@ jeBoolean Pop_TranslationCompare( const jePath *PLong, const jePath *PShort, jeF
 	assert( PLong != NULL );
 	assert( PShort != NULL );
 	
-	Count = jePath_GetKeyframeCount(PLong,JE_PATH_TRANSLATION_CHANNEL);
+	Count = grPath_GetKeyframeCount(PLong,GR_PATH_TRANSLATION_CHANNEL);
 	if (Count == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	assert( jePath_GetKeyframeCount(PShort,JE_PATH_TRANSLATION_CHANNEL) <= Count );
+	assert( grPath_GetKeyframeCount(PShort,GR_PATH_TRANSLATION_CHANNEL) <= Count );
 
 	for (i=0; i<Count; i++)
 		{
-			jePath_GetKeyframe(PLong,i,JE_PATH_TRANSLATION_CHANNEL, &T, &M1);
-			jePath_SampleChannels(PShort, T,&Q1,&V1);
-			//jePath_SampleChannels(PLong , T,&Q2,&V2);
-			if (jeVec3d_Compare(&V1, &(M1.Translation),Tolerance) == JE_FALSE)
+			grPath_GetKeyframe(PLong,i,GR_PATH_TRANSLATION_CHANNEL, &T, &M1);
+			grPath_SampleChannels(PShort, T,&Q1,&V1);
+			//grPath_SampleChannels(PLong , T,&Q2,&V2);
+			if (grVec3d_Compare(&V1, &(M1.Translation),Tolerance) == GR_FALSE)
 				{
-					return JE_FALSE; 
+					return GR_FALSE; 
 				}
 			#ifdef SUPERSAMPLE
 				if (i>0)
@@ -344,11 +344,11 @@ jeBoolean Pop_TranslationCompare( const jePath *PLong, const jePath *PShort, jeF
 
 		if (Count>0)
 			{
-				jePath_GetKeyframe(PLong,0,JE_PATH_TRANSLATION_CHANNEL, &StartTime, &M1);
+				grPath_GetKeyframe(PLong,0,GR_PATH_TRANSLATION_CHANNEL, &StartTime, &M1);
 			}
 		if (Count>1)
 			{
-				jePath_GetKeyframe(PLong,Count-1,JE_PATH_TRANSLATION_CHANNEL, &EndTime, &M1);
+				grPath_GetKeyframe(PLong,Count-1,GR_PATH_TRANSLATION_CHANNEL, &EndTime, &M1);
 			}
 		else
 			{
@@ -357,24 +357,24 @@ jeBoolean Pop_TranslationCompare( const jePath *PLong, const jePath *PShort, jeF
 
 		for (T=StartTime; T<=EndTime; T+=DT)
 			{
-				jePath_SampleChannels(PLong,  T, &Q1, &V1);
-				jePath_SampleChannels(PShort, T, &Q2, &V2);
-				if (jeVec3d_Compare(&V1, &V2,Tolerance) == JE_FALSE)
+				grPath_SampleChannels(PLong,  T, &Q1, &V1);
+				grPath_SampleChannels(PShort, T, &Q2, &V2);
+				if (grVec3d_Compare(&V1, &V2,Tolerance) == GR_FALSE)
 					{
-						return JE_FALSE; 
+						return GR_FALSE; 
 					}
 			}
 
 	#endif
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean Pop_ZapTranslationsIfAllKeysEqual( jePath *P, jeFloat Tolerance, jeBoolean *AllEqual )
+grBoolean Pop_ZapTranslationsIfAllKeysEqual( grPath *P, grFloat Tolerance, grBoolean *AllEqual )
 {
-	jeXForm3d M1;
-	jeFloat T;
-	jeQuaternion Q1,Q2;
-	jeVec3d V1,V2;
+	grXForm3d M1;
+	grFloat T;
+	grQuaternion Q1,Q2;
+	grVec3d V1,V2;
 
 	int Count;
 	int i;
@@ -382,50 +382,50 @@ jeBoolean Pop_ZapTranslationsIfAllKeysEqual( jePath *P, jeFloat Tolerance, jeBoo
 	assert( P != NULL );
 	assert( AllEqual != NULL );
 
-	*AllEqual = JE_FALSE;
+	*AllEqual = GR_FALSE;
 	
-	Count = jePath_GetKeyframeCount(P,JE_PATH_TRANSLATION_CHANNEL);
+	Count = grPath_GetKeyframeCount(P,GR_PATH_TRANSLATION_CHANNEL);
 	if (Count == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	jePath_GetKeyframe(P,0,JE_PATH_TRANSLATION_CHANNEL, &T, &M1);
-	jePath_SampleChannels(P, T,&Q1,&V1);
+	grPath_GetKeyframe(P,0,GR_PATH_TRANSLATION_CHANNEL, &T, &M1);
+	grPath_SampleChannels(P, T,&Q1,&V1);
 
 	for (i=1; i<Count; i++)
 		{
-			jePath_GetKeyframe(P,i,JE_PATH_TRANSLATION_CHANNEL, &T, &M1);
-			jePath_SampleChannels(P , T,&Q2,&V2);
-			if (jeVec3d_Compare(&V1, &V2,Tolerance) == JE_FALSE)
-				return JE_TRUE; 
+			grPath_GetKeyframe(P,i,GR_PATH_TRANSLATION_CHANNEL, &T, &M1);
+			grPath_SampleChannels(P , T,&Q2,&V2);
+			if (grVec3d_Compare(&V1, &V2,Tolerance) == GR_FALSE)
+				return GR_TRUE; 
 		}
 
 	// if we get to here, all keys are equal.  (delete all but first and last)
 	for (i=Count-2; i>0; i--)
 		{
-			//jePath_GetKeyframe(P,i,JE_PATH_TRANSLATION_CHANNEL, &T, &M1);
-			if (jePath_DeleteKeyframe(P,i,JE_PATH_TRANSLATION_CHANNEL) == JE_FALSE)
+			//grPath_GetKeyframe(P,i,GR_PATH_TRANSLATION_CHANNEL, &T, &M1);
+			if (grPath_DeleteKeyframe(P,i,GR_PATH_TRANSLATION_CHANNEL) == GR_FALSE)
 				{
-					return JE_FALSE;
+					return GR_FALSE;
 				}
 		}
 
-	*AllEqual = JE_TRUE;
-	return JE_TRUE;
+	*AllEqual = GR_TRUE;
+	return GR_TRUE;
 }
 
 #if 0
-jeBoolean Pop_TranslationComparePortion( jePath *PLong, jePath *PShort, jeFloat Tolerance,int StartIndex,int EndIndex)
+grBoolean Pop_TranslationComparePortion( grPath *PLong, grPath *PShort, grFloat Tolerance,int StartIndex,int EndIndex)
 {
-	jeXForm3d M1;
-	jeFloat T;
+	grXForm3d M1;
+	grFloat T;
 	#ifdef SUPERSAMPLE
-		jeFloat StartTime,EndTime;
-		jeFloat LastT=-9e29f;
-		jeFloat DT=9e29f;
+		grFloat StartTime,EndTime;
+		grFloat LastT=-9e29f;
+		grFloat DT=9e29f;
 	#endif
-	jeQuaternion Q1,Q2;
-	jeVec3d V1,V2;
+	grQuaternion Q1,Q2;
+	grVec3d V1,V2;
 
 	int Count;
 	int i,n;
@@ -433,12 +433,12 @@ jeBoolean Pop_TranslationComparePortion( jePath *PLong, jePath *PShort, jeFloat 
 	assert( PLong != NULL );
 	assert( PShort != NULL );
 	
-	Count = jePath_GetKeyframeCount(PLong,JE_PATH_TRANSLATION_CHANNEL);
+	Count = grPath_GetKeyframeCount(PLong,GR_PATH_TRANSLATION_CHANNEL);
 	if (Count == 0)
 		{
-			return JE_TRUE;
+			return GR_TRUE;
 		}
-	assert( jePath_GetKeyframeCount(PShort,JE_PATH_TRANSLATION_CHANNEL) <= Count );
+	assert( grPath_GetKeyframeCount(PShort,GR_PATH_TRANSLATION_CHANNEL) <= Count );
 
 
 	for (i=StartIndex; i<EndIndex; i++)
@@ -453,16 +453,16 @@ jeBoolean Pop_TranslationComparePortion( jePath *PLong, jePath *PShort, jeFloat 
 					n = n-Count;
 				}
 
-			jePath_GetKeyframe(PLong,n,JE_PATH_TRANSLATION_CHANNEL, &T, &M1);
-			//jeQuaternion_FromMatrix(&M1,&Q1);
-			jePath_SampleChannels(PShort, T,&Q1,&V1);
-			jePath_SampleChannels(PLong , T,&Q2,&V2);
-			if (jeVec3d_Compare(&V1, &V2,Tolerance) == JE_FALSE)
-				return JE_FALSE; 
+			grPath_GetKeyframe(PLong,n,GR_PATH_TRANSLATION_CHANNEL, &T, &M1);
+			//grQuaternion_FromMatrix(&M1,&Q1);
+			grPath_SampleChannels(PShort, T,&Q1,&V1);
+			grPath_SampleChannels(PLong , T,&Q2,&V2);
+			if (grVec3d_Compare(&V1, &V2,Tolerance) == GR_FALSE)
+				return GR_FALSE; 
 			#ifdef SUPERSAMPLE
 				if (fabs(T-LastT) < DT)
 					{
-						DT = (jeFloat)fabs(T-LastT);
+						DT = (grFloat)fabs(T-LastT);
 					}
 				LastT = T;
 			#endif
@@ -493,204 +493,204 @@ jeBoolean Pop_TranslationComparePortion( jePath *PLong, jePath *PShort, jeFloat 
 		if (Count==1)
 			{		// if count is 0, it didn't get here
 					// if count is 1, there is only one possible return value, and that is checked in above loop.
-				return JE_TRUE;
+				return GR_TRUE;
 			}
 
 
-		jePath_GetKeyframe(PLong,StartIndex,JE_PATH_TRANSLATION_CHANNEL, &StartTime, &M1);
-		jePath_GetKeyframe(PLong,EndIndex,JE_PATH_TRANSLATION_CHANNEL, &EndTime, &M1);
+		grPath_GetKeyframe(PLong,StartIndex,GR_PATH_TRANSLATION_CHANNEL, &StartTime, &M1);
+		grPath_GetKeyframe(PLong,EndIndex,GR_PATH_TRANSLATION_CHANNEL, &EndTime, &M1);
 
 		if (EndTime>StartTime)
 			{
 				for (T=StartTime; T<=EndTime; T+=DT)
 					{
-						jePath_SampleChannels(PLong,  T, &Q1, &V1);
-						jePath_SampleChannels(PShort, T, &Q2, &V2);
-						if (jeVec3d_Compare(&V1, &V2,Tolerance) == JE_FALSE)
+						grPath_SampleChannels(PLong,  T, &Q1, &V1);
+						grPath_SampleChannels(PShort, T, &Q2, &V2);
+						if (grVec3d_Compare(&V1, &V2,Tolerance) == GR_FALSE)
 							{
-								return JE_FALSE; 
+								return GR_FALSE; 
 							}
 					}
 			}
 		else
 			{
-				jeFloat LastTime;
-				jePath_GetKeyframe(PLong,Count-1,JE_PATH_TRANSLATION_CHANNEL, &LastTime, &M1);
+				grFloat LastTime;
+				grPath_GetKeyframe(PLong,Count-1,GR_PATH_TRANSLATION_CHANNEL, &LastTime, &M1);
 				for (T=0.0f; T<=EndTime; T+=DT)
 					{
-						jePath_SampleChannels(PLong,  T, &Q1, &V1);
-						jePath_SampleChannels(PShort, T, &Q2, &V2);
-						if (jeVec3d_Compare(&V1, &V2,Tolerance) == JE_FALSE)
+						grPath_SampleChannels(PLong,  T, &Q1, &V1);
+						grPath_SampleChannels(PShort, T, &Q2, &V2);
+						if (grVec3d_Compare(&V1, &V2,Tolerance) == GR_FALSE)
 							{
-								return JE_FALSE; 
+								return GR_FALSE; 
 							}
 					}
 				for (T=StartTime; T<=LastTime; T+=DT)
 					{
-						jePath_SampleChannels(PLong,  T, &Q1, &V1);
-						jePath_SampleChannels(PShort, T, &Q2, &V2);
-						if (jeVec3d_Compare(&V1, &V2,Tolerance) == JE_FALSE)
+						grPath_SampleChannels(PLong,  T, &Q1, &V1);
+						grPath_SampleChannels(PShort, T, &Q2, &V2);
+						if (grVec3d_Compare(&V1, &V2,Tolerance) == GR_FALSE)
 							{
-								return JE_FALSE; 
+								return GR_FALSE; 
 							}
 					}
 			}
 	#endif
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 #endif
 
-jeBoolean pop_ZapLastKey(const jePath *P, jePath *Popt, int Channel1, int Channel2, jeFloat Tolerance)
+grBoolean pop_ZapLastKey(const grPath *P, grPath *Popt, int Channel1, int Channel2, grFloat Tolerance)
 {
 	assert( Popt != NULL );
 	assert( Channel1 != Channel2 );
-	assert( Channel1 == JE_PATH_ROTATION_CHANNEL || Channel1 == JE_PATH_TRANSLATION_CHANNEL );
-	assert( Channel2 == JE_PATH_ROTATION_CHANNEL || Channel2 == JE_PATH_TRANSLATION_CHANNEL );
+	assert( Channel1 == GR_PATH_ROTATION_CHANNEL || Channel1 == GR_PATH_TRANSLATION_CHANNEL );
+	assert( Channel2 == GR_PATH_ROTATION_CHANNEL || Channel2 == GR_PATH_TRANSLATION_CHANNEL );
 	
-	if (jePath_GetKeyframeCount(Popt, Channel1)==2)
+	if (grPath_GetKeyframeCount(Popt, Channel1)==2)
 		{
-			if (jePath_GetKeyframeCount(Popt, Channel2)>=2)
+			if (grPath_GetKeyframeCount(Popt, Channel2)>=2)
 				{
-					jeFloat T1,T2,StartTime1,EndTime1,StartTime2,EndTime2;
-					jeXForm3d M;
-					jeQuaternion Q1,Q2;
-					jeVec3d V1,V2;
+					grFloat T1,T2,StartTime1,EndTime1,StartTime2,EndTime2;
+					grXForm3d M;
+					grQuaternion Q1,Q2;
+					grVec3d V1,V2;
 
-					if (jePath_GetTimeExtents(Popt, &StartTime1, &EndTime1)==JE_FALSE)
+					if (grPath_GetTimeExtents(Popt, &StartTime1, &EndTime1)==GR_FALSE)
 						{
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 			
-					jePath_GetKeyframe(Popt,0,Channel1, &T1, &M);
-					jePath_GetKeyframe(Popt,1,Channel1, &T2, &M);
+					grPath_GetKeyframe(Popt,0,Channel1, &T1, &M);
+					grPath_GetKeyframe(Popt,1,Channel1, &T2, &M);
 					
-					jePath_SampleChannels(Popt, T1, &Q1, &V1);
-					jePath_SampleChannels(Popt, T2, &Q2, &V2);
+					grPath_SampleChannels(Popt, T1, &Q1, &V1);
+					grPath_SampleChannels(Popt, T2, &Q2, &V2);
 					
 					// first and last key have to be equal!
-					if (Channel1 == JE_PATH_ROTATION_CHANNEL)
+					if (Channel1 == GR_PATH_ROTATION_CHANNEL)
 						{
-							if (jeQuaternion_Compare(&Q1,&Q2,Tolerance) == JE_FALSE)
+							if (grQuaternion_Compare(&Q1,&Q2,Tolerance) == GR_FALSE)
 								{
-									return JE_TRUE;
+									return GR_TRUE;
 								}
 						}
 					else
 						{
-							if (jeVec3d_Compare(&V1, &V2,Tolerance) == JE_FALSE)
+							if (grVec3d_Compare(&V1, &V2,Tolerance) == GR_FALSE)
 								{
-									return JE_TRUE; 
+									return GR_TRUE; 
 								}
 						}
 
-					if (jePath_DeleteKeyframe(Popt,1,Channel1) == JE_FALSE)
+					if (grPath_DeleteKeyframe(Popt,1,Channel1) == GR_FALSE)
 						{
-							return JE_FALSE;
+							return GR_FALSE;
 						}
-					if (jePath_GetTimeExtents(Popt,&StartTime2,&EndTime2)==JE_FALSE)
+					if (grPath_GetTimeExtents(Popt,&StartTime2,&EndTime2)==GR_FALSE)
 						{	// cant get extents: try to reverse change and bail out
-							if (jePath_InsertKeyframe(Popt,Channel1,T2,&M) == JE_FALSE)
+							if (grPath_InsertKeyframe(Popt,Channel1,T2,&M) == GR_FALSE)
 								{
-									return JE_FALSE;
+									return GR_FALSE;
 								}
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 					if (      (fabs(StartTime1-StartTime2) > Tolerance)
 						  ||  (fabs(EndTime1-EndTime2) > Tolerance)     )
 						{	// new extents are bad: reverse change and bail out
-							if (jePath_InsertKeyframe(Popt,Channel1,T2,&M) == JE_FALSE)
+							if (grPath_InsertKeyframe(Popt,Channel1,T2,&M) == GR_FALSE)
 								{
-									return JE_FALSE;
+									return GR_FALSE;
 								}
-							return JE_FALSE;
+							return GR_FALSE;
 						}
 
 						
-					if (Channel1 == JE_PATH_ROTATION_CHANNEL)
+					if (Channel1 == GR_PATH_ROTATION_CHANNEL)
 						{
-							if ( Pop_RotationCompare   (P,Popt,Tolerance)==JE_FALSE )
+							if ( Pop_RotationCompare   (P,Popt,Tolerance)==GR_FALSE )
 								{	// new path has too much error: reverse change and bail out
-									if (jePath_InsertKeyframe(Popt,Channel1,T2,&M) == JE_FALSE)
+									if (grPath_InsertKeyframe(Popt,Channel1,T2,&M) == GR_FALSE)
 										{
-											return JE_FALSE;
+											return GR_FALSE;
 										}
-									return JE_FALSE;
+									return GR_FALSE;
 								}
 						}
 					else
 						{
-							if (Pop_TranslationCompare(P,Popt,Tolerance)==JE_FALSE )
+							if (Pop_TranslationCompare(P,Popt,Tolerance)==GR_FALSE )
 								{
-									if (jePath_InsertKeyframe(Popt,Channel1,T2,&M) == JE_FALSE)
+									if (grPath_InsertKeyframe(Popt,Channel1,T2,&M) == GR_FALSE)
 										{
-											return JE_FALSE;
+											return GR_FALSE;
 										}
-									return JE_FALSE;
+									return GR_FALSE;
 								}
 						}
-					return JE_TRUE;
+					return GR_TRUE;
 				}	
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean pop_ZapIdentityKey(jePath *P, jePath *Popt,int Channel,jeFloat Tolerance)
+grBoolean pop_ZapIdentityKey(grPath *P, grPath *Popt,int Channel,grFloat Tolerance)
 {
-	jeFloat T;
-	jeXForm3d M;
-	jeQuaternion Q;
-	jeVec3d V;
+	grFloat T;
+	grXForm3d M;
+	grQuaternion Q;
+	grVec3d V;
 
 	assert( Popt != NULL );
-	assert( Channel == JE_PATH_ROTATION_CHANNEL || Channel == JE_PATH_TRANSLATION_CHANNEL );
+	assert( Channel == GR_PATH_ROTATION_CHANNEL || Channel == GR_PATH_TRANSLATION_CHANNEL );
 	
-	if (jePath_GetKeyframeCount(Popt, Channel)==1)
+	if (grPath_GetKeyframeCount(Popt, Channel)==1)
 		{
-			jePath_GetKeyframe(Popt,0,Channel, &T, &M);
-			jePath_SampleChannels(Popt, T,&Q,&V);
+			grPath_GetKeyframe(Popt,0,Channel, &T, &M);
+			grPath_SampleChannels(Popt, T,&Q,&V);
 
 			switch (Channel)
 				{
-					case (JE_PATH_ROTATION_CHANNEL):
+					case (GR_PATH_ROTATION_CHANNEL):
 						{
-							jeQuaternion QI;
-							jeQuaternion_SetNoRotation(&QI);
-							if (jeQuaternion_Compare(&Q,&QI, Tolerance) == JE_TRUE)
+							grQuaternion QI;
+							grQuaternion_SetNoRotation(&QI);
+							if (grQuaternion_Compare(&Q,&QI, Tolerance) == GR_TRUE)
 								{
-									if (jePath_DeleteKeyframe(Popt,0,Channel) == JE_FALSE)
+									if (grPath_DeleteKeyframe(Popt,0,Channel) == GR_FALSE)
 										{
-											return JE_FALSE;
+											return GR_FALSE;
 										}
-									if ( Pop_RotationCompare   (P,Popt,Tolerance)==JE_FALSE )
+									if ( Pop_RotationCompare   (P,Popt,Tolerance)==GR_FALSE )
 										{
-											if (jePath_InsertKeyframe(Popt,JE_PATH_ROTATION_CHANNEL,T,&M) == JE_FALSE)
+											if (grPath_InsertKeyframe(Popt,GR_PATH_ROTATION_CHANNEL,T,&M) == GR_FALSE)
 												{
-													return JE_FALSE;
+													return GR_FALSE;
 												}
 										}
-									assert( Pop_RotationCompare   (P,Popt,Tolerance)!=JE_FALSE );
+									assert( Pop_RotationCompare   (P,Popt,Tolerance)!=GR_FALSE );
 								}
 						}
 						break;
-					case (JE_PATH_TRANSLATION_CHANNEL):
+					case (GR_PATH_TRANSLATION_CHANNEL):
 						{
-							jeVec3d VI;
-							jeVec3d_Clear(&VI);
-							if (jeVec3d_Compare(&V, &VI ,Tolerance) == JE_TRUE)
+							grVec3d VI;
+							grVec3d_Clear(&VI);
+							if (grVec3d_Compare(&V, &VI ,Tolerance) == GR_TRUE)
 								{
-									if (jePath_DeleteKeyframe(Popt,0,Channel) == JE_FALSE)
+									if (grPath_DeleteKeyframe(Popt,0,Channel) == GR_FALSE)
 										{
-											return JE_FALSE;
+											return GR_FALSE;
 										}
-									if ( Pop_TranslationCompare(P,Popt,Tolerance)==JE_FALSE )
+									if ( Pop_TranslationCompare(P,Popt,Tolerance)==GR_FALSE )
 										{
-											if (jePath_InsertKeyframe(Popt,JE_PATH_TRANSLATION_CHANNEL,T,&M) == JE_FALSE)
+											if (grPath_InsertKeyframe(Popt,GR_PATH_TRANSLATION_CHANNEL,T,&M) == GR_FALSE)
 												{
-													return JE_FALSE;
+													return GR_FALSE;
 												}
 										}
-									assert( Pop_TranslationCompare(P,Popt,Tolerance)!=JE_FALSE );
+									assert( Pop_TranslationCompare(P,Popt,Tolerance)!=GR_FALSE );
 								}
 						}
 						break;
@@ -699,13 +699,13 @@ jeBoolean pop_ZapIdentityKey(jePath *P, jePath *Popt,int Channel,jeFloat Toleran
 				}
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 #if 0
-jePath *pop_CreateCopy(jePath *Src)
+grPath *pop_CreateCopy(grPath *Src)
 {
-	jePath *P;
+	grPath *P;
 	
 	int i,Count;
 	int RInterp=0;
@@ -713,25 +713,25 @@ jePath *pop_CreateCopy(jePath *Src)
 
 	assert ( Src != NULL );
 
-	P = jePath_Create(JE_PATH_INTERPOLATE_HERMITE, JE_PATH_INTERPOLATE_SQUAD,JE_FALSE);	
+	P = grPath_Create(GR_PATH_INTERPOLATE_HERMITE, GR_PATH_INTERPOLATE_SQUAD,GR_FALSE);	
 	if (P == NULL)
 		{
 			return NULL;
 		}
 
 	{
-		Count = jePath_GetKeyframeCount(Src,JE_PATH_TRANSLATION_CHANNEL);
+		Count = grPath_GetKeyframeCount(Src,GR_PATH_TRANSLATION_CHANNEL);
 		if (Count>0)
 			{
-				jeFloat Time;
-				jeXForm3d M;
+				grFloat Time;
+				grXForm3d M;
 
 				for (i=0; i<Count; i++)
 					{
-						jePath_GetKeyframe(Src,i,JE_PATH_TRANSLATION_CHANNEL,&Time,&M);
-						if (jePath_InsertKeyframe(P,JE_PATH_TRANSLATION_CHANNEL,Time,&M)==JE_FALSE)
+						grPath_GetKeyframe(Src,i,GR_PATH_TRANSLATION_CHANNEL,&Time,&M);
+						if (grPath_InsertKeyframe(P,GR_PATH_TRANSLATION_CHANNEL,Time,&M)==GR_FALSE)
 							{
-								jePath_Destroy(&P);
+								grPath_Destroy(&P);
 								return NULL;
 							}
 					}
@@ -739,18 +739,18 @@ jePath *pop_CreateCopy(jePath *Src)
 	}
 
 	{
-		Count = jePath_GetKeyframeCount(Src,JE_PATH_ROTATION_CHANNEL);
+		Count = grPath_GetKeyframeCount(Src,GR_PATH_ROTATION_CHANNEL);
 		if (Count>0)
 			{
-				jeFloat Time;
-				jeXForm3d M;
+				grFloat Time;
+				grXForm3d M;
 
 				for (i=0; i<Count; i++)
 					{
-						jePath_GetKeyframe(Src,i,JE_PATH_ROTATION_CHANNEL,&Time,&M);
-						if (jePath_InsertKeyframe(P,JE_PATH_ROTATION_CHANNEL,Time,&M)==JE_FALSE)
+						grPath_GetKeyframe(Src,i,GR_PATH_ROTATION_CHANNEL,&Time,&M);
+						if (grPath_InsertKeyframe(P,GR_PATH_ROTATION_CHANNEL,Time,&M)==GR_FALSE)
 							{
-								jePath_Destroy(&P);
+								grPath_Destroy(&P);
 								return NULL;
 							}
 					}
@@ -762,170 +762,170 @@ jePath *pop_CreateCopy(jePath *Src)
 #endif
 					
 
-jePath *Pop_PathOptimize( jePath *P, jeFloat Tolerance)
+grPath *Pop_PathOptimize( grPath *P, grFloat Tolerance)
 {
 	int Count;
-	jePath *Popt;
+	grPath *Popt;
 	int i,pass;
-	jeBoolean AnyRemoved;
-	jeFloat T;
-	jeXForm3d M;
-	jeBoolean AllEqualRotations,AllEqualTranslations;
+	grBoolean AnyRemoved;
+	grFloat T;
+	grXForm3d M;
+	grBoolean AllEqualRotations,AllEqualTranslations;
 	
 
 	assert( P != NULL );
 
-	Popt = jePath_CreateCopy(P);
+	Popt = grPath_CreateCopy(P);
 	if (Popt==NULL)
 		{
 			return NULL;
 		}
 
 
-	AnyRemoved = JE_TRUE;
+	AnyRemoved = GR_TRUE;
 	pass = 0;
 
-	if (Pop_ZapRotationsIfAllKeysEqual(Popt,Tolerance,&AllEqualRotations) == JE_FALSE)
+	if (Pop_ZapRotationsIfAllKeysEqual(Popt,Tolerance,&AllEqualRotations) == GR_FALSE)
 		{
-			jePath_Destroy(&Popt);
+			grPath_Destroy(&Popt);
 			return NULL;
 		}
-	//assert( Pop_RotationCompare   (P,Popt,Tolerance)!=JE_FALSE );
+	//assert( Pop_RotationCompare   (P,Popt,Tolerance)!=GR_FALSE );
 	
-	if (Pop_ZapTranslationsIfAllKeysEqual(Popt,Tolerance,&AllEqualTranslations) == JE_FALSE)
+	if (Pop_ZapTranslationsIfAllKeysEqual(Popt,Tolerance,&AllEqualTranslations) == GR_FALSE)
 		{
-			jePath_Destroy(&Popt);
+			grPath_Destroy(&Popt);
 			return NULL;
 		}
-	//assert( Pop_TranslationCompare(P,Popt,Tolerance)!=JE_FALSE );
+	//assert( Pop_TranslationCompare(P,Popt,Tolerance)!=GR_FALSE );
 
 		
 	if (AllEqualRotations)
 		{
 			// Try to kill last 2 keys, if the extent of the path is defined by the other channel...
-			if (pop_ZapLastKey(P,Popt,JE_PATH_ROTATION_CHANNEL,JE_PATH_TRANSLATION_CHANNEL,Tolerance)==JE_FALSE)
+			if (pop_ZapLastKey(P,Popt,GR_PATH_ROTATION_CHANNEL,GR_PATH_TRANSLATION_CHANNEL,Tolerance)==GR_FALSE)
 				{
-					jePath_Destroy(&Popt);
+					grPath_Destroy(&Popt);
 					return NULL;
 				}
 		}
 	else
 		{
-			Count = jePath_GetKeyframeCount(Popt,JE_PATH_ROTATION_CHANNEL);
+			Count = grPath_GetKeyframeCount(Popt,GR_PATH_ROTATION_CHANNEL);
 			//for (i=1; i< Count-1; i++)
 			for (i=Count-2; i>=1; i--)
 				{
-					jePath_GetKeyframe(P,i,JE_PATH_ROTATION_CHANNEL, &T, &M);
+					grPath_GetKeyframe(P,i,GR_PATH_ROTATION_CHANNEL, &T, &M);
 					if (MkUtil_Interrupt())
 						{
-							jePath_Destroy(&Popt);
+							grPath_Destroy(&Popt);
 							return NULL;
 						}
 				
-					if (jePath_DeleteKeyframe(Popt,i,JE_PATH_ROTATION_CHANNEL) == JE_FALSE)
+					if (grPath_DeleteKeyframe(Popt,i,GR_PATH_ROTATION_CHANNEL) == GR_FALSE)
 						{
-							jePath_Destroy(&Popt);
+							grPath_Destroy(&Popt);
 							return NULL;
 						}
-					//if ( Pop_RotationComparePortion(P,Popt,Tolerance,i-2,i+2)!=JE_FALSE )
-					if ( Pop_RotationCompare   (P,Popt,Tolerance)!=JE_FALSE )
+					//if ( Pop_RotationComparePortion(P,Popt,Tolerance,i-2,i+2)!=GR_FALSE )
+					if ( Pop_RotationCompare   (P,Popt,Tolerance)!=GR_FALSE )
 						{
-							AnyRemoved = JE_TRUE;
+							AnyRemoved = GR_TRUE;
 						}
 					else
 						{
-							//jePath_GetKeyframe(P,i,JE_PATH_ROTATION_CHANNEL, &T, &M);
-							if (jePath_InsertKeyframe(Popt,JE_PATH_ROTATION_CHANNEL,T,&M) == JE_FALSE)
+							//grPath_GetKeyframe(P,i,GR_PATH_ROTATION_CHANNEL, &T, &M);
+							if (grPath_InsertKeyframe(Popt,GR_PATH_ROTATION_CHANNEL,T,&M) == GR_FALSE)
 								{
-									jePath_Destroy(&Popt);
+									grPath_Destroy(&Popt);
 									return NULL;
 								}
 						}
 					/*
-					if (Pop_RotationCompare   (P,Popt,Tolerance)==JE_FALSE )
+					if (Pop_RotationCompare   (P,Popt,Tolerance)==GR_FALSE )
 						{
-							jePath_GetKeyframe(P,i,JE_PATH_ROTATION_CHANNEL, &T, &M);
+							grPath_GetKeyframe(P,i,GR_PATH_ROTATION_CHANNEL, &T, &M);
 							Pop_RotationCompare   (P,Popt,Tolerance);
 						}
 					*/
-					assert( Pop_RotationCompare   (P,Popt,Tolerance)!=JE_FALSE );
+					assert( Pop_RotationCompare   (P,Popt,Tolerance)!=GR_FALSE );
 				}
 
-			assert( Pop_RotationCompare   (P,Popt,Tolerance)!=JE_FALSE );
-			assert( Pop_TranslationCompare(P,Popt,Tolerance)!=JE_FALSE );
+			assert( Pop_RotationCompare   (P,Popt,Tolerance)!=GR_FALSE );
+			assert( Pop_TranslationCompare(P,Popt,Tolerance)!=GR_FALSE );
 			// Try to kill last 2 keys, if the extent of the path is defined by the other channel...
-			if (pop_ZapLastKey(P,Popt,JE_PATH_ROTATION_CHANNEL,JE_PATH_TRANSLATION_CHANNEL,Tolerance)==JE_FALSE)
+			if (pop_ZapLastKey(P,Popt,GR_PATH_ROTATION_CHANNEL,GR_PATH_TRANSLATION_CHANNEL,Tolerance)==GR_FALSE)
 				{
-					jePath_Destroy(&Popt);
+					grPath_Destroy(&Popt);
 					return NULL;
 				}
-			assert( Pop_RotationCompare   (P,Popt,Tolerance)!=JE_FALSE );
-			if (pop_ZapIdentityKey(P,Popt,JE_PATH_ROTATION_CHANNEL,Tolerance)==JE_FALSE)
+			assert( Pop_RotationCompare   (P,Popt,Tolerance)!=GR_FALSE );
+			if (pop_ZapIdentityKey(P,Popt,GR_PATH_ROTATION_CHANNEL,Tolerance)==GR_FALSE)
 				{
-					jePath_Destroy(&Popt);
+					grPath_Destroy(&Popt);
 					return NULL;
 				}
-			assert( Pop_RotationCompare   (P,Popt,Tolerance)!=JE_FALSE );
+			assert( Pop_RotationCompare   (P,Popt,Tolerance)!=GR_FALSE );
 		}
 	
 	if (AllEqualTranslations)
 		{
 			// Try to kill last 2 keys, if the extent of the path is defined by the other channel...
-			if (pop_ZapLastKey(P,Popt,JE_PATH_TRANSLATION_CHANNEL,JE_PATH_ROTATION_CHANNEL,Tolerance)==JE_FALSE)
+			if (pop_ZapLastKey(P,Popt,GR_PATH_TRANSLATION_CHANNEL,GR_PATH_ROTATION_CHANNEL,Tolerance)==GR_FALSE)
 				{
-					jePath_Destroy(&Popt);
+					grPath_Destroy(&Popt);
 					return NULL;
 				}
 		}
 	else
 		{
-			Count = jePath_GetKeyframeCount(Popt,JE_PATH_TRANSLATION_CHANNEL);
+			Count = grPath_GetKeyframeCount(Popt,GR_PATH_TRANSLATION_CHANNEL);
 			//for (i=1; i< Count-1; i++)
 			for (i=Count-2; i>=1; i--)
 				{
-					jePath_GetKeyframe(P,i,JE_PATH_TRANSLATION_CHANNEL, &T, &M);
+					grPath_GetKeyframe(P,i,GR_PATH_TRANSLATION_CHANNEL, &T, &M);
 					if (MkUtil_Interrupt())
 						{
-							jePath_Destroy(&Popt);
+							grPath_Destroy(&Popt);
 							return NULL;
 						}
-					if (jePath_DeleteKeyframe(Popt,i,JE_PATH_TRANSLATION_CHANNEL) == JE_FALSE)
+					if (grPath_DeleteKeyframe(Popt,i,GR_PATH_TRANSLATION_CHANNEL) == GR_FALSE)
 						{
-							jePath_Destroy(&Popt);
+							grPath_Destroy(&Popt);
 							return NULL;
 						}
-					//if ( Pop_TranslationComparePortion(P,Popt,Tolerance,i-2,i+2)!=JE_FALSE )
-					if ( Pop_TranslationCompare(P,Popt,Tolerance)!=JE_FALSE )
+					//if ( Pop_TranslationComparePortion(P,Popt,Tolerance,i-2,i+2)!=GR_FALSE )
+					if ( Pop_TranslationCompare(P,Popt,Tolerance)!=GR_FALSE )
 						{
-							AnyRemoved = JE_TRUE;
+							AnyRemoved = GR_TRUE;
 						}
 					else
 						{
-							//jePath_GetKeyframe(P,i,JE_PATH_TRANSLATION_CHANNEL, &T, &M);
-							if (jePath_InsertKeyframe(Popt,JE_PATH_TRANSLATION_CHANNEL,T,&M) == JE_FALSE)
+							//grPath_GetKeyframe(P,i,GR_PATH_TRANSLATION_CHANNEL, &T, &M);
+							if (grPath_InsertKeyframe(Popt,GR_PATH_TRANSLATION_CHANNEL,T,&M) == GR_FALSE)
 								{
-									jePath_Destroy(&Popt);
+									grPath_Destroy(&Popt);
 									return NULL;
 								}
 						}
-					assert( Pop_TranslationCompare(P,Popt,Tolerance)!=JE_FALSE );
+					assert( Pop_TranslationCompare(P,Popt,Tolerance)!=GR_FALSE );
 				}
 
-			assert( Pop_TranslationCompare(P,Popt,Tolerance)!=JE_FALSE );
-			assert( Pop_RotationCompare   (P,Popt,Tolerance)!=JE_FALSE );
+			assert( Pop_TranslationCompare(P,Popt,Tolerance)!=GR_FALSE );
+			assert( Pop_RotationCompare   (P,Popt,Tolerance)!=GR_FALSE );
 			// Try to kill last 2 keys, if the extent of the path is defined by the other channel...
-			if (pop_ZapLastKey(P,Popt,JE_PATH_TRANSLATION_CHANNEL,JE_PATH_ROTATION_CHANNEL,Tolerance)==JE_FALSE)
+			if (pop_ZapLastKey(P,Popt,GR_PATH_TRANSLATION_CHANNEL,GR_PATH_ROTATION_CHANNEL,Tolerance)==GR_FALSE)
 				{
-					jePath_Destroy(&Popt);
+					grPath_Destroy(&Popt);
 					return NULL;
 				}
-			assert( Pop_TranslationCompare(P,Popt,Tolerance)!=JE_FALSE );
-			if (pop_ZapIdentityKey(P,Popt,JE_PATH_TRANSLATION_CHANNEL,Tolerance)==JE_FALSE)
+			assert( Pop_TranslationCompare(P,Popt,Tolerance)!=GR_FALSE );
+			if (pop_ZapIdentityKey(P,Popt,GR_PATH_TRANSLATION_CHANNEL,Tolerance)==GR_FALSE)
 				{
-					jePath_Destroy(&Popt);
+					grPath_Destroy(&Popt);
 					return NULL;
 				}
-			assert( Pop_TranslationCompare(P,Popt,Tolerance)!=JE_FALSE );
+			assert( Pop_TranslationCompare(P,Popt,Tolerance)!=GR_FALSE );
 		}
 
 			

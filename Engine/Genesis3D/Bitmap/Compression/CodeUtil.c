@@ -148,7 +148,7 @@ uint32 max,ret;
 
 void cu_putExpandingSigned_ari(int val,arithInfo *stream,int init_max,int step_max)
 {
-jeBoolean sign;
+grBoolean sign;
 if ( val < 0 ) { sign = 1; val = -val; } else sign = 0;
 arithEncBitRaw(stream,sign);
 cu_putExpanding_ari(val,stream,init_max,step_max);
@@ -157,7 +157,7 @@ cu_putExpanding_ari(val,stream,init_max,step_max);
 int  cu_getExpandingSigned_ari(arithInfo *stream,int init_max,int step_max)
 {
 int ret;
-jeBoolean sign;
+grBoolean sign;
 sign = arithDecBitRaw(stream);
 ret= cu_getExpanding_ari(stream,init_max,step_max);
 if ( sign ) return - ret; else return ret;
@@ -165,7 +165,7 @@ if ( sign ) return - ret; else return ret;
 
 void cu_putMultingSigned_ari(int val,arithInfo *stream,int init_max,int step_mult)
 {
-jeBoolean sign;
+grBoolean sign;
 if ( val < 0 ) { sign = 1; val = -val; } else sign = 0;
 arithEncBitRaw(stream,sign);
 cu_putMulting_ari(val,stream,init_max,step_mult);
@@ -174,7 +174,7 @@ cu_putMulting_ari(val,stream,init_max,step_mult);
 int  cu_getMultingSigned_ari(arithInfo *stream,int init_max,int step_mult)
 {
 int ret;
-jeBoolean sign;
+grBoolean sign;
 sign = arithDecBitRaw(stream);
 ret= cu_getMulting_ari(stream,init_max,step_mult);
 if ( sign ) return - ret; else return ret;

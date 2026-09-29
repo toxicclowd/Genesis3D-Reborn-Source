@@ -34,7 +34,7 @@ extern "C" {
 WindowRegister *WndReg_Create();
 void WndReg_Destroy( WindowRegister *hWndReg );
 
-jeBoolean WndReg_RegisterWindow(  HWND pHwnd, int32 Signiture );
+grBoolean WndReg_RegisterWindow(  HWND pHwnd, int32 Signiture );
 int32 WndReg_GetSigniture(  HWND pHwnd );
 HWND  WndReg_GetWindow( int32 Signiture );
 

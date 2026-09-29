@@ -528,7 +528,7 @@ bool	CMainFrame::InitializeJet3D()
 			}
 
 			//	register world objects located in the 'objects' dir
-			if (!jeEngine_RegisterObjects(m_strObjectDir.GetBuffer(m_strObjectDir.GetLength())))
+			if (!grEngine_RegisterObjects(m_strObjectDir.GetBuffer(m_strObjectDir.GetLength())))
 			{			
 				AfxMessageBox("Failed to register objects.\n\n Shutting Down...");
 				SendMessage(WM_CLOSE);
@@ -693,83 +693,83 @@ bool CMainFrame::ShutdownAll()
 		if (m_pEngine)
 		{
 			// stop it for now. we'll kill it later...
-			jeEngine_Activate(m_pEngine, FALSE);
+			grEngine_Activate(m_pEngine, FALSE);
 		}
 
 		//	destroy world, engine, etc...
 		if (m_pWorld)
 		{
-			jeWorld_Destroy(&m_pWorld);
+			grWorld_Destroy(&m_pWorld);
 		}
 
 //		if (m_pResourceMgr)
 //		{
-//			jeResource_MgrDestroy(&m_pResourceMgr);
+//			grResource_MgrDestroy(&m_pResourceMgr);
 //		}
 
 		if (m_pCamera)
 		{
-			jeCamera_Destroy(&m_pCamera);
+			grCamera_Destroy(&m_pCamera);
 		}
 
 		if (m_pSoundSys)
 		{
-			jeSound_DestroySoundSystem(m_pSoundSys);
+			grSound_DestroySoundSystem(m_pSoundSys);
 		}
 
 		if (m_pEngine)
 		{	
 			if (m_pDriver)
 			{
-				jeEngine_ShutdownDriver(m_pEngine);
+				grEngine_ShutdownDriver(m_pEngine);
 			}
 
-			jeEngine_Destroy(&m_pEngine);
+			grEngine_Destroy(&m_pEngine);
 		}
 
 		//	destroy all the virtual file systems
 //		if (m_pvFileSys)
 //		{
-//			jeVFile_Close(m_pvFileSys);
+//			grVFile_Close(m_pvFileSys);
 //		}
 
 		if (m_pvfMaterialFile)
 		{
-			jeVFile_Close(m_pvfMaterialFile);
+			grVFile_Close(m_pvfMaterialFile);
 		}
 
 		if (m_pvfActorFile)
 		{
-			jeVFile_Close(m_pvfActorFile);
+			grVFile_Close(m_pvfActorFile);
 		}
 
 		if (m_pvfSoundFile)
 		{
-			jeVFile_Close(m_pvfSoundFile);
+			grVFile_Close(m_pvfSoundFile);
 		}
 
 		if (m_pvfLevelFile)
 		{
-			jeVFile_Close(m_pvfLevelFile);
+			grVFile_Close(m_pvfLevelFile);
 		}
 
 		/////////////////
 		if (m_pResourceMgr)
 		{
-			jeResource_MgrDestroy(&m_pResourceMgr);
+			grResource_MgrDestroy(&m_pResourceMgr);
 		}
 
 		//	destroy all the virtual file systems
 		if (m_pvFileSys)
 		{
-			jeVFile_Close(m_pvFileSys);
+			grVFile_Close(m_pvFileSys);
 		}
 		////////////////////
 
 		//	Destroy our pointer manager
 		if (m_pPtrMgr)
 		{
-			jePtrMgr_Destroy(&m_pPtrMgr);
+			grPtrMgr_Destroy(&m_pPtrMgr);
 		}
 
 		//	nullify all pointers at once -- just for style reasons
@@ -804,7 +804,7 @@ bool CMainFrame::ShutdownAll()
 //	InitFileSystem
 //	
 ////////////////////////////////////////////////////////////////////////////////
-bool CMainFrame::InitFileSystem(jeEngine* pEngine)
+bool CMainFrame::InitFileSystem(grEngine* pEngine)
 {
 	//	main virtual file system
 	//	NOTE: We are storing Dir string info in CString vars. But we cannot pass the
@@ -812,65 +812,65 @@ bool CMainFrame::InitFileSystem(jeEngine* pEngine)
 	//	So, we pass the BUFFER from the CString var. This IS a slight inconvenience. BUT overall,
 	//	CString is such a powerful and elegant class (when compared to the char type),
 	//	that the benefits far outweigh the difficulties.
-	m_pvFileSys = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS,
-		m_strBaseDir.GetBuffer(m_strBaseDir.GetLength()), NULL, JE_VFILE_OPEN_DIRECTORY);
+	m_pvFileSys = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS,
+		m_strBaseDir.GetBuffer(m_strBaseDir.GetLength()), NULL, GR_VFILE_OPEN_DIRECTORY);
 
 	if (!m_pvFileSys)
 		return false;
 
 	//	create resource manager
-	m_pResourceMgr = jeResource_MgrCreate(pEngine);
+	m_pResourceMgr = grResource_MgrCreate(pEngine);
 
 	if (m_pResourceMgr)
 	{	
 		//	now, create specialized virtual file systems.
 
-		m_pvfMaterialFile = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS,
+		m_pvfMaterialFile = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS,
 			m_strMaterialDir.GetBuffer(m_strMaterialDir.GetLength()),
-			NULL, JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY);
+			NULL, GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
 
 		if (!m_pvfMaterialFile)
 			return false;
 
-		m_pvfSoundFile = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS,
+		m_pvfSoundFile = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS,
 			m_strSoundDir.GetBuffer(m_strSoundDir.GetLength()), NULL,
-			JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY);
+			GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
 
 		if (!m_pvfSoundFile)
 			return false;
 
-		m_pvfActorFile = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS,
+		m_pvfActorFile = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS,
 			m_strActorDir.GetBuffer(m_strActorDir.GetLength()),
-			NULL, JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY);
+			NULL, GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
 
 		if (!m_pvfActorFile)
 			return false;
 
-		m_pvfLevelFile = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS,
+		m_pvfLevelFile = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS,
 			m_strLevelDir.GetBuffer(m_strLevelDir.GetLength()),
-			NULL, JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY);
+			NULL, GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
 
 		if (!m_pvfLevelFile)
 			return false;
 
 		//	add file systems to resourcemgr so the world loader 
 		//	can resolve references in a world file
-		if (!jeResource_AddVFile(m_pResourceMgr,
+		if (!grResource_AddVFile(m_pResourceMgr,
 			m_strMaterialDir.GetBuffer(m_strMaterialDir.GetLength()),
 			m_pvfMaterialFile )) 
 			return false;
 
-		if( !jeResource_AddVFile(m_pResourceMgr,
+		if( !grResource_AddVFile(m_pResourceMgr,
 			m_strSoundDir.GetBuffer(m_strSoundDir.GetLength()),
 			m_pvfSoundFile ))
 			return false;
 
-		if(!jeResource_AddVFile(m_pResourceMgr, 
+		if(!grResource_AddVFile(m_pResourceMgr, 
 			m_strActorDir.GetBuffer(m_strActorDir.GetLength()),
 			m_pvfActorFile))
 			return false;
 
-		if(!jeResource_AddVFile(m_pResourceMgr,
+		if(!grResource_AddVFile(m_pResourceMgr,
 			m_strLevelDir.GetBuffer(m_strLevelDir.GetLength()),
 			m_pvfLevelFile))
 			return false;
@@ -882,7 +882,7 @@ bool CMainFrame::InitFileSystem(jeEngine* pEngine)
 	}
 
 	//	create pointer manager (for world loader)
-	m_pPtrMgr = jePtrMgr_Create();
+	m_pPtrMgr = grPtrMgr_Create();
 
 	if (!m_pPtrMgr)
 		return false;
@@ -902,7 +902,7 @@ bool CMainFrame::InitEngine(HWND hWnd)
 	//	of char variable types.
 	if (!m_pEngine)
 	{
-		m_pEngine = jeEngine_Create(hWnd, (const char*)m_strGameName.GetBuffer(m_strGameName.GetLength()), (const char*)m_strBaseDir.GetBuffer(m_strBaseDir.GetLength()));
+		m_pEngine = grEngine_Create(hWnd, (const char*)m_strGameName.GetBuffer(m_strGameName.GetLength()), (const char*)m_strBaseDir.GetBuffer(m_strBaseDir.GetLength()));
 		if (!m_pEngine)
 		{
 			return false;
@@ -910,11 +910,11 @@ bool CMainFrame::InitEngine(HWND hWnd)
 		else
 		{
 			//	turn off the frame rate counter and display
-			jeEngine_EnableFrameRateCounter(m_pEngine, JE_FALSE);
+			grEngine_EnableFrameRateCounter(m_pEngine, GR_FALSE);
 
 			//	brighten things a bit
-			jeEngine_SetGamma(m_pEngine, 2.5f);
-			if (!jeEngine_Activate(m_pEngine, JE_FALSE))
+			grEngine_SetGamma(m_pEngine, 2.5f);
+			if (!grEngine_Activate(m_pEngine, GR_FALSE))
 				return false;
 		}
 	}
@@ -922,7 +922,7 @@ bool CMainFrame::InitEngine(HWND hWnd)
 	//	now load a video driver and set display params
 	if (!m_pDriver)
 	{
-		if (LoadDriver() == JE_FALSE)
+		if (LoadDriver() == GR_FALSE)
 		{
 			return false;	
 		}
@@ -932,7 +932,7 @@ bool CMainFrame::InitEngine(HWND hWnd)
 	if (!m_pCamera)
 	{
 		//	set the FOV and give the camera a rendering rect
-		m_pCamera = jeCamera_Create(2.0f, &m_Rect);
+		m_pCamera = grCamera_Create(2.0f, &m_Rect);
 	
 		if (!m_pCamera)
 		{
@@ -943,7 +943,7 @@ bool CMainFrame::InitEngine(HWND hWnd)
 	//	now, the sound system
 	if (!m_pSoundSys)
 	{
-		m_pSoundSys = jeSound_CreateSoundSystem(hWnd);
+		m_pSoundSys = grSound_CreateSoundSystem(hWnd);
 		if (!m_pSoundSys)
 		{
 			return false;	
@@ -951,11 +951,11 @@ bool CMainFrame::InitEngine(HWND hWnd)
 	}
 
 	//	initialize the transform and translation for the camera.  
-	jeXForm3d_SetIdentity(&m_xfCamera);
+	grXForm3d_SetIdentity(&m_xfCamera);
 	m_xfCamera.Translation.Y = 40.0f;
 
 	//	give the camera a transform so it has a place in the world
-	if (!jeCamera_SetXForm(m_pCamera, &m_xfCamera))
+	if (!grCamera_SetXForm(m_pCamera, &m_xfCamera))
 	{	
 		return false;
 	}
@@ -982,14 +982,14 @@ bool	CMainFrame::LoadDriver()
 		{
 			SetCurrentDirectory(m_strBaseDir);
 
-			m_pDrvSys = jeEngine_GetDriverSystem(m_pEngine);
+			m_pDrvSys = grEngine_GetDriverSystem(m_pEngine);
 			if (!m_pDrvSys)
 				return false;
 		}	//	if (!m_pDrvSys..
 
 		if (!m_pDriver)	
 		{
-			m_pDriver = jeDriver_SystemGetNextDriver(m_pDrvSys, NULL);
+			m_pDriver = grDriver_SystemGetNextDriver(m_pDrvSys, NULL);
 
 			if (!m_pDriver)
 				return false;
@@ -997,7 +997,7 @@ bool	CMainFrame::LoadDriver()
 
 		while (m_pDriver != NULL)
 		{
-			jeDriver_GetName(m_pDriver, &drvname);
+			grDriver_GetName(m_pDriver, &drvname);
 
 			//	if it's the driver name we want, then move to the next task...
 			if (strstr(drvname, m_strDriverName.GetBuffer(m_strDriverName.GetLength())) != NULL)
@@ -1005,17 +1005,17 @@ bool	CMainFrame::LoadDriver()
 				break;
 			}
 
-			m_pDriver = jeDriver_SystemGetNextDriver(m_pDrvSys, m_pDriver);
+			m_pDriver = grDriver_SystemGetNextDriver(m_pDrvSys, m_pDriver);
 		}	//	while(m_pDriver...
 
 		if (m_pDriver)
 		{	
 			if (!m_pMode)
 			{	
-				m_pMode = jeDriver_GetNextMode(m_pDriver, NULL);
+				m_pMode = grDriver_GetNextMode(m_pDriver, NULL);
 				while (m_pMode != NULL)
 				{
-					jeDriver_ModeGetWidthHeight(m_pMode, &tempwidth, &tempheight);
+					grDriver_ModeGetWidthHeight(m_pMode, &tempwidth, &tempheight);
 
 #ifdef _DEBUG
 					if ((tempwidth == -1) && (tempheight == -1))	//	windowed
@@ -1028,29 +1028,29 @@ bool	CMainFrame::LoadDriver()
 						break;										//	because window fram is removed
 																	//	also solves problems with large screens that are not
 																	//	supported by the video drivers (modes aren't big enough)
-//					jeDriver_ModeGetName(m_pMode, &ModeName);
+//					grDriver_ModeGetName(m_pMode, &ModeName);
 					
 //					strModeName = (CString)ModeName;
 
 //					if (strModeName == m_strDesiredMode)			//	Fullscreen	
 //						break;
 #endif
-					m_pMode = jeDriver_GetNextMode(m_pDriver, m_pMode);
+					m_pMode = grDriver_GetNextMode(m_pDriver, m_pMode);
 				}	//	while (m_pMode...
 			}	//	if (!m_pMode...
 
 			if (m_pMode)
 			{
-				jeBoolean	result;
+				grBoolean	result;
 				HWND		hWnd = NULL;
 				
 				hWnd = GetSafeHwnd();
 				
 				if (hWnd)
 				{
-					result = jeEngine_SetDriverAndMode(m_pEngine, hWnd , m_pDriver, m_pMode);
+					result = grEngine_SetDriverAndMode(m_pEngine, hWnd , m_pDriver, m_pMode);
 
-					if (result == JE_FALSE)
+					if (result == GR_FALSE)
 					{
 						return false;
 					}
@@ -1060,7 +1060,7 @@ bool	CMainFrame::LoadDriver()
 					return false;
 				}
 
-				if (!jeEngine_SetRenderMode(m_pEngine, RenderMode_TexturedAndLit))
+				if (!grEngine_SetRenderMode(m_pEngine, RenderMode_TexturedAndLit))
 				{
 					return false;
 				}
@@ -1142,8 +1142,8 @@ CString CMainFrame::BrowseForWorld()
 bool CMainFrame::LoadWorld()
 {
 	bool			bNullWorld = false;
-	jeVFile			*pvfTemp = NULL;
-	jeVFile			*pvfJ3dFork = NULL;
+	grVFile			*pvfTemp = NULL;
+	grVFile			*pvfJ3dFork = NULL;
 	CString			strNullPath = _T("NULL");
 	CString			strBlankPath = _T("");
 
@@ -1169,23 +1169,23 @@ bool CMainFrame::LoadWorld()
 
 				if (levelpath)
 				{
-					m_pWorld = jeWorld_CreateFromEditorFile(levelpath, m_pPtrMgr, m_pResourceMgr);
+					m_pWorld = grWorld_CreateFromEditorFile(levelpath, m_pPtrMgr, m_pResourceMgr);
 
 					if (m_pWorld)
 					{
-						jeWorld_CreateRef(m_pWorld);	// SHOULD be done automatically... but ain't
+						grWorld_CreateRef(m_pWorld);	// SHOULD be done automatically... but ain't
 
-						if (!jeWorld_SetEngine(m_pWorld, m_pEngine))
+						if (!grWorld_SetEngine(m_pWorld, m_pEngine))
 						{
-							jeWorld_Destroy(&m_pWorld);
+							grWorld_Destroy(&m_pWorld);
 							return false;
 						}
 
-						if (!jeWorld_AttachSoundSystem(m_pWorld, m_pSoundSys))
+						if (!grWorld_AttachSoundSystem(m_pWorld, m_pSoundSys))
 							return false;
 
-						jeWorld_RebuildBSP(m_pWorld, BSP_OPTIONS_CSG_BRUSHES, Logic_Super, 3);
-						jeWorld_RebuildLights(m_pWorld); 
+						grWorld_RebuildBSP(m_pWorld, BSP_OPTIONS_CSG_BRUSHES, Logic_Super, 3);
+						grWorld_RebuildLights(m_pWorld); 
 					}	//	if (m_pWorld..
 					else
 						return false;
@@ -1222,41 +1222,41 @@ bool CMainFrame::LoadWorld()
 
 				if (levelpath)
 				{
-					pvfTemp = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_VIRTUAL, levelpath, 
-						NULL, JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY);
+					pvfTemp = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_VIRTUAL, levelpath, 
+						NULL, GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
 
 					if (pvfTemp)
 					{
 						//	get the J3D vfile from the world file
-						pvfJ3dFork = jeVFile_Open( pvfTemp, "Jet3D", JE_VFILE_OPEN_READONLY);
+						pvfJ3dFork = grVFile_Open( pvfTemp, "Jet3D", GR_VFILE_OPEN_READONLY);
 
 						if (pvfJ3dFork && m_pPtrMgr && m_pResourceMgr)
 						{
-							m_pWorld = jeWorld_CreateFromFile(pvfJ3dFork, m_pPtrMgr, m_pResourceMgr);						
+							m_pWorld = grWorld_CreateFromFile(pvfJ3dFork, m_pPtrMgr, m_pResourceMgr);						
 
 							if (m_pWorld)
 							{
-								jeVFile_Close(pvfTemp);
-								jeVFile_Close(pvfJ3dFork);
+								grVFile_Close(pvfTemp);
+								grVFile_Close(pvfJ3dFork);
 
-								jeWorld_CreateRef(m_pWorld);	// SHOULD be done automatically... but ain't
+								grWorld_CreateRef(m_pWorld);	// SHOULD be done automatically... but ain't
 
-								if (!jeWorld_SetEngine(m_pWorld, m_pEngine))
+								if (!grWorld_SetEngine(m_pWorld, m_pEngine))
 								{
-									jeWorld_Destroy(&m_pWorld);
+									grWorld_Destroy(&m_pWorld);
 									return false;
 								}
 
-								if (!jeWorld_AttachSoundSystem(m_pWorld, m_pSoundSys))
+								if (!grWorld_AttachSoundSystem(m_pWorld, m_pSoundSys))
 									return false;
 
-								jeWorld_RebuildBSP(m_pWorld, BSP_OPTIONS_CSG_BRUSHES, Logic_Super, 3);
-								jeWorld_RebuildLights(m_pWorld); 
+								grWorld_RebuildBSP(m_pWorld, BSP_OPTIONS_CSG_BRUSHES, Logic_Super, 3);
+								grWorld_RebuildLights(m_pWorld); 
 							}
 							else if (!m_pWorld)	// if no world from Level...
 							{
-								jeVFile_Close(pvfTemp);
-								jeVFile_Close(pvfJ3dFork);
+								grVFile_Close(pvfTemp);
+								grVFile_Close(pvfJ3dFork);
 
 								return false;
 
@@ -1264,16 +1264,16 @@ bool CMainFrame::LoadWorld()
 						}
 						else	//	we can't even read the file
 						{
-							jeVFile_Close(pvfTemp);
-							jeVFile_Close(pvfJ3dFork);
+							grVFile_Close(pvfTemp);
+							grVFile_Close(pvfJ3dFork);
 
 							return false;
 						}
 					}	//	if (Level)...
 					else	// we have no Level
 					{
-						jeVFile_Close(pvfTemp);
-						jeVFile_Close(pvfJ3dFork);
+						grVFile_Close(pvfTemp);
+						grVFile_Close(pvfJ3dFork);
 
 						return false;
 					}
@@ -1304,7 +1304,7 @@ bool CMainFrame::LoadWorld()
 //	RenderView
 //	to be called ONLY by OnTimer()
 ////////////////////////////////////////////////////////////////////////////////
-bool CMainFrame::RenderView(jeFloat fElapsedTime)
+bool CMainFrame::RenderView(grFloat fElapsedTime)
 {	
 	if ((m_pEngine) && (m_pWorld) && (m_pCamera))
 	{
@@ -1339,14 +1339,14 @@ bool CMainFrame::RenderView(jeFloat fElapsedTime)
 			if (GetCapture() != this)
 			{
 				m_rectMainView = rectTest;
-				jeEngine_UpdateWindow(m_pEngine);
+				grEngine_UpdateWindow(m_pEngine);
 				m_bJustMoved = false;
-				jeCamera_SetAttributes(m_pCamera, 2.0f, &m_Rect);
+				grCamera_SetAttributes(m_pCamera, 2.0f, &m_Rect);
 			}
 		}
 #endif
 
-		if (!jeCamera_SetXForm(m_pCamera, &m_xfCamera))
+		if (!grCamera_SetXForm(m_pCamera, &m_xfCamera))
 		{
 			return true;
 		}
@@ -1357,7 +1357,7 @@ bool CMainFrame::RenderView(jeFloat fElapsedTime)
 			GetMouseInput();
 
 			//	prepare the engine to render current world
-			if (!jeEngine_BeginFrame(m_pEngine, m_pCamera, JE_TRUE))
+			if (!grEngine_BeginFrame(m_pEngine, m_pCamera, GR_TRUE))
 			{
 				SendMessage(WM_CLOSE);
 			}
@@ -1367,11 +1367,11 @@ bool CMainFrame::RenderView(jeFloat fElapsedTime)
 		{
 			//	go through the list of world objects, and deliver the time.
 			//	They will adjust themselves accordingly...
-			jeWorld_Frame(m_pWorld, fElapsedTime);
+			grWorld_Frame(m_pWorld, fElapsedTime);
 
 			//	now that all changes have been calculated, render the world
 			//	to reflect these changes
-			if (!jeWorld_Render(m_pWorld, m_pCamera, (jeFrustum*)NULL))
+			if (!grWorld_Render(m_pWorld, m_pCamera, (grFrustum*)NULL))
 			{
 				ShutdownAll();
 			}
@@ -1379,10 +1379,10 @@ bool CMainFrame::RenderView(jeFloat fElapsedTime)
 
 		if (m_pEngine)
 		{
-			jeEngine_Printf(m_pEngine, 0, 10, 10, JE_COLOR_COLORVALUE(100,100,100,100), "Genesis3D: Reborn - Press ESC to close.");
+			grEngine_Printf(m_pEngine, 0, 10, 10, GR_COLOR_COLORVALUE(100,100,100,100), "Genesis3D: Reborn - Press ESC to close.");
 
 			//	flip the new rendered frame to the screen
-			if (!jeEngine_EndFrame(m_pEngine))
+			if (!grEngine_EndFrame(m_pEngine))
 			{
 				SendMessage(WM_CLOSE);
 			}
@@ -1398,16 +1398,16 @@ bool CMainFrame::RenderView(jeFloat fElapsedTime)
 //	MoveCamera
 //	Moves our camera forward or backward
 ////////////////////////////////////////////////////////////////////////////////
-void CMainFrame::MoveCamera(float speed, jeVec3d *Direction)
+void CMainFrame::MoveCamera(float speed, grVec3d *Direction)
 {
-	if ((jeXForm3d_IsValid(&m_xfCamera)) &&
-		(jeVec3d_IsValid(&m_xfCamera.Translation)))
+	if ((grXForm3d_IsValid(&m_xfCamera)) &&
+		(grVec3d_IsValid(&m_xfCamera.Translation)))
 	{
 		//	new position	
 		m_vecCameraPos = m_xfCamera.Translation;		
 
 		//	Move forward or backward
-		jeVec3d_AddScaled(&m_vecCameraPos, Direction, speed*m_fSpeedMultiplier, &m_vecCameraPos); 
+		grVec3d_AddScaled(&m_vecCameraPos, Direction, speed*m_fSpeedMultiplier, &m_vecCameraPos); 
 		m_xfCamera.Translation = m_vecCameraPos;
 	}
 }
@@ -1420,11 +1420,11 @@ void CMainFrame::MoveCamera(float speed, jeVec3d *Direction)
 ////////////////////////////////////////////////////////////////////////////////
 void CMainFrame:: ControlCamera(UINT nFlags, CPoint MouseDelta, short ZoomDelta)		
 {
-	jeXForm3d		cTempXForm;				//	for holding rotational info
-	jeVec3d			tempUp, tempLeft, oldCameraTranslation;
-	jeQuaternion	Quat;					//	our quaternion variables
-	jeFloat			TURN_SPEED = 0.0f;		//	speed camera will move if turning left/right
-	jeFloat			MOVE_SPEED = 0.0f;		//	speed camera will move forward or backward
+	grXForm3d		cTempXForm;				//	for holding rotational info
+	grVec3d			tempUp, tempLeft, oldCameraTranslation;
+	grQuaternion	Quat;					//	our quaternion variables
+	grFloat			TURN_SPEED = 0.0f;		//	speed camera will move if turning left/right
+	grFloat			MOVE_SPEED = 0.0f;		//	speed camera will move forward or backward
 	int				Movement = 0;
 	float			Sensitivity = 0.4f;
 	float			NormalSpeed = 60.0f;
@@ -1436,22 +1436,22 @@ void CMainFrame:: ControlCamera(UINT nFlags, CPoint MouseDelta, short ZoomDelta)
 #endif
 
 	//	initialize
-	jeXForm3d_SetIdentity(&cTempXForm);
+	grXForm3d_SetIdentity(&cTempXForm);
 
 	//	save current camera vector, we'll need it later	
 	oldCameraTranslation = m_xfCamera.Translation;
 
 	if(MouseDelta.x != 0)		//	is mouse moving left or right?
 	{
-		jeXForm3d_Copy(&m_xfCamera, &cTempXForm);
+		grXForm3d_Copy(&m_xfCamera, &cTempXForm);
 
-		jeXForm3d_SetZRotation(&cTempXForm, 0.0f);	//	Prevent camera roll
-		jeXForm3d_GetUp(&cTempXForm, &tempUp);		//	Get Y axis
+		grXForm3d_SetZRotation(&cTempXForm, 0.0f);	//	Prevent camera roll
+		grXForm3d_GetUp(&cTempXForm, &tempUp);		//	Get Y axis
 		TURN_SPEED   =  -(float)MouseDelta.x * Sensitivity;
-		jeQuaternion_SetFromAxisAngle(&Quat, &tempUp, -RAD(TURN_SPEED));
-		jeQuaternion_ToMatrix(&Quat, &cTempXForm);
+		grQuaternion_SetFromAxisAngle(&Quat, &tempUp, -RAD(TURN_SPEED));
+		grQuaternion_ToMatrix(&Quat, &cTempXForm);
 
-		jeXForm3d_Multiply(&cTempXForm,  &m_xfCamera, &m_xfCamera);
+		grXForm3d_Multiply(&cTempXForm,  &m_xfCamera, &m_xfCamera);
 
 		//	restore camera to original vector
 		m_xfCamera.Translation = oldCameraTranslation;	
@@ -1460,14 +1460,14 @@ void CMainFrame:: ControlCamera(UINT nFlags, CPoint MouseDelta, short ZoomDelta)
 
 	if(MouseDelta.y != 0)			//	is mouse moving up or down?
 	{
-		jeXForm3d_SetIdentity(&cTempXForm);
-		jeXForm3d_Copy(&m_xfCamera, &cTempXForm);
-		jeXForm3d_GetLeft(&cTempXForm, &tempLeft);		//	Get X axis
+		grXForm3d_SetIdentity(&cTempXForm);
+		grXForm3d_Copy(&m_xfCamera, &cTempXForm);
+		grXForm3d_GetLeft(&cTempXForm, &tempLeft);		//	Get X axis
 
 		TURN_SPEED   =  -(float)MouseDelta.y * Sensitivity;
-		jeQuaternion_SetFromAxisAngle(&Quat, &tempLeft, RAD(TURN_SPEED));
-		jeQuaternion_ToMatrix(&Quat, &cTempXForm);
-		jeXForm3d_Multiply(&cTempXForm, &m_xfCamera,  &m_xfCamera);
+		grQuaternion_SetFromAxisAngle(&Quat, &tempLeft, RAD(TURN_SPEED));
+		grQuaternion_ToMatrix(&Quat, &cTempXForm);
+		grXForm3d_Multiply(&cTempXForm, &m_xfCamera,  &m_xfCamera);
 
 		//	restore camera to original vector
 		m_xfCamera.Translation = oldCameraTranslation;	
@@ -1477,7 +1477,7 @@ void CMainFrame:: ControlCamera(UINT nFlags, CPoint MouseDelta, short ZoomDelta)
 	if (m_pCamera)
 	{
 		//	update the camera's transform
-		if (!jeCamera_SetXForm(m_pCamera, &m_xfCamera))
+		if (!grCamera_SetXForm(m_pCamera, &m_xfCamera))
 			return;
 	}
 }
@@ -1599,9 +1599,9 @@ void CMainFrame::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		case VK_UP:
 		case ID_MOVE_FORWARD:	//	(W)
 			{
-				jeVec3d		In;
+				grVec3d		In;
 				In.X = In.Y = In.Z = 0.0f;
-				jeXForm3d_GetIn(&m_xfCamera, &In);
+				grXForm3d_GetIn(&m_xfCamera, &In);
 				MoveCamera(20.0f, &In);	
 				break;
 			}
@@ -1609,9 +1609,9 @@ void CMainFrame::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		case VK_DOWN:
 		case ID_MOVE_BACK:		//	(S)
 			{
-				jeVec3d		In;
+				grVec3d		In;
 				In.X = In.Y = In.Z = 0.0f;
-				jeXForm3d_GetIn(&m_xfCamera, &In);
+				grXForm3d_GetIn(&m_xfCamera, &In);
 				MoveCamera(-10.0f, &In);
 				break;
 			}
@@ -1619,9 +1619,9 @@ void CMainFrame::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		case VK_LEFT:
 		case ID_MOVE_LEFT:		//	(A)
 			{
-				jeVec3d		Left;
+				grVec3d		Left;
 				Left.X = Left.Y = Left.Z = 0.0f;
-				jeXForm3d_GetLeft(&m_xfCamera, &Left);
+				grXForm3d_GetLeft(&m_xfCamera, &Left);
 				MoveCamera(10.0f, &Left);	
 				break;
 			}
@@ -1629,9 +1629,9 @@ void CMainFrame::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		case VK_RIGHT:
 		case ID_MOVE_RIGHT:		//	(D)
 			{
-				jeVec3d		Left;
+				grVec3d		Left;
 				Left.X = Left.Y = Left.Z = 0.0f;
-				jeXForm3d_GetLeft(&m_xfCamera, &Left);
+				grXForm3d_GetLeft(&m_xfCamera, &Left);
 				MoveCamera(-10.0f, &Left);	
 				break;
 			}
@@ -1767,7 +1767,7 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
 		{
 			if (m_bReadyToRender)
 			{
-				jeFloat			fElapsedTime(0.0f);
+				grFloat			fElapsedTime(0.0f);
 				LARGE_INTEGER	LICurTick, LIDeltaTick;
 
 				//	close the gate -- so no interruptions until we're completely

@@ -67,11 +67,11 @@ void FastSplitPath(register char* path, char* drive, char* dir, char* fname, cha
 typedef struct	DirTree
 {
 	char *				Name;
-	jeVFile_Time		Time;
-	jeVFile_Attributes	AttributeFlags;
+	grVFile_Time		Time;
+	grVFile_Attributes	AttributeFlags;
 	long				Size;
-	jeVFile_Hints		Hints;
-	jeVFile *			HintsFile;
+	grVFile_Hints		Hints;
+	grVFile *			HintsFile;
 	long				Offset;
 	struct DirTree *	Parent;
 	struct DirTree *	Children;
@@ -91,7 +91,7 @@ static	char *	DuplicateString(const char *String)
 	char *	NewString;
 
 	Length = strlen(String) + 1;
-	NewString = (char *)jeRam_Allocate(Length);
+	NewString = (char *)grRam_Allocate(Length);
 	if	(NewString)
 		memcpy(NewString, String, Length);
 	return NewString;
@@ -101,7 +101,7 @@ DirTree *DirTree_Create(void)
 {
 	DirTree *	Tree;
 
-	Tree = (DirTree *)jeRam_Allocate(sizeof(*Tree));
+	Tree = (DirTree *)grRam_Allocate(sizeof(*Tree));
 	if	(!Tree)
 		return Tree;
 
@@ -109,11 +109,11 @@ DirTree *DirTree_Create(void)
 	Tree->Name = DuplicateString("");
 	if	(!Tree->Name)
 	{
-		jeRam_Free(Tree);
+		grRam_Free(Tree);
 		return NULL;
 	}
 
-	Tree->AttributeFlags |= JE_VFILE_ATTRIB_DIRECTORY;
+	Tree->AttributeFlags |= GR_VFILE_ATTRIB_DIRECTORY;
 
 	return Tree;
 }
@@ -130,15 +130,15 @@ void	DirTree_Destroy(DirTree *Tree)
 		DirTree_Destroy(Tree->Siblings);
 
 	if	(Tree->HintsFile)
-		jeVFile_Close(Tree->HintsFile);
+		grVFile_Close(Tree->HintsFile);
 
 	if ( Tree->Name )
-		jeRam_Free(Tree->Name);
+		grRam_Free(Tree->Name);
 
 	if ( Tree->Hints.HintData != NULL)
-		jeRam_Free(Tree->Hints.HintData);
+		grRam_Free(Tree->Hints.HintData);
 
-	jeRam_Free(Tree);
+	grRam_Free(Tree);
 }
 
 typedef	struct	DirTree_Header
@@ -147,7 +147,7 @@ typedef	struct	DirTree_Header
 	uint32	ArchaicIgnored;
 }	DirTree_Header;
 
-static	jeBoolean	WriteTree(const DirTree *Tree, jeVFile *File)
+static	grBoolean	WriteTree(const DirTree *Tree, grVFile *File)
 {
 	int		Length;
 	int		Terminator;
@@ -156,43 +156,43 @@ static	jeBoolean	WriteTree(const DirTree *Tree, jeVFile *File)
 	assert(Tree->Name);
 
 	Terminator = DIRTREE_LIST_NOTTERMINATED;
-	if	(jeVFile_Write(File, &Terminator, sizeof(Terminator)) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(File, &Terminator, sizeof(Terminator)) == GR_FALSE)
+		return GR_FALSE;
 
 	// Write out the name
 	Length = strlen(Tree->Name) + 1;
-	if	(jeVFile_Write(File, &Length, sizeof(Length)) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(File, &Length, sizeof(Length)) == GR_FALSE)
+		return GR_FALSE;
 	if	(Length > 0)
 	{
-		if	(jeVFile_Write(File, Tree->Name, Length) == JE_FALSE)
-			return JE_FALSE;
+		if	(grVFile_Write(File, Tree->Name, Length) == GR_FALSE)
+			return GR_FALSE;
 	}
 
 	// Write out the attribute information
-	if	(jeVFile_Write(File, &Tree->Time, sizeof(Tree->Time)) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(File, &Tree->Time, sizeof(Tree->Time)) == GR_FALSE)
+		return GR_FALSE;
 
-	if	(jeVFile_Write(File, &Tree->AttributeFlags, sizeof(Tree->AttributeFlags)) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(File, &Tree->AttributeFlags, sizeof(Tree->AttributeFlags)) == GR_FALSE)
+		return GR_FALSE;
 
-	if	(jeVFile_Write(File, &Tree->Size, sizeof(Tree->Size)) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(File, &Tree->Size, sizeof(Tree->Size)) == GR_FALSE)
+		return GR_FALSE;
 
-	if	(jeVFile_Write(File, &Tree->Offset, sizeof(Tree->Offset)) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(File, &Tree->Offset, sizeof(Tree->Offset)) == GR_FALSE)
+		return GR_FALSE;
 	
 	if	(Tree->HintsFile)
 	{
-		jeVFile_MemoryContext	MemoryContext;
+		grVFile_MemoryContext	MemoryContext;
 
-		jeVFile_UpdateContext(Tree->HintsFile, &MemoryContext, sizeof(MemoryContext));
-		if	(jeVFile_Write(File, &MemoryContext.DataLength, sizeof(Tree->Hints.HintDataLength)) == JE_FALSE)
-			return JE_FALSE;
+		grVFile_UpdateContext(Tree->HintsFile, &MemoryContext, sizeof(MemoryContext));
+		if	(grVFile_Write(File, &MemoryContext.DataLength, sizeof(Tree->Hints.HintDataLength)) == GR_FALSE)
+			return GR_FALSE;
 		if ( MemoryContext.DataLength != 0 )
 		{
-			if	(jeVFile_Write(File, MemoryContext.Data, MemoryContext.DataLength) == JE_FALSE)
-				return JE_FALSE;
+			if	(grVFile_Write(File, MemoryContext.Data, MemoryContext.DataLength) == GR_FALSE)
+				return GR_FALSE;
 		}
 	}
 	else
@@ -200,10 +200,10 @@ static	jeBoolean	WriteTree(const DirTree *Tree, jeVFile *File)
 		// <> CB 2/10
 //		assert(Tree->Hints.HintDataLength == 0);
 		assert(!Tree->HintsFile);
-		if	(jeVFile_Write(File, &(Tree->Hints.HintDataLength), sizeof(Tree->Hints.HintDataLength)) == JE_FALSE)
-			return JE_FALSE;
-		if	(jeVFile_Write(File, Tree->Hints.HintData, Tree->Hints.HintDataLength) == JE_FALSE)
-			return JE_FALSE;
+		if	(grVFile_Write(File, &(Tree->Hints.HintDataLength), sizeof(Tree->Hints.HintDataLength)) == GR_FALSE)
+			return GR_FALSE;
+		if	(grVFile_Write(File, Tree->Hints.HintData, Tree->Hints.HintDataLength) == GR_FALSE)
+			return GR_FALSE;
 	}
 	
 	// Write out the Children
@@ -214,8 +214,8 @@ static	jeBoolean	WriteTree(const DirTree *Tree, jeVFile *File)
 	else
 	{
 		Terminator = DIRTREE_LIST_TERMINATED;
-		if	(jeVFile_Write(File, &Terminator, sizeof(Terminator)) == JE_FALSE)
-			return JE_FALSE;
+		if	(grVFile_Write(File, &Terminator, sizeof(Terminator)) == GR_FALSE)
+			return GR_FALSE;
 	}
 
 	// Write out the Siblings
@@ -226,47 +226,47 @@ static	jeBoolean	WriteTree(const DirTree *Tree, jeVFile *File)
 	else
 	{
 		Terminator = DIRTREE_LIST_TERMINATED;
-		if	(jeVFile_Write(File, &Terminator, sizeof(Terminator)) == JE_FALSE)
-			return JE_FALSE;
+		if	(grVFile_Write(File, &Terminator, sizeof(Terminator)) == GR_FALSE)
+			return GR_FALSE;
 	}
 	
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean DirTree_WriteToFile1(const DirTree *Tree, jeVFile *File, long *Size)
+static	grBoolean DirTree_WriteToFile1(const DirTree *Tree, grVFile *File, long *Size)
 {
 DirTree_Header	Header;
 long			StartPosition;
 long			EndPosition;
-jeVFile * LZFS;
+grVFile * LZFS;
 	
 	Header.Signature = DIRTREE_FILE_SIGNATURE;
 
-	jeVFile_Tell(File,&StartPosition);
+	grVFile_Tell(File,&StartPosition);
 
 #ifdef DO_LZ
-	if ( ! (LZFS = jeVFile_OpenNewSystem(File,JE_VFILE_TYPE_LZ, NULL, NULL,JE_VFILE_OPEN_CREATE) ))
-		return JE_FALSE;
+	if ( ! (LZFS = grVFile_OpenNewSystem(File,GR_VFILE_TYPE_LZ, NULL, NULL,GR_VFILE_OPEN_CREATE) ))
+		return GR_FALSE;
 #else
 	LZFS = File;
 #endif
 
-	if	(jeVFile_Write(LZFS, &Header, sizeof(Header)) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Write(LZFS, &Header, sizeof(Header)) == GR_FALSE)
+		return GR_FALSE;
 			
-	if	(WriteTree(Tree, LZFS) == JE_FALSE)
-		return JE_FALSE;
+	if	(WriteTree(Tree, LZFS) == GR_FALSE)
+		return GR_FALSE;
 
 #ifdef DO_LZ
-	if ( ! jeVFile_Close(LZFS) )
-		return JE_FALSE;
+	if ( ! grVFile_Close(LZFS) )
+		return GR_FALSE;
 #endif
 
-	jeVFile_Tell(File,&EndPosition);
+	grVFile_Tell(File,&EndPosition);
 
 	*Size = EndPosition - StartPosition;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void DirTree_SetFileSize(DirTree *Tree, long Size)
@@ -281,17 +281,17 @@ void DirTree_GetFileSize(DirTree *Tree, long *Size)
 	*Size = Tree->Size;
 }
 
-jeBoolean DirTree_WriteToFile(const DirTree *Tree, jeVFile *File)
+grBoolean DirTree_WriteToFile(const DirTree *Tree, grVFile *File)
 {
 long Size;
 
 return DirTree_WriteToFile1(Tree, File, &Size);
 }
 
-jeBoolean DirTree_GetSize(const DirTree *Tree, long *Size)
+grBoolean DirTree_GetSize(const DirTree *Tree, long *Size)
 {
-	jeVFile *				FS;
-	jeVFile_MemoryContext	Context;
+	grVFile *				FS;
+	grVFile_MemoryContext	Context;
 
 	/*
 		This function is implemented via a write to a memory file for
@@ -306,98 +306,98 @@ jeBoolean DirTree_GetSize(const DirTree *Tree, long *Size)
 	Context.Data	   = NULL;
 	Context.DataLength = 0;
 
-	FS = jeVFile_OpenNewSystem(NULL,
-							 JE_VFILE_TYPE_MEMORY,
+	FS = grVFile_OpenNewSystem(NULL,
+							 GR_VFILE_TYPE_MEMORY,
 							 NULL,
 							 &Context,
-							 JE_VFILE_OPEN_CREATE);
+							 GR_VFILE_OPEN_CREATE);
 	if	(!FS)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if	(DirTree_WriteToFile1(Tree, FS, Size) == JE_FALSE)
-		return JE_FALSE;
+	if	(DirTree_WriteToFile1(Tree, FS, Size) == GR_FALSE)
+		return GR_FALSE;
 
-	if	(jeVFile_Size(FS, Size) == JE_FALSE)
-		return JE_FALSE;
+	if	(grVFile_Size(FS, Size) == GR_FALSE)
+		return GR_FALSE;
 
-	jeVFile_Close(FS);
+	grVFile_Close(FS);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean DirTree_OpenFile(DirTree * Tree,uint32 OpenFlags)
+grBoolean DirTree_OpenFile(DirTree * Tree,uint32 OpenFlags)
 {
 	assert(Tree);
 
-	if ( (Tree->AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY) )
+	if ( (Tree->AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY) )
 	{
-		if ( ! (OpenFlags & JE_VFILE_OPEN_DIRECTORY ) )
-			return JE_FALSE;
+		if ( ! (OpenFlags & GR_VFILE_OPEN_DIRECTORY ) )
+			return GR_FALSE;
 	}
 	else
 	{
-		if ( (OpenFlags & JE_VFILE_OPEN_DIRECTORY ) )
-			return JE_FALSE;
+		if ( (OpenFlags & GR_VFILE_OPEN_DIRECTORY ) )
+			return GR_FALSE;
 	}
 
 	if ( Tree->HintsFile ) // <> CB 2/10
 	{
-		if ( ! jeVFile_Seek(Tree->HintsFile,0,JE_VFILE_SEEKSET) )
-			return JE_FALSE;
+		if ( ! grVFile_Seek(Tree->HintsFile,0,GR_VFILE_SEEKSET) )
+			return GR_FALSE;
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-static	jeBoolean	ReadTree(jeVFile *File, DirTree **TreePtr)
+static	grBoolean	ReadTree(grVFile *File, DirTree **TreePtr)
 {
 int			Terminator;
 int			Length;
 DirTree *	Tree = NULL;
 
-	if	(jeVFile_Read(File, &Terminator, sizeof(Terminator)) == JE_FALSE)
+	if	(grVFile_Read(File, &Terminator, sizeof(Terminator)) == GR_FALSE)
 	{
-		jeErrorLog_AddString(-1,"ReadTree : VF_Read Name",NULL);
+		grErrorLog_AddString(-1,"ReadTree : VF_Read Name",NULL);
 		goto fail;
 	}
 
 	if	(Terminator == DIRTREE_LIST_TERMINATED)
 	{
 		*TreePtr = NULL;
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
 	if	(Terminator != DIRTREE_LIST_NOTTERMINATED)
 	{
-		jeErrorLog_AddString(-1,"ReadTree : DirTree : garbled Terminator!",NULL);
+		grErrorLog_AddString(-1,"ReadTree : DirTree : garbled Terminator!",NULL);
 		goto fail;
 	}
 
-	Tree = (DirTree *)jeRam_AllocateClear(sizeof(*Tree));
+	Tree = (DirTree *)grRam_AllocateClear(sizeof(*Tree));
 	if	(!Tree)
 	{
-		jeErrorLog_AddString(-1,"ReadTree : Ram",NULL);
+		grErrorLog_AddString(-1,"ReadTree : Ram",NULL);
 		goto fail;
 	}
 
 	// Read the name
-	if	(jeVFile_Read(File, &Length, sizeof(Length)) == JE_FALSE)
+	if	(grVFile_Read(File, &Length, sizeof(Length)) == GR_FALSE)
 	{
-		jeErrorLog_AddString(-1,"ReadTree : VF_Read Name",NULL);
+		grErrorLog_AddString(-1,"ReadTree : VF_Read Name",NULL);
 		goto fail;
 	}
 
 	assert(Length > 0 && Length <= (_MAX_PATH + _MAX_PATH));
-	Tree->Name = (char *)jeRam_Allocate(Length+1);
+	Tree->Name = (char *)grRam_Allocate(Length+1);
 	if	(!Tree->Name)
 	{
-		jeErrorLog_AddString(-1,"ReadTree : Ram",NULL);
+		grErrorLog_AddString(-1,"ReadTree : Ram",NULL);
 		goto fail;
 	}
 	
-	if	(jeVFile_Read(File, Tree->Name, Length) == JE_FALSE)
+	if	(grVFile_Read(File, Tree->Name, Length) == GR_FALSE)
 	{
-		jeErrorLog_AddString(-1,"ReadTree : VF_Read Name",NULL);
+		grErrorLog_AddString(-1,"ReadTree : VF_Read Name",NULL);
 		goto fail;
 	}
 
@@ -406,47 +406,47 @@ DirTree *	Tree = NULL;
 //printf("Reading '%s'\n", Tree->Name);
 
 	// Read out the attribute information
-	if	(jeVFile_Read(File, &Tree->Time, sizeof(Tree->Time)) == JE_FALSE)
+	if	(grVFile_Read(File, &Tree->Time, sizeof(Tree->Time)) == GR_FALSE)
 	{
-		jeErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
+		grErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
 		goto fail;
 	}
 
-	if	(jeVFile_Read(File, &Tree->AttributeFlags, sizeof(Tree->AttributeFlags)) == JE_FALSE)	
+	if	(grVFile_Read(File, &Tree->AttributeFlags, sizeof(Tree->AttributeFlags)) == GR_FALSE)	
 	{
-		jeErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
+		grErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
 		goto fail;
 	}
 
-	if	(jeVFile_Read(File, &Tree->Size, sizeof(Tree->Size)) == JE_FALSE)	
+	if	(grVFile_Read(File, &Tree->Size, sizeof(Tree->Size)) == GR_FALSE)	
 	{
-		jeErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
+		grErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
 		goto fail;
 	}
 
-	if	(jeVFile_Read(File, &Tree->Offset, sizeof(Tree->Offset)) == JE_FALSE)
+	if	(grVFile_Read(File, &Tree->Offset, sizeof(Tree->Offset)) == GR_FALSE)
 	{
-		jeErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
+		grErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
 		goto fail;
 	}
 
-	if	(jeVFile_Read(File, &Tree->Hints.HintDataLength, sizeof(Tree->Hints.HintDataLength)) == JE_FALSE)
+	if	(grVFile_Read(File, &Tree->Hints.HintDataLength, sizeof(Tree->Hints.HintDataLength)) == GR_FALSE)
 	{
-		jeErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
+		grErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
 		goto fail;
 	}
 
 	if	(Tree->Hints.HintDataLength != 0)
 	{
-		Tree->Hints.HintData = jeRam_Allocate(Tree->Hints.HintDataLength);
+		Tree->Hints.HintData = grRam_Allocate(Tree->Hints.HintDataLength);
 		if	(!Tree->Hints.HintData)
 		{
-			jeErrorLog_AddString(-1,"ReadTree : Ram",Tree->Name);
+			grErrorLog_AddString(-1,"ReadTree : Ram",Tree->Name);
 			goto fail;
 		}
-		if	(jeVFile_Read(File, Tree->Hints.HintData, Tree->Hints.HintDataLength) == JE_FALSE)
+		if	(grVFile_Read(File, Tree->Hints.HintData, Tree->Hints.HintDataLength) == GR_FALSE)
 		{
-			jeErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
+			grErrorLog_AddString(-1,"ReadTree : VF_Read",Tree->Name);
 			goto fail;
 		}
 	}
@@ -455,12 +455,12 @@ DirTree *	Tree = NULL;
 
 //printf("Reading children of '%s'\n", Tree->Name);
 	// Read the children
-	if	(ReadTree(File, &Tree->Children) == JE_FALSE)
+	if	(ReadTree(File, &Tree->Children) == GR_FALSE)
 		goto fail;
 
 //printf("Reading siblings of '%s'\n", Tree->Name);
 	// Read the Siblings
-	if	(ReadTree(File, &Tree->Siblings) == JE_FALSE)
+	if	(ReadTree(File, &Tree->Siblings) == GR_FALSE)
 		goto fail;
 
 //DirTree_Dump(Tree);
@@ -469,19 +469,19 @@ DirTree *	Tree = NULL;
 
 	assert(Tree->HintsFile == NULL);
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 fail:
 	if ( Tree )
 	DirTree_Destroy(Tree);
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-DirTree *DirTree_CreateFromFile(jeVFile *File)
+DirTree *DirTree_CreateFromFile(grVFile *File)
 {
 DirTree *		Res;
 DirTree_Header	Header;
-jeVFile * LZFS;
+grVFile * LZFS;
 	
 #ifdef	KROUERDEBUG
 {
@@ -492,22 +492,22 @@ jeVFile * LZFS;
 }
 #endif
 
-	if ( ! (LZFS = jeVFile_OpenNewSystem(File,JE_VFILE_TYPE_LZ, NULL, NULL,JE_VFILE_OPEN_READONLY) ))
+	if ( ! (LZFS = grVFile_OpenNewSystem(File,GR_VFILE_TYPE_LZ, NULL, NULL,GR_VFILE_OPEN_READONLY) ))
 		return NULL;
 
-	if ( ! jeVFile_Read(LZFS, &Header, sizeof(Header)) )
+	if ( ! grVFile_Read(LZFS, &Header, sizeof(Header)) )
 		return NULL;
 
 	if	(Header.Signature != DIRTREE_FILE_SIGNATURE)
 	{
-		jeErrorLog_AddString(-1,"DirTree : didn't get signature!",NULL);
+		grErrorLog_AddString(-1,"DirTree : didn't get signature!",NULL);
 		return NULL;
 	}
 
-	if	(ReadTree(LZFS, &Res) == JE_FALSE)
+	if	(ReadTree(LZFS, &Res) == GR_FALSE)
 		return NULL;
 
-	if ( ! jeVFile_Close(LZFS) )
+	if ( ! grVFile_Close(LZFS) )
 		return NULL;
 
 #ifdef	KROUERDEBUG
@@ -602,22 +602,22 @@ DirTree *DirTree_FindPartial(
 	return (DirTree *)Tree;
 }
 
-static	jeBoolean	PathHasDir(const char *Path)
+static	grBoolean	PathHasDir(const char *Path)
 {
 	if	(strchr(Path, '\\'))
-		return JE_TRUE;
+		return GR_TRUE;
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-DirTree * DirTree_AddFile(DirTree *Tree, const char *Path, jeBoolean IsDirectory)
+DirTree * DirTree_AddFile(DirTree *Tree, const char *Path, grBoolean IsDirectory)
 {
 	DirTree *		NewEntry;
 	const char *	LeftOvers;
 
 	assert(Tree);
 	assert(Path);
-	assert(IsDirectory == JE_TRUE || IsDirectory == JE_FALSE);
+	assert(IsDirectory == GR_TRUE || IsDirectory == GR_FALSE);
 
 	assert(strlen(Path) > 0);
 
@@ -633,7 +633,7 @@ DirTree * DirTree_AddFile(DirTree *Tree, const char *Path, jeBoolean IsDirectory
 		Path = LeftOvers;
 	}
 
-	NewEntry = (DirTree *)jeRam_Allocate(sizeof(*NewEntry));
+	NewEntry = (DirTree *)grRam_Allocate(sizeof(*NewEntry));
 	if	(!NewEntry)
 		return NULL;
 
@@ -641,21 +641,21 @@ DirTree * DirTree_AddFile(DirTree *Tree, const char *Path, jeBoolean IsDirectory
 	NewEntry->Name = DuplicateString(Path);
 	if	(!NewEntry->Name)
 	{
-		jeRam_Free(NewEntry->Name);
-		jeRam_Free(NewEntry);
+		grRam_Free(NewEntry->Name);
+		grRam_Free(NewEntry);
 		return NULL;
 	}
 
 	NewEntry->Siblings = Tree->Children;
 						 Tree->Children = NewEntry;
 
-	if	(IsDirectory == JE_TRUE)
-		NewEntry->AttributeFlags |= JE_VFILE_ATTRIB_DIRECTORY;
+	if	(IsDirectory == GR_TRUE)
+		NewEntry->AttributeFlags |= GR_VFILE_ATTRIB_DIRECTORY;
 
 	return NewEntry;
 }
 
-jeBoolean DirTree_Remove(DirTree *Tree, DirTree *SubTree)
+grBoolean DirTree_Remove(DirTree *Tree, DirTree *SubTree)
 {
 	DirTree 	Siblings;
 	DirTree * 	pSiblings;
@@ -672,7 +672,7 @@ jeBoolean DirTree_Remove(DirTree *Tree, DirTree *SubTree)
 	while	(ParanoiaCheck && ParanoiaCheck != Tree)
 		ParanoiaCheck = ParanoiaCheck->Parent;
 	if	(!ParanoiaCheck)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Siblings.Siblings = Parent->Children;
 	assert(Siblings.Siblings);
@@ -686,28 +686,28 @@ jeBoolean DirTree_Remove(DirTree *Tree, DirTree *SubTree)
 				Parent->Children = SubTree->Siblings;
 			SubTree->Siblings = NULL;
 			DirTree_Destroy(SubTree);
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 		pSiblings = pSiblings->Siblings;
 	}
 
 	assert(!"Shouldn't be a way to get here");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-void DirTree_SetFileAttributes(DirTree *Tree, jeVFile_Attributes Attributes)
+void DirTree_SetFileAttributes(DirTree *Tree, grVFile_Attributes Attributes)
 {
 	assert(Tree);
 	assert(Attributes);
 
 	// Only support the read only flag
-	assert(!(Attributes & ~JE_VFILE_ATTRIB_READONLY));
-	assert(!(Tree->AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY));
+	assert(!(Attributes & ~GR_VFILE_ATTRIB_READONLY));
+	assert(!(Tree->AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY));
 
-	Tree->AttributeFlags = (Tree->AttributeFlags & ~JE_VFILE_ATTRIB_READONLY)  | Attributes;
+	Tree->AttributeFlags = (Tree->AttributeFlags & ~GR_VFILE_ATTRIB_READONLY)  | Attributes;
 }
 
-void DirTree_GetFileAttributes(DirTree *Tree, jeVFile_Attributes *Attributes)
+void DirTree_GetFileAttributes(DirTree *Tree, grVFile_Attributes *Attributes)
 {
 	assert(Tree);
 	assert(Attributes);
@@ -718,7 +718,7 @@ void DirTree_GetFileAttributes(DirTree *Tree, jeVFile_Attributes *Attributes)
 void DirTree_SetFileOffset(DirTree *Leaf, long Offset)
 {
 	assert(Leaf);
-	assert(!(Leaf->AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY));
+	assert(!(Leaf->AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY));
 
 	Leaf->Offset = Offset;
 }
@@ -726,67 +726,67 @@ void DirTree_SetFileOffset(DirTree *Leaf, long Offset)
 void DirTree_GetFileOffset(DirTree *Leaf, long *Offset)
 {
 	assert(Leaf);
-	assert(!(Leaf->AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY));
+	assert(!(Leaf->AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY));
 
 	*Offset = Leaf->Offset;
 }
 
-void DirTree_SetFileTime(DirTree *Tree, const jeVFile_Time *Time)
+void DirTree_SetFileTime(DirTree *Tree, const grVFile_Time *Time)
 {
 	assert(Tree);
 
 	Tree->Time = *Time;
 }
 
-void DirTree_GetFileTime(DirTree *Tree, jeVFile_Time *Time)
+void DirTree_GetFileTime(DirTree *Tree, grVFile_Time *Time)
 {
 	assert(Tree);
 
 	*Time = Tree->Time;
 }
 
-jeBoolean DirTree_FileHasHints(DirTree *Tree)
+grBoolean DirTree_FileHasHints(DirTree *Tree)
 {
 	if	(!Tree->HintsFile && Tree->Hints.HintDataLength == 0)	// <> CB 2/10
-		return JE_FALSE;
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeVFile * DirTree_GetHintsFile(DirTree *Tree)
+grVFile * DirTree_GetHintsFile(DirTree *Tree)
 {
 	if	(!Tree->HintsFile)
 	{
-		jeVFile_MemoryContext	MemoryContext;
+		grVFile_MemoryContext	MemoryContext;
 
 		if	(Tree->Hints.HintDataLength != 0)
 		{
 			MemoryContext.Data = Tree->Hints.HintData;
 			MemoryContext.DataLength = Tree->Hints.HintDataLength;
 	
-			Tree->HintsFile = jeVFile_OpenNewSystem(NULL,
-													JE_VFILE_TYPE_MEMORY,
+			Tree->HintsFile = grVFile_OpenNewSystem(NULL,
+													GR_VFILE_TYPE_MEMORY,
 													NULL,
 													&MemoryContext,
-													JE_VFILE_OPEN_READONLY);
+													GR_VFILE_OPEN_READONLY);
 		}
 		else
 		{
 			MemoryContext.Data = NULL;
 			MemoryContext.DataLength = 0;
 	
-			Tree->HintsFile = jeVFile_OpenNewSystem(NULL,
-													JE_VFILE_TYPE_MEMORY,
+			Tree->HintsFile = grVFile_OpenNewSystem(NULL,
+													GR_VFILE_TYPE_MEMORY,
 													NULL,
 													&MemoryContext,
-													JE_VFILE_OPEN_CREATE);
+													GR_VFILE_OPEN_CREATE);
 		}
 	}
 
 	return Tree->HintsFile;
 }
 
-jeBoolean DirTree_GetName(const DirTree *Tree, char *Buff, int MaxLen)
+grBoolean DirTree_GetName(const DirTree *Tree, char *Buff, int MaxLen)
 {
 	int	Length;
 
@@ -796,39 +796,39 @@ jeBoolean DirTree_GetName(const DirTree *Tree, char *Buff, int MaxLen)
 
 	Length = strlen(Tree->Name);
 	if	(Length > MaxLen)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	memcpy(Buff, Tree->Name, Length + 1);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean DirTree_GetFullName(const DirTree *Tree, char *Buff, int MaxLen)
+grBoolean DirTree_GetFullName(const DirTree *Tree, char *Buff, int MaxLen)
 {
 	int	Length;
 
 	Length = strlen(Tree->Name) + 1;
 	if	(Length > MaxLen)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	*Buff = '\0';
 	if	(Tree->Parent)
 	{
-		if	(DirTree_GetFullName(Tree->Parent, Buff, MaxLen - Length) == JE_FALSE)
-			return JE_FALSE;
+		if	(DirTree_GetFullName(Tree->Parent, Buff, MaxLen - Length) == GR_FALSE)
+			return GR_FALSE;
 	}
 
 	strcat(Buff, Tree->Name);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean DirTree_FileExists(const DirTree *Tree, const char *Path)
+grBoolean DirTree_FileExists(const DirTree *Tree, const char *Path)
 {
 	if	(DirTree_FindExact(Tree, Path) == NULL)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 DirTree_Finder * DirTree_CreateFinder(DirTree *Tree, const char *Path)
@@ -856,14 +856,14 @@ DirTree_Finder * DirTree_CreateFinder(DirTree *Tree, const char *Path)
 	if	(!SubTree)
 		return NULL;
 
-	Finder = (DirTree_Finder *)jeRam_Allocate(sizeof(*Finder));
+	Finder = (DirTree_Finder *)grRam_Allocate(sizeof(*Finder));
 	if	(!Finder)
 		return Finder;
 
 	Finder->MatchName = DuplicateString(Name);
 	if	(!Finder->MatchName)
 	{
-		jeRam_Free(Finder);
+		grRam_Free(Finder);
 		return NULL;
 	}
 
@@ -875,8 +875,8 @@ DirTree_Finder * DirTree_CreateFinder(DirTree *Tree, const char *Path)
 
 	if	(!Finder->MatchExt)
 	{
-		jeRam_Free(Finder->MatchName);
-		jeRam_Free(Finder);
+		grRam_Free(Finder->MatchName);
+		grRam_Free(Finder);
 		return NULL;
 	}
 
@@ -891,12 +891,12 @@ void DirTree_DestroyFinder(DirTree_Finder *Finder)
 	assert(Finder->MatchName);
 	assert(Finder->MatchExt);
 
-	jeRam_Free(Finder->MatchName);
-	jeRam_Free(Finder->MatchExt);
-	jeRam_Free(Finder);
+	grRam_Free(Finder->MatchName);
+	grRam_Free(Finder->MatchExt);
+	grRam_Free(Finder);
 }
 
-static jeBoolean	MatchPattern(const char *Source, const char *Pattern)
+static grBoolean	MatchPattern(const char *Source, const char *Pattern)
 {
 	assert(Source);
 	assert(Pattern);
@@ -905,7 +905,7 @@ static jeBoolean	MatchPattern(const char *Source, const char *Pattern)
 	{
 	case	'\0':
 		if	(*Source)
-			return JE_FALSE;
+			return GR_FALSE;
 		break;
 
 	case	'*':
@@ -914,11 +914,11 @@ static jeBoolean	MatchPattern(const char *Source, const char *Pattern)
 			Pattern++;
 			while	(*Source)
 			{
-				if	(MatchPattern(Source, Pattern) == JE_TRUE)
-					return JE_TRUE;
+				if	(MatchPattern(Source, Pattern) == GR_TRUE)
+					return GR_TRUE;
 				Source++;
 			}
-			return JE_FALSE;
+			return GR_FALSE;
 		}
 		break;
 
@@ -929,10 +929,10 @@ static jeBoolean	MatchPattern(const char *Source, const char *Pattern)
 		if	(*Source == *Pattern)
 			return MatchPattern(Source + 1, Pattern + 1);
 		else
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 DirTree * DirTree_FinderGetNextFile(DirTree_Finder *Finder)
@@ -951,8 +951,8 @@ DirTree * DirTree_FinderGetNextFile(DirTree_Finder *Finder)
 	do
 	{
 		_splitpath(Res->Name, NULL, NULL, Name, Ext);
-		if	(MatchPattern(Name, Finder->MatchName) == JE_TRUE &&
-			 MatchPattern(Ext,  Finder->MatchExt) == JE_TRUE)
+		if	(MatchPattern(Name, Finder->MatchName) == GR_TRUE &&
+			 MatchPattern(Ext,  Finder->MatchExt) == GR_TRUE)
 		{
 			break;
 		}
@@ -981,7 +981,7 @@ static	void DirTree_Dump1(const DirTree *Tree, int i)
 	DirTree *	Temp;
 
 	indent(i);
-	if	(Tree->AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY)
+	if	(Tree->AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY)
 		printf("\\%s\n", Tree->Name);
 	else
 		printf("%-*s  %08x  %08x\n", 40 - i, Tree->Name, Tree->Offset, Tree->Size);

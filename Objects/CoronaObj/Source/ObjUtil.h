@@ -24,7 +24,7 @@
 #pragma warning ( disable : 4115 )
 #include <windows.h>
 #pragma warning ( default : 4115 )
-#include "jeWorld.h"
+#include "grWorld.h"
 
 
 #ifdef __cplusplus
@@ -85,15 +85,15 @@ void ObjUtil_LogError(
 //	ObjUtil_WriteString()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean ObjUtil_WriteString(
-	jeVFile	*File,		// file to write to
+grBoolean ObjUtil_WriteString(
+	grVFile	*File,		// file to write to
 	char	*String );	// string to write out
 
 //	ObjUtil_ReadString()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean ObjUtil_ReadString(
-	jeVFile	*File,		// file to read from
+grBoolean ObjUtil_ReadString(
+	grVFile	*File,		// file to read from
 	char	**String );	// where to save string pointer
 
 //	ObjUtil_DestroyBitmapList()
@@ -106,7 +106,7 @@ void ObjUtil_DestroyBitmapList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 BitmapList * ObjUtil_CreateBitmapList(
-	jeResourceMgr	*ResourceMgr,	// resource manager to use
+	grResourceMgr	*ResourceMgr,	// resource manager to use
 	char			*ResourceName,	// name of resource
 	char			*FileFilter );	// file filter
 
@@ -114,27 +114,27 @@ BitmapList * ObjUtil_CreateBitmapList(
 //
 ////////////////////////////////////////////////////////////////////////////////////////
 void ObjUtil_TextureGroupSetSize(
-	jeEngine		*Engine,			// engine to use
-	jeResourceMgr	*ResourceMgr,		// resource manager to use
+	grEngine		*Engine,			// engine to use
+	grResourceMgr	*ResourceMgr,		// resource manager to use
 	BitmapList		*AvailableArt,		// list of all available art
 	char			*ChosenSizeName,	// name of size that was chosen
 	char			**SaveBitmapName,	// current bitmap name and where to save new name
 	char			**SaveAlphaName,	// current alpha name and where to save new name
-	jeBitmap		**SaveArt,			// current art and where to save new art
+	grBitmap		**SaveArt,			// current art and where to save new art
 	char			**SaveArtName );	// current art name and where to save new name
 
 //	ObjUtil_TextureGroupSetArt()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-jeBoolean ObjUtil_TextureGroupSetArt(
-	jeEngine		*Engine,			// engine to use
-	jeResourceMgr	*ResourceMgr,		// resource manager to use
+grBoolean ObjUtil_TextureGroupSetArt(
+	grEngine		*Engine,			// engine to use
+	grResourceMgr	*ResourceMgr,		// resource manager to use
 	BitmapList		*AvailableArt,		// list of all available art
 	char			*ChosenBitmapName,	// name of bitmap that was chosen
 	char			*ChosenAlphaName,	// name of alpha that was chosen
 	char			**SaveBitmapName,	// current bitmap name and where to save new name
 	char			**SaveAlphaName,	// current alpha name and where to save new name
-	jeBitmap		**SaveArt,			// current art and where to save new art
+	grBitmap		**SaveArt,			// current art and where to save new art
 	char			**ArtName );		// current art name and where to save new name
 
 

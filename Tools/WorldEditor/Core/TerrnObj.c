@@ -31,7 +31,7 @@
 #include <math.h>
 
 #include "ErrorLog.h"
-#include "jet.h"
+#include "Genesis3D.h"
 #include "Ram.h"
 #include "Transform.h"
 #include "Util.h"
@@ -60,15 +60,15 @@ typedef struct tagTerrain
 #ifdef _DEBUG
 	int					nSignature ;
 #endif
-	jeWorld				*	pWorld ; //Not mine do not destroy
+	grWorld				*	pWorld ; //Not mine do not destroy
 	int32				Flags;
-	jeExtBox			WorldBounds ;
-	jeTerrain		*	TerrainData ;
-	jeObject		*	jeObjectData;
-	jeBitmap		*	HeightMap ;
-	jeBitmap		*	TerrainMap ;
-	jeVec3d				Center ;
-	jeVec3d				Size ;
+	grExtBox			WorldBounds ;
+	grTerrain		*	TerrainData ;
+	grObject		*	grObjectData;
+	grBitmap		*	HeightMap ;
+	grBitmap		*	TerrainMap ;
+	grVec3d				Center ;
+	grVec3d				Size ;
 } Terrain ;
 
 //STATIC FUNCTIONS
@@ -78,58 +78,58 @@ static void Terrain_SetData( Terrain * pTerrain )
 	pTerrain;
 }
 
-static void Terrain_SizeEdge( Terrain * pTerrain, const jeVec3d * pStillEdge, const jeFloat fScale, ORTHO_AXIS Axis )
+static void Terrain_SizeEdge( Terrain * pTerrain, const grVec3d * pStillEdge, const grFloat fScale, ORTHO_AXIS Axis )
 {
 	float	fTemp;
 
 
-	fTemp = jeVec3d_GetElement( &pTerrain->Center, Axis ) - jeVec3d_GetElement( pStillEdge, Axis ) ;
+	fTemp = grVec3d_GetElement( &pTerrain->Center, Axis ) - grVec3d_GetElement( pStillEdge, Axis ) ;
 	fTemp = fTemp * fScale ;
-	fTemp = fTemp + jeVec3d_GetElement( pStillEdge, Axis ) ;
-	jeVec3d_SetElement( &pTerrain->Center, Axis, fTemp ) ;
+	fTemp = fTemp + grVec3d_GetElement( pStillEdge, Axis ) ;
+	grVec3d_SetElement( &pTerrain->Center, Axis, fTemp ) ;
 	Terrain_SetData( pTerrain );
 }
 
-static jeBitmap* Terrain_CreateDefaultMap( )
+static grBitmap* Terrain_CreateDefaultMap( )
 {
-	jeBitmap* pHeightMap;
-	jeBitmap * Lock;
-	jeBoolean success;
-	jeBitmap_Info Info;
+	grBitmap* pHeightMap;
+	grBitmap * Lock;
+	grBoolean success;
+	grBitmap_Info Info;
 	uint8 *bits,*bptr;
 	int x,y;
 
-	pHeightMap = jeBitmap_Create(TERRAIN_DEFAULT_WIDTH, TERRAIN_DEFAULT_HEIGHT, 1, JE_PIXELFORMAT_8BIT ); 
-	success = jeBitmap_LockForWriteFormat(pHeightMap,&Lock,0,0,JE_PIXELFORMAT_8BIT_PAL);
+	pHeightMap = grBitmap_Create(TERRAIN_DEFAULT_WIDTH, TERRAIN_DEFAULT_HEIGHT, 1, GR_PIXELFORMAT_8BIT ); 
+	success = grBitmap_LockForWriteFormat(pHeightMap,&Lock,0,0,GR_PIXELFORMAT_8BIT_PAL);
 	if ( ! success )
 	{
 
-		success = jeBitmap_SetFormat(pHeightMap,JE_PIXELFORMAT_8BIT,JE_TRUE,0,NULL);
+		success = grBitmap_SetFormat(pHeightMap,GR_PIXELFORMAT_8BIT,GR_TRUE,0,NULL);
 		assert(success);
-		success = jeBitmap_LockForWriteFormat(pHeightMap,&Lock,0,0,JE_PIXELFORMAT_8BIT);
+		success = grBitmap_LockForWriteFormat(pHeightMap,&Lock,0,0,GR_PIXELFORMAT_8BIT);
 		assert(success);
 	}
-	success = jeBitmap_GetInfo(Lock,&Info,NULL);
+	success = grBitmap_GetInfo(Lock,&Info,NULL);
 	assert(success);
 
 	//seting the palette 0 to green so default terrain map will be all green
 	{
-	jeBitmap_Palette * Pal;
+	grBitmap_Palette * Pal;
 
 
-		Pal = jeBitmap_Palette_Create(JE_PIXELFORMAT_24BIT_RGB,256);
+		Pal = grBitmap_Palette_Create(GR_PIXELFORMAT_24BIT_RGB,256);
 		assert(Pal);
 
 
-		success = jeBitmap_Palette_SetEntryColor(Pal,0,0,255,0,255);
+		success = grBitmap_Palette_SetEntryColor(Pal,0,0,255,0,255);
 		assert(success);
 
-		success = jeBitmap_SetPalette(pHeightMap,Pal);
+		success = grBitmap_SetPalette(pHeightMap,Pal);
 		assert(success);
 	}
 	// you can only call _GetBits on a locked bitmap
 
-	bits = jeBitmap_GetBits(Lock);
+	bits = grBitmap_GetBits(Lock);
 	assert( bits );
 
 	bptr = bits;
@@ -138,7 +138,7 @@ static jeBitmap* Terrain_CreateDefaultMap( )
 		for(x=0; x < Info.Width; x++)
 		{
 
-			*bptr++ = (uint8)(sin( sqrt(x*x + y*y)*JE_PI/16.0 )*127 + 127);
+			*bptr++ = (uint8)(sin( sqrt(x*x + y*y)*GR_PI/16.0 )*127 + 127);
 		}
 
 		bptr += Info.Stride -  Info.Width;
@@ -147,52 +147,52 @@ static jeBitmap* Terrain_CreateDefaultMap( )
 
 	// you call Unlock on all the mips you locked - not on the original bitmap!
 
-	success = jeBitmap_UnLock(Lock);
+	success = grBitmap_UnLock(Lock);
 	assert(success);
 	return( pHeightMap );
 }
 
 // CREATORS
-Terrain *	Terrain_Create( jeWorld	* pWorld, Group * pGroup, const char * const pszName, int32 nNumber, jeBitmap *HeightMap, jeBitmap * TerrainMap )
+Terrain *	Terrain_Create( grWorld	* pWorld, Group * pGroup, const char * const pszName, int32 nNumber, grBitmap *HeightMap, grBitmap * TerrainMap )
 {
 	Terrain	*	pTerrain;
 	assert( pszName );
 	assert( HeightMap );
 	assert( TerrainMap );
 
-	pTerrain = JE_RAM_ALLOCATE_STRUCT( Terrain );
+	pTerrain = GR_RAM_ALLOCATE_STRUCT( Terrain );
 	if( pTerrain == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate Terrain" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate Terrain" );
 		return( NULL );
 	}
 	memset( pTerrain, 0, sizeof( Terrain ) );
 	assert( (pTerrain->nSignature = SIGNATURE) == SIGNATURE ) ;	// ASSIGN
 	if( !Object_Init( &pTerrain->ObjectData, pGroup, KIND_TERRAIN, pszName, nNumber ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeRam_Free( pTerrain );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grRam_Free( pTerrain );
 		return( NULL );
 	}
 	pTerrain->pWorld = pWorld;
 	pTerrain->HeightMap = HeightMap;
 	pTerrain->TerrainMap = TerrainMap;
 
-	jeVec3d_Set( &pTerrain->Center, 0.0f, 0.0f, 0.0f );
-	jeVec3d_Set( &pTerrain->Size,	TERRAIN_BOX_WIDTH, TERRAIN_BOX_HEIGHT, TERRAIN_BOX_DEPTH );
-	pTerrain->TerrainData = jeTerrain_CreateFromBitmap(pTerrain->HeightMap, &pTerrain->Center, &pTerrain->Size);
+	grVec3d_Set( &pTerrain->Center, 0.0f, 0.0f, 0.0f );
+	grVec3d_Set( &pTerrain->Size,	TERRAIN_BOX_WIDTH, TERRAIN_BOX_HEIGHT, TERRAIN_BOX_DEPTH );
+	pTerrain->TerrainData = grTerrain_CreateFromBitmap(pTerrain->HeightMap, &pTerrain->Center, &pTerrain->Size);
 	if( pTerrain->TerrainData == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeRam_Free( pTerrain );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grRam_Free( pTerrain );
 		return( NULL );
 	}
-	//jeTerrain_SetTextures( pTerrain->TerrainData,&TerrainMap, 1);
+	//grTerrain_SetTextures( pTerrain->TerrainData,&TerrainMap, 1);
 	Terrain_UpdateBounds( pTerrain );
 
-	pTerrain->jeObjectData = jeObject_Create("Terrain");
-	jeTerrain_InitObject( pTerrain->TerrainData,pTerrain->jeObjectData);
-	jeWorld_AddObject( pTerrain->pWorld, pTerrain->jeObjectData);
+	pTerrain->grObjectData = grObject_Create("Terrain");
+	grTerrain_InitObject( pTerrain->TerrainData,pTerrain->grObjectData);
+	grWorld_AddObject( pTerrain->pWorld, pTerrain->grObjectData);
 	
 	return( pTerrain );
 }// Terrain_Create
@@ -206,39 +206,39 @@ Terrain *	Terrain_Copy( Terrain *	pTerrain, int32 nNumber )
 	assert( pTerrain );
 	assert( SIGNATURE == pTerrain->nSignature ) ;
 
-	pNewTerrain = JE_RAM_ALLOCATE_STRUCT( Terrain );
+	pNewTerrain = GR_RAM_ALLOCATE_STRUCT( Terrain );
 	if( pNewTerrain == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate Terrain" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate Terrain" );
 		return( NULL );
 	}
 	memset( pNewTerrain, 0, sizeof( Terrain ) );
 	assert( (pNewTerrain->nSignature = SIGNATURE) == SIGNATURE ) ;	// ASSIGN
 	if( !Object_Init( &pNewTerrain->ObjectData, pTerrain->ObjectData.pGroup, KIND_TERRAIN, pTerrain->ObjectData.pszName, nNumber ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeRam_Free( pNewTerrain );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grRam_Free( pNewTerrain );
 		return( NULL );
 	}
 	pNewTerrain->pWorld = pTerrain->pWorld;
 	pNewTerrain->HeightMap = pTerrain->HeightMap;
-	jeBitmap_CreateRef(pTerrain->HeightMap);
+	grBitmap_CreateRef(pTerrain->HeightMap);
 	pNewTerrain->TerrainMap = pTerrain->TerrainMap;
-	jeBitmap_CreateRef(pTerrain->TerrainMap);
+	grBitmap_CreateRef(pTerrain->TerrainMap);
 	pNewTerrain->Center = pTerrain->Center;
 	pNewTerrain->Size = pTerrain->Size;
 	pNewTerrain->WorldBounds = pTerrain->WorldBounds;
-	pNewTerrain->TerrainData = jeTerrain_CreateFromBitmap(pTerrain->HeightMap, &pTerrain->Center, &pTerrain->Size);
+	pNewTerrain->TerrainData = grTerrain_CreateFromBitmap(pTerrain->HeightMap, &pTerrain->Center, &pTerrain->Size);
 	if( pNewTerrain->TerrainData == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeRam_Free( pNewTerrain );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grRam_Free( pNewTerrain );
 		return( NULL );
 	}
 
-	pNewTerrain->jeObjectData = jeObject_Create("Terrain");
-	jeTerrain_InitObject( pNewTerrain->TerrainData,pNewTerrain->jeObjectData);
-	jeWorld_AddObject( pNewTerrain->pWorld, pNewTerrain->jeObjectData);
+	pNewTerrain->grObjectData = grObject_Create("Terrain");
+	grTerrain_InitObject( pNewTerrain->TerrainData,pNewTerrain->grObjectData);
+	grWorld_AddObject( pNewTerrain->pWorld, pNewTerrain->grObjectData);
 
 	return( pNewTerrain );
 }
@@ -254,12 +254,12 @@ Terrain *	Terrain_FromTemplate( char * pszName, Group * pGroup, Terrain *	pTerra
 	pNewTerrain = Terrain_Copy( pTerrain, nNumber );
 	if( pNewTerrain == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
 		return( NULL );
 	}
 	if( pNewTerrain->ObjectData.pszName != NULL )
 	{
-		jeRam_Free( pNewTerrain->ObjectData.pszName );
+		grRam_Free( pNewTerrain->ObjectData.pszName );
 	}
 	pNewTerrain->ObjectData.pszName = pszName;
 	pNewTerrain->ObjectData.pGroup = pGroup ;
@@ -267,42 +267,42 @@ Terrain *	Terrain_FromTemplate( char * pszName, Group * pGroup, Terrain *	pTerra
 	return( pNewTerrain );
 }
 
-Terrain * Terrain_CreateTemplate( jeWorld * pWorld )
+Terrain * Terrain_CreateTemplate( grWorld * pWorld )
 {
 	Terrain	*	pTerrain;
 
-	pTerrain = JE_RAM_ALLOCATE_STRUCT( Terrain );
+	pTerrain = GR_RAM_ALLOCATE_STRUCT( Terrain );
 	if( pTerrain == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate Terrain" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate Terrain" );
 		return( NULL );
 	}
 	memset( pTerrain, 0, sizeof( Terrain ) );
 	assert( (pTerrain->nSignature = SIGNATURE) == SIGNATURE ) ;	// ASSIGN
 	if( !Object_Init( &pTerrain->ObjectData, NULL, KIND_TERRAIN, "Terrain", 0 ) )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Terrain_CreateTemplate:Object_Init" );
-		jeRam_Free( pTerrain );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Terrain_CreateTemplate:Object_Init" );
+		grRam_Free( pTerrain );
 		return( NULL );
 	}
 	pTerrain->pWorld = pWorld;
 	pTerrain->HeightMap = Terrain_CreateDefaultMap();
 	if( pTerrain->HeightMap == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Terrain_CreateTemplate:Terrain_CreateDefaultMap" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Terrain_CreateTemplate:Terrain_CreateDefaultMap" );
 		return( NULL );
 	}
 	pTerrain->TerrainMap = Terrain_CreateDefaultMap();
 	if( pTerrain->TerrainMap == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Terrain_CreateTemplate:Terrain_CreateDefaultMap" );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Terrain_CreateTemplate:Terrain_CreateDefaultMap" );
 		return( NULL );
 	}
 
-	jeVec3d_Set( &pTerrain->Center, 0.0f, 0.0f, 0.0f );
-	jeVec3d_Set( &pTerrain->Size,	TERRAIN_BOX_WIDTH, TERRAIN_BOX_HEIGHT, TERRAIN_BOX_DEPTH );
+	grVec3d_Set( &pTerrain->Center, 0.0f, 0.0f, 0.0f );
+	grVec3d_Set( &pTerrain->Size,	TERRAIN_BOX_WIDTH, TERRAIN_BOX_HEIGHT, TERRAIN_BOX_DEPTH );
 	pTerrain->TerrainData = NULL;
-	pTerrain->jeObjectData = NULL;
+	pTerrain->grObjectData = NULL;
 	Terrain_UpdateBounds( pTerrain );
 
 	return( pTerrain );
@@ -316,28 +316,28 @@ char *	Terrain_CreateDefaultName(  )
 void Terrain_Destroy( Terrain ** ppTerrain ) 
 {
 	if( (*ppTerrain)->TerrainMap )
-		jeBitmap_Destroy( &(*ppTerrain)->TerrainMap );
+		grBitmap_Destroy( &(*ppTerrain)->TerrainMap );
 	if( (*ppTerrain)->HeightMap )
-		jeBitmap_Destroy( &(*ppTerrain)->HeightMap );
+		grBitmap_Destroy( &(*ppTerrain)->HeightMap );
 	if( (*ppTerrain)->TerrainData  != NULL )
-		jeTerrain_Destroy(&(*ppTerrain)->TerrainData);
-	jeRam_Free( (*ppTerrain) );
+		grTerrain_Destroy(&(*ppTerrain)->TerrainData);
+	grRam_Free( (*ppTerrain) );
 }// Terrain_Destroy
 
 
 // MODIFIERS
-void Terrain_Move( Terrain * pTerrain, const jeVec3d * pWorldDistance )
+void Terrain_Move( Terrain * pTerrain, const grVec3d * pWorldDistance )
 {
 	assert( pTerrain != NULL ) ;
 	assert( SIGNATURE == pTerrain->nSignature ) ;
 
 	Terrain_SetModified( pTerrain );
-	jeVec3d_Add( &pTerrain->Center, pWorldDistance, &pTerrain->Center );
+	grVec3d_Add( &pTerrain->Center, pWorldDistance, &pTerrain->Center );
 	Terrain_SetData( pTerrain );
 
 }// Terrain_Move
 
-void Terrain_Size( Terrain * pTerrain, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
+void Terrain_Size( Terrain * pTerrain, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis )
 {
 	assert( pTerrain != NULL ) ;
 	assert( SIGNATURE == pTerrain->nSignature ) ;
@@ -405,7 +405,7 @@ void Terrain_Size( Terrain * pTerrain, const jeExtBox * pSelectedBounds, const j
 
 }// Terrain_Size
 
-void Terrain_SetXForm( Terrain * pTerrain, const jeXForm3d * XForm )
+void Terrain_SetXForm( Terrain * pTerrain, const grXForm3d * XForm )
 {
 
 	assert( pTerrain );
@@ -424,8 +424,8 @@ void Terrain_UpdateBounds( Terrain * pTerrain )
 
 	assert( pTerrain );
 
-	jeExtBox_SetTranslation ( &pTerrain->WorldBounds, &pTerrain->Center );
-	jeExtBox_Set (  &pTerrain->WorldBounds,
+	grExtBox_SetTranslation ( &pTerrain->WorldBounds, &pTerrain->Center );
+	grExtBox_Set (  &pTerrain->WorldBounds,
 					pTerrain->Center.X - pTerrain->Size.X/2.0f,
 					pTerrain->Center.Y - pTerrain->Size.Y/2.0f,
 					pTerrain->Center.Z - pTerrain->Size.Z/2.0f,
@@ -446,13 +446,13 @@ void Terrain_SetModified( Terrain * pTerrain )
 
 
 // ACCESSORS
-void Terrain_GetXForm( const Terrain * pTerrain, jeXForm3d * XForm )
+void Terrain_GetXForm( const Terrain * pTerrain, grXForm3d * XForm )
 {
-	jeXForm3d_SetIdentity( XForm );
+	grXForm3d_SetIdentity( XForm );
 	XForm->Translation = pTerrain->Center;
 }
 
-const jeExtBox * Terrain_GetWorldAxialBounds( const Terrain * pTerrain )
+const grExtBox * Terrain_GetWorldAxialBounds( const Terrain * pTerrain )
 {
 	assert( pTerrain != NULL ) ;
 	assert( SIGNATURE == pTerrain->nSignature ) ;
@@ -467,19 +467,19 @@ const jeExtBox * Terrain_GetWorldAxialBounds( const Terrain * pTerrain )
 
 }// Terrain_GetWorldAxialBounds
 
-jeTerrain *			Terrain_GetTerrain( const Terrain * pTerrain )
+grTerrain *			Terrain_GetTerrain( const Terrain * pTerrain )
 {
 	assert( pTerrain );
 
 	return( pTerrain->TerrainData );
 }
 
-jeBoolean Terrain_SelectClosest( Terrain * pTerrain, FindInfo	*	pFindInfo )
+grBoolean Terrain_SelectClosest( Terrain * pTerrain, FindInfo	*	pFindInfo )
 {
 	int					i ; 
 	Point				points[5] ;
-	jeFloat				DistSq ;
-	const jeExtBox *	Bounds ;
+	grFloat				DistSq ;
+	const grExtBox *	Bounds ;
 
 
 	assert( pTerrain != NULL );
@@ -509,14 +509,14 @@ jeBoolean Terrain_SelectClosest( Terrain * pTerrain, FindInfo	*	pFindInfo )
 			pFindInfo->nFaceEdge = 0;
 		}
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 //IS
-jeBoolean	Terrain_IsInRect( const Terrain * pTerrain, jeExtBox *pSelRect, jeBoolean bSelEncompeses )
+grBoolean	Terrain_IsInRect( const Terrain * pTerrain, grExtBox *pSelRect, grBoolean bSelEncompeses )
 {
-	const jeExtBox *pWorldBounds;
-	jeExtBox		Result;
+	const grExtBox *pWorldBounds;
+	grExtBox		Result;
 
 	assert( pTerrain );
 	assert( pSelRect );
@@ -530,27 +530,27 @@ jeBoolean	Terrain_IsInRect( const Terrain * pTerrain, jeExtBox *pSelRect, jeBool
 			pSelRect->Min.X <= pWorldBounds->Min.X &&
 			pSelRect->Min.Y <= pWorldBounds->Min.Y &&
 			pSelRect->Min.Z <= pWorldBounds->Min.Z )
-			 return( JE_TRUE );
+			 return( GR_TRUE );
 	}
 	else
 	{
 		return( Util_geExtBox_Intersection ( pSelRect, pWorldBounds, &Result	) );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }//Terrain_IsInRect
 
 
 //FILE
-Terrain * Terrain_CreateFromFile( jeVFile * pF )
+Terrain * Terrain_CreateFromFile( grVFile * pF )
 {
 	Terrain	*	pTerrain = NULL ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 
-	pTerrain = JE_RAM_ALLOCATE_STRUCT( Terrain );
+	pTerrain = GR_RAM_ALLOCATE_STRUCT( Terrain );
 	if( pTerrain == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate Terrain" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate Terrain" );
 		return( NULL );
 	}
 	memset( pTerrain, 0, sizeof( Terrain ) );
@@ -558,38 +558,38 @@ Terrain * Terrain_CreateFromFile( jeVFile * pF )
 
 	if( !Object_InitFromFile( pF , &pTerrain->ObjectData ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Object_InitFromFile.\n", NULL);
+		return GR_FALSE;
 	}
-	if( !jeVFile_Read( pF, &pTerrain->Center, sizeof pTerrain->Center ) )
+	if( !grVFile_Read( pF, &pTerrain->Center, sizeof pTerrain->Center ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
+		return GR_FALSE;
 	}
-	if( !jeVFile_Read( pF, &pTerrain->Size, sizeof pTerrain->Size ) )
+	if( !grVFile_Read( pF, &pTerrain->Size, sizeof pTerrain->Size ) )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
+		return GR_FALSE;
 	}
-	pTerrain->HeightMap = jeBitmap_CreateFromFile( pF );
+	pTerrain->HeightMap = grBitmap_CreateFromFile( pF );
 	if( pTerrain->HeightMap == NULL )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-	pTerrain->TerrainMap = jeBitmap_CreateFromFile( pF );
+	pTerrain->TerrainMap = grBitmap_CreateFromFile( pF );
 	if( pTerrain->TerrainMap == NULL )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
+		return GR_FALSE;
 	}
 
-/*	pTerrain->TerrainData = jeTerrain_CreateFromFile(pF);
+/*	pTerrain->TerrainData = grTerrain_CreateFromFile(pF);
 	if( pTerrain->TerrainData == NULL )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString( GR_ERR_FILEIO_READ, "Terrain_ReadFromFile.\n", NULL);
+		return GR_FALSE;
 	}
 */
 	Terrain_UpdateBounds( pTerrain );
@@ -597,45 +597,45 @@ Terrain * Terrain_CreateFromFile( jeVFile * pF )
 }
 
 
-jeBoolean Terrain_WriteToFile( Terrain * pTerrain, jeVFile * pF )
+grBoolean Terrain_WriteToFile( Terrain * pTerrain, grVFile * pF )
 {
 	assert( pTerrain != NULL ) ;
 	assert( SIGNATURE == pTerrain->nSignature ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	if( !Object_WriteToFile( &pTerrain->ObjectData, pF ) )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Object_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pTerrain->Center, sizeof pTerrain->Center ) == JE_FALSE )
+	if( grVFile_Write( pF, &pTerrain->Center, sizeof pTerrain->Center ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
-	if( jeVFile_Write( pF, &pTerrain->Size, sizeof pTerrain->Size ) == JE_FALSE )
+	if( grVFile_Write( pF, &pTerrain->Size, sizeof pTerrain->Size ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
-	if( jeBitmap_WriteToFile( pTerrain->HeightMap, pF ) == JE_FALSE )
+	if( grBitmap_WriteToFile( pTerrain->HeightMap, pF ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
-	if( jeBitmap_WriteToFile( pTerrain->TerrainMap, pF ) == JE_FALSE )
+	if( grBitmap_WriteToFile( pTerrain->TerrainMap, pF ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 /*
-	if( jeTerrain_WriteToFile(pTerrain->TerrainData, pF ) == JE_FALSE )
+	if( grTerrain_WriteToFile(pTerrain->TerrainData, pF ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Terrain_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 */	
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// Terrain_WriteToFile
 

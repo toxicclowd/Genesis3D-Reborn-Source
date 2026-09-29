@@ -31,10 +31,10 @@ extern "C" {
 
 typedef struct image image;
 
-/** encode() should be called on post-transformed jeWavelet data **/
+/** encode() should be called on post-transformed grWavelet data **/
 
-extern jeBoolean encodeWaveletImage(jeWavelet *w,image *im);
-extern jeBoolean decodeWaveletImage(jeWavelet *w,image *im);
+extern grBoolean encodeWaveletImage(grWavelet *w,image *im);
+extern grBoolean decodeWaveletImage(grWavelet *w,image *im);
 
 #ifdef __cplusplus
 }

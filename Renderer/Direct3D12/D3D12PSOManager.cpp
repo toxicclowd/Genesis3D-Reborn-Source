@@ -53,7 +53,7 @@ VS_OUTPUT VSMain(VS_INPUT input)
 {
     VS_OUTPUT output;
 
-    // jeTLVertex contains pixel-space x/y and positive camera-space z. The legacy
+    // grTLVertex contains pixel-space x/y and positive camera-space z. The legacy
     // driver used XYZRHW with depth = 1 - 1/z. Constructing this clip position
     // reproduces that projection and preserves perspective-correct UV interpolation.
     float width = max(ViewportWidth, 1.0f);
@@ -151,13 +151,13 @@ D3D12PSOManager::~D3D12PSOManager()
 	Shutdown();
 }
 
-jeBoolean D3D12PSOManager::Initialize()
+grBoolean D3D12PSOManager::Initialize()
 {
 	Shutdown();
 	if (!CompileShaders() || !CreateRootSignature())
 	{
 		Shutdown();
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// Build the normal, depth-tested variants now so shader/input-layout errors are
@@ -167,12 +167,12 @@ jeBoolean D3D12PSOManager::Initialize()
 		!CreatePSO(PSO_MULTITEX, 0))
 	{
 		Shutdown();
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	m_bInitialized = true;
 	D3D12Log::GetPtr()->Printf("D3D12 PSO manager initialized");
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void D3D12PSOManager::Shutdown()
@@ -193,7 +193,7 @@ void D3D12PSOManager::Shutdown()
 ID3D12PipelineState* D3D12PSOManager::GetPSO(
 	D3D12_PSO_TYPE Type,
 	uint32 Flags,
-	jeBoolean SceneWireframe)
+	grBoolean SceneWireframe)
 {
 	if (!m_bInitialized || Type < PSO_GOURAUD || Type >= PSO_COUNT)
 		return nullptr;
@@ -211,13 +211,13 @@ ID3D12PipelineState* D3D12PSOManager::GetPSO(
 	}
 
 	uint32 State = 0;
-	if (ForceAlpha || (Flags & (JE_RENDER_FLAG_ALPHA | JE_RENDER_FLAG_COLORKEY)))
+	if (ForceAlpha || (Flags & (GR_RENDER_FLAG_ALPHA | GR_RENDER_FLAG_COLORKEY)))
 		State |= STATE_ALPHA;
-	if (Flags & JE_RENDER_FLAG_NO_ZTEST)
+	if (Flags & GR_RENDER_FLAG_NO_ZTEST)
 		State |= STATE_NO_ZTEST;
-	if (Flags & JE_RENDER_FLAG_NO_ZWRITE)
+	if (Flags & GR_RENDER_FLAG_NO_ZWRITE)
 		State |= STATE_NO_ZWRITE;
-	if (SceneWireframe || (Flags & JE_RENDER_FLAG_WIREFRAME))
+	if (SceneWireframe || (Flags & GR_RENDER_FLAG_WIREFRAME))
 		State |= STATE_WIREFRAME;
 
 	if (!m_PSOs[Type][State] && !CreatePSO(Type, State))
@@ -230,15 +230,15 @@ ID3D12RootSignature* D3D12PSOManager::GetRootSignature()
 	return m_pRootSignature.Get();
 }
 
-jeBoolean D3D12PSOManager::CompileShaders()
+grBoolean D3D12PSOManager::CompileShaders()
 {
 	m_VS_Gouraud = CompileShader(ShaderCode, "VSMain", "vs_5_0");
 	m_PS_Gouraud = CompileShader(ShaderCode, "PSGouraud", "ps_5_0");
 	m_PS_Texture = CompileShader(ShaderCode, "PSTexture", "ps_5_0");
 	m_PS_MultiTex = CompileShader(ShaderCode, "PSMultiTexture", "ps_5_0");
 	return (m_VS_Gouraud && m_PS_Gouraud && m_PS_Texture && m_PS_MultiTex)
-		? JE_TRUE
-		: JE_FALSE;
+		? GR_TRUE
+		: GR_FALSE;
 }
 
 ComPtr<ID3DBlob> D3D12PSOManager::CompileShader(
@@ -278,7 +278,7 @@ ComPtr<ID3DBlob> D3D12PSOManager::CompileShader(
 	return Shader;
 }
 
-jeBoolean D3D12PSOManager::CreateRootSignature()
+grBoolean D3D12PSOManager::CreateRootSignature()
 {
 	D3D12_DESCRIPTOR_RANGE Ranges[2] = {};
 	for (UINT i = 0; i < 2; ++i)
@@ -334,7 +334,7 @@ jeBoolean D3D12PSOManager::CreateRootSignature()
 			"ERROR: Root signature serialization failed (0x%08X): %s",
 			Hr,
 			Errors ? static_cast<const char*>(Errors->GetBufferPointer()) : "no details");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	Hr = g_pDevice->CreateRootSignature(
@@ -345,15 +345,15 @@ jeBoolean D3D12PSOManager::CreateRootSignature()
 	if (FAILED(Hr))
 	{
 		D3D12Log::GetPtr()->Printf("ERROR: CreateRootSignature failed - HR: 0x%08X", Hr);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
+grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 {
 	if (Type < PSO_GOURAUD || Type > PSO_MULTITEX || State >= PSO_STATE_COUNT)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	D3D12_INPUT_ELEMENT_DESC InputLayout[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -426,7 +426,7 @@ jeBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 			static_cast<uint32>(Type),
 			State,
 			Hr);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }

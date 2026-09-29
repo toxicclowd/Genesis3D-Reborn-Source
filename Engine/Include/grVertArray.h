@@ -38,20 +38,18 @@ extern "C" {
 /*! @typedef grVertArray
     @brief A reference to an Array of grVertex
 */
-typedef struct jeVertArray grVertArray;
-typedef struct jeVertArray jeVertArray;
+typedef struct grVertArray grVertArray;
 
 /*! @typedef grVertArray_Optimizer
     @brief A reference to an Optimizer of Array of grVertex
 */
-typedef struct jeVertArray_Optimizer grVertArray_Optimizer;
-typedef struct jeVertArray_Optimizer jeVertArray_Optimizer;
+typedef struct grVertArray_Optimizer grVertArray_Optimizer;
 
 /*! @typedef grVertArray_Index
     @brief The grVertrray Index type
 */
 typedef	uint16							grVertArray_Index;
-typedef grVertArray_Index				jeVertArray_Index;
+typedef grVertArray_Index				grVertArray_Index;
 
 
 /*! @def GR_VERTARRAY_MAX_VERTS
@@ -97,27 +95,5 @@ GRAPI grBoolean		GRCC grVertArray_GetEdgeVerts(grVertArray_Optimizer *Optimizer,
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define JE_VERTARRAY_MAX_VERTS                   GR_VERTARRAY_MAX_VERTS
-#define JE_VERTARRAY_NULL_INDEX                  GR_VERTARRAY_NULL_INDEX
-#define jeVertArray_AddVert                      grVertArray_AddVert
-#define jeVertArray_Create                       grVertArray_Create
-#define jeVertArray_CreateFromFile               grVertArray_CreateFromFile
-#define jeVertArray_CreateOptimizer              grVertArray_CreateOptimizer
-#define jeVertArray_Destroy                      grVertArray_Destroy
-#define jeVertArray_DestroyOptimizer             grVertArray_DestroyOptimizer
-#define jeVertArray_GetEdgeVerts                 grVertArray_GetEdgeVerts
-#define jeVertArray_GetMaxIndex                  grVertArray_GetMaxIndex
-#define jeVertArray_GetOptimizedIndex            grVertArray_GetOptimizedIndex
-#define jeVertArray_GetVertByIndex               grVertArray_GetVertByIndex
-#define jeVertArray_IsValid                      grVertArray_IsValid
-#define jeVertArray_RefVertByIndex               grVertArray_RefVertByIndex
-#define jeVertArray_RemoveVert                   grVertArray_RemoveVert
-#define jeVertArray_SetVertByIndex               grVertArray_SetVertByIndex
-#define jeVertArray_ShareVert                    grVertArray_ShareVert
-#define jeVertArray_WriteToFile                  grVertArray_WriteToFile
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

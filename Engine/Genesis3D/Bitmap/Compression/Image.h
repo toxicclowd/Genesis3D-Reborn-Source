@@ -36,7 +36,7 @@ typedef struct image
 		/** data[plane][y][x] **/
 		/** data[plane][0] is a pointer to the whole plane **/
 
-	jeBoolean alphaIsBoolean;	// otherwise a full uint8 alpha channel
+	grBoolean alphaIsBoolean;	// otherwise a full uint8 alpha channel
 	uint8 * alpha;		// plane_size bytes of alpha data , NULL for none
 } image;
 
@@ -46,14 +46,14 @@ extern image * newImageFrom(image *im);
 extern void freeImage(image *im);
 extern void zeroImage(image *im);
 
-extern image * newImageAlpha(int width, int height,int planes,jeBoolean alphaIsBoolean);
+extern image * newImageAlpha(int width, int height,int planes,grBoolean alphaIsBoolean);
 extern void insertImageAlpha(image *im,uint8 *alpha);
 
 extern void patchImage(image *fm,image *to,int fmx,int fmy,int w,int h,int tox,int toy);
 
-extern jeBoolean extendImage(image *im,int fmw,int fmh);
-extern jeBoolean zeroExtendedImage(image *im,int fmw,int fmh,int levels);
-extern jeBoolean zeroAlphaImage(image *im,int levels);
+extern grBoolean extendImage(image *im,int fmw,int fmh);
+extern grBoolean zeroExtendedImage(image *im,int fmw,int fmh,int levels);
+extern grBoolean zeroAlphaImage(image *im,int levels);
 
 extern void transposeImage(image *im);
 

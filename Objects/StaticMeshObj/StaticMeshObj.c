@@ -25,14 +25,14 @@
 #include <string.h>
 #include <float.h>
 #include "VFile.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 #include "Ram.h"
-#include "jeResource.h"
-#include "jeWorld.h"
+#include "grResource.h"
+#include "grWorld.h"
 #include "StaticMeshObj.h"
 //#include "Resource.h"
-#include "jeStaticMesh.h"
-#include "jeVersion.h"
+#include "grStaticMesh.h"
+#include "grVersion.h"
 #include "Errorlog.h"
 
 //NOTE BY TRILOBITE
@@ -53,189 +53,189 @@ enum
 };
 
 static HINSTANCE						hObjInstance = NULL;
-static jeProperty						StaticMeshProperties[SMESH_LAST_INDEX];
-static jeProperty_List					StaticMeshPropertyList = { SMESH_LAST_INDEX, &(StaticMeshProperties[0]) };
+static grProperty						StaticMeshProperties[SMESH_LAST_INDEX];
+static grProperty_List					StaticMeshPropertyList = { SMESH_LAST_INDEX, &(StaticMeshProperties[0]) };
 static char								**FileList = NULL;
 static int								TotalFiles = 0;
 
 typedef struct StaticMeshObject
 {
-	jeStaticMesh						*sm;
+	grStaticMesh						*sm;
 	
-	jeWorld								*World;
-	jeResourceMgr						*ResMgr;
-	jeEngine							*Engine;
+	grWorld								*World;
+	grResourceMgr						*ResMgr;
+	grEngine							*Engine;
 
-	jeXForm3d							XForm;
+	grXForm3d							XForm;
 
 	int									RefCount;
 } StaticMeshObject;
 
-static jeBoolean BuildFileList(jeResourceMgr *ResMgr)
+static grBoolean BuildFileList(grResourceMgr *ResMgr)
 {
-	jeVFile								*Dir = NULL, *VFS = NULL;
-	jeVFile_Finder						*Finder = NULL;
+	grVFile								*Dir = NULL, *VFS = NULL;
+	grVFile_Finder						*Finder = NULL;
 	int									CurrFile = 0;
 
-	Dir = jeResource_GetVFile(ResMgr, "StaticMesh");
+	Dir = grResource_GetVFile(ResMgr, "StaticMesh");
 	if (!Dir)
 	{
-		if (!jeResource_OpenDirectory(ResMgr, "StaticMesh", "StaticMesh"))
-			return JE_FALSE;
+		if (!grResource_OpenDirectory(ResMgr, "StaticMesh", "StaticMesh"))
+			return GR_FALSE;
 
-		Dir = jeResource_GetVFile(ResMgr, "StaticMesh");
+		Dir = grResource_GetVFile(ResMgr, "StaticMesh");
 		if (!Dir)
-			return JE_FALSE;
+			return GR_FALSE;
 	}
 
-	Finder = jeVFile_CreateFinder(Dir, "*");
+	Finder = grVFile_CreateFinder(Dir, "*");
 	if (!Finder)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	while (jeVFile_FinderGetNextFile(Finder) == JE_TRUE)
+	while (grVFile_FinderGetNextFile(Finder) == GR_TRUE)
 	{
-		jeVFile_Properties				Props;
+		grVFile_Properties				Props;
 
-		jeVFile_FinderGetProperties(Finder, &Props);
-		if (Props.AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY)
+		grVFile_FinderGetProperties(Finder, &Props);
+		if (Props.AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY)
 		{
-			jeVFile_Finder				*DirFinder = NULL;
-			jeVFile						*SubDir = NULL;
+			grVFile_Finder				*DirFinder = NULL;
+			grVFile						*SubDir = NULL;
 
-			SubDir = jeVFile_OpenNewSystem(Dir, JE_VFILE_TYPE_DOS, Props.Name, NULL, JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY);
+			SubDir = grVFile_OpenNewSystem(Dir, GR_VFILE_TYPE_DOS, Props.Name, NULL, GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY);
 			if (!SubDir)
 			{
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
-			DirFinder = jeVFile_CreateFinder(SubDir, "*.jsm");
+			DirFinder = grVFile_CreateFinder(SubDir, "*.jsm");
 			if (!DirFinder)
 			{
-				jeVFile_Close(SubDir);
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grVFile_Close(SubDir);
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
-			while (jeVFile_FinderGetNextFile(DirFinder) == JE_TRUE)
+			while (grVFile_FinderGetNextFile(DirFinder) == GR_TRUE)
 			{
 				TotalFiles++;
 			}
 
-			jeVFile_DestroyFinder(DirFinder);
-			jeVFile_Close(SubDir);
+			grVFile_DestroyFinder(DirFinder);
+			grVFile_Close(SubDir);
 		}
 		else if (!strcmp(Props.Name, ".jetpak"))
 		{
-			jeVFile						*PakFile = NULL;
-			jeVFile_Finder				*PakFinder = NULL;
+			grVFile						*PakFile = NULL;
+			grVFile_Finder				*PakFinder = NULL;
 
-			PakFile = jeVFile_OpenNewSystem(Dir, JE_VFILE_TYPE_VIRTUAL, Props.Name, NULL, JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY);
+			PakFile = grVFile_OpenNewSystem(Dir, GR_VFILE_TYPE_VIRTUAL, Props.Name, NULL, GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY);
 			if (!PakFile)
 			{
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
-			PakFinder = jeVFile_CreateFinder(PakFile, "*.jsm");
+			PakFinder = grVFile_CreateFinder(PakFile, "*.jsm");
 			if (!PakFinder)
 			{
-				jeVFile_Close(PakFile);
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grVFile_Close(PakFile);
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
-			while (jeVFile_FinderGetNextFile(PakFinder) == JE_TRUE)
+			while (grVFile_FinderGetNextFile(PakFinder) == GR_TRUE)
 			{
 				TotalFiles++;
 			}
 
-			jeVFile_DestroyFinder(PakFinder);
-			jeVFile_Close(PakFile);
+			grVFile_DestroyFinder(PakFinder);
+			grVFile_Close(PakFile);
 		}
 	}
 
-	jeVFile_DestroyFinder(Finder);
+	grVFile_DestroyFinder(Finder);
 
-	FileList = jeRam_AllocateClear(sizeof(char*) * TotalFiles);
+	FileList = grRam_AllocateClear(sizeof(char*) * TotalFiles);
 	if (!FileList)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	Finder = jeVFile_CreateFinder(Dir, "*");
+	Finder = grVFile_CreateFinder(Dir, "*");
 	if (!Finder)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	while (jeVFile_FinderGetNextFile(Finder) == JE_TRUE)
+	while (grVFile_FinderGetNextFile(Finder) == GR_TRUE)
 	{
-		jeVFile_Properties				Props;
+		grVFile_Properties				Props;
 
-		jeVFile_FinderGetProperties(Finder, &Props);
-		if (Props.AttributeFlags & JE_VFILE_ATTRIB_DIRECTORY)
+		grVFile_FinderGetProperties(Finder, &Props);
+		if (Props.AttributeFlags & GR_VFILE_ATTRIB_DIRECTORY)
 		{
-			jeVFile_Finder				*DirFinder = NULL;
-			jeVFile						*SubDir = NULL;
+			grVFile_Finder				*DirFinder = NULL;
+			grVFile						*SubDir = NULL;
 
-			SubDir = jeVFile_OpenNewSystem(Dir, JE_VFILE_TYPE_DOS, Props.Name, NULL, JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY);
+			SubDir = grVFile_OpenNewSystem(Dir, GR_VFILE_TYPE_DOS, Props.Name, NULL, GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY);
 			if (!SubDir)
 			{
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
-			DirFinder = jeVFile_CreateFinder(SubDir, "*.jsm");
+			DirFinder = grVFile_CreateFinder(SubDir, "*.jsm");
 			if (!DirFinder)
 			{
-				jeVFile_Close(SubDir);
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grVFile_Close(SubDir);
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
-			while (jeVFile_FinderGetNextFile(DirFinder) == JE_TRUE)
+			while (grVFile_FinderGetNextFile(DirFinder) == GR_TRUE)
 			{
-				jeVFile_Properties				FileProps;
+				grVFile_Properties				FileProps;
 
-				jeVFile_FinderGetProperties(DirFinder, &FileProps);
+				grVFile_FinderGetProperties(DirFinder, &FileProps);
 				FileList[CurrFile++] = FileProps.Name;
 			}
 
-			jeVFile_DestroyFinder(DirFinder);
-			jeVFile_Close(SubDir);
+			grVFile_DestroyFinder(DirFinder);
+			grVFile_Close(SubDir);
 		}
 		else if (!strcmp(Props.Name, ".jetpak"))
 		{
-			jeVFile						*PakFile = NULL;
-			jeVFile_Finder				*PakFinder = NULL;
+			grVFile						*PakFile = NULL;
+			grVFile_Finder				*PakFinder = NULL;
 
-			PakFile = jeVFile_OpenNewSystem(Dir, JE_VFILE_TYPE_VIRTUAL, Props.Name, NULL, JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY);
+			PakFile = grVFile_OpenNewSystem(Dir, GR_VFILE_TYPE_VIRTUAL, Props.Name, NULL, GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY);
 			if (!PakFile)
 			{
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
-			PakFinder = jeVFile_CreateFinder(PakFile, "*.jsm");
+			PakFinder = grVFile_CreateFinder(PakFile, "*.jsm");
 			if (!PakFinder)
 			{
-				jeVFile_Close(PakFile);
-				jeVFile_DestroyFinder(Finder);
-				return JE_FALSE;
+				grVFile_Close(PakFile);
+				grVFile_DestroyFinder(Finder);
+				return GR_FALSE;
 			}
 
-			while (jeVFile_FinderGetNextFile(PakFinder) == JE_TRUE)
+			while (grVFile_FinderGetNextFile(PakFinder) == GR_TRUE)
 			{
-				jeVFile_Properties				FileProps;
+				grVFile_Properties				FileProps;
 
-				jeVFile_FinderGetProperties(PakFinder, &FileProps);
+				grVFile_FinderGetProperties(PakFinder, &FileProps);
 				FileList[CurrFile++] = FileProps.Name;
 			}
 
-			jeVFile_DestroyFinder(PakFinder);
-			jeVFile_Close(PakFile);
+			grVFile_DestroyFinder(PakFinder);
+			grVFile_Close(PakFile);
 		}
 	}
 
-	jeVFile_DestroyFinder(Finder);
-	return JE_TRUE;
+	grVFile_DestroyFinder(Finder);
+	return GR_TRUE;
 }
 
 void Init_Class(HINSTANCE hInstance)
@@ -252,17 +252,17 @@ void Deinit_Class()
 		int							i;
 
 		for (i = 0; i < TotalFiles; i++)
-			jeRam_Free(FileList[i]);
+			grRam_Free(FileList[i]);
 
-		jeRam_Free(FileList);
+		grRam_Free(FileList);
 	}
 }
 
-void * JETCC CreateInstance()
+void * GRCC CreateInstance()
 {
 	StaticMeshObject				*Mesh;
 
-	Mesh = (StaticMeshObject*)jeRam_AllocateClear(sizeof(StaticMeshObject));
+	Mesh = (StaticMeshObject*)grRam_AllocateClear(sizeof(StaticMeshObject));
 	if (!Mesh)
 		return NULL;
 
@@ -272,12 +272,12 @@ void * JETCC CreateInstance()
 	Mesh->Engine = NULL;
 	Mesh->ResMgr = NULL;
 	
-	jeXForm3d_SetIdentity(&Mesh->XForm);
+	grXForm3d_SetIdentity(&Mesh->XForm);
 
 	return (void*)Mesh;
 }
 
-void JETCC CreateRef(void *Instance)
+void GRCC CreateRef(void *Instance)
 {
 	StaticMeshObject			*Mesh = (StaticMeshObject*)Instance;
 
@@ -286,31 +286,31 @@ void JETCC CreateRef(void *Instance)
 	Mesh->RefCount++;
 }
 
-jeBoolean JETCC Destroy(void **Instance)
+grBoolean GRCC Destroy(void **Instance)
 {
 	StaticMeshObject			**pSM = (StaticMeshObject**)Instance;
 
-	jeStaticMesh_Destroy(&(*pSM)->sm);
-	jeRam_Free((*pSM));
+	grStaticMesh_Destroy(&(*pSM)->sm);
+	grRam_Free((*pSM));
 
 	(*pSM) = NULL;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC Render(const void *Instance, const jeWorld *World, const jeEngine *Engine, const jeCamera *Camera, const jeFrustum *CameraSpaceFrustum, jeObject_RenderFlags RenderFlags)
+grBoolean GRCC Render(const void *Instance, const grWorld *World, const grEngine *Engine, const grCamera *Camera, const grFrustum *CameraSpaceFrustum, grObject_RenderFlags RenderFlags)
 {
 	StaticMeshObject			*Mesh = (StaticMeshObject*)Instance;
 
 
 	//ORIG commented out by trilobite
-	//  return jeStaticMesh_Render(Mesh->sm, (const jeEngine*)Engine, (const jeCamera*)Camera, (const jeFrustum*)CameraSpaceFrustum, &Mesh->XForm);
+	//  return grStaticMesh_Render(Mesh->sm, (const grEngine*)Engine, (const grCamera*)Camera, (const grFrustum*)CameraSpaceFrustum, &Mesh->XForm);
 	//
 	// EXPERIMENTAL REPLACEMENT BELOW BY trilobite
-	return jeStaticMesh_Render(Mesh->sm, (jeEngine*)Engine, (jeCamera*)Camera, (jeFrustum*)CameraSpaceFrustum, &Mesh->XForm);
+	return grStaticMesh_Render(Mesh->sm, (grEngine*)Engine, (grCamera*)Camera, (grFrustum*)CameraSpaceFrustum, &Mesh->XForm);
 	
 }
 
-jeBoolean JETCC AttachWorld(void *Instance, jeWorld *World)
+grBoolean GRCC AttachWorld(void *Instance, grWorld *World)
 {
 	StaticMeshObject			*Mesh = (StaticMeshObject*)Instance;
 
@@ -318,25 +318,25 @@ jeBoolean JETCC AttachWorld(void *Instance, jeWorld *World)
 		DetachWorld((void*)Mesh, Mesh->World);
 
 	Mesh->World = World;
-	Mesh->ResMgr = jeWorld_GetResourceMgr(World);
+	Mesh->ResMgr = grWorld_GetResourceMgr(World);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC DetachWorld(void *Instance, jeWorld *World)
+grBoolean GRCC DetachWorld(void *Instance, grWorld *World)
 {
 	StaticMeshObject			*Mesh = (StaticMeshObject*)Instance;
 
 	if (Mesh->World != World)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Mesh->World = NULL;
 	Mesh->ResMgr = NULL;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC AttachEngine(void *Instance, jeEngine *Engine)
+grBoolean GRCC AttachEngine(void *Instance, grEngine *Engine)
 {
 	StaticMeshObject			*Mesh = (StaticMeshObject*)Instance;
 
@@ -344,141 +344,141 @@ jeBoolean JETCC AttachEngine(void *Instance, jeEngine *Engine)
 		DetachEngine((void*)Mesh, Mesh->Engine);
 
 	Mesh->Engine = Engine;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC DetachEngine(void *Instance, jeEngine *Engine)
+grBoolean GRCC DetachEngine(void *Instance, grEngine *Engine)
 {
 	StaticMeshObject			*Mesh = (StaticMeshObject*)Instance;
 
 	if (Mesh->Engine != Engine)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Mesh->Engine = NULL;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC AttachSoundSystem(void *Instance, jeSound_System *SoundSys)
+grBoolean GRCC AttachSoundSystem(void *Instance, grSound_System *SoundSys)
 {
 	Instance;
 	SoundSys;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC DetachSoundSystem(void *Instance, jeSound_System *SoundSys)
+grBoolean GRCC DetachSoundSystem(void *Instance, grSound_System *SoundSys)
 {
 	Instance;
 	SoundSys;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC Collision(const void *Instance, const jeExtBox *Box, const jeVec3d *Front, const jeVec3d *Back, jeVec3d *Impact, jePlane *Plane)
+grBoolean GRCC Collision(const void *Instance, const grExtBox *Box, const grVec3d *Front, const grVec3d *Back, grVec3d *Impact, grPlane *Plane)
 {
 	Impact = NULL;
 	Plane = NULL;
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-jeBoolean JETCC GetExtBox(const void *Instance, jeExtBox *BBox)
+grBoolean GRCC GetExtBox(const void *Instance, grExtBox *BBox)
 {
 	StaticMeshObject				*Mesh = (StaticMeshObject*)Instance;
 
-	return jeStaticMesh_GetExtBox(Mesh, BBox);
+	return grStaticMesh_GetExtBox(Mesh, BBox);
 }
 
-void * JETCC CreateFromFile(jeVFile *File, jePtrMgr *PtrMgr)
+void * GRCC CreateFromFile(grVFile *File, grPtrMgr *PtrMgr)
 {
 	return NULL;
 }
 
-jeBoolean JETCC WriteToFile(const void *Instance, jeVFile *File, jePtrMgr *PtrMgr)
+grBoolean GRCC WriteToFile(const void *Instance, grVFile *File, grPtrMgr *PtrMgr)
 {
 	// Stub implementation
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC GetPropertyList(void *Instance, jeProperty_List **List)
+grBoolean GRCC GetPropertyList(void *Instance, grProperty_List **List)
 {
 	// Stub implementation
 	*List = &StaticMeshPropertyList;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC SetProperty(void *Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data *pData)
+grBoolean GRCC SetProperty(void *Instance, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data *pData)
 {
 	// Stub implementation
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC SetXForm(void *Instance, const jeXForm3d *XForm)
+grBoolean GRCC SetXForm(void *Instance, const grXForm3d *XForm)
 {
 	StaticMeshObject *Mesh = (StaticMeshObject*)Instance;
 	
 	if (!Mesh || !XForm)
-		return JE_FALSE;
+		return GR_FALSE;
 		
 	Mesh->XForm = *XForm;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC GetXForm(const void *Instance, jeXForm3d *XForm)
+grBoolean GRCC GetXForm(const void *Instance, grXForm3d *XForm)
 {
 	const StaticMeshObject *Mesh = (const StaticMeshObject*)Instance;
 	
 	if (!Mesh || !XForm)
-		return JE_FALSE;
+		return GR_FALSE;
 		
 	*XForm = Mesh->XForm;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-int JETCC GetXFormModFlags(const void *Instance)
+int GRCC GetXFormModFlags(const void *Instance)
 {
 	// Return that we support translation and rotation
-	return (JE_OBJECT_XFORM_TRANSLATE | JE_OBJECT_XFORM_ROTATE);
+	return (GR_OBJECT_XFORM_TRANSLATE | GR_OBJECT_XFORM_ROTATE);
 }
 
-jeBoolean JETCC GetChildren(const void *Instance, jeObject *Children, int MaxNumChildren)
+grBoolean GRCC GetChildren(const void *Instance, grObject *Children, int MaxNumChildren)
 {
 	// No children support
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC AddChild(void *Instance, const jeObject *Child)
+grBoolean GRCC AddChild(void *Instance, const grObject *Child)
 {
 	// No children support
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC RemoveChild(void *Instance, const jeObject *Child)
+grBoolean GRCC RemoveChild(void *Instance, const grObject *Child)
 {
 	// No children support
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC EditDialog(void *Instance, HWND Parent)
+grBoolean GRCC EditDialog(void *Instance, HWND Parent)
 {
 	// No edit dialog yet
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC Frame(void *Instance, float TimeDelta)
+grBoolean GRCC Frame(void *Instance, float TimeDelta)
 {
 	// Nothing to update per frame yet
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean JETCC SendAMessage(void *Instance, int32 Msg, void *Data)
+grBoolean GRCC SendAMessage(void *Instance, int32 Msg, void *Data)
 {
 	// No message handling yet
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-jeBoolean JETCC ChangeBoxCollision(const void *Instance, const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane)
+grBoolean GRCC ChangeBoxCollision(const void *Instance, const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane)
 {
 	// No collision support yet
-	return JE_FALSE;
+	return GR_FALSE;
 }

@@ -41,7 +41,7 @@ BmpPool* BmpPool_Create()
 {
 	BmpPool* pBmpPool;
 
-	pBmpPool = (BmpPool*)JE_RAM_ALLOCATE_STRUCT( BmpPool  );
+	pBmpPool = (BmpPool*)GR_RAM_ALLOCATE_STRUCT( BmpPool  );
 	if( pBmpPool == NULL )
 	{
 		return( NULL );
@@ -49,7 +49,7 @@ BmpPool* BmpPool_Create()
 	pBmpPool->Pool = List_Create();
 	if( pBmpPool->Pool == NULL )
 	{
-		jeRam_Free( pBmpPool );
+		grRam_Free( pBmpPool );
 		return( NULL );
 	}
 	return( pBmpPool );
@@ -90,19 +90,19 @@ BmpEntry* BmpSearchPtr( List * pList, HBITMAP hBitmap, ListIterator *pli )
 }
 
 
-jeBoolean BmpPool_Add( BmpPool* pBmpPool, HINSTANCE	hRes, char* BmpName )
+grBoolean BmpPool_Add( BmpPool* pBmpPool, HINSTANCE	hRes, char* BmpName )
 {
 	BmpEntry *pNewEntry;
 	int32 sLen;
 	ListIterator li;
 
 	if( BmpSearch( pBmpPool->Pool, BmpName, &li) != NULL )
-		return( JE_TRUE );
+		return( GR_TRUE );
 #ifndef NDEBUG
 	sLen = strlen( BmpName );
 	assert( sLen < NAME_MAX );
 #endif
-	pNewEntry = JE_RAM_ALLOCATE_STRUCT( BmpEntry );
+	pNewEntry = GR_RAM_ALLOCATE_STRUCT( BmpEntry );
 	strcpy( pNewEntry->Name, BmpName );
 	pNewEntry->Usage = 0;
 
@@ -111,7 +111,7 @@ jeBoolean BmpPool_Add( BmpPool* pBmpPool, HINSTANCE	hRes, char* BmpName )
 	pNewEntry->hBitmap = LoadImage(hRes,BmpName,IMAGE_BITMAP, 0,0,LR_DEFAULTSIZE | LR_LOADFROMFILE);//LoadBitmap( hRes, BmpName );
 
 	List_Append( pBmpPool->Pool,  pNewEntry );
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 	// get rid of warnings
 	sLen;
@@ -125,19 +125,19 @@ BOOL BmpPool_AddWithName(BmpPool* pBmpPool, HINSTANCE hRes, char* BmpFile, char*
 	ListIterator li;
 
 	if( BmpSearch( pBmpPool->Pool, BmpName, &li) != NULL )
-		return( JE_TRUE );
+		return( GR_TRUE );
 #ifndef NDEBUG
 	sLen = strlen( BmpName );
 	assert( sLen < NAME_MAX );
 #endif
-	pNewEntry = JE_RAM_ALLOCATE_STRUCT( BmpEntry );
+	pNewEntry = GR_RAM_ALLOCATE_STRUCT( BmpEntry );
 	strcpy( pNewEntry->Name, BmpName );
 	pNewEntry->Usage = 0;
 
 // Modified to load from file, since resources dont appear to be working.
 	pNewEntry->hBitmap = LoadImage(hRes,BmpFile,IMAGE_BITMAP, 0,0,LR_DEFAULTSIZE | LR_LOADFROMFILE);//LoadBitmap( hRes, BmpName );
 	List_Append( pBmpPool->Pool,  pNewEntry );
-	return( JE_TRUE );
+	return( GR_TRUE );
 
 	// get rid of warnings
 	sLen;
@@ -167,10 +167,10 @@ void BmpPool_DestroyEntryDestroy( List * pList, BmpEntry * pBmpEntry, ListIterat
 	if( pBmpEntry->hBitmap != NULL )
 		DeleteObject(pBmpEntry->hBitmap);
 	List_Remove (pList, *pli, NULL);
-	jeRam_Free( pBmpEntry );
+	grRam_Free( pBmpEntry );
 }
 
-jeBoolean BmpPool_Release( BmpPool* pBmpPool, char* BmpName )
+grBoolean BmpPool_Release( BmpPool* pBmpPool, char* BmpName )
 {
 	BmpEntry * pBmpEntry;
 	ListIterator li;
@@ -182,13 +182,13 @@ jeBoolean BmpPool_Release( BmpPool* pBmpPool, char* BmpName )
 		pBmpEntry->Usage--;
 		if( pBmpEntry->Usage == 0 )
 			BmpPool_DestroyEntryDestroy( pBmpPool->Pool, pBmpEntry, &li );
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
 
-jeBoolean BmpPool_ReleasePtr( BmpPool* pBmpPool, HBITMAP hBitmap )
+grBoolean BmpPool_ReleasePtr( BmpPool* pBmpPool, HBITMAP hBitmap )
 {
 	BmpEntry * pBmpEntry;
 	ListIterator li;
@@ -200,9 +200,9 @@ jeBoolean BmpPool_ReleasePtr( BmpPool* pBmpPool, HBITMAP hBitmap )
 		pBmpEntry->Usage--;
 		if( pBmpEntry->Usage == 0 )
 			BmpPool_DestroyEntryDestroy( pBmpPool->Pool, pBmpEntry, &li );
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
 void BmpPool_Destroy( BmpPool** hBmpPool )
@@ -227,5 +227,5 @@ void BmpPool_Destroy( BmpPool** hBmpPool )
 		}
 		List_Destroy (&(*hBmpPool)->Pool, NULL );
 	}
-	jeRam_Free( (*hBmpPool) );
+	grRam_Free( (*hBmpPool) );
 }

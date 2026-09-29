@@ -20,8 +20,8 @@
 /****************************************************************************************/
 // RAM memory manager
 
-#ifndef JE_RAM_H
-#define JE_RAM_H
+#ifndef GR_RAM_H
+#define GR_RAM_H
 
 // Memory debugging functionality only supported under Windows..
 #ifndef WIN32
@@ -34,7 +34,7 @@
 
 #include "BaseType.h"
 
-#include "jeMemAllocInfo.h"	// Added by Icestorm
+#include "grMemAllocInfo.h"	// Added by Icestorm
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,24 +42,24 @@ extern "C" {
 
 /*******
 
-CB note : do NOT do jeRam_Allocate then memset(mem,0,len) !!!
+CB note : do NOT do grRam_Allocate then memset(mem,0,len) !!!
 	
-use jeRam_AllocateClear !
+use grRam_AllocateClear !
 
 This function uses a very fast memory clearer!  The normal memset
 causes L2 cache misses!
 
 *******/
 
-typedef int (* jeRam_CriticalCallbackFunction)(void);
+typedef int (* grRam_CriticalCallbackFunction)(void);
 
 /*
   Set the critical callback function.  ram_allocate will call the critical
   callback function if it's unable to allocate memory.
 */
-JETAPI jeRam_CriticalCallbackFunction JETCC jeRam_SetCriticalCallback
+GRAPI grRam_CriticalCallbackFunction GRCC grRam_SetCriticalCallback
     (
-      jeRam_CriticalCallbackFunction callback
+      grRam_CriticalCallbackFunction callback
     );
 
 /*
@@ -67,83 +67,83 @@ JETAPI jeRam_CriticalCallbackFunction JETCC jeRam_SetCriticalCallback
   the critical callback function (if set) is called for a failed memory allocation.
   add is added to the current counter value.  the new counter value is returned.
 */
-JETAPI int JETCC jeRam_EnableCriticalCallback(int add);
+GRAPI int GRCC grRam_EnableCriticalCallback(int add);
 
 
 /*
   Allocate memory of the given size.  In debug mode, the memory is filled
   with 0xA5, and we keep track of the amount of memory allocated.  Also, in debug
   mode, we track where the memory was allocated and can optionally provide a
-  report of allocated blocks.  See jeRam_ReportAllocations.
+  report of allocated blocks.  See grRam_ReportAllocations.
 */
 
 #ifndef NDEBUG
 
-#ifndef JE_DEACTIVATE_JMAI	// Icestorm: Added jMAI+Breakpoint-Support
+#ifndef GR_DEACTIVATE_JMAI	// Icestorm: Added jMAI+Breakpoint-Support
 
-#define jeRam_Allocate(size) (_jeRam_DoBreakTest(_jeRam_DebugAllocate(size, __FILE__, __LINE__)))
+#define grRam_Allocate(size) (_grRam_DoBreakTest(_grRam_DebugAllocate(size, __FILE__, __LINE__)))
 
-// Do not call _jeRam_DebugAllocate directly.
-JETAPI void* _jeRam_DebugAllocate(uint32 size, const char* pFile, int line);
-JETAPI void* JETCC _jeRam_DoBreakTest(void *Pointer);	// Icestorm
+// Do not call _grRam_DebugAllocate directly.
+GRAPI void* _grRam_DebugAllocate(uint32 size, const char* pFile, int line);
+GRAPI void* GRCC _grRam_DoBreakTest(void *Pointer);	// Icestorm
 
-#else // JE_DEACTIVATE_JMAI
+#else // GR_DEACTIVATE_JMAI
 
-#define jeRam_Allocate(size) _jeRam_DebugAllocate(size, __FILE__, __LINE__)
+#define grRam_Allocate(size) _grRam_DebugAllocate(size, __FILE__, __LINE__)
 
-// Do not call _jeRam_DebugAllocate directly.
-JETAPI void* JETCC _jeRam_DebugAllocate(uint32 size, const char* pFile, int line);
+// Do not call _grRam_DebugAllocate directly.
+GRAPI void* GRCC _grRam_DebugAllocate(uint32 size, const char* pFile, int line);
 
-#endif // JE_DEACTIVATE_JMAI
+#endif // GR_DEACTIVATE_JMAI
 
 #else
 
-JETAPI void * JETCC jeRam_Allocate(uint32 size);
+GRAPI void * GRCC grRam_Allocate(uint32 size);
 
 #endif
 
 // allocate the ram & clear it. (calloc)
-#ifndef JE_DEACTIVATE_JMAI //Icestorm : FILE/LINE correction for jMAI
+#ifndef GR_DEACTIVATE_JMAI //Icestorm : FILE/LINE correction for jMAI
 
 #ifndef NDEBUG
 
-#define jeRam_AllocateClear(size) (_jeRam_DoBreakTest(_jeRam_DebugAllocateClear(size, __FILE__, __LINE__)))
+#define grRam_AllocateClear(size) (_grRam_DoBreakTest(_grRam_DebugAllocateClear(size, __FILE__, __LINE__)))
 
-JETAPI void * JETCC _jeRam_DebugAllocateClear(uint32 size, const char* pFile, int line);
+GRAPI void * GRCC _grRam_DebugAllocateClear(uint32 size, const char* pFile, int line);
 
 #else
 
-JETAPI void * JETCC jeRam_AllocateClear(uint32 size);
+GRAPI void * GRCC grRam_AllocateClear(uint32 size);
 
 #endif
 
 #ifndef NDEBUG
 
-JETAPI void JETCC jeRam_DebugFree_(void *ptr, const char* pFile, int line);
+GRAPI void GRCC grRam_DebugFree_(void *ptr, const char* pFile, int line);
 
-#define jeRam_Free(ptr) {jeRam_DebugFree_(ptr, __FILE__, __LINE__);(ptr)=NULL;}
+#define grRam_Free(ptr) {grRam_DebugFree_(ptr, __FILE__, __LINE__);(ptr)=NULL;}
 
 #else
 
-JETAPI void JETCC jeRam_Free_(void *ptr);
+GRAPI void GRCC grRam_Free_(void *ptr);
 
-#define jeRam_Free(xxx) {jeRam_Free_(xxx);(xxx)=NULL;}
+#define grRam_Free(xxx) {grRam_Free_(xxx);(xxx)=NULL;}
 
 #endif
 
-#else // JE_DEACTIVATE_JMAI
+#else // GR_DEACTIVATE_JMAI
 
 // allocate the ram & clear it. (calloc)
-JETAPI void * JETCC jeRam_AllocateClear(uint32 size);
+GRAPI void * GRCC grRam_AllocateClear(uint32 size);
 
 /*
   Free an allocated memory block.
 */
-JETAPI void JETCC jeRam_Free_(void *ptr);
+GRAPI void GRCC grRam_Free_(void *ptr);
 
-#define jeRam_Free(xxx) {jeRam_Free_(xxx);(xxx)=NULL;}
+#define grRam_Free(xxx) {grRam_Free_(xxx);(xxx)=NULL;}
 
-#endif // JE_DEACTIVATE_JMAI
+#endif // GR_DEACTIVATE_JMAI
 /*
   Reallocate memory.  This function supports shrinking and expanding blocks,
   and will also act like ram_allocate if the pointer passed to it is NULL.
@@ -151,14 +151,14 @@ JETAPI void JETCC jeRam_Free_(void *ptr);
 */
 #ifndef NDEBUG
 
-#define jeRam_Realloc(ptr, newsize) _jeRam_DebugRealloc(ptr, newsize, __FILE__, __LINE__)
+#define grRam_Realloc(ptr, newsize) _grRam_DebugRealloc(ptr, newsize, __FILE__, __LINE__)
 
-// Do not call _jeRam_DebugRealloc directly.
-JETAPI void* JETCC _jeRam_DebugRealloc(void* ptr, uint32 size, const char* pFile, int line);
+// Do not call _grRam_DebugRealloc directly.
+GRAPI void* GRCC _grRam_DebugRealloc(void* ptr, uint32 size, const char* pFile, int line);
 
 #else
 
-JETAPI void * JETCC jeRam_Realloc(void *ptr,uint32 newsize);
+GRAPI void * GRCC grRam_Realloc(void *ptr,uint32 newsize);
 
 #endif
 
@@ -166,71 +166,54 @@ JETAPI void * JETCC jeRam_Realloc(void *ptr,uint32 newsize);
 
 #include <stdio.h>
 
-JETAPI void JETCC jeRam_ReportAllocations(void);
+GRAPI void GRCC grRam_ReportAllocations(void);
 
-JETAPI void JETCC jeRam_ShowStats(FILE * ToFile);
+GRAPI void GRCC grRam_ShowStats(FILE * ToFile);
 
 #else
 
-#define jeRam_ReportAllocations() 
+#define grRam_ReportAllocations() 
 
 #endif
 
 #ifndef NDEBUG
-    extern int32 jeRam_CurrentlyUsed;
-    extern int32 jeRam_NumberOfAllocations;
-    extern int32 jeRam_MaximumUsed;
-    extern int32 jeRam_MaximumNumberOfAllocations;
+    extern int32 grRam_CurrentlyUsed;
+    extern int32 grRam_NumberOfAllocations;
+    extern int32 grRam_MaximumUsed;
+    extern int32 grRam_MaximumNumberOfAllocations;
 
-JETAPI     void JETCC jeRam_AddAllocation(int n,uint32 size);
+GRAPI     void GRCC grRam_AddAllocation(int n,uint32 size);
 #else
-    #define jeRam_AddAllocation(n,s)
+    #define grRam_AddAllocation(n,s)
 #endif
 
-#define JE_RAM_ALLOCATE_STRUCT(type)			(type *)jeRam_Allocate (sizeof (type))
-#define JE_RAM_ALLOCATE_STRUCT_CLEAR(type)      (type *)jeRam_AllocateClear(sizeof (type))
-#define JE_RAM_ALLOCATE_ARRAY(type,count)		(type *)jeRam_Allocate (sizeof (type) * (count))
-#define JE_RAM_ALLOCATE_ARRAY_CLEAR(type,count)	(type *)jeRam_AllocateClear(sizeof (type) * (count))
+#define GR_RAM_ALLOCATE_STRUCT(type)			(type *)grRam_Allocate (sizeof (type))
+#define GR_RAM_ALLOCATE_STRUCT_CLEAR(type)      (type *)grRam_AllocateClear(sizeof (type))
+#define GR_RAM_ALLOCATE_ARRAY(type,count)		(type *)grRam_Allocate (sizeof (type) * (count))
+#define GR_RAM_ALLOCATE_ARRAY_CLEAR(type,count)	(type *)grRam_AllocateClear(sizeof (type) * (count))
 
 #if 0 //{@@
 
 #ifndef NDEBUG	// <> CB note : what the @*#$ is this XX ? This is a bad line, regardless!
-#define JE_RAM_REALLOC_ARRAY(ptr,type,count)  (type *)jeRam_Realloc(  (ptr), sizeof(type) * (count) );{type *XX=(ptr);}
+#define GR_RAM_REALLOC_ARRAY(ptr,type,count)  (type *)grRam_Realloc(  (ptr), sizeof(type) * (count) );{type *XX=(ptr);}
 #else
-#define JE_RAM_REALLOC_ARRAY(ptr,type,count)  (type *)jeRam_Realloc(  (ptr), sizeof(type) * (count) )
+#define GR_RAM_REALLOC_ARRAY(ptr,type,count)  (type *)grRam_Realloc(  (ptr), sizeof(type) * (count) )
 #endif
 
 #else
 
-#define JE_RAM_REALLOC_ARRAY(ptr,type,count)  (type *)jeRam_Realloc(  (ptr), sizeof(type) * (count) )
+#define GR_RAM_REALLOC_ARRAY(ptr,type,count)  (type *)grRam_Realloc(  (ptr), sizeof(type) * (count) )
 
 #endif //}
 
 #ifdef NDEBUG
-#define jeRam_IsValidPtr(ptr)	(JE_TRUE)
+#define grRam_IsValidPtr(ptr)	(GR_TRUE)
 #else
-jeBoolean jeRam_IsValidPtr(const void *ptr);
+grBoolean grRam_IsValidPtr(const void *ptr);
 #endif
 
 // Genesis3D: Reborn gr* Aliases
-#define grRam_CriticalCallbackFunction jeRam_CriticalCallbackFunction
-#define grRam_SetCriticalCallback      jeRam_SetCriticalCallback
-#define grRam_EnableCriticalCallback   jeRam_EnableCriticalCallback
-#define grRam_Allocate                 jeRam_Allocate
-#define grRam_AllocateClear            jeRam_AllocateClear
-#define grRam_Free                     jeRam_Free
-#define grRam_Free_                    jeRam_Free_
-#define grRam_Realloc                  jeRam_Realloc
-#define grRam_ReportAllocations        jeRam_ReportAllocations
-#define grRam_ShowStats                jeRam_ShowStats
-#define grRam_AddAllocation            jeRam_AddAllocation
-#define grRam_IsValidPtr               jeRam_IsValidPtr
 
-#define GR_RAM_ALLOCATE_STRUCT         JE_RAM_ALLOCATE_STRUCT
-#define GR_RAM_ALLOCATE_STRUCT_CLEAR   JE_RAM_ALLOCATE_STRUCT_CLEAR
-#define GR_RAM_ALLOCATE_ARRAY          JE_RAM_ALLOCATE_ARRAY
-#define GR_RAM_ALLOCATE_ARRAY_CLEAR    JE_RAM_ALLOCATE_ARRAY_CLEAR
-#define GR_RAM_REALLOC_ARRAY           JE_RAM_REALLOC_ARRAY
 
 #ifdef __cplusplus
   }

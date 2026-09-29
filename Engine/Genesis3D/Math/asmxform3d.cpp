@@ -29,11 +29,11 @@
 #include <assert.h>
 
 //========================================================================================
-//	jeXForm3d_TransformVecArrayKatmai
+//	grXForm3d_TransformVecArrayKatmai
 //	Katmai asm version 
 //	cb added prefetches
 //========================================================================================
-void JETCC jeXForm3d_TransformVecArrayKatmai(const jeXForm3d *XForm, const jeVec3d *Source, jeVec3d *Dest, int32 Count)
+void GRCC grXForm3d_TransformVecArrayKatmai(const grXForm3d *XForm, const grVec3d *Source, grVec3d *Dest, int32 Count)
 {
 	assert( XForm != NULL );
 	assert( Source != NULL );
@@ -44,7 +44,7 @@ void JETCC jeXForm3d_TransformVecArrayKatmai(const jeXForm3d *XForm, const jeVec
 
 	_asm
 	 {
-		mov			ecx, Count						// number of jeVec3d's to process
+		mov			ecx, Count						// number of grVec3d's to process
 		test		ecx, ecx
 		jz			Done
 
@@ -112,12 +112,12 @@ Done:
 }
 
 //========================================================================================
-//	jeXForm3d_TransformArrayKatmai  Strides must be aligned!
+//	grXForm3d_TransformArrayKatmai  Strides must be aligned!
 //	Katmai asm version 
 //========================================================================================
-void JETCC jeXForm3d_TransformArrayKatmai(const jeXForm3d *XForm,
-										   const jeVec3d *Source,
-										   jeVec3d *Dest,
+void GRCC grXForm3d_TransformArrayKatmai(const grXForm3d *XForm,
+										   const grVec3d *Source,
+										   grVec3d *Dest,
 										   int32 SourceStride,
 										   int32 DestStride,
 										   int32 Count)
@@ -135,7 +135,7 @@ void JETCC jeXForm3d_TransformArrayKatmai(const jeXForm3d *XForm,
 
 	_asm
 	 {
-		mov			ecx, Count						// number of jeVec3d's to process
+		mov			ecx, Count						// number of grVec3d's to process
 		test		ecx, ecx
 		jz			Done
 
@@ -201,12 +201,12 @@ Done:
 }
 
 //========================================================================================
-//	jeXForm3d_TransformArrayX86  Strides should be aligned
+//	grXForm3d_TransformArrayX86  Strides should be aligned
 //	Assembly version 
 //========================================================================================
-void JETCC jeXForm3d_TransformArrayX86(const jeXForm3d *XForm,
-										const jeVec3d *Source,
-										jeVec3d *Dest,
+void GRCC grXForm3d_TransformArrayX86(const grXForm3d *XForm,
+										const grVec3d *Source,
+										grVec3d *Dest,
 										int32 SourceStride,
 										int32 DestStride,
 										int32 Count)
@@ -293,10 +293,10 @@ Again:
 }
 
 //========================================================================================
-//	jeXForm3d_TransformVecArrayX86
+//	grXForm3d_TransformVecArrayX86
 //	Assembly version 
 //========================================================================================
-void JETCC jeXForm3d_TransformVecArrayX86(const jeXForm3d *XForm, const jeVec3d *Source, jeVec3d *Dest, int32 Count)
+void GRCC grXForm3d_TransformVecArrayX86(const grXForm3d *XForm, const grVec3d *Source, grVec3d *Dest, int32 Count)
 {
 	#define FSIZE	4
 
@@ -374,10 +374,10 @@ Again:
 
 #if 0	//thought intel compiler did these but it doesn't
 //========================================================================================
-//	jeXForm3d_TransformVecArray3DNow
+//	grXForm3d_TransformVecArray3DNow
 //	Assembly version 
 //========================================================================================
-void JETCC jeXForm3d_TransformVecArray3DNow(const jeXForm3d *XForm, const jeVec3d *Source, jeVec3d *Dest, int32 Count)
+void GRCC grXForm3d_TransformVecArray3DNow(const grXForm3d *XForm, const grVec3d *Source, grVec3d *Dest, int32 Count)
 {
 	assert( XForm != NULL );
 	assert( Source != NULL );
@@ -449,12 +449,12 @@ LVector_Array_Transform4_Loop_Next:
 	}
 }
 //========================================================================================
-//	jeXForm3d_TransformArray3DNow
+//	grXForm3d_TransformArray3DNow
 //	Assembly version 
 //========================================================================================
-void JETCC jeXForm3d_TransformArray3DNow(const jeXForm3d *XForm,
-										  const jeVec3d *Source,
-										  jeVec3d *Dest,
+void GRCC grXForm3d_TransformArray3DNow(const grXForm3d *XForm,
+										  const grVec3d *Source,
+										  grVec3d *Dest,
 										  int32 SourceStride,
 										  int32 DestStride,
 										  int32 Count)

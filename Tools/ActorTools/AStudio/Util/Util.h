@@ -27,19 +27,19 @@
 #endif
 
 char *Util_Strdup (const char *s);
-jeBoolean Util_SetString (char **ppString, const char *NewValue);
+grBoolean Util_SetString (char **ppString, const char *NewValue);
 
-jeBoolean Util_IsValidInt (char const *Text, int *TheVal);
-jeBoolean Util_IsValidFloat (const char *Text, float *TheFloat);
+grBoolean Util_IsValidInt (char const *Text, int *TheVal);
+grBoolean Util_IsValidFloat (const char *Text, float *TheFloat);
 unsigned int Util_htoi (const char *s);
 void Util_QuoteString (const char *s, char *d);
 
 // Obtain the integer at the end of a string.
 // For example, foo123 will return the value 123 in *pVal
 // pLastChar points to the last non-numeric character (possibly end of string)
-jeBoolean Util_GetEndStringValue( const char *psz, int32 *pVal, int32 *pLastChar) ;
+grBoolean Util_GetEndStringValue( const char *psz, int32 *pVal, int32 *pLastChar) ;
 
-jeBoolean Util_FileExists (const char *Filename);
+grBoolean Util_FileExists (const char *Filename);
 
 #ifdef __cplusplus
 	}

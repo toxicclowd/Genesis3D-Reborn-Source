@@ -42,7 +42,7 @@
 #endif
 
 
-#include "jet.h"
+#include "Genesis3D.h"
 
 typedef struct tag_AProject	AProject;
 
@@ -51,22 +51,22 @@ AProject *AProject_Create (const char *OutputName);
 void AProject_Destroy (AProject **ppProject);
 
 // file i/o
-AProject *AProject_CreateFromFile (jeVFile *FS);
+AProject *AProject_CreateFromFile (grVFile *FS);
 AProject *AProject_CreateFromFilename (const char *Filename);
 
-jeBoolean AProject_WriteToFile (const AProject *pProject, jeVFile *FS);
-jeBoolean AProject_WriteToFilename (const AProject *pProject, const char *Filename);
+grBoolean AProject_WriteToFile (const AProject *pProject, grVFile *FS);
+grBoolean AProject_WriteToFilename (const AProject *pProject, const char *Filename);
 
 // Paths section
-jeBoolean AProject_GetForceRelativePaths (const AProject *pProject);
-jeBoolean AProject_SetForceRelativePaths (AProject *pProject, const jeBoolean Flag);
+grBoolean AProject_GetForceRelativePaths (const AProject *pProject);
+grBoolean AProject_SetForceRelativePaths (AProject *pProject, const grBoolean Flag);
 
 const char *AProject_GetMaterialsPath (const AProject *pProject);
-jeBoolean AProject_SetMaterialsPath (AProject *pProject, const char *Path);
+grBoolean AProject_SetMaterialsPath (AProject *pProject, const char *Path);
 
 //Need a directory for 'temporary' or 'obj' files:
 const char *AProject_GetObjPath (const AProject *pProject);
-jeBoolean AProject_SetObjPath (AProject *pProject, const char *Path);
+grBoolean AProject_SetObjPath (AProject *pProject, const char *Path);
 		
 // Output file section
 typedef enum
@@ -76,10 +76,10 @@ typedef enum
 } ApjOutputFormat;
 
 const char *AProject_GetOutputFilename (const AProject *pProject);
-jeBoolean AProject_SetOutputFilename (AProject *pProject, const char *Filename);
+grBoolean AProject_SetOutputFilename (AProject *pProject, const char *Filename);
 
 ApjOutputFormat AProject_GetOutputFormat (const AProject *pProject);
-jeBoolean AProject_SetOutputFormat (AProject *pProject, const ApjOutputFormat Fmt);
+grBoolean AProject_SetOutputFormat (AProject *pProject, const ApjOutputFormat Fmt);
 
 
 // Body section
@@ -95,10 +95,10 @@ typedef enum
 ApjBodyFormat AProject_GetBodyFormatFromFilename (const char *Name);
 
 const char *AProject_GetBodyFilename (const AProject *pProject);
-jeBoolean AProject_SetBodyFilename (AProject *pProject, const char *Filename);
+grBoolean AProject_SetBodyFilename (AProject *pProject, const char *Filename);
 
 ApjBodyFormat AProject_GetBodyFormat (const AProject *pProject);
-jeBoolean AProject_SetBodyFormat (AProject *pProject, ApjBodyFormat Fmt);
+grBoolean AProject_SetBodyFormat (AProject *pProject, ApjBodyFormat Fmt);
 
 
 // Materials section
@@ -110,7 +110,7 @@ typedef enum
 
 int AProject_GetMaterialsCount (const AProject *pProject);
 
-jeBoolean AProject_AddMaterial
+grBoolean AProject_AddMaterial
 	(
 	  AProject *pProject,
 	  const char *MaterialName,
@@ -120,21 +120,21 @@ jeBoolean AProject_AddMaterial
 	  int *pIndex		// returned index
 	);
 
-jeBoolean AProject_RemoveMaterial (AProject *pProject, const int Index);
+grBoolean AProject_RemoveMaterial (AProject *pProject, const int Index);
 
 int AProject_GetMaterialIndex (const AProject *pProject, const char *MaterialName);
 
 ApjMaterialFormat AProject_GetMaterialFormat (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMaterialFormat (AProject *pProject, const int Index, const ApjMaterialFormat Fmt);
+grBoolean AProject_SetMaterialFormat (AProject *pProject, const int Index, const ApjMaterialFormat Fmt);
 
 const char *AProject_GetMaterialName (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMaterialName (AProject *pProject, const int Index, const char *MaterialName);
+grBoolean AProject_SetMaterialName (AProject *pProject, const int Index, const char *MaterialName);
 
 const char *AProject_GetMaterialTextureFilename (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMaterialTextureFilename (AProject *pProject, const int Index, const char *TextureFilename);
+grBoolean AProject_SetMaterialTextureFilename (AProject *pProject, const int Index, const char *TextureFilename);
 
-JE_RGBA AProject_GetMaterialTextureColor (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMaterialTextureColor (AProject *pProject, const int Index, 
+GR_RGBA AProject_GetMaterialTextureColor (const AProject *pProject, const int Index);
+grBoolean AProject_SetMaterialTextureColor (AProject *pProject, const int Index, 
 	const float Red, const float Green, const float Blue, const float Alpha);
 
 
@@ -155,39 +155,39 @@ ApjMotionFormat AProject_GetMotionFormatFromFilename (const char *Filename);
 
 int AProject_GetMotionsCount (const AProject *pProject);
 
-jeBoolean AProject_AddMotion
+grBoolean AProject_AddMotion
 	(
 	  AProject *pProject,
 	  const char *MotionName,
 	  const char *Filename,
 	  const ApjMotionFormat Fmt,
-	  const jeBoolean OptFlag,
+	  const grBoolean OptFlag,
 	  const int OptLevel,
 	  const char *BoneName,
 	  int *pIndex	// returned index
 	);
 
-jeBoolean AProject_RemoveMotion (AProject *pProject, const int Index);
+grBoolean AProject_RemoveMotion (AProject *pProject, const int Index);
 
 int AProject_GetMotionIndex (const AProject *pProject, const char *MotionName);
 
 ApjMotionFormat AProject_GetMotionFormat (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMotionFormat (AProject *pProject, const int Index, const ApjMotionFormat Fmt);
+grBoolean AProject_SetMotionFormat (AProject *pProject, const int Index, const ApjMotionFormat Fmt);
 
 const char *AProject_GetMotionName (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMotionName (AProject *pProject, const int Index, const char *MotionName);
+grBoolean AProject_SetMotionName (AProject *pProject, const int Index, const char *MotionName);
 
 const char *AProject_GetMotionFilename (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMotionFilename (AProject *pProject, const int Index, const char *Filename);
+grBoolean AProject_SetMotionFilename (AProject *pProject, const int Index, const char *Filename);
 
-jeBoolean AProject_GetMotionOptimizationFlag (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMotionOptimizationFlag (AProject *pProject, const int Index, const jeBoolean Flag);
+grBoolean AProject_GetMotionOptimizationFlag (const AProject *pProject, const int Index);
+grBoolean AProject_SetMotionOptimizationFlag (AProject *pProject, const int Index, const grBoolean Flag);
 
 int AProject_GetMotionOptimizationLevel (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMotionOptimizationLevel (AProject *pProject, const int Index, const int OptLevel);
+grBoolean AProject_SetMotionOptimizationLevel (AProject *pProject, const int Index, const int OptLevel);
 
 const char *AProject_GetMotionBone (const AProject *pProject, const int Index);
-jeBoolean AProject_SetMotionBone (AProject *pProject, const int Index, const char *BoneName);
+grBoolean AProject_SetMotionBone (AProject *pProject, const int Index, const char *BoneName);
 
 #ifdef __cplusplus
 	}

@@ -30,83 +30,83 @@ extern "C" {
 
 typedef	enum
 {
-	JE_THREADQUEUE_STATUS_WAITINGFORTHREAD,
-	JE_THREADQUEUE_STATUS_WAITINGTOBEGIN,
-	JE_THREADQUEUE_STATUS_RUNNING,
-	JE_THREADQUEUE_STATUS_COMPLETED,
-}	jeThreadQueue_JobStatus;
+	GR_THREADQUEUE_STATUS_WAITINGFORTHREAD,
+	GR_THREADQUEUE_STATUS_WAITINGTOBEGIN,
+	GR_THREADQUEUE_STATUS_RUNNING,
+	GR_THREADQUEUE_STATUS_COMPLETED,
+}	grThreadQueue_JobStatus;
 		// these are gauranteed to be in order of execution :
 		//  if you want to know if a job is not running yet, you can do
 		//		(Status < RUNNING) ?
 
-typedef	struct jeThreadQueue_Job		jeThreadQueue_Job;
-typedef struct jeThreadQueue_Semaphore	jeThreadQueue_Semaphore;
+typedef	struct grThreadQueue_Job		grThreadQueue_Job;
+typedef struct grThreadQueue_Semaphore	grThreadQueue_Semaphore;
 
-typedef	void (*jeThreadQueue_JobFunction)(jeThreadQueue_Job *, void *);
+typedef	void (*grThreadQueue_JobFunction)(grThreadQueue_Job *, void *);
 
 typedef	enum
 {
-	JE_THREADQUEUE_PRIORITY_HIGH,
-	JE_THREADQUEUE_PRIORITY_LOW,
-}	jeThreadQueue_Priority;
+	GR_THREADQUEUE_PRIORITY_HIGH,
+	GR_THREADQUEUE_PRIORITY_LOW,
+}	grThreadQueue_Priority;
 
-JETAPI	jeThreadQueue_Job *	JETCC jeThreadQueue_JobCreate(
-	jeThreadQueue_JobFunction		Function,
+GRAPI	grThreadQueue_Job *	GRCC grThreadQueue_JobCreate(
+	grThreadQueue_JobFunction		Function,
 	void *		Context,
-	jeErrorLog *ErrorLog,
+	grErrorLog *ErrorLog,
 	uint32		StackLimit); // <> remove the StackLimit
 				// note that when you call this, the job does not actually
 				// start until someone calls a PollJos.
 
-JETAPI	void JETCC jeThreadQueue_JobCreateRef(jeThreadQueue_Job *Job);
-JETAPI	void JETCC jeThreadQueue_JobDestroy(jeThreadQueue_Job **Job);
+GRAPI	void GRCC grThreadQueue_JobCreateRef(grThreadQueue_Job *Job);
+GRAPI	void GRCC grThreadQueue_JobDestroy(grThreadQueue_Job **Job);
 
-JETAPI	jeThreadQueue_JobStatus	JETCC jeThreadQueue_JobGetStatus(const jeThreadQueue_Job *Job);
+GRAPI	grThreadQueue_JobStatus	GRCC grThreadQueue_JobGetStatus(const grThreadQueue_Job *Job);
 
-JETAPI	jeBoolean JETCC jeThreadQueue_JobSetPriority(
-	jeThreadQueue_Job *		Job,
-	jeThreadQueue_Priority	Priority);
+GRAPI	grBoolean GRCC grThreadQueue_JobSetPriority(
+	grThreadQueue_Job *		Job,
+	grThreadQueue_Priority	Priority);
 				// will return false if the priority could not be changed 
 				//	(eg. the thread was already running)
 				// (not a fatal error)
 
-JETAPI	jeThreadQueue_Priority JETCC jeThreadQueue_JobGetPriority(jeThreadQueue_Job * Job);
+GRAPI	grThreadQueue_Priority GRCC grThreadQueue_JobGetPriority(grThreadQueue_Job * Job);
 				// this does *not* return the result of SetPriority , but instead it
 				//	returns the actual realized priority due to location in the queue
 
-JETAPI	jeBoolean	JETCC jeThreadQueue_SetThreadLimit(int MaxThreads);
-JETAPI	int			JETCC jeThreadQueue_GetThreadLimit(void);
+GRAPI	grBoolean	GRCC grThreadQueue_SetThreadLimit(int MaxThreads);
+GRAPI	int			GRCC grThreadQueue_GetThreadLimit(void);
 
-JETAPI	void JETCC jeThreadQueue_Sleep(int Milliseconds);
+GRAPI	void GRCC grThreadQueue_Sleep(int Milliseconds);
 				// don't use the Windows Sleep() use this
 
-JETAPI	void JETCC jeThreadQueue_PollJobs(void);
+GRAPI	void GRCC grThreadQueue_PollJobs(void);
 				// warning : do NOT call this unless you are the master of the threads!
 				//	calling this function too often will under-represent high priority threads!
 				//	try to use WaitOnJob instead!
 
-JETAPI jeBoolean JETCC jeThreadQueue_WaitOnJob(jeThreadQueue_Job * Job,
-											jeThreadQueue_JobStatus WaitForStatus);
-				//can wait for JE_THREADQUEUE_STATUS_RUNNING or JE_THREADQUEUE_STATUS_COMPLETED
+GRAPI grBoolean GRCC grThreadQueue_WaitOnJob(grThreadQueue_Job * Job,
+											grThreadQueue_JobStatus WaitForStatus);
+				//can wait for GR_THREADQUEUE_STATUS_RUNNING or GR_THREADQUEUE_STATUS_COMPLETED
 				// waits for Status *or higher* !
 
 // ----- use these Semaphores to lock data that ThreadQueue_Jobs may peek at.
 
-JETAPI jeThreadQueue_Semaphore * JETCC jeThreadQueue_Semaphore_Create(void);
-JETAPI void JETCC jeThreadQueue_Semaphore_Lock(		jeThreadQueue_Semaphore * S);
-JETAPI void JETCC jeThreadQueue_Semaphore_UnLock(	jeThreadQueue_Semaphore * S);
-JETAPI void JETCC jeThreadQueue_Semaphore_Destroy(	jeThreadQueue_Semaphore ** pS);
+GRAPI grThreadQueue_Semaphore * GRCC grThreadQueue_Semaphore_Create(void);
+GRAPI void GRCC grThreadQueue_Semaphore_Lock(		grThreadQueue_Semaphore * S);
+GRAPI void GRCC grThreadQueue_Semaphore_UnLock(	grThreadQueue_Semaphore * S);
+GRAPI void GRCC grThreadQueue_Semaphore_Destroy(	grThreadQueue_Semaphore ** pS);
 
 #ifndef NDEBUG
-JETAPI	void JETCC jeThreadQueue_DumpQueue(void);			// uses stdio !
+GRAPI	void GRCC grThreadQueue_DumpQueue(void);			// uses stdio !
 #else
-#define jeThreadQueue_DumpQueue()
+#define grThreadQueue_DumpQueue()
 #endif
 
 #ifndef NDEBUG
-JETAPI void JETCC jeThreadQueue_GetDebugInfo(int * pActiveJobCount,int *pSemaphoreCount, int * pNumThreads);
+GRAPI void GRCC grThreadQueue_GetDebugInfo(int * pActiveJobCount,int *pSemaphoreCount, int * pNumThreads);
 #else
-#define jeThreadQueue_GetDebugInfo(a,s,n)
+#define grThreadQueue_GetDebugInfo(a,s,n)
 #endif
 
 

@@ -25,7 +25,7 @@
 #include <Assert.h>
 
 #include "ErrorLog.h"
-#include "jeModel.h"
+#include "grModel.h"
 
 #include "ModelList.h"
 
@@ -40,7 +40,7 @@ static void ModelList_DestroyModelCB( void *p1 )
 	Object_Free( (Object**)&pModel ) ;
 }// ModelList_DestroyModelCB
 
-static jeBoolean ModelList_WriteCB( Model * pModel, void* lParam )
+static grBoolean ModelList_WriteCB( Model * pModel, void* lParam )
 {
 	return Model_WriteToFile( pModel, (Brush_WriteInfo*)lParam) ;
 }// ModelList_WriteCB
@@ -73,7 +73,7 @@ Model * ModelList_GetModel( ModelList * pList, ModelIterator * pMI )
 	assert( pMI != NULL ) ;
 
 //	pModel = List_GetData( pMI ) ;
-//	assert( JE_TRUE == Model_IsValid( pModel ) ) ;
+//	assert( GR_TRUE == Model_IsValid( pModel ) ) ;
 	return (Model*)List_GetFirst( (List*)pList, pMI ) ;
 
 }// ModelList_GetModel
@@ -105,13 +105,13 @@ Model * ModelList_GetNext( ModelList * pList, ModelIterator * pMI )
 ModelIterator ModelList_Append( ModelList * pList, Model * pModel )
 {
 	assert( pList != NULL ) ;
-	assert( JE_TRUE == Model_IsValid( pModel ) ) ;
+	assert( GR_TRUE == Model_IsValid( pModel ) ) ;
 
 	Object_AddRef( (Object*)pModel );
 	return List_Append( pList, pModel ) ;
 }// ModelList_Append
 
-static jeBoolean ModelList_FindCB( void *p1, void *lParam )
+static grBoolean ModelList_FindCB( void *p1, void *lParam )
 {
 	return ( p1 == lParam ) ;
 }// ObjectList_FindCB
@@ -119,13 +119,13 @@ static jeBoolean ModelList_FindCB( void *p1, void *lParam )
 void ModelList_Remove( ModelList * pList, Model * pModel ) 
 {
 	ModelIterator	pMI ;
-	jeBoolean		bFound ;
+	grBoolean		bFound ;
 	Model	*		pFoundModel ;
 
 	assert( pList != NULL ) ;
 
 	bFound = List_Search( pList, ModelList_FindCB, pModel, &pFoundModel, &pMI ) ;
-	assert( JE_TRUE == bFound ) ;
+	assert( GR_TRUE == bFound ) ;
 
 	List_Remove( pList, pMI, NULL ) ;
 	Object_Free( (Object**)&pModel );
@@ -148,7 +148,7 @@ typedef struct BrushEnumData {
 	BrushListCB Callback;
 } BrushEnumData;
 
-static jeBoolean ModelList_BrushEnumCB( Model* pModel, void * pVoid )
+static grBoolean ModelList_BrushEnumCB( Model* pModel, void * pVoid )
 {
 	BrushEnumData *pData = (BrushEnumData*)pVoid;
 
@@ -170,35 +170,35 @@ int32 ModelList_EnumBrushes( ModelList * pList, void * pVoid, BrushListCB Callba
 
 // CALLBACKS
 
-jeBoolean ModelList_NumberModelsCB( Model * pModel, void * lParam )
+grBoolean ModelList_NumberModelsCB( Model * pModel, void * lParam )
 {
 	int32 *Counter = (int32*)lParam;
 
 	*Counter += 1;
-	return JE_TRUE ;
+	return GR_TRUE ;
 	pModel;
 }// ModelList_NumberModelsCB
 
 
 // FILE HANDLING
-ModelList * ModelList_CreateFromFile( jeVFile * pF, jePtrMgr * pPtrMgr )
+ModelList * ModelList_CreateFromFile( grVFile * pF, grPtrMgr * pPtrMgr )
 {
 	ModelList	*	pList = NULL ;
 	Model		*	pModel ;
 	int32			i ;
 	int32			nItems ;
 	int32			nVersion ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
-	if( !jeVFile_Read( pF, &nVersion, sizeof nVersion ) )
+	if( !grVFile_Read( pF, &nVersion, sizeof nVersion ) )
 		return NULL ;
 	if( nVersion != MODEL_VERSION )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "ModelList_CreateFromFile Version.\n", NULL);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "ModelList_CreateFromFile Version.\n", NULL);
 		return NULL ;
 	}
 
-	if( !jeVFile_Read( pF, &nItems, sizeof nItems ) )
+	if( !grVFile_Read( pF, &nItems, sizeof nItems ) )
 		return NULL ;
 
 	pList = ModelList_Create( ) ;
@@ -228,7 +228,7 @@ MLCFF_FAILURE :
 }// ModelList_CreateFromFile
 
 
-jeBoolean ModelList_WriteToFile( ModelList * pList, jeVFile * pF, jePtrMgr * pPtrMgr )
+grBoolean ModelList_WriteToFile( ModelList * pList, grVFile * pF, grPtrMgr * pPtrMgr )
 {
 	int32	nVersion ;
 	int32	nItems ;
@@ -237,20 +237,20 @@ jeBoolean ModelList_WriteToFile( ModelList * pList, jeVFile * pF, jePtrMgr * pPt
 	// !!FRANK - CREATE A PTRMGR HERE?
 
 	assert( pList != NULL ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	nVersion = MODEL_VERSION ;
-	if( jeVFile_Write( pF, &nVersion, sizeof nVersion ) == JE_FALSE )
+	if( grVFile_Write( pF, &nVersion, sizeof nVersion ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "ModelList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "ModelList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 	
 	nItems = ModelList_GetNumItems( pList ) ;
-	if( jeVFile_Write( pF, &nItems, sizeof nItems ) == JE_FALSE )
+	if( grVFile_Write( pF, &nItems, sizeof nItems ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "ModelList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "ModelList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 	
 	WriteInfo.pF = pF;
@@ -260,7 +260,7 @@ jeBoolean ModelList_WriteToFile( ModelList * pList, jeVFile * pF, jePtrMgr * pPt
 
 }// ModelList_WriteToFile
 
-jeBoolean ModelList_Reattach( ModelList * pList, jeWorld * pWorld )
+grBoolean ModelList_Reattach( ModelList * pList, grWorld * pWorld )
 {
 	Model * pModel;
 	ListIterator pli;
@@ -273,12 +273,12 @@ jeBoolean ModelList_Reattach( ModelList * pList, jeWorld * pWorld )
 	while( pModel != NULL )
 	{
 		mri.pModel = Model_GetguModel( pModel ) ;
-	//	mri.IndexTag = jeModel_GetIndexTag( pModel ) ;
+	//	mri.IndexTag = grModel_GetIndexTag( pModel ) ;
 		ModelList_EnumModels( pList, &mri, Model_ReattachCB ) ;
 		assert( mri.IndexTag == MODEL_REATTACH_GOOD ) ;
 		pModel = (Model*)List_GetNext(pList, &pli );
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// ModelList_Reattach
 
 /* EOF: ModelList.c */

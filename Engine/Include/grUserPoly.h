@@ -37,10 +37,8 @@ extern "C" {
 //========================================================================================
 //	Typedefs/#defines
 //========================================================================================
-typedef struct jeUserPoly grUserPoly;
-typedef struct jeUserPoly jeUserPoly;
-typedef struct jeMaterialSpec grMaterialSpec;
-typedef struct jeMaterialSpec jeMaterialSpec;
+typedef struct grUserPoly grUserPoly;
+typedef struct grMaterialSpec grMaterialSpec;
 
 
 typedef enum
@@ -50,7 +48,7 @@ typedef enum
 	Type_Quad, 
 	Type_Sprite
 } grUserPoly_Type;
-typedef grUserPoly_Type jeUserPoly_Type;
+typedef grUserPoly_Type grUserPoly_Type;
 
 
 //========================================================================================
@@ -106,21 +104,5 @@ GRAPI grBoolean	GRCC grUserPoly_Render(const grUserPoly *Poly, const grEngine *E
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeUserPoly_CreateLine                    grUserPoly_CreateLine
-#define jeUserPoly_CreateQuad                    grUserPoly_CreateQuad
-#define jeUserPoly_CreateRef                     grUserPoly_CreateRef
-#define jeUserPoly_CreateSprite                  grUserPoly_CreateSprite
-#define jeUserPoly_CreateTri                     grUserPoly_CreateTri
-#define jeUserPoly_Destroy                       grUserPoly_Destroy
-#define jeUserPoly_IsValid                       grUserPoly_IsValid
-#define jeUserPoly_Render                        grUserPoly_Render
-#define jeUserPoly_UpdateLine                    grUserPoly_UpdateLine
-#define jeUserPoly_UpdateQuad                    grUserPoly_UpdateQuad
-#define jeUserPoly_UpdateSprite                  grUserPoly_UpdateSprite
-#define jeUserPoly_UpdateTri                     grUserPoly_UpdateTri
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

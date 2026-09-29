@@ -33,7 +33,7 @@
 
 typedef struct LightList{
 	List			*	pList;
-	jeWorld			*	pWorld;
+	grWorld			*	pWorld;
 } LightList;
 
 static void LightList_DestroyLightCB( void *p1 )
@@ -45,28 +45,28 @@ static void LightList_DestroyLightCB( void *p1 )
 	Object_Free( (Object**)&pLight ) ;
 }// LightList_DestroyLightCB
 
-static jeBoolean LightList_FindCB( void *p1, void *lParam )
+static grBoolean LightList_FindCB( void *p1, void *lParam )
 {
 	return ( p1 == lParam ) ;
 }// LightList_FindCB
 
 
 
-LightList * LightList_Create( jeWorld *pWorld )
+LightList * LightList_Create( grWorld *pWorld )
 {
 	LightList *pLightList;
 
-	pLightList = JE_RAM_ALLOCATE_STRUCT( LightList );
+	pLightList = GR_RAM_ALLOCATE_STRUCT( LightList );
 	if( pLightList == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, "Unable to allocate LightList" );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, "Unable to allocate LightList" );
 		return( NULL );
 	}
 	pLightList->pList = List_Create( );
 	if( pLightList->pList == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_INTERNAL_RESOURCE, "Trace" );
-		jeRam_Free( pLightList );
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Trace" );
+		grRam_Free( pLightList );
 		return( NULL );
 	}
 	pLightList->pWorld = pWorld;
@@ -78,7 +78,7 @@ LightList * LightList_Create( jeWorld *pWorld )
 void LightList_Destroy( LightList **ppLightList )
 {
 	List_Destroy( &(*ppLightList)->pList, LightList_DestroyLightCB ) ;
-	jeRam_Free( (*ppLightList) );
+	grRam_Free( (*ppLightList) );
 }// LightList_Destroy
 
 //
@@ -132,13 +132,13 @@ LightIterator LightList_Append( LightList * pLightList, Light * pLight )
 void LightList_Remove( LightList * pLightList, Light * pLight )
 {
 	LightIterator	pBI ;
-	jeBoolean		bFound ;
+	grBoolean		bFound ;
 	Light	*		pFoundLight ;
 
 	assert( pLightList != NULL ) ;
 
 	bFound = List_Search( pLightList->pList, LightList_FindCB, pLight, &pFoundLight, &pBI ) ;
-	assert( JE_TRUE == bFound ) ;
+	assert( GR_TRUE == bFound ) ;
 
 	List_Remove( pLightList->pList, pBI, NULL ) ;
 }// LightList_Remove
@@ -161,30 +161,30 @@ int32 LightList_EnumLights( LightList * pLightList, void * pVoid, LightListCB Ca
 
 
 
-LightList * LightList_CreateFromFile( jeVFile * pF, jeWorld * pWorld, jePtrMgr * pPtrMgr  )
+LightList * LightList_CreateFromFile( grVFile * pF, grWorld * pWorld, grPtrMgr * pPtrMgr  )
 {
 	LightList	*	pLightList = NULL ;
 	Light		*	pLight ;
 	int32			i ;
 	int32			nItems ;
 	int32			nVersion ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
-	if( !jeVFile_Read( pF, &nVersion, sizeof nVersion ) )
+	if( !grVFile_Read( pF, &nVersion, sizeof nVersion ) )
 		return NULL ;
 	if( nVersion != LIGHT_VERSION )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_READ, "BrushList_CreateFromFile Version.\n", NULL);
+		grErrorLog_AddString(GR_ERR_FILEIO_READ, "BrushList_CreateFromFile Version.\n", NULL);
 		return NULL ;
 	}
 
-	if( !jeVFile_Read( pF, &nItems, sizeof nItems ) )
+	if( !grVFile_Read( pF, &nItems, sizeof nItems ) )
 		return NULL ;
 
 	pLightList = LightList_Create( pWorld ) ;
 	if( pLightList == NULL )
 	{
-		jeErrorLog_AddString(JE_ERR_INTERNAL_RESOURCE, "Lightist_CreateFromFile\n", NULL);
+		grErrorLog_AddString(GR_ERR_INTERNAL_RESOURCE, "Lightist_CreateFromFile\n", NULL);
 		return NULL ;
 	}
 
@@ -193,7 +193,7 @@ LightList * LightList_CreateFromFile( jeVFile * pF, jeWorld * pWorld, jePtrMgr *
 		pLight = Light_CreateFromFile( pF, pWorld, pPtrMgr ) ;
 		if( pLight == NULL )
 		{
-			jeErrorLog_AddString(JE_ERR_INTERNAL_RESOURCE, "Lightist_CreateFromFile\n", NULL);
+			grErrorLog_AddString(GR_ERR_INTERNAL_RESOURCE, "Lightist_CreateFromFile\n", NULL);
 			return NULL ;
 		}
 		if( LightList_Append( pLightList, pLight ) == NULL )
@@ -202,7 +202,7 @@ LightList * LightList_CreateFromFile( jeVFile * pF, jeWorld * pWorld, jePtrMgr *
 			return NULL ;
 		}
 		Object_Free( (Object**)&pLight );
-		Object_SetInLevel( (Object*)pLight, JE_TRUE );
+		Object_SetInLevel( (Object*)pLight, GR_TRUE );
 	}
 	return pLightList ;
 
@@ -210,7 +210,7 @@ LightList * LightList_CreateFromFile( jeVFile * pF, jeWorld * pWorld, jePtrMgr *
 }// LightList_CreateFromFile
 
 
-jeBoolean LightList_WriteToFile( LightList * pList, jeVFile * pF, jePtrMgr * pPtrMgr )
+grBoolean LightList_WriteToFile( LightList * pList, grVFile * pF, grPtrMgr * pPtrMgr )
 {
 	int32	nVersion ;
 	int32	nItems ;
@@ -218,20 +218,20 @@ jeBoolean LightList_WriteToFile( LightList * pList, jeVFile * pF, jePtrMgr * pPt
 	ListIterator pli;
 
 	assert( pList != NULL ) ;
-	assert( jeVFile_IsValid( pF ) ) ;
+	assert( grVFile_IsValid( pF ) ) ;
 
 	nVersion = LIGHT_VERSION ;
-	if( jeVFile_Write( pF, &nVersion, sizeof nVersion ) == JE_FALSE )
+	if( grVFile_Write( pF, &nVersion, sizeof nVersion ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 	
 	nItems = LightList_GetNumItems( pList ) ;
-	if( jeVFile_Write( pF, &nItems, sizeof nItems ) == JE_FALSE )
+	if( grVFile_Write( pF, &nItems, sizeof nItems ) == GR_FALSE )
 	{
-		jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "BrushList_WriteToFile.\n", NULL);
+		return GR_FALSE;
 	}
 	
 	pLight = (Light	*)List_GetFirst (pList->pList, &pli);
@@ -239,13 +239,13 @@ jeBoolean LightList_WriteToFile( LightList * pList, jeVFile * pF, jePtrMgr * pPt
 	{
 		if( !Light_WriteToFile( pLight, pF, pPtrMgr ) )
 		{
-			jeErrorLog_AddString(JE_ERR_FILEIO_WRITE, "Light_WriteToFile.\n", NULL);
-			return JE_FALSE;
+			grErrorLog_AddString(GR_ERR_FILEIO_WRITE, "Light_WriteToFile.\n", NULL);
+			return GR_FALSE;
 		}
 
 		pLight = (Light*)List_GetNext( pList->pList, &pli );
 	}
-	return  JE_TRUE;
+	return  GR_TRUE;
 
 }// LightList_WriteToFile
 

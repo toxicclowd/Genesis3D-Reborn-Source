@@ -78,22 +78,22 @@ inline HRESULT CreateCommittedResource(
 }
 
 // Get DXGI format from Jet3D pixel format  
-inline DXGI_FORMAT GetDXGIFormat(const jeRDriver_PixelFormat* drvFormat)
+inline DXGI_FORMAT GetDXGIFormat(const grRDriver_PixelFormat* drvFormat)
 {
 	if (!drvFormat)
 		return DXGI_FORMAT_B8G8R8A8_UNORM; // Default
 	
-	// jePixelFormat is a uint32, check its value against the format constants
-	jePixelFormat pixelFormat = drvFormat->PixelFormat;
+	// grPixelFormat is a uint32, check its value against the format constants
+	grPixelFormat pixelFormat = drvFormat->PixelFormat;
 	
 	// Check for common formats based on the pixel format value
-	if (pixelFormat == JE_PIXELFORMAT_32BIT_ARGB)
+	if (pixelFormat == GR_PIXELFORMAT_32BIT_ARGB)
 		return DXGI_FORMAT_B8G8R8A8_UNORM;
-	else if (pixelFormat == JE_PIXELFORMAT_24BIT_RGB)
+	else if (pixelFormat == GR_PIXELFORMAT_24BIT_RGB)
 		return DXGI_FORMAT_B8G8R8X8_UNORM;
-	else if (pixelFormat == JE_PIXELFORMAT_16BIT_565_RGB)
+	else if (pixelFormat == GR_PIXELFORMAT_16BIT_565_RGB)
 		return DXGI_FORMAT_B5G6R5_UNORM;
-	else if (pixelFormat == JE_PIXELFORMAT_16BIT_4444_ARGB)
+	else if (pixelFormat == GR_PIXELFORMAT_16BIT_4444_ARGB)
 		return DXGI_FORMAT_B4G4R4A4_UNORM;
 	
 	return DXGI_FORMAT_B8G8R8A8_UNORM; // Default

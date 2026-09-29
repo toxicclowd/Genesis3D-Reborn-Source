@@ -19,14 +19,14 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include <windows.h>
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "Object.h"
 #include "ObjectDef.h"
-#include "jeVersion.h"
+#include "grVersion.h"
 #include "StaticMeshObj.h"
 
-jeObjectDef ObjectDef = {
-	JE_OBJECT_TYPE_UNKNOWN,
+grObjectDef ObjectDef = {
+	GR_OBJECT_TYPE_UNKNOWN,
 	"StaticMesh",
 	0,
 
@@ -83,18 +83,18 @@ jeObjectDef ObjectDef = {
 //	Object_RegisterDef()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-OBJECT_API jeBoolean Object_RegisterDef(
+OBJECT_API grBoolean Object_RegisterDef(
 	float Major,	// major version number
 	float Minor )	// minor version number
 {
 
 	// fail if versions don't match
-	if ( ( Major != JET_MAJOR_VERSION ) || ( Minor != JET_MINOR_VERSION ) )
+	if ( ( Major != GRT_MAJOR_VERSION ) || ( Minor != GRT_MINOR_VERSION ) )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// register def
-	return jeObject_RegisterGlobalObjectDef(&ObjectDef);
+	return grObject_RegisterGlobalObjectDef(&ObjectDef);
 
 } // Object_RegisterDef()

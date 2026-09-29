@@ -205,8 +205,8 @@ BOOL CAStudioPropSheet::OnInitDialog()
 {
 	CPropertySheet::OnInitDialog();
 
-    m_pEngine = jeEngine_Create(GetSafeHwnd(), "AStudio", ".");
-    m_pResManager = jeResource_MgrCreate(m_pEngine);
+    m_pEngine = grEngine_Create(GetSafeHwnd(), "AStudio", ".");
+    m_pResManager = grResource_MgrCreate(m_pEngine);
 
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
@@ -339,8 +339,8 @@ int CAStudioPropSheet::OnCreate (LPCREATESTRUCT lpCreateStruct)
 void CAStudioPropSheet::OnDestroy()
 {
 	WinHelp(0L, HELP_QUIT);	// shutdown WinHelp
-    jeEngine_Destroy(&m_pEngine);
-    jeResource_MgrDestroy(&m_pResManager);
+    grEngine_Destroy(&m_pEngine);
+    grResource_MgrDestroy(&m_pResManager);
 	CPropertySheet::OnDestroy();
 }
 
@@ -478,7 +478,7 @@ bool CAStudioPropSheet::WriteTheDamnFileAlready (const CString &Filename)
 // Returns true if successful.  false if any error occurred.
 //  This function does no error output--it's up to the calling function.
 {
-	bool rslt = (AProject_WriteToFilename (m_Project, Filename) == JE_FALSE) ? false : true;
+	bool rslt = (AProject_WriteToFilename (m_Project, Filename) == GR_FALSE) ? false : true;
 
 	if (rslt)
 	{
@@ -657,14 +657,14 @@ void CAStudioPropSheet::OnFileNew ()
 	GetFullPathName (Dlg.m_ProjectName, MAX_PATH, ProjectName, NULL);
 
 	// Append the project file extension if there isn't an extension on the filename
-	if (FilePath_GetExt (ProjectName, Ext) == JE_FALSE)
+	if (FilePath_GetExt (ProjectName, Ext) == GR_FALSE)
 	{
 		FilePath_SetExt (ProjectName, ".apj", ProjectName);
 	}
 
 	// Get just the base filename for the default body name
 	// If no name, give it the Untitled string
-	if (FilePath_GetName (ProjectName, NameOnly) == JE_FALSE)
+	if (FilePath_GetName (ProjectName, NameOnly) == GR_FALSE)
 	{
 		strcpy (NameOnly, rcstring_Load (AfxGetResourceHandle (), IDS_UNTITLED));
 	}
@@ -680,7 +680,7 @@ void CAStudioPropSheet::OnFileNew ()
 	}
 
 	// Set the force relative flag accordingly
-	AProject_SetForceRelativePaths (NewProject, (Dlg.m_UseProjectDir == TRUE) ? JE_TRUE : JE_FALSE);
+	AProject_SetForceRelativePaths (NewProject, (Dlg.m_UseProjectDir == TRUE) ? GR_TRUE : GR_FALSE);
 	// Make sure property pages are there...
 	AddPropertyPages ();
 	// set new project pointer and update the display
@@ -778,11 +778,11 @@ void CAStudioPropSheet::OnProjectBuild ()
 		m_EditMessages.SetWindowText ("");
 
 		// and start compile...
-		const jeBoolean rslt = MakeHelp_StartCompile (m_Project, m_Options, this);
+		const grBoolean rslt = MakeHelp_StartCompile (m_Project, m_Options, this);
 
 		// If compile started OK, then lock out controls.
 		// If it failed, then display message
-		if (rslt == JE_FALSE)
+		if (rslt == GR_FALSE)
 		{
 			AfxMessageBox (IDS_CANTSTARTCOMPILE, MB_ICONEXCLAMATION);
 		}
@@ -814,18 +814,18 @@ void CAStudioPropSheet::OnProjectBuildAll ()
 	m_EditMessages.SetWindowText ("");
 
 	// clean
-	if (Make_Clean (m_Project, m_Options, MakeHelp_Printf) == JE_FALSE)
+	if (Make_Clean (m_Project, m_Options, MakeHelp_Printf) == GR_FALSE)
 	{
 		AfxMessageBox (IDS_COMPILEFAILED, MB_OK);
 		return;
 	}
 
 	// and start compile...
-	const jeBoolean rslt = MakeHelp_StartCompile (m_Project, m_Options, this);
+	const grBoolean rslt = MakeHelp_StartCompile (m_Project, m_Options, this);
 
 	// If compile started OK, then lock out controls.
 	// If it failed, then display message
-	if (rslt == JE_FALSE)
+	if (rslt == GR_FALSE)
 	{
 		AfxMessageBox (IDS_CANTSTARTCOMPILE, MB_ICONEXCLAMATION);
 	}
@@ -850,7 +850,7 @@ void CAStudioPropSheet::OnProjectClean ()
 	AfxFormatString1 (Msg, IDS_CLEANING, m_Filename);
 	MakeHelp_Printf ("%s\n", Msg);
 
-	if (Make_Clean (m_Project, m_Options, MakeHelp_Printf) == JE_FALSE)
+	if (Make_Clean (m_Project, m_Options, MakeHelp_Printf) == GR_FALSE)
 	{
 		AfxMessageBox (IDS_COMPILEFAILED, MB_OK);
 	}
@@ -863,7 +863,7 @@ void CAStudioPropSheet::OnProjectActorSummary ()
 	MakeHelp_SetMessagesWindow (this);
 	EnableMessagesWindow (true);
 	m_EditMessages.SetWindowText ("");
-	if (Make_ActorSummary (m_Project, MakeHelp_Printf) == JE_FALSE)
+	if (Make_ActorSummary (m_Project, MakeHelp_Printf) == GR_FALSE)
 	{
 		AfxMessageBox (IDS_SUMMARYFAILED, MB_OK);
 	}
@@ -987,7 +987,7 @@ LRESULT CAStudioPropSheet::OnCompileDone (UINT wParam, LONG lParam)
 	}
 
 	SetCompilingStatus (false);
-	if (((jeBoolean)lParam) == JE_FALSE)
+	if (((grBoolean)lParam) == GR_FALSE)
 	{
 		// compile failed
 		AfxMessageBox (IDS_COMPILEFAILED, MB_OK);

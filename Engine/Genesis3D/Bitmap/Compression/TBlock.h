@@ -25,8 +25,8 @@
 #include "Image.h"
 #include "transform.h"
 
-typedef void (*jeWaveletFunc) (int *to,int *fm,int len);
+typedef void (*grWaveletFunc) (int *to,int *fm,int len);
 
-void untransformBlocked(image *im,int levels,jeWaveletFunc waver,jeBoolean doLHs);
+void untransformBlocked(image *im,int levels,grWaveletFunc waver,grBoolean doLHs);
 
 #endif // TRANSBLOCK_H

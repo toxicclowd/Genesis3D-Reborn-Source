@@ -463,7 +463,7 @@ ERR_ADDRADIOBUTTON:
 	return( FALSE );
 }
 
-BOOL CDialogBuilderDlg::AddField( FieldStruct * pField, char * Name, PROPERTY_FIELD_TYPE Type, int Id, int DataId, jeProperty_TypeInfo *pTypeInfo )
+BOOL CDialogBuilderDlg::AddField( FieldStruct * pField, char * Name, PROPERTY_FIELD_TYPE Type, int Id, int DataId, grProperty_TypeInfo *pTypeInfo )
 {
 	BOOL Result = TRUE;
 	pField->Type = Type;
@@ -626,12 +626,12 @@ BOOL CDialogBuilderDlg::SetRadioField( FieldStruct *pField, int Bool, int DataSi
 	return( TRUE );
 }
 
-BOOL CDialogBuilderDlg::SetVec3dGroup( FieldStruct *pField, jeVec3d Vector, int DataSize )
+BOOL CDialogBuilderDlg::SetVec3dGroup( FieldStruct *pField, grVec3d Vector, int DataSize )
 {
 	CBuilderButton * pButton;
 	CString	ButtonText;
 
-	ASSERT( DataSize == sizeof( jeVec3d ) );
+	ASSERT( DataSize == sizeof( grVec3d ) );
 	ButtonText.Format( "x:%.0f y:%.0f z:%.0f", Vector.X, Vector.Y, Vector.Z );
 
 	pButton = (CBuilderButton*)pField->FieldCntl;
@@ -642,7 +642,7 @@ BOOL CDialogBuilderDlg::SetVec3dGroup( FieldStruct *pField, jeVec3d Vector, int 
 	DataSize;
 }
 
-BOOL CDialogBuilderDlg::SetColorPickerField(  FieldStruct *pField, jeVec3d Vector, int DataSize )
+BOOL CDialogBuilderDlg::SetColorPickerField(  FieldStruct *pField, grVec3d Vector, int DataSize )
 {
 //	CColorButton support by Tom Morris 1-16-05
 //	CBuilderButton * pButton;
@@ -659,7 +659,7 @@ BOOL CDialogBuilderDlg::SetColorPickerField(  FieldStruct *pField, jeVec3d Vecto
 	return( TRUE );
 }
 
-BOOL CDialogBuilderDlg::SetRGBGroup( FieldStruct *pField, jeVec3d Vector, int DataSize )
+BOOL CDialogBuilderDlg::SetRGBGroup( FieldStruct *pField, grVec3d Vector, int DataSize )
 {
 	CBuilderButton * pButton;
 	CString	ButtonText;
@@ -692,13 +692,13 @@ BOOL CDialogBuilderDlg::SetComboField( FieldStruct *pField, char * String, int D
 	return( TRUE );
 }
 
-BOOL CDialogBuilderDlg::UpdateDataByArray( jeProperty_List *pArray )
+BOOL CDialogBuilderDlg::UpdateDataByArray( grProperty_List *pArray )
 {
 
-	jeProperty * pDescriptor = pArray->pjeProperty;
+	grProperty * pDescriptor = pArray->pgrProperty;
 	int i;
 
-	ASSERT( pArray->jePropertyN == FieldN );
+	ASSERT( pArray->grPropertyN == FieldN );
 
 	for( i = 0; i < FieldN; i++ )
 	{
@@ -709,7 +709,7 @@ BOOL CDialogBuilderDlg::UpdateDataByArray( jeProperty_List *pArray )
 	return( TRUE );		
 }
 
-BOOL CDialogBuilderDlg::UpdateFieldData( FieldStruct *pField, jeProperty_Data *pData, int DataSize )
+BOOL CDialogBuilderDlg::UpdateFieldData( FieldStruct *pField, grProperty_Data *pData, int DataSize )
 {
 	switch( pField->Type )
 	{
@@ -776,7 +776,7 @@ BOOL CDialogBuilderDlg::UpdateFieldData( FieldStruct *pField, jeProperty_Data *p
 	return( TRUE );
 }
 
-BOOL CDialogBuilderDlg::UpdateFieldDataById( int Id, jeProperty_Data *pData, int DataSize )
+BOOL CDialogBuilderDlg::UpdateFieldDataById( int Id, grProperty_Data *pData, int DataSize )
 {
 	FieldStruct * pField;
 
@@ -807,20 +807,20 @@ void CDialogBuilderDlg::DisableField( FieldStruct * pField )
 		break;
 	}
 }
-BOOL CDialogBuilderDlg::BuildFromDescriptor( jeProperty_List *pArray )
+BOOL CDialogBuilderDlg::BuildFromDescriptor( grProperty_List *pArray )
 {
 	int i;
 	int Level = 0;
-	jeProperty * pDescriptor = pArray->pjeProperty;
+	grProperty * pDescriptor = pArray->pgrProperty;
 	BOOL		bInRadioGroup = FALSE;
 
 
-	FieldN = pArray->jePropertyN;
-	pFieldList = (FieldStruct*)new( FieldStruct[pArray->jePropertyN] );
+	FieldN = pArray->grPropertyN;
+	pFieldList = (FieldStruct*)new( FieldStruct[pArray->grPropertyN] );
 	if( pFieldList == nullptr )
 		return( FALSE );
 
-	for( i = 0 ; i < pArray->jePropertyN ; i++ )
+	for( i = 0 ; i < pArray->grPropertyN ; i++ )
 	{
 		if(  pDescriptor[i].Type ==	PROPERTY_TIME_GROUP_TYPE )
 		{
@@ -829,7 +829,7 @@ BOOL CDialogBuilderDlg::BuildFromDescriptor( jeProperty_List *pArray )
 				memset( &pFieldList[i], 0, sizeof( FieldStruct ) );
 				pFieldList[i].Type = pDescriptor[i].Type;
 				i++;
-				ASSERT( i < pArray->jePropertyN );
+				ASSERT( i < pArray->grPropertyN );
 			}
 			memset( &pFieldList[i], 0, sizeof( FieldStruct ) );
 			pFieldList[i].Type = pDescriptor[i].Type;
@@ -1072,7 +1072,7 @@ BOOL CDialogBuilderDlg::HandleComboMsg( FieldStruct* pField, int nCode )
 	if( nCode == CBN_SELENDOK )
 	{
 		CString Text;
-		jeProperty_Data Data;
+		grProperty_Data Data;
 		CComboBox *pCombo;
 		CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 		CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
@@ -1143,7 +1143,7 @@ BOOL CDialogBuilderDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 			pEdit = (CBuilderEdit *)ActiveWnd;
 			pEdit->SetProperty();
 		}
-		return(JE_TRUE );
+		return(GR_TRUE );
 	}
 
 	foundField = FindFieldById( LOWORD( wParam)  );
@@ -1329,7 +1329,7 @@ LONG CDialogBuilderDlg::OnChangeColor(UINT lParam, LONG wParam)
 			pDoc = pMainFrm->GetCurrentDocument() ;
 			if (pDoc)
 			{
-				jeProperty_Data Data;
+				grProperty_Data Data;
 				CColorButton	*pColorButton = nullptr;
 
 				pColorButton = (CColorButton*)pFoundField->FieldCntl;

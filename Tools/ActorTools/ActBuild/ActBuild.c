@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "jet.h"
+#include "Genesis3D.h"
 #include "make.h"
 #include "mkutil.h"
 #include "ram.h"
@@ -52,7 +52,7 @@ ActBuild_Options *ActBuild_OptionsCreate    (void)
 {
 	ActBuild_Options *pOptions;
 
-	pOptions = JE_RAM_ALLOCATE_STRUCT (ActBuild_Options);
+	pOptions = GR_RAM_ALLOCATE_STRUCT (ActBuild_Options);
 	if (pOptions != NULL)
 	{
 		*pOptions = DefaultOptions;
@@ -68,7 +68,7 @@ void ActBuild_OptionsDestroy (ActBuild_Options** ppOptions)
 	p = *ppOptions;
 	assert (p != NULL);
 
-	jeRam_Free (*ppOptions);
+	grRam_Free (*ppOptions);
 	*ppOptions = NULL;
 }
 
@@ -188,7 +188,7 @@ ReturnCode ActBuild_DoMake (ActBuild_Options* options,MkUtil_Printf Printf)
 	}
 
 	// Guess it's time to go making...
-	if (Make_Actor (Project, LocalOptions, Printf) == JE_TRUE)
+	if (Make_Actor (Project, LocalOptions, Printf) == GR_TRUE)
 	{
 		Printf ("SUCCESS: Actor build process completed successfully.\n");
 	}

@@ -39,13 +39,13 @@ extern "C" {
 
 typedef struct scontext scontext;
 
-extern scontext * scontextCreate(arithInfo * arithinfo,int size,int escmax,int totmax,int inc,jeBoolean noesc);
+extern scontext * scontextCreate(arithInfo * arithinfo,int size,int escmax,int totmax,int inc,grBoolean noesc);
 extern void scontextAdd(scontext *sc, int symbol);
-extern jeBoolean scontextEncode(scontext *sc, int symbol);	/** returns "coded?" **/
+extern grBoolean scontextEncode(scontext *sc, int symbol);	/** returns "coded?" **/
 extern int scontextDecode(scontext *sc);				/** returns -1 for escape **/
 extern void scontextHalve(scontext *sc);
 extern void scontextFree(scontext *sc);
-extern jeBoolean scontextHas(scontext *sc,int symbol);
+extern grBoolean scontextHas(scontext *sc,int symbol);
 extern int scontextGetProb(scontext *sc,int symbol);
 
 #ifdef __cplusplus

@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-const	jeVFile_SystemAPIs *JETCC FSINet_GetAPIs(void);
+const	grVFile_SystemAPIs *GRCC FSINet_GetAPIs(void);
 
 #ifdef	__cplusplus
 }

@@ -53,7 +53,7 @@ CStats::CStats(CWnd* pParent /*=NULL*/)
 	//}}AFX_DATA_INIT
 }
 
-void CStats::SetData( const jeBSP_DebugInfo * pDebugInfo )
+void CStats::SetData( const grBSP_DebugInfo * pDebugInfo )
 {
 	//UpdateData( true );
 	m_Areas =		pDebugInfo->NumAreas;

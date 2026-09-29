@@ -23,6 +23,6 @@
 
 #include "quatern.h"
 
-void Quaternion_GetEulerZXY(jeQuaternion* Q, float* pZ, float* pX, float* pY);
+void Quaternion_GetEulerZXY(grQuaternion* Q, float* pZ, float* pX, float* pY);
 
 #endif // QUATERN2_H

@@ -97,8 +97,8 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
-	void SetPosition( jeVec3d * pPos );
-	void GetPosition( jeVec3d * pPos );
+	void SetPosition( grVec3d * pPos );
+	void GetPosition( grVec3d * pPos );
 	void FillFields( LightInfo * pLightInfo, int32 BlankFieldFlag, const char * pszName, int32 nNumber );
 };
 

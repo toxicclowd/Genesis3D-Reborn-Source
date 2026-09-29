@@ -68,9 +68,9 @@ void CMyStatic::OnPaint()
 	Material_Struct		*	pMaterial = NULL ;
 	MaterialIterator		MI ;
 #ifdef _USE_BITMAPS
-	jeBitmap			*	pBitmap ;
+	grBitmap			*	pBitmap ;
 #else
-	jeMaterialSpec		*	pMatSpec;
+	grMaterialSpec		*	pMatSpec;
 #endif
 //	HBITMAP					hBitmap ;
 	int						x, y ;
@@ -124,19 +124,19 @@ void CMyStatic::OnPaint()
 	while( pMaterial != NULL )
 	{
 #ifdef _USE_BITMAPS
-		jeBitmap * Lock;
-		pBitmap = (jeBitmap*) Materials_GetBitmap( pMaterial ) ;
+		grBitmap * Lock;
+		pBitmap = (grBitmap*) Materials_GetBitmap( pMaterial ) ;
 		if( pMaterial == pCurrentMaterial )
 			dc.FillSolidRect( x-1, y-1, m_nTile+2, m_nTile-yOffset+2, RGB(255,255,255) ) ;  
 
 	//	hBitmap = CreateHBitmapFromgeBitmap( pBitmap, MemDC.m_hDC ) ;
 
-		if( jeBitmap_LockForRead( pBitmap, &Lock, 0, 0, JE_PIXELFORMAT_24BIT_BGR, JE_FALSE, 0 ) )
+		if( grBitmap_LockForRead( pBitmap, &Lock, 0, 0, GR_PIXELFORMAT_24BIT_BGR, GR_FALSE, 0 ) )
 		{
 			BITMAPINFO			bmi ;
-			jeBitmap_Info		info ;
+			grBitmap_Info		info ;
 
-			jeBitmap_GetInfo(Lock,&info,NULL);
+			grBitmap_GetInfo(Lock,&info,NULL);
 
 			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 			bmi.bmiHeader.biHeight = -info.Height;
@@ -170,24 +170,24 @@ void CMyStatic::OnPaint()
 				0,						// y-coord upper-left corner of source rectangle
 				info.Stride,			// width of source rectangle
 				info.Height-srcyOffset,	// height of source rectangle
-				jeBitmap_GetBits( Lock ),// address of bitmap bits
+				grBitmap_GetBits( Lock ),// address of bitmap bits
 				&bmi,					// address of bitmap data
 				DIB_RGB_COLORS,			// usage flags
 				SRCCOPY					// raster operation code
 			) ;
-			jeBitmap_UnLock (Lock);
+			grBitmap_UnLock (Lock);
 
 		}
 	//	DeleteBitmap( hBitmap ) ;
 #else
-		pMatSpec = (jeMaterialSpec*) Materials_GetMaterialSpec( pMaterial ) ;
+		pMatSpec = (grMaterialSpec*) Materials_GetMaterialSpec( pMaterial ) ;
 		if( pMaterial == pCurrentMaterial )
 			dc.FillSolidRect( x-1, y-1, m_nTile+2, m_nTile-yOffset+2, RGB(255,255,255) ) ;  
 
 	//	hBitmap = CreateHBitmapFromgeBitmap( pBitmap, MemDC.m_hDC ) ;
-		jeMaterialSpec_Thumbnail* pThumb = NULL;
+		grMaterialSpec_Thumbnail* pThumb = NULL;
 
-		if( (pThumb = jeMaterialSpec_GetThumbnail( pMatSpec )) != NULL )
+		if( (pThumb = grMaterialSpec_GetThumbnail( pMatSpec )) != NULL )
 		{
 			BITMAPINFOHEADER	bmi ;
 
@@ -381,7 +381,7 @@ int CMyStatic::ScrollMaterialInView(const Material_Struct *pMaterial)
 		0,						// y-coordinate of lower-left corner of source rect.
 		0,						// first scan line in array
 		m_nTile,				// number of scan lines
-		jeBitmap_GetBits( Lock ),// address of array with DIB bits
+		grBitmap_GetBits( Lock ),// address of array with DIB bits
 		&bmi,					// address of structure with bitmap info.
 		DIB_RGB_COLORS			// RGB or palette indexes
 	);

@@ -26,6 +26,6 @@
 Intentional Error : bitmap_blidata only allowed in bitmap internals!
 #endif
 
-extern jeBoolean jeBitmap_Gamma_Apply(jeBitmap * Bitmap,jeBoolean Invert);
+extern grBoolean grBitmap_Gamma_Apply(grBitmap * Bitmap,grBoolean Invert);
 
 #endif //BITMAP_GAMMA_H

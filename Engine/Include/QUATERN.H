@@ -18,15 +18,15 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_QUATERNION_H
-#define JE_QUATERNION_H
+#ifndef GR_QUATERNION_H
+#define GR_QUATERNION_H
 
 /***************************************************************************
 
 	the quatern module contains basic support for a quaternion object.
 
 	quaternions are an extension of complex numbers that allows an
-	expression for rotation that can be easily interpolated.  jeQuaternion_s are also 
+	expression for rotation that can be easily interpolated.  grQuaternion_s are also 
 	more numericaly stable for repeated rotations than matrices.
 
 	
@@ -100,132 +100,132 @@ extern "C" {
 
 typedef struct 
 {
-	jeFloat	W;
-	jeFloat   X,Y,Z;
-	//jeVec3d   QuatV;
-} jeQuaternion;
+	grFloat	W;
+	grFloat   X,Y,Z;
+	//grVec3d   QuatV;
+} grQuaternion;
 
 
-#define	QUATERNION_PI	(JE_PI)
+#define	QUATERNION_PI	(GR_PI)
 
-JETAPI jeBoolean JETCC jeQuaternion_IsValid( const jeQuaternion *Q );
-	// return JE_TRUE if Q is non null and for has no NAN's in its components
+GRAPI grBoolean GRCC grQuaternion_IsValid( const grQuaternion *Q );
+	// return GR_TRUE if Q is non null and for has no NAN's in its components
 
-JETAPI void JETCC jeQuaternion_Set( jeQuaternion *Q, jeFloat W, jeFloat X, jeFloat Y, jeFloat Z);
+GRAPI void GRCC grQuaternion_Set( grQuaternion *Q, grFloat W, grFloat X, grFloat Y, grFloat Z);
 	// set quaternion components.  Doesn't normalize
-JETAPI void JETCC jeQuaternion_SetVec3d( jeQuaternion *Q, jeFloat W, const jeVec3d *V);
+GRAPI void GRCC grQuaternion_SetVec3d( grQuaternion *Q, grFloat W, const grVec3d *V);
 	// set quaternion components.  Doesn't normalize
-JETAPI void JETCC jeQuaternion_SetFromAxisAngle(jeQuaternion *Q, const jeVec3d *Axis, jeFloat Theta);
+GRAPI void GRCC grQuaternion_SetFromAxisAngle(grQuaternion *Q, const grVec3d *Axis, grFloat Theta);
 	// set a quaternion from an axis and a rotation around the axis
-JETAPI jeBoolean JETCC jeQuaternion_GetAxisAngle(const jeQuaternion *Q, jeVec3d *Axis, jeFloat *Theta);
+GRAPI grBoolean GRCC grQuaternion_GetAxisAngle(const grQuaternion *Q, grVec3d *Axis, grFloat *Theta);
 	// gets an axis and angle of rotation around the axis from a quaternion
-	// returns JE_TRUE if there is an axis.  
-	// returns JE_FALSE if there is no axis (and Axis is set to 0,0,0, and Theta is 0)
+	// returns GR_TRUE if there is an axis.  
+	// returns GR_FALSE if there is no axis (and Axis is set to 0,0,0, and Theta is 0)
 
-JETAPI void JETCC jeQuaternion_Get( const jeQuaternion *Q, 
-					jeFloat *W, jeFloat *X, jeFloat *Y, jeFloat *Z);
+GRAPI void GRCC grQuaternion_Get( const grQuaternion *Q, 
+					grFloat *W, grFloat *X, grFloat *Y, grFloat *Z);
 	// get quaternion components into W,X,Y,Z
-JETAPI void JETCC jeQuaternion_GetVec3d( const jeQuaternion *Q, jeFloat *W, jeVec3d *V);
+GRAPI void GRCC grQuaternion_GetVec3d( const grQuaternion *Q, grFloat *W, grVec3d *V);
 	// get quaternion components into W and V
 
-JETAPI void JETCC jeQuaternion_FromMatrix(
-	const jeXForm3d		*RotationMatrix,
-	      jeQuaternion	*QDest);
+GRAPI void GRCC grQuaternion_FromMatrix(
+	const grXForm3d		*RotationMatrix,
+	      grQuaternion	*QDest);
 	// takes upper 3 by 3 portion of matrix (rotation sub matrix) 
 	// and generates a quaternion
 
-JETAPI void JETCC jeQuaternion_ToMatrix(
-	const jeQuaternion	*Q, 
-		  jeXForm3d		*RotationMatrixDest);
+GRAPI void GRCC grQuaternion_ToMatrix(
+	const grQuaternion	*Q, 
+		  grXForm3d		*RotationMatrixDest);
 	// takes a unit quaternion and makes RotationMatrixDest an equivelant rotation xform.
 	// (any translation in RotationMatrixDest will be list)
 
-JETAPI void JETCC jeQuaternion_Slerp(
-	const jeQuaternion		*Q0, 
-	const jeQuaternion		*Q1, 
-	jeFloat					T,		
-	jeQuaternion			*QT);
+GRAPI void GRCC grQuaternion_Slerp(
+	const grQuaternion		*Q0, 
+	const grQuaternion		*Q1, 
+	grFloat					T,		
+	grQuaternion			*QT);
 	// spherical interpolation between q0 and q1.   0<=t<=1 
 	// resulting quaternion is 'between' q0 and q1
 	// with t==0 being all q0, and t==1 being all q1.
 	// returns a quaternion with a positive W - always takes shortest route
 	// through the positive W domain.
 
-JETAPI void JETCC jeQuaternion_SlerpNotShortest(
-	const jeQuaternion		*Q0, 
-	const jeQuaternion		*Q1, 
-	jeFloat					T,		
-	jeQuaternion			*QT);
+GRAPI void GRCC grQuaternion_SlerpNotShortest(
+	const grQuaternion		*Q0, 
+	const grQuaternion		*Q1, 
+	grFloat					T,		
+	grQuaternion			*QT);
 	// spherical interpolation between q0 and q1.   0<=t<=1 
 	// resulting quaternion is 'between' q0 and q1
 	// with t==0 being all q0, and t==1 being all q1.
 
 
-JETAPI void JETCC jeQuaternion_Multiply(
-	const jeQuaternion	*Q1, 
-	const jeQuaternion	*Q2, 
-	jeQuaternion			*QProduct);
+GRAPI void GRCC grQuaternion_Multiply(
+	const grQuaternion	*Q1, 
+	const grQuaternion	*Q2, 
+	grQuaternion			*QProduct);
 	// multiplies q1 * q2, and places the result in q.
 	// no failure. 	renormalization not automatic
 
-JETAPI void JETCC jeQuaternion_Rotate(
-	const jeQuaternion	*Q, 
-	const jeVec3d       *V, 
-	jeVec3d				*VRotated);
+GRAPI void GRCC grQuaternion_Rotate(
+	const grQuaternion	*Q, 
+	const grVec3d       *V, 
+	grVec3d				*VRotated);
 	// Rotates V by the quaternion Q, places the result in VRotated.
 
-JETAPI jeBoolean JETCC jeQuaternion_IsUnit(const jeQuaternion *Q);
-	// returns JE_TRUE if q is a unit quaternion.  JE_FALSE otherwise.
+GRAPI grBoolean GRCC grQuaternion_IsUnit(const grQuaternion *Q);
+	// returns GR_TRUE if q is a unit quaternion.  GR_FALSE otherwise.
 
-JETAPI jeFloat JETCC jeQuaternion_Normalize(jeQuaternion *Q);
+GRAPI grFloat GRCC grQuaternion_Normalize(grQuaternion *Q);
 	// normalizes q to be a unit quaternion.  returns original magnitude of q
 
-JETAPI void JETCC jeQuaternion_Copy(const jeQuaternion *QSrc, jeQuaternion *QDst);
+GRAPI void GRCC grQuaternion_Copy(const grQuaternion *QSrc, grQuaternion *QDst);
 	// copies quaternion QSrc into QDst
 
-JETAPI void JETCC jeQuaternion_SetNoRotation(jeQuaternion *Q);
+GRAPI void GRCC grQuaternion_SetNoRotation(grQuaternion *Q);
 	// sets Q to be a quaternion with no rotation (like an identity matrix)
 
-JETAPI void JETCC jeQuaternion_Ln(
-	const jeQuaternion *Q, 
-	jeQuaternion *LnQ);
+GRAPI void GRCC grQuaternion_Ln(
+	const grQuaternion *Q, 
+	grQuaternion *LnQ);
 	// ln(Q) for unit quaternion only!
 
-JETAPI void JETCC jeQuaternion_Exp(
-	const jeQuaternion *Q,
-	jeQuaternion *ExpQ);
+GRAPI void GRCC grQuaternion_Exp(
+	const grQuaternion *Q,
+	grQuaternion *ExpQ);
 	// exp(Q) for pure quaternion only!  (zero scalar part (W))
 
-JETAPI void JETCC jeQuaternion_Scale(
-	const jeQuaternion *Q,
-	jeFloat Scale,
-	jeQuaternion *QScaled);
+GRAPI void GRCC grQuaternion_Scale(
+	const grQuaternion *Q,
+	grFloat Scale,
+	grQuaternion *QScaled);
 	// Q = Q * Scale  (result is not generally a unit quaternion!)
 
-JETAPI void JETCC jeQuaternion_Add(
-	const jeQuaternion *Q1,
-	const jeQuaternion *Q2,
-	jeQuaternion *QSum);
+GRAPI void GRCC grQuaternion_Add(
+	const grQuaternion *Q1,
+	const grQuaternion *Q2,
+	grQuaternion *QSum);
 	// QSum = Q1 + Q2  (result is not generally a unit quaternion!)
 
-JETAPI void JETCC jeQuaternion_Subtract(
-	const jeQuaternion *Q1, 
-	const jeQuaternion *Q2, 
-	jeQuaternion *QSum);
+GRAPI void GRCC grQuaternion_Subtract(
+	const grQuaternion *Q1, 
+	const grQuaternion *Q2, 
+	grQuaternion *QSum);
 	// QSum = Q1 - Q2  (result is not generally a unit quaternion!)
 
-JETAPI void JETCC jeQuaternion_Inverse(const jeQuaternion *Q, jeQuaternion *QInv);
+GRAPI void GRCC grQuaternion_Inverse(const grQuaternion *Q, grQuaternion *QInv);
 	// sets QInv to the inverse of Q.  
 
-JETAPI jeFloat JETCC jeQuaternion_Magnitude(const jeQuaternion *Q);
+GRAPI grFloat GRCC grQuaternion_Magnitude(const grQuaternion *Q);
 	// returns Magnitude of Q.  
 
-JETAPI jeBoolean JETCC jeQuaternion_Compare( jeQuaternion *Q1, jeQuaternion *Q2, jeFloat Tolerance );
-	// return JE_TRUE if quaternions differ elementwise by less than Tolerance.
+GRAPI grBoolean GRCC grQuaternion_Compare( grQuaternion *Q1, grQuaternion *Q2, grFloat Tolerance );
+	// return GR_TRUE if quaternions differ elementwise by less than Tolerance.
 
 
 #ifndef NDEBUG
-JETAPI void JETCC jeQuaternion_SetMaximalAssertionMode( jeBoolean Enable );
+GRAPI void GRCC grQuaternion_SetMaximalAssertionMode( grBoolean Enable );
 #endif
 
 #ifdef __cplusplus

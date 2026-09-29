@@ -45,45 +45,45 @@ Ortho *			Ortho_Create( void ) ;
 void			Ortho_Destroy( Ortho ** ppOrtho ) ;
 
 // ACCESSORS
-jeFloat			Ortho_GetGridDistance( const Ortho * pOrtho ) ;
+grFloat			Ortho_GetGridDistance( const Ortho * pOrtho ) ;
 long			Ortho_GetHeight( const Ortho * pOrtho ) ;
 ORTHO_AXIS		Ortho_GetHorizontalAxis( const Ortho * pOrtho ) ;
 const char *	Ortho_GetName( const Ortho * pOrtho ) ;
 ORTHO_AXIS		Ortho_GetOrthogonalAxis( const Ortho * pOrtho ) ;
-jeFloat			Ortho_GetRotationFromView(const Ortho * pOrtho, Point *pMousePt, Point *pAnchor, Point * pSelCenter ) ;
+grFloat			Ortho_GetRotationFromView(const Ortho * pOrtho, Point *pMousePt, Point *pAnchor, Point * pSelCenter ) ;
 ORTHO_AXIS		Ortho_GetVerticalAxis( const Ortho * pOrtho ) ;
 Ortho_ViewType	Ortho_GetViewType( const Ortho * pOrtho ) ;
 int32			Ortho_GetViewSelectThreshold( Ortho * pOrtho ) ;
 long			Ortho_GetWidth( const Ortho * pOrtho ) ;
-jeFloat			Ortho_GetWorldHandleSelectThreshold( const Ortho * pOrtho ) ;
-jeFloat			Ortho_GetWorldSelectThreshold( const Ortho * pOrtho ) ;
+grFloat			Ortho_GetWorldHandleSelectThreshold( const Ortho * pOrtho ) ;
+grFloat			Ortho_GetWorldSelectThreshold( const Ortho * pOrtho ) ;
 
 // IS
-jeBoolean		Ortho_IsViewPointInWorldBox( const Ortho * pOrtho, const int x, const int y, const jeExtBox * pWorldBox ) ;
+grBoolean		Ortho_IsViewPointInWorldBox( const Ortho * pOrtho, const int x, const int y, const grExtBox * pWorldBox ) ;
 
 // MODIFIERS
-void			Ortho_MoveCamera( Ortho * pOrtho, const jeVec3d * pDelta ) ;
+void			Ortho_MoveCamera( Ortho * pOrtho, const grVec3d * pDelta ) ;
 void			Ortho_ResetSettings( Ortho * pOrtho, long vx, long vy ) ;
 void			Ortho_ResizeView( Ortho * pOrtho, long vx, long vy ) ;
-void			Ortho_SetAngles( Ortho * pOrtho, const jeVec3d * pAngles ) ;
-void			Ortho_SetAnglesRPY( Ortho * pOrtho, jeFloat roll, jeFloat pitch, jeFloat yaw ) ;
-void			Ortho_SetBoxOrthogonalToMax( const Ortho * pOrtho, jeExtBox * pBox ) ;
-void			Ortho_SetCameraPos( Ortho * pOrtho, const jeVec3d * pPos ) ;
+void			Ortho_SetAngles( Ortho * pOrtho, const grVec3d * pAngles ) ;
+void			Ortho_SetAnglesRPY( Ortho * pOrtho, grFloat roll, grFloat pitch, grFloat yaw ) ;
+void			Ortho_SetBoxOrthogonalToMax( const Ortho * pOrtho, grExtBox * pBox ) ;
+void			Ortho_SetCameraPos( Ortho * pOrtho, const grVec3d * pPos ) ;
 void			Ortho_SetSelectThreshold( Ortho * pOrtho, const int nPixels ) ;
 void			Ortho_SetViewType( Ortho * pOrtho, const Ortho_ViewType vt ) ;
-void			Ortho_SetZoom( Ortho * pOrtho, const jeFloat zf ) ;
+void			Ortho_SetZoom( Ortho * pOrtho, const grFloat zf ) ;
 void			Ortho_UpdateWorldBounds( Ortho * pOrtho ) ;
-void			Ortho_ZoomChange( Ortho * pOrtho, const jeFloat fFactor ) ;
+void			Ortho_ZoomChange( Ortho * pOrtho, const grFloat fFactor ) ;
 
 
 // COORDINATES AND TRANSLATION
-void			Ortho_GetViewCenter( const Ortho * pOrtho, jeVec3d * pCenter ) ;
-void			Ortho_ViewToWorld( const Ortho * pOrtho, const int x, const int y, jeVec3d *pW ) ;
-void			Ortho_ViewToWorldDistance( const Ortho * pOrtho, const int x, const int y, jeVec3d *pW ) ;
-void			Ortho_ViewToWorldRect( const Ortho * pOrtho, const Point * pV1, const Point * pV2, jeExtBox * pWorldBox ) ;
-void			Ortho_WorldToView( const Ortho * pOrtho, const jeVec3d * pW, Point * pPt ) ;
-void            Ortho_WorldToViewRect( const Ortho * pOrtho, const jeExtBox * pWorldBox, Rect * pViewRect ) ;
-jeBoolean		Ortho_TestWorldToViewRect( const Ortho * pOrtho, const jeExtBox * pWorldBox, Rect * pViewRect ) ;
+void			Ortho_GetViewCenter( const Ortho * pOrtho, grVec3d * pCenter ) ;
+void			Ortho_ViewToWorld( const Ortho * pOrtho, const int x, const int y, grVec3d *pW ) ;
+void			Ortho_ViewToWorldDistance( const Ortho * pOrtho, const int x, const int y, grVec3d *pW ) ;
+void			Ortho_ViewToWorldRect( const Ortho * pOrtho, const Point * pV1, const Point * pV2, grExtBox * pWorldBox ) ;
+void			Ortho_WorldToView( const Ortho * pOrtho, const grVec3d * pW, Point * pPt ) ;
+void            Ortho_WorldToViewRect( const Ortho * pOrtho, const grExtBox * pWorldBox, Rect * pViewRect ) ;
+grBoolean		Ortho_TestWorldToViewRect( const Ortho * pOrtho, const grExtBox * pWorldBox, Rect * pViewRect ) ;
 
 
 #ifdef __cplusplus

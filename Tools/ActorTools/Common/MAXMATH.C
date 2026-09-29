@@ -36,23 +36,23 @@
 #define SWAP(a, b) { temp = (a); (a) = (b); (b) = temp; }
 #define MATRIX_DIM 4
 
-jeBoolean gaussj(float **a);
+grBoolean gaussj(float **a);
 
-// jeXForm3d_Multiply causes the MSDEV50 compiler to choke when "global
+// grXForm3d_Multiply causes the MSDEV50 compiler to choke when "global
 // optimizations" is turned on.  The result is that the compiler hangs
 // and must be aborted.  Simplifying the expressions did not help.
 #pragma optimize("g", off)
 
-void MaxMath_Multiply(const jeXForm3d* M1, const jeXForm3d* M2, jeXForm3d* MProduct)
+void MaxMath_Multiply(const grXForm3d* M1, const grXForm3d* M2, grXForm3d* MProduct)
 {
-	jeXForm3d M1L;
-	jeXForm3d M2L;
+	grXForm3d M1L;
+	grXForm3d M2L;
 
 	assert( M1       != NULL );
 	assert( M2       != NULL );
 	assert( MProduct != NULL );
-	assert( jeXForm3d_IsOrthogonal(M1) == JE_TRUE );
-	assert( jeXForm3d_IsOrthogonal(M2) == JE_TRUE );
+	assert( grXForm3d_IsOrthogonal(M1) == GR_TRUE );
+	assert( grXForm3d_IsOrthogonal(M2) == GR_TRUE );
 
 	M1L = *M1;
 	M2L = *M2;
@@ -108,13 +108,13 @@ void MaxMath_Multiply(const jeXForm3d* M1, const jeXForm3d* M2, jeXForm3d* MProd
 	MProduct->Translation.Z += M2L.CZ * M1L.Translation.Z;
 	MProduct->Translation.Z += M2L.Translation.Z;
 	
-	assert ( jeXForm3d_IsOrthogonal(MProduct) == JE_TRUE );
+	assert ( grXForm3d_IsOrthogonal(MProduct) == GR_TRUE );
 }
 #pragma optimize("", on)
 
-void MaxMath_Transform(const jeXForm3d* M, const jeVec3d* v, jeVec3d* r)
+void MaxMath_Transform(const grXForm3d* M, const grVec3d* v, grVec3d* r)
 {
-	jeVec3d vv;
+	grVec3d vv;
 
 	vv = *v;
 
@@ -123,7 +123,7 @@ void MaxMath_Transform(const jeXForm3d* M, const jeVec3d* v, jeVec3d* r)
 	r->Z = M->AZ * vv.X + M->BZ * vv.Y + M->CZ * vv.Z + M->Translation.Z;
 }
 
-void MaxMath_GetInverse(const jeXForm3d* A, jeXForm3d* Inv)
+void MaxMath_GetInverse(const grXForm3d* A, grXForm3d* Inv)
 {
 	float AInv[MATRIX_DIM+1][MATRIX_DIM+1]; // 1 based
 	float* pARows[MATRIX_DIM+1]; // 1 based
@@ -169,11 +169,11 @@ void MaxMath_GetInverse(const jeXForm3d* A, jeXForm3d* Inv)
 	Inv->Translation.Z = AInv[4][3];
 }
 
-void MaxMath_InverseMultiply(const jeXForm3d* A, const jeXForm3d* B, jeXForm3d* M)
+void MaxMath_InverseMultiply(const grXForm3d* A, const grXForm3d* B, grXForm3d* M)
 {
 	float BInv[MATRIX_DIM+1][MATRIX_DIM+1]; // 1 based
 	float* pBRows[MATRIX_DIM+1]; // 1 based
-	jeXForm3d Product;
+	grXForm3d Product;
 
 	BInv[1][1] = B->AX;
 	BInv[1][2] = B->AY;
@@ -262,7 +262,7 @@ void MaxMath_InverseMultiply(const jeXForm3d* A, const jeXForm3d* B, jeXForm3d* 
 	*M = Product;
 }
 
-jeBoolean gaussj(float **a)
+grBoolean gaussj(float **a)
 {
 	int i, j, k, l, ll;
 	int icol = 0;
@@ -296,7 +296,7 @@ jeBoolean gaussj(float **a)
 					else 
 					{
 						if (ipiv[k] > 1) 
-							return(JE_FALSE);
+							return(GR_FALSE);
 					}
 				}
 			}
@@ -310,7 +310,7 @@ jeBoolean gaussj(float **a)
 		indxr[i] = irow;
 		indxc[i] = icol;
 		if (a[icol][icol] == 0.0) 
-			return(JE_FALSE);
+			return(GR_FALSE);
 		pivinv = 1.0f / a[icol][icol];
 		a[icol][icol] = 1.0;
 		for (l=1;l<=MATRIX_DIM;l++) 
@@ -333,6 +333,6 @@ jeBoolean gaussj(float **a)
 				SWAP(a[k][indxr[l]], a[k][indxc[l]]);
 	}
 
-	return(JE_TRUE);
+	return(GR_TRUE);
 }
 /* (C) Copr. 1986-92 Numerical Recipes Software ^. */

@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_LZA_H
-#define JE_LZA_H
+#ifndef GR_LZA_H
+#define GR_LZA_H
 
 #include "BaseType.h"
 
@@ -32,7 +32,7 @@ typedef struct lzaDecoder lzaDecoder;
 extern void lzaEncode(uint8 *rawArray,uint32 rawLen,uint8 **compArrayPtr,uint32 * compLenPtr);
 
 extern lzaDecoder * lzaDecoder_Create(uint8 *compArray,uint32 TotCompLen,uint32 CurCompLen,uint8 * rawArray,int rawLen);
-extern jeBoolean	lzaDecoder_Extend(lzaDecoder * Stream,uint32 AddCompLen,uint32 * pCurAvailable);
+extern grBoolean	lzaDecoder_Extend(lzaDecoder * Stream,uint32 AddCompLen,uint32 * pCurAvailable);
 extern void			lzaDecoder_Destroy(lzaDecoder ** pStream);
 
 /*******

@@ -67,7 +67,7 @@ TBlock_VB            : 0.003923 : 4.4 %
 **/
 
 typedef struct {
-	jeWaveletFunc waver;
+	grWaveletFunc waver;
 	int * blocks;
 	int * trows[9];
 	int stride8;
@@ -258,7 +258,7 @@ int *workrow;
 int y8,yi,y,w8;
 int * bptr;
 int stride8,**rows,*blocks;
-jeWaveletFunc waver;
+grWaveletFunc waver;
 
 	TIMER_P(TBlock_H);
 
@@ -300,7 +300,7 @@ void untH2(int starty,int endy,int w,tblockInfo * tbi)
 int y8,nexty,y,w8,i;
 int * bptr;
 int stride8,**rows,*blocks;
-jeWaveletFunc waver;
+grWaveletFunc waver;
 
 	TIMER_P(TBlock_H);
 
@@ -414,7 +414,7 @@ int *workrow,*row;
 int y8,yi,y,w8;
 int * bptr;
 int stride8,**rows,*blocks;
-jeWaveletFunc waver;
+grWaveletFunc waver;
 
 	TIMER_P(TBlock_HB);
 
@@ -460,7 +460,7 @@ void untV2(int w,int h,tblockInfo * tbi)
 int x8,xi,y;
 int * bptr;
 int stride8,**rows,*blocks;
-jeWaveletFunc waver;
+grWaveletFunc waver;
 
 	//  this is just bad:
 	// TBlock_V_UnBlock     : 0.009621 : 11.4 %
@@ -518,7 +518,7 @@ void untV3(int w,int h,tblockInfo * tbi)
 int x8,xi,y,i;
 int * bptr;
 int stride8,**rows,**trows,*blocks;
-jeWaveletFunc waver;
+grWaveletFunc waver;
 
 	// The Waver is slow cuz we're writing to memory not in cache at all
 	//  on a K7 or P3, we the cachetouch_w fixes everything
@@ -578,7 +578,7 @@ int x8,xi,y,i;
 int * bptr;
 int stride8,**rows,*workrow,*blocks;
 int *zrows[8];
-jeWaveletFunc waver;
+grWaveletFunc waver;
 
 	// well, we sped up the Waver, but the UnBlock still hurts
 	// TBlock_V_UnBlock     : 0.009015 : 11.1 %
@@ -641,7 +641,7 @@ void untVb3(int w,int h,tblockInfo * tbi)
 int x8,xi,y;
 int * bptr;
 int stride8,**trows,*blocks;
-jeWaveletFunc waver;
+grWaveletFunc waver;
 
 	TIMER_P(TBlock_VB);
 
@@ -688,7 +688,7 @@ jeWaveletFunc waver;
 
 /*}{*** IT ********/
 
-void untransformBlocked(image *im,int levels,jeWaveletFunc waver,jeBoolean doLHs)
+void untransformBlocked(image *im,int levels,grWaveletFunc waver,grBoolean doLHs)
 {
 int p,l;
 tblockInfo tbi;
@@ -715,7 +715,7 @@ int imw,imh,ims;
 
 	TIMER_P(TBlock_Ram);
 
-	blocks = (int *)jeRam_Allocate(sizeof(int)*(stride8*w + 9*h));
+	blocks = (int *)grRam_Allocate(sizeof(int)*(stride8*w + 9*h));
 	assert(blocks);
 
 	TIMER_Q(TBlock_Ram);
@@ -772,7 +772,7 @@ pushTSC();
 				untVb3(w,h,&tbi);
 			}
 
-			assert(jeRam_IsValidPtr(blocks));
+			assert(grRam_IsValidPtr(blocks));
 		}
 	}
 
@@ -780,7 +780,7 @@ showPopTSC("untrans blocked");
 
 	TIMER_P(TBlock_Ram);
 
-	jeRam_Free(blocks);
+	grRam_Free(blocks);
 
 	TIMER_Q(TBlock_Ram);
 

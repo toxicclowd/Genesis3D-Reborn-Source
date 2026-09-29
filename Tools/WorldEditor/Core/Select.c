@@ -38,7 +38,7 @@
 #include "Util.h"
 #include "Light.h"
 #include "../Resource.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 #include "ram.h"
 #include "userobj.h"
 
@@ -51,11 +51,11 @@
 typedef	struct tagFindFaceInfo
 {
 	const Level *	pLevel;
-	jeVec3d			Front; //front of test vector. Basicly Camera
-	jeVec3d			Back ; //back of test vector. the mouse click pojected far into world space.	
+	grVec3d			Front; //front of test vector. Basicly Camera
+	grVec3d			Back ; //back of test vector. the mouse click pojected far into world space.	
 	Brush		*	pBrush;
-	jeBrush_Face *  pFace;
-	jeFloat			fMinDistance ;
+	grBrush_Face *  pFace;
+	grFloat			fMinDistance ;
 	uint32			c1;
 	uint32			c2;
 } FindFaceInfo;
@@ -68,13 +68,13 @@ typedef struct tagAddSelectInfo
 typedef struct tagDeleteSelectedInfo
 {
 	Level		*	pLevel ;
-	jeExtBox	*	pWorldBounds ;
+	grExtBox	*	pWorldBounds ;
 } DeleteSelectedInfo ;
 
 typedef struct tagDeselectBrushInfo
 {
 	Level		*	pLevel ;
-	jeExtBox	*	pWorldBounds ;
+	grExtBox	*	pWorldBounds ;
 	int32			nCount ;
 	OBJECT_KIND		eKind ;
 } DeselectBrushInfo ;
@@ -88,17 +88,17 @@ typedef struct tagDupDeselInfo
 
 typedef struct tagVertexPointInfo
 {
-	jeVec3d		WorldPoint ;
+	grVec3d		WorldPoint ;
 	ORTHO_AXIS	OAxis ;
 	int32		nVertex ;
-	jeFloat		fTolerance ;
+	grFloat		fTolerance ;
 } VertexPointInfo ;
 
 
 
-static jeBoolean Select_AddAndSelect( Object * pObject, void * lParam )
+static grBoolean Select_AddAndSelect( Object * pObject, void * lParam )
 {
-	jeBoolean		bSuccess = JE_TRUE ;
+	grBoolean		bSuccess = GR_TRUE ;
 	AddSelectInfo *	pasi = (AddSelectInfo*)lParam ;
 
 	bSuccess = Level_AddObject( pasi->pLevel, pObject ) ;	// Bumps ref on success
@@ -112,9 +112,9 @@ static jeBoolean Select_AddAndSelect( Object * pObject, void * lParam )
 
 
 // Added JH 25.03.2000
-static jeBoolean Select_Add( Object * pObject, void * lParam )
+static grBoolean Select_Add( Object * pObject, void * lParam )
 {
-	jeBoolean		bSuccess = JE_TRUE ;
+	grBoolean		bSuccess = GR_TRUE ;
 	AddSelectInfo *	pasi = (AddSelectInfo*)lParam ;
 
 	bSuccess = Level_AddObject( pasi->pLevel, pObject ) ;	// Bumps ref on success
@@ -126,23 +126,23 @@ static jeBoolean Select_Add( Object * pObject, void * lParam )
 	return bSuccess ;
 }// Select_Add
 
-static jeBoolean Select_DeselectObjectsCB( Object * pObject, void * lParam )
+static grBoolean Select_DeselectObjectsCB( Object * pObject, void * lParam )
 {
 	DeselectBrushInfo * pdbi ;
-	jeExtBox			ObjectBounds;
+	grExtBox			ObjectBounds;
 	pdbi = (DeselectBrushInfo*)lParam ;
 	if( Object_GetWorldDrawBounds( pObject, &ObjectBounds ) )
 		Util_ExtBox_Union( pdbi->pWorldBounds,  &ObjectBounds, pdbi->pWorldBounds ) ;
 	Level_SelectObject(  pdbi->pLevel, pObject, LEVEL_DESELECT ) ;
 	pdbi->nCount++ ;
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Select_DeselectObjectsCB
 
-static jeBoolean Select_DeselectObjectsExcluding( Object * pObject, void * lParam )
+static grBoolean Select_DeselectObjectsExcluding( Object * pObject, void * lParam )
 {
 	DeselectBrushInfo * pdbi = (DeselectBrushInfo*)lParam ;
-	jeExtBox			ObjectBounds ;
+	grExtBox			ObjectBounds ;
 	if( Object_GetKind( pObject ) != pdbi->eKind )
 	{
 		pdbi = (DeselectBrushInfo*)lParam ;
@@ -152,11 +152,11 @@ static jeBoolean Select_DeselectObjectsExcluding( Object * pObject, void * lPara
 		Level_SelectObject(  pdbi->pLevel, pObject, LEVEL_DESELECT ) ;
 		pdbi->nCount++ ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// Select_DeselectObjectsExcluding
 
-static jeBoolean Select_CreateSelectedUndoCB( Object * pObject, void *lParam  )
+static grBoolean Select_CreateSelectedUndoCB( Object * pObject, void *lParam  )
 {
 	Level		*	pLevel ;
 	Undo		*	pUndo ;
@@ -173,7 +173,7 @@ static jeBoolean Select_CreateSelectedUndoCB( Object * pObject, void *lParam  )
 
 
 
-static jeBoolean Select_ClosestObject( Object * pObject, void * lParam )
+static grBoolean Select_ClosestObject( Object * pObject, void * lParam )
 {
 	FindInfo		*	pFindInfo ;
 
@@ -185,25 +185,25 @@ static jeBoolean Select_ClosestObject( Object * pObject, void * lParam )
 
 }// Select_ClosestObject
 
-jeBoolean Select_PointOverVertexCB( Object * pObject, void * lParam )
+grBoolean Select_PointOverVertexCB( Object * pObject, void * lParam )
 {
 	uint32	nVertex ;
 	VertexPointInfo	* pvpi = (VertexPointInfo*)lParam ;
 	if( Object_GetKind( pObject ) != KIND_BRUSH ) 
-		return( JE_FALSE );
+		return( GR_FALSE );
 	if( Brush_IsPointOverVertex( (Brush*)pObject, &pvpi->WorldPoint, pvpi->OAxis, pvpi->fTolerance, &nVertex ) )
 	{
 		pvpi->nVertex = nVertex ;
-		return JE_FALSE ;
+		return GR_FALSE ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Select_PointOnVertexCB
 
-jeBoolean	Select_ClosestFaceCB( Model * pModel, void * lParam )
+grBoolean	Select_ClosestFaceCB( Model * pModel, void * lParam )
 {
 	FindFaceInfo		*	pFindInfo ;
-	jeBrushRayInfo		 	Info;
-	jeFloat					Dist;
+	grBrushRayInfo		 	Info;
+	grFloat					Dist;
 
 
 	assert( pModel != NULL );
@@ -211,15 +211,15 @@ jeBoolean	Select_ClosestFaceCB( Model * pModel, void * lParam )
 
 	pFindInfo = (FindFaceInfo*)lParam ;
 
-	if( jeModel_RayIntersectsBrushes( 
+	if( grModel_RayIntersectsBrushes( 
 		Model_GetguModel( pModel ), 
 		&pFindInfo->Front, &pFindInfo->Back, 
 		&Info)
 	)
 	{
 		if( Info.Brush ==  NULL )
-			return( JE_TRUE );
-		Dist = jeVec3d_DistanceBetween( &pFindInfo->Back, &Info.Impact );
+			return( GR_TRUE );
+		Dist = grVec3d_DistanceBetween( &pFindInfo->Back, &Info.Impact );
 		if( Dist < pFindInfo->fMinDistance )
 		{
 			pFindInfo->fMinDistance =  pFindInfo->fMinDistance;
@@ -231,46 +231,46 @@ jeBoolean	Select_ClosestFaceCB( Model * pModel, void * lParam )
 		}
 	}
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 	Dist;Info;
 }// Select_ClosestFaceCB
 
-jeBoolean Select_CreateModel( Level * pLevel, const char * pszName )
+grBoolean Select_CreateModel( Level * pLevel, const char * pszName )
 {
 	assert( pLevel != NULL ) ;
 	assert( pszName != NULL ) ;
 
-	return JE_TRUE ;	 // I'm not even sure why I want to return anything...
+	return GR_TRUE ;	 // I'm not even sure why I want to return anything...
 }// Select_CreateModel
 
-jeBoolean	Select_Face(Level * pLevel, const jeCamera * pCamera,  const Point * pViewPt, uint32 *c1, uint32 *c2 ) 
+grBoolean	Select_Face(Level * pLevel, const grCamera * pCamera,  const Point * pViewPt, uint32 *c1, uint32 *c2 ) 
 {
-	jeVec3d	Vector;
-	jeVec3d	Front;
-	jeVec3d	Back;
-	jeXForm3d pXForm;
+	grVec3d	Vector;
+	grVec3d	Front;
+	grVec3d	Back;
+	grXForm3d pXForm;
 	Object * pObject;
 	Group * pGroup;
-	jeCollisionInfo Info;
-	jeBrushRayInfo		 	RayInfo;
+	grCollisionInfo Info;
+	grBrushRayInfo		 	RayInfo;
 	
 	assert( pLevel );
 	assert( pCamera );
 	assert( pViewPt );
 
-	jeCamera_ScreenPointToWorld(	pCamera, pViewPt->X, pViewPt->Y, &Vector );
+	grCamera_ScreenPointToWorld(	pCamera, pViewPt->X, pViewPt->Y, &Vector );
 
-	jeVec3d_Scale( &Vector, BIG_SCALE, &Vector );
-	jeCamera_GetXForm( pCamera,&pXForm);
+	grVec3d_Scale( &Vector, BIG_SCALE, &Vector );
+	grCamera_GetXForm( pCamera,&pXForm);
 	Front = pXForm.Translation;
-	jeVec3d_Add( &Front, &Vector, &Back );
-	if( jeWorld_Collision( Level_GetjeWorld(pLevel ), NULL,  &Front, &Back, &Info  ) )
+	grVec3d_Add( &Front, &Vector, &Back );
+	if( grWorld_Collision( Level_GetgrWorld(pLevel ), NULL,  &Front, &Back, &Info  ) )
 	{
 		pObject  = Level_FindgeObject( pLevel,  Info.Object );
 
 		if( (Object_GetKind( pObject ) == KIND_MODEL) && !Model_IsLocked( (Model*)pObject ) )
 		{
-			if( jeModel_RayIntersectsBrushes( 
+			if( grModel_RayIntersectsBrushes( 
 				Model_GetguModel( (Model*)pObject ), 
 				&Front, &Back, 
 				&RayInfo)
@@ -295,32 +295,32 @@ jeBoolean	Select_Face(Level * pLevel, const jeCamera * pCamera,  const Point * p
 			Level_SelectGroup( pLevel, pGroup, LEVEL_NOFACESELECT );
 		else
 			Level_SelectObject( pLevel, pObject, LEVEL_NOFACESELECT );
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 } //Select_Face
 
-static jeBoolean Select_AllFaceCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_AllFaceCB( Object *pObject, void * pVoid ) 
 {
 	if( Object_GetKind( pObject ) != KIND_BRUSH ) 
-		return( JE_TRUE );
+		return( GR_TRUE );
 
 	Brush_SelectAllFaces( (Brush*)pObject );
-	return( JE_TRUE );
+	return( GR_TRUE );
 	pVoid;
 }
 
-jeBoolean Select_AllFaces( Level * pLevel )
+grBoolean Select_AllFaces( Level * pLevel )
 {
 	Level_EnumSelected( pLevel, NULL, Select_AllFaceCB );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 typedef struct SelectFaceInfo {
 	Brush* pBrush;
-	jeBrush_Face *pFace;
+	grBrush_Face *pFace;
 } SelectFaceInfo;
 
-static jeBoolean Select_NextFaceCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_NextFaceCB( Object *pObject, void * pVoid ) 
 {
 	SelectFaceInfo	*	pInfo = (SelectFaceInfo *)pVoid;
 	Brush			*	pBrush = (Brush*)pObject;
@@ -329,12 +329,12 @@ static jeBoolean Select_NextFaceCB( Object *pObject, void * pVoid )
 	assert( Object_GetKind( pObject ) == KIND_BRUSH ) ;
 
 	if( !Brush_HasSelectedFace( pBrush ) )
-		return(JE_TRUE );
+		return(GR_TRUE );
 	pInfo->pBrush = pBrush;
 	pInfo->pFace = Brush_GetNextSelFace( pBrush );
 	if( pInfo->pFace == NULL )
-		return( JE_TRUE );
-	return( JE_FALSE );
+		return( GR_TRUE );
+	return( GR_FALSE );
 } //Select_NextFaceCB
 
 void Select_NextFace( Level * pLevel )
@@ -352,22 +352,22 @@ void Select_NextFace( Level * pLevel )
 	}
 }
 
-static jeBoolean Select_PrevFaceCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_PrevFaceCB( Object *pObject, void * pVoid ) 
 {
 	SelectFaceInfo	*	pInfo = (SelectFaceInfo *)pVoid;
 	Brush			*	pBrush = (Brush*)pObject;
 	assert( pObject );
 	assert( pVoid );
 	if( Object_GetKind( pObject ) != KIND_BRUSH ) 
-		return( JE_TRUE );
+		return( GR_TRUE );
 
 	if( !Brush_HasSelectedFace( pBrush ) )
-		return(JE_TRUE );
+		return(GR_TRUE );
 	pInfo->pBrush = pBrush;
 	pInfo->pFace = Brush_GetPrevSelFace( pBrush );
 	if( pInfo->pFace == NULL )
-		return( JE_TRUE );
-	return( JE_FALSE );
+		return( GR_TRUE );
+	return( GR_FALSE );
 } //Select_PrevFaceCB
 
 void Select_PrevFace( Level * pLevel )
@@ -386,16 +386,16 @@ void Select_PrevFace( Level * pLevel )
 }// Select_PrevFace
 
 typedef struct ApplyMatrInfo_Struct {
-	const jeFaceInfo *pFaceInfo;
+	const grFaceInfo *pFaceInfo;
 	Undo *		pUndo;
 #ifdef _USE_BITMAPS
-	jeBitmap *  pCurBitmap;
+	grBitmap *  pCurBitmap;
 #else
-	jeMaterialSpec* pCurMaterialSpec;
+	grMaterialSpec* pCurMaterialSpec;
 #endif
 } ApplyMatrInfo_Struct;
 
-static jeBoolean Select_ApplyMatrCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_ApplyMatrCB( Object *pObject, void * pVoid ) 
 {
 	ApplyMatrInfo_Struct *pApplyMatrInfo = (ApplyMatrInfo_Struct *)pVoid;
 	assert( pObject );
@@ -419,7 +419,7 @@ static jeBoolean Select_ApplyMatrCB( Object *pObject, void * pVoid )
 		default:
 		break;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 } //Select_PrevFaceCB
 
 void Select_ApplyCurMaterial( Level * pLevel )
@@ -432,7 +432,7 @@ void Select_ApplyCurMaterial( Level * pLevel )
 	ApplyMatrInfo.pFaceInfo = Level_GetCurFaceInfo( pLevel );
 	ApplyMatrInfo.pUndo = Level_GetUndo( pLevel );
 #ifdef _USE_BITMAPS
-	ApplyMatrInfo.pCurBitmap = Level_GetCurMaterialjeBitmap( pLevel );
+	ApplyMatrInfo.pCurBitmap = Level_GetCurMaterialgrBitmap( pLevel );
 #else
 	ApplyMatrInfo.pCurMaterialSpec = Level_GetCurMaterialSpec( pLevel );
 #endif
@@ -444,7 +444,7 @@ void Select_ApplyCurMaterial( Level * pLevel )
 
 
 
-static jeBoolean Select_LightInfoCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_LightInfoCB( Object *pObject, void * pVoid ) 
 {
 	LightInfoCB_Struct *pLightInfoCBData = (LightInfoCB_Struct *)pVoid;
 	Light			*	pLight = (Light*)pObject;
@@ -452,10 +452,10 @@ static jeBoolean Select_LightInfoCB( Object *pObject, void * pVoid )
 	assert( pObject );
 	assert( pVoid );
 	if( Object_GetKind( pObject ) != KIND_LIGHT ) 
-		return( JE_TRUE );
+		return( GR_TRUE );
 
 	Light_GetInfo( pLight, pLightInfoCBData->LightInfo, &pLightInfoCBData->FieldFlag );
-	return( JE_TRUE );
+	return( GR_TRUE );
 } //Select_LightInfoCB
 
 
@@ -475,7 +475,7 @@ void Select_GetLightInfo( Level * pLevel, LightInfo *LightInfo, int32 *pBlankFie
 }//Select_GetLightInfo
 
 
-static jeBoolean Select_SetFaceInfoCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_SetFaceInfoCB( Object *pObject, void * pVoid ) 
 {
 	FaceInfoCB_Struct *pFaceInfoCBData = (FaceInfoCB_Struct *)pVoid;
 	Brush			*	pBrush = (Brush*)pObject;
@@ -485,12 +485,12 @@ static jeBoolean Select_SetFaceInfoCB( Object *pObject, void * pVoid )
 	assert( Object_GetKind( pObject ) == KIND_BRUSH ) ;
 
 	if( !Brush_HasSelectedFace( pBrush ) )
-		return(JE_TRUE );
+		return(GR_TRUE );
 	Brush_SetFaceInfo( pBrush, pFaceInfoCBData );
-	return( JE_TRUE );
+	return( GR_TRUE );
 } //Select_FaceInfoCB
 
-void Select_SetFaceInfo( Level * pLevel, jeFaceInfo *pFaceInfo, int32 BlankFieldFlag )
+void Select_SetFaceInfo( Level * pLevel, grFaceInfo *pFaceInfo, int32 BlankFieldFlag )
 {
 	FaceInfoCB_Struct FaceInfoCBData; 
 
@@ -503,7 +503,7 @@ void Select_SetFaceInfo( Level * pLevel, jeFaceInfo *pFaceInfo, int32 BlankField
 
 }// Select_SetFaceInfo
 
-static jeBoolean Select_SetLightInfoCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_SetLightInfoCB( Object *pObject, void * pVoid ) 
 {
 	LightInfoCB_Struct *pLightInfoCBData = (LightInfoCB_Struct *)pVoid;
 	Light			*	pLight = (Light*)pObject;
@@ -511,10 +511,10 @@ static jeBoolean Select_SetLightInfoCB( Object *pObject, void * pVoid )
 	assert( pObject );
 	assert( pVoid );
 	if( Object_GetKind( pObject ) != KIND_LIGHT ) 
-		return( JE_TRUE );
+		return( GR_TRUE );
 
 	Light_SetInfo( pLight, pLightInfoCBData->LightInfo, pLightInfoCBData->FieldFlag );
-	return( JE_TRUE );
+	return( GR_TRUE );
 } //Select_FaceInfoCB
 
 void Select_SetLightInfo( Level * pLevel, LightInfo *pLightInfo, int32 BlankFieldFlag  )
@@ -536,7 +536,7 @@ void Select_SetLightInfo( Level * pLevel, LightInfo *pLightInfo, int32 BlankFiel
 }// Select_SetLightInfo
 
 
-static jeBoolean Select_DupSelection( Object * pObject, void * lParam )
+static grBoolean Select_DupSelection( Object * pObject, void * lParam )
 {
 	DupDeselInfo	* pddi ;
 	Object			* pNewObject ;
@@ -549,19 +549,19 @@ static jeBoolean Select_DupSelection( Object * pObject, void * lParam )
 		Level_GetNextObjectId( pddi->pLevel, Object_GetKind( pObject ), Object_GetName( pObject ) ) 
 	) ;
 	if( pNewObject == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
 	if( ObjectList_Append( pddi->pDups, pNewObject ) == NULL )
 	{
 		Object_Free( &pNewObject ) ;
-		return JE_FALSE ;
+		return GR_FALSE ;
 	}
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Select_DupDesel
 
 
 
-static jeBoolean Select_HandleIn( int32 Left, int32 Top, Point * pViewPt )
+static grBoolean Select_HandleIn( int32 Left, int32 Top, Point * pViewPt )
 {
 	Rect	r ;
 
@@ -574,7 +574,7 @@ static jeBoolean Select_HandleIn( int32 Left, int32 Top, Point * pViewPt )
 
 }// Select_HandleIn
 
-static jeBoolean Select_DragBeginCB( Object * pObject, void * lParam )
+static grBoolean Select_DragBeginCB( Object * pObject, void * lParam )
 {
 	Level * pLevel;
 
@@ -587,7 +587,7 @@ static jeBoolean Select_DragBeginCB( Object * pObject, void * lParam )
 
 }// Select_DragBeginCB
 
-static jeBoolean Select_DragEndCB( Object * pObject, void * lParam )
+static grBoolean Select_DragEndCB( Object * pObject, void * lParam )
 {
 	Level * pLevel;
 
@@ -596,15 +596,15 @@ static jeBoolean Select_DragEndCB( Object * pObject, void * lParam )
 	
 	pLevel = (Level*)lParam;
 
-	Object_Update( pObject, OBJECT_UPDATE_CHANGE, JE_FALSE );
+	Object_Update( pObject, OBJECT_UPDATE_CHANGE, GR_FALSE );
 
-	return( JE_TRUE ) ;
+	return( GR_TRUE ) ;
 
 }// Select_DragBeginCB
 
-static jeBoolean Select_DeleteCB( Object * pObject, void * lParam )
+static grBoolean Select_DeleteCB( Object * pObject, void * lParam )
 {
-	jeExtBox				Bounds ;
+	grExtBox				Bounds ;
 	DeleteSelectedInfo	*	pdsi = (DeleteSelectedInfo*)lParam ;
 	Level				*	pLevel;
 	Undo				*	pUndo;
@@ -623,7 +623,7 @@ static jeBoolean Select_DeleteCB( Object * pObject, void * lParam )
 
 	Level_SelectObject(  pLevel, pObject, LEVEL_DESELECT ) ;
 	Level_DeleteObject( pLevel, pObject );
-	return( JE_TRUE ) ;
+	return( GR_TRUE ) ;
 
 }// Select_DragBeginCB
 
@@ -631,24 +631,24 @@ static jeBoolean Select_DeleteCB( Object * pObject, void * lParam )
 // END STATIC
 //
 
-jeBoolean Select_IsCorner( SELECT_HANDLE SelectHandle )
+grBoolean Select_IsCorner( SELECT_HANDLE SelectHandle )
 {
 	assert( SelectHandle > Select_None &&  SelectHandle < Select_Last ) ;
 
 	return SelectHandle >= Select_TopLeft && SelectHandle <= Select_BottomRight ; 
 }// Select_IsCorner
 
-jeBoolean Select_IsEdge( SELECT_HANDLE SelectHandle )
+grBoolean Select_IsEdge( SELECT_HANDLE SelectHandle )
 {
 	assert( SelectHandle > Select_None &&  SelectHandle < Select_Last ) ;
 
 	return SelectHandle >= Select_Left && SelectHandle <= Select_Bottom ; 
 }// Select_IsCorner
 
-jeBoolean Select_IsPointOverVertex( const Ortho * pOrtho, const Point * pViewPt, Level * pLevel )
+grBoolean Select_IsPointOverVertex( const Ortho * pOrtho, const Point * pViewPt, Level * pLevel )
 {
 	VertexPointInfo	vpi ;
-	jeBoolean		b ;
+	grBoolean		b ;
 
 	Ortho_ViewToWorld( pOrtho, pViewPt->X, pViewPt->Y, &vpi.WorldPoint ) ;
 	vpi.OAxis = Ortho_GetOrthogonalAxis( pOrtho ) ;
@@ -659,14 +659,14 @@ jeBoolean Select_IsPointOverVertex( const Ortho * pOrtho, const Point * pViewPt,
 	return !b ;
 }// Select_IsPointOnVertex
 
-jeBoolean Select_ClosestThing( Level * pLevel, const Ortho * pOrtho, const Point * pViewPt, LEVEL_STATE eState, jeExtBox * pWorldBounds, MODE eMode, jeBoolean bControl_Held )
+grBoolean Select_ClosestThing( Level * pLevel, const Ortho * pOrtho, const Point * pViewPt, LEVEL_STATE eState, grExtBox * pWorldBounds, MODE eMode, grBoolean bControl_Held )
 {
 	FindInfo			findInfo ;
 	SELECT_RESULT		SelResult = SELECT_RESULT_NONE ;
-	jeVec3d				WorldPoint ;
-	jeBoolean			bSelDone = JE_FALSE ;
-	jeVertArray_Index	nVertex ;
-	jeExtBox			DeselectBox;
+	grVec3d				WorldPoint ;
+	grBoolean			bSelDone = GR_FALSE ;
+	grVertArray_Index	nVertex ;
+	grExtBox			DeselectBox;
 
 	assert( pLevel != NULL ) ;
 	assert( pViewPt != NULL ) ;
@@ -709,19 +709,19 @@ jeBoolean Select_ClosestThing( Level * pLevel, const Ortho * pOrtho, const Point
 				Ortho_ViewToWorld( pOrtho, pViewPt->X, pViewPt->Y, &WorldPoint ) ;
 				if( Brush_IsPointOverNearVertex( (Brush*)findInfo.pObject, &WorldPoint, Ortho_GetOrthogonalAxis( pOrtho ), Ortho_GetWorldSelectThreshold( pOrtho ), &uVertex ) )
 				{
-					nVertex = (jeVertArray_Index)uVertex ;
+					nVertex = (grVertArray_Index)uVertex ;
 					switch( eState )
 					{
 					case LEVEL_TOGGLE :	Brush_ToggleVert( (Brush*)findInfo.pObject, nVertex ) ;	break ;
 					} 
-					bSelDone = JE_TRUE ;
+					bSelDone = GR_TRUE ;
 					SelResult = SELECT_RESULT_CHANGED;
 				}
 			}
 			Util_ExtBox_Union( pWorldBounds, Level_GetSubSelDrawBounds( pLevel ), pWorldBounds );
 		}
 		
-		if( bSelDone == JE_FALSE )
+		if( bSelDone == GR_FALSE )
 		{	// BB or RS mode
 			Group * pGroup;
 			uint32	flags;
@@ -782,7 +782,7 @@ jeBoolean Select_ClosestThing( Level * pLevel, const Ortho * pOrtho, const Point
 }// Select_ClosestThing
 
 
-jeBoolean Select_CreateSelectedUndo( Level * pLevel, UNDO_TYPES Type )
+grBoolean Select_CreateSelectedUndo( Level * pLevel, UNDO_TYPES Type )
 {
 	Undo *			pUndo;
 	assert( pLevel != NULL ) ;
@@ -794,7 +794,7 @@ jeBoolean Select_CreateSelectedUndo( Level * pLevel, UNDO_TYPES Type )
 
 }// Select_CreateSelectedUndo
 
-jeBoolean Select_Delete( Level * pLevel, jeExtBox * pWorldBounds )
+grBoolean Select_Delete( Level * pLevel, grExtBox * pWorldBounds )
 {
 	DeleteSelectedInfo	dsi ;
 	Undo  * pUndo;
@@ -810,10 +810,10 @@ jeBoolean Select_Delete( Level * pLevel, jeExtBox * pWorldBounds )
 	dsi.pLevel = pLevel ;
 	dsi.pWorldBounds = pWorldBounds ;
 	Level_EnumSelected( pLevel, &dsi, Select_DeleteCB );
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// Select_Delete
 
-jeBoolean Select_DeselectAll( Level * pLevel, jeExtBox * pWorldBounds )
+grBoolean Select_DeselectAll( Level * pLevel, grExtBox * pWorldBounds )
 {
 	DeselectBrushInfo dbi ;
 
@@ -830,12 +830,12 @@ jeBoolean Select_DeselectAll( Level * pLevel, jeExtBox * pWorldBounds )
 	if( dbi.nCount != 0 )
 	{
 		Level_SetModifiedSelection( pLevel ) ;
-		return JE_TRUE ;
+		return GR_TRUE ;
 	}
-	return JE_FALSE ;
+	return GR_FALSE ;
 }// Select_DeselectAll
 
-jeBoolean Select_DeselectAllExcluding( Level * pLevel, jeExtBox * pWorldBounds, OBJECT_KIND eKind )
+grBoolean Select_DeselectAllExcluding( Level * pLevel, grExtBox * pWorldBounds, OBJECT_KIND eKind )
 {
 	DeselectBrushInfo	dbi ;
 	assert( pLevel != NULL ) ;
@@ -850,31 +850,31 @@ jeBoolean Select_DeselectAllExcluding( Level * pLevel, jeExtBox * pWorldBounds, 
 	if( dbi.nCount != 0 )
 	{
 		Level_SetModifiedSelection( pLevel ) ;
-		return JE_TRUE ;
+		return GR_TRUE ;
 	}
-	return JE_FALSE ;
+	return GR_FALSE ;
 }// Select_DeselectAllExcluding
 
-jeBoolean Select_DupAndDeselectSelections( Level * pLevel )
+grBoolean Select_DupAndDeselectSelections( Level * pLevel )
 {
-	jeBoolean					bSuccess ;
+	grBoolean					bSuccess ;
 	DupDeselInfo				ddi ;
 	AddSelectInfo				asi ;
-	jeExtBox					WorldBounds ;
+	grExtBox					WorldBounds ;
 	assert( pLevel != NULL ) ;
 
 	ddi.pDups = ObjectList_Create( ) ;
 	if( ddi.pDups == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
 	ddi.pLevel = pLevel ;
 	bSuccess = Level_EnumSelected( pLevel, &ddi, Select_DupSelection ) ;
-	if( JE_TRUE == bSuccess )
+	if( GR_TRUE == bSuccess )
 	{
 		Select_DeselectAll( pLevel, &WorldBounds ) ;
 		asi.pLevel = pLevel ;
 		bSuccess = ObjectList_EnumObjects( ddi.pDups, &asi, Select_AddAndSelect ) ;
-		if( JE_FALSE == bSuccess )	// Failed selecting some of the list
+		if( GR_FALSE == bSuccess )	// Failed selecting some of the list
 		{
 			Select_DeselectAll( pLevel, &WorldBounds ) ;
 		}
@@ -886,26 +886,26 @@ jeBoolean Select_DupAndDeselectSelections( Level * pLevel )
 }// Select_DupAndDeselectedSelections
 
  // Added JH 25.03.2000
-jeBoolean		Select_Dup ( Level * pLevel ) 
+grBoolean		Select_Dup ( Level * pLevel ) 
 {
-	jeBoolean					bSuccess ;
+	grBoolean					bSuccess ;
 	DupDeselInfo				ddi ;
 	AddSelectInfo				asi ;
-	jeExtBox					WorldBounds ;
+	grExtBox					WorldBounds ;
 	assert( pLevel != NULL ) ;
 
 	ddi.pDups = ObjectList_Create( ) ;
 	if( ddi.pDups == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
 	ddi.pLevel = pLevel ;
 	bSuccess = Level_EnumSelected( pLevel, &ddi, Select_DupSelection ) ;
-	if( JE_TRUE == bSuccess )
+	if( GR_TRUE == bSuccess )
 	{
 	//	Select_DeselectAll( pLevel, &WorldBounds ) ;
 		asi.pLevel = pLevel ;
 		bSuccess = ObjectList_EnumObjects( ddi.pDups, &asi, Select_AddAndSelect ) ;
-		if( JE_FALSE == bSuccess )	// Failed selecting some of the list
+		if( GR_FALSE == bSuccess )	// Failed selecting some of the list
 		{
 			Select_DeselectAll( pLevel, &WorldBounds ) ;
 		}
@@ -920,14 +920,14 @@ jeBoolean		Select_Dup ( Level * pLevel )
 
 
 typedef struct SelectRectStruct {
-	jeExtBox *pSelBox;
-	jeBoolean bSelEncompeses;
+	grExtBox *pSelBox;
+	grBoolean bSelEncompeses;
 	int32 Mask;
 	Level * pLevel;
-	jeBoolean bSelChanged;
+	grBoolean bSelChanged;
 } SelectRectStruct;
 
-static jeBoolean Select_RectangleCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_RectangleCB( Object *pObject, void * pVoid ) 
 {
 	SelectRectStruct *pSelectRectInfo = (SelectRectStruct*)pVoid;
 	Group * pGroup;
@@ -935,23 +935,23 @@ static jeBoolean Select_RectangleCB( Object *pObject, void * pVoid )
 	assert( pVoid );
 
 	if( !(Object_GetKind( pObject ) & pSelectRectInfo->Mask) ) 
-		return(JE_TRUE );
+		return(GR_TRUE );
 
 
 	pGroup = Object_IsMemberOfLockedGroup( pObject );
 	if( pGroup != NULL )
 	{
-		jeExtBox GroupBox;
-		jeExtBox UnionBox;
+		grExtBox GroupBox;
+		grExtBox UnionBox;
 
 		ObjectList_GetListBounds( Group_GetObjectList(pGroup), &GroupBox );
-		jeExtBox_Union( &GroupBox, pSelectRectInfo->pSelBox, &UnionBox );
+		grExtBox_Union( &GroupBox, pSelectRectInfo->pSelBox, &UnionBox );
 		//If the Union is equal to the selectRect the GroupBox is enclosed
-		if( jeVec3d_Compare( &pSelectRectInfo->pSelBox->Min, &UnionBox.Min, 0.0f ) &&
-			jeVec3d_Compare( &pSelectRectInfo->pSelBox->Max, &UnionBox.Max, 0.0f ) )
+		if( grVec3d_Compare( &pSelectRectInfo->pSelBox->Min, &UnionBox.Min, 0.0f ) &&
+			grVec3d_Compare( &pSelectRectInfo->pSelBox->Max, &UnionBox.Max, 0.0f ) )
 		{
 			Level_SelectGroup( pSelectRectInfo->pLevel, pGroup, LEVEL_SELECT );
-			pSelectRectInfo->bSelChanged = JE_TRUE;
+			pSelectRectInfo->bSelChanged = GR_TRUE;
 		}
 	}
 	else
@@ -959,14 +959,14 @@ static jeBoolean Select_RectangleCB( Object *pObject, void * pVoid )
 		if( Object_IsInRect( pObject, pSelectRectInfo->pSelBox, pSelectRectInfo->bSelEncompeses ) )
 		{
 			Level_SelectObject( pSelectRectInfo->pLevel, pObject , LEVEL_SELECT ) ;
-			pSelectRectInfo->bSelChanged = JE_TRUE;
+			pSelectRectInfo->bSelChanged = GR_TRUE;
 		}
 	}
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Select_Rectangle( Level * pLevel, jeExtBox *pSelBox, jeBoolean bSelEncompeses, int32 Mask, jeExtBox *Bounds )
+grBoolean Select_Rectangle( Level * pLevel, grExtBox *pSelBox, grBoolean bSelEncompeses, int32 Mask, grExtBox *Bounds )
 {
 	SelectRectStruct SelectRectInfo;
 
@@ -978,29 +978,29 @@ jeBoolean Select_Rectangle( Level * pLevel, jeExtBox *pSelBox, jeBoolean bSelEnc
 	SelectRectInfo.Mask = Mask;
 	SelectRectInfo.pSelBox = pSelBox;
 	SelectRectInfo.pLevel = pLevel;
-	SelectRectInfo.bSelChanged = JE_FALSE;
+	SelectRectInfo.bSelChanged = GR_FALSE;
 	Level_EnumObjects( pLevel, &SelectRectInfo, Select_RectangleCB ) ;
 	*Bounds = *Level_GetSelDrawBounds(  pLevel );
 	return( SelectRectInfo.bSelChanged );
 }//Select_Rectangle
 
-static jeBoolean Select_VertsInRectangleCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_VertsInRectangleCB( Object *pObject, void * pVoid ) 
 {
 	SelectRectStruct *pSelectRectInfo = (SelectRectStruct*)pVoid;
 	assert( pObject );
 	assert( pVoid );
 
 	if( Object_GetKind( pObject ) != KIND_BRUSH  )
-		return( JE_TRUE );
+		return( GR_TRUE );
 
 	if( Brush_SelectVertInRect( (Brush*)pObject, pSelectRectInfo->pSelBox) )
 	{
-		pSelectRectInfo->bSelChanged = JE_TRUE;
+		pSelectRectInfo->bSelChanged = GR_TRUE;
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Select_VertsInRectangle( Level * pLevel, jeExtBox *pSelBox, jeBoolean bSelEncompeses, jeExtBox *Bounds ) 
+grBoolean Select_VertsInRectangle( Level * pLevel, grExtBox *pSelBox, grBoolean bSelEncompeses, grExtBox *Bounds ) 
 {
 	SelectRectStruct SelectRectInfo;
 	assert( pLevel );
@@ -1010,22 +1010,22 @@ jeBoolean Select_VertsInRectangle( Level * pLevel, jeExtBox *pSelBox, jeBoolean 
 	SelectRectInfo.bSelEncompeses = bSelEncompeses;
 	SelectRectInfo.pSelBox = pSelBox;
 	SelectRectInfo.pLevel = pLevel;
-	SelectRectInfo.bSelChanged = JE_FALSE;
+	SelectRectInfo.bSelChanged = GR_FALSE;
 	Level_EnumSelected( pLevel, &SelectRectInfo, Select_VertsInRectangleCB ) ;
 	*Bounds = *Level_GetSelDrawBounds(  pLevel );
 	return( SelectRectInfo.bSelChanged );
 }//Select_VertsInRectangle
 
-jeBoolean Select_DragBegin( Level * pLevel )
+grBoolean Select_DragBegin( Level * pLevel )
 {
 	assert( pLevel != NULL ) ;
 
-	Level_SetChanged( pLevel, JE_TRUE );
+	Level_SetChanged( pLevel, GR_TRUE );
 	return Level_EnumSelected( pLevel, pLevel, Select_DragBeginCB ) ;
 
 }// Select_DragBegin
 
-jeBoolean Select_DragEnd( Level * pLevel )
+grBoolean Select_DragEnd( Level * pLevel )
 {
 	assert( pLevel != NULL ) ;
 
@@ -1034,16 +1034,16 @@ jeBoolean Select_DragEnd( Level * pLevel )
 
 }// Select_DragEnd
 
-jeBoolean Select_DragBeginSub( Level * pLevel )
+grBoolean Select_DragBeginSub( Level * pLevel )
 {
 	assert( pLevel != NULL ) ;
 
-	Level_SetChanged( pLevel, JE_TRUE );
+	Level_SetChanged( pLevel, GR_TRUE );
 	return Level_EnumSubSelected( pLevel, pLevel, Select_DragBeginCB ) ;
 
 }// Select_DragBegin
 
-jeBoolean Select_DragEndSub( Level * pLevel )
+grBoolean Select_DragEndSub( Level * pLevel )
 {
 	assert( pLevel != NULL ) ;
 
@@ -1052,7 +1052,7 @@ jeBoolean Select_DragEndSub( Level * pLevel )
 
 }// Select_DragEnd
 
-SELECT_HANDLE Select_ViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox * pWorldBox )
+SELECT_HANDLE Select_ViewPointHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox )
 {
 	Rect	viewRect ;
 	Rect	handleRect ;
@@ -1066,7 +1066,7 @@ SELECT_HANDLE Select_ViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox 
 
 	handleRect = viewRect ;
 	Rect_Inflate( &handleRect, HALFHANDLESIZE, HALFHANDLESIZE ) ;
-	if( Rect_IsPointIn( &handleRect, pViewPt ) == JE_FALSE )
+	if( Rect_IsPointIn( &handleRect, pViewPt ) == GR_FALSE )
 		return Select_None ;
 
 	// Corners
@@ -1095,7 +1095,7 @@ SELECT_HANDLE Select_ViewPointHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox 
 
 }// Select_ViewPointHandle
 
-SELECT_HANDLE Select_NearestCornerHandle( Ortho * pOrtho, Point * pViewPt, jeExtBox * pWorldBox )
+SELECT_HANDLE Select_NearestCornerHandle( Ortho * pOrtho, Point * pViewPt, grExtBox * pWorldBox )
 {
 	Rect	viewRect ;
 	Point	Center ;
@@ -1108,17 +1108,17 @@ SELECT_HANDLE Select_NearestCornerHandle( Ortho * pOrtho, Point * pViewPt, jeExt
 	Rect_GetTranslation( &viewRect, &Center ) ;
 	
 	rad = atan2( Center.Y - pViewPt->Y, pViewPt->X - Center.X ) ;
-	if( rad < -JE_HALFPI )
+	if( rad < -GR_HALFPI )
 		return Select_BottomLeft ;
 	else if( rad < 0.0f )
 		return Select_BottomRight ;
-	else if( rad < JE_HALFPI )
+	else if( rad < GR_HALFPI )
 		return Select_TopRight ;
 	
 	return Select_TopLeft ;
 }// Select_NearestHandle
 
-jeBoolean Select_MoveVertCB( Object *pObject, void * pVoid )
+grBoolean Select_MoveVertCB( Object *pObject, void * pVoid )
 {
 	assert( pObject );
 	assert( pVoid );
@@ -1126,70 +1126,70 @@ jeBoolean Select_MoveVertCB( Object *pObject, void * pVoid )
 
 	Brush_MoveSelectedVert( (Brush*)pObject, pVoid);
 /*
-	if( !jeBrush_IsConvex( Brush_GetgeBrush( (Brush*)pObject ) ) )
+	if( !grBrush_IsConvex( Brush_GetgeBrush( (Brush*)pObject ) ) )
 	{
 		Brush_RestoreSelVert( (Brush*)pObject );
-		return( JE_FALSE );
+		return( GR_FALSE );
 	}
 */
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Select_MoveSelectedVert( Level * pLevel, jeVec3d * dWorldDist, jeExtBox * WorldBounds )
+grBoolean Select_MoveSelectedVert( Level * pLevel, grVec3d * dWorldDist, grExtBox * WorldBounds )
 {
 	*WorldBounds  =	*Level_GetSelBounds( pLevel );
 
 	Level_EnumSelected( pLevel, dWorldDist, Select_MoveVertCB );
 	Level_SetModifiedSelection( pLevel );
-	jeExtBox_Union ( WorldBounds, Level_GetSelDrawBounds( pLevel ), WorldBounds );
-	return( JE_TRUE );
+	grExtBox_Union ( WorldBounds, Level_GetSelDrawBounds( pLevel ), WorldBounds );
+	return( GR_TRUE );
 }
 
 // End added / modified by cjp
 
-jeBoolean Select_HasNoSelVertCB( Object *pObject, void * pVoid )
+grBoolean Select_HasNoSelVertCB( Object *pObject, void * pVoid )
 {
 	assert( pObject );
 
 	if( Object_GetKind( pObject )!= KIND_BRUSH )
-		return( JE_TRUE );
+		return( GR_TRUE );
 	return( !Brush_HasSelectedVert( (Brush *) pObject ) );
 	pVoid;
 }
 
-jeBoolean Select_HasSelectedVerts( Level * pLevel )
+grBoolean Select_HasSelectedVerts( Level * pLevel )
 {
 	return( !Level_EnumSelected( pLevel, NULL, Select_HasNoSelVertCB ) );
 }// Select_HasSelectedVerts
 
-jeBoolean Select_DeselectAllVertCB( Object *pObject, void * pVoid )
+grBoolean Select_DeselectAllVertCB( Object *pObject, void * pVoid )
 {
 	assert( pObject );
 
 	if( Object_GetKind( pObject )!= KIND_BRUSH )
-		return( JE_TRUE );
+		return( GR_TRUE );
 	Brush_DeselectAllVert( (Brush *) pObject  );
-	return( JE_TRUE );
+	return( GR_TRUE );
 	pVoid;
 }
 
-jeBoolean		Select_DeselectAllVerts( Level *pLevel )
+grBoolean		Select_DeselectAllVerts( Level *pLevel )
 {
 	return( Level_EnumSelected( pLevel, NULL, Select_DeselectAllVertCB ) );
 }
 
-jeBoolean Select_DeselectAllFacesCB( Object *pObject, void * pVoid )
+grBoolean Select_DeselectAllFacesCB( Object *pObject, void * pVoid )
 {
 	assert( pObject );
 
 	if( Object_GetKind( pObject )!= KIND_BRUSH )
-		return( JE_TRUE );
+		return( GR_TRUE );
 	Brush_DeselectAllFaces( (Brush *) pObject  );
-	return( JE_TRUE );
+	return( GR_TRUE );
 	pVoid;
 }
 
-jeBoolean		Select_DeselectAllFaces( Level *pLevel )
+grBoolean		Select_DeselectAllFaces( Level *pLevel )
 {
 	return( Level_EnumSelected( pLevel, NULL, Select_DeselectAllFacesCB ) );
 }
@@ -1199,7 +1199,7 @@ typedef struct GetName_Struct {
 	int32		* nNumber;
 } GetName_Struct;
 
-jeBoolean Select_GetNameCB( Object *pObject, void * pVoid )
+grBoolean Select_GetNameCB( Object *pObject, void * pVoid )
 {
 	GetName_Struct * pGetName_Data = (GetName_Struct *)pVoid;
 	const char * Name;
@@ -1218,9 +1218,9 @@ jeBoolean Select_GetNameCB( Object *pObject, void * pVoid )
 	{
 		*pGetName_Data->nNumber = SELECT_INVALID_NNUMBER;
 		if( strcmp( pGetName_Data->Name, Name ) )
-			return( JE_FALSE );
+			return( GR_FALSE );
 	}
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 //	Goes through the selection 
@@ -1250,7 +1250,7 @@ typedef struct SetName_Struct {
 	Level		* pLevel;
 } SetName_Struct;
 
-jeBoolean Select_SetNameCB( Object *pObject, void * pVoid )
+grBoolean Select_SetNameCB( Object *pObject, void * pVoid )
 {
 	SetName_Struct * pSetName_Data = (SetName_Struct *)pVoid;
 	int32 nNumber;
@@ -1260,7 +1260,7 @@ jeBoolean Select_SetNameCB( Object *pObject, void * pVoid )
 
 	nNumber = Level_GetNextObjectId( pSetName_Data->pLevel, Object_GetKind( pObject ), pSetName_Data->Name );
 	Object_SetName( pObject, pSetName_Data->Name, nNumber );
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
 void Select_SetName( Level * pLevel, const char * Name )
@@ -1273,58 +1273,58 @@ void Select_SetName( Level * pLevel, const char * Name )
 }
 
 
-static jeBoolean Select_FillPositionDescriptor( Level * pLevel, jeProperty *pDescriptor )
+static grBoolean Select_FillPositionDescriptor( Level * pLevel, grProperty *pDescriptor )
 {
-	jeVec3d  Center;
+	grVec3d  Center;
 	char * Name;
 
 	if( !Level_GetSelBoundsCenter( pLevel, &Center )  )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	Name = Util_LoadLocalRcString( IDS_POSITION_FIELD );
 	if( Name == NULL )
-		return(JE_FALSE );
-	jeProperty_FillVec3dGroup( &pDescriptor[0], Name, &Center,	OBJECT_POSITION_FIELD  );
-	jeRam_Free( Name );
+		return(GR_FALSE );
+	grProperty_FillVec3dGroup( &pDescriptor[0], Name, &Center,	OBJECT_POSITION_FIELD  );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONX_FIELD );
 	if( Name == NULL )
-		return(JE_FALSE );
-	jeProperty_FillFloat( &pDescriptor[1], Name, Center.X,	OBJECT_POSITION_FIELDX, -FLT_MAX, FLT_MAX, 1.0f );
-	jeRam_Free( Name );
+		return(GR_FALSE );
+	grProperty_FillFloat( &pDescriptor[1], Name, Center.X,	OBJECT_POSITION_FIELDX, -FLT_MAX, FLT_MAX, 1.0f );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONY_FIELD );
 	if( Name == NULL )
-		return(JE_FALSE );
-	jeProperty_FillFloat( &pDescriptor[2], Name, Center.Y,	OBJECT_POSITION_FIELDY, -FLT_MAX, FLT_MAX, 1.0f );
-	jeRam_Free( Name );
+		return(GR_FALSE );
+	grProperty_FillFloat( &pDescriptor[2], Name, Center.Y,	OBJECT_POSITION_FIELDY, -FLT_MAX, FLT_MAX, 1.0f );
+	grRam_Free( Name );
 
 	Name = Util_LoadLocalRcString( IDS_POSITIONZ_FIELD );
 	if( Name == NULL )
-		return(JE_FALSE );
-	jeProperty_FillFloat( &pDescriptor[3], Name, Center.Z,	OBJECT_POSITION_FIELDZ, -FLT_MAX, FLT_MAX, 1.0f );
-	jeRam_Free( Name );
+		return(GR_FALSE );
+	grProperty_FillFloat( &pDescriptor[3], Name, Center.Z,	OBJECT_POSITION_FIELDZ, -FLT_MAX, FLT_MAX, 1.0f );
+	grRam_Free( Name );
 
-	jeProperty_FillGroupEnd( &pDescriptor[4], OBJECT_POSITION_FIELD_END );
-	return( JE_TRUE );
+	grProperty_FillGroupEnd( &pDescriptor[4], OBJECT_POSITION_FIELD_END );
+	return( GR_TRUE );
 }
 
-static jeProperty_List * Select_AppendDescriptorArray(  Level * pLevel, jeProperty_List * pArray )
+static grProperty_List * Select_AppendDescriptorArray(  Level * pLevel, grProperty_List * pArray )
 {
-	jeProperty_List * pNewArray;
-	jeProperty * foundDescriptor;
-	jeProperty * pDescriptor;
-	jeProperty * pNewDescriptor;
+	grProperty_List * pNewArray;
+	grProperty * foundDescriptor;
+	grProperty * pDescriptor;
+	grProperty * pNewDescriptor;
 	int	CurDescriptor = 0;
 	int i;
 
 
-	pNewArray = jeProperty_ListCreate( pArray->jePropertyN +6  );
+	pNewArray = grProperty_ListCreate( pArray->grPropertyN +6  );
 	if( pNewArray == NULL )
 		return( NULL );
 
-	foundDescriptor = jeProperty_ListFindByDataId( pArray, OBJECT_NAME_FIELD );
-	pDescriptor = pArray->pjeProperty;
-	pNewDescriptor = pNewArray->pjeProperty;
+	foundDescriptor = grProperty_ListFindByDataId( pArray, OBJECT_NAME_FIELD );
+	pDescriptor = pArray->pgrProperty;
+	pNewDescriptor = pNewArray->pgrProperty;
 	if( foundDescriptor != NULL )
 	{
 		pNewDescriptor[CurDescriptor] = *foundDescriptor;
@@ -1335,7 +1335,7 @@ static jeProperty_List * Select_AppendDescriptorArray(  Level * pLevel, jeProper
 	if( Select_FillPositionDescriptor( pLevel, &pNewDescriptor[CurDescriptor] ) )
 		CurDescriptor += 5;
 #pragma message ("Later add selection size and maybe rotation here" )
-	for( i = 0 ; i < pArray->jePropertyN ; i++ )
+	for( i = 0 ; i < pArray->grPropertyN ; i++ )
 	{
 		if( ( pDescriptor[i].DataId == OBJECT_NAME_FIELD ) ||
 			( pDescriptor[i].DataId == OBJECT_POSITION_FIELD ) ||
@@ -1349,23 +1349,23 @@ static jeProperty_List * Select_AppendDescriptorArray(  Level * pLevel, jeProper
 		if( pDescriptor[i].FieldName  != NULL )
 			pNewDescriptor[CurDescriptor].FieldName = Util_StrDup( pDescriptor[i].FieldName );
 		CurDescriptor++;
-		assert( CurDescriptor <= pNewArray->jePropertyN );
+		assert( CurDescriptor <= pNewArray->grPropertyN );
 	}
-	pNewArray->jePropertyN = CurDescriptor;
+	pNewArray->grPropertyN = CurDescriptor;
 	return( pNewArray );
 }
 
-jeProperty_List * Select_BuildDescriptor( Level * pLevel )
+grProperty_List * Select_BuildDescriptor( Level * pLevel )
 {
 	LEVEL_SEL SelType;
-	jeProperty_List * pArray = NULL;
-	jeProperty_List * pArray2 = NULL;
-	jeProperty_List * pTempArray = NULL;
+	grProperty_List * pArray = NULL;
+	grProperty_List * pArray2 = NULL;
+	grProperty_List * pTempArray = NULL;
 	ObjectList		* pSelList;
 	Object			* pObject;
 	ObjectIterator    Iterator;
-	int				  bSameType = JE_FALSE;
-	jeProperty * foundDescriptor;
+	int				  bSameType = GR_FALSE;
+	grProperty * foundDescriptor;
 
 	SelType = Level_GetSelType( pLevel ) ;
 	pSelList = Level_GetSelList( pLevel );
@@ -1392,7 +1392,7 @@ jeProperty_List * Select_BuildDescriptor( Level * pLevel )
 		)
 	{
 		if( !(SelType & LEVEL_SELMANY )   )
-			bSameType = JE_TRUE;
+			bSameType = GR_TRUE;
 		pObject = ObjectList_GetFirst( pSelList, &Iterator );
 		pArray = Object_BuildDescriptor( pObject );
 		if( pArray == NULL )
@@ -1404,11 +1404,11 @@ jeProperty_List * Select_BuildDescriptor( Level * pLevel )
 			pArray2 = Object_BuildDescriptor( pObject );
 			if( pArray2 == NULL )
 				goto SBD_ERROR;
-			pTempArray  = jeProperty_ListMerge( pArray, pArray2, bSameType );
+			pTempArray  = grProperty_ListMerge( pArray, pArray2, bSameType );
 			if( pTempArray == NULL )
 				goto SBD_ERROR;
-			jeProperty_ListDestroy( &pArray );
-			jeProperty_ListDestroy( &pArray2 );
+			grProperty_ListDestroy( &pArray );
+			grProperty_ListDestroy( &pArray2 );
 			pArray = pTempArray;
 			pObject = ObjectList_GetNext( pSelList, &Iterator );
 		}
@@ -1420,17 +1420,17 @@ jeProperty_List * Select_BuildDescriptor( Level * pLevel )
 		return( NULL );
 	if( Level_IsSnapGrid( pLevel ) )
 	{
-		foundDescriptor = jeProperty_ListFindByDataId( pArray, OBJECT_POSITION_FIELDX );
+		foundDescriptor = grProperty_ListFindByDataId( pArray, OBJECT_POSITION_FIELDX );
 		if( foundDescriptor != NULL )
 		{
 			foundDescriptor->TypeInfo.NumInfo.Increment = (float)Level_GetGridSnapSize( pLevel );
 		}
-		foundDescriptor = jeProperty_ListFindByDataId( pArray, OBJECT_POSITION_FIELDY );
+		foundDescriptor = grProperty_ListFindByDataId( pArray, OBJECT_POSITION_FIELDY );
 		if( foundDescriptor != NULL )
 		{
 			foundDescriptor->TypeInfo.NumInfo.Increment = (float)Level_GetGridSnapSize( pLevel );
 		}
-		foundDescriptor = jeProperty_ListFindByDataId( pArray, OBJECT_POSITION_FIELDZ );
+		foundDescriptor = grProperty_ListFindByDataId( pArray, OBJECT_POSITION_FIELDZ );
 		if( foundDescriptor != NULL )
 		{
 			foundDescriptor->TypeInfo.NumInfo.Increment = (float)Level_GetGridSnapSize( pLevel );
@@ -1440,9 +1440,9 @@ jeProperty_List * Select_BuildDescriptor( Level * pLevel )
 	return( pArray );
 SBD_ERROR:
 	if( pArray )
-		jeProperty_ListDestroy( &pArray );
+		grProperty_ListDestroy( &pArray );
 	if( pArray2 )
-		jeProperty_ListDestroy( &pArray2 );
+		grProperty_ListDestroy( &pArray2 );
 	return NULL;
 
 }
@@ -1455,11 +1455,11 @@ typedef struct tagSelectAllStruct
 {
 	int32       Mask;
 	Level *     pLevel;
-	jeBoolean   bSelChanged;
+	grBoolean   bSelChanged;
 } SelectAllStruct;
 
 
-static jeBoolean Select_AllCB( Object *pObject, void * pVoid ) 
+static grBoolean Select_AllCB( Object *pObject, void * pVoid ) 
 {
 	SelectAllStruct *pSelectAllInfo = (SelectAllStruct*)pVoid;
 	Group * pGroup;
@@ -1468,24 +1468,24 @@ static jeBoolean Select_AllCB( Object *pObject, void * pVoid )
 	assert( pVoid );
 
 	if( !(Object_GetKind( pObject ) & pSelectAllInfo->Mask) ) 
-		return(JE_TRUE );
+		return(GR_TRUE );
 
 	pGroup = Object_IsMemberOfLockedGroup(pObject);
 	if( pGroup != NULL )
 	{
 		Level_SelectGroup( pSelectAllInfo->pLevel, pGroup, LEVEL_SELECT );
-		pSelectAllInfo->bSelChanged = JE_TRUE;
+		pSelectAllInfo->bSelChanged = GR_TRUE;
 	}
 	else
 	{
 		Level_SelectObject( pSelectAllInfo->pLevel, pObject , LEVEL_SELECT ) ;
-		pSelectAllInfo->bSelChanged = JE_TRUE;
+		pSelectAllInfo->bSelChanged = GR_TRUE;
 	}
 
-	return( JE_TRUE );
+	return( GR_TRUE );
 }
 
-jeBoolean Select_All( Level * pLevel, int32 Mask, jeExtBox *Bounds )
+grBoolean Select_All( Level * pLevel, int32 Mask, grExtBox *Bounds )
 {
 	SelectAllStruct SelectAllInfo;
 
@@ -1494,7 +1494,7 @@ jeBoolean Select_All( Level * pLevel, int32 Mask, jeExtBox *Bounds )
 
 	SelectAllInfo.Mask           = Mask;
 	SelectAllInfo.pLevel         = pLevel;
-	SelectAllInfo.bSelChanged    = JE_FALSE;
+	SelectAllInfo.bSelChanged    = GR_FALSE;
 
 	Level_EnumObjects( pLevel, &SelectAllInfo, Select_AllCB ) ;
 	*Bounds = *Level_GetSelDrawBounds(  pLevel );
@@ -1502,7 +1502,7 @@ jeBoolean Select_All( Level * pLevel, int32 Mask, jeExtBox *Bounds )
 }
 
 
-jeBoolean Select_KindsSelectedCB(Object *pObject, void * pVoid)
+grBoolean Select_KindsSelectedCB(Object *pObject, void * pVoid)
 {
 	assert(pObject);
 
@@ -1515,7 +1515,7 @@ jeBoolean Select_KindsSelectedCB(Object *pObject, void * pVoid)
 
 		iMask = (iMask | iKind);
 	}
-	return (JE_TRUE);
+	return (GR_TRUE);
 }
 
 

@@ -29,49 +29,49 @@
 extern "C" {
 #endif
 
-typedef struct jeWavelet jeWavelet;
-typedef struct jeWavelet_Options jeWavelet_Options;
+typedef struct grWavelet grWavelet;
+typedef struct grWavelet_Options grWavelet_Options;
 
-struct jeWavelet_Options
+struct grWavelet_Options
 {
 	int transformN;
 	int coderN;
-	jeBoolean transposeLHs;
+	grBoolean transposeLHs;
 	float ratio;
-	jeBoolean tblock;
+	grBoolean tblock;
 };
 
-jeWavelet * jeWavelet_Create(const jeBitmap_Info * Info,const void * Bits,const jeBitmap * Bmp,
-									const jeWavelet_Options * opts);
-void		jeWavelet_CreateRef(jeWavelet * w);
-jeWavelet * jeWavelet_CreateEmpty(int width,int height);
-jeWavelet * jeWavelet_CreateFromFile(jeBitmap * Bmp,jeVFile * File);
-jeWavelet * jeWavelet_CreateFromBitmap(const jeBitmap * Bmp,const jeWavelet_Options * opts);
-void 		jeWavelet_Destroy(jeWavelet ** pW);
+grWavelet * grWavelet_Create(const grBitmap_Info * Info,const void * Bits,const grBitmap * Bmp,
+									const grWavelet_Options * opts);
+void		grWavelet_CreateRef(grWavelet * w);
+grWavelet * grWavelet_CreateEmpty(int width,int height);
+grWavelet * grWavelet_CreateFromFile(grBitmap * Bmp,grVFile * File);
+grWavelet * grWavelet_CreateFromBitmap(const grBitmap * Bmp,const grWavelet_Options * opts);
+void 		grWavelet_Destroy(grWavelet ** pW);
 
-void		jeWavelet_GetInfo( const jeWavelet *w, jeBitmap_Info * Info);
-jeBoolean	jeWavelet_HasAlpha(const jeWavelet *w);
+void		grWavelet_GetInfo( const grWavelet *w, grBitmap_Info * Info);
+grBoolean	grWavelet_HasAlpha(const grWavelet *w);
 
-jeBoolean	jeWavelet_Compress(jeWavelet * w,const jeBitmap_Info * Info,const void * Bits,
-									const jeBitmap * Bmp,const jeWavelet_Options * opts);
-jeBoolean	jeWavelet_WriteToFile(const jeWavelet * W,jeVFile * File);
+grBoolean	grWavelet_Compress(grWavelet * w,const grBitmap_Info * Info,const void * Bits,
+									const grBitmap * Bmp,const grWavelet_Options * opts);
+grBoolean	grWavelet_WriteToFile(const grWavelet * W,grVFile * File);
 
-jeBoolean	jeWavelet_CanDecompressMips(const jeWavelet *w,const jeBitmap_Info * ToInfo );
-jeBoolean	jeWavelet_Decompress(const jeWavelet * w,const jeBitmap_Info * Info,void * Bits);
-jeBoolean	jeWavelet_DecompressMips(const jeWavelet * W,const jeBitmap_Info ** InfoArray,const void ** BitsArray,uint32 MipLow,uint32 MipHigh);
+grBoolean	grWavelet_CanDecompressMips(const grWavelet *w,const grBitmap_Info * ToInfo );
+grBoolean	grWavelet_Decompress(const grWavelet * w,const grBitmap_Info * Info,void * Bits);
+grBoolean	grWavelet_DecompressMips(const grWavelet * W,const grBitmap_Info ** InfoArray,const void ** BitsArray,uint32 MipLow,uint32 MipHigh);
 
-jeBoolean	jeWavelet_SetOptions(jeWavelet_Options *opts,int clevel,jeBoolean NeedMips,jeFloat ratio);
+grBoolean	grWavelet_SetOptions(grWavelet_Options *opts,int clevel,grBoolean NeedMips,grFloat ratio);
 
-jeBoolean	jeWavelet_SetExpertOptions(jeWavelet_Options *opts,jeFloat Ratio,int TransformN,int CoderN,jeBoolean TransposeLHs,jeBoolean Block);
+grBoolean	grWavelet_SetExpertOptions(grWavelet_Options *opts,grFloat Ratio,int TransformN,int CoderN,grBoolean TransposeLHs,grBoolean Block);
 
-const char *jeWavelet_GetOptionsDescription(void);
+const char *grWavelet_GetOptionsDescription(void);
 
-jeBoolean	jeWavelet_ShouldDecompressStreaming(const jeWavelet * W);
+grBoolean	grWavelet_ShouldDecompressStreaming(const grWavelet * W);
 
-void		jeWavelet_CheckStreaming(const jeWavelet * W);
-void		jeWavelet_WaitStreaming( const jeWavelet * W);
+void		grWavelet_CheckStreaming(const grWavelet * W);
+void		grWavelet_WaitStreaming( const grWavelet * W);
 
-jeThreadQueue_Job * jeWavelet_StreamingJob(const jeWavelet *W);
+grThreadQueue_Job * grWavelet_StreamingJob(const grWavelet *W);
 
 #ifdef __cplusplus
 }

@@ -23,7 +23,7 @@
 #ifndef TERRAINLIST_H
 #define TERRAINLIST_H
 
-#include "jeList.h"
+#include "grList.h"
 #include "Symbol.h"
 #include "TerrnObj.h"
 
@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-typedef jeBoolean (*TerrainListCB)( Terrain * pTerrain, void * pVoid ) ;
+typedef grBoolean (*TerrainListCB)( Terrain * pTerrain, void * pVoid ) ;
 
 typedef List TerrainList ;
 typedef ListIterator TerrainIterator ;

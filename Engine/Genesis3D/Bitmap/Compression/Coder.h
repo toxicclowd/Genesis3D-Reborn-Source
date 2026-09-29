@@ -38,7 +38,7 @@ typedef struct coderParams
 	int nextmask,bitshift;
 } coderParams;
 
-typedef jeBoolean (*coderInit) (coder *);
+typedef grBoolean (*coderInit) (coder *);
 typedef void (*coderFree) (coder *);
 typedef void (*coderFlush) (coder *);
 typedef void (*coderEncodeBandBP) (coderParams *p);
@@ -58,7 +58,7 @@ struct coder
 	uint32 wStopLen;
 };
 
-/** coder settings are passed via stopLen and coderN in the jeWavelet structures **/
+/** coder settings are passed via stopLen and coderN in the grWavelet structures **/
 
 extern coder * coderCreateWrite(int coderN,uint8 * compArray);
 extern coder * coderCreateRead( int coderN,uint8 * compArray,int stopLen);
@@ -74,7 +74,7 @@ extern void coderDestroy(coder *);
 extern void coderEncodeDPCM(coder *c,int *plane,int width,int height,int rowpad);
 extern void coderDecodeDPCM(coder *c,int *plane,int width,int height,int rowpad);
 
-extern void coderCodeDPCM1d(coder *c,int *plane,int width,jeBoolean Decode);
+extern void coderCodeDPCM1d(coder *c,int *plane,int width,grBoolean Decode);
 
 #define CODE_MAX_BPN			(24)
 #define CODE_MAX_VAL			(1<<CODE_MAX_BPN)

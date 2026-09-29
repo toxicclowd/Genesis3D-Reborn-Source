@@ -21,19 +21,19 @@
 #include	"symbol.h"
 #include	"eclipsenames.h"
 
-static	jeSymbol *JETCC AcquireSymbol(jeSymbol_Table *ST, jeSymbol *Qualifier, const char *Name, jeSymbol_Type Type)
+static	grSymbol *GRCC AcquireSymbol(grSymbol_Table *ST, grSymbol *Qualifier, const char *Name, grSymbol_Type Type)
 {
-	jeSymbol *	Symbol;
+	grSymbol *	Symbol;
 
-	Symbol = jeSymbol_TableFindSymbol(ST, Qualifier, Name);
+	Symbol = grSymbol_TableFindSymbol(ST, Qualifier, Name);
 	if	(Symbol)
 		return Symbol;
 
-	Symbol = jeSymbol_Create(ST, Qualifier, Name, Type);
+	Symbol = grSymbol_Create(ST, Qualifier, Name, Type);
 	if	(Symbol)
 	{
-		jeSymbol_Destroy(&Symbol);
-		Symbol = jeSymbol_TableFindSymbol(ST, Qualifier, Name);
+		grSymbol_Destroy(&Symbol);
+		Symbol = grSymbol_TableFindSymbol(ST, Qualifier, Name);
 	}
 	return Symbol;
 }
@@ -46,19 +46,19 @@ static	const char *Names[] =
 	"TypeDefinitions"
 };
 
-static	jeSymbol_Type Types[] =
+static	grSymbol_Type Types[] =
 {
-	JE_SYMBOL_TYPE_LIST,
-	JE_SYMBOL_TYPE_VOID,
-	JE_SYMBOL_TYPE_VOID,
-	JE_SYMBOL_TYPE_LIST,
+	GR_SYMBOL_TYPE_LIST,
+	GR_SYMBOL_TYPE_VOID,
+	GR_SYMBOL_TYPE_VOID,
+	GR_SYMBOL_TYPE_LIST,
 };
 
-jeSymbol *jeEclipseNames(jeSymbol_Table *ST, jeEclipseNames_Id Id)
+grSymbol *grEclipseNames(grSymbol_Table *ST, grEclipseNames_Id Id)
 {
-	jeSymbol *	Qualifier;
+	grSymbol *	Qualifier;
 
-	Qualifier = AcquireSymbol(ST, NULL, "Eclipse", JE_SYMBOL_TYPE_VOID);
+	Qualifier = AcquireSymbol(ST, NULL, "Eclipse", GR_SYMBOL_TYPE_VOID);
 	if	(!Qualifier)
 		return NULL;
 

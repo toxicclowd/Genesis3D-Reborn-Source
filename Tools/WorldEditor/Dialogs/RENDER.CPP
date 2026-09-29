@@ -56,7 +56,7 @@ CRender::CRender(CWnd* pParent /*=NULL*/)
 	//}}AFX_DATA_INIT
 }
 
-void CRender::SetData( const jeBSP_DebugInfo * pDebugInfo )
+void CRender::SetData( const grBSP_DebugInfo * pDebugInfo )
 {
 	UpdateData( true );
 	m_Areas =		pDebugInfo->NumAreas;
@@ -213,7 +213,7 @@ void CRender::OnUpdateall()
 BOOL CRender::OnCommand(WPARAM wParam, LPARAM lParam) 
 {
 	if( wParam == 1 && lParam == 0 )
-		return(JE_TRUE );
+		return(GR_TRUE );
 	
 	return CDialog::OnCommand(wParam, lParam);
 }

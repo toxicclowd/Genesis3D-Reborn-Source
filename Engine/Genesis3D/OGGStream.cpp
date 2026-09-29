@@ -26,7 +26,7 @@
 static size_t vorbis_read_func(void *ptr, size_t size, size_t nmemb, void *datasource)
 {
 	int32					pos, newpos;
-	jeVFile					*File = (jeVFile*)datasource;
+	grVFile					*File = (grVFile*)datasource;
 	size_t					bytestoread;
 
 	if (!size || !nmemb)
@@ -34,9 +34,9 @@ static size_t vorbis_read_func(void *ptr, size_t size, size_t nmemb, void *datas
 
 	bytestoread = size * nmemb;
 
-	jeVFile_Tell(File, &pos);
-	jeVFile_Read(File, ptr, bytestoread);
-	jeVFile_Tell(File, &newpos);
+	grVFile_Tell(File, &pos);
+	grVFile_Read(File, ptr, bytestoread);
+	grVFile_Tell(File, &newpos);
 
 	if ((newpos - pos) == bytestoread)
 		return bytestoread;
@@ -46,73 +46,73 @@ static size_t vorbis_read_func(void *ptr, size_t size, size_t nmemb, void *datas
 
 static int vorbis_seek_func(void *datasource, ogg_int64_t offset, int whence)
 {
-	jeVFile						*File = (jeVFile*)datasource;
-	jeVFile_Whence				w;
+	grVFile						*File = (grVFile*)datasource;
+	grVFile_Whence				w;
 
 	switch (whence)
 	{
 	case SEEK_SET:
 		{
-			w = JE_VFILE_SEEKSET;
+			w = GR_VFILE_SEEKSET;
 			break;
 		}
 	case SEEK_CUR:
 		{
-			w = JE_VFILE_SEEKCUR;
+			w = GR_VFILE_SEEKCUR;
 			break;
 		}
 	case SEEK_END:
 		{
-			w = JE_VFILE_SEEKEND;
+			w = GR_VFILE_SEEKEND;
 			break;
 		}
 	default:
 		return 0;
 	}
 
-	return jeVFile_Seek(File, (int)offset, w);
+	return grVFile_Seek(File, (int)offset, w);
 }
 
 static int vorbis_close_func(void *datasource)
 {
-	jeVFile					*File = (jeVFile*)datasource;
+	grVFile					*File = (grVFile*)datasource;
 
-	jeVFile_Close(File);
+	grVFile_Close(File);
 	return 0;
 }
 
 static long vorbis_tell_func(void *datasource)
 {
-	jeVFile					*File = (jeVFile*)datasource;
+	grVFile					*File = (grVFile*)datasource;
 	int32					t;
 
-	jeVFile_Tell(File, &t);
+	grVFile_Tell(File, &t);
 	return t;
 }
 
-jeOGGStream *jeOGGStream_Create(jeVFile *FS, const char *filename)
+grOGGStream *grOGGStream_Create(grVFile *FS, const char *filename)
 {
-	jeOGGStream				*ogg = NULL;
+	grOGGStream				*ogg = NULL;
 	ov_callbacks			ov;
 
-	ogg = (jeOGGStream*)JE_RAM_ALLOCATE_STRUCT(jeOGGStream);
+	ogg = (grOGGStream*)GR_RAM_ALLOCATE_STRUCT(grOGGStream);
 	if (!ogg)
 		return NULL;
 
-	memset(ogg, 0, sizeof(jeOGGStream));
+	memset(ogg, 0, sizeof(grOGGStream));
 
 	if (FS != NULL)
 	{
-		ogg->File = jeVFile_Open(FS, filename, JE_VFILE_OPEN_READONLY);
+		ogg->File = grVFile_Open(FS, filename, GR_VFILE_OPEN_READONLY);
 	}
 	else
 	{
-		ogg->File = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_DOS, filename, NULL, JE_VFILE_OPEN_READONLY);
+		ogg->File = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS, filename, NULL, GR_VFILE_OPEN_READONLY);
 	}
 
 	if (!ogg->File)
 	{
-		jeRam_Free(ogg);
+		grRam_Free(ogg);
 		ogg = NULL;
 		return NULL;
 	}
@@ -124,10 +124,10 @@ jeOGGStream *jeOGGStream_Create(jeVFile *FS, const char *filename)
 
 	if (ov_open_callbacks(ogg->File, &ogg->VorbisFile, NULL, 0, ov) < 0)
 	{
-		jeVFile_Close(ogg->File);
+		grVFile_Close(ogg->File);
 		ogg->File = NULL;
 
-		jeRam_Free(ogg);
+		grRam_Free(ogg);
 		ogg = NULL;
 		
 		return NULL;
@@ -149,25 +149,25 @@ jeOGGStream *jeOGGStream_Create(jeVFile *FS, const char *filename)
 	ogg->BufferSize = 0;
 	//strcpy(ogg->FileName, filename);
 	strcpy_s(ogg->FileName, filename);
-	ogg->IsEOF = JE_FALSE;
+	ogg->IsEOF = GR_FALSE;
 	
 	return ogg;
 }
 
-void jeOGGStream_Destroy(jeOGGStream **OGG)
+void grOGGStream_Destroy(grOGGStream **OGG)
 {
 	assert(OGG != NULL);
 
 	ov_clear(&(*OGG)->VorbisFile);
 
 	if ((*OGG)->File)
-		jeVFile_Close((*OGG)->File);
+		grVFile_Close((*OGG)->File);
 
-	jeRam_Free((*OGG));
+	grRam_Free((*OGG));
 	(*OGG) = NULL;
 }
 
-uint32 jeOGGStream_Read(jeOGGStream *OGG, char *buffer, uint32 size)
+uint32 grOGGStream_Read(grOGGStream *OGG, char *buffer, uint32 size)
 {
 	char					*pBuffer = buffer;
 	uint32					bytes_read = 0;
@@ -181,7 +181,7 @@ uint32 jeOGGStream_Read(jeOGGStream *OGG, char *buffer, uint32 size)
 
 		ret = ov_read(&OGG->VorbisFile, pBuffer, size - bytes_read, 0, 2, 1, &section);
 		if (ret == 0 || section != 0)
-			OGG->IsEOF = JE_TRUE;
+			OGG->IsEOF = GR_TRUE;
 		else if (ret < 0)
 			return 0;
 		
@@ -192,22 +192,22 @@ uint32 jeOGGStream_Read(jeOGGStream *OGG, char *buffer, uint32 size)
 	return bytes_read;
 }
 
-void jeOGGStream_Reset(jeOGGStream *OGG)
+void grOGGStream_Reset(grOGGStream *OGG)
 {
 	assert(OGG != NULL);
 
-	OGG->IsEOF = JE_FALSE;
+	OGG->IsEOF = GR_FALSE;
 	ov_pcm_seek(&OGG->VorbisFile, 0);
 }
 
-uint32 jeOGGStream_GetSize(jeOGGStream *OGG)
+uint32 grOGGStream_GetSize(grOGGStream *OGG)
 {
 	assert(OGG != NULL);
 
 	return OGG->NumSamples * OGG->Format.nChannels * OGG->Format.wBitsPerSample / 8;
 }
 
-jeBoolean jeOGGStream_IsEOF(jeOGGStream *OGG)
+grBoolean grOGGStream_IsEOF(grOGGStream *OGG)
 {
 	assert(OGG != NULL);
 

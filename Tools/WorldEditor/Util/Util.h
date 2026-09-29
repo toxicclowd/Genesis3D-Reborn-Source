@@ -44,48 +44,48 @@ void		Util_Init( unsigned long hStringResources ) ;
 char *		Util_GetRcString( char * psz, const unsigned int idResource ) ;
 char *		Util_LoadLocalRcString(unsigned int resid);  //allocates memory and fills string
 char *		Util_LoadText( unsigned int resid );
-jeBoolean	Util_IsKeyDown( int vKey ) ;
+grBoolean	Util_IsKeyDown( int vKey ) ;
 char *		Util_StrDup( const char * const psz ) ;
 int			Util_GetAppPath( char *Buf, int BufSize );
 float		Util_GetTime();
 
 // GDI THIN WRAPS
-jeBoolean	Util_Polyline( int32 hDC, Point * pPoints, int32 nPoints ) ;
+grBoolean	Util_Polyline( int32 hDC, Point * pPoints, int32 nPoints ) ;
 
 // MATH AND SUCH
-void		Util_ExtBox_Union( const jeExtBox *B1, const jeExtBox *B2, jeExtBox *Result ) ;
-void		Util_geExtBox_ExtendToEnclose( jeExtBox *B, const jeVec3d *Point ) ;
-jeFloat		Util_geExtBox_GetExtent( const jeExtBox *B, int32 nElement ) ;
-void		Util_geExtBox_InitFromTwoPoints( jeExtBox * B, const jeVec3d * p1, const jeVec3d * p2 ) ;
-jeBoolean	Util_geExtBox_Intersection( const jeExtBox *B1, const jeExtBox *B2, jeExtBox *Result	);
-void		Util_ExtBox_SetInvalid( jeExtBox *B ) ;
-void		Util_ExtBox_Transform( const jeExtBox *B, const jeXForm3d *XForm, jeExtBox *Result ) ;
-void		Util_ExtBox_TransformJ( const jeExtBox *B, const jeXForm3d *XForm, jeExtBox *Result ) ;
-jeFloat		Util_log2( jeFloat f ) ;
-jeFloat		Util_NearestLowerPowerOf2( const jeFloat fVal ) ;
+void		Util_ExtBox_Union( const grExtBox *B1, const grExtBox *B2, grExtBox *Result ) ;
+void		Util_geExtBox_ExtendToEnclose( grExtBox *B, const grVec3d *Point ) ;
+grFloat		Util_geExtBox_GetExtent( const grExtBox *B, int32 nElement ) ;
+void		Util_geExtBox_InitFromTwoPoints( grExtBox * B, const grVec3d * p1, const grVec3d * p2 ) ;
+grBoolean	Util_geExtBox_Intersection( const grExtBox *B1, const grExtBox *B2, grExtBox *Result	);
+void		Util_ExtBox_SetInvalid( grExtBox *B ) ;
+void		Util_ExtBox_Transform( const grExtBox *B, const grXForm3d *XForm, grExtBox *Result ) ;
+void		Util_ExtBox_TransformJ( const grExtBox *B, const grXForm3d *XForm, grExtBox *Result ) ;
+grFloat		Util_log2( grFloat f ) ;
+grFloat		Util_NearestLowerPowerOf2( const grFloat fVal ) ;
 
 int32		Util_Time( void ) ;
 
-jeFloat		Util_PointToLineDistanceSquared( const Point * pL1, const Point * pL2, const Point * pPoint ) ;
-jeFloat		Util_PointDistanceSquared( const Point * pL1, const Point * pL2 ) ;
+grFloat		Util_PointToLineDistanceSquared( const Point * pL1, const Point * pL2, const Point * pPoint ) ;
+grFloat		Util_PointDistanceSquared( const Point * pL1, const Point * pL2 ) ;
 
 // FILE STUFF
 void		Util_DriveAndPathOnly( char * pszPath ) ;
 void		Util_NameOnly( char * pszPath ) ;
 void		Util_NewExtension(char * pszString, const char * pszNewExt) ;
 void		Util_StripTrailingBackslash(char * pszString ) ;
-jeBoolean	Util_geVFile_ReadString( jeVFile * pFile, char * pszBuffer, const int32 nMaxChars ) ;
+grBoolean	Util_geVFile_ReadString( grVFile * pFile, char * pszBuffer, const int32 nMaxChars ) ;
 
-__inline jeBoolean IsFloatZero( jeFloat f )
+__inline grBoolean IsFloatZero( grFloat f )
 {
 	if( fabs( f ) < FLOAT_NEAR_ZERO )
-		return JE_TRUE ;
+		return GR_TRUE ;
 
-	return JE_FALSE ;	 
+	return GR_FALSE ;	 
 }
-__inline jeFloat Util_Round( jeFloat f )
+__inline grFloat Util_Round( grFloat f )
 {
-	return (jeFloat)floor((f)+0.5f) ;
+	return (grFloat)floor((f)+0.5f) ;
 }
 
 #ifdef __cplusplus

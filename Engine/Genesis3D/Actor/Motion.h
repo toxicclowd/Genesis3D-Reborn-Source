@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_MOTION_H
-#define JE_MOTION_H
+#ifndef GR_MOTION_H
+#define GR_MOTION_H
 
 /*	motion
 
@@ -36,139 +36,139 @@
 extern "C" {
 #endif
 
-// JET_PUBLIC_APIS
-typedef struct jeMotion jeMotion;
+// GR_PUBLIC_APIS
+typedef struct grMotion grMotion;
 
-JETAPI jeMotion *JETCC jeMotion_Create(jeBoolean ManageNames);
+GRAPI grMotion *GRCC grMotion_Create(grBoolean ManageNames);
 
-JETAPI void JETCC jeMotion_Destroy(jeMotion **PM);
+GRAPI void GRCC grMotion_Destroy(grMotion **PM);
 
-// JET_PRIVATE_APIS
+// GR_PRIVATE_APIS
 
-JETAPI jeBoolean JETCC jeMotion_IsValid(const jeMotion *M);
+GRAPI grBoolean GRCC grMotion_IsValid(const grMotion *M);
 
 	// AddPath adds a reference of P to the motion M.  Ownership is shared - The caller must destroy P.
-JETAPI jeBoolean JETCC jeMotion_AddPath(jeMotion *M, jePath *P,const char *Name,int *Index);
+GRAPI grBoolean GRCC grMotion_AddPath(grMotion *M, grPath *P,const char *Name,int *Index);
 
-JETAPI jeBoolean JETCC jeMotion_HasNames(const jeMotion *M);
-JETAPI int32 JETCC jeMotion_GetNameChecksum(const jeMotion *M);
+GRAPI grBoolean GRCC grMotion_HasNames(const grMotion *M);
+GRAPI int32 GRCC grMotion_GetNameChecksum(const grMotion *M);
 
-JETAPI jeBoolean JETCC jeMotion_RemoveNames(jeMotion *M);
+GRAPI grBoolean GRCC grMotion_RemoveNames(grMotion *M);
 
-JETAPI void JETCC jeMotion_SampleChannels(const jeMotion *M, int PathIndex, jeFloat Time, jeQuaternion *Rotation, jeVec3d *Translation);
-JETAPI jeBoolean JETCC jeMotion_SampleChannelsNamed(const jeMotion *M, const char *PathName, jeFloat Time, jeQuaternion *Rotation, jeVec3d *Translation);
+GRAPI void GRCC grMotion_SampleChannels(const grMotion *M, int PathIndex, grFloat Time, grQuaternion *Rotation, grVec3d *Translation);
+GRAPI grBoolean GRCC grMotion_SampleChannelsNamed(const grMotion *M, const char *PathName, grFloat Time, grQuaternion *Rotation, grVec3d *Translation);
 
-JETAPI void JETCC jeMotion_Sample(const jeMotion *M, int PathIndex, jeFloat Time, jeXForm3d *Transform);
-JETAPI jeBoolean JETCC jeMotion_SampleNamed(const jeMotion *M, const char *PathName, jeFloat Time, jeXForm3d *Transform);
+GRAPI void GRCC grMotion_Sample(const grMotion *M, int PathIndex, grFloat Time, grXForm3d *Transform);
+GRAPI grBoolean GRCC grMotion_SampleNamed(const grMotion *M, const char *PathName, grFloat Time, grXForm3d *Transform);
 
 	// the returned Paths from _Get functions should not be destroyed.  
-	// if ownership is desired, call jePath_CreateRef() to create another owner. 
+	// if ownership is desired, call grPath_CreateRef() to create another owner. 
 	// an 'owner' has access to the object regardless of the number of other owners, and 
 	// an owner must call the object's destroy method to relinquish ownership
-JETAPI jePath *JETCC jeMotion_GetPathNamed(const jeMotion *M,const char *Name);
-JETAPI const char *JETCC jeMotion_GetNameOfPath(const jeMotion *M, int Index);
+GRAPI grPath *GRCC grMotion_GetPathNamed(const grMotion *M,const char *Name);
+GRAPI const char *GRCC grMotion_GetNameOfPath(const grMotion *M, int Index);
 
-// JET_PUBLIC_APIS
-JETAPI jePath *JETCC jeMotion_GetPath(const jeMotion *M,int Index);
-JETAPI int JETCC jeMotion_GetPathCount(const jeMotion *M);
+// GR_PUBLIC_APIS
+GRAPI grPath *GRCC grMotion_GetPath(const grMotion *M,int Index);
+GRAPI int GRCC grMotion_GetPathCount(const grMotion *M);
 
 
-JETAPI jeBoolean JETCC jeMotion_SetName(jeMotion *M, const char * Name);
-JETAPI const char *JETCC jeMotion_GetName(const jeMotion *M);
+GRAPI grBoolean GRCC grMotion_SetName(grMotion *M, const char * Name);
+GRAPI const char *GRCC grMotion_GetName(const grMotion *M);
 
-// JET_PRIVATE_APIS
+// GR_PRIVATE_APIS
 
 	// support for compound motions.  A motion can either have sub-motions, or be single motion.
 	// these functions support motions that have sub-motions.
-JETAPI int JETCC jeMotion_GetSubMotionCount(const jeMotion*M);
+GRAPI int GRCC grMotion_GetSubMotionCount(const grMotion*M);
 
 	// the returned motions from these _Get functions should not be destroyed.  
-	// if ownership is desired, call jeMotion_CreateRef() to create another owner. 
+	// if ownership is desired, call grMotion_CreateRef() to create another owner. 
 	// an 'owner' has access to the object regardless of the number of other owners, and 
 	// an owner must call the object's destroy method to relinquish ownership
-JETAPI jeMotion *JETCC jeMotion_GetSubMotion(const jeMotion *M,int Index);
-JETAPI jeMotion *JETCC jeMotion_GetSubMotionNamed(const jeMotion *M,const char *Name);
-JETAPI jeBoolean JETCC jeMotion_AddSubMotion(
-								jeMotion *ParentMotion,
-								jeFloat TimeScale,			// Scale factor for this submotion
-								jeFloat TimeOffset,			// Time in parent motion when submotion should start
-								jeMotion *SubMotion,
-								jeFloat StartTime,			// Blend start time (relative to submotion)
-								jeFloat StartMagnitude,		// Blend start magnitude (0..1)
-								jeFloat EndTime,			// Blend ending time (relative to submotion)
-								jeFloat EndMagnitude,		// Blend ending magnitude (0..1)
-								const jeXForm3d *Transform,	// Base transform to apply to this submotion
+GRAPI grMotion *GRCC grMotion_GetSubMotion(const grMotion *M,int Index);
+GRAPI grMotion *GRCC grMotion_GetSubMotionNamed(const grMotion *M,const char *Name);
+GRAPI grBoolean GRCC grMotion_AddSubMotion(
+								grMotion *ParentMotion,
+								grFloat TimeScale,			// Scale factor for this submotion
+								grFloat TimeOffset,			// Time in parent motion when submotion should start
+								grMotion *SubMotion,
+								grFloat StartTime,			// Blend start time (relative to submotion)
+								grFloat StartMagnitude,		// Blend start magnitude (0..1)
+								grFloat EndTime,			// Blend ending time (relative to submotion)
+								grFloat EndMagnitude,		// Blend ending magnitude (0..1)
+								const grXForm3d *Transform,	// Base transform to apply to this submotion
 								int *Index);				// returned motion index
 
-JETAPI jeMotion *JETCC  jeMotion_RemoveSubMotion(jeMotion *ParentMotion, int SubMotionIndex);
+GRAPI grMotion *GRCC  grMotion_RemoveSubMotion(grMotion *ParentMotion, int SubMotionIndex);
 
 // Get/Set submotion time offset.  The time offset is the offset into the 
 // compound (parent) motion at which the submotion should start.
-JETAPI jeFloat   JETCC  jeMotion_GetTimeOffset( const jeMotion *M,int SubMotionIndex );
-JETAPI jeBoolean  JETCC jeMotion_SetTimeOffset( jeMotion *M,int SubMotionIndex,jeFloat TimeOffset );
+GRAPI grFloat   GRCC  grMotion_GetTimeOffset( const grMotion *M,int SubMotionIndex );
+GRAPI grBoolean  GRCC grMotion_SetTimeOffset( grMotion *M,int SubMotionIndex,grFloat TimeOffset );
 
 // Get/Set submotion time scale.  Time scaling is applied to the submotion after the TimeOffset
 // is applied.  The formula is:  (CurrentTime - TimeOffset) * TimeScale
-JETAPI jeFloat   JETCC  jeMotion_GetTimeScale( const jeMotion *M,int SubMotionIndex );
-JETAPI jeBoolean  JETCC jeMotion_SetTimeScale( jeMotion *M,int SubMotionIndex,jeFloat TimeScale );
+GRAPI grFloat   GRCC  grMotion_GetTimeScale( const grMotion *M,int SubMotionIndex );
+GRAPI grBoolean  GRCC grMotion_SetTimeScale( grMotion *M,int SubMotionIndex,grFloat TimeScale );
 
 // Get blending amount for a particular submotion.  The Time parameter is parent-relative.
-JETAPI jeFloat    JETCC jeMotion_GetBlendAmount( const jeMotion *M, int SubMotionIndex, jeFloat Time);
+GRAPI grFloat    GRCC grMotion_GetBlendAmount( const grMotion *M, int SubMotionIndex, grFloat Time);
 
 // Get/Set blending path.  The keyframe times in the blend path are relative to the submotion.
-JETAPI jePath    *JETCC jeMotion_GetBlendPath( const jeMotion *M,int SubMotionIndex );
-JETAPI jeBoolean  JETCC jeMotion_SetBlendPath( jeMotion *M,int SubMotionIndex, jePath *Blend );
+GRAPI grPath    *GRCC grMotion_GetBlendPath( const grMotion *M,int SubMotionIndex );
+GRAPI grBoolean  GRCC grMotion_SetBlendPath( grMotion *M,int SubMotionIndex, grPath *Blend );
 
-JETAPI const jeXForm3d *JETCC jeMotion_GetBaseTransform( const jeMotion *M,int SubMotionIndex );
-JETAPI jeBoolean  JETCC jeMotion_SetBaseTransform( jeMotion *M,int SubMotionIndex, jeXForm3d *BaseTransform );
-JETAPI jeBoolean  JETCC jeMotion_GetTransform(const jeMotion *M, jeFloat Time, jeXForm3d *Transform);
-// JET_PUBLIC_APIS
+GRAPI const grXForm3d *GRCC grMotion_GetBaseTransform( const grMotion *M,int SubMotionIndex );
+GRAPI grBoolean  GRCC grMotion_SetBaseTransform( grMotion *M,int SubMotionIndex, grXForm3d *BaseTransform );
+GRAPI grBoolean  GRCC grMotion_GetTransform(const grMotion *M, grFloat Time, grXForm3d *Transform);
+// GR_PUBLIC_APIS
 
 	// gets time of first key and time of last key (as if motion did not loop)
-	// if there are no paths in the motion: returns JE_FALSE and times are not set
-	// otherwise returns JE_TRUE
+	// if there are no paths in the motion: returns GR_FALSE and times are not set
+	// otherwise returns GR_TRUE
 	//
 	// For a compound motion, GetTimeExtents will return the extents of the scaled submotions.
 	// For a single motion, no scaling is applied.
-JETAPI jeBoolean JETCC jeMotion_GetTimeExtents(const jeMotion *M,jeFloat *StartTime,jeFloat *EndTime);
+GRAPI grBoolean GRCC grMotion_GetTimeExtents(const grMotion *M,grFloat *StartTime,grFloat *EndTime);
 
 // Only one event is allowed per time key.
 
-JETAPI jeBoolean JETCC jeMotion_InsertEvent(jeMotion *M, jeFloat tKey, const char* String);
+GRAPI grBoolean GRCC grMotion_InsertEvent(grMotion *M, grFloat tKey, const char* String);
 	// Inserts the new event and corresponding string.
 
-JETAPI jeBoolean JETCC jeMotion_DeleteEvent(jeMotion *M, jeFloat tKey);
+GRAPI grBoolean GRCC grMotion_DeleteEvent(grMotion *M, grFloat tKey);
 	// Deletes the event
 
-JETAPI void JETCC jeMotion_SetupEventIterator(
-	jeMotion *M,
-	jeFloat StartTime,				// Inclusive search start
-	jeFloat EndTime);				// Non-inclusive search stop
+GRAPI void GRCC grMotion_SetupEventIterator(
+	grMotion *M,
+	grFloat StartTime,				// Inclusive search start
+	grFloat EndTime);				// Non-inclusive search stop
 	// For searching or querying the array for events between two times
 	// times are compaired [StartTime,EndTime), '[' is inclusive, ')' is 
-	// non-inclusive.  This prepares the jeMotion_GetNextEvent() function.
+	// non-inclusive.  This prepares the grMotion_GetNextEvent() function.
 
-JETAPI jeBoolean JETCC jeMotion_GetNextEvent(
-	jeMotion *M,						// Event list to iterate
-	jeFloat *pTime,				// Return time, if found
+GRAPI grBoolean GRCC grMotion_GetNextEvent(
+	grMotion *M,						// Event list to iterate
+	grFloat *pTime,				// Return time, if found
 	const char **ppEventString);	// Return data, if found
-	// Iterates from StartTime to EndTime as setup in jeMotion_SetupEventIterator()
+	// Iterates from StartTime to EndTime as setup in grMotion_SetupEventIterator()
 	// and for each event between these times [StartTime,EndTime)
 	// this function will return Time and EventString returned for that event
 	// and the iterator will be positioned for the next search.  When there 
-	// are no more events in the range, this function will return JE_FALSE (Time
+	// are no more events in the range, this function will return GR_FALSE (Time
 	// will be 0 and ppEventString will be empty).
 
-JETAPI jeBoolean JETCC jeMotion_GetEventExtents(const jeMotion *M,
-			jeFloat *FirstEventTime,
-			jeFloat *LastEventTime);
+GRAPI grBoolean GRCC grMotion_GetEventExtents(const grMotion *M,
+			grFloat *FirstEventTime,
+			grFloat *LastEventTime);
 	// returns the time associated with the first and last events 
-	// returns JE_FALSE if there are no events (and Times are not set)
+	// returns GR_FALSE if there are no events (and Times are not set)
 
 
-// JET_PRIVATE_APIS
-JETAPI jeMotion *JETCC jeMotion_CreateFromFile(jeVFile *f);
-JETAPI jeBoolean JETCC jeMotion_WriteToFile(const jeMotion *M,jeVFile *pFile);
+// GR_PRIVATE_APIS
+GRAPI grMotion *GRCC grMotion_CreateFromFile(grVFile *f);
+GRAPI grBoolean GRCC grMotion_WriteToFile(const grMotion *M,grVFile *pFile);
 
 #ifdef __cplusplus
 }

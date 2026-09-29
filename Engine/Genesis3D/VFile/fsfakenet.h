@@ -24,7 +24,7 @@
 
 #include "VFile._h"
 
-const jeVFile_SystemAPIs * JETCC FSFakeNet_GetAPIs(void);
+const grVFile_SystemAPIs * GRCC FSFakeNet_GetAPIs(void);
 
 #endif
 

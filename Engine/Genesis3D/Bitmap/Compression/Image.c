@@ -70,7 +70,7 @@ int **rows,z;
 	swapints(im->width,im->height);
 }
 
-jeBoolean extendImage(image *im,int fmw,int fmh)
+grBoolean extendImage(image *im,int fmw,int fmh)
 {
 int x,y,ex,ey;
 int **rows;
@@ -81,7 +81,7 @@ int p;
 	ey = im->height - fmh;
 
 	if ( ex == 0 && ey == 0 )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	assert( ex < fmw );
 	assert( ey < fmh );
@@ -158,10 +158,10 @@ int p;
 		}
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-jeBoolean zeroExtendedImage(image *im,int fmw,int fmh,int levels)
+grBoolean zeroExtendedImage(image *im,int fmw,int fmh,int levels)
 {
 int y,ew,eh,w,h,gw,gh;
 int **rows;
@@ -170,7 +170,7 @@ int p,level;
 DebugLog(int zeroed = 0);
 
 	if ( fmw == im->width && fmh == im->height )
-		return JE_TRUE;
+		return GR_TRUE;
 
 	for(p=0;p<im->planes;p++)
 	{
@@ -224,7 +224,7 @@ DebugLog(int zeroed = 0);
 
 	DebugLog( Log_Printf("extend zeroed : %d\n",zeroed) );
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 int sample8(uint8 * plane,int s,int x,int y,int z)
@@ -244,11 +244,11 @@ uint8 *row,*ptr;
 return A;
 }
 
-jeBoolean zeroAlphaImage(image *im,int levels)
+grBoolean zeroAlphaImage(image *im,int levels)
 {
 DebugLog(int zeroed = 0);
 
-//return JE_TRUE; // @@
+//return GR_TRUE; // @@
 	// the image has already been transformed
 
 	if ( im->planes == 4 )
@@ -338,7 +338,7 @@ DebugLog(int zeroed = 0);
 		DebugLog( Log_Printf("alpha zeroed : %d\n",zeroed) );
 	}
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 image * newImage(int width, int height,int planes)
@@ -417,7 +417,7 @@ int len;
 		im->data[p] = &(im->data[p][1]);
 		rows = im->data[p];
 
-		if ( (rows[0] = (int *)jeRam_Allocate(im->plane_bytes + 2*len*sizeof(int))) == NULL )
+		if ( (rows[0] = (int *)grRam_Allocate(im->plane_bytes + 2*len*sizeof(int))) == NULL )
 		{
 			freeImage(im); return NULL;
 		}
@@ -450,12 +450,12 @@ int p;
 return newImage;
 }
 
-image * newImageAlpha(int width, int height,int planes,jeBoolean alphaIsBoolean)
+image * newImageAlpha(int width, int height,int planes,grBoolean alphaIsBoolean)
 {
 image * im;
 	if ( (im = newImage(width,height,planes)) == NULL ) 
 		return NULL;
-	if ( (im->alpha = (uint8*)jeRam_Allocate(im->plane_size)) == NULL )
+	if ( (im->alpha = (uint8*)grRam_Allocate(im->plane_size)) == NULL )
 	{
 		freeImage(im);
 		return NULL;
@@ -494,15 +494,15 @@ void freeImage(image *im)
 				if ( im->data[p] ) 
 				{
 					if (im->data[p][0] )
-						jeRam_Free(im->data[p][0]);
+						grRam_Free(im->data[p][0]);
 					im->data[p] = &(im->data[p][-1]);
-					jeRam_Free(im->data[p]);
+					grRam_Free(im->data[p]);
 				}
 			}
-			jeRam_Free(im->data);
+			grRam_Free(im->data);
 		}
 		destroy( im->alpha );
-		jeRam_Free(im);
+		grRam_Free(im);
 	}
 }
 
@@ -576,7 +576,7 @@ int diffs[MAX_DIFF+1];
 int diff,i,totsq,pnum;
 double mse;
 
-	jeCPU_PauseMMX();	// !! be careful of MMX used elsewhere!
+	grCPU_PauseMMX();	// !! be careful of MMX used elsewhere!
 
 	memclear(diffs,(MAX_DIFF+1)*sizeof(long));
 
@@ -606,7 +606,7 @@ double mse;
 
 	mse = (float)totsq/(src->tot_size);
 
-	jeCPU_ResumeMMX();
+	grCPU_ResumeMMX();
 
 return sqrt(mse);
 }

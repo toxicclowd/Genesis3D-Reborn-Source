@@ -46,58 +46,58 @@ this code only work on Intel-Endian crap.
 
 // internal protos
 
-extern const jePixelFormat_Operations * jePixelFormat_Operations_Array;
+extern const grPixelFormat_Operations * grPixelFormat_Operations_Array;
 
 /*}{****************************************************************************************/
 
-JETAPI uint32 JETCC jePixelFormat_ComposePixel(jePixelFormat Format,int R,int G,int B,int A)
+GRAPI uint32 GRCC grPixelFormat_ComposePixel(grPixelFormat Format,int R,int G,int B,int A)
 {
-const jePixelFormat_Operations * ops;
-	ops = &jePixelFormat_Operations_Array[Format];
+const grPixelFormat_Operations * ops;
+	ops = &grPixelFormat_Operations_Array[Format];
 	assert(ops);
 	assert(ops->ComposePixel);
 	return ops->ComposePixel(R,G,B,A);
 }
 
-JETAPI void JETCC jePixelFormat_DecomposePixel(jePixelFormat Format,uint32 Pixel,int *R,int *G,int *B,int *A)
+GRAPI void GRCC grPixelFormat_DecomposePixel(grPixelFormat Format,uint32 Pixel,int *R,int *G,int *B,int *A)
 {
-const jePixelFormat_Operations * ops;
-	ops = &jePixelFormat_Operations_Array[Format];
+const grPixelFormat_Operations * ops;
+	ops = &grPixelFormat_Operations_Array[Format];
 	assert(ops);
 	assert(ops->DecomposePixel);
 	ops->DecomposePixel(Pixel,R,G,B,A);
 }
 
-JETAPI uint32 JETCC jePixelFormat_GetPixel(jePixelFormat Format,uint8 **ppData)
+GRAPI uint32 GRCC grPixelFormat_GetPixel(grPixelFormat Format,uint8 **ppData)
 {
-const jePixelFormat_Operations * ops;
-	ops = &jePixelFormat_Operations_Array[Format];
+const grPixelFormat_Operations * ops;
+	ops = &grPixelFormat_Operations_Array[Format];
 	assert(ops);
 	assert(ops->GetPixel);
 	return ops->GetPixel(ppData);
 }
 
-JETAPI void JETCC jePixelFormat_PutPixel(jePixelFormat Format,uint8 **ppData,uint32 Pixel)
+GRAPI void GRCC grPixelFormat_PutPixel(grPixelFormat Format,uint8 **ppData,uint32 Pixel)
 {
-const jePixelFormat_Operations * ops;
-	ops = &jePixelFormat_Operations_Array[Format];
+const grPixelFormat_Operations * ops;
+	ops = &grPixelFormat_Operations_Array[Format];
 	assert(ops);
 	assert(ops->PutPixel);
 	ops->PutPixel(ppData,Pixel);
 }
 
-JETAPI void JETCC jePixelFormat_GetColor(jePixelFormat Format,uint8 **ppData,int *R,int *G,int *B,int *A)
+GRAPI void GRCC grPixelFormat_GetColor(grPixelFormat Format,uint8 **ppData,int *R,int *G,int *B,int *A)
 {
-const jePixelFormat_Operations * ops;
-	ops = &jePixelFormat_Operations_Array[Format];
+const grPixelFormat_Operations * ops;
+	ops = &grPixelFormat_Operations_Array[Format];
 	assert(ops);
 	assert(ops->GetColor);
 	ops->GetColor(ppData,R,G,B,A);
 }
-JETAPI void JETCC jePixelFormat_PutColor(jePixelFormat Format,uint8 **ppData,int R,int G,int B,int A)
+GRAPI void GRCC grPixelFormat_PutColor(grPixelFormat Format,uint8 **ppData,int R,int G,int B,int A)
 {
-const jePixelFormat_Operations * ops;
-	ops = &jePixelFormat_Operations_Array[Format];
+const grPixelFormat_Operations * ops;
+	ops = &grPixelFormat_Operations_Array[Format];
 	assert(ops);
 	assert(ops->PutColor);
 	ops->PutColor(ppData,R,G,B,A);
@@ -105,41 +105,41 @@ const jePixelFormat_Operations * ops;
 
 /*}{****************************************************************************************/
 
-JETAPI uint32 JETCC jePixelFormat_ConvertPixel(jePixelFormat Format,uint32 Pixel,jePixelFormat ToFormat)
+GRAPI uint32 GRCC grPixelFormat_ConvertPixel(grPixelFormat Format,uint32 Pixel,grPixelFormat ToFormat)
 {
 int R,G,B,A;
-		jePixelFormat_DecomposePixel(Format,Pixel,&R,&G,&B,&A);
-return	jePixelFormat_ComposePixel(ToFormat,R,G,B,A);
+		grPixelFormat_DecomposePixel(Format,Pixel,&R,&G,&B,&A);
+return	grPixelFormat_ComposePixel(ToFormat,R,G,B,A);
 }
 
-JETAPI const jePixelFormat_Operations * JETCC jePixelFormat_GetOperations( jePixelFormat Format )
+GRAPI const grPixelFormat_Operations * GRCC grPixelFormat_GetOperations( grPixelFormat Format )
 {
-	if ( ! jePixelFormat_IsValid(Format) )
+	if ( ! grPixelFormat_IsValid(Format) )
 		return NULL;
 	else
-		return & jePixelFormat_Operations_Array[Format];
+		return & grPixelFormat_Operations_Array[Format];
 }
 
 /*}{****************************************************************************************/
 
-JETAPI unsigned int JETCC jePixelFormat_BytesPerPel( jePixelFormat Format )
+GRAPI unsigned int GRCC grPixelFormat_BytesPerPel( grPixelFormat Format )
 {
-	assert( jePixelFormat_IsValid(Format) );
-return jePixelFormat_Operations_Array[Format].BytesPerPel;
+	assert( grPixelFormat_IsValid(Format) );
+return grPixelFormat_Operations_Array[Format].BytesPerPel;
 }
 
-JETAPI jeBoolean JETCC jePixelFormat_HasPalette(  jePixelFormat Format )
+GRAPI grBoolean GRCC grPixelFormat_HasPalette(  grPixelFormat Format )
 {
-	assert( jePixelFormat_IsValid(Format) );
-return jePixelFormat_Operations_Array[Format].HasPalette;
+	assert( grPixelFormat_IsValid(Format) );
+return grPixelFormat_Operations_Array[Format].HasPalette;
 }
 
-JETAPI jeBoolean JETCC jePixelFormat_HasAlpha(  jePixelFormat Format )
+GRAPI grBoolean GRCC grPixelFormat_HasAlpha(  grPixelFormat Format )
 {
-	assert( jePixelFormat_IsValid(Format) );
-//	if ( Format == JE_PIXELFORMAT_16BIT_1555_ARGB ) @@
+	assert( grPixelFormat_IsValid(Format) );
+//	if ( Format == GR_PIXELFORMAT_16BIT_1555_ARGB ) @@
 //		return 0;
-return jePixelFormat_Operations_Array[Format].AMask;
+return grPixelFormat_Operations_Array[Format].AMask;
 }
 
 static int NumBitsOn(uint32 val)
@@ -153,36 +153,36 @@ uint32 count = 0;
 return count;
 }
 
-JETAPI jeBoolean JETCC jePixelFormat_HasGoodAlpha(  jePixelFormat Format )
+GRAPI grBoolean GRCC grPixelFormat_HasGoodAlpha(  grPixelFormat Format )
 {
-	assert( jePixelFormat_IsValid(Format) );
+	assert( grPixelFormat_IsValid(Format) );
 	
-	if ( NumBitsOn(jePixelFormat_Operations_Array[Format].AMask) > 1 )
-		return JE_TRUE;
+	if ( NumBitsOn(grPixelFormat_Operations_Array[Format].AMask) > 1 )
+		return GR_TRUE;
 	else
-		return JE_FALSE;
+		return GR_FALSE;
 }
 
-JETAPI jeBoolean JETCC jePixelFormat_IsRaw(  jePixelFormat Format )
+GRAPI grBoolean GRCC grPixelFormat_IsRaw(  grPixelFormat Format )
 {
-	assert( jePixelFormat_IsValid(Format) );
-	if ( jePixelFormat_Operations_Array[Format].ComposePixel )
-		return JE_TRUE;
+	assert( grPixelFormat_IsValid(Format) );
+	if ( grPixelFormat_Operations_Array[Format].ComposePixel )
+		return GR_TRUE;
 	else
-		return JE_FALSE;
+		return GR_FALSE;
 }
 
-JETAPI const char * JETCC jePixelFormat_Description(  jePixelFormat Format )
+GRAPI const char * GRCC grPixelFormat_Description(  grPixelFormat Format )
 {
-	assert( jePixelFormat_IsValid(Format) );
-return jePixelFormat_Operations_Array[Format].Description;
+	assert( grPixelFormat_IsValid(Format) );
+return grPixelFormat_Operations_Array[Format].Description;
 }
 
-JETAPI jeBoolean JETCC jePixelFormat_IsValid(jePixelFormat Format)
+GRAPI grBoolean GRCC grPixelFormat_IsValid(grPixelFormat Format)
 {
-	if ( (int)Format < 0 || (int)Format >= JE_PIXELFORMAT_COUNT )
-		return JE_FALSE;
-	return JE_TRUE;
+	if ( (int)Format < 0 || (int)Format >= GR_PIXELFORMAT_COUNT )
+		return GR_FALSE;
+	return GR_TRUE;
 }
 
 /*}{****************************************************************************************/
@@ -827,7 +827,7 @@ void	Put_32abgr(uint8 **ppData,int  R,int  G,int  B,int  A)
 
 /*}{********* the giant format-ops definition ****************/
 
-static const jePixelFormat_Operations jePixelFormat_Operations_Array_Def[] = 
+static const grPixelFormat_Operations grPixelFormat_Operations_Array_Def[] = 
 {
 	{0,0,0,0,			0,0,0,0,	0,0,0,0,	0 ,0,		"invalid"},	
 
@@ -864,7 +864,7 @@ static const jePixelFormat_Operations jePixelFormat_Operations_Array_Def[] =
 	{0,0,0,0,			0,0,0,0,	0,0,0,0,	0 ,0,	"invalid"}
 };
 
-const jePixelFormat_Operations * jePixelFormat_Operations_Array = jePixelFormat_Operations_Array_Def;
+const grPixelFormat_Operations * grPixelFormat_Operations_Array = grPixelFormat_Operations_Array_Def;
 
 
 /*}{************************************************/

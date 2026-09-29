@@ -38,7 +38,7 @@ class CModel : public CDialog
 public:
 	CModel(CWnd* pParent = NULL);   // standard constructor
 	void SetCurrentDocument(CJweDoc *pDoc);
-	jeBoolean AddObject( Object *pObject );
+	grBoolean AddObject( Object *pObject );
 	void RenameObject( Object *pObject );
 	void AddSelection(CJweDoc *pDoc);
 	void RemoveDeleted();
@@ -80,15 +80,15 @@ protected:
 private:
 	void DeRefAllObjects();
 	CImageList m_ImageList;
-	static jeBoolean AddSelectionCB(Object *pObject, void *lParam);
-	static jeBoolean ModelListCB( Model *pModel, void *lParam);
-	static jeBoolean ModelComboCB( Model *pModel, void *lParam);
-	static jeBoolean BrushCB( Brush *pBrush, void *lParam);
-	static jeBoolean RemoveSelectionCB(Object *pObject, void *lParam);
-	static jeBoolean SelectCB(Object *pObject, void *lParam);
+	static grBoolean AddSelectionCB(Object *pObject, void *lParam);
+	static grBoolean ModelListCB( Model *pModel, void *lParam);
+	static grBoolean ModelComboCB( Model *pModel, void *lParam);
+	static grBoolean BrushCB( Brush *pBrush, void *lParam);
+	static grBoolean RemoveSelectionCB(Object *pObject, void *lParam);
+	static grBoolean SelectCB(Object *pObject, void *lParam);
 	static HTREEITEM GetObjectItem( CTreeCtrl *pList, Object *pObject );
 	void	ChangeModels( HTREEITEM hItem );
-	void	SelectGroup( HTREEITEM hGroupItem, jeBoolean bSelect );
+	void	SelectGroup( HTREEITEM hGroupItem, grBoolean bSelect );
 	void UpdateCurModel();
 };
 

@@ -27,7 +27,7 @@
 
 #include "errorlog.h"
 #include "ram.h"
-#include "jeProperty.h"
+#include "grProperty.h"
 
 #include "jwe.h"
 #include "timeline.h"
@@ -58,9 +58,9 @@
 */
 
 #ifndef JET_20
-#define JE_ERR_WINDOWS_API_FAILURE 99
-#define JE_ERR_SUBSYSTEM_FAILURE   98
-#define jeErrorLog_IntToString(xx) NULL
+#define GR_ERR_WINDOWS_API_FAILURE 99
+#define GR_ERR_SUBSYSTEM_FAILURE   98
+#define grErrorLog_IntToString(xx) NULL
 #endif
 
 #define TIMELINE_CUT_THRESHOLD 0.0001f
@@ -137,7 +137,7 @@ typedef struct TimeData
 	// time bar
 	float		CurrTime;
 	int			CurrTimeProp;
-	jeBoolean	TimeBarSelected;
+	grBoolean	TimeBarSelected;
 
 	float		TimeStart;			// start time of time line
 	float		TimeEnd;			// end time of time line
@@ -174,70 +174,70 @@ typedef struct TimeEdit
 	int			DragStartY;
 	int			DragX;
 	int			DragY;
-	jeBoolean   Dragging;
+	grBoolean   Dragging;
 
 	// dragging vars (right Mousbutton)
-	jeBoolean   rDragging;
+	grBoolean   rDragging;
 	
 	// When moving move all bars
-	jeBoolean   MoveAll;
+	grBoolean   MoveAll;
 	// Display Timemode
-	jeBoolean TimeMode;
+	grBoolean TimeMode;
 
 	CTimeLine	*pCTimeLine;
 
 } TimeEdit;
 
-static jeBoolean	TimeEdit_Paint(TimeEdit *TE);
+static grBoolean	TimeEdit_Paint(TimeEdit *TE);
 					
-static jeBoolean	TimeEdit_AnimateSelected(TimeEdit *TE);
-static jeBoolean	TimeEdit_Select(TimeEdit *TE, int MouseX, int MouseY);
-static jeBoolean	TimeEdit_SelectTest(TimeEdit *TE, int, int, int MouseX, int MouseY, int Yoff);
+static grBoolean	TimeEdit_AnimateSelected(TimeEdit *TE);
+static grBoolean	TimeEdit_Select(TimeEdit *TE, int MouseX, int MouseY);
+static grBoolean	TimeEdit_SelectTest(TimeEdit *TE, int, int, int MouseX, int MouseY, int Yoff);
 static float		TimeEdit_XToTime(TimeEdit* TE, int MouseX);
 static int			TimeEdit_TimeToX(TimeEdit* TE, double Time);
 
-static jeBoolean	TimeEdit_MoveSelectedKeys(TimeEdit *TE, float Offset, int MouseY);
-static jeBoolean	TimeEdit_DupSelectedKeys(TimeEdit *TE);
-static jeBoolean	TimeEdit_SelectMultiTest(TimeEdit *TE, int MouseX, int MouseY);
+static grBoolean	TimeEdit_MoveSelectedKeys(TimeEdit *TE, float Offset, int MouseY);
+static grBoolean	TimeEdit_DupSelectedKeys(TimeEdit *TE);
+static grBoolean	TimeEdit_SelectMultiTest(TimeEdit *TE, int MouseX, int MouseY);
 static int			TimeEdit_CountSelectedKeys(TimeEdit *TE);
 
-static jeBoolean	TimeEdit_AddKey(TimeEdit* TE, int MouseX, int MouseY);
-static jeBoolean	TimeEdit_DelKey(TimeEdit* TE);
+static grBoolean	TimeEdit_AddKey(TimeEdit* TE, int MouseX, int MouseY);
+static grBoolean	TimeEdit_DelKey(TimeEdit* TE);
 
-static jeBoolean	TimeEdit_AddEvent(TimeEdit* TE, int MouseX, int MouseY);
-static jeBoolean	TimeEdit_AddEventTime(TimeEdit* TE, float Time);
+static grBoolean	TimeEdit_AddEvent(TimeEdit* TE, int MouseX, int MouseY);
+static grBoolean	TimeEdit_AddEventTime(TimeEdit* TE, float Time);
 
-static jeBoolean	TimeEdit_IsEventArea(TimeEdit *TE, int MouseX, int MouseY);
+static grBoolean	TimeEdit_IsEventArea(TimeEdit *TE, int MouseX, int MouseY);
 static int			TimeEdit_TimeToX(TimeEdit* TE, double Time);
-static jeBoolean	TimeEdit_InsertTime(TimeEdit *TE);
-static jeBoolean	TimeEdit_CursorInInsertArea(TimeEdit* TE, int MouseX, int MouseY);
+static grBoolean	TimeEdit_InsertTime(TimeEdit *TE);
+static grBoolean	TimeEdit_CursorInInsertArea(TimeEdit* TE, int MouseX, int MouseY);
 static void			TimeEdit_SetScrollPos(TimeEdit *TE, float Time);
 static void			Callback_GetIndividualTime(TimeEdit *TE, int TimeLineNdx, float *Time);
-static jeBoolean TimeEdit_IsCutLeft(Channel *cp, int ndx);
-static jeBoolean TimeEdit_IsCutRight(Channel *cp, int ndx);
+static grBoolean TimeEdit_IsCutLeft(Channel *cp, int ndx);
+static grBoolean TimeEdit_IsCutRight(Channel *cp, int ndx);
 
 HWND TimeEdit_CreateWindow(HWND hwndParent, int32 Width, int32 Height);
-jeBoolean TimeEdit_GetValidTimeDataFromProperties(TimeEdit* TE, jeProperty_List *List, int StartNdx, TimeData *TD);
+grBoolean TimeEdit_GetValidTimeDataFromProperties(TimeEdit* TE, grProperty_List *List, int StartNdx, TimeData *TD);
 TimeEdit *TimeEdit_CreateTimeEditData(HWND hWnd);
 
 void TimeEdit_SelectTimeLineFromIndex(TimeEdit *TE, int TimeLineNdx);
-jeBoolean TimeEdit_SelectNewTimeLineFromMouse(TimeEdit *TE, int MouseY);
+grBoolean TimeEdit_SelectNewTimeLineFromMouse(TimeEdit *TE, int MouseY);
 void Callback_GetCurrentTime(TimeData *TD, float *Time);
-jeBoolean TimeEdit_GetPathObject(Object** op);
+grBoolean TimeEdit_GetPathObject(Object** op);
 
-static jeBoolean	TimeEdit_SetEventReadOnly(TimeEdit* TE,jeBoolean ReadOnly);
+static grBoolean	TimeEdit_SetEventReadOnly(TimeEdit* TE,grBoolean ReadOnly);
 
 
 void TimeEdit_QueryControllerForTimeLine(TimeEdit *TE);
-jeBoolean TimeEdit_InitAddTimeLine(TimeEdit* TE, int NumChannels);
+grBoolean TimeEdit_InitAddTimeLine(TimeEdit* TE, int NumChannels);
 void Callback_GetKeyData(TimeEdit* TE, int ChannelNdx, int KeyNdx);
 void Callback_ReturnTime(TimeData *TD);
 void Callback_ReturnData(TimeData *TD, int ChannelNdx);
-jeBoolean Callback_SetPlayMode(TimeEdit* TE, jeBoolean Play);
-jeBoolean Callback_GetPlayMode(TimeEdit* TE, int *PlayMode);
+grBoolean Callback_SetPlayMode(TimeEdit* TE, grBoolean Play);
+grBoolean Callback_GetPlayMode(TimeEdit* TE, int *PlayMode);
 void TimeEdit_SelectObject(TimeEdit *TE);
 void TimeEdit_MarkObject(TimeEdit *TE, int TimeLineNdx);
-jeObject *TimeEdit_GetObject(TimeEdit *TE, int TimeLineNdx);
+grObject *TimeEdit_GetObject(TimeEdit *TE, int TimeLineNdx);
 static void TimeEdit_ZoomOut(TimeEdit* TE);
 static void TimeEdit_ZoomIn(TimeEdit* TE);
 static void TimeEdit_ZoomReset(TimeEdit* TE);
@@ -353,8 +353,8 @@ void CTimeLine::OnSetObjectNames()
 {
 	CMainFrame	*pMainFrm	= (CMainFrame*)AfxGetMainWnd() ;
 	CJweDoc		*pDoc		= pMainFrm->GetCurrentDocument() ;
-	jeWorld		*World;
-	jeObject	*CurrObject;
+	grWorld		*World;
+	grObject	*CurrObject;
 	const char	*Name;
 
 
@@ -371,12 +371,12 @@ void CTimeLine::OnSetObjectNames()
 
 	while (TRUE)
 	{
-		CurrObject = jeWorld_GetNextObject(World, CurrObject);
+		CurrObject = grWorld_GetNextObject(World, CurrObject);
 		
 		if (CurrObject == NULL)
 			break;
 		
-		Name = jeObject_GetName( CurrObject );
+		Name = grObject_GetName( CurrObject );
 		
 		if (!Name) continue;
 		m_ObjectName.AddString(Name);
@@ -403,14 +403,14 @@ void CTimeLine::OnChangeTimelineEventtext()
 }
 
 
-jeBoolean TimeEdit_UpdateLastKeyTime(TimeEdit *TE, float NewTime)
+grBoolean TimeEdit_UpdateLastKeyTime(TimeEdit *TE, float NewTime)
 	{
 	if (NewTime >= 0.0f)
 		{
 		if (NewTime > TE->LastKeyTime)
 			TE->LastKeyTime = NewTime;
 
-		return JE_TRUE;
+		return GR_TRUE;
 		}
 	else
 		{
@@ -436,23 +436,23 @@ jeBoolean TimeEdit_UpdateLastKeyTime(TimeEdit *TE, float NewTime)
 			}
 
 		TE->LastKeyTime = LastTime;
-		return JE_TRUE;
+		return GR_TRUE;
 		}
 	}
 
-jeBoolean	CTimeLine::UpdateTimeDelta(float TimeDelta )
+grBoolean	CTimeLine::UpdateTimeDelta(float TimeDelta )
 {
 	float Time;
 	int TimeLineNdx;
-	jeBoolean PlayBack;
+	grBoolean PlayBack;
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
 	assert(m_TE);
 
 	Callback_GetPlayMode(m_TE, &PlayBack);
-	if (PlayBack == JE_FALSE)
-		return JE_TRUE;
+	if (PlayBack == GR_FALSE)
+		return GR_TRUE;
 
 	pDoc->UpdateAllViews( NULL, DOC_HINT_ORTHO, NULL );
 
@@ -460,7 +460,7 @@ jeBoolean	CTimeLine::UpdateTimeDelta(float TimeDelta )
 
 	for (TimeLineNdx = 0; TimeLineNdx < m_TE->TimeLineCount; TimeLineNdx++)
 	{
-		jeFloat Len = m_TE->TimeLineList[TimeLineNdx].TimeEnd- m_TE->TimeLineList[TimeLineNdx].TimeStart;
+		grFloat Len = m_TE->TimeLineList[TimeLineNdx].TimeEnd- m_TE->TimeLineList[TimeLineNdx].TimeStart;
 		Callback_GetIndividualTime(m_TE, TimeLineNdx, &Time);
 		m_TE->TimeLineList[TimeLineNdx].CurrTime = Time;
 
@@ -499,11 +499,11 @@ jeBoolean	CTimeLine::UpdateTimeDelta(float TimeDelta )
 
 	::InvalidateRect(m_TE->hwnd, NULL, FALSE);
 
-	return JE_TRUE;
+	return GR_TRUE;
 	TimeDelta;
 }
 
-jeBoolean CTimeLine::SubSelectObject(jeObject *pObj)
+grBoolean CTimeLine::SubSelectObject(grObject *pObj)
 {
 	int TimeLineNdx;
 
@@ -512,8 +512,8 @@ jeBoolean CTimeLine::SubSelectObject(jeObject *pObj)
 	// select time line in correct position
 
 	// send stop playback message if trying to edit
-	Callback_SetPlayMode(m_TE, JE_FALSE);
-	CTimeLine::TimelineModeSet(JE_FALSE);
+	Callback_SetPlayMode(m_TE, GR_FALSE);
+	CTimeLine::TimelineModeSet(GR_FALSE);
 
 	for (TimeLineNdx = 0; TimeLineNdx < m_TE->TimeLineCount; TimeLineNdx++)
 		{
@@ -527,17 +527,17 @@ jeBoolean CTimeLine::SubSelectObject(jeObject *pObj)
 			}
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean CTimeLine::SubSelectEndMove(jeObject *pObj)
+grBoolean CTimeLine::SubSelectEndMove(grObject *pObj)
 {
 	Channel *cp;
 
 	assert(pObj);
 
-	Callback_SetPlayMode(m_TE, JE_FALSE);
-	CTimeLine::TimelineModeSet(JE_FALSE);
+	Callback_SetPlayMode(m_TE, GR_FALSE);
+	CTimeLine::TimelineModeSet(GR_FALSE);
 
 	cp = &m_TE->TimeLine->Channel[CHANNEL_POS];
 
@@ -550,18 +550,18 @@ jeBoolean CTimeLine::SubSelectEndMove(jeObject *pObj)
 	Callback_ReturnData(m_TE->TimeLine, CHANNEL_POS);
 
 	// get the current XForm
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean CTimeLine::SubSelectEndRotate(jeObject *pObj)
+grBoolean CTimeLine::SubSelectEndRotate(grObject *pObj)
 {
 	Channel *cp;
 
 	assert(pObj);
 
 	// send stop playback message if trying to edit
-	Callback_SetPlayMode(m_TE, JE_FALSE);
-	CTimeLine::TimelineModeSet(JE_FALSE);
+	Callback_SetPlayMode(m_TE, GR_FALSE);
+	CTimeLine::TimelineModeSet(GR_FALSE);
 
 	cp = &m_TE->TimeLine->Channel[CHANNEL_ROT];
 
@@ -574,18 +574,18 @@ jeBoolean CTimeLine::SubSelectEndRotate(jeObject *pObj)
 	Callback_ReturnData(m_TE->TimeLine, CHANNEL_ROT);
 
 	// get the current XForm
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // CTimeLine Property List handlers
 
-BOOL CTimeLine::HasTimeLineData( jeProperty_List *pArray )
+BOOL CTimeLine::HasTimeLineData( grProperty_List *pArray )
 {
 	int i;
 
-	for( i = 0; i < pArray->jePropertyN; i++ )
-		if( pArray->pjeProperty[i].Type == PROPERTY_TIME_GROUP_TYPE )
+	for( i = 0; i < pArray->grPropertyN; i++ )
+		if( pArray->pgrProperty[i].Type == PROPERTY_TIME_GROUP_TYPE )
 		{
 #pragma message( "Validate Time line properties here")
 			return TRUE;
@@ -593,7 +593,7 @@ BOOL CTimeLine::HasTimeLineData( jeProperty_List *pArray )
 	return( FALSE );
 }
 
-static jeBoolean TimeEdit_SetEventReadOnly (TimeEdit* TE,jeBoolean ReadOnly)
+static grBoolean TimeEdit_SetEventReadOnly (TimeEdit* TE,grBoolean ReadOnly)
 {
 	TE->pCTimeLine->m_EventText.ShowWindow(ReadOnly ? 0:1);
 	TE->pCTimeLine->m_ObjectName.ShowWindow(ReadOnly? 0:1);
@@ -603,18 +603,18 @@ static jeBoolean TimeEdit_SetEventReadOnly (TimeEdit* TE,jeBoolean ReadOnly)
 	TE->pCTimeLine->m_Static3.ShowWindow(ReadOnly? 0:1);
 	TE->pCTimeLine->m_CLR.ShowWindow(ReadOnly? 0:1);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean TimeEdit_GetValidTimeDataFromProperties(TimeEdit* TE, jeProperty_List *List, int StartNdx, TimeData *TD)
+grBoolean TimeEdit_GetValidTimeDataFromProperties(TimeEdit* TE, grProperty_List *List, int StartNdx, TimeData *TD)
 {
 	int i;
-	jeBoolean ValidChannel = JE_FALSE, ValidCurrTime = JE_FALSE;
+	grBoolean ValidChannel = GR_FALSE, ValidCurrTime = GR_FALSE;
 
-	for (i = StartNdx; i < List->jePropertyN; i++)
+	for (i = StartNdx; i < List->grPropertyN; i++)
 		{
-		jeProperty *p = &List->pjeProperty[i];
+		grProperty *p = &List->pgrProperty[i];
 
 		if (p->Type == PROPERTY_TIME_GROUP_TYPE)
 			{
@@ -632,7 +632,7 @@ jeBoolean TimeEdit_GetValidTimeDataFromProperties(TimeEdit* TE, jeProperty_List 
 			{
 			TD->ChannelPropID[CHANNEL_POS] = p->DataId;
 			memcpy(&TD->Channel[CHANNEL_POS], p->Data.Ptr, sizeof(Channel));
-			ValidChannel = JE_TRUE;
+			ValidChannel = GR_TRUE;
 			}
 		else
 		if (p->Type == PROPERTY_CHANNEL_ROT_TYPE)
@@ -651,7 +651,7 @@ jeBoolean TimeEdit_GetValidTimeDataFromProperties(TimeEdit* TE, jeProperty_List 
 			{
 			TD->CurrTimeProp = p->DataId;
 			TD->CurrTime = p->Data.Float;
-			ValidCurrTime = JE_TRUE;
+			ValidCurrTime = GR_TRUE;
 			}
 		}
 
@@ -660,7 +660,7 @@ jeBoolean TimeEdit_GetValidTimeDataFromProperties(TimeEdit* TE, jeProperty_List 
 }
 
 
-BOOL CTimeLine::BuildFromDescriptor( jeProperty_List *List )
+BOOL CTimeLine::BuildFromDescriptor( grProperty_List *List )
 {
 	int i;
 
@@ -677,7 +677,7 @@ BOOL CTimeLine::BuildFromDescriptor( jeProperty_List *List )
 	{
 	static Object *CurrPathObj;
 	Object *op;
-	jeBoolean PlayBack;
+	grBoolean PlayBack;
 
 	Callback_GetPlayMode(m_TE, &PlayBack);
 
@@ -692,9 +692,9 @@ BOOL CTimeLine::BuildFromDescriptor( jeProperty_List *List )
 	TimeEdit_UpdateLastKeyTime(m_TE, -1.0f);
 
 	m_TE->TimeLineCount = 0;
-	for (i = 0; i < List->jePropertyN; i++)
+	for (i = 0; i < List->grPropertyN; i++)
 		{
-		jeProperty *p = &List->pjeProperty[i];
+		grProperty *p = &List->pgrProperty[i];
 
 		if (p->Type == PROPERTY_TIME_GROUP_TYPE)
 			{
@@ -702,7 +702,7 @@ BOOL CTimeLine::BuildFromDescriptor( jeProperty_List *List )
 				{
 				TimeEdit_MarkObject(m_TE, m_TE->TimeLineCount);
 				strcpy(m_TE->TimeLineList[m_TE->TimeLineCount].Descr, p->FieldName);
-				//m_TE->TimeLineList[m_TE->TimeLineCount].TimeBarSelected = JE_FALSE; don't want this here
+				//m_TE->TimeLineList[m_TE->TimeLineCount].TimeBarSelected = GR_FALSE; don't want this here
 				m_TE->TimeLineCount++;
 				}
 			}
@@ -721,7 +721,7 @@ void CTimeLine::Reset()
 	this->ShowWindow( SW_HIDE );
 }
 
-BOOL CTimeLine::UpdateDataByArray( jeProperty_List *pArray )
+BOOL CTimeLine::UpdateDataByArray( grProperty_List *pArray )
 {
 	CTimeLine::BuildFromDescriptor( pArray );
 	return( TRUE );
@@ -750,24 +750,24 @@ void TimeEdit_SelectTimeLineFromIndex(TimeEdit *TE, int TimeLineNdx)
 	TimeEdit_SetScrollPos(TE, TE->TimeLine->TimeStart);
 }
 
-jeBoolean TimeEdit_SelectNewTimeLineFromMouse(TimeEdit *TE, int MouseY)
+grBoolean TimeEdit_SelectNewTimeLineFromMouse(TimeEdit *TE, int MouseY)
 {
 	int TimeLineNdx;
 
 	TimeLineNdx = ((MouseY + TE->ScrollY-(LINE_OFFSET-TIMEBAR_START)+TITLESIZE - 4) / LINE_OFFSET);
 
 	if (TimeLineNdx == TE->TimeLine - TE->TimeLineList)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if (TimeLineNdx < 0)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if (TimeLineNdx >= TE->TimeLineCount)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	TimeEdit_SelectTimeLineFromIndex(TE, TimeLineNdx);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void TimeEdit_SetTimeLineFromCursor(TimeEdit *TE, int MouseY)
@@ -958,7 +958,7 @@ VOID CALLBACK TimeEdit_DragTimerProc(HWND hwnd, UINT iMsg, UINT iTimerID, DWORD 
 	// only allow dragging after small amount of time
 	// otherwise its just a "selection" and not a drag
 
-	TE->Dragging = JE_TRUE;
+	TE->Dragging = GR_TRUE;
 	if (TE->DragTimer)
 		{
 		KillTimer(hwnd, TE->DragTimer);
@@ -995,7 +995,7 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 
 		case WM_RBUTTONUP:
 			{
-				TE->rDragging = JE_FALSE;
+				TE->rDragging = GR_FALSE;
 				break;
 			}
 		case WM_RBUTTONDOWN:
@@ -1003,7 +1003,7 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 				TE->DragStartX = TE->DragX = LOWORD(lParam);  // horizontal position of cursor 
 				TE->DragStartY = TE->DragY = HIWORD(lParam);  // vertical position 
 
-				TE->rDragging = JE_TRUE;
+				TE->rDragging = GR_TRUE;
 				SetCursor(LoadCursor(TE->hinst, MAKEINTRESOURCE(IDC_HAND_OPEN)));
 				break;
 			}
@@ -1109,9 +1109,9 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 
 				case VK_DELETE :
 
-					if (TimeEdit_DelKey(TE) == JE_FALSE)
+					if (TimeEdit_DelKey(TE) == GR_FALSE)
 						{
-						jeErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_DelKey() failed.", NULL);
+						grErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_DelKey() failed.", NULL);
 						break; // error occured
 						}
 
@@ -1201,9 +1201,9 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 ;				if (TE->DragX<30000)
 				TE->TimeDragX = TimeEdit_XToTime (TE,TE->DragX);
 
-				if (TimeEdit_AnimateSelected(TE) == JE_FALSE)
+				if (TimeEdit_AnimateSelected(TE) == GR_FALSE)
 					{
-					jeErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_AnimateSelected() failed.", NULL);
+					grErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_AnimateSelected() failed.", NULL);
 					break; //error
 					}
 
@@ -1237,9 +1237,9 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 				if (TE->DragStartX!= MouseX)
 					{
 					float	TimeDelta = TimeEdit_XToTime(TE,MouseX)-TE->TimeDragStartX;
-					if (TimeEdit_MoveSelectedKeys(TE, TimeDelta, MouseY) == JE_FALSE)
+					if (TimeEdit_MoveSelectedKeys(TE, TimeDelta, MouseY) == GR_FALSE)
 						{
-						jeErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_MoveSelectedKeys() failed.", NULL);
+						grErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_MoveSelectedKeys() failed.", NULL);
 						break; //error
 						}
 					}
@@ -1258,7 +1258,7 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 				}
 
 			// Turn Dragging off and kill the DragTimer
-			TE->Dragging = JE_FALSE;
+			TE->Dragging = GR_FALSE;
 			ReleaseCapture();
 
 			if (TE->DragTimer)
@@ -1285,9 +1285,9 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 					POINT point;
 					GetCursorPos(&point);
 					TE->DragX = point.x;
-					if (TimeEdit_AnimateSelected(TE) == JE_FALSE)
+					if (TimeEdit_AnimateSelected(TE) == GR_FALSE)
 						{
-						jeErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_AnimateSelected() failed.", NULL);
+						grErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_AnimateSelected() failed.", NULL);
 						break; //error
 						}
 					break;
@@ -1311,7 +1311,7 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 			TE->TimeDragStartX	= TimeEdit_XToTime (TE,TE->DragStartX);
 			TE->TimeDragX		= TimeEdit_XToTime (TE,TE->DragX);
 
-			TE->TimeLine->TimeBarSelected = JE_FALSE;
+			TE->TimeLine->TimeBarSelected = GR_FALSE;
 
 			if (TimeEdit_SelectNewTimeLineFromMouse(TE, MouseY))
 				{
@@ -1325,19 +1325,19 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 
 			if (TimeEdit_CursorInInsertArea(TE, MouseX, MouseY))
 				{
-				if (TimeEdit_IsEventArea(TE, MouseX, MouseY) == JE_TRUE)
+				if (TimeEdit_IsEventArea(TE, MouseX, MouseY) == GR_TRUE)
 					{
-					if (TimeEdit_AddEvent(TE, MouseX, MouseY) == JE_FALSE)
+					if (TimeEdit_AddEvent(TE, MouseX, MouseY) == GR_FALSE)
 						{
-						jeErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_AddEvent() failed.", NULL);
+						grErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_AddEvent() failed.", NULL);
 						break; //error
 						}
 					}
 				else
 					{
-					if (TimeEdit_AddKey(TE, MouseX, MouseY) == JE_FALSE)
+					if (TimeEdit_AddKey(TE, MouseX, MouseY) == GR_FALSE)
 						{
-						jeErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_AddKey() failed.", NULL);
+						grErrorLog_AddString(-1,"TimeEdit_WndProc: TimeEdit_AddKey() failed.", NULL);
 						break; //error
 						}
 					}
@@ -1350,7 +1350,7 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 					TE->DragTimer = SetTimer(hWnd, DRAG_TIMER, DRAG_DEBOUCE, TimeEdit_DragTimerProc);
 					if (TE->DragTimer == 0)
 						{
-						jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE,"TimeEdit_WndProc: SetTimer() failed.", jeErrorLog_IntToString(GetLastError()));
+						grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE,"TimeEdit_WndProc: SetTimer() failed.", grErrorLog_IntToString(GetLastError()));
 						}
 					}
 
@@ -1358,7 +1358,7 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 
 				if (wParam & MK_CONTROL)
 					{
-					if (TimeEdit_SelectMultiTest(TE, MouseX, MouseY) == JE_FALSE)
+					if (TimeEdit_SelectMultiTest(TE, MouseX, MouseY) == GR_FALSE)
 						break;
 					}
 				else if (wParam & MK_SHIFT)
@@ -1369,13 +1369,13 @@ LRESULT CALLBACK TimeEdit_WndProc(HWND hWnd, UINT iMessage,
 							TE->DragTimer = SetTimer(hWnd, DRAG_TIMER, DRAG_DEBOUCE, TimeEdit_DragTimerProc);
 							if (TE->DragTimer == 0)
 								{
-								jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE,"TimeEdit_WndProc: SetTimer() failed.", jeErrorLog_IntToString(GetLastError()));
+								grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE,"TimeEdit_WndProc: SetTimer() failed.", grErrorLog_IntToString(GetLastError()));
 								}
 							}
 					}	
 				else
 					{
-						if (TimeEdit_Select(TE, MouseX, MouseY) == JE_FALSE)
+						if (TimeEdit_Select(TE, MouseX, MouseY) == GR_FALSE)
 							break;
 					}
 				}
@@ -1550,7 +1550,7 @@ static int TimeEdit_TimeToX(TimeEdit* TE, double Time)
 	return PosX;
 }
 
-static jeBoolean TimeEdit_SetPosition(TimeEdit *TE)
+static grBoolean TimeEdit_SetPosition(TimeEdit *TE)
 {
 	RECT Rect;
 	int LeftBorder;
@@ -1563,8 +1563,8 @@ static jeBoolean TimeEdit_SetPosition(TimeEdit *TE)
 
 	if (GetClientRect(TE->hwnd,&Rect)==0)
 		{
-			jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"TimeEdit_SetPosition:  GetWindowRect failed");
-			return JE_FALSE;
+			grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"TimeEdit_SetPosition:  GetWindowRect failed");
+			return GR_FALSE;
 		}
 	TE->WindowAcross = (Rect.right - Rect.left);
 	TE->WindowDown   = (Rect.bottom- Rect.top);
@@ -1577,10 +1577,10 @@ static jeBoolean TimeEdit_SetPosition(TimeEdit *TE)
 	TE->PositionX = Rect.left + LeftBorder;
 	TE->PositionY = Rect.top + LINE_OFFSET;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean TimeEdit_IsEventArea(TimeEdit *TE, int MouseX, int MouseY)
+static grBoolean TimeEdit_IsEventArea(TimeEdit *TE, int MouseX, int MouseY)
 {
 	assert(TE);
 
@@ -1588,7 +1588,7 @@ static jeBoolean TimeEdit_IsEventArea(TimeEdit *TE, int MouseX, int MouseY)
 	TE,MouseX,MouseY;
 }
 
-static jeBoolean TimeEdit_SelectTest(TimeEdit *TE, int ChannelNdx, int KeyNdx, int MouseX, int MouseY, int Yoff)
+static grBoolean TimeEdit_SelectTest(TimeEdit *TE, int ChannelNdx, int KeyNdx, int MouseX, int MouseY, int Yoff)
 {
 	int x_ul, y_ul, x_lr, y_lr;
 	int PosX;
@@ -1626,23 +1626,23 @@ static jeBoolean TimeEdit_SelectTest(TimeEdit *TE, int ChannelNdx, int KeyNdx, i
 	y_lr = TE->PositionY + ysize + Yoff+LINESIZE/2;
 
 	if (MouseX < x_ul)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (MouseY < y_ul)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (MouseX > x_lr)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (MouseY > y_lr)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-static jeBoolean TimeEdit_SelectMultiTest(TimeEdit *TE, int MouseX, int MouseY)
+static grBoolean TimeEdit_SelectMultiTest(TimeEdit *TE, int MouseX, int MouseY)
 {
 	int i,c;
 	int s;
-	jeBoolean Found;
+	grBoolean Found;
 
 	assert(TE);
 
@@ -1655,13 +1655,13 @@ static jeBoolean TimeEdit_SelectMultiTest(TimeEdit *TE, int MouseX, int MouseY)
 		for (i = 0; i < cp->KeyCount; i++)
 			{
 
-			if (TimeEdit_SelectTest(TE, c,i, MouseX, MouseY, Yoff[c]) == JE_TRUE)
+			if (TimeEdit_SelectTest(TE, c,i, MouseX, MouseY, Yoff[c]) == GR_TRUE)
 				{
-				Found = JE_FALSE;
+				Found = GR_FALSE;
 				for (s = 0; cp->KeysSelected[s] != -1; s++)
 					{
 					if (cp->KeysSelected[s] == i)
-						Found = JE_TRUE;
+						Found = GR_TRUE;
 					}
 		
 				if (!Found)
@@ -1677,10 +1677,10 @@ static jeBoolean TimeEdit_SelectMultiTest(TimeEdit *TE, int MouseX, int MouseY)
 	if (TimeEdit_CountSelectedKeys(TE)>1)
 			TimeEdit_SetEventReadOnly(TE,TRUE);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }	
 
-static jeBoolean TimeEdit_SelectTimeBarTest(TimeEdit *TE, int MouseX, int MouseY)
+static grBoolean TimeEdit_SelectTimeBarTest(TimeEdit *TE, int MouseX, int MouseY)
 {
 	int x_ul, y_ul, x_lr, y_lr;
 	int PosX;
@@ -1696,7 +1696,7 @@ static jeBoolean TimeEdit_SelectTimeBarTest(TimeEdit *TE, int MouseX, int MouseY
 	y_lr = TE->PositionY - (TIMEBAR_TOP_SIZE) + 6;
 
 	if (MouseX > x_ul && MouseX < x_lr && MouseY > y_ul && MouseY < y_lr)
-		return JE_TRUE;
+		return GR_TRUE;
 
 	x_ul = PosX - 6;
 	y_ul = TE->PositionY + (TIMEBAR_BOT_SIZE) - 6;
@@ -1705,12 +1705,12 @@ static jeBoolean TimeEdit_SelectTimeBarTest(TimeEdit *TE, int MouseX, int MouseY
 	y_lr = TE->PositionY + (TIMEBAR_BOT_SIZE) + 6;
 
 	if (MouseX > x_ul && MouseX < x_lr && MouseY > y_ul && MouseY < y_lr)
-		return JE_TRUE;
+		return GR_TRUE;
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static jeBoolean TimeEdit_SelectTimeLineTest(TimeEdit *TE, int MouseX, int MouseY)
+static grBoolean TimeEdit_SelectTimeLineTest(TimeEdit *TE, int MouseX, int MouseY)
 {
 	int x_ul, y_ul, x_lr, y_lr;
 	int PosX;
@@ -1726,18 +1726,18 @@ static jeBoolean TimeEdit_SelectTimeLineTest(TimeEdit *TE, int MouseX, int Mouse
 	y_lr = TE->PositionY + 4;
 
 	if (MouseX < x_ul)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (MouseY < y_ul)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (MouseX > x_lr)
-		return JE_FALSE;
+		return GR_FALSE;
 	if (MouseY > y_lr)
-		return JE_FALSE;
+		return GR_FALSE;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean TimeEdit_AnimateSelected(TimeEdit *TE)
+static grBoolean TimeEdit_AnimateSelected(TimeEdit *TE)
 {
 	assert(TE);
 
@@ -1800,15 +1800,15 @@ static jeBoolean TimeEdit_AnimateSelected(TimeEdit *TE)
 			}
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean TimeEdit_Select(TimeEdit *TE, int MouseX, int MouseY)
+static grBoolean TimeEdit_Select(TimeEdit *TE, int MouseX, int MouseY)
 {
 	int i,c;
 	Channel *cp,*cp1;
-	jeBoolean SomethingSelected = JE_FALSE;
-	jeBoolean ChannelKeySelected[MAX_CHANNELS];
+	grBoolean SomethingSelected = GR_FALSE;
+	grBoolean ChannelKeySelected[MAX_CHANNELS];
 
 	assert(TE);
 
@@ -1826,7 +1826,7 @@ static jeBoolean TimeEdit_Select(TimeEdit *TE, int MouseX, int MouseY)
 
 		for (i = 0; i < cp->KeyCount; i++)
 			{	
-			if (TimeEdit_SelectTest(TE, c, i, MouseX, MouseY, Yoff[c]) == JE_TRUE)
+			if (TimeEdit_SelectTest(TE, c, i, MouseX, MouseY, Yoff[c]) == GR_TRUE)
 				{
 				// select single key
 				if (cp->KeysSelected[0] == i) // clicking an already selected key
@@ -1846,8 +1846,8 @@ static jeBoolean TimeEdit_Select(TimeEdit *TE, int MouseX, int MouseY)
 				else TimeEdit_SetEventReadOnly(TE,TRUE);
 
 				// pass the first key only
-				SomethingSelected = JE_TRUE;
-				ChannelKeySelected[c] = JE_TRUE;
+				SomethingSelected = GR_TRUE;
+				ChannelKeySelected[c] = GR_TRUE;
 
 				TimeEdit_SelectObject(TE);
 				}
@@ -1894,14 +1894,14 @@ static jeBoolean TimeEdit_Select(TimeEdit *TE, int MouseX, int MouseY)
 			}
 		}
 
-	TE->TimeLine->TimeBarSelected = JE_FALSE;
+	TE->TimeLine->TimeBarSelected = GR_FALSE;
 
 	// only try selecting the timebar or timeline if we aren't selecting a key/event
-	if (SomethingSelected == JE_FALSE)
+	if (SomethingSelected == GR_FALSE)
 		{	
 		if (TimeEdit_SelectTimeBarTest(TE, MouseX, MouseY))
 			{
-			TE->TimeLine->TimeBarSelected = JE_TRUE;
+			TE->TimeLine->TimeBarSelected = GR_TRUE;
 			Callback_ReturnTime(TE->TimeLine);
 			TimeEdit_SelectObject(TE);
 			}
@@ -1924,17 +1924,17 @@ static jeBoolean TimeEdit_Select(TimeEdit *TE, int MouseX, int MouseY)
 	if (TimeEdit_CountSelectedKeys(TE)>1)
 			TimeEdit_SetEventReadOnly(TE,TRUE);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-static void TimeEdit_SafeKeyTime(Channel* cp, float NewTime, jeBoolean IsCut, float *ReturnTime)
+static void TimeEdit_SafeKeyTime(Channel* cp, float NewTime, grBoolean IsCut, float *ReturnTime)
 {
 	int i;
-	jeBoolean blocker;
+	grBoolean blocker;
 	float start_time, end_time;
 
-	blocker = JE_FALSE;
+	blocker = GR_FALSE;
 
 	start_time = NewTime;
 
@@ -1953,7 +1953,7 @@ static void TimeEdit_SafeKeyTime(Channel* cp, float NewTime, jeBoolean IsCut, fl
 			if ( ! (end_time < st || start_time > et &&
 				fabs(st - end_time) >= MIN_KEY_TIME && fabs(start_time - et) >= MIN_KEY_TIME) )
 				{
-				blocker = JE_TRUE; // this time is blocked - try another one
+				blocker = GR_TRUE; // this time is blocked - try another one
 				NewTime += MIN_KEY_TIME/4;
 				TimeEdit_SafeKeyTime(cp, NewTime, IsCut, ReturnTime);
 				// skip past cut right
@@ -1965,7 +1965,7 @@ static void TimeEdit_SafeKeyTime(Channel* cp, float NewTime, jeBoolean IsCut, fl
 		if ((cp->KeyList[i] >= start_time && cp->KeyList[i] <= end_time) ||
 			fabs(cp->KeyList[i] - start_time) < MIN_KEY_TIME || fabs(cp->KeyList[i] - end_time) < MIN_KEY_TIME)
 			{
-			blocker = JE_TRUE; // this time is blocked - try another one
+			blocker = GR_TRUE; // this time is blocked - try another one
 			NewTime += MIN_KEY_TIME/4;
 			TimeEdit_SafeKeyTime(cp, NewTime, IsCut, ReturnTime);
 			break;
@@ -1981,7 +1981,7 @@ static void TimeEdit_SafeKeyTime(Channel* cp, float NewTime, jeBoolean IsCut, fl
 }
 
 
-static jeBoolean TimeEdit_CursorInInsertArea(TimeEdit* TE, int MouseX, int MouseY)
+static grBoolean TimeEdit_CursorInInsertArea(TimeEdit* TE, int MouseX, int MouseY)
 {
 	int ChannelList[2] = {-1,-1};
 	Channel *cp;
@@ -1989,7 +1989,7 @@ static jeBoolean TimeEdit_CursorInInsertArea(TimeEdit* TE, int MouseX, int Mouse
 	int i,k;
 	int TimeLineNdx;
 	int EventLineY,PosLineY,RotLineY,DualLineY;
-	jeBoolean ret = JE_TRUE;
+	grBoolean ret = GR_TRUE;
 
 	assert(TE);
 
@@ -1999,19 +1999,19 @@ static jeBoolean TimeEdit_CursorInInsertArea(TimeEdit* TE, int MouseX, int Mouse
 
 	if (MouseX < TE->PositionX - ELLIPSE_SEL_SIZE)
 		{
-		ret = JE_FALSE;
+		ret = GR_FALSE;
 		goto end;
 		}
 
 	if (MouseX > (TE->PositionX + TE->SizeX) + ELLIPSE_SEL_SIZE)
 		{
-		ret = JE_FALSE;
+		ret = GR_FALSE;
 		goto end;
 		}
 
 	if (TimeEdit_SelectTimeBarTest(TE, MouseX, MouseY))
 		{
-		ret = JE_FALSE;
+		ret = GR_FALSE;
 		goto end;
 		}
 
@@ -2043,7 +2043,7 @@ static jeBoolean TimeEdit_CursorInInsertArea(TimeEdit* TE, int MouseX, int Mouse
 
 	if (Count == 0)
 		{
-		ret = JE_FALSE;
+		ret = GR_FALSE;
 		}
 
 	for (i = 0; i < Count; i++)
@@ -2052,15 +2052,15 @@ static jeBoolean TimeEdit_CursorInInsertArea(TimeEdit* TE, int MouseX, int Mouse
 
 		if (cp->Disabled || !ret)
 			{
-			ret = JE_FALSE;
+			ret = GR_FALSE;
 			break;
 			}
 
 		for (k = 0; k < cp->KeyCount; k++)
 			{	
-			if (TimeEdit_SelectTest(TE, ChannelList[i], k, MouseX, MouseY, Yoff[ChannelList[i]]) == JE_TRUE)
+			if (TimeEdit_SelectTest(TE, ChannelList[i], k, MouseX, MouseY, Yoff[ChannelList[i]]) == GR_TRUE)
 				{
-				ret = JE_FALSE;
+				ret = GR_FALSE;
 				break;
 				}
 			}
@@ -2074,19 +2074,19 @@ end:
 }
 
 
-static jeBoolean TimeEdit_AddKeyTime(TimeEdit* TE, int ChannelNdx, float Time)
+static grBoolean TimeEdit_AddKeyTime(TimeEdit* TE, int ChannelNdx, float Time)
 {
 	Channel *cp;
 
 	cp = &TE->TimeLine->Channel[ChannelNdx];
 	
 	if (cp->Disabled) 
-		return JE_TRUE;
+		return GR_TRUE;
 
 	if (cp->KeyCount+2 >= MAX_KEYS)
 		{
-		jeErrorLog_AddString(-1,"TimeEdit_AddKey: Key limit hit.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"TimeEdit_AddKey: Key limit hit.", NULL);
+		return GR_FALSE;
 		}
 
 	Callback_GetKeyData(TE, ChannelNdx, cp->KeyCount);
@@ -2099,17 +2099,17 @@ static jeBoolean TimeEdit_AddKeyTime(TimeEdit* TE, int ChannelNdx, float Time)
 		}
 
 	TimeEdit_SetEventReadOnly(TE,TRUE);
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean TimeEdit_MoveKeyTime(TimeEdit* TE, int ChannelNdx, int KeyNdx, float Time)
+static grBoolean TimeEdit_MoveKeyTime(TimeEdit* TE, int ChannelNdx, int KeyNdx, float Time)
 {
 	Channel *cp;
 
 	cp = &TE->TimeLine->Channel[ChannelNdx];
 	
 	if (cp->Disabled) 
-		return JE_TRUE;
+		return GR_TRUE;
 
 	if (TimeEdit_IsCutLeft(cp, KeyNdx))
 		{
@@ -2129,7 +2129,7 @@ static jeBoolean TimeEdit_MoveKeyTime(TimeEdit* TE, int ChannelNdx, int KeyNdx, 
 		cp->KeyList[KeyNdx] = Time;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void TimeEdit_SortChannel(Channel *cp, float *v, unsigned n)
@@ -2185,16 +2185,16 @@ void TimeEdit_SortChannel(Channel *cp, float *v, unsigned n)
 		}
 	}
 
-static jeBoolean TimeEdit_DelKeyTime(TimeEdit* TE, int ChannelNdx, int KeyNdx)
+static grBoolean TimeEdit_DelKeyTime(TimeEdit* TE, int ChannelNdx, int KeyNdx)
 {
 	Channel *cp;
 	int CutNdx = -1;
-	jeBoolean Sort = JE_FALSE;
+	grBoolean Sort = GR_FALSE;
 	int i;
 
 	cp = &TE->TimeLine->Channel[ChannelNdx];
 	if (cp->Disabled) 
-		return JE_TRUE;
+		return GR_TRUE;
 	
 	for (i = 0; cp->KeysSelected[i] != -1; i++)
 		{
@@ -2212,7 +2212,7 @@ static jeBoolean TimeEdit_DelKeyTime(TimeEdit* TE, int ChannelNdx, int KeyNdx)
 
 		if (TimeEdit_IsCutRight(cp, cp->KeyCount-1))
 			{
-			Sort = JE_TRUE;
+			Sort = GR_TRUE;
 			}
 
 		if (CutNdx >= 0)
@@ -2232,17 +2232,17 @@ static jeBoolean TimeEdit_DelKeyTime(TimeEdit* TE, int ChannelNdx, int KeyNdx)
 			TimeEdit_SortChannel(cp, cp->KeyList, cp->KeyCount);
 			}
 	}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean TimeEdit_AddKey(TimeEdit* TE, int MouseX, int MouseY)
+static grBoolean TimeEdit_AddKey(TimeEdit* TE, int MouseX, int MouseY)
 {
 	float Time, ReturnTime;
 	int diff_pos, diff_rot, diff_both, diff_min;
-	int ChannelEnabled[MAX_CHANNELS] = {JE_FALSE, JE_FALSE, JE_FALSE};
+	int ChannelEnabled[MAX_CHANNELS] = {GR_FALSE, GR_FALSE, GR_FALSE};
 	Channel *cp;
 	int i;
-	jeBoolean ret = JE_TRUE;
+	grBoolean ret = GR_TRUE;
 	assert(TE);
 
 	// add a new key
@@ -2257,12 +2257,12 @@ static jeBoolean TimeEdit_AddKey(TimeEdit* TE, int MouseX, int MouseY)
 
 	if (diff_min == diff_pos || diff_min == diff_both)
 	{
-		ChannelEnabled[CHANNEL_POS] = JE_TRUE;
+		ChannelEnabled[CHANNEL_POS] = GR_TRUE;
 	}
 
 	if (diff_min == diff_rot || diff_min == diff_both)
 	{
-		ChannelEnabled[CHANNEL_ROT] = JE_TRUE;
+		ChannelEnabled[CHANNEL_ROT] = GR_TRUE;
 	}
 
 	for (i = 0; i < MAX_CHANNELS; i++)
@@ -2293,7 +2293,7 @@ static jeBoolean TimeEdit_AddKey(TimeEdit* TE, int MouseX, int MouseY)
 }
 
 
-static jeBoolean TimeEdit_DelKey(TimeEdit* TE)
+static grBoolean TimeEdit_DelKey(TimeEdit* TE)
 {
 	Channel *cp;
 	int c;
@@ -2323,10 +2323,10 @@ static jeBoolean TimeEdit_DelKey(TimeEdit* TE)
 			}
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static jeBoolean TimeEdit_AddEventTime(TimeEdit* TE, float Time)
+static grBoolean TimeEdit_AddEventTime(TimeEdit* TE, float Time)
 {	
 	float ReturnTime;
 	Channel *cp;
@@ -2337,9 +2337,9 @@ static jeBoolean TimeEdit_AddEventTime(TimeEdit* TE, float Time)
 	cp = &TE->TimeLine->Channel[CHANNEL_EVENT];
 
 	if (cp->Disabled) 
-		return JE_TRUE;
+		return GR_TRUE;
 
-	TimeEdit_SafeKeyTime(cp, Time, JE_FALSE, &ReturnTime);
+	TimeEdit_SafeKeyTime(cp, Time, GR_FALSE, &ReturnTime);
 
 	cp->KeyList[cp->KeyCount] = ReturnTime;
 
@@ -2347,20 +2347,20 @@ static jeBoolean TimeEdit_AddEventTime(TimeEdit* TE, float Time)
 
 	if (cp->KeyCount++ >= MAX_KEYS)
 		{
-		jeErrorLog_AddString(-1,"TimeEdit_InitAddEvent: Event limit hit.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"TimeEdit_InitAddEvent: Event limit hit.", NULL);
+		return GR_FALSE;
 		}
 
 	Callback_ReturnData(TE->TimeLine, CHANNEL_EVENT);
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 }
 
-static jeBoolean TimeEdit_AddEvent(TimeEdit* TE, int MouseX, int MouseY)
+static grBoolean TimeEdit_AddEvent(TimeEdit* TE, int MouseX, int MouseY)
 {
 	Channel *cp;
-	jeFloat Time;
+	grFloat Time;
 	int i;
 
 	assert(TE);
@@ -2373,7 +2373,7 @@ static jeBoolean TimeEdit_AddEvent(TimeEdit* TE, int MouseX, int MouseY)
 	cp = &TE->TimeLine->Channel[CHANNEL_EVENT];
 
 	if (cp->Disabled) 
-		return JE_TRUE;
+		return GR_TRUE;
 
 	for (i = 0; i < MAX_CHANNELS-1; i++)
 	{
@@ -2388,7 +2388,7 @@ static jeBoolean TimeEdit_AddEvent(TimeEdit* TE, int MouseX, int MouseY)
 	cp->KeysSelected[0] = -1;
 
 
-	return JE_TRUE;
+	return GR_TRUE;
 	MouseY;
 }
 
@@ -2412,7 +2412,7 @@ static int TimeEdit_CountSelectedKeys(TimeEdit *TE)
 }
 
 
-static jeBoolean TimeEdit_MoveSelectedKeys(TimeEdit *TE, float Offset, int MouseY)
+static grBoolean TimeEdit_MoveSelectedKeys(TimeEdit *TE, float Offset, int MouseY)
 {
 	int i,c;
 	float Time,MouseAtTime=-1,ReturnTime;
@@ -2450,7 +2450,7 @@ static jeBoolean TimeEdit_MoveSelectedKeys(TimeEdit *TE, float Offset, int Mouse
 
 			if (TimeEdit_IsCutRight(cp, ndx))
 				{
-				TimeEdit_SafeKeyTime(cp, MouseAtTime, JE_TRUE, &ReturnTime);
+				TimeEdit_SafeKeyTime(cp, MouseAtTime, GR_TRUE, &ReturnTime);
 				TimeEdit_MoveKeyTime(TE, c, ndx-1, ReturnTime);
 				}
 			else
@@ -2487,11 +2487,11 @@ static jeBoolean TimeEdit_MoveSelectedKeys(TimeEdit *TE, float Offset, int Mouse
 
 	Callback_ReturnTime(TE->TimeLine);
 
-	return JE_TRUE;
+	return GR_TRUE;
 	MouseY;
 }
 
-static jeBoolean TimeEdit_DupSelectedKeys(TimeEdit *TE)
+static grBoolean TimeEdit_DupSelectedKeys(TimeEdit *TE)
 {
 	int i,c;
 	Channel *cp;
@@ -2542,9 +2542,9 @@ static jeBoolean TimeEdit_DupSelectedKeys(TimeEdit *TE)
 		}
 
 	TE->pCTimeLine->m_InsertCut.SetCheck(0);		
-	return JE_TRUE;
+	return GR_TRUE;
 }
-static jeBoolean TimeEdit_InsertTime(TimeEdit *TE)
+static grBoolean TimeEdit_InsertTime(TimeEdit *TE)
 {
 	float TimeOffset,Time;
 	int i,c;
@@ -2575,16 +2575,16 @@ static jeBoolean TimeEdit_InsertTime(TimeEdit *TE)
 
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean TimeEdit_IsCutLeft(Channel *cp, int ndx)
+grBoolean TimeEdit_IsCutLeft(Channel *cp, int ndx)
 	{
 	return (ndx+1 < cp->KeyCount && fabs(cp->KeyList[ndx] - cp->KeyList[ndx+1]) <= TIMELINE_CUT_THRESHOLD);
 	}
 
-jeBoolean TimeEdit_IsCutRight(Channel *cp, int ndx)
+grBoolean TimeEdit_IsCutRight(Channel *cp, int ndx)
 	{
 	return (ndx-1 >= 0 && fabs(cp->KeyList[ndx] - cp->KeyList[ndx-1]) <= TIMELINE_CUT_THRESHOLD);
 	}
@@ -2592,7 +2592,7 @@ jeBoolean TimeEdit_IsCutRight(Channel *cp, int ndx)
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Painting functions
 
-static jeBoolean TimeEdit_TimeLinePaint(TimeEdit *TE,	HDC hdc)
+static grBoolean TimeEdit_TimeLinePaint(TimeEdit *TE,	HDC hdc)
 {
 	int i,c;
 	int x_ul, y_ul, x_lr, y_lr;
@@ -2623,30 +2623,30 @@ static jeBoolean TimeEdit_TimeLinePaint(TimeEdit *TE,	HDC hdc)
 	BlackPen = (HPEN)GetStockObject(BLACK_PEN);
 	if (BlackPen == NULL)
 		{	
-		jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: GetStockObject for pen failed", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: GetStockObject for pen failed", NULL);
+		return GR_FALSE;
 		}
 
 	// draw time keys
 	NewBrush = (HPEN)GetStockObject(BLACK_BRUSH);
 	if (NewBrush == NULL)
 		{	
-		jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: GetStockObject for pen failed", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: GetStockObject for pen failed", NULL);
+		return GR_FALSE;
 		}
 
 	OldBrush = (HPEN)SelectObject(hdc,NewBrush);
 	if (OldBrush == NULL)
 		{	
-		jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: SelectObject for pen failed", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: SelectObject for pen failed", NULL);
+		return GR_FALSE;
 		}
 
 	BluePen = (HPEN)CreatePen(PS_SOLID, 0, RGB(0,0,255));
 	if (BluePen == NULL)
 		{	
-		jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: CreatePen failed", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: CreatePen failed", NULL);
+		return GR_FALSE;
 		}
 	
 	hBrush = (HBRUSH)SelectObject(hdc, CreateSolidBrush(RGB(255,255,255)));
@@ -2726,14 +2726,14 @@ static jeBoolean TimeEdit_TimeLinePaint(TimeEdit *TE,	HDC hdc)
 	NewBrush = (HPEN)GetStockObject(GRAY_BRUSH);
 	if (NewBrush == NULL)
 		{	
-		jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: GetStockObject for pen failed", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: GetStockObject for pen failed", NULL);
+		return GR_FALSE;
 		}
 	OldBrush = (HPEN)SelectObject(hdc,NewBrush);
 	if (OldBrush == NULL)
 		{	
-		jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: SelectObject for pen failed", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE, "TimeEdit_TimeLinePaint: SelectObject for pen failed", NULL);
+		return GR_FALSE;
 		}
 
 	hBrush = (HBRUSH)SelectObject(hdc, CreateSolidBrush(RGB(255,0,0)));
@@ -2747,7 +2747,7 @@ static jeBoolean TimeEdit_TimeLinePaint(TimeEdit *TE,	HDC hdc)
 		for (i = 0; cp->KeysSelected[i] != -1; i++)
 			{
 			int ndx = cp->KeysSelected[i];
-			jeBoolean CutLeft, CutRight;
+			grBoolean CutLeft, CutRight;
 
 
 			Time = cp->KeyList[ndx];
@@ -2756,7 +2756,7 @@ static jeBoolean TimeEdit_TimeLinePaint(TimeEdit *TE,	HDC hdc)
 		/*	if ((X < TE->PositionX) || (X > (TE->PositionX + TE->SizeX)))
 				continue;*/
 
-			CutLeft = CutRight = JE_FALSE;
+			CutLeft = CutRight = GR_FALSE;
 			x_ul = X - ELLIPSE_SIZE*3;
 			y_ul = TE->PositionY - ELLIPSE_SIZE + Yoff[c]+LINESIZE/2;
 
@@ -2765,7 +2765,7 @@ static jeBoolean TimeEdit_TimeLinePaint(TimeEdit *TE,	HDC hdc)
 	
 			if (TimeEdit_IsCutLeft(cp, ndx))
 				{
-				CutLeft = JE_TRUE;
+				CutLeft = GR_TRUE;
 
 				x_st = X;
 				y_st = y_ul;
@@ -2778,7 +2778,7 @@ static jeBoolean TimeEdit_TimeLinePaint(TimeEdit *TE,	HDC hdc)
 			else
 			if (TimeEdit_IsCutRight(cp, ndx))
 				{
-				CutRight = JE_TRUE;
+				CutRight = GR_TRUE;
 
 				x_st = X;
 				y_st = y_lr;
@@ -2914,11 +2914,11 @@ static jeBoolean TimeEdit_TimeLinePaint(TimeEdit *TE,	HDC hdc)
 
 	DeleteObject(SelectObject(hdc, hBrush));
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-static jeBoolean TimeEdit_Paint(TimeEdit *TE)
+static grBoolean TimeEdit_Paint(TimeEdit *TE)
 {
 	HDC hdc;
 	HPEN NewBrush;
@@ -2957,36 +2957,36 @@ static jeBoolean TimeEdit_Paint(TimeEdit *TE)
 
  
 	if (TE->TimeLineCount == 0)
-		return JE_TRUE;
+		return GR_TRUE;
 
-	if (TimeEdit_SetPosition(TE)==JE_FALSE)
+	if (TimeEdit_SetPosition(TE)==GR_FALSE)
 	{
-		jeErrorLog_Add(JE_ERR_SUBSYSTEM_FAILURE,"TimeEdit_Paint:  TimeEdit_SetPosition failed");
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_SUBSYSTEM_FAILURE,"TimeEdit_Paint:  TimeEdit_SetPosition failed");
+		return GR_FALSE;
 	}
 
 	hdc = GetDC(TE->hwnd);
 	if (hdc == NULL)
 	{
-		jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"TimeEdit_Paint:  GetDC for drawing failed");
-		return JE_FALSE;
+		grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"TimeEdit_Paint:  GetDC for drawing failed");
+		return GR_FALSE;
 	}
 
 	
 	NewBrush = (HPEN)GetStockObject(BLACK_BRUSH);
 	if (NewBrush == NULL)
 	{
-		jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"TimeEdit_Paint:  GetStockObject for pen failed");
+		grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"TimeEdit_Paint:  GetStockObject for pen failed");
 		ReleaseDC(TE->hwnd,hdc);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 				
 	OldBrush = (HPEN)SelectObject(hdc,NewBrush);
 	if (OldBrush == NULL)
 	{
-		jeErrorLog_Add(JE_ERR_WINDOWS_API_FAILURE,"TimeEdit_Paint:  SelectObject for pen failed");
+		grErrorLog_Add(GR_ERR_WINDOWS_API_FAILURE,"TimeEdit_Paint:  SelectObject for pen failed");
 		ReleaseDC(TE->hwnd,hdc);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 	
 	// Create Offscreen DC
@@ -2998,7 +2998,7 @@ static jeBoolean TimeEdit_Paint(TimeEdit *TE)
  	if (memhdc==NULL) 
 	{
 		ReleaseDC(TE->hwnd,hdc);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	offscreenBitmap = CreateCompatibleBitmap(hdc,hdcRect.right-hdcRect.left,hdcRect.bottom-hdcRect.top);
@@ -3007,7 +3007,7 @@ static jeBoolean TimeEdit_Paint(TimeEdit *TE)
 	{
 		DeleteDC(memhdc);
 		ReleaseDC(TE->hwnd,hdc);
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	holdBitmap		= SelectObject( memhdc,offscreenBitmap );
@@ -3250,9 +3250,9 @@ static jeBoolean TimeEdit_Paint(TimeEdit *TE)
 		}
 
 		// draw time line data
-		if (TimeEdit_TimeLinePaint(TE, memhdc) == JE_FALSE)
+		if (TimeEdit_TimeLinePaint(TE, memhdc) == GR_FALSE)
 			{	
-			jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE, "TimeEdit_Paint: TimeLinePaint failed", NULL);
+			grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE, "TimeEdit_Paint: TimeLinePaint failed", NULL);
 			
 			SelectClipRgn(memhdc, NULL);
 			DeleteObject (ClipRegion);
@@ -3262,7 +3262,7 @@ static jeBoolean TimeEdit_Paint(TimeEdit *TE)
 			DeleteDC (memhdc);
 
 			ReleaseDC(TE->hwnd,hdc);
-			return JE_FALSE;
+			return GR_FALSE;
 			}
 
 		SelectClipRgn(memhdc, NULL);
@@ -3290,7 +3290,7 @@ static jeBoolean TimeEdit_Paint(TimeEdit *TE)
 	TE->TimeLine = TE->SaveTimeLine;
 	TE->PositionY = SavePosY;
  
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -3312,11 +3312,11 @@ void TimeEdit_Clear(TimeEdit* TE)
 		}
 
 	TE->TimeLine->CurrTime = 0.0f;
-	TE->Dragging = JE_FALSE;
+	TE->Dragging = GR_FALSE;
 	InvalidateRect(TE->hwnd, NULL, FALSE);
 }
 
-jeBoolean TimeEdit_InitAddPosKey(TimeEdit* TE, float Time)
+grBoolean TimeEdit_InitAddPosKey(TimeEdit* TE, float Time)
 {
 	Channel *cp;
 
@@ -3327,13 +3327,13 @@ jeBoolean TimeEdit_InitAddPosKey(TimeEdit* TE, float Time)
 	cp->KeyList[cp->KeyCount] = Time;
 	if (cp->KeyCount++ >= MAX_KEYS)
 		{
-		jeErrorLog_AddString(-1,"TimeEdit_InitAddKey: Key limit hit.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"TimeEdit_InitAddKey: Key limit hit.", NULL);
+		return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean TimeEdit_InitAddRotKey(TimeEdit* TE, float Time)
+grBoolean TimeEdit_InitAddRotKey(TimeEdit* TE, float Time)
 {
 	Channel *cp;
 	assert(TE);
@@ -3343,13 +3343,13 @@ jeBoolean TimeEdit_InitAddRotKey(TimeEdit* TE, float Time)
 	cp->KeyList[cp->KeyCount] = Time;
 	if (cp->KeyCount++ >= MAX_KEYS)
 		{
-		jeErrorLog_AddString(-1,"TimeEdit_InitAddKey: Key limit hit.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"TimeEdit_InitAddKey: Key limit hit.", NULL);
+		return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean TimeEdit_InitAddEvent(TimeEdit* TE, float Time)
+grBoolean TimeEdit_InitAddEvent(TimeEdit* TE, float Time)
 {
 	Channel *cp;
 	assert(TE);
@@ -3359,13 +3359,13 @@ jeBoolean TimeEdit_InitAddEvent(TimeEdit* TE, float Time)
 	cp->KeyList[cp->KeyCount] = Time;
 	if (cp->KeyCount++ >= MAX_KEYS)
 		{
-		jeErrorLog_AddString(-1,"TimeEdit_InitAddKey: Key limit hit.", NULL);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"TimeEdit_InitAddKey: Key limit hit.", NULL);
+		return GR_FALSE;
 		}
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-jeBoolean TimeEdit_InitAddTimeLine(TimeEdit* TE, int ChannelFlags)
+grBoolean TimeEdit_InitAddTimeLine(TimeEdit* TE, int ChannelFlags)
 {
 	int ThisTimeLine;
 	int i;
@@ -3376,13 +3376,13 @@ jeBoolean TimeEdit_InitAddTimeLine(TimeEdit* TE, int ChannelFlags)
 
 	for (i = 0; i < MAX_CHANNELS; i++)
 		{
-		TE->TimeLineList[ThisTimeLine].Channel[i].Disabled = JE_TRUE;
+		TE->TimeLineList[ThisTimeLine].Channel[i].Disabled = GR_TRUE;
 
 		if (ChannelFlags & 1<<i)
 			{
 			memset(TE->TimeLineList[ThisTimeLine].Channel[i].KeyList, 0, sizeof(TE->TimeLineList[ThisTimeLine].Channel[i].KeyList));
 			memset(TE->TimeLineList[ThisTimeLine].Channel[i].KeysSelected, -1, sizeof(TE->TimeLineList[ThisTimeLine].Channel[i].KeysSelected));
-			TE->TimeLineList[ThisTimeLine].Channel[i].Disabled = JE_FALSE;
+			TE->TimeLineList[ThisTimeLine].Channel[i].Disabled = GR_FALSE;
 			TE->TimeLineList[ThisTimeLine].Channel[i].KeyCount = 0;
 			}
 		}
@@ -3392,11 +3392,11 @@ jeBoolean TimeEdit_InitAddTimeLine(TimeEdit* TE, int ChannelFlags)
 	//TimeEdit_SetCurrentTimeLine(TE, ThisTimeLine);
 	TE->TimeLine = &TE->TimeLineList[ThisTimeLine];
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-jeBoolean TimeEdit_GetPathObject(Object** op)
+grBoolean TimeEdit_GetPathObject(Object** op)
 {
 	ObjectList *OL;
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
@@ -3411,28 +3411,28 @@ jeBoolean TimeEdit_GetPathObject(Object** op)
 
 	if (!OL || ObjectList_GetNumItems(OL) != 1)
 		{
-		return JE_TRUE;
+		return GR_TRUE;
 		}
 
 	*op = ObjectList_GetFirst(OL, &Iterator);
 
 	if (*op == NULL)
 		{
-		return JE_TRUE;
+		return GR_TRUE;
 		}
 
 	if (strcmp(Object_GetName(*op),"PathObject") != 0)
 		{
 		*op = NULL;
-		return JE_TRUE;
+		return GR_TRUE;
 		}
 
-	return JE_TRUE;
+	return GR_TRUE;
 	}
 
 void Callback_ReturnTime(TimeData *TD)
 {
-	jeProperty_Data Data;
+	grProperty_Data Data;
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
@@ -3443,7 +3443,7 @@ void Callback_ReturnTime(TimeData *TD)
 void Callback_ReturnData(TimeData *TD, int ChannelNdx)
 {
 	int PropType[MAX_CHANNELS] = {PROPERTY_CHANNEL_POS_TYPE, PROPERTY_CHANNEL_ROT_TYPE, PROPERTY_CHANNEL_EVENT_TYPE};
-	jeProperty_Data Data;
+	grProperty_Data Data;
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
 
@@ -3482,11 +3482,11 @@ void TimeEdit_QueryControllerForTimeLine(TimeEdit *TE)
 	return;
 }
 
-jeObject *TimeEdit_GetObject(TimeEdit *TE, int TimeLineNdx)
+grObject *TimeEdit_GetObject(TimeEdit *TE, int TimeLineNdx)
 {
 	Object *op;
 	Object_TimeGetObject data;
-	jeObject *obj;
+	grObject *obj;
 
 	TimeEdit_GetPathObject(&op);
 	if (!op)
@@ -3508,7 +3508,7 @@ void TimeEdit_SelectObject(TimeEdit *TE)
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
-	jeObject *obj;
+	grObject *obj;
 
 	obj = TimeEdit_GetObject(TE, TE->TimeLine - TE->TimeLineList);
 
@@ -3523,7 +3523,7 @@ void TimeEdit_MarkObject(TimeEdit *TE, int TimeLineNdx)
 {
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 	CJweDoc*	pDoc = pMainFrm->GetCurrentDocument() ;
-	jeObject *obj;
+	grObject *obj;
 
 	obj = TimeEdit_GetObject(TE, TimeLineNdx);
 
@@ -3572,7 +3572,7 @@ void Callback_GetKeyData(TimeEdit *TE, int ChannelNdx, int KeyNdx)
 	}
 }
 
-jeBoolean Callback_SetPlayMode(TimeEdit *TE, jeBoolean Play)
+grBoolean Callback_SetPlayMode(TimeEdit *TE, grBoolean Play)
 {
 	Object_TimePlayMode data;
 	Object *op;
@@ -3580,7 +3580,7 @@ jeBoolean Callback_SetPlayMode(TimeEdit *TE, jeBoolean Play)
 	TimeEdit_GetPathObject(&op);
 	if (!op)
 		{
-		return JE_TRUE;
+		return GR_TRUE;
 		}
 
 	data.TimeLineNdx = TE->TimeLine - TE->TimeLineList;
@@ -3588,12 +3588,12 @@ jeBoolean Callback_SetPlayMode(TimeEdit *TE, jeBoolean Play)
 
 	Object_SendMessage(op, OBJECT_TIMELINE_SET_PLAY_MODE_MSG, &data);
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
 
-jeBoolean Callback_GetPlayMode(TimeEdit *TE, int *PlayMode)
+grBoolean Callback_GetPlayMode(TimeEdit *TE, int *PlayMode)
 {
 	Object_TimePlayMode data;
 	Object *op;
@@ -3601,8 +3601,8 @@ jeBoolean Callback_GetPlayMode(TimeEdit *TE, int *PlayMode)
 	TimeEdit_GetPathObject(&op);
 	if (!op)
 	{
-		*PlayMode = JE_FALSE;
-		return JE_TRUE;
+		*PlayMode = GR_FALSE;
+		return GR_TRUE;
 	}
 		
 	data.TimeLineNdx = TE->TimeLine - TE->TimeLineList;
@@ -3610,7 +3610,7 @@ jeBoolean Callback_GetPlayMode(TimeEdit *TE, int *PlayMode)
 
 	*PlayMode = data.PlayMode;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 void Callback_GetCurrentTime(TimeData *TD, float *Time)
@@ -3651,7 +3651,7 @@ void Callback_GetIndividualTime(TimeEdit *TE, int TimeLineNdx, float *Time)
 	TE;
 }
 
-void JETCC TimeEdit_FreeTimeLine(TimeEdit *TE, int TimeLineNdx)
+void GRCC TimeEdit_FreeTimeLine(TimeEdit *TE, int TimeLineNdx)
 {
 	int k;
 
@@ -3660,7 +3660,7 @@ void JETCC TimeEdit_FreeTimeLine(TimeEdit *TE, int TimeLineNdx)
 		{
 		if (TE->TimeLineList[TimeLineNdx].Channel[CHANNEL_EVENT].KeyData[k].String)
 			{
-			jeRam_Free(TE->TimeLineList[TimeLineNdx].Channel[CHANNEL_EVENT].KeyData[k].String);
+			grRam_Free(TE->TimeLineList[TimeLineNdx].Channel[CHANNEL_EVENT].KeyData[k].String);
 			}
 		}
 }
@@ -3688,7 +3688,7 @@ void TimeEdit_Destroy(TimeEdit *TE)
 			{
 			TimeEdit_FreeTimeLine(TE, i);
 			}
-		jeRam_Free(TE);
+		grRam_Free(TE);
 		}
 }
 
@@ -3697,18 +3697,18 @@ TimeEdit *TimeEdit_CreateTimeEditData(HWND hWnd)
 	TimeEdit *TE;
 	int i;
 
-	TE = JE_RAM_ALLOCATE_STRUCT(TimeEdit);
+	TE = GR_RAM_ALLOCATE_STRUCT(TimeEdit);
 
 	if (TE == NULL)
 		{
-			jeErrorLog_AddString(JE_ERR_MEMORY_RESOURCE,"TimeEdit_CreateWindow:  Couldn't create TimeEdit object",NULL);
+			grErrorLog_AddString(GR_ERR_MEMORY_RESOURCE,"TimeEdit_CreateWindow:  Couldn't create TimeEdit object",NULL);
 			goto Error;
 		}
 
-	TE->Dragging = JE_FALSE;
-	TE->rDragging= JE_FALSE;
-	TE->MoveAll	 = JE_FALSE;
-	TE->TimeMode = JE_FALSE;
+	TE->Dragging = GR_FALSE;
+	TE->rDragging= GR_FALSE;
+	TE->MoveAll	 = GR_FALSE;
+	TE->TimeMode = GR_FALSE;
 	TE->ScrollY  = 0;
 
 	TE->TimeLine = NULL;
@@ -3731,7 +3731,7 @@ TimeEdit *TimeEdit_CreateTimeEditData(HWND hWnd)
 		{
 		if (GetLastError()!=0)
 			{
-			jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE,"TimeEdit_CreateWindow:  SetWindowLong failed",jeErrorLog_IntToString(GetLastError()));
+			grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE,"TimeEdit_CreateWindow:  SetWindowLong failed",grErrorLog_IntToString(GetLastError()));
 			goto Error;
 			}
 		}
@@ -3741,7 +3741,7 @@ TimeEdit *TimeEdit_CreateTimeEditData(HWND hWnd)
 Error:
 
 	if (TE)
-		jeRam_Free(TE);
+		grRam_Free(TE);
 
 	return (NULL);
 }
@@ -3768,7 +3768,7 @@ HWND TimeEdit_CreateWindow(HWND hwndParent, int32 Width, int32 Height)
 		{
 			if (RegisterClass(&wc)==0)
 				{
-					jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE,"TimeEdit_CreateWindow: RegisterClass for TimeEdit window",jeErrorLog_IntToString(GetLastError()));
+					grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE,"TimeEdit_CreateWindow: RegisterClass for TimeEdit window",grErrorLog_IntToString(GetLastError()));
 					goto Error;
 				}
 		}
@@ -3790,7 +3790,7 @@ HWND TimeEdit_CreateWindow(HWND hwndParent, int32 Width, int32 Height)
 
 	if (!hWnd)
 		{
-			jeErrorLog_AddString(JE_ERR_WINDOWS_API_FAILURE,"TimeEdit_CreateWindow: CreateWindowEx failed for TimeEdit window",jeErrorLog_IntToString(GetLastError()));
+			grErrorLog_AddString(GR_ERR_WINDOWS_API_FAILURE,"TimeEdit_CreateWindow: CreateWindowEx failed for TimeEdit window",grErrorLog_IntToString(GetLastError()));
 			goto Error;
 		}
 
@@ -3815,7 +3815,7 @@ HWND TimeEdit_CreateWindow(HWND hwndParent, int32 Width, int32 Height)
 
 	if (TE)
 		{
-		jeRam_Free(TE);
+		grRam_Free(TE);
 		}
 	return NULL;
 }
@@ -3904,7 +3904,7 @@ BOOL CTimeLine::OnInitDialog()
 	bCLR.SetTooltipText (&Tooltip,TRUE);
 */
 	// event edit box starts out read only
-	TimeEdit_SetEventReadOnly (m_TE,JE_TRUE);
+	TimeEdit_SetEventReadOnly (m_TE,GR_TRUE);
 	//ToolBar.Create(IDD,this);
 
 	this->MoveWindow( 0, 0, 820, 300, TRUE );
@@ -4025,7 +4025,7 @@ void CTimeLine::SetEventProperties()
 			// if greater than 256 then fall back to deallocate and strdup'ing
 			if (cp->KeyData[cp->KeysSelected[0]].String)
 				{
-				jeRam_Free(cp->KeyData[cp->KeysSelected[0]].String);
+				grRam_Free(cp->KeyData[cp->KeysSelected[0]].String);
 				}
 
 			cp->KeyData[cp->KeysSelected[0]].String = Util_StrDup(text);
@@ -4035,7 +4035,7 @@ void CTimeLine::SetEventProperties()
 			// if less than 256 then allocate a fixed buffer for this
 			if (!cp->KeyData[cp->KeysSelected[0]].String)
 				{
-				cp->KeyData[cp->KeysSelected[0]].String = (char*)jeRam_Allocate(256);
+				cp->KeyData[cp->KeysSelected[0]].String = (char*)grRam_Allocate(256);
 				}
 
 			// just do a copy - we're garanteed to have room
@@ -4082,12 +4082,12 @@ void CTimeLine::OnTimelineMode()
 	switch (playmode)
 		{
 		case 0:
-			Callback_SetPlayMode(m_TE, JE_FALSE);
+			Callback_SetPlayMode(m_TE, GR_FALSE);
 			m_PlayMode.SetWindowText("Play");
 			m_PlayMode.InvalidateRect(NULL, FALSE);
 			break;
 		case 1:
-			Callback_SetPlayMode(m_TE, JE_TRUE);
+			Callback_SetPlayMode(m_TE, GR_TRUE);
 			m_PlayMode.SetWindowText("Stop");
 			m_PlayMode.InvalidateRect(NULL, FALSE);
 			break;
@@ -4156,7 +4156,7 @@ void CTimeLine::OnTimelineMod()
 			m_PlayMode.InvalidateRect(NULL, FALSE);
 			bPlay.SetIcon  ( IDI_PLAY);
 
-			Callback_SetPlayMode(m_TE, JE_FALSE);
+			Callback_SetPlayMode(m_TE, GR_FALSE);
 			m_PlayMode.SetWindowText("Play");
 			GetDlgItem( IDC_TIMELINE_MOD )->SetWindowText("Play");
 			break;
@@ -4164,7 +4164,7 @@ void CTimeLine::OnTimelineMod()
 			GetDlgItem( IDC_TIMELINE_MOD )->SetWindowText("Stop");
 			bPlay.SetIcon  ( IDI_PLAYING);
 
-			Callback_SetPlayMode(m_TE, JE_TRUE);
+			Callback_SetPlayMode(m_TE, GR_TRUE);
 			m_PlayMode.SetWindowText("Stop");
 			m_PlayMode.InvalidateRect(NULL, FALSE);
 			break;

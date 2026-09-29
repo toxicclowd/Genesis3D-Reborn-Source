@@ -328,14 +328,14 @@ WORD WINAPI PaletteSize(LPSTR lpbi)
 
 #include "ErrorLog.h"
 
-jeBoolean  SaveDIB(jeVFile	*	pF, jePtrMgr	*pPtrMgr ,HANDLE hDib)
+grBoolean  SaveDIB(grVFile	*	pF, grPtrMgr	*pPtrMgr ,HANDLE hDib)
 {
 	BITMAPFILEHEADER bmfHdr{}; // Header for Bitmap file
 	LPBITMAPINFOHEADER lpBI{};   // Pointer to DIB info structure
 	DWORD dwDIBSize{};
 
 	if (hDib == nullptr)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	/*
 	 * Get a pointer to the DIB memory, the first of which contains
@@ -343,14 +343,14 @@ jeBoolean  SaveDIB(jeVFile	*	pF, jePtrMgr	*pPtrMgr ,HANDLE hDib)
 	 */
 	lpBI = (LPBITMAPINFOHEADER) ::GlobalLock((HGLOBAL) hDib);
 	if (lpBI == nullptr)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if (!IS_WIN30_DIB(lpBI))
 	{
 		::GlobalUnlock((HGLOBAL) hDib);
-		jeErrorLog_AddString( JE_ERR_WINDOWS_API_FAILURE, "SaveDIB: Unsupported DIB", "Jet3D");
+		grErrorLog_AddString( GR_ERR_WINDOWS_API_FAILURE, "SaveDIB: Unsupported DIB", "Jet3D");
 
-		return JE_FALSE;       // It's an other-style DIB (save not supported)
+		return GR_FALSE;       // It's an other-style DIB (save not supported)
 	}
 
 	/*
@@ -415,17 +415,17 @@ jeBoolean  SaveDIB(jeVFile	*	pF, jePtrMgr	*pPtrMgr ,HANDLE hDib)
 	bmfHdr.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) + lpBI->biSize;
 
 			// Write the file header 
-	if(jeVFile_Write( pF, &bmfHdr, sizeof(BITMAPFILEHEADER) ) == JE_FALSE )
+	if(grVFile_Write( pF, &bmfHdr, sizeof(BITMAPFILEHEADER) ) == GR_FALSE )
 		{   ::GlobalUnlock((HGLOBAL) hDib);
-			jeErrorLog_AddString( JE_ERR_WINDOWS_API_FAILURE, "SaveDIB: Write of BMP-Header failed", "Jet3D");
-			return JE_FALSE;
+			grErrorLog_AddString( GR_ERR_WINDOWS_API_FAILURE, "SaveDIB: Write of BMP-Header failed", "Jet3D");
+			return GR_FALSE;
 		}
 
 	// Write the DIB header and the bits 
-	if(jeVFile_Write( pF, lpBI, dwDIBSize ) == JE_FALSE )
+	if(grVFile_Write( pF, lpBI, dwDIBSize ) == GR_FALSE )
 		{   ::GlobalUnlock((HGLOBAL) hDib);
-			jeErrorLog_AddString( JE_ERR_WINDOWS_API_FAILURE, "SaveDIB: Write of BMP-Body failed", "Jet3D");
-			return JE_FALSE;
+			grErrorLog_AddString( GR_ERR_WINDOWS_API_FAILURE, "SaveDIB: Write of BMP-Body failed", "Jet3D");
+			return GR_FALSE;
 		}
 
 	::GlobalUnlock((HGLOBAL) hDib);
@@ -495,7 +495,7 @@ HANDLE DDBToDIB( CBitmap& bitmap, DWORD dwCompression, CPalette* pPal )
 	if (!hDIB){
 		SelectPalette(hDC,hPal,FALSE);
 		ReleaseDC(NULL,hDC);
-	    jeErrorLog_AddString( JE_ERR_WINDOWS_API_FAILURE, "DDBToDIB: No mem left", "Jet3D");
+	    grErrorLog_AddString( GR_ERR_WINDOWS_API_FAILURE, "DDBToDIB: No mem left", "Jet3D");
 		return nullptr;
 	}
 
@@ -532,7 +532,7 @@ HANDLE DDBToDIB( CBitmap& bitmap, DWORD dwCompression, CPalette* pPal )
 		// Reselect the original palette
 		SelectPalette(hDC,hPal,FALSE);
 		ReleaseDC(NULL,hDC);
-	    jeErrorLog_AddString( JE_ERR_WINDOWS_API_FAILURE, "DDBToDIB: GlobalReAlloc failed", "Jet3D");
+	    grErrorLog_AddString( GR_ERR_WINDOWS_API_FAILURE, "DDBToDIB: GlobalReAlloc failed", "Jet3D");
 		return NULL;
 	}
 
@@ -554,7 +554,7 @@ HANDLE DDBToDIB( CBitmap& bitmap, DWORD dwCompression, CPalette* pPal )
 		
 		SelectPalette(hDC,hPal,FALSE);
 		ReleaseDC(NULL,hDC);
-	    jeErrorLog_AddString( JE_ERR_WINDOWS_API_FAILURE, "DDBToDIB: GetDIBits failed", "Jet3D");
+	    grErrorLog_AddString( GR_ERR_WINDOWS_API_FAILURE, "DDBToDIB: GetDIBits failed", "Jet3D");
 		return NULL;
 	}
 
@@ -564,7 +564,7 @@ HANDLE DDBToDIB( CBitmap& bitmap, DWORD dwCompression, CPalette* pPal )
 }
 
 
-jeBoolean WriteWindowToDIB( jeVFile	*	pF, jePtrMgr	*pPtrMgr , CWnd *pWnd )
+grBoolean WriteWindowToDIB( grVFile	*	pF, grPtrMgr	*pPtrMgr , CWnd *pWnd )
 {
 	CBitmap 	bitmap{};
 	CWindowDC	dc(pWnd);
@@ -606,8 +606,8 @@ jeBoolean WriteWindowToDIB( jeVFile	*	pF, jePtrMgr	*pPtrMgr , CWnd *pWnd )
 	if( hDIB == nullptr )
 		{
 		  GlobalFree( hDIB );
-		  jeErrorLog_AddString( JE_ERR_WINDOWS_API_FAILURE, "WriteWindowToDIB: bitmap to a DIB failed", "Jet3D");
-		  return JE_FALSE;
+		  grErrorLog_AddString( GR_ERR_WINDOWS_API_FAILURE, "WriteWindowToDIB: bitmap to a DIB failed", "Jet3D");
+		  return GR_FALSE;
 		}
 
 	// Write it to file
@@ -615,7 +615,7 @@ jeBoolean WriteWindowToDIB( jeVFile	*	pF, jePtrMgr	*pPtrMgr , CWnd *pWnd )
 
 	// Free the memory allocated by DDBToDIB for the DIB
 	GlobalFree( hDIB );
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 

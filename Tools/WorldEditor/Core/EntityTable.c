@@ -25,7 +25,7 @@
 #include <StdLib.h>
 #include <String.h>
 
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "EclipseNames.h"
 #include "Vec3d.h"
 
@@ -34,23 +34,23 @@
 typedef struct tagFieldDef
 {
 	char		*	pszName ;
-	jeSymbol_Type	Type ;
+	grSymbol_Type	Type ;
 	char		*	pszDefault ;
 } FieldDef ;
 
 const static FieldDef TestFields[] = 
 {
-	{ "MinRadius", 	JE_SYMBOL_TYPE_INT, 	"20" },
-	{ "MaxRadius", 	JE_SYMBOL_TYPE_INT, 	"40" },
-	{ "FadeTime", 	JE_SYMBOL_TYPE_FLOAT, 	"0.5" },
-	{ "Color", 		JE_SYMBOL_TYPE_COLOR, 	"255 255 255" },
-	{ "Origin", 	JE_SYMBOL_TYPE_VEC3D, 	"5 0 5" },
-	{ "Description", JE_SYMBOL_TYPE_STRING, "Hello there!" },
+	{ "MinRadius", 	GR_SYMBOL_TYPE_INT, 	"20" },
+	{ "MaxRadius", 	GR_SYMBOL_TYPE_INT, 	"40" },
+	{ "FadeTime", 	GR_SYMBOL_TYPE_FLOAT, 	"0.5" },
+	{ "Color", 		GR_SYMBOL_TYPE_COLOR, 	"255 255 255" },
+	{ "Origin", 	GR_SYMBOL_TYPE_VEC3D, 	"5 0 5" },
+	{ "Description", GR_SYMBOL_TYPE_STRING, "Hello there!" },
 } ;
 
 const static FieldDef PlayerStart[] = 
 {
-	{ "Origin",		JE_SYMBOL_TYPE_VEC3D,	"12 0 12" }
+	{ "Origin",		GR_SYMBOL_TYPE_VEC3D,	"12 0 12" }
 } ;
 
 typedef struct tagDefaultsTypes
@@ -66,77 +66,77 @@ const static DefaultTypes Defaults[] =
 	{ "PlayerStart", PlayerStart, sizeof(PlayerStart)/sizeof(PlayerStart[0]) }
 } ;
 
-jeSymbol_Table * EntityTable_Create( void )
+grSymbol_Table * EntityTable_Create( void )
 {
-	return jeSymbol_TableCreate() ;
+	return grSymbol_TableCreate() ;
 }// EntityTable_Create
 
 
-void EntityTable_Destroy( jeSymbol_Table ** ppSymbols )
+void EntityTable_Destroy( grSymbol_Table ** ppSymbols )
 {
 	assert( ppSymbols != NULL ) ;
 	assert( *ppSymbols != NULL ) ;
 
-	jeSymbol_TableDestroy( ppSymbols ) ;
+	grSymbol_TableDestroy( ppSymbols ) ;
 
 }// EntityTable_Destroy
 
-jeBoolean EntityTable_AddField( jeSymbol_Table * pSymbols, jeSymbol * pTypeSym, const char *Name, jeSymbol_Type Type, void *DefaultValue )
+grBoolean EntityTable_AddField( grSymbol_Table * pSymbols, grSymbol * pTypeSym, const char *Name, grSymbol_Type Type, void *DefaultValue )
 {
-	jeSymbol_List *	pFieldList;
-	jeSymbol *		pFieldSym;
-	jeBoolean		bFound;
+	grSymbol_List *	pFieldList;
+	grSymbol *		pFieldSym;
+	grBoolean		bFound;
 
-	bFound = jeSymbol_GetProperty
+	bFound = grSymbol_GetProperty
 	(
 		pTypeSym,
-		jeEclipseNames(pSymbols, JE_ECLIPSENAMES_STRUCTUREFIELDS),
+		grEclipseNames(pSymbols, GR_ECLIPSENAMES_STRUCTUREFIELDS),
 		&pFieldList, 
 		sizeof(pFieldList), 
-		JE_SYMBOL_TYPE_LIST
+		GR_SYMBOL_TYPE_LIST
 	);
 
-	if( JE_FALSE == bFound )
+	if( GR_FALSE == bFound )
 	{
-		pFieldList = jeSymbol_ListCreate( pSymbols );
+		pFieldList = grSymbol_ListCreate( pSymbols );
 		if( !pFieldList )
-			return JE_FALSE ;
-		if( jeSymbol_SetProperty( pTypeSym,
-							jeEclipseNames(pSymbols, JE_ECLIPSENAMES_STRUCTUREFIELDS),
-							&pFieldList, sizeof(pFieldList), JE_SYMBOL_TYPE_LIST) == JE_FALSE)
+			return GR_FALSE ;
+		if( grSymbol_SetProperty( pTypeSym,
+							grEclipseNames(pSymbols, GR_ECLIPSENAMES_STRUCTUREFIELDS),
+							&pFieldList, sizeof(pFieldList), GR_SYMBOL_TYPE_LIST) == GR_FALSE)
 		{
-			jeSymbol_ListDestroy( &pFieldList ) ;
-			return JE_FALSE;
+			grSymbol_ListDestroy( &pFieldList ) ;
+			return GR_FALSE;
 		}
 	}
 
-	pFieldSym = jeSymbol_Create(pSymbols, pTypeSym, Name, Type ) ;
+	pFieldSym = grSymbol_Create(pSymbols, pTypeSym, Name, Type ) ;
 	if( !pFieldSym )
-		return JE_FALSE ;
+		return GR_FALSE ;
 	
-	if( EntityTable_SetDefaultValue( pSymbols, pFieldSym, DefaultValue ) == JE_FALSE )
+	if( EntityTable_SetDefaultValue( pSymbols, pFieldSym, DefaultValue ) == GR_FALSE )
 	{
-		jeSymbol_Destroy( &pFieldSym ) ;
-		return JE_FALSE;
+		grSymbol_Destroy( &pFieldSym ) ;
+		return GR_FALSE;
 	}
 
-	if( jeSymbol_ListAddSymbol( pFieldList, pFieldSym ) == JE_FALSE )
+	if( grSymbol_ListAddSymbol( pFieldList, pFieldSym ) == GR_FALSE )
 	{
-		jeSymbol_Destroy( &pFieldSym ) ;
-		return JE_FALSE;
+		grSymbol_Destroy( &pFieldSym ) ;
+		return GR_FALSE;
 	}
 
-	jeSymbol_Destroy( &pFieldSym ) ;
-	jeSymbol_ListDestroy( &pFieldList ) ;
+	grSymbol_Destroy( &pFieldSym ) ;
+	grSymbol_ListDestroy( &pFieldList ) ;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }// EntityTable_AddField
 
-jeBoolean EntityTable_AddFieldToInstances( jeSymbol_Table * pSymbols, jeSymbol * pDef, const char * pszName, jeSymbol_Type Type, void * DefaultValue )
+grBoolean EntityTable_AddFieldToInstances( grSymbol_Table * pSymbols, grSymbol * pDef, const char * pszName, grSymbol_Type Type, void * DefaultValue )
 {
-	jeSymbol_List	*	pList ;
-	jeSymbol		*	pEntity ;
-	jeBoolean			bContinue ;
+	grSymbol_List	*	pList ;
+	grSymbol		*	pEntity ;
+	grBoolean			bContinue ;
 	int					iIndex ;
 	assert( pSymbols != NULL ) ;
 	assert( pDef != NULL ) ;
@@ -144,171 +144,171 @@ jeBoolean EntityTable_AddFieldToInstances( jeSymbol_Table * pSymbols, jeSymbol *
 	assert( strlen(pszName) < ENTITY_MAXNAMELENGTH ) ;
 	assert( DefaultValue != NULL ) ;
 
-	pList = jeSymbol_TableGetQualifiedSymbolList( pSymbols, jeSymbol_GetQualifier( pDef ) ) ;
+	pList = grSymbol_TableGetQualifiedSymbolList( pSymbols, grSymbol_GetQualifier( pDef ) ) ;
 	if( pList == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
 	iIndex = 0 ;
-	bContinue = JE_TRUE ;
-	while( bContinue && (pEntity = jeSymbol_ListGetSymbol( pList, iIndex )) != NULL )
+	bContinue = GR_TRUE ;
+	while( bContinue && (pEntity = grSymbol_ListGetSymbol( pList, iIndex )) != NULL )
 	{
 		iIndex++ ;
-		if( jeSymbol_Compare( pEntity, pDef ) == JE_FALSE )
+		if( grSymbol_Compare( pEntity, pDef ) == GR_FALSE )
 		{
 			bContinue = EntityTable_AddField( pSymbols, pDef, pszName, Type, DefaultValue ) ;
 		}
 	}
-	jeSymbol_ListDestroy( &pList ) ;
+	grSymbol_ListDestroy( &pList ) ;
 
 	return bContinue ;
 }// EntityTable_AddFieldToInstances
 
-jeSymbol * EntityTable_CreateType( jeSymbol_Table * pSymbols, const char * pszName )
+grSymbol * EntityTable_CreateType( grSymbol_Table * pSymbols, const char * pszName )
 {
-	jeSymbol		*	pTypeSym ;
-	jeSymbol		*	pQualifier ;
-	jeSymbol_List	*	pDefTypeList ;
-	jeSymbol		*	pGlobalTypesSymbol ;
-	jeSymbol		*	pDefinitionsProperty ;
-	jeBoolean			bSuccess ;
+	grSymbol		*	pTypeSym ;
+	grSymbol		*	pQualifier ;
+	grSymbol_List	*	pDefTypeList ;
+	grSymbol		*	pGlobalTypesSymbol ;
+	grSymbol		*	pDefinitionsProperty ;
+	grBoolean			bSuccess ;
 
-	pGlobalTypesSymbol = jeEclipseNames( pSymbols, JE_ECLIPSENAMES_TYPES ) ;
-	pDefinitionsProperty = jeEclipseNames( pSymbols, JE_ECLIPSENAMES_TYPEDEFINITIONS ) ;
+	pGlobalTypesSymbol = grEclipseNames( pSymbols, GR_ECLIPSENAMES_TYPES ) ;
+	pDefinitionsProperty = grEclipseNames( pSymbols, GR_ECLIPSENAMES_TYPEDEFINITIONS ) ;
 	if( pGlobalTypesSymbol == NULL || pDefinitionsProperty == NULL )
 		return NULL ;
 	
 	// Can't do it if the symbol already exists.
-	if( jeSymbol_TableFindSymbol( pSymbols, NULL, pszName ) )
+	if( grSymbol_TableFindSymbol( pSymbols, NULL, pszName ) )
 		return NULL ;
 
 	// Create a package for the type, and intern the type symbol in that package
-	pQualifier = jeSymbol_Create( pSymbols, NULL, pszName, JE_SYMBOL_TYPE_VOID ) ;
+	pQualifier = grSymbol_Create( pSymbols, NULL, pszName, GR_SYMBOL_TYPE_VOID ) ;
 	if( !pQualifier )
 		return NULL ;
 
-	pTypeSym = jeSymbol_Create( pSymbols, pQualifier, pszName, JE_SYMBOL_TYPE_VOID ) ;
-	jeSymbol_Destroy( &pQualifier ) ;
+	pTypeSym = grSymbol_Create( pSymbols, pQualifier, pszName, GR_SYMBOL_TYPE_VOID ) ;
+	grSymbol_Destroy( &pQualifier ) ;
 
-	if( jeSymbol_GetProperty( pGlobalTypesSymbol, pDefinitionsProperty, &pDefTypeList, sizeof pDefTypeList, JE_SYMBOL_TYPE_LIST ) == JE_FALSE )
+	if( grSymbol_GetProperty( pGlobalTypesSymbol, pDefinitionsProperty, &pDefTypeList, sizeof pDefTypeList, GR_SYMBOL_TYPE_LIST ) == GR_FALSE )
 	{
 		// First time thru--create list and set it's property
-		pDefTypeList = jeSymbol_ListCreate( pSymbols ) ;
-		bSuccess = JE_FALSE ;
+		pDefTypeList = grSymbol_ListCreate( pSymbols ) ;
+		bSuccess = GR_FALSE ;
 		if( pDefTypeList != NULL )
 		{
-			bSuccess = jeSymbol_SetProperty( pGlobalTypesSymbol, pDefinitionsProperty, &pDefTypeList, sizeof( pDefTypeList ), JE_SYMBOL_TYPE_LIST ) ;
+			bSuccess = grSymbol_SetProperty( pGlobalTypesSymbol, pDefinitionsProperty, &pDefTypeList, sizeof( pDefTypeList ), GR_SYMBOL_TYPE_LIST ) ;
 		}
 
-		if( pDefTypeList == NULL || bSuccess == JE_FALSE )
+		if( pDefTypeList == NULL || bSuccess == GR_FALSE )
 		{
-			jeSymbol_TableRemoveSymbol( pSymbols, pTypeSym ) ;
-			jeSymbol_Destroy( &pTypeSym ) ;
+			grSymbol_TableRemoveSymbol( pSymbols, pTypeSym ) ;
+			grSymbol_Destroy( &pTypeSym ) ;
 			return NULL ;
 		}
 	}
 	
-	if( jeSymbol_ListAddSymbol( pDefTypeList, pTypeSym ) == JE_FALSE )
+	if( grSymbol_ListAddSymbol( pDefTypeList, pTypeSym ) == GR_FALSE )
 	{
-		jeSymbol_TableRemoveSymbol( pSymbols, pTypeSym ) ;
-		jeSymbol_Destroy( &pTypeSym ) ;
+		grSymbol_TableRemoveSymbol( pSymbols, pTypeSym ) ;
+		grSymbol_Destroy( &pTypeSym ) ;
 		return NULL ;
 	}
 
-	jeSymbol_ListDestroy( &pDefTypeList ) ;
+	grSymbol_ListDestroy( &pDefTypeList ) ;
 
 	return pTypeSym ;
 }// EntityTable_CreateType
 
-int32 EntityTable_ListGetNumItems( jeSymbol_List * pList )
+int32 EntityTable_ListGetNumItems( grSymbol_List * pList )
 {
-	jeSymbol *	p ;
+	grSymbol *	p ;
 	int32		nCount ;
 	assert( pList != NULL ) ;
 
 	nCount = 0 ;
-	while( (p = jeSymbol_ListGetSymbol( pList, nCount )) != NULL )
+	while( (p = grSymbol_ListGetSymbol( pList, nCount )) != NULL )
 	{
 		nCount++ ;
 	}
 	return nCount ;
 }// EntityTable_ListGetNumItems
 
-jeBoolean EntityTable_EnumDefinitions( jeSymbol_Table * pSymbols, void * pVoid, EntityTable_ForEachCallback Callback )
+grBoolean EntityTable_EnumDefinitions( grSymbol_Table * pSymbols, void * pVoid, EntityTable_ForEachCallback Callback )
 {
-	jeSymbol_List	*	pDefTypeList ;
-	jeSymbol		*	pGlobalTypesSymbol ;
-	jeSymbol		*	pDefinitionsProperty ;
-	jeSymbol		*	pSymbol ;
+	grSymbol_List	*	pDefTypeList ;
+	grSymbol		*	pGlobalTypesSymbol ;
+	grSymbol		*	pDefinitionsProperty ;
+	grSymbol		*	pSymbol ;
 	int					Index = 0 ;
-	jeBoolean			bContinue ;
+	grBoolean			bContinue ;
 
 	assert( pSymbols != NULL ) ;
 
-	pGlobalTypesSymbol = jeEclipseNames( pSymbols, JE_ECLIPSENAMES_TYPES ) ;
-	pDefinitionsProperty = jeEclipseNames( pSymbols, JE_ECLIPSENAMES_TYPEDEFINITIONS ) ;
+	pGlobalTypesSymbol = grEclipseNames( pSymbols, GR_ECLIPSENAMES_TYPES ) ;
+	pDefinitionsProperty = grEclipseNames( pSymbols, GR_ECLIPSENAMES_TYPEDEFINITIONS ) ;
 	if( pGlobalTypesSymbol == NULL || pDefinitionsProperty == NULL )
-		return JE_FALSE ;
+		return GR_FALSE ;
 
-	jeSymbol_GetProperty( pGlobalTypesSymbol, pDefinitionsProperty, &pDefTypeList, sizeof pDefTypeList, JE_SYMBOL_TYPE_LIST ) ;
+	grSymbol_GetProperty( pGlobalTypesSymbol, pDefinitionsProperty, &pDefTypeList, sizeof pDefTypeList, GR_SYMBOL_TYPE_LIST ) ;
 	assert( pDefTypeList != NULL ) ;
 
-	bContinue = JE_TRUE ;
-	while( bContinue && (pSymbol = jeSymbol_ListGetSymbol( pDefTypeList, Index )) != NULL )
+	bContinue = GR_TRUE ;
+	while( bContinue && (pSymbol = grSymbol_ListGetSymbol( pDefTypeList, Index )) != NULL )
 	{
 		Index++ ;
 		bContinue = Callback( pSymbol, pVoid ) ;
 	}
 
-	return JE_TRUE ;
+	return GR_TRUE ;
 
 }// EntityTable_Enum
 
-jeBoolean EntityTable_EnumFields( jeSymbol_Table * pST, const char * pszType, void * pVoid, EntityTable_ForEachCallback Callback )
+grBoolean EntityTable_EnumFields( grSymbol_Table * pST, const char * pszType, void * pVoid, EntityTable_ForEachCallback Callback )
 {
-	jeSymbol		*	pTypeSym ;
-	jeSymbol_List	*	pFieldList ;
-	jeSymbol		*	pFieldSym ;
-	jeSymbol		*	pEntityDef ;
+	grSymbol		*	pTypeSym ;
+	grSymbol_List	*	pFieldList ;
+	grSymbol		*	pFieldSym ;
+	grSymbol		*	pEntityDef ;
 	int					iField ;
-	jeBoolean			b ;
+	grBoolean			b ;
 
 	assert( pST != NULL ) ;
 
-	pTypeSym = jeSymbol_TableFindSymbol( pST, NULL, pszType ) ;
+	pTypeSym = grSymbol_TableFindSymbol( pST, NULL, pszType ) ;
 	assert( pTypeSym != NULL ) ;
 
-	pEntityDef = jeSymbol_TableFindSymbol( pST, pTypeSym, jeSymbol_GetName( pTypeSym ) ) ;	// TYPE::TYPE
+	pEntityDef = grSymbol_TableFindSymbol( pST, pTypeSym, grSymbol_GetName( pTypeSym ) ) ;	// TYPE::TYPE
 
-	b = jeSymbol_GetProperty
+	b = grSymbol_GetProperty
 	(
 		pEntityDef,
-		jeEclipseNames(pST, JE_ECLIPSENAMES_STRUCTUREFIELDS),
+		grEclipseNames(pST, GR_ECLIPSENAMES_STRUCTUREFIELDS),
 		&pFieldList, 
 		sizeof(pFieldList), 
-		JE_SYMBOL_TYPE_LIST
+		GR_SYMBOL_TYPE_LIST
 	);
 	assert( b ) ;
-	if( JE_FALSE == b )
-		return JE_FALSE ;
+	if( GR_FALSE == b )
+		return GR_FALSE ;
 	
 	iField = 0 ;
-	while( b && (pFieldSym = jeSymbol_ListGetSymbol( pFieldList, iField )) != NULL )
+	while( b && (pFieldSym = grSymbol_ListGetSymbol( pFieldList, iField )) != NULL )
 	{
 		b = Callback( pFieldSym, pVoid ) ;
 		iField++ ;
 	}
-	jeSymbol_ListDestroy( &pFieldList ) ;
+	grSymbol_ListDestroy( &pFieldList ) ;
 
 	return b ;
 
 }// EntityTable_EnumFields
 
-jeBoolean EntityTable_InitDefault( jeSymbol_Table * pSymbols )
+grBoolean EntityTable_InitDefault( grSymbol_Table * pSymbols )
 {
 	int					i ;
 	int					j ;
 	int					nFields ;
-	jeSymbol		*	pDef ;
+	grSymbol		*	pDef ;
 	assert( pSymbols != NULL ) ;
 
 	for( i=0; i<sizeof(Defaults)/sizeof(Defaults[0]); i++ )
@@ -331,158 +331,158 @@ jeBoolean EntityTable_InitDefault( jeSymbol_Table * pSymbols )
 		}
 	}
 	
-	return JE_TRUE ;
+	return GR_TRUE ;
 }// EntityTable_InitDefault
 
-void EntityTable_RemoveDefaultEntityField( jeSymbol_Table * pST, jeSymbol * pSymbol )
+void EntityTable_RemoveDefaultEntityField( grSymbol_Table * pST, grSymbol * pSymbol )
 {
-	jeSymbol		*	pEntityDef ;
-	jeSymbol_List	*	pFieldList ;
-	jeBoolean			b ;
+	grSymbol		*	pEntityDef ;
+	grSymbol_List	*	pFieldList ;
+	grBoolean			b ;
 	assert( pST != NULL ) ;
 	assert( pSymbol != NULL ) ;
 	
 	// Incoming ENTITY::ENTITY::FIELD
-	pEntityDef = jeSymbol_GetQualifier( pSymbol ) ;	// ENTITY::ENTITY
+	pEntityDef = grSymbol_GetQualifier( pSymbol ) ;	// ENTITY::ENTITY
 
 	// Remove from structure fields
-	b = jeSymbol_GetProperty
+	b = grSymbol_GetProperty
 	(
 		pEntityDef,
-		jeEclipseNames(pST, JE_ECLIPSENAMES_STRUCTUREFIELDS),
+		grEclipseNames(pST, GR_ECLIPSENAMES_STRUCTUREFIELDS),
 		&pFieldList, 
 		sizeof(pFieldList), 
-		JE_SYMBOL_TYPE_LIST
+		GR_SYMBOL_TYPE_LIST
 	);
 	if( b )
 	{
-		jeSymbol_ListRemoveSymbol( pFieldList, pSymbol ) ;
-		jeSymbol_ListDestroy( &pFieldList ) ;
+		grSymbol_ListRemoveSymbol( pFieldList, pSymbol ) ;
+		grSymbol_ListDestroy( &pFieldList ) ;
 	}
 
-	jeSymbol_TableRemoveSymbol( pST, pSymbol ) ;
+	grSymbol_TableRemoveSymbol( pST, pSymbol ) ;
 
 }// EntityTable_RemoveDefaultEntityField
 
-void EntityTable_RemoveEntityAndInstances( jeSymbol_Table * pST, jeSymbol * pEntityDef )
+void EntityTable_RemoveEntityAndInstances( grSymbol_Table * pST, grSymbol * pEntityDef )
 {
-	jeSymbol_List	*	pList ;
-	jeSymbol		*	p ;
+	grSymbol_List	*	pList ;
+	grSymbol		*	p ;
 	int32				nIndex ;
 
 	assert( pST != NULL ) ;
 	assert( pEntityDef != NULL ) ;
 
 	// List will have the "definition" and all instances
-	pList = jeSymbol_TableGetQualifiedSymbolList( pST, jeSymbol_GetQualifier(pEntityDef) ) ;
+	pList = grSymbol_TableGetQualifiedSymbolList( pST, grSymbol_GetQualifier(pEntityDef) ) ;
 	assert( pList != NULL ) ;
 	nIndex = 0 ;
-	while( (p = jeSymbol_ListGetSymbol( pList, nIndex )) != NULL )
+	while( (p = grSymbol_ListGetSymbol( pList, nIndex )) != NULL )
 	{
 		nIndex++ ;
-		jeSymbol_TableRemoveSymbol( pST, p ) ;
-		jeSymbol_Destroy( &p ) ;
+		grSymbol_TableRemoveSymbol( pST, p ) ;
+		grSymbol_Destroy( &p ) ;
 	}
-	jeSymbol_ListDestroy( &pList ) ;
+	grSymbol_ListDestroy( &pList ) ;
 
 //	EntityTable_RemoveDefaultEntityField( pST, pEntityDef ) ;
-//	jeSymbol_Destroy( &pEntityDef ) ;
+//	grSymbol_Destroy( &pEntityDef ) ;
 
 }// EntityTable_RemoveEntityAndInstances
 
 
-jeBoolean EntityTable_SetDefaultValue( jeSymbol_Table *pST, jeSymbol *pFieldSym, void *DefaultValue )
+grBoolean EntityTable_SetDefaultValue( grSymbol_Table *pST, grSymbol *pFieldSym, void *DefaultValue )
 {
-	jeSymbol_Type	Type;
-	jeSymbol *		pDefaultValueSym;
+	grSymbol_Type	Type;
+	grSymbol *		pDefaultValueSym;
 
 	pDefaultValueSym = pFieldSym ;
 
-//	DefaultValueSym = jeEclipseNames(ST, JE_ECLIPSENAMES_FIELDDEFAULTVALUE);
+//	DefaultValueSym = grEclipseNames(ST, GR_ECLIPSENAMES_FIELDDEFAULTVALUE);
 //	if	(!DefaultValueSym)
-//		return JE_FALSE;
+//		return GR_FALSE;
 
-	Type = jeSymbol_GetType( pFieldSym ) ;
+	Type = grSymbol_GetType( pFieldSym ) ;
 	switch( Type )
 	{
 		int		Integer;
-		jeFloat	Float;
-		jeVec3d	Vector;
-		JE_RGBA	Color;
+		grFloat	Float;
+		grVec3d	Vector;
+		GR_RGBA	Color;
 
-	case JE_SYMBOL_TYPE_INT:
+	case GR_SYMBOL_TYPE_INT:
 		Integer = atoi(DefaultValue);
-		return jeSymbol_SetProperty(pFieldSym,
+		return grSymbol_SetProperty(pFieldSym,
 								  pDefaultValueSym,
 								  &Integer,
 								  sizeof(Integer),
-								  JE_SYMBOL_TYPE_INT);
+								  GR_SYMBOL_TYPE_INT);
 
-	case JE_SYMBOL_TYPE_FLOAT:
-		Float = (jeFloat)atof(DefaultValue);
-		return jeSymbol_SetProperty(pFieldSym, 
+	case GR_SYMBOL_TYPE_FLOAT:
+		Float = (grFloat)atof(DefaultValue);
+		return grSymbol_SetProperty(pFieldSym, 
 								pDefaultValueSym,
-								&Float, sizeof(Float), JE_SYMBOL_TYPE_FLOAT);
+								&Float, sizeof(Float), GR_SYMBOL_TYPE_FLOAT);
 
-	case JE_SYMBOL_TYPE_COLOR:
+	case GR_SYMBOL_TYPE_COLOR:
 		sscanf( DefaultValue, "%f %f %f", &Color.r, &Color.g, &Color.b);
-		return jeSymbol_SetProperty( pFieldSym, 
+		return grSymbol_SetProperty( pFieldSym, 
 								pDefaultValueSym,
-								&Color, sizeof(Color), JE_SYMBOL_TYPE_COLOR);
+								&Color, sizeof(Color), GR_SYMBOL_TYPE_COLOR);
 
-	case JE_SYMBOL_TYPE_VEC3D:
+	case GR_SYMBOL_TYPE_VEC3D:
 		sscanf(DefaultValue, "%f %f %f", &Vector.X, &Vector.Y, &Vector.Z);
-		return jeSymbol_SetProperty(pFieldSym, 
+		return grSymbol_SetProperty(pFieldSym, 
 								pDefaultValueSym,
-								&Vector, sizeof(Vector), JE_SYMBOL_TYPE_VEC3D);
+								&Vector, sizeof(Vector), GR_SYMBOL_TYPE_VEC3D);
 		break;
 
-	case JE_SYMBOL_TYPE_STRING:
-		return jeSymbol_SetProperty(pFieldSym, 
+	case GR_SYMBOL_TYPE_STRING:
+		return grSymbol_SetProperty(pFieldSym, 
 								pDefaultValueSym,
-								DefaultValue, sizeof(DefaultValue), JE_SYMBOL_TYPE_STRING);
+								DefaultValue, sizeof(DefaultValue), GR_SYMBOL_TYPE_STRING);
 		break;
 
 	default:
 		assert(!"Not finished here");
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	assert(!"Shouldn't get here");
 	pST;
 }// EntityTable_SetDefaultValue
 
-//jeSymbol * Entity_TableGetType( 
+//grSymbol * Entity_TableGetType( 
 
-jeSymbol * EntityTable_GetField( jeSymbol_Table * pST, jeSymbol * pEntity, const char * pszName )
+grSymbol * EntityTable_GetField( grSymbol_Table * pST, grSymbol * pEntity, const char * pszName )
 {
-	jeSymbol * pQualifier ;
-	jeSymbol * pEntityDef ;
-	jeSymbol * pField = NULL ;
+	grSymbol * pQualifier ;
+	grSymbol * pEntityDef ;
+	grSymbol * pField = NULL ;
 
 	assert( pST != NULL ) ;
 	assert( pEntity != NULL ) ;
 	assert( pszName != NULL ) ;
 	assert( strlen( pszName ) < ENTITY_MAXNAMELENGTH ) ;
 
-	pQualifier = jeSymbol_GetQualifier( pEntity ) ;	// TYPE:
-	pEntityDef = jeSymbol_TableFindSymbol( pST, pQualifier, jeSymbol_GetName( pQualifier ) ) ;	// TYPE::TYPE
+	pQualifier = grSymbol_GetQualifier( pEntity ) ;	// TYPE:
+	pEntityDef = grSymbol_TableFindSymbol( pST, pQualifier, grSymbol_GetName( pQualifier ) ) ;	// TYPE::TYPE
 	if( pEntityDef != NULL )
-		pField = jeSymbol_TableFindSymbol( pST, pEntityDef, pszName ) ;	// TYPE::TYPE::FIELD
+		pField = grSymbol_TableFindSymbol( pST, pEntityDef, pszName ) ;	// TYPE::TYPE::FIELD
 
 	return pField ;
 
 }// EntityTable_GetField
 
-jeSymbol * EntityTable_AddEntity( jeSymbol_Table * pST, const char * pszType, const char * pszName )
+grSymbol * EntityTable_AddEntity( grSymbol_Table * pST, const char * pszType, const char * pszName )
 {
-	jeSymbol		*	pType ;
-	jeSymbol		*	pEntityDef ;
-	jeSymbol		*	pEntity ;
-	jeSymbol		*	pProperty ;
-	jeSymbol_List	*	pFieldList ;
+	grSymbol		*	pType ;
+	grSymbol		*	pEntityDef ;
+	grSymbol		*	pEntity ;
+	grSymbol		*	pProperty ;
+	grSymbol_List	*	pFieldList ;
 	int					iProperty ;
-	jeBoolean			b ;
+	grBoolean			b ;
 
 	assert( pST != NULL ) ;
 	assert( pszType != NULL ) ;
@@ -490,112 +490,112 @@ jeSymbol * EntityTable_AddEntity( jeSymbol_Table * pST, const char * pszType, co
 	assert( pszName != NULL ) ;
 	assert( strlen( pszName ) < ENTITY_MAXNAMELENGTH ) ;
 
-	pType = jeSymbol_TableFindSymbol( pST, NULL, pszType ) ;
+	pType = grSymbol_TableFindSymbol( pST, NULL, pszType ) ;
 	assert( pType != NULL ) ;
 
-	pEntityDef = jeSymbol_Create( pST, pType/*jeSymbol_GetQualifier( pType )*/, pszType, JE_SYMBOL_TYPE_SYMBOL ) ;
+	pEntityDef = grSymbol_Create( pST, pType/*grSymbol_GetQualifier( pType )*/, pszType, GR_SYMBOL_TYPE_SYMBOL ) ;
 	if( pEntityDef == NULL )
 		return NULL ;
 
-	pEntity = jeSymbol_Create( pST, pType, pszName, JE_SYMBOL_TYPE_SYMBOL ) ;
+	pEntity = grSymbol_Create( pST, pType, pszName, GR_SYMBOL_TYPE_SYMBOL ) ;
 	if( pEntity == NULL )
 		return NULL ;
 
 	// Get the list of fields for this Entity
-	b = jeSymbol_GetProperty
+	b = grSymbol_GetProperty
 	( 
 		pEntityDef, 
-		jeEclipseNames( pST, JE_ECLIPSENAMES_STRUCTUREFIELDS), 
+		grEclipseNames( pST, GR_ECLIPSENAMES_STRUCTUREFIELDS), 
 		&pFieldList, 
 		sizeof pFieldList, 
-		JE_SYMBOL_TYPE_LIST
+		GR_SYMBOL_TYPE_LIST
 	) ;
-	if( b == JE_FALSE )
+	if( b == GR_FALSE )
 		return pEntity ;
 
 	// For each field, set the default value from the def entity
 	iProperty = 0 ;
-	b = JE_TRUE ;
-	while( b && (pProperty = jeSymbol_ListGetSymbol( pFieldList, iProperty )) != NULL )
+	b = GR_TRUE ;
+	while( b && (pProperty = grSymbol_ListGetSymbol( pFieldList, iProperty )) != NULL )
 	{
-		b = jeSymbol_CopyProperty( pEntity, pProperty, pProperty, pProperty ) ;
-		if( b == JE_FALSE )
+		b = grSymbol_CopyProperty( pEntity, pProperty, pProperty, pProperty ) ;
+		if( b == GR_FALSE )
 		{
-			jeSymbol_Destroy( &pEntity ) ;
+			grSymbol_Destroy( &pEntity ) ;
 			pEntity = NULL ;		// Just to be sure
 			break ;
 		}
 		iProperty++ ;
 	}
 
-	jeSymbol_ListDestroy( &pFieldList ) ;
+	grSymbol_ListDestroy( &pFieldList ) ;
 
 	return pEntity ;
 }// EntityTable_AddEntity
 
 
-jeSymbol * EntityTable_CopyEntity( jeSymbol_Table * pST, jeSymbol * pEntity, const char * pszName )
+grSymbol * EntityTable_CopyEntity( grSymbol_Table * pST, grSymbol * pEntity, const char * pszName )
 {
-	jeSymbol		*	pType ;
-	jeSymbol		*	pEntityDef ;
-	jeSymbol		*	pNewEntity ;
-	jeSymbol		*	pProperty ;
-	jeSymbol_List	*	pFieldList ;
+	grSymbol		*	pType ;
+	grSymbol		*	pEntityDef ;
+	grSymbol		*	pNewEntity ;
+	grSymbol		*	pProperty ;
+	grSymbol_List	*	pFieldList ;
 	int					iProperty ;
-	jeBoolean			b ;
+	grBoolean			b ;
 
 	assert( pST != NULL ) ;
 	assert( pszName != NULL ) ;
 	assert( strlen( pszName ) < ENTITY_MAXNAMELENGTH ) ;
 
-	pType = jeSymbol_GetQualifier( pEntity ) ;	// TYPE:
+	pType = grSymbol_GetQualifier( pEntity ) ;	// TYPE:
 	assert( pType != NULL ) ;
 
-	pEntityDef = jeSymbol_TableFindSymbol( pST, pType, jeSymbol_GetName( pType ) ) ;
+	pEntityDef = grSymbol_TableFindSymbol( pST, pType, grSymbol_GetName( pType ) ) ;
 	if( pEntityDef == NULL )
 		return NULL ;
 
-	pNewEntity = jeSymbol_Create( pST, pType, pszName, JE_SYMBOL_TYPE_SYMBOL ) ;
+	pNewEntity = grSymbol_Create( pST, pType, pszName, GR_SYMBOL_TYPE_SYMBOL ) ;
 	if( pNewEntity == NULL )
 		return NULL ;
 
 	// Get the list of fields for this Entity
-	b = jeSymbol_GetProperty
+	b = grSymbol_GetProperty
 	( 
 		pEntityDef, 
-		jeEclipseNames( pST, JE_ECLIPSENAMES_STRUCTUREFIELDS), 
+		grEclipseNames( pST, GR_ECLIPSENAMES_STRUCTUREFIELDS), 
 		&pFieldList, 
 		sizeof pFieldList, 
-		JE_SYMBOL_TYPE_LIST
+		GR_SYMBOL_TYPE_LIST
 	) ;
-	if( b == JE_FALSE )
+	if( b == GR_FALSE )
 		return pNewEntity ;
 
 	// For each field, set the default value from the def entity
 	iProperty = 0 ;
-	b = JE_TRUE ;
-	while( b && (pProperty = jeSymbol_ListGetSymbol( pFieldList, iProperty )) != NULL )
+	b = GR_TRUE ;
+	while( b && (pProperty = grSymbol_ListGetSymbol( pFieldList, iProperty )) != NULL )
 	{
-		b = jeSymbol_CopyProperty( pNewEntity, pProperty, pEntity, pProperty ) ;
-		if( b == JE_FALSE )
+		b = grSymbol_CopyProperty( pNewEntity, pProperty, pEntity, pProperty ) ;
+		if( b == GR_FALSE )
 		{
-			jeSymbol_Destroy( &pNewEntity ) ;
+			grSymbol_Destroy( &pNewEntity ) ;
 			pNewEntity = NULL ;		// Just to be sure
 			break ;
 		}
 		iProperty++ ;
 	}
 
-	jeSymbol_ListDestroy( &pFieldList ) ;
+	grSymbol_ListDestroy( &pFieldList ) ;
 
 	return pNewEntity ;
 }// EntityTable_CopyEntity
 
 
-jeSymbol * EntityTable_FindSymbol( jeSymbol_Table * pST, const char * pszType, const char * pszName )
+grSymbol * EntityTable_FindSymbol( grSymbol_Table * pST, const char * pszType, const char * pszName )
 {
-	jeSymbol * pTypeSym ;
-	jeSymbol * pEntity ;
+	grSymbol * pTypeSym ;
+	grSymbol * pEntity ;
 
 	assert( pST != NULL ) ;
 	assert( pszType != NULL ) ;
@@ -603,10 +603,10 @@ jeSymbol * EntityTable_FindSymbol( jeSymbol_Table * pST, const char * pszType, c
 	assert( pszName != NULL ) ;
 	assert( strlen(pszName) < ENTITY_MAXNAMELENGTH ) ;
 
-	pTypeSym = jeSymbol_TableFindSymbol( pST, NULL, pszType ) ;
+	pTypeSym = grSymbol_TableFindSymbol( pST, NULL, pszType ) ;
 	assert( pTypeSym != NULL ) ;
 
-	pEntity = jeSymbol_TableFindSymbol( pST, pTypeSym, pszName ) ;
+	pEntity = grSymbol_TableFindSymbol( pST, pTypeSym, pszName ) ;
 	assert( pEntity != NULL ) ;
 
 	return pEntity ;

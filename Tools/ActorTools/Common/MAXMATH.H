@@ -26,10 +26,10 @@ extern "C"
 {
 #endif
 
-void MaxMath_Transform(const jeXForm3d* M, const jeVec3d* v, jeVec3d* r);
-void MaxMath_GetInverse(const jeXForm3d* A, jeXForm3d* Inv);
-void MaxMath_InverseMultiply(const jeXForm3d* A, const jeXForm3d* B, jeXForm3d* M);
-void MaxMath_Multiply(const jeXForm3d* M1, const jeXForm3d* M2, jeXForm3d* MProduct);
+void MaxMath_Transform(const grXForm3d* M, const grVec3d* v, grVec3d* r);
+void MaxMath_GetInverse(const grXForm3d* A, grXForm3d* Inv);
+void MaxMath_InverseMultiply(const grXForm3d* A, const grXForm3d* B, grXForm3d* M);
+void MaxMath_Multiply(const grXForm3d* M1, const grXForm3d* M2, grXForm3d* MProduct);
 
 #ifdef __cplusplus
 }

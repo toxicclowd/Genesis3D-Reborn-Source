@@ -40,10 +40,10 @@ MaterialList_Struct* MaterialList_Create(  )
 {
 	MaterialList_Struct* MaterialList;
 
-	MaterialList = JE_RAM_ALLOCATE_STRUCT( MaterialList_Struct );
+	MaterialList = GR_RAM_ALLOCATE_STRUCT( MaterialList_Struct );
 	if( MaterialList == NULL )
 	{
-		jeErrorLog_Add( JE_ERR_MEMORY_RESOURCE, NULL );
+		grErrorLog_Add( GR_ERR_MEMORY_RESOURCE, NULL );
 		return( NULL );
 	}
 	MaterialList->pList = List_Create ();
@@ -59,7 +59,7 @@ void MaterialList_Destroy( MaterialList_Struct **hMaterialList )
 	if( (*hMaterialList)->pList != NULL )
 		List_Destroy ( &(*hMaterialList)->pList, (List_DestroyCallback) Materials_Destroy );
 
-	jeRam_Free( (*hMaterialList) );
+	grRam_Free( (*hMaterialList) );
 }
 
 int32 MaterialList_GetNumItems( const MaterialList_Struct * pMaterials )
@@ -98,7 +98,7 @@ Material_Struct *	MaterialList_GetNextMaterial( MaterialList_Struct * MaterialLi
 
 
 // Materials_DoesExist
-jeBoolean Materials_DoesExist( Material_Struct * pMaterial, void * pVoid )
+grBoolean Materials_DoesExist( Material_Struct * pMaterial, void * pVoid )
 {
 	return (strcmp(Materials_GetName(pMaterial), (char*) pVoid) != 0);
 }
@@ -106,14 +106,14 @@ jeBoolean Materials_DoesExist( Material_Struct * pMaterial, void * pVoid )
 
 // Parses the diretory specified by DirPath for ".bmp" extention
 // Creates a material for each found bmp and adds it to MaterialList
-jeBoolean MaterialList_LoadFromDir( MaterialList_Struct* MaterialList, jeEngine* pEngine, jeResourceMgr* pResMgr, char* DirPath )
+grBoolean MaterialList_LoadFromDir( MaterialList_Struct* MaterialList, grEngine* pEngine, grResourceMgr* pResMgr, char* DirPath )
 {
 #define JMAT_SPEC "*.jmat"
 #define BMP_SPEC "*.bmp"
 	char	AppPath[255];
-	jeVFile *Directory;
-	jeVFile_Finder *Finder;
-	jeVFile_Properties Properties;
+	grVFile *Directory;
+	grVFile_Finder *Finder;
+	grVFile_Properties Properties;
 	Material_Struct *Material;
 
 	assert( MaterialList != NULL);
@@ -122,61 +122,61 @@ jeBoolean MaterialList_LoadFromDir( MaterialList_Struct* MaterialList, jeEngine*
 	Util_GetAppPath( AppPath, 255 );
 	//strcat( AppPath, "\\" );
 	strcat( AppPath, DirPath );
-	Directory = jeVFile_OpenNewSystem(
+	Directory = grVFile_OpenNewSystem(
 		NULL, 
-		JE_VFILE_TYPE_DOS, 
+		GR_VFILE_TYPE_DOS, 
 		AppPath, 
 		NULL,
-		JE_VFILE_OPEN_READONLY | JE_VFILE_OPEN_DIRECTORY );
+		GR_VFILE_OPEN_READONLY | GR_VFILE_OPEN_DIRECTORY );
 
 	if( Directory == NULL )
 	{
-		jeErrorLog_AddString( JE_ERR_FILEIO_OPEN, "Unable to open directory", DirPath );
-		return( JE_FALSE );
+		grErrorLog_AddString( GR_ERR_FILEIO_OPEN, "Unable to open directory", DirPath );
+		return( GR_FALSE );
 	}
 
 #ifndef _USE_BITMAPS
 	// Krouer: modify to load first JMAT file
 	{
-		Finder = jeVFile_CreateFinder( Directory, JMAT_SPEC );
+		Finder = grVFile_CreateFinder( Directory, JMAT_SPEC );
 
 		if( Finder == NULL )
 		{
-			jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Unable to search directory", DirPath );
-			return( JE_FALSE );
+			grErrorLog_AddString( GR_ERR_FILEIO_READ, "Unable to search directory", DirPath );
+			return( GR_FALSE );
 		}
 
-		while(  jeVFile_FinderGetNextFile(Finder) )
+		while(  grVFile_FinderGetNextFile(Finder) )
 		{
-			if( jeVFile_FinderGetProperties(Finder, &Properties ) == JE_FALSE )
+			if( grVFile_FinderGetProperties(Finder, &Properties ) == GR_FALSE )
 			{
-				jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Unable to search directory", DirPath );
-				return( JE_FALSE );
+				grErrorLog_AddString( GR_ERR_FILEIO_READ, "Unable to search directory", DirPath );
+				return( GR_FALSE );
 			}
 			// Krouer: Load the JMAT
 			Material = Materials_LoadEx( pEngine, pResMgr, AppPath, Properties.Name );
 			if(  Material == NULL )
 			{
-				jeErrorLog_Add( JE_ERR_FILEIO_READ, NULL );
-				return( JE_FALSE );
+				grErrorLog_Add( GR_ERR_FILEIO_READ, NULL );
+				return( GR_FALSE );
 			}
 			List_Append( MaterialList->pList, Material );
 		}
 
-		jeVFile_DestroyFinder( Finder );
+		grVFile_DestroyFinder( Finder );
 	}
 	
 	// convert the BMP left
-	Finder = jeVFile_CreateFinder( Directory, BMP_SPEC );
+	Finder = grVFile_CreateFinder( Directory, BMP_SPEC );
 	if( Finder != NULL )
 	{
 		MaterialIterator MI = NULL;
-		while(  jeVFile_FinderGetNextFile(Finder) )
+		while(  grVFile_FinderGetNextFile(Finder) )
 		{
-			if( jeVFile_FinderGetProperties(Finder, &Properties ) == JE_FALSE )
+			if( grVFile_FinderGetProperties(Finder, &Properties ) == GR_FALSE )
 			{
-				jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Unable to search directory", DirPath );
-				return( JE_FALSE );
+				grErrorLog_AddString( GR_ERR_FILEIO_READ, "Unable to search directory", DirPath );
+				return( GR_FALSE );
 			}
 			
 			if (MaterialList_SearchByName(MaterialList, &MI, Properties.Name) == NULL) {
@@ -185,43 +185,43 @@ jeBoolean MaterialList_LoadFromDir( MaterialList_Struct* MaterialList, jeEngine*
 
 				if(  Material == NULL )
 				{
-					jeErrorLog_Add( JE_ERR_FILEIO_READ, NULL );
-					return( JE_FALSE );
+					grErrorLog_Add( GR_ERR_FILEIO_READ, NULL );
+					return( GR_FALSE );
 				}
 				List_Append( MaterialList->pList, Material );
 			}
 		}
-		jeVFile_DestroyFinder( Finder );
+		grVFile_DestroyFinder( Finder );
 	}
 #else
 	// convert the BMP left
-	Finder = jeVFile_CreateFinder( Directory, BMP_SPEC );
+	Finder = grVFile_CreateFinder( Directory, BMP_SPEC );
 	if( Finder != NULL )
 	{
 		MaterialIterator MI = NULL;
-		while(  jeVFile_FinderGetNextFile(Finder) )
+		while(  grVFile_FinderGetNextFile(Finder) )
 		{
-			if( jeVFile_FinderGetProperties(Finder, &Properties ) == JE_FALSE )
+			if( grVFile_FinderGetProperties(Finder, &Properties ) == GR_FALSE )
 			{
-				jeErrorLog_AddString( JE_ERR_FILEIO_READ, "Unable to search directory", DirPath );
-				return( JE_FALSE );
+				grErrorLog_AddString( GR_ERR_FILEIO_READ, "Unable to search directory", DirPath );
+				return( GR_FALSE );
 			}
 			
 			Material = Materials_Load( pEngine, pResMgr, AppPath, Properties.Name );
 
 			if(  Material == NULL )
 			{
-				jeErrorLog_Add( JE_ERR_FILEIO_READ, NULL );
-				return( JE_FALSE );
+				grErrorLog_Add( GR_ERR_FILEIO_READ, NULL );
+				return( GR_FALSE );
 			}
 			List_Append( MaterialList->pList, Material );
 		}
-		jeVFile_DestroyFinder( Finder );
+		grVFile_DestroyFinder( Finder );
 	}
 #endif
 
-	jeVFile_Close( Directory );
-	return( JE_TRUE );
+	grVFile_Close( Directory );
+	return( GR_TRUE );
 }
 
 Material_Struct*	MaterialList_GetCurMaterial( MaterialList_Struct* MaterialList )
@@ -250,7 +250,7 @@ int32 MaterialList_EnumMaterials( MaterialList_Struct * pList, void * pVoid, Mat
 }// MaterialList_EnumMaterials
 
 
-static jeBoolean MaterialList_SearchNameCB(void *pData, void *lParam)
+static grBoolean MaterialList_SearchNameCB(void *pData, void *lParam)
 {
 	Material_Struct* Material = (Material_Struct*)pData;
 	char* Name = lParam;

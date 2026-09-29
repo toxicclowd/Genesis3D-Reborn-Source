@@ -48,18 +48,18 @@ int WINAPI DllMain(image_id	hInstance,DWORD		fdwReason, PVOID		pvReserved );
 
 #endif
 
-#include "jeTypes.h"
+#include "grTypes.h"
 #include "DynamicLight.h"
 #include "Object.h"
 #include "ObjectDef.h"
-#include "jeVersion.h"
+#include "grVersion.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //	Object definition
 ////////////////////////////////////////////////////////////////////////////////////////
-jeObjectDef ObjectDef =
+grObjectDef ObjectDef =
 {
-	JE_OBJECT_TYPE_UNKNOWN,
+	GR_OBJECT_TYPE_UNKNOWN,
 	"Dynamic Light",
 	0,
 	CreateInstance,
@@ -153,18 +153,18 @@ int WINAPI DllMain(
 //	Object_RegisterDef()
 //
 ////////////////////////////////////////////////////////////////////////////////////////
-DLLExport jeBoolean Object_RegisterDef(
+DLLExport grBoolean Object_RegisterDef(
 	float Major,	// major version number
 	float Minor )	// minor version number
 {
 
 	// fail if versions don't match
-	if ( ( Major != JET_MAJOR_VERSION ) || ( Minor != JET_MINOR_VERSION ) )
+	if ( ( Major != GRT_MAJOR_VERSION ) || ( Minor != GRT_MINOR_VERSION ) )
 	{
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	// register def
-	return ( jeObject_RegisterGlobalObjectDef( &ObjectDef ) );
+	return ( grObject_RegisterGlobalObjectDef( &ObjectDef ) );
 
 } // Object_RegisterDef()

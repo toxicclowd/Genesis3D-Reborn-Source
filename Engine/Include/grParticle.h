@@ -34,13 +34,11 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////////////////////
 //	Particle system structs
 ////////////////////////////////////////////////////////////////////////////////////////
-typedef struct jeParticle grParticle;
-typedef struct jeParticle jeParticle;
-typedef struct jeParticle_System grParticle_System;
-typedef struct jeParticle_System jeParticle_System;
+typedef struct grParticle grParticle;
+typedef struct grParticle_System grParticle_System;
 
 
-typedef struct jeMaterialSpec		grMaterialSpec;
+typedef struct grMaterialSpec		grMaterialSpec;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -108,16 +106,5 @@ GRAPI void GRCC grParticle_SystemRemoveAll(
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeParticle_GetCount                      grParticle_GetCount
-#define jeParticle_SystemAddParticle             grParticle_SystemAddParticle
-#define jeParticle_SystemCreate                  grParticle_SystemCreate
-#define jeParticle_SystemDestroy                 grParticle_SystemDestroy
-#define jeParticle_SystemFrame                   grParticle_SystemFrame
-#define jeParticle_SystemRemoveAll               grParticle_SystemRemoveAll
-#define jeParticle_SystemRemoveAnchorPoint       grParticle_SystemRemoveAnchorPoint
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

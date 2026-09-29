@@ -23,7 +23,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "jeWorld.h"
+#include "grWorld.h"
 #include "defs.h"
 #include "Group.h"
 #include "Descriptor.h"
@@ -47,46 +47,46 @@ char  *				Camera_CreateDefaultName( void );
 Camera *			Camera_CreateTemplate(  );
 
 // MODIFIERS
-jeBoolean			Camera_Move( Camera * pCamera, const jeVec3d * pWorldDistance ) ;
-void				Camera_Rotate( Camera * pCamera, ORTHO_AXIS RAxis, jeFloat RadianAngle, const jeVec3d * pRotationCenter );
+grBoolean			Camera_Move( Camera * pCamera, const grVec3d * pWorldDistance ) ;
+void				Camera_Rotate( Camera * pCamera, ORTHO_AXIS RAxis, grFloat RadianAngle, const grVec3d * pRotationCenter );
 void				Camera_SetIndexTag( Camera * pCamera, const uint32 nIndex ) ;
 void				Camera_SetModified( Camera * pCamera ) ;
-void				Camera_Snap( Camera * pCamera, jeFloat fSnapSize ) ;
-jeBoolean			Camera_SetXForm( Camera * pCamera, const jeXForm3d * XForm );
+void				Camera_Snap( Camera * pCamera, grFloat fSnapSize ) ;
+grBoolean			Camera_SetXForm( Camera * pCamera, const grXForm3d * XForm );
 void				Camera_UpdateBounds( Camera * pCamera ) ;
-jeBoolean			Camera_Size( Camera * pCamera, const jeExtBox * pSelectedBounds, const jeFloat hScale, const jeFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
+grBoolean			Camera_Size( Camera * pCamera, const grExtBox * pSelectedBounds, const grFloat hScale, const grFloat vScale, SELECT_HANDLE eSizeType, ORTHO_AXIS HAxis, ORTHO_AXIS VAxis ) ;
 void				Camera_SetIndexTag( Camera * pCamera, const uint32 nIndex ) ;
 void				Camera_AddToWorld( Camera * pCamera );
-jeBoolean			Camera_UpdateData( Camera * pCamera );
-jeProperty_List *	Camera_BuildDescriptor( Camera * pCamera );
-void				Camera_SetProperty( Camera * pCamera, int DataId, int DataType, jeProperty_Data * pData, jeBoolean bUpdate );
-jeBoolean			Camera_TranslateCurCam( Camera * pCamera, jeVec3d * Offset );
-jeBoolean			Camera_RotCurCamY( Camera * pCamera, float Radians );
-jeBoolean			Camera_RotCurCamX( Camera * pCamera, float Radians );
+grBoolean			Camera_UpdateData( Camera * pCamera );
+grProperty_List *	Camera_BuildDescriptor( Camera * pCamera );
+void				Camera_SetProperty( Camera * pCamera, int DataId, int DataType, grProperty_Data * pData, grBoolean bUpdate );
+grBoolean			Camera_TranslateCurCam( Camera * pCamera, grVec3d * Offset );
+grBoolean			Camera_RotCurCamY( Camera * pCamera, float Radians );
+grBoolean			Camera_RotCurCamX( Camera * pCamera, float Radians );
 void				Camera_SetCurCamY( Camera * pCamera, float YRot );
 void				Camera_SetCurCamX( Camera * pCamera, float XRot );
 
 // ACCESSORS
-void				Camera_GetXForm( const Camera * pCamera, jeXForm3d * XForm );
-const jeExtBox *	Camera_GetWorldAxialBounds( const Camera * pCamera ) ;
-void				Camera_GetWorldDrawBounds( const Camera * pCamera, jeExtBox *DrawBounds );
-jeBoolean			Camera_SelectClosest( Camera * pCamera, FindInfo *	pFindInfo );
-jeObject	*		Camera_GetjeObject( Camera * pCamera );
+void				Camera_GetXForm( const Camera * pCamera, grXForm3d * XForm );
+const grExtBox *	Camera_GetWorldAxialBounds( const Camera * pCamera ) ;
+void				Camera_GetWorldDrawBounds( const Camera * pCamera, grExtBox *DrawBounds );
+grBoolean			Camera_SelectClosest( Camera * pCamera, FindInfo *	pFindInfo );
+grObject	*		Camera_GetgrObject( Camera * pCamera );
 float				Camera_GetFOV( Camera * pCamera );
 float				Camera_GetCurCamY( const Camera * pCamera ) ;
 float				Camera_GetCurCamX( const Camera * pCamera ) ;
 
 // IS
-jeBoolean		Camera_IsInRect( const Camera * pCamera, jeExtBox *pSelRect, jeBoolean bSelEncompeses );
+grBoolean		Camera_IsInRect( const Camera * pCamera, grExtBox *pSelRect, grBoolean bSelEncompeses );
 
-jeBoolean		Camera_WriteToFile( Camera * pCamera, jeVFile * pF, jePtrMgr *PtrMgr );
-Camera *		Camera_CreateFromFile( jeVFile * pF, jePtrMgr *PtrMgr );
+grBoolean		Camera_WriteToFile( Camera * pCamera, grVFile * pF, grPtrMgr *PtrMgr );
+Camera *		Camera_CreateFromFile( grVFile * pF, grPtrMgr *PtrMgr );
 
 //PRESENTATION
-void Camera_RenderOrtho( const Ortho * pOrtho, Camera *pCamera, int32 hDC, jeBoolean bColorOveride );
+void Camera_RenderOrtho( const Ortho * pOrtho, Camera *pCamera, int32 hDC, grBoolean bColorOveride );
 
 // CALLBACK
-jeBoolean		Camera_ReattachCB( Camera * pCamera, void* lParam );
+grBoolean		Camera_ReattachCB( Camera * pCamera, void* lParam );
 
 #ifdef __cplusplus
 }

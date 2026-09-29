@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_BASETYPE_H
-#define JE_BASETYPE_H
+#ifndef GR_BASETYPE_H
+#define GR_BASETYPE_H
  
 /*
 	Some basic types defined with clear names for
@@ -38,17 +38,13 @@ extern "C" {
 // keep __fastcall for internal call perhaps engine can increase the gain by using __inline instead
 // but __inline will increase the size
 #define	GRCF	__fastcall
-#define JETCF GRCF
 #define	GRCC	__stdcall
-#define JETCC GRCC
 
 // paradoxnj - We don't care about static libs.  Changed to conventional DLL export
 #ifdef JETENGINE_EXPORTS
 #define GRAPI					_declspec(dllexport)
-#define JETAPI GRAPI
 #else
 #define GRAPI					_declspec(dllimport)
-#define JETAPI GRAPI
 #endif
 
 #define JETLINE __inline //added (cyrius)
@@ -56,16 +52,14 @@ extern "C" {
 //------------------------------
 
 typedef int			grBoolean;
-typedef grBoolean	jeBoolean;
+typedef grBoolean	grBoolean;
 #define GR_FALSE	((grBoolean)0)
-#define JE_FALSE GR_FALSE
 #define GR_TRUE		((grBoolean)1)
-#define JE_TRUE GR_TRUE
 
 //------------------------------
 
 typedef float grFloat;
-typedef grFloat jeFloat;
+typedef grFloat grFloat;
 
 typedef signed long     int32;
 typedef signed short    int16;
@@ -80,61 +74,61 @@ typedef unsigned char	uint8 ;
 #define NULL													(0)
 #endif
 
-#define	JE_PI													((jeFloat)3.14159265358979323846)
-#define	JE_TWOPI											((jeFloat)6.28318530717958647692)
-#define	JE_HALFPI											((jeFloat)1.57079632679489661923)
+#define	GR_PI													((grFloat)3.14159265358979323846)
+#define	GR_TWOPI											((grFloat)6.28318530717958647692)
+#define	GR_HALFPI											((grFloat)1.57079632679489661923)
 
-#define JE_DEGS_PER_RAD								((jeFloat)0.01745329251994329576)
-#define JE_RADS_PER_DEG								((jeFloat)57.2957795130823208767)
+#define GR_DEGS_PER_RAD								((grFloat)0.01745329251994329576)
+#define GR_RADS_PER_DEG								((grFloat)57.2957795130823208767)
 
 // BEGIN - 32-bit color values - paradoxnj 8/3/2005
 // maps unsigned 8 bits/channel to uint32
-#define JE_COLOR_ARGB(a,r,g,b)						((uint32)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
-#define JE_COLOR_RGBA(r,g,b,a)						JE_COLOR_ARGB(a,r,g,b)
-#define JE_COLOR_XRGB(r,g,b)						JE_COLOR_ARGB(0xff,r,g,b)
+#define GR_COLOR_ARGB(a,r,g,b)						((uint32)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
+#define GR_COLOR_RGBA(r,g,b,a)						GR_COLOR_ARGB(a,r,g,b)
+#define GR_COLOR_XRGB(r,g,b)						GR_COLOR_ARGB(0xff,r,g,b)
 
-#define JE_COLOR_XYUV(y,u,v)						JE_COLOR_ARGB(0xff,y,u,v)
-#define JE_COLOR_AYUV(a,y,u,v)						JE_COLOR_ARGB(a,y,u,v)
+#define GR_COLOR_XYUV(y,u,v)						GR_COLOR_ARGB(0xff,y,u,v)
+#define GR_COLOR_AYUV(a,y,u,v)						GR_COLOR_ARGB(a,y,u,v)
 
 // maps floating point channels (0.f to 1.f range) to uint32
-#define JE_COLOR_COLORVALUE(r,g,b,a)				JE_COLOR_RGBA((uint32)((r)*255.f),(uint32)((g)*255.f),(uint32)((b)*255.f),(uint32)((a)*255.f))
+#define GR_COLOR_COLORVALUE(r,g,b,a)				GR_COLOR_RGBA((uint32)((r)*255.f),(uint32)((g)*255.f),(uint32)((b)*255.f),(uint32)((a)*255.f))
 
-#define JE_COLOR_GETARGB(argb,a,r,g,b)				{a=((argb>>24)&0xff); r=((argb>>16)&0xff); g=((argb>>8)&0xff); b=((argb)&0xff); }
+#define GR_COLOR_GETARGB(argb,a,r,g,b)				{a=((argb>>24)&0xff); r=((argb>>16)&0xff); g=((argb>>8)&0xff); b=((argb)&0xff); }
 
 // END - 32-bit color values - paradoxnj 8/3/2005
 
 // should probably be moved to trig module
-__inline jeFloat jeFloat_DegToRad(jeFloat d)
+__inline grFloat grFloat_DegToRad(grFloat d)
 {
-	return d * JE_DEGS_PER_RAD;
+	return d * GR_DEGS_PER_RAD;
 }
 
-__inline jeFloat jeFloat_RadToDeg(jeFloat r)
+__inline grFloat grFloat_RadToDeg(grFloat r)
 {
-	return r * JE_RADS_PER_DEG;
+	return r * GR_RADS_PER_DEG;
 }
 
 
 //------------------------------
 // macros on basic jet types
 
-#define JE_ABS(x)										( (x) < 0 ? (-(x)) : (x) )
-#define JE_CLAMP(x,lo,hi)								( (x) < (lo) ? (lo) : ( (x) > (hi) ? (hi) : (x) ) )
-#define JE_CLAMP8(x)									JE_CLAMP(x,0,255)
-#define JE_CLAMP16(x)									JE_CLAMP(x,0,65536)
-#define JE_BOOLSAME(x,y)								( ( (x) && (y) ) || ( !(x) && !(y) ) )
+#define GR_ABS(x)										( (x) < 0 ? (-(x)) : (x) )
+#define GR_CLAMP(x,lo,hi)								( (x) < (lo) ? (lo) : ( (x) > (hi) ? (hi) : (x) ) )
+#define GR_CLAMP8(x)									GR_CLAMP(x,0,255)
+#define GR_CLAMP16(x)									GR_CLAMP(x,0,65536)
+#define GR_BOOLSAME(x,y)								( ( (x) && (y) ) || ( !(x) && !(y) ) )
 
-#define JE_EPSILON										((jeFloat)0.000797f)
-#define JE_FLOATS_EQUAL(x,y)							( JE_ABS((x) - (y)) < JE_EPSILON )
-#define JE_FLOAT_ISZERO(x)								JE_FLOATS_EQUAL(x,0.0f)
+#define GR_EPSILON										((grFloat)0.000797f)
+#define GR_FLOATS_EQUAL(x,y)							( GR_ABS((x) - (y)) < GR_EPSILON )
+#define GR_FLOAT_ISZERO(x)								GR_FLOATS_EQUAL(x,0.0f)
 
 // you're right... inline funcs are more useful :^)
-static __inline jeFloat jeFloat_Sqr(jeFloat a)
+static __inline grFloat grFloat_Sqr(grFloat a)
 {
 	return a * a;
 }
 
-static __inline jeFloat jeFloat_Cube(jeFloat a)
+static __inline grFloat grFloat_Cube(grFloat a)
 {
 	return a * a * a;
 }
@@ -144,7 +138,7 @@ static __inline jeFloat jeFloat_Cube(jeFloat a)
 // CB : what does the optimizer do with inline assembly in inline functions ?
 //		will it turn off all optimizations?
 
-static jeFloat __inline jeFloat_RoundToInt(jeFloat val) // rounds depending on how you set jeCPU_FloatControl
+static grFloat __inline grFloat_RoundToInt(grFloat val) // rounds depending on how you set grCPU_FloatControl
 {
 	__asm
 	{
@@ -155,7 +149,7 @@ static jeFloat __inline jeFloat_RoundToInt(jeFloat val) // rounds depending on h
 return val;
 }
 
-static jeFloat __inline jeFloat_Sqrt(jeFloat val)
+static grFloat __inline grFloat_Sqrt(grFloat val)
 {
 	__asm 
 	{
@@ -166,7 +160,7 @@ static jeFloat __inline jeFloat_Sqrt(jeFloat val)
 return val;
 }
 
-static jeFloat __inline jeFloat_Sin(jeFloat val)
+static grFloat __inline grFloat_Sin(grFloat val)
 {
 	__asm 
 	{
@@ -177,7 +171,7 @@ static jeFloat __inline jeFloat_Sin(jeFloat val)
 return val;
 }
 
-static jeFloat __inline jeFloat_Cos(jeFloat val)
+static grFloat __inline grFloat_Cos(grFloat val)
 {
 	__asm 
 	{
@@ -188,7 +182,7 @@ static jeFloat __inline jeFloat_Cos(jeFloat val)
 return val;
 }
 
-static int32 __inline jeFloat_ToInt(jeFloat f)
+static int32 __inline grFloat_ToInt(grFloat f)
 {
 int32 i;
 	__asm
@@ -204,50 +198,21 @@ return i;
 //------------------------------
 
 #ifdef __cplusplus
-class jeUnknown
+class grUnknown
 {
 protected:
-	virtual ~jeUnknown()						{}
+	virtual ~grUnknown()						{}
 
 public:
 	virtual uint32					AddRef() = 0;
 	virtual uint32					Release() = 0;
 };
-typedef jeUnknown grUnknown;
+typedef grUnknown grUnknown;
 #endif
 
 // Genesis3D: Reborn gr* Aliases
-#define GR_PI				JE_PI
-#define GR_TWOPI			JE_TWOPI
-#define GR_HALFPI			JE_HALFPI
-#define GR_DEGS_PER_RAD		JE_DEGS_PER_RAD
-#define GR_RADS_PER_DEG		JE_RADS_PER_DEG
 
-#define GR_COLOR_ARGB		JE_COLOR_ARGB
-#define GR_COLOR_RGBA		JE_COLOR_RGBA
-#define GR_COLOR_XRGB		JE_COLOR_XRGB
-#define GR_COLOR_XYUV		JE_COLOR_XYUV
-#define GR_COLOR_AYUV		JE_COLOR_AYUV
-#define GR_COLOR_COLORVALUE	JE_COLOR_COLORVALUE
-#define GR_COLOR_GETARGB	JE_COLOR_GETARGB
 
-#define grFloat_DegToRad	jeFloat_DegToRad
-#define grFloat_RadToDeg	jeFloat_RadToDeg
-#define GR_ABS				JE_ABS
-#define GR_CLAMP			JE_CLAMP
-#define GR_CLAMP8			JE_CLAMP8
-#define GR_CLAMP16			JE_CLAMP16
-#define GR_BOOLSAME			JE_BOOLSAME
-#define GR_EPSILON			JE_EPSILON
-#define GR_FLOATS_EQUAL		JE_FLOATS_EQUAL
-#define GR_FLOAT_ISZERO		JE_FLOAT_ISZERO
-#define grFloat_Sqr			jeFloat_Sqr
-#define grFloat_Cube		jeFloat_Cube
-#define grFloat_RoundToInt	jeFloat_RoundToInt
-#define grFloat_Sqrt		jeFloat_Sqrt
-#define grFloat_Sin			jeFloat_Sin
-#define grFloat_Cos			jeFloat_Cos
-#define grFloat_ToInt		jeFloat_ToInt
 
 #ifdef __cplusplus
 }

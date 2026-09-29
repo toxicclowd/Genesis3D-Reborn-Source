@@ -35,33 +35,23 @@ extern "C" {
 #endif
 
 //**********
-typedef struct jeEngine		grEngine;
-typedef struct jeEngine		jeEngine;
-typedef struct jeCamera		grCamera;
-typedef struct jeCamera		jeCamera;
-typedef struct jeFrustum	grFrustum;
-typedef struct jeFrustum	jeFrustum;
-typedef struct jeWorld		grWorld;
-typedef struct jeWorld		jeWorld;
-typedef struct jeObject		grObject;
-typedef struct jeObject		jeObject;
-typedef struct jeMaterial_Array grMaterial_Array;
-typedef struct jeMaterial_Array jeMaterial_Array;
-typedef struct jeFaceInfo_Array grFaceInfo_Array;
-typedef struct jeFaceInfo_Array jeFaceInfo_Array;
-typedef struct jeBrushRayInfo grBrushRayInfo;
-typedef struct jeBrushRayInfo jeBrushRayInfo;
-typedef struct jeBSP_DebugInfo grBSP_DebugInfo;
-typedef struct jeBSP_DebugInfo jeBSP_DebugInfo;
+typedef struct grEngine		grEngine;
+typedef struct grCamera		grCamera;
+typedef struct grFrustum	grFrustum;
+typedef struct grWorld		grWorld;
+typedef struct grObject		grObject;
+typedef struct grMaterial_Array grMaterial_Array;
+typedef struct grFaceInfo_Array grFaceInfo_Array;
+typedef struct grBrushRayInfo grBrushRayInfo;
+typedef struct grBSP_DebugInfo grBSP_DebugInfo;
 
-typedef struct jeModel grModel;
-typedef struct jeModel jeModel;
-typedef struct jeBSPSetup { // Incarnadine
+typedef struct grModel grModel;
+typedef struct grBSPSetup { // Incarnadine
 	grBSP_Options Options;
 	grBSP_Logic Logic;
 	grBSP_LogicBalance LogicBalance;
 } grBSPSetup;
-typedef struct jeBSPSetup jeBSPSetup;
+typedef struct grBSPSetup grBSPSetup;
 
 
 GRAPI grModel		* GRCC grModel_Create(void);
@@ -128,41 +118,5 @@ GRAPI const		grXForm3d * GRCC grModel_GetXForm(grModel *Model );
 //========================================================================================
 // Backward Compatibility Definitions (je -> gr)
 //========================================================================================
-#ifndef GENESIS_NO_JET_COMPAT
-
-#define jeModel_AddBrush                         grModel_AddBrush
-#define jeModel_AddObject                        grModel_AddObject
-#define jeModel_ChangeBoxCollision               grModel_ChangeBoxCollision
-#define jeModel_Collision                        grModel_Collision
-#define jeModel_Create                           grModel_Create
-#define jeModel_CreateFromFile                   grModel_CreateFromFile
-#define jeModel_CreateRef                        grModel_CreateRef
-#define jeModel_Destroy                          grModel_Destroy
-#define jeModel_GetBSPDebugInfo                  grModel_GetBSPDebugInfo
-#define jeModel_GetNextBrush                     grModel_GetNextBrush
-#define jeModel_GetXForm                         grModel_GetXForm
-#define jeModel_HasBrush                         grModel_HasBrush
-#define jeModel_PatchLighting                    grModel_PatchLighting
-#define jeModel_RayIntersectsBrushes             grModel_RayIntersectsBrushes
-#define jeModel_RebuildBSP                       grModel_RebuildBSP
-#define jeModel_RebuildBSPFaces                  grModel_RebuildBSPFaces
-#define jeModel_RebuildLights                    grModel_RebuildLights
-#define jeModel_RebuildLightsFromPoint           grModel_RebuildLightsFromPoint
-#define jeModel_RemoveBrush                      grModel_RemoveBrush
-#define jeModel_RemoveObject                     grModel_RemoveObject
-#define jeModel_Render                           grModel_Render
-#define jeModel_SetArrays                        grModel_SetArrays
-#define jeModel_SetBrushFaceCB                   grModel_SetBrushFaceCB
-#define jeModel_SetBrushFaceCBOnOff              grModel_SetBrushFaceCBOnOff
-#define jeModel_SetDefaultContents               grModel_SetDefaultContents
-#define jeModel_SetEngine                        grModel_SetEngine
-#define jeModel_SetRenderOptions                 grModel_SetRenderOptions
-#define jeModel_SetWorld                         grModel_SetWorld
-#define jeModel_SetXForm                         grModel_SetXForm
-#define jeModel_UpdateBrush                      grModel_UpdateBrush
-#define jeModel_UpdateBrushFace                  grModel_UpdateBrushFace
-#define jeModel_WriteToFile                      grModel_WriteToFile
-
-#endif // GENESIS_NO_JET_COMPAT
 
 #endif

@@ -25,7 +25,7 @@
 #include "Errorlog.h"
 #include "Ram.h"
 #include "crc32.h"
-#include "jeFrustum.h"
+#include "grFrustum.h"
 #include "Util.h"
 #include "Log.h"
 
@@ -36,31 +36,31 @@
 #define MAX_DEFS	(100)
 #define INVALID_INDEX	(-1)
 
-//#define ObjectError(str,Obz)	jeErrorLog_AddString(-1,"jeObject " (((Obz) != nullptr) ? (((jeObject *)(Obz))->Name) : "Unknown") " Error: " str, nullptr))
-__inline void ObjectError(const char* str, const jeObject* Obz)
+//#define ObjectError(str,Obz)	grErrorLog_AddString(-1,"grObject " (((Obz) != nullptr) ? (((grObject *)(Obz))->Name) : "Unknown") " Error: " str, nullptr))
+__inline void ObjectError(const char* str, const grObject* Obz)
 {
 	char msg[1024];
-	sprintf_s(msg, "jeObject %s Error: %s", (((Obz) != nullptr) ? (((jeObject *)(Obz))->Name) : "Unknown"), str);
-	jeErrorLog_AddString(-1, msg, (((Obz) != nullptr) ? (((jeObject *)(Obz))->Name) : "Unknown"));
+	sprintf_s(msg, "grObject %s Error: %s", (((Obz) != nullptr) ? (((grObject *)(Obz))->Name) : "Unknown"), str);
+	grErrorLog_AddString(-1, msg, (((Obz) != nullptr) ? (((grObject *)(Obz))->Name) : "Unknown"));
 }
 
 
 /*}{********************** Manager Functions ******************/
 
-static const uint32 jeObject_Tag = 0x424F4547; //GEOB
+static const uint32 grObject_Tag = 0x424F4547; //GEOB
 
-static jeObjectDef	RegisteredDefs[MAX_DEFS];
+static grObjectDef	RegisteredDefs[MAX_DEFS];
 static uint32		RegisteredTag[MAX_DEFS];
 static unsigned int			NumRegisteredDefs = 0;
 
-uint32 __inline jeObject_DefTag(const jeObjectDef * Methods)
+uint32 __inline grObject_DefTag(const grObjectDef * Methods)
 {
 return CRC32_Array((const uint8 *)Methods->Name,strlen(Methods->Name));
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_RegisterGlobalObjectDef(const jeObjectDef * Methods)
+GRAPI grBoolean	GRCC grObject_RegisterGlobalObjectDef(const grObjectDef * Methods)
 {
 	uint32 Tag;
 	int i;
@@ -70,11 +70,11 @@ JETAPI jeBoolean	JETCC jeObject_RegisterGlobalObjectDef(const jeObjectDef * Meth
 
 	if ( strlen(Methods->Name) == 0 )
 	{
-		jeErrorLog_AddString(-1,"Object Error: no Name!",Methods->Name);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Object Error: no Name!",Methods->Name);
+		return GR_FALSE;
 	}
 
-	Tag = jeObject_DefTag(Methods);
+	Tag = grObject_DefTag(Methods);
 
 	// <> this is not thread-safe
 
@@ -83,30 +83,30 @@ JETAPI jeBoolean	JETCC jeObject_RegisterGlobalObjectDef(const jeObjectDef * Meth
 		if ( RegisteredTag[i] == Tag )
 		{
 			if ( memcmp(&(RegisteredDefs[i]),Methods,sizeof(*Methods)) == 0 )
-				return JE_TRUE;
+				return GR_TRUE;
 			else
 			{
-				jeErrorLog_AddString(-1,"Object Error: Tag collision!",Methods->Name);
-				return JE_FALSE;
+				grErrorLog_AddString(-1,"Object Error: Tag collision!",Methods->Name);
+				return GR_FALSE;
 			}
 		}
 	}
 
 	if ( NumRegisteredDefs == MAX_DEFS )
 	{
-		jeErrorLog_AddString(-1,"Object Error: too many defs!",Methods->Name);
-		return JE_FALSE;
+		grErrorLog_AddString(-1,"Object Error: too many defs!",Methods->Name);
+		return GR_FALSE;
 	}
 
 	RegisteredTag[ NumRegisteredDefs] = Tag;
 	RegisteredDefs[NumRegisteredDefs] = *Methods;
 	NumRegisteredDefs++;
 	
-	return JE_TRUE;
+	return GR_TRUE;
 }
 //====================================================================================================
 //====================================================================================================
-int32 jeObject_FindObjectDef( const char * TypeName  )
+int32 grObject_FindObjectDef( const char * TypeName  )
 {
 	int i;
 
@@ -119,7 +119,7 @@ int32 jeObject_FindObjectDef( const char * TypeName  )
 }
 //====================================================================================================
 //====================================================================================================
-JETAPI int32		JETCC jeObject_GetRegisteredN()
+GRAPI int32		GRCC grObject_GetRegisteredN()
 {
 	return( NumRegisteredDefs );
 }
@@ -127,45 +127,45 @@ JETAPI int32		JETCC jeObject_GetRegisteredN()
 //====================================================================================================
 //====================================================================================================
 
-JETAPI const char*	JETCC jeObject_GetRegisteredDefName( int Index )
+GRAPI const char*	GRCC grObject_GetRegisteredDefName( int Index )
 {
 	assert( Index < NumRegisteredDefs );
 
 	return( RegisteredDefs[Index].Name );
 }
 
-JETAPI uint32	JETCC jeObject_GetRegisteredFlags( int Index )
+GRAPI uint32	GRCC grObject_GetRegisteredFlags( int Index )
 {
 	assert( Index < NumRegisteredDefs );
 
 	return( RegisteredDefs[Index].Flags);
 }
 
-JETAPI jeBoolean	JETCC jeObject_GetRegisteredPropertyList(const char * TypeName, jeProperty_List **List)
+GRAPI grBoolean	GRCC grObject_GetRegisteredPropertyList(const char * TypeName, grProperty_List **List)
 {
 	int Index;
 
-	Index =  jeObject_FindObjectDef( TypeName  );
+	Index =  grObject_FindObjectDef( TypeName  );
 	if( Index == INVALID_INDEX )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	if( RegisteredDefs[Index].GetGlobalPropertyList == nullptr )
 	{
 		*List = nullptr;
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
 	return( (*RegisteredDefs[Index].GetGlobalPropertyList)(List) );
 }
 
-JETAPI jeBoolean	JETCC jeObject_SetRegisteredProperty( const char * TypeName, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData )
+GRAPI grBoolean	GRCC grObject_SetRegisteredProperty( const char * TypeName, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData )
 {
 	int Index;
 
-	Index =  jeObject_FindObjectDef( TypeName  );
+	Index =  grObject_FindObjectDef( TypeName  );
 	if( Index == INVALID_INDEX )
-		return( JE_FALSE );
+		return( GR_FALSE );
 	if( RegisteredDefs[Index].SetGlobalProperty == nullptr )
 	{
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
 	return( (*RegisteredDefs[Index].SetGlobalProperty)(FieldID, DataType, pData) );
 }
@@ -173,17 +173,17 @@ JETAPI jeBoolean	JETCC jeObject_SetRegisteredProperty( const char * TypeName, in
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeObject *	JETCC jeObject_Create( const char * TypeName )
+GRAPI grObject *	GRCC grObject_Create( const char * TypeName )
 {
-	jeObject* Object{};
+	grObject* Object{};
 	int32 Index = 0;
 
-	Index = jeObject_FindObjectDef( TypeName );
+	Index = grObject_FindObjectDef( TypeName );
 
 	if( Index == INVALID_INDEX )
 		return nullptr;
 
-	Object = (jeObject *)jeRam_AllocateClear(sizeof(jeObject)); // <> MemPool
+	Object = (grObject *)grRam_AllocateClear(sizeof(grObject)); // <> MemPool
 
 	if( Object == nullptr )
 		return( nullptr );
@@ -197,7 +197,7 @@ JETAPI jeObject *	JETCC jeObject_Create( const char * TypeName )
 	Object->Contents = CONTENTS_SOLID;
 	Object->Parent = nullptr;
 	Object->Self = Object;
-	Object->Children = jeChain_Create();
+	Object->Children = grChain_Create();
 
 	if (!Object->Children)
 		goto ExitWithError;
@@ -222,29 +222,29 @@ JETAPI jeObject *	JETCC jeObject_Create( const char * TypeName )
 			}
 
 			if (Object->Children)
-				jeChain_Destroy(&Object->Children);
+				grChain_Destroy(&Object->Children);
 
-			jeRam_Free(Object);
+			grRam_Free(Object);
 		}
 		return nullptr;
 	}
 }
 //====================================================================================================
 //====================================================================================================
-JETAPI jeObject *	JETCC jeObject_Duplicate( jeObject *pObject )
+GRAPI grObject *	GRCC grObject_Duplicate( grObject *pObject )
 {
-	jeObject * pObjectCopy{};
+	grObject * pObjectCopy{};
 	int32 Index{};
 
 	if( pObject->Methods->DuplicateInstance == nullptr )
 		return( nullptr );
 
-	Index = jeObject_FindObjectDef( jeObject_GetTypeName(pObject) );
+	Index = grObject_FindObjectDef( grObject_GetTypeName(pObject) );
 
 	if( Index == INVALID_INDEX )
 		return nullptr;
 
-	pObjectCopy = (jeObject *)jeRam_AllocateClear(sizeof(jeObject)); // <> MemPool
+	pObjectCopy = (grObject *)grRam_AllocateClear(sizeof(grObject)); // <> MemPool
 	if( pObjectCopy == nullptr )
 		return( nullptr );
 
@@ -252,13 +252,13 @@ JETAPI jeObject *	JETCC jeObject_Duplicate( jeObject *pObject )
 	pObjectCopy->Methods = &RegisteredDefs[Index];
 	pObjectCopy->RefCnt = 1;
 	//Royce
-	pObjectCopy->Children = jeChain_Create();
+	pObjectCopy->Children = grChain_Create();
 	//---
 
 	pObjectCopy->Instance = pObject->Methods->DuplicateInstance(pObject->Instance);
 	if( pObjectCopy->Instance == nullptr )
 	{
-		jeRam_Free( pObjectCopy );
+		grRam_Free( pObjectCopy );
 		return( nullptr );
 	}
 	return pObjectCopy;
@@ -266,9 +266,9 @@ JETAPI jeObject *	JETCC jeObject_Duplicate( jeObject *pObject )
 
 //====================================================================================================
 //====================================================================================================
-JETAPI void		JETCC jeObject_Destroy(jeObject ** pObject)
+GRAPI void		GRCC grObject_Destroy(grObject ** pObject)
 {
-	jeObject * Object;
+	grObject * Object;
 	assert(pObject);
 	Object = *pObject;
 	if ( ! Object )
@@ -278,7 +278,7 @@ JETAPI void		JETCC jeObject_Destroy(jeObject ** pObject)
 	}
 	assert( Object->RefCnt > 0 );
 #ifdef _DEBUG
-	Log_Printf("jeObject_Destroy %s\n", Object->Name);
+	Log_Printf("grObject_Destroy %s\n", Object->Name);
 #endif
 
 	Object->RefCnt--;
@@ -286,16 +286,16 @@ JETAPI void		JETCC jeObject_Destroy(jeObject ** pObject)
 	if( Object->RefCnt == 0 )
 	{
 		if (Object->Children)
-			jeChain_Destroy(&Object->Children);
+			grChain_Destroy(&Object->Children);
 
 		if( Object->Name != nullptr )
-			jeRam_Free(Object->Name); // <> MemPool
+			grRam_Free(Object->Name); // <> MemPool
 
 		// Free the instance
 		if( Object->Instance != nullptr ) // Krouer: do not crash if object has failed to load
-			jeObject_Free(Object); 
+			grObject_Free(Object); 
 
-		jeRam_Free(Object); // <> MemPool
+		grRam_Free(Object); // <> MemPool
 	}
 
 	*pObject = nullptr;
@@ -303,17 +303,17 @@ JETAPI void		JETCC jeObject_Destroy(jeObject ** pObject)
 
 //====================================================================================================
 //====================================================================================================
-JETAPI void			JETCC jeObject_SetName( jeObject * pObject, const char * Name )
+GRAPI void			GRCC grObject_SetName( grObject * pObject, const char * Name )
 {
 	assert( pObject );
 	assert( Name );
 
 	if( pObject->Name != nullptr )
-		jeRam_Free( pObject->Name );
+		grRam_Free( pObject->Name );
 	pObject->Name = Util_StrDup( Name );
 }
 
-JETAPI const char  *JETCC jeObject_GetName( const jeObject * pObject )
+GRAPI const char  *GRCC grObject_GetName( const grObject * pObject )
 {
 	assert( pObject );
 	return( pObject->Name );
@@ -322,40 +322,40 @@ JETAPI const char  *JETCC jeObject_GetName( const jeObject * pObject )
 /*}{********************** Object Functions ******************/
 
 
-JETAPI jeObject *	JETCC jeObject_CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr)
+GRAPI grObject *	GRCC grObject_CreateFromFile(grVFile * File, grPtrMgr *PtrMgr)
 {
-	jeObject * Object = nullptr;
-	jeVFile * HintsFile = nullptr;
+	grObject * Object = nullptr;
+	grVFile * HintsFile = nullptr;
 	uint32 Tag;
 	long StartPos = -1;
 	uint32	NameLng{};
 
 	if (PtrMgr)
 	{
-		if (!jePtrMgr_ReadPtr(PtrMgr, File, (void **)&Object))
+		if (!grPtrMgr_ReadPtr(PtrMgr, File, (void **)&Object))
 			return nullptr;
 
 		if (Object)
 		{
-			jeObject_CreateRef(Object);
+			grObject_CreateRef(Object);
 
 			return Object;		// Ptr found in stack, return it
 		}
 	}
 
-	HintsFile = jeVFile_CreateHintsFile(File);
+	HintsFile = grVFile_CreateHintsFile(File);
 	if ( ! HintsFile )
 		return nullptr;
 
-	if ( ! jeVFile_Tell(HintsFile,&StartPos))
+	if ( ! grVFile_Tell(HintsFile,&StartPos))
 		goto fail;
 
-	Object = (jeObject *)jeRam_AllocateClear(sizeof(jeObject)); // <> MemPool
+	Object = (grObject *)grRam_AllocateClear(sizeof(grObject)); // <> MemPool
 	if ( ! Object )
 		goto fail;
 
 	Object->Contents = CONTENTS_SOLID;
-	Object->Children = jeChain_Create();
+	Object->Children = grChain_Create();
 	Object->RefCnt = 1;
 	Object->Self = Object;
 
@@ -366,20 +366,20 @@ JETAPI jeObject *	JETCC jeObject_CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr
 	{
 #pragma message( "Should we recover the pushed pointer on failure?")
 		// Push the ptr on the stack
-		if (!jePtrMgr_PushPtr(PtrMgr, Object))
+		if (!grPtrMgr_PushPtr(PtrMgr, Object))
 			goto fail;
 	}
 
-	if ( ! jeVFile_Read(HintsFile,&Tag,sizeof(Tag)) )
+	if ( ! grVFile_Read(HintsFile,&Tag,sizeof(Tag)) )
 		goto fail;
 
-	if ( Tag != jeObject_Tag )
+	if ( Tag != grObject_Tag )
 	{
 		ObjectError("didn't get GEOB tag!",nullptr);
 		goto fail;
 	}
 	
-	if ( ! jeVFile_Read(HintsFile,&Tag,sizeof(Tag)) )
+	if ( ! grVFile_Read(HintsFile,&Tag,sizeof(Tag)) )
 		goto fail;
 
 	{
@@ -394,13 +394,13 @@ JETAPI jeObject *	JETCC jeObject_CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr
 		}
 	}
 	
-	if ( ! jeVFile_Read(File, &NameLng,sizeof(NameLng)) )
+	if ( ! grVFile_Read(File, &NameLng,sizeof(NameLng)) )
 		goto fail;
 
 	if( NameLng )
 	{
-		Object->Name = (char *)jeRam_Allocate( NameLng );
-		if ( ! jeVFile_Read(File, Object->Name, NameLng) )
+		Object->Name = (char *)grRam_Allocate( NameLng );
+		if ( ! grVFile_Read(File, Object->Name, NameLng) )
 			goto fail;
 	}
 
@@ -415,7 +415,7 @@ JETAPI jeObject *	JETCC jeObject_CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr
 		goto fail;
 	}
 
-	jeVFile_Close(HintsFile);
+	grVFile_Close(HintsFile);
 	HintsFile = nullptr;
 
 	Object->Instance = Object->Methods->CreateFromFile(File, PtrMgr);
@@ -428,12 +428,12 @@ JETAPI jeObject *	JETCC jeObject_CreateFromFile(jeVFile * File, jePtrMgr *PtrMgr
 fail:
 
 	ObjectError("CreateFromFile failed",Object);
-	jeObject_Destroy(&Object);
+	grObject_Destroy(&Object);
 	if ( HintsFile )
 	{
 		if ( StartPos != -1 )
-			jeVFile_Seek(HintsFile,StartPos,JE_VFILE_SEEKSET);
-		jeVFile_Close(HintsFile);
+			grVFile_Seek(HintsFile,StartPos,GR_VFILE_SEEKSET);
+		grVFile_Close(HintsFile);
 	}
 
 	return nullptr;
@@ -443,10 +443,10 @@ fail:
 //====================================================================================================
 //====================================================================================================
 
-JETAPI jeBoolean	JETCC jeObject_WriteToFile(const jeObject * Object,jeVFile * File, jePtrMgr *PtrMgr)
+GRAPI grBoolean	GRCC grObject_WriteToFile(const grObject * Object,grVFile * File, grPtrMgr *PtrMgr)
 
 {
-	jeVFile * HintsFile = nullptr;
+	grVFile * HintsFile = nullptr;
 	uint32 Tag;
 	long StartPos = -1;
 	uint32	NameLng{};
@@ -458,11 +458,11 @@ JETAPI jeBoolean	JETCC jeObject_WriteToFile(const jeObject * Object,jeVFile * Fi
 		uint32		Count;
 
 		// writes the pointer header
-		if (!jePtrMgr_WritePtr(PtrMgr, File, (void*)Object, &Count))
-			return JE_FALSE;
+		if (!grPtrMgr_WritePtr(PtrMgr, File, (void*)Object, &Count))
+			return GR_FALSE;
 
 		if (Count)
-			return JE_TRUE;		// Ptr was on stack, so return
+			return GR_TRUE;		// Ptr was on stack, so return
 
 		assert ( Object->Methods->WriteToFile );
 
@@ -471,28 +471,28 @@ JETAPI jeBoolean	JETCC jeObject_WriteToFile(const jeObject * Object,jeVFile * Fi
 		if (PtrMgr)
 		{
 			// Push the ptr on the stack
-			if (!jePtrMgr_PushPtr(PtrMgr, (void*)Object))
-				return JE_FALSE;
+			if (!grPtrMgr_PushPtr(PtrMgr, (void*)Object))
+				return GR_FALSE;
 		}
 
 	}
 
 	if ( ! Object->Methods->WriteToFile )
-		return JE_FALSE;
+		return GR_FALSE;
 
-	HintsFile = jeVFile_CreateHintsFile(File);
+	HintsFile = grVFile_CreateHintsFile(File);
 	if ( ! HintsFile )
 		goto fail;
 
-	if ( ! jeVFile_Tell(HintsFile,&StartPos))
+	if ( ! grVFile_Tell(HintsFile,&StartPos))
 		goto fail;
 
-	if ( ! jeVFile_Write(HintsFile,&jeObject_Tag,sizeof(jeObject_Tag)) )
+	if ( ! grVFile_Write(HintsFile,&grObject_Tag,sizeof(grObject_Tag)) )
 		goto fail;
 
-	Tag = jeObject_DefTag(Object->Methods);
+	Tag = grObject_DefTag(Object->Methods);
 
-	if ( ! jeVFile_Write(HintsFile,&Tag,sizeof(Tag)) )
+	if ( ! grVFile_Write(HintsFile,&Tag,sizeof(Tag)) )
 		goto fail;
 
 	if( Object->Name  )
@@ -501,43 +501,43 @@ JETAPI jeBoolean	JETCC jeObject_WriteToFile(const jeObject * Object,jeVFile * Fi
 	}
 	else
 		NameLng = 0;
-	if ( ! jeVFile_Write(File, &NameLng,sizeof(NameLng)) )
+	if ( ! grVFile_Write(File, &NameLng,sizeof(NameLng)) )
 		goto fail;
 
 	if( NameLng )
-		if ( ! jeVFile_Write(File, Object->Name, NameLng) )
+		if ( ! grVFile_Write(File, Object->Name, NameLng) )
 			goto fail;
 
-	jeVFile_Close(HintsFile);
+	grVFile_Close(HintsFile);
 	HintsFile = nullptr;
 
 	if ( ! Object->Methods->WriteToFile(Object->Instance,File, PtrMgr) )
 		goto fail;
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 fail:
 
 	if (PtrMgr)
 		{
-		jePtrMgr_PopPtr(PtrMgr, (void*)Object);
+		grPtrMgr_PopPtr(PtrMgr, (void*)Object);
 		}
 
 	ObjectError("WriteToFile failed",Object);
 	if (HintsFile)
 	{
 		if ( StartPos != -1 )
-			jeVFile_Seek(HintsFile,StartPos,JE_VFILE_SEEKSET);
-		jeVFile_Close(HintsFile);
+			grVFile_Seek(HintsFile,StartPos,GR_VFILE_SEEKSET);
+		grVFile_Close(HintsFile);
 	}
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeObject_Type	JETCC jeObject_GetType(const jeObject * Object)
+GRAPI grObject_Type	GRCC grObject_GetType(const grObject * Object)
 {
 	assert(Object && Object->Instance && Object->Methods);
 	return Object->Methods->Type;
@@ -545,7 +545,7 @@ JETAPI jeObject_Type	JETCC jeObject_GetType(const jeObject * Object)
 
 //====================================================================================================
 //====================================================================================================
-JETAPI const char *JETCC jeObject_GetTypeName	(const jeObject * Object)
+GRAPI const char *GRCC grObject_GetTypeName	(const grObject * Object)
 {
 	assert(Object && Object->Instance && Object->Methods);
 	return Object->Methods->Name;
@@ -553,14 +553,14 @@ JETAPI const char *JETCC jeObject_GetTypeName	(const jeObject * Object)
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_GetPropertyList(const jeObject *Object, jeProperty_List **List)
+GRAPI grBoolean	GRCC grObject_GetPropertyList(const grObject *Object, grProperty_List **List)
 {
 	assert(Object);
 	assert(Object->Instance);
 	assert(Object->Methods);
 
 	if (!Object->Methods->GetPropertyList)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->GetPropertyList(Object->Instance, List);
 }
@@ -568,14 +568,14 @@ JETAPI jeBoolean	JETCC jeObject_GetPropertyList(const jeObject *Object, jeProper
 //====================================================================================================
 //====================================================================================================
 
-JETAPI jeBoolean	JETCC jeObject_SetProperty(jeObject *Object, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData )
+GRAPI grBoolean	GRCC grObject_SetProperty(grObject *Object, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData )
 {
 	assert(Object);
 	assert(Object->Instance);
 	assert(Object->Methods);
 
 	if (!Object->Methods->SetProperty)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->SetProperty(Object->Instance, FieldID, DataType, pData );
 }
@@ -583,21 +583,21 @@ JETAPI jeBoolean	JETCC jeObject_SetProperty(jeObject *Object, int32 FieldID, PRO
 //====================================================================================================
 //====================================================================================================
 
-JETAPI jeBoolean	JETCC jeObject_GetProperty(const jeObject *Object, int32 FieldID, PROPERTY_FIELD_TYPE DataType, jeProperty_Data * pData )
+GRAPI grBoolean	GRCC grObject_GetProperty(const grObject *Object, int32 FieldID, PROPERTY_FIELD_TYPE DataType, grProperty_Data * pData )
 {
 	assert(Object);
 	assert(Object->Instance);
 	assert(Object->Methods);
 
 	if (!Object->Methods->GetProperty)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->GetProperty(Object->Instance, FieldID, DataType, pData );
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI void   *		JETCC jeObject_GetInstance( const jeObject *Object )
+GRAPI void   *		GRCC grObject_GetInstance( const grObject *Object )
 {
 	assert(Object);
 
@@ -606,7 +606,7 @@ JETAPI void   *		JETCC jeObject_GetInstance( const jeObject *Object )
 
 //====================================================================================================
 //====================================================================================================
-JETAPI void			JETCC jeObject_CreateInstanceRef(jeObject * Object)
+GRAPI void			GRCC grObject_CreateInstanceRef(grObject * Object)
 {
 	assert(Object);
 	assert(Object->Instance);
@@ -617,7 +617,7 @@ JETAPI void			JETCC jeObject_CreateInstanceRef(jeObject * Object)
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_Free		(jeObject * Object)
+GRAPI grBoolean GRCC grObject_Free		(grObject * Object)
 {
 	assert(Object && Object->Instance && Object->Methods);
 	assert(Object->Methods->Destroy);
@@ -626,7 +626,7 @@ JETAPI jeBoolean JETCC jeObject_Free		(jeObject * Object)
 
 //====================================================================================================
 //====================================================================================================
-JETAPI void		JETCC jeObject_CreateRef	(jeObject * Object)
+GRAPI void		GRCC grObject_CreateRef	(grObject * Object)
 {
 	assert(Object );
 	 Object->RefCnt++;
@@ -634,37 +634,37 @@ JETAPI void		JETCC jeObject_CreateRef	(jeObject * Object)
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_Render(	const jeObject			*Object,
-												const jeWorld			*World, 
-												const jeEngine			*Engine, 
-												const jeCamera			*Camera, 
-												const jeFrustum			*CameraSpaceFrustum, 
-												jeObject_RenderFlags	RenderFlags)
+GRAPI grBoolean GRCC grObject_Render(	const grObject			*Object,
+												const grWorld			*World, 
+												const grEngine			*Engine, 
+												const grCamera			*Camera, 
+												const grFrustum			*CameraSpaceFrustum, 
+												grObject_RenderFlags	RenderFlags)
 {
 	assert(Object && Object->Instance && Object->Methods);
 
 	if (!Object->Methods->Render )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->Render(Object->Instance, World, Engine, Camera, CameraSpaceFrustum, RenderFlags);
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_AttachWorld( jeObject *Object, jeWorld * pWorld )
+GRAPI grBoolean GRCC grObject_AttachWorld( grObject *Object, grWorld * pWorld )
 {
-	//jeChain_Link	*Link;
-	jeBoolean		Ret{};
-	jeObject	*Object2{};
+	//grChain_Link	*Link;
+	grBoolean		Ret{};
+	grObject	*Object2{};
 
 	assert(Object && Object->Instance && Object->Methods);
 
-	Ret = JE_TRUE;
+	Ret = GR_TRUE;
 	
 	//Royce
 	if (Object->Children) {
 	//---
-		for (Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, Object2))
+		for (Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, Object2))
 		{
 			assert(Object2);
 
@@ -688,20 +688,20 @@ JETAPI jeBoolean JETCC jeObject_AttachWorld( jeObject *Object, jeWorld * pWorld 
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_DettachWorld( jeObject *Object, jeWorld * pWorld )
+GRAPI grBoolean GRCC grObject_DettachWorld( grObject *Object, grWorld * pWorld )
 {
-	//jeChain_Link	*Link;
-	jeBoolean		Ret{};
-	jeObject	*Object2{};
+	//grChain_Link	*Link;
+	grBoolean		Ret{};
+	grObject	*Object2{};
 
 	assert(Object && Object->Instance && Object->Methods);
 	if (Object != Object->Self) {
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
-	Ret = JE_TRUE;
+	Ret = GR_TRUE;
 
-	for (Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, Object2))
+	for (Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, Object2))
 	{
 		assert(Object2);
 
@@ -726,20 +726,20 @@ JETAPI jeBoolean JETCC jeObject_DettachWorld( jeObject *Object, jeWorld * pWorld
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_AttachEngine( jeObject *Object, jeEngine *Engine )
+GRAPI grBoolean GRCC grObject_AttachEngine( grObject *Object, grEngine *Engine )
 {
-	//jeChain_Link	*Link;
-	jeBoolean		Ret{};
-	jeObject	*Object2{};
+	//grChain_Link	*Link;
+	grBoolean		Ret{};
+	grObject	*Object2{};
 
 	assert(Object && Object->Instance && Object->Methods);
 
-	Ret = JE_TRUE;
+	Ret = GR_TRUE;
 
 	//Royce
 	if (Object->Children) {
 	//---
-		for (Object2 = (jeObject*)jeChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, Object2))
+		for (Object2 = (grObject*)grChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, Object2))
 		{
 		
 			assert(Object2);
@@ -764,20 +764,20 @@ JETAPI jeBoolean JETCC jeObject_AttachEngine( jeObject *Object, jeEngine *Engine
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_DettachEngine( jeObject *Object, jeEngine *Engine )
+GRAPI grBoolean GRCC grObject_DettachEngine( grObject *Object, grEngine *Engine )
 {
-	//jeChain_Link	*Link;
-	jeBoolean		Ret{};
-	jeObject	*Object2{};
+	//grChain_Link	*Link;
+	grBoolean		Ret{};
+	grObject	*Object2{};
 
 	assert(Object && Object->Instance && Object->Methods);
 	if (Object != Object->Self) {
-		return JE_TRUE;
+		return GR_TRUE;
 	}
 
-	Ret = JE_TRUE;
+	Ret = GR_TRUE;
 
-	for (Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, Object2))
+	for (Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, Object2))
 	{
 		assert(Object2);
 
@@ -802,21 +802,21 @@ JETAPI jeBoolean JETCC jeObject_DettachEngine( jeObject *Object, jeEngine *Engin
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_AttachSoundSystem( jeObject *Object, jeSound_System *SoundSystem )
+GRAPI grBoolean GRCC grObject_AttachSoundSystem( grObject *Object, grSound_System *SoundSystem )
 {
-	//jeChain_Link	*Link;
-	jeBoolean		Ret{};
-	jeObject* Object2{};
+	//grChain_Link	*Link;
+	grBoolean		Ret{};
+	grObject* Object2{};
 
 	assert(Object && Object->Instance && Object->Methods);
 	Object->pSoundSystem = SoundSystem;
 
-	Ret = JE_TRUE;
+	Ret = GR_TRUE;
 
 	//Royce
 	if (Object->Children) {
 	//---
-		for (Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, Object2))
+		for (Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, Object2))
 		{
 		
 			assert(Object2);
@@ -841,23 +841,23 @@ JETAPI jeBoolean JETCC jeObject_AttachSoundSystem( jeObject *Object, jeSound_Sys
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_DettachSoundSystem( jeObject *Object, jeSound_System *SoundSystem )
+GRAPI grBoolean GRCC grObject_DettachSoundSystem( grObject *Object, grSound_System *SoundSystem )
 {
-	jeChain_Link	*Link{};
-	jeBoolean		Ret{};
+	grChain_Link	*Link{};
+	grBoolean		Ret{};
 
 	assert(Object && Object->Instance && Object->Methods);
 	if (Object != Object->Self) {
-		return JE_FALSE;
+		return GR_FALSE;
 	}
 
 	Object->pSoundSystem = nullptr;
 
-	Ret = JE_TRUE;
+	Ret = GR_TRUE;
 
-	for (Link = jeChain_GetFirstLink(Object->Children); Link; Link = jeChain_LinkGetNext(Link))
+	for (Link = grChain_GetFirstLink(Object->Children); Link; Link = grChain_LinkGetNext(Link))
 	{
-		jeObject	*Object2 = (jeObject*)Link;
+		grObject	*Object2 = (grObject*)Link;
 		
 		assert(Object2);
 		if (Object2 != Object2->Self) {
@@ -881,41 +881,41 @@ JETAPI jeBoolean JETCC jeObject_DettachSoundSystem( jeObject *Object, jeSound_Sy
 
 
 //====================================================================================================
-//	jeObject_Collision
+//	grObject_Collision
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_Collision(const jeObject *Object, const jeExtBox *Box, const jeVec3d *Front, const jeVec3d *Back, jeVec3d *Impact, jePlane *Plane, jeObject ** pSubObject)
+GRAPI grBoolean GRCC grObject_Collision(const grObject *Object, const grExtBox *Box, const grVec3d *Front, const grVec3d *Back, grVec3d *Impact, grPlane *Plane, grObject ** pSubObject)
 {
-jeChain_Link * Link{};
-jeFloat Distance{},ClosestDistance{};
-jeVec3d ClosestImpact{};
-jePlane ClosestPlane{};
-const jeObject * ClosestObject{};
-jeBoolean GotHit{};
+grChain_Link * Link{};
+grFloat Distance{},ClosestDistance{};
+grVec3d ClosestImpact{};
+grPlane ClosestPlane{};
+const grObject * ClosestObject{};
+grBoolean GotHit{};
 
 	assert(Object);
 	assert(Object->Instance);
 	assert(Object->Methods);
 
-	GotHit = JE_FALSE;
-	if(jeObject_GetContents(Object) != CONTENTS_SOLID) return GotHit; // Incarnadine
+	GotHit = GR_FALSE;
+	if(grObject_GetContents(Object) != CONTENTS_SOLID) return GotHit; // Incarnadine
 
 	if ( pSubObject )
 	{
 		assert( Object->Children );
-		for( Link = jeChain_GetFirstLink(Object->Children); Link; Link = jeChain_LinkGetNext(Link) )
+		for( Link = grChain_GetFirstLink(Object->Children); Link; Link = grChain_LinkGetNext(Link) )
 		{
-		jeObject *Child,*ChildSubO;
-			Child = (jeObject *)jeChain_LinkGetLinkData(Link);
+		grObject *Child,*ChildSubO;
+			Child = (grObject *)grChain_LinkGetLinkData(Link);
 			assert(Child);
 
 			if (Impact && Plane)
 			{
-				if ( jeObject_Collision(Child, Box, Front, Back, Impact, Plane, &ChildSubO) )
+				if ( grObject_Collision(Child, Box, Front, Back, Impact, Plane, &ChildSubO) )
 				{
-					Distance = jeVec3d_DistanceBetweenSquared(Front,Impact);
+					Distance = grVec3d_DistanceBetweenSquared(Front,Impact);
 					if ( ! GotHit || Distance < ClosestDistance )
 					{
-						GotHit = JE_TRUE;
+						GotHit = GR_TRUE;
 						ClosestDistance = Distance;
 						ClosestImpact = *Impact;
 						ClosestPlane = *Plane;
@@ -923,8 +923,8 @@ jeBoolean GotHit{};
 					}
 				}
 			} else
-				if ( jeObject_Collision(Child, Box, Front, Back, nullptr, nullptr, &ChildSubO) )
-					return JE_TRUE;
+				if ( grObject_Collision(Child, Box, Front, Back, nullptr, nullptr, &ChildSubO) )
+					return GR_TRUE;
 		}
 	}
 
@@ -934,10 +934,10 @@ jeBoolean GotHit{};
 		{
 			if ( Object->Methods->Collision(Object->Instance, Box, Front, Back, Impact, Plane) )
 			{
-				Distance = jeVec3d_DistanceBetweenSquared(Front,Impact);
+				Distance = grVec3d_DistanceBetweenSquared(Front,Impact);
 				if ( ! GotHit || Distance < ClosestDistance )
 				{
-					GotHit = JE_TRUE;
+					GotHit = GR_TRUE;
 					ClosestDistance = Distance;
 					ClosestImpact = *Impact;
 					ClosestPlane = *Plane;
@@ -946,56 +946,56 @@ jeBoolean GotHit{};
 			}
 		} else
 			if ( Object->Methods->Collision(Object->Instance, Box, Front, Back, nullptr, nullptr) )
-				return JE_TRUE;
+				return GR_TRUE;
 	}
 
 	if ( GotHit )
 	{
 		*Impact = ClosestImpact;
 		*Plane = ClosestPlane;
-		if ( pSubObject ) *pSubObject = (jeObject *)ClosestObject;
-		return JE_TRUE;
+		if ( pSubObject ) *pSubObject = (grObject *)ClosestObject;
+		return GR_TRUE;
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
 // Added by Icestorm
 //====================================================================================================
-//	jeObject_ChangeBoxCollision
+//	grObject_ChangeBoxCollision
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_ChangeBoxCollision(const jeObject *Object, const jeVec3d *Pos, const jeExtBox *FrontBox, const jeExtBox *BackBox, jeExtBox *ImpactBox, jePlane *Plane, jeObject ** SubObject)
+GRAPI grBoolean GRCC grObject_ChangeBoxCollision(const grObject *Object, const grVec3d *Pos, const grExtBox *FrontBox, const grExtBox *BackBox, grExtBox *ImpactBox, grPlane *Plane, grObject ** SubObject)
 {
-	jeChain_Link* Link{};
-	jeFloat Distance{}, ClosestDistance{};
-	jeExtBox ClosestImpactBox{};
-	jePlane ClosestPlane{};
-	const jeObject* ClosestObject{};
-	jeBoolean GotHit{};
+	grChain_Link* Link{};
+	grFloat Distance{}, ClosestDistance{};
+	grExtBox ClosestImpactBox{};
+	grPlane ClosestPlane{};
+	const grObject* ClosestObject{};
+	grBoolean GotHit{};
 
 	assert(Object);
 	assert(Object->Instance);
 	assert(Object->Methods);
 
-	GotHit = JE_FALSE;
+	GotHit = GR_FALSE;
 
 	if ( SubObject )
 	{
 		assert( Object->Children );
-		for( Link = jeChain_GetFirstLink(Object->Children); Link; Link = jeChain_LinkGetNext(Link) )
+		for( Link = grChain_GetFirstLink(Object->Children); Link; Link = grChain_LinkGetNext(Link) )
 		{
-			jeObject *Child,*ChildSubO{};
-			Child = (jeObject *)jeChain_LinkGetLinkData(Link);
+			grObject *Child,*ChildSubO{};
+			Child = (grObject *)grChain_LinkGetLinkData(Link);
 			assert(Child);
 
 			if (ImpactBox && Plane)
 			{
-				if ( jeObject_ChangeBoxCollision(Child, Pos, FrontBox, BackBox, ImpactBox, Plane, &ChildSubO) )
+				if ( grObject_ChangeBoxCollision(Child, Pos, FrontBox, BackBox, ImpactBox, Plane, &ChildSubO) )
 				{
-					Distance = jeVec3d_DistanceBetweenSquared(&FrontBox->Min, &ImpactBox->Min);
+					Distance = grVec3d_DistanceBetweenSquared(&FrontBox->Min, &ImpactBox->Min);
 					if ( ! GotHit || Distance < ClosestDistance )
 					{
-						GotHit = JE_TRUE;
+						GotHit = GR_TRUE;
 						ClosestDistance = Distance;
 						ClosestImpactBox = *ImpactBox;
 						ClosestPlane = *Plane;
@@ -1003,8 +1003,8 @@ JETAPI jeBoolean JETCC jeObject_ChangeBoxCollision(const jeObject *Object, const
 					}
 				}
 			} else
-				if ( jeObject_ChangeBoxCollision(Child, Pos, FrontBox, BackBox, nullptr, nullptr, &ChildSubO) )
-					return JE_TRUE;
+				if ( grObject_ChangeBoxCollision(Child, Pos, FrontBox, BackBox, nullptr, nullptr, &ChildSubO) )
+					return GR_TRUE;
 		}
 	}
 
@@ -1014,10 +1014,10 @@ JETAPI jeBoolean JETCC jeObject_ChangeBoxCollision(const jeObject *Object, const
 		{
 			if ( Object->Methods->ChangeBoxCollision(Object->Instance, Pos, FrontBox, BackBox, ImpactBox, Plane) )
 			{
-				Distance = jeVec3d_DistanceBetweenSquared(&FrontBox->Min, &ImpactBox->Min);
+				Distance = grVec3d_DistanceBetweenSquared(&FrontBox->Min, &ImpactBox->Min);
 				if ( ! GotHit || Distance < ClosestDistance )
 				{
-					GotHit = JE_TRUE;
+					GotHit = GR_TRUE;
 					ClosestDistance = Distance;
 					ClosestImpactBox = *ImpactBox;
 					ClosestPlane = *Plane;
@@ -1026,28 +1026,28 @@ JETAPI jeBoolean JETCC jeObject_ChangeBoxCollision(const jeObject *Object, const
 			}
 		} else
 			if ( Object->Methods->ChangeBoxCollision(Object->Instance, Pos, FrontBox, BackBox, nullptr, nullptr) )
-				return JE_TRUE;
+				return GR_TRUE;
 	}
 
 	if ( GotHit )
 	{
 		*ImpactBox = ClosestImpactBox;
 		*Plane = ClosestPlane;
-		if ( SubObject ) *SubObject = (jeObject *)ClosestObject;
-		return JE_TRUE;
+		if ( SubObject ) *SubObject = (grObject *)ClosestObject;
+		return GR_TRUE;
 	}
 
-return JE_FALSE;
+return GR_FALSE;
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_GetExtBox	(const jeObject * Object,jeExtBox *BBox)
+GRAPI grBoolean	GRCC grObject_GetExtBox	(const grObject * Object,grExtBox *BBox)
 {
 	assert(Object && Object->Instance && Object->Methods);
 
 	if (!Object->Methods->GetExtBox )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->GetExtBox(Object->Instance,BBox);
 }
@@ -1055,65 +1055,65 @@ JETAPI jeBoolean	JETCC jeObject_GetExtBox	(const jeObject * Object,jeExtBox *BBo
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_SetXForm	(jeObject * Object,const jeXForm3d *XF)
+GRAPI grBoolean	GRCC grObject_SetXForm	(grObject * Object,const grXForm3d *XF)
 {
 	assert(Object && Object->Instance && Object->Methods);
 
 	if (!Object->Methods->SetXForm)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->SetXForm(Object->Instance, XF);
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean JETCC jeObject_GetXForm	(const jeObject * Object,jeXForm3d *XF)
+GRAPI grBoolean GRCC grObject_GetXForm	(const grObject * Object,grXForm3d *XF)
 {
 	assert(Object && Object->Instance && Object->Methods);
 
 	if (!Object->Methods->GetXForm)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->GetXForm(Object->Instance,XF);
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI int JETCC jeObject_GetXFormModFlags( const jeObject * Object )
+GRAPI int GRCC grObject_GetXFormModFlags( const grObject * Object )
 {
 	assert(Object && Object->Instance && Object->Methods);
 
 	if (!Object->Methods->GetXFormModFlags)
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->GetXFormModFlags(Object->Instance);
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_GetChildren(const jeObject * Object,jeObject * Children,int MaxNumChildren)
+GRAPI grBoolean	GRCC grObject_GetChildren(const grObject * Object,grObject * Children,int MaxNumChildren)
 {
 	assert(Object && Object->Instance && Object->Methods);
 
 	if (!Object->Methods->GetChildren )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->GetChildren(Object->Instance,Children,MaxNumChildren);
 }
 
 //====================================================================================================
-//	jeObject_GetNextChild
+//	grObject_GetNextChild
 //====================================================================================================
-JETAPI jeObject *JETCC jeObject_GetNextChild(const jeObject *Object, jeObject *Start)
+GRAPI grObject *GRCC grObject_GetNextChild(const grObject *Object, grObject *Start)
 {
 	assert(Object && Object->Instance && Object->Methods);
 
-	return (jeObject *)jeChain_GetNextLinkData(Object->Children, Start);
+	return (grObject *)grChain_GetNextLinkData(Object->Children, Start);
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeObject *JETCC jeObject_GetParent( const jeObject *Object )
+GRAPI grObject *GRCC grObject_GetParent( const grObject *Object )
 {
 	assert(Object && Object->Instance && Object->Methods);
 
@@ -1122,7 +1122,7 @@ JETAPI jeObject *JETCC jeObject_GetParent( const jeObject *Object )
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_AddChild	(jeObject * Object, jeObject * Child)
+GRAPI grBoolean	GRCC grObject_AddChild	(grObject * Object, grObject * Child)
 {
 /*	if (Object != nullptr)
 	{
@@ -1130,58 +1130,58 @@ JETAPI jeBoolean	JETCC jeObject_AddChild	(jeObject * Object, jeObject * Child)
 		{
 			if (Object->Methods != nullptr)
 			{
-				if (!jeChain_AddLinkData(Object->Children, (void*)Child))
-					return JE_FALSE;
+				if (!grChain_AddLinkData(Object->Children, (void*)Child))
+					return GR_FALSE;
 
 				if (!Object->Methods->AddChild)
-					return JE_TRUE;
+					return GR_TRUE;
 
-				//if (Object->Methods->Type != JE_OBJECT_TYPE_MODEL || Child->Methods->Type != JE_OBJECT_TYPE_ACTOR)
+				//if (Object->Methods->Type != GR_OBJECT_TYPE_MODEL || Child->Methods->Type != GR_OBJECT_TYPE_ACTOR)
 				//{
 				if (Object != nullptr)
 				{ 
 				if (Object->pWorld != nullptr && Child != nullptr)
-					jeObject_AttachWorld(Child, Object->pWorld);
+					grObject_AttachWorld(Child, Object->pWorld);
 				if (Object->pEngine != nullptr && Child != nullptr)
-					jeObject_AttachEngine(Child, Object->pEngine);
+					grObject_AttachEngine(Child, Object->pEngine);
 				if (Object->pSoundSystem != nullptr && Child != nullptr)
-					jeObject_AttachSoundSystem(Child, Object->pSoundSystem);
+					grObject_AttachSoundSystem(Child, Object->pSoundSystem);
 				//}
 				Child->Parent = Object;
-				//jeObject_CreateRef(Child);
+				//grObject_CreateRef(Child);
 				return Object->Methods->AddChild(Object->Instance, Child);
 				}
 			}
-			return JE_FALSE;
+			return GR_FALSE;
 		}
-		return JE_FALSE;
+		return GR_FALSE;
 	}
-	return JE_FALSE;
+	return GR_FALSE;
 	*/
 
 //by trilobite
 
 	assert(Object && Object->Instance && Object->Methods);
 
-	assert(!jeChain_FindLink(Object->Children, (void*)Child));
+	assert(!grChain_FindLink(Object->Children, (void*)Child));
 
-	if (!jeChain_AddLinkData(Object->Children, (void*)Child))
-		return JE_FALSE;
+	if (!grChain_AddLinkData(Object->Children, (void*)Child))
+		return GR_FALSE;
 	
 	if (!Object->Methods->AddChild)
-		return JE_TRUE;
+		return GR_TRUE;
 
-	//if (Object->Methods->Type != JE_OBJECT_TYPE_MODEL || Child->Methods->Type != JE_OBJECT_TYPE_ACTOR)
+	//if (Object->Methods->Type != GR_OBJECT_TYPE_MODEL || Child->Methods->Type != GR_OBJECT_TYPE_ACTOR)
 	//{
 		if( Object->pWorld )
-			jeObject_AttachWorld( Child, Object->pWorld );
+			grObject_AttachWorld( Child, Object->pWorld );
 		if( Object->pEngine )
-			jeObject_AttachEngine( Child, Object->pEngine );
+			grObject_AttachEngine( Child, Object->pEngine );
 		if( Object->pSoundSystem )
-			jeObject_AttachSoundSystem( Child, Object->pSoundSystem );
+			grObject_AttachSoundSystem( Child, Object->pSoundSystem );
 	//}
 	Child->Parent = Object;
-	//jeObject_CreateRef(Child);
+	//grObject_CreateRef(Child);
 	return Object->Methods->AddChild(Object->Instance,Child);
 
 	
@@ -1189,60 +1189,60 @@ JETAPI jeBoolean	JETCC jeObject_AddChild	(jeObject * Object, jeObject * Child)
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_RemoveChild(jeObject* Object, jeObject* Child)
+GRAPI grBoolean	GRCC grObject_RemoveChild(grObject* Object, grObject* Child)
 {
 
 /*
 	if (Object != nullptr)
 	{
-		if (!jeChain_FindLink(Object->Children, (void*)Child))
-			return JE_FALSE;
+		if (!grChain_FindLink(Object->Children, (void*)Child))
+			return GR_FALSE;
 
-		if (!jeChain_RemoveLinkData(Object->Children, (void*)Child))
-			return JE_FALSE;
+		if (!grChain_RemoveLinkData(Object->Children, (void*)Child))
+			return GR_FALSE;
 	
 		if (Object != nullptr)
 		{
 			if (Object->Methods != nullptr)
 				if (!Object->Methods->RemoveChild)
-					return JE_TRUE;
+					return GR_TRUE;
 		}
 	}
 
 	if (Object != nullptr && Child != nullptr)
 	{
 		if (Object->pWorld != nullptr)
-			jeObject_DettachWorld(Child, Object->pWorld);
+			grObject_DettachWorld(Child, Object->pWorld);
 		if (Object->pEngine != nullptr)
-			jeObject_DettachEngine(Child, Object->pEngine);
+			grObject_DettachEngine(Child, Object->pEngine);
 		if (Object->pSoundSystem != nullptr)
-			jeObject_DettachSoundSystem(Child, Object->pSoundSystem);
+			grObject_DettachSoundSystem(Child, Object->pSoundSystem);
 		Child->Parent = nullptr;
 
 		return Object->Methods->RemoveChild(Object->Instance, Child);
 	}
 
-	return JE_TRUE;
+	return GR_TRUE;
 
 	*/
 
 	
 	assert(Object && Object->Instance && Object->Methods);
 
-	if (!jeChain_FindLink(Object->Children, (void*)Child))
-		return JE_FALSE;
+	if (!grChain_FindLink(Object->Children, (void*)Child))
+		return GR_FALSE;
 
-	if (!jeChain_RemoveLinkData(Object->Children, (void*)Child))
-		return JE_FALSE;
+	if (!grChain_RemoveLinkData(Object->Children, (void*)Child))
+		return GR_FALSE;
 
 	if (!Object->Methods->RemoveChild )
-		return JE_TRUE;
+		return GR_TRUE;
 	if( Object->pWorld )
-		jeObject_DettachWorld( Child, Object->pWorld );
+		grObject_DettachWorld( Child, Object->pWorld );
 	if( Object->pEngine )
-		jeObject_DettachEngine( Child, Object->pEngine );
+		grObject_DettachEngine( Child, Object->pEngine );
 	if( Object->pSoundSystem )
-		jeObject_DettachSoundSystem( Child, Object->pSoundSystem );
+		grObject_DettachSoundSystem( Child, Object->pSoundSystem );
 	Child->Parent = nullptr;
 
 	return Object->Methods->RemoveChild(Object->Instance,Child);
@@ -1252,38 +1252,38 @@ JETAPI jeBoolean	JETCC jeObject_RemoveChild(jeObject* Object, jeObject* Child)
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_EditDialog (jeObject * Object,HWND Parent)
+GRAPI grBoolean	GRCC grObject_EditDialog (grObject * Object,HWND Parent)
 {
 	assert(Object && Object->Instance && Object->Methods);
 
 	if (!Object->Methods->EditDialog )
-		return JE_FALSE;
+		return GR_FALSE;
 		
 	return Object->Methods->EditDialog(Object->Instance,Parent);
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_SendMessage (jeObject * Object,int32 Msg, void * Data)
+GRAPI grBoolean	GRCC grObject_SendMessage (grObject * Object,int32 Msg, void * Data)
 {
 	assert(Object && Object->Instance && Object->Methods);
 	
 	if (!Object->Methods->SendMessage )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	return Object->Methods->SendMessage(Object->Instance, Msg, Data );
 }
 
 //====================================================================================================
 //====================================================================================================
-JETAPI jeBoolean	JETCC jeObject_Frame (jeObject * Object,float TimeDelta )
+GRAPI grBoolean	GRCC grObject_Frame (grObject * Object,float TimeDelta )
 {
-	jeBoolean		Ret = JE_TRUE;
-	jeObject	*Object2{};
+	grBoolean		Ret = GR_TRUE;
+	grObject	*Object2{};
 	assert(Object && Object->Instance && Object->Methods);
 	
 
-	for (Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (jeObject *)jeChain_GetNextLinkData(Object->Children, Object2))
+	for (Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, nullptr); Object2; Object2 = (grObject *)grChain_GetNextLinkData(Object->Children, Object2))
 	{
 		assert(Object2);
 
@@ -1301,28 +1301,28 @@ JETAPI jeBoolean	JETCC jeObject_Frame (jeObject * Object,float TimeDelta )
 
 /*}{********************** Crap ******************/
 
-static jeObject TestO = { nullptr, nullptr };
+static grObject TestO = { nullptr, nullptr };
 
 //====================================================================================================
 //====================================================================================================
-static void TestFunc(jeObject * O)
+static void TestFunc(grObject * O)
 {
-	jeObject_Free(O);
+	grObject_Free(O);
 }
 
-JETAPI int32 JETCC jeObject_GetContents(const jeObject * Object)
+GRAPI int32 GRCC grObject_GetContents(const grObject * Object)
 {
 	assert(Object != nullptr);
 	return Object->Contents;
 }
 
-JETAPI void JETCC jeObject_SetContents(jeObject * Object, int32 Contents)
+GRAPI void GRCC grObject_SetContents(grObject * Object, int32 Contents)
 {
 	assert(Object != nullptr);
 	Object->Contents = Contents;
 }
 
-JETAPI void JETCC jeObject_SetRenderNextPass(const jeObject* Object, jeBoolean RenderNext)
+GRAPI void GRCC grObject_SetRenderNextPass(const grObject* Object, grBoolean RenderNext)
 {
 	assert(Object != nullptr);
 
@@ -1330,7 +1330,7 @@ JETAPI void JETCC jeObject_SetRenderNextPass(const jeObject* Object, jeBoolean R
 		Object->Methods->SetRenderNextPass(Object->Instance, RenderNext);
 }
 
-JETAPI uint32 JETCC jeObject_GetFlags(const jeObject * Object)
+GRAPI uint32 GRCC grObject_GetFlags(const grObject * Object)
 {
 	assert(Object != nullptr);
 

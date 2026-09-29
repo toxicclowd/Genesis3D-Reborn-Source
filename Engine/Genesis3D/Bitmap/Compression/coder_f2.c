@@ -34,7 +34,7 @@ seem to be affected much
 #include "Coder.h"
 #include "rungae.h"
 
-jeBoolean coderFast2Init(coder *c);
+grBoolean coderFast2Init(coder *c);
 void coderFast2Free(coder *c);
 void coderFast2Flush(coder *c);
 void coderFast2EncodeBandBP(coderParams *p);
@@ -60,18 +60,18 @@ typedef struct
 	rung_t rungs[CONTEXTS];
 } bpInfo;
 
-jeBoolean coderFast2Init(coder *c)
+grBoolean coderFast2Init(coder *c)
 {
 bpInfo *d;
 
 	if ( !(d = (bpInfo *)new(bpInfo)) )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	c->data = d;
 
 	coderFast2Flush(c);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 void coderFast2Free(coder *c)

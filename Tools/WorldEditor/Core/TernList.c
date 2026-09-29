@@ -34,7 +34,7 @@
 
 #include "TernList.h"
 
-static jeBoolean TerrainList_FindCB( void *p1, void *lParam )
+static grBoolean TerrainList_FindCB( void *p1, void *lParam )
 {
 	return ( p1 == lParam ) ;
 }// TerrainList_FindCB
@@ -64,13 +64,13 @@ TerrainIterator TerrainList_Append( TerrainList * pList, Terrain * pTerrain )
 void TerrainList_Remove( TerrainList * pTerrainList, Terrain * pTerrain )
 {
 	TerrainIterator	pBI ;
-	jeBoolean		bFound ;
+	grBoolean		bFound ;
 	Terrain	*		pFoundTerrain ;
 
 	assert( pTerrainList != NULL ) ;
 
 	bFound = List_Search( pTerrainList, TerrainList_FindCB, pTerrain, &pFoundTerrain, &pBI ) ;
-	assert( JE_TRUE == bFound ) ;
+	assert( GR_TRUE == bFound ) ;
 
 	List_Remove( pTerrainList, pBI, NULL ) ;
 }// LightList_Remove

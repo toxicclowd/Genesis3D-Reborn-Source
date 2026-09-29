@@ -68,18 +68,18 @@ note : alpha now coded as a 4th plane of the wavelet; the alpha
 #include "Log.h"
 #include "Tsc.h"
 
-void codeImageAlpha(coder * coder,image * im,jeBoolean encoding);
+void codeImageAlpha(coder * coder,image * im,grBoolean encoding);
 
 void encodeImageAlpha(coder * encoder,image * im)
 {
 	if ( ! im->alpha ) return;
-	codeImageAlpha(encoder,im,JE_TRUE);
+	codeImageAlpha(encoder,im,GR_TRUE);
 }
 
 void decodeImageAlpha(coder * decoder,image * im)
 {
 	if ( ! im->alpha ) return;
-	codeImageAlpha(decoder,im,JE_FALSE);
+	codeImageAlpha(decoder,im,GR_FALSE);
 }
 
 
@@ -114,7 +114,7 @@ static unsigned char grad_context_table[256] =
 
 #define BIT_CONTEXTS	(1<<5)
 
-void codeImageAlpha(coder * coder,image * im,jeBoolean encoding)
+void codeImageAlpha(coder * coder,image * im,grBoolean encoding)
 {
 
 	if ( im->alphaIsBoolean )

@@ -24,30 +24,30 @@
 /*    Copyright (c) 1997, Eclipse Entertainment; All rights reserved.       */
 /*                                                                          */
 /****************************************************************************/
-#ifndef JE_SOUND3D_H
-#define JE_SOUND3D_H
+#ifndef GR_SOUND3D_H
+#define GR_SOUND3D_H
 
 #include "BaseType.h"
 #include "Sound.h"
-#include "jeWorld.h"
+#include "grWorld.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// JET_PUBLIC_APIS
+// GR_PUBLIC_APIS
 
-JETAPI	void JETCC jeSound3D_GetConfig(
-			const jeWorld *World, 
-			const jeXForm3d *CameraTransform, 
-			const jeVec3d *SoundPos, 
-			jeFloat Min, 
-			jeFloat Ds,
-			jeFloat *Volume,
-			jeFloat *Pan,
-			jeFloat *Frequency);
+GRAPI	void GRCC grSound3D_GetConfig(
+			const grWorld *World, 
+			const grXForm3d *CameraTransform, 
+			const grVec3d *SoundPos, 
+			grFloat Min, 
+			grFloat Ds,
+			grFloat *Volume,
+			grFloat *Pan,
+			grFloat *Frequency);
 
-// JET_PRIVATE_APIS
+// GR_PRIVATE_APIS
 
 #ifdef __cplusplus
 }

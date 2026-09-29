@@ -99,13 +99,13 @@ bool MakeHelp_GetRelativePath (const AProject *Project, const char *NewPath, cha
 
 		// Get project path, which just happens to be the current directory...
 		GetCurrentDirectory (MAX_PATH, ProjectDir);
-		if (FilePath_GetDriveAndDir (NewPath, NewFileDir) != JE_FALSE)
+		if (FilePath_GetDriveAndDir (NewPath, NewFileDir) != GR_FALSE)
 		{
 			// There's a path on the filename.
 			// If there's no drive or leading slash, then it must be relative
 			char PathWork[MAX_PATH];
 
-			if (FilePath_GetDrive (NewPath, PathWork) == JE_FALSE)
+			if (FilePath_GetDrive (NewPath, PathWork) == GR_FALSE)
 			{
 				// no drive, must be a dir
 				FilePath_GetDir (NewPath, PathWork);
@@ -173,11 +173,11 @@ static UINT MakeHelp_ThreadProc (void *pParam)
 	MakeHelp_CompileActive = true;
 
 	// clear compile interrupt flag
-	Make_SetInterruptFlag (JE_FALSE);
+	Make_SetInterruptFlag (GR_FALSE);
 	// get compile params
 	CompileParams = *((MakeHelp_CompileInfo *)pParam);
 	// and do the compile
-	const jeBoolean rslt = Make_Actor(CompileParams.Project, CompileParams.Options, MakeHelp_Printf);
+	const grBoolean rslt = Make_Actor(CompileParams.Project, CompileParams.Options, MakeHelp_Printf);
 	
 	// notify the app that we finished...
 	CompileParams.Parent->PostMessage (WM_USER_COMPILE_DONE, MAKEHELP_PROCESSID, (LPARAM)rslt);
@@ -210,5 +210,5 @@ bool MakeHelp_StartCompile (AProject *Project, AOptions *Options, CWnd *Parent)
 void MakeHelp_CancelCompile (void)
 {
 	// Request that compile be canceled
-	Make_SetInterruptFlag (JE_TRUE);
+	Make_SetInterruptFlag (GR_TRUE);
 }

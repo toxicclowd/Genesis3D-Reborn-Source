@@ -45,7 +45,7 @@ todos :
 #define RUNGFUNC_PREFIX static
 //#include "rungae.c"
 
-jeBoolean coderFastInit(coder *c);
+grBoolean coderFastInit(coder *c);
 void coderFastFree(coder *c);
 void coderFast_flush(coder *c);
 void coderFastEncodeBandBP(coderParams *p);
@@ -70,18 +70,18 @@ typedef struct
 	rung_t rungs[CONTEXTS];
 } bpInfo;
 
-jeBoolean coderFastInit(coder *c)
+grBoolean coderFastInit(coder *c)
 {
 bpInfo *d;
 
 	if ( !(d = (bpInfo *)new(bpInfo)) )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	c->data = d;
 
 	coderFast_flush(c);
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
 void coderFastFree(coder *c)

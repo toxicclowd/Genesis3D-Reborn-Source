@@ -22,7 +22,7 @@
 #ifndef MFCUTIL_H
 #define MFCUTIL_H
 
-#include "Jet.h"
+#include "Genesis3D.h"
 
 void		PositionDialogUnderTabs( CDialog * pDlg ) ;
 BOOL		LoadBMPImage( LPCTSTR sBMPFile, CBitmap& bitmap, CPalette *pPal ) ;
@@ -34,7 +34,7 @@ void		SetupTemplateDialogIcons( CDialog * pDlg ) ;
 HTREEITEM	TreeViewIsInBranch( CTreeCtrl *pTV, HTREEITEM hItem, const char * psz) ;
 
 // BMP Stuff
-BOOL WriteWindowToDIB( jeVFile	*	pF, jePtrMgr	*pPtrMgr , CWnd *pWnd );
+BOOL WriteWindowToDIB( grVFile	*	pF, grPtrMgr	*pPtrMgr , CWnd *pWnd );
 
 #endif // Prevent multiple inclusion
 /* EOF: MfcUtil.h */

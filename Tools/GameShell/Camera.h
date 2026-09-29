@@ -7,7 +7,7 @@
 #define CAMERA_H
 
 #include <windows.h>
-#include "jet.h"
+#include "Genesis3D.h"
 
 #include "eosscript.h"
 
@@ -35,7 +35,7 @@ public:
 	virtual ~CJetRect()							{}
 
 public:
-	jeRect								m_Rect;
+	grRect								m_Rect;
 
 public:
 	void							SetLeft(int32 left)					{ m_Rect.Left = left; }
@@ -56,7 +56,7 @@ public:
 		m_Rect.Bottom = bottom;
 	}
 
-	void GetRect(jeRect *Rect)
+	void GetRect(grRect *Rect)
 	{
 		*Rect = m_Rect;
 	}
@@ -127,23 +127,23 @@ public:
 	virtual ~CCamera();
 
 private:
-	jeCamera							*m_pCamera;
+	grCamera							*m_pCamera;
 	float								m_FOV;
 	CJetRect							m_Rect;
 
 	float								m_FarClipPlane;
-	jeBoolean							m_bFarClipEnabled;
+	grBoolean							m_bFarClipEnabled;
 
-	jeXForm3d							m_XForm;
+	grXForm3d							m_XForm;
 	
 public:
-	jeBoolean							Create(float fov, CJetRect *Rect);
+	grBoolean							Create(float fov, CJetRect *Rect);
 	void								Destroy();
 
-	void								SetFarClipPlane(jeBoolean Enable, float val);
+	void								SetFarClipPlane(grBoolean Enable, float val);
 	float								GetFarClipPlane();
 
-	jeBoolean							IsFarClipEnabled();
+	grBoolean							IsFarClipEnabled();
 
 	void								SetFOV(float fov);
 	float								GetFOV();
@@ -151,8 +151,8 @@ public:
 	void								SetViewRect(CJetRect *Rect);
 	void								GetViewRect(CJetRect *Rect);
 
-	void								SetXForm(jeXForm3d *XForm);
-	void								GetXForm(jeXForm3d *XForm);
+	void								SetXForm(grXForm3d *XForm);
+	void								GetXForm(grXForm3d *XForm);
 
 public:
 	void								EOSSetAttributes();

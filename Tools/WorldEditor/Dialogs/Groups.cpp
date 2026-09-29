@@ -166,7 +166,7 @@ void CGroups::SetCurrentDocument(CJweDoc *pDoc)
 	}
 }// SetCurrentDocument
 
-jeBoolean CGroups::AddObject( Object* pObject )
+grBoolean CGroups::AddObject( Object* pObject )
 {
 	HTREEITEM hItem;
 	HTREEITEM hObjectItem;
@@ -185,7 +185,7 @@ jeBoolean CGroups::AddObject( Object* pObject )
 		{
 			pszDisplayName = Object_GetNameAndTag( pObject ) ;
 			if( pszDisplayName == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			int imageIdx = 0;
 			switch (Object_GetKind(pObject)) {
 			case KIND_BRUSH: imageIdx = 5; break;
@@ -194,17 +194,17 @@ jeBoolean CGroups::AddObject( Object* pObject )
 			default: break;
 			}
 			hObjectItem	= m_List.InsertItem( pszDisplayName, imageIdx, imageIdx, hItem, TVI_SORT );
-			jeRam_Free( pszDisplayName );
+			grRam_Free( pszDisplayName );
 			if( hObjectItem == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			m_List.SetItemData( hObjectItem, (DWORD)pObject ) ;
 			Object_AddRef( pObject );
 
-			return( JE_TRUE );
+			return( GR_TRUE );
 		}
 		hItem = m_List.GetNextSiblingItem(hItem );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
 
@@ -220,12 +220,12 @@ void CGroups::RenameObject( Object *pObject )
 	if( pszDisplayName != NULL )
 	{
 		m_List.SetItemText( hItem, pszDisplayName );
-		jeRam_Free( pszDisplayName ) ;
+		grRam_Free( pszDisplayName ) ;
 	}
 
 }
 
-jeBoolean CGroups::GroupListCB( Group *pGroup, void *lParam)
+grBoolean CGroups::GroupListCB( Group *pGroup, void *lParam)
 {
 	HTREEITEM			hItem = NULL ;
 	CTreeCtrlEx		*	pList = (CTreeCtrlEx*)lParam ;
@@ -242,14 +242,14 @@ jeBoolean CGroups::GroupListCB( Group *pGroup, void *lParam)
 			GroupInfoData.hItemGroup = hItem;
 			GroupInfoData.pList = pList;
 			pList->SetItemData( hItem, (DWORD)pGroup ) ;
-			if( ObjectList_EnumObjects( Group_GetObjectList( pGroup ), &GroupInfoData, CGroups::ObjectCB ) == JE_FALSE )
+			if( ObjectList_EnumObjects( Group_GetObjectList( pGroup ), &GroupInfoData, CGroups::ObjectCB ) == GR_FALSE )
 				hItem = NULL ;
 		}
 	}
-	return ( hItem == NULL ) ? JE_FALSE : JE_TRUE ;
+	return ( hItem == NULL ) ? GR_FALSE : GR_TRUE ;
 }// GroupCB
 
-jeBoolean CGroups::GroupComboCB( Group *pGroup, void *lParam)
+grBoolean CGroups::GroupComboCB( Group *pGroup, void *lParam)
 {
 	int					nIndex = CB_ERR ;
 	CComboBox			*pCBList = (CComboBox*)lParam ;
@@ -265,10 +265,10 @@ jeBoolean CGroups::GroupComboCB( Group *pGroup, void *lParam)
 			pCBList->SetItemDataPtr( nIndex, pGroup );
 
 	}
-	return ( nIndex != CB_ERR ) ? JE_FALSE : JE_TRUE ;
+	return ( nIndex != CB_ERR ) ? GR_FALSE : GR_TRUE ;
 }// GroupCB
 
-jeBoolean CGroups::ObjectCB( Object *pObject, void *lParam)
+grBoolean CGroups::ObjectCB( Object *pObject, void *lParam)
 {
 	HTREEITEM			hItem = NULL ;
 	GroupInfo		*	pGroupInfo = (GroupInfo*)lParam ;
@@ -291,12 +291,12 @@ jeBoolean CGroups::ObjectCB( Object *pObject, void *lParam)
 			pGroupInfo->pList->SetItemData( hItem, (DWORD)pObject ) ;
 			Object_AddRef( pObject );
 		}
-		jeRam_Free( pszDisplayName ) ;
+		grRam_Free( pszDisplayName ) ;
 	}
-	return ( hItem == NULL ) ? JE_FALSE : JE_TRUE ;
+	return ( hItem == NULL ) ? GR_FALSE : GR_TRUE ;
 }// ObjectCB
 
-jeBoolean CGroups::AddSelectionCB(Object *pObject, void *lParam)
+grBoolean CGroups::AddSelectionCB(Object *pObject, void *lParam)
 {
 	HTREEITEM hItem;
 	HTREEITEM hObjectItem;
@@ -317,7 +317,7 @@ jeBoolean CGroups::AddSelectionCB(Object *pObject, void *lParam)
 		{
 			pszDisplayName = Object_GetNameAndTag( pObject ) ;
 			if( pszDisplayName == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			int imageIdx = 0;
 			switch (Object_GetKind(pObject)) {
 			case KIND_BRUSH: imageIdx = 5; break;
@@ -326,16 +326,16 @@ jeBoolean CGroups::AddSelectionCB(Object *pObject, void *lParam)
 			default: break;
 			}
 			hObjectItem	= pList->InsertItem( pszDisplayName, imageIdx, imageIdx, hItem, TVI_SORT );
-			jeRam_Free( pszDisplayName );
+			grRam_Free( pszDisplayName );
 			if( hObjectItem == NULL )
-				return( JE_FALSE );
+				return( GR_FALSE );
 			pList->SetItemData( hObjectItem, (DWORD)pObject ) ;
 			Object_AddRef( pObject );
-			return( JE_TRUE );
+			return( GR_TRUE );
 		}
 		hItem = pList->GetNextSiblingItem(hItem );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 
 HTREEITEM CGroups::GetObjectItem( CTreeCtrl *pList, Object *pObject )
@@ -432,7 +432,7 @@ void CGroups::ChangeGroups( HTREEITEM hItem )
 	Object_SetGroup( pObject, pGroup );
 }
 
-void CGroups::SelectGroup( HTREEITEM hGroupItem, jeBoolean bSelect )
+void CGroups::SelectGroup( HTREEITEM hGroupItem, grBoolean bSelect )
 {
 	HTREEITEM		hItem;
 	LEVEL_STATE		State;
@@ -482,7 +482,7 @@ void CGroups::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 	// I'm still not getting correct multi-sel messages
 	
 	if( !Util_IsKeyDown( VK_CONTROL ) )
-		pDoc->DeselectAll( JE_FALSE );
+		pDoc->DeselectAll( GR_FALSE );
 	hItem = pNMTreeView->itemNew.hItem ;
 	if( hItem != NULL )
 	{
@@ -494,11 +494,11 @@ void CGroups::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 			State = m_List.GetItemState( hItem, TVIS_SELECTED );
 			if(  State & TVIS_SELECTED )
 			{
-				SelectGroup( hItem, JE_TRUE );
+				SelectGroup( hItem, GR_TRUE );
 			}
 			else
 			{
-				SelectGroup( hItem, JE_FALSE );
+				SelectGroup( hItem, GR_FALSE );
 			}
 		}
 		else
@@ -520,7 +520,7 @@ void CGroups::OnSelchangedTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
-jeBoolean CGroups::SelectCB(Object *pObject, void *lParam)
+grBoolean CGroups::SelectCB(Object *pObject, void *lParam)
 {
 	HTREEITEM hObjectItem;
 	CTreeCtrlEx	*pList = (CTreeCtrlEx	*)lParam;
@@ -532,9 +532,9 @@ jeBoolean CGroups::SelectCB(Object *pObject, void *lParam)
 	if( hObjectItem )
 	{
 		pList->SelectItemEx( hObjectItem );
-		return( JE_TRUE );
+		return( GR_TRUE );
 	}
-	return( JE_FALSE );
+	return( GR_FALSE );
 }
 // SELECTION has changed
 
@@ -702,7 +702,7 @@ void CGroups::OnRclickTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 
         if (ObjKind == KIND_GROUP && szName != "Default") {
             Group* pGroup = (Group*) m_List.GetItemData(hItem);
-            jeBoolean visFlag = Group_IsVisible(pGroup);
+            grBoolean visFlag = Group_IsVisible(pGroup);
             SubMenu->ModifyMenu(ID_WORLDMODEL_SHOW, MF_BYCOMMAND | MF_STRING, ID_WORLDMODEL_SHOW, visFlag?"&Hide":"&Show");
             SubMenu->ModifyMenu(ID_WORLDMODEL_INVERTSHOW, MF_BYCOMMAND | MF_STRING, ID_WORLDMODEL_INVERTSHOW, visFlag?"In&vert Hide":"In&vert Show");
             SubMenu->EnableMenuItem(ID_WORLDMODEL_INVERTSHOW, MF_BYCOMMAND | MF_GRAYED);  // Krouer: to active when ready
@@ -710,7 +710,7 @@ void CGroups::OnRclickTvItems(NMHDR* pNMHDR, LRESULT* pResult)
         } else
         if (ObjKind == KIND_BRUSH) {
             Brush* pBrush = (Brush*) pObject;
-            jeBoolean visFlag = Brush_IsVisible(pBrush);
+            grBoolean visFlag = Brush_IsVisible(pBrush);
             SubMenu->ModifyMenu(ID_WORLDMODEL_SHOW, MF_BYCOMMAND | MF_STRING, ID_WORLDMODEL_SHOW, visFlag?"&Hide":"&Show");
             SubMenu->ModifyMenu(ID_WORLDMODEL_INVERTSHOW, MF_BYCOMMAND | MF_STRING, ID_WORLDMODEL_INVERTSHOW, visFlag?"In&vert Hide":"In&vert Show");
             SubMenu->EnableMenuItem(ID_WORLDMODEL_INVERTSHOW, MF_BYCOMMAND | MF_GRAYED);  // Krouer: to active when ready
@@ -731,8 +731,8 @@ void CGroups::OnRclickTvItems(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CGroups::OnWorldGroupExporttoprefab() 
 {
-	jeVFile* pFS;
-	jeVFile* pFile;
+	grVFile* pFS;
+	grVFile* pFile;
 	CMainFrame*		pMainFrm;
 	CJweDoc	*		pDoc ;
 
@@ -781,34 +781,34 @@ void CGroups::OnWorldGroupExporttoprefab()
 
 	if (saveDlg.DoModal() == IDOK) {
 		// open a file system
-		pFS = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_VIRTUAL, saveDlg.GetPathName(), NULL, JE_VFILE_OPEN_CREATE|JE_VFILE_OPEN_DIRECTORY);
+		pFS = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_VIRTUAL, saveDlg.GetPathName(), NULL, GR_VFILE_OPEN_CREATE|GR_VFILE_OPEN_DIRECTORY);
 
 		// create the header
-		pFile = jeVFile_Open(pFS, "Version", JE_VFILE_OPEN_CREATE );
-		jeVFile_Write(pFile, &Signature, sizeof(Signature));
-		jeVFile_Write(pFile, &Version, sizeof(Version));
-		jeVFile_Close(pFile);
+		pFile = grVFile_Open(pFS, "Version", GR_VFILE_OPEN_CREATE );
+		grVFile_Write(pFile, &Signature, sizeof(Signature));
+		grVFile_Write(pFile, &Version, sizeof(Version));
+		grVFile_Close(pFile);
 
-		jePtrMgr* pPtrMgr = jePtrMgr_Create();
+		grPtrMgr* pPtrMgr = grPtrMgr_Create();
 
 		// create the Group part
-		pFile = jeVFile_Open(pFS, "Group", JE_VFILE_OPEN_CREATE );
+		pFile = grVFile_Open(pFS, "Group", GR_VFILE_OPEN_CREATE );
 
-		jeMaterial_Array* pMaterial = jeWorld_GetMaterialArray(Level_GetjeWorld((const Level*)pDoc->GetLevel()));
+		grMaterial_Array* pMaterial = grWorld_GetMaterialArray(Level_GetgrWorld((const Level*)pDoc->GetLevel()));
 
 		// write Group info into file
 		Group_WriteToPrefabFile(pGroup, pFile, pPtrMgr, pMaterial);
 
-		jeVFile_Close(pFile);
+		grVFile_Close(pFile);
 
-		jePtrMgr_Destroy(&pPtrMgr);
+		grPtrMgr_Destroy(&pPtrMgr);
 
-		jeVFile_Close(pFS);
+		grVFile_Close(pFS);
 	}
 	SetCurrentDirectory(szDefPath);
 }
 
-jeBoolean CGroups::GroupNameCB( Group *pGroup, void *lParam)
+grBoolean CGroups::GroupNameCB( Group *pGroup, void *lParam)
 {
 	char*	pszName = (char*) lParam;
 	char*	pszDisplayName ;
@@ -816,7 +816,7 @@ jeBoolean CGroups::GroupNameCB( Group *pGroup, void *lParam)
 	return  strcmp(pszName, pszDisplayName) == 0;
 }
 
-jeBoolean CGroups::AddObjectCB( Object *pObject, void *lParam)
+grBoolean CGroups::AddObjectCB( Object *pObject, void *lParam)
 {
 	HTREEITEM			hItem = NULL ;
 	char			*	pszDisplayName ;
@@ -845,9 +845,9 @@ jeBoolean CGroups::AddObjectCB( Object *pObject, void *lParam)
 			Level* pLevel = pInfoGroup->pDoc->GetLevel();
 
 			if (Object_GetKind(pObject) == KIND_BRUSH) {
-				jeBoolean bLightUpdate;
-				jeBoolean bBrushUpdate;
-				jeBoolean bResult = JE_FALSE;
+				grBoolean bLightUpdate;
+				grBoolean bBrushUpdate;
+				grBoolean bResult = GR_FALSE;
 
 				Brush* pBrush = (Brush*) pObject;
 
@@ -855,51 +855,51 @@ jeBoolean CGroups::AddObjectCB( Object *pObject, void *lParam)
 
 				if( Level_GetBrushUpdate(pLevel) == LEVEL_UPDATE_CHANGE )
 				{
-					bBrushUpdate = JE_TRUE;
+					bBrushUpdate = GR_TRUE;
 					bLightUpdate = Level_GetBrushLighting(pLevel);
 				}
 				else
 				{
-					bBrushUpdate = JE_FALSE;
-					bLightUpdate = JE_FALSE;
+					bBrushUpdate = GR_FALSE;
+					bLightUpdate = GR_FALSE;
 					Object_Dirty( pObject );
 				}
 
 				bResult = Model_AddBrushWorld( Level_GetCurModel(pLevel), pBrush, bBrushUpdate, bLightUpdate);
 
-				bResult = Brush_AttachWorld( pBrush, Level_GetjeWorld(pLevel) );
+				bResult = Brush_AttachWorld( pBrush, Level_GetgrWorld(pLevel) );
 
 			}
 
 			Group_AddObject( pInfoGroup->pGroup, pObject );
-			Object_SetInLevel( pObject, JE_TRUE );
+			Object_SetInLevel( pObject, GR_TRUE );
 
 			CMainFrame *	pMainFrm = (CMainFrame*)AfxGetMainWnd() ;
 			pMainFrm->AddObjectEx(pObject, MAINFRM_ADDOBJECT_LIST|MAINFRM_ADDOBJECT_MODEL) ;
 		
 		}
-		jeRam_Free( pszDisplayName ) ;
+		grRam_Free( pszDisplayName ) ;
 	}
-	return ( hItem == NULL ) ? JE_FALSE : JE_TRUE ;
+	return ( hItem == NULL ) ? GR_FALSE : GR_TRUE ;
 }
 
 /*! @brief Add group Material to the current World material list
     @param pMatIdent The group material list
     @param lParam The group information
 */
-jeBoolean CGroups_LoadTextureCB( MaterialIdent *pMatIdent, void *lParam)
+grBoolean CGroups_LoadTextureCB( MaterialIdent *pMatIdent, void *lParam)
 {
     long matIdx = 0;
-    jeMaterial* pMaterial = NULL;
+    grMaterial* pMaterial = NULL;
 	CMainFrame* pMainFrm = (CMainFrame*) AfxGetMainWnd();
 
 	GroupInfo* pInfoGroup = (GroupInfo*) lParam;
 	Level* pLevel = pInfoGroup->pDoc->GetLevel();
 
-	jeMaterial_Array* pMatArray = jeWorld_GetMaterialArray(Level_GetjeWorld(pLevel));
+	grMaterial_Array* pMatArray = grWorld_GetMaterialArray(Level_GetgrWorld(pLevel));
 
-    while (pMaterial = jeMaterial_ArrayGetNextMaterial(pMatArray, pMaterial)) {
-        if (stricmp(jeMaterial_GetName(pMaterial), pMatIdent->MaterialName) == 0) {
+    while (pMaterial = grMaterial_ArrayGetNextMaterial(pMatArray, pMaterial)) {
+        if (stricmp(grMaterial_GetName(pMaterial), pMatIdent->MaterialName) == 0) {
             pMatIdent->WorldMatIdx = matIdx;
             break;
         }
@@ -907,32 +907,32 @@ jeBoolean CGroups_LoadTextureCB( MaterialIdent *pMatIdent, void *lParam)
     }
 
     if (pMaterial == NULL) {
-    	pMatIdent->WorldMatIdx = jeMaterial_ArrayCreateMaterial(pMatArray, pMatIdent->MaterialName);
+    	pMatIdent->WorldMatIdx = grMaterial_ArrayCreateMaterial(pMatArray, pMatIdent->MaterialName);
 
 #ifdef _USE_BITMAPS
-	    jeBitmap* pBitmap = Level_GetMaterialBitmapByName(pLevel, pMatIdent->MaterialName);
+	    grBitmap* pBitmap = Level_GetMaterialBitmapByName(pLevel, pMatIdent->MaterialName);
 	    if (pBitmap == NULL) {
 		    pBitmap = Level_GetMaterialBitmapByName(pLevel, "jet3d");
 		    strcpy(pMatIdent->BitmapName, "jet3d");
 	    }
     	
 	    if (pBitmap) {
-		    jeMaterial_ArraySetMaterialBitmap(pMatArray, pMatIdent->WorldMatIdx, pBitmap, pMatIdent->BitmapName);
+		    grMaterial_ArraySetMaterialBitmap(pMatArray, pMatIdent->WorldMatIdx, pBitmap, pMatIdent->BitmapName);
 	    }
 #else
-	    jeMaterialSpec* pMatSpec = Level_GetMaterialSpecByName(pLevel, pMatIdent->MaterialName);
+	    grMaterialSpec* pMatSpec = Level_GetMaterialSpecByName(pLevel, pMatIdent->MaterialName);
 	    if (pMatSpec == NULL) {
 		    pMatSpec = Level_GetMaterialSpecByName(pLevel, "jet3d");
 		    strcpy(pMatIdent->BitmapName, "jet3d");
 	    }
     	
 	    if (pMatSpec) {
-		    jeMaterial_ArraySetMaterialSpec(pMatArray, pMatIdent->WorldMatIdx, pMatSpec, pMatIdent->BitmapName);
+		    grMaterial_ArraySetMaterialSpec(pMatArray, pMatIdent->WorldMatIdx, pMatSpec, pMatIdent->BitmapName);
 	    }
 #endif
     }
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*! @brief Change the FaceInfo material index to the new one when the material was added
@@ -940,32 +940,32 @@ jeBoolean CGroups_LoadTextureCB( MaterialIdent *pMatIdent, void *lParam)
     @param lParam The material list
     @see CGroups::OnWorldGroupImportfrom()
 */
-jeBoolean CGroups_PatchFaceInfoCB( Object *pObject, void *lParam)
+grBoolean CGroups_PatchFaceInfoCB( Object *pObject, void *lParam)
 {
 	MaterialIdentList* pList = (MaterialIdentList*) lParam;
 	
 	if (KIND_BRUSH == Object_GetKind(pObject)) {
 		Brush* pBrush = (Brush*) pObject;
-		jeBrush* pJeBrush = Brush_GetjeBrush(pBrush);
-		jeBrush_Face* pFace = jeBrush_GetNextFace(pJeBrush, NULL);
+		grBrush* pJeBrush = Brush_GetgrBrush(pBrush);
+		grBrush_Face* pFace = grBrush_GetNextFace(pJeBrush, NULL);
 		while (pFace) {
-			jeFaceInfo faceinfo;
-			jeBrush_FaceGetFaceInfo(pFace, &faceinfo);
+			grFaceInfo faceinfo;
+			grBrush_FaceGetFaceInfo(pFace, &faceinfo);
 			faceinfo.MaterialIndex = MaterialIdentList_GetWorldIndexByFileIndex(pList, faceinfo.MaterialIndex);
-			jeBrush_FaceSetFaceInfo(pFace, &faceinfo);
-			pFace = jeBrush_GetNextFace(pJeBrush, pFace);
+			grBrush_FaceSetFaceInfo(pFace, &faceinfo);
+			pFace = grBrush_GetNextFace(pJeBrush, pFace);
 		}
 	}
 	
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 /*! @brief Import a prefab from a file
 */
 void CGroups::OnWorldGroupImportfrom() 
 {
-	jeVFile* pFS;
-	jeVFile* pFile;
+	grVFile* pFS;
+	grVFile* pFile;
 
 	CMainFrame*	pMainFrm = (CMainFrame*)AfxGetMainWnd();
 	CJweDoc	*	pDoc = pMainFrm->GetCurrentDocument();
@@ -1008,35 +1008,35 @@ void CGroups::OnWorldGroupImportfrom()
 		if (szExt == "j3p") {
 			// goal : read prefab to group
 			// open a file system
-			pFS = jeVFile_OpenNewSystem(NULL, JE_VFILE_TYPE_VIRTUAL, openDlg.GetPathName(), NULL, JE_VFILE_OPEN_READONLY|JE_VFILE_OPEN_DIRECTORY);
+			pFS = grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_VIRTUAL, openDlg.GetPathName(), NULL, GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
 
 			// read the header
-			pFile = jeVFile_Open(pFS, "Version", JE_VFILE_OPEN_READONLY );
-			jeVFile_Read(pFile, &Signature, sizeof(Signature));
-			jeVFile_Read(pFile, &Version, sizeof(Version));
-			jeVFile_Close(pFile);
+			pFile = grVFile_Open(pFS, "Version", GR_VFILE_OPEN_READONLY );
+			grVFile_Read(pFile, &Signature, sizeof(Signature));
+			grVFile_Read(pFile, &Version, sizeof(Version));
+			grVFile_Close(pFile);
 
 			if (Signature != PREFAB_SIGNATURE || Version > PREFAB_VERSION) {
-				jeVFile_Close(pFS);
+				grVFile_Close(pFS);
 				AfxMessageBox("Import of prefab failed");
 				return;
 			}
 
 			// create a local Pointer Manager
-			jePtrMgr* pPtrMgr = jePtrMgr_Create();
+			grPtrMgr* pPtrMgr = grPtrMgr_Create();
 			MaterialIdentList* pMatList = MaterialIdentList_Create();
 
 			// open the Group part
-			pFile = jeVFile_Open(pFS, "Group", JE_VFILE_OPEN_READONLY );
+			pFile = grVFile_Open(pFS, "Group", GR_VFILE_OPEN_READONLY );
 
 			// create a Group from the file
 			pGroup = Group_CreateFromPrefabFile(pFile, pPtrMgr, pMatList);
 
-			jeVFile_Close(pFile);
+			grVFile_Close(pFile);
 
-			jePtrMgr_Destroy(&pPtrMgr);
+			grPtrMgr_Destroy(&pPtrMgr);
 
-			jeVFile_Close(pFS);
+			grVFile_Close(pFS);
 
 			// Add Material of imported Level into world
 			GroupInfo GroupInfoData;
@@ -1052,7 +1052,7 @@ void CGroups::OnWorldGroupImportfrom()
 		}
 		if (pGroup) {
 			Group* pAddGroup = NULL;
-			jeExtBox		WorldBounds;
+			grExtBox		WorldBounds;
 			CAddModel		AddModelDialog;
 
 			// Add a group into the Document
@@ -1135,7 +1135,7 @@ void CGroups::OnWorldmodelShow()
 	OBJECT_KIND ObjKind = Object_GetKind(pObject);
     if (ObjKind == KIND_GROUP) {
         Group* pGroup = (Group*) pObject;
-        jeBoolean visFlag = !Group_IsVisible(pGroup);
+        grBoolean visFlag = !Group_IsVisible(pGroup);
         Group_Show(pGroup, visFlag);
         HTREEITEM hChild = m_List.GetChildItem(hItem);
         while (hChild) {
@@ -1143,7 +1143,7 @@ void CGroups::OnWorldmodelShow()
         	ObjKind = Object_GetKind(pObject);
             if (ObjKind == KIND_BRUSH) {
                 Brush* pBrush = (Brush*) pObject;
-                jeBoolean visFlag = !Brush_IsVisible(pBrush);
+                grBoolean visFlag = !Brush_IsVisible(pBrush);
                 m_lHiddenItemCount += visFlag?-1:1;
                 Brush_Show(pBrush, visFlag);
             }
@@ -1153,7 +1153,7 @@ void CGroups::OnWorldmodelShow()
     } else
     if (ObjKind == KIND_BRUSH) {
         Brush* pBrush = (Brush*) pObject;
-        jeBoolean visFlag = !Brush_IsVisible(pBrush);
+        grBoolean visFlag = !Brush_IsVisible(pBrush);
         m_lHiddenItemCount += visFlag?-1:1;
         Brush_Show(pBrush, visFlag);
         pDoc->UpdateAll();
@@ -1175,7 +1175,7 @@ void CGroups::ShowAllGroups()
         if (ObjKind == KIND_GROUP) {
             Group* pGroup = (Group*) pObject;
             if (!Group_IsVisible(pGroup)) {
-                Group_Show(pGroup, JE_TRUE);
+                Group_Show(pGroup, GR_TRUE);
             }
             HTREEITEM hChild = m_List.GetChildItem(hItem);
             while (hChild) {
@@ -1183,7 +1183,7 @@ void CGroups::ShowAllGroups()
         	    ObjKind = Object_GetKind(pObject);
                 if (ObjKind == KIND_BRUSH) {
                     Brush* pBrush = (Brush*) pObject;
-                    Brush_Show(pBrush, JE_TRUE);
+                    Brush_Show(pBrush, GR_TRUE);
                 }
                 hChild = m_List.GetNextSiblingItem(hChild);
             }

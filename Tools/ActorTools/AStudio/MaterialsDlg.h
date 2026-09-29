@@ -90,7 +90,7 @@ protected:
 	virtual BOOL OnKillActive ();
 
 private:
-	JE_RGBA m_Color;
+	GR_RGBA m_Color;
 	bool	m_FilenameChanged;
 	int		m_CurrentIndex;
 

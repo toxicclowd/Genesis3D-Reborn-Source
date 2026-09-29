@@ -18,8 +18,8 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#ifndef JE_LOG_H
-#define JE_LOG_H
+#ifndef GR_LOG_H
+#define GR_LOG_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,7 +48,7 @@ void Log_Printf(const char * string, ...);
 void Log_TeeFile( FILE * FP );
 
 // Wrapper to trace matrices - dont print the last row
-void Log_PrintMatrices(jeXForm3d* pXF);
+void Log_PrintMatrices(grXForm3d* pXF);
 
 #else	// NO_LOG
 

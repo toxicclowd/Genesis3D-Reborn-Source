@@ -1,0 +1,152 @@
+/****************************************************************************************/
+/*  grMemAllocInfo._h                                                                   */
+/*                                                                                      */
+/*  Author: David Eisele                                                                */
+/*  Description: Extended memoryleak debugging module                                   */
+/*                                                                                      */
+/*  The contents of this file are subject to the Jet3D Public License                   */
+/*  Version 1.02 (the "License"); you may not use this file except in                   */
+/*  compliance with the License. You may obtain a copy of the License at                */
+/*  http://www.jet3d.com                                                                */
+/*                                                                                      */
+/*  Software distributed under the License is distributed on an "AS IS"                 */
+/*  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied.  See                */
+/*  the License for the specific language governing rights and limitations              */
+/*  under the License.                                                                  */
+/*                                                                                      */
+/*  This file was not part of the original Jet3D, released December 12, 1999.           */
+/*                                                                                      */
+/****************************************************************************************/
+
+#ifndef JEJMAI__H
+#define JEJMAI__H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdio.h>
+#include "grMemAllocInfo.h"
+
+#define jMAI_RPT0(fp,S)				do{_RPT0(_CRT_WARN,S);			  fprintf(fp,S);			}while(0)
+#define jMAI_RPT1(fp,S,a1)			do{_RPT1(_CRT_WARN,S,a1);		  fprintf(fp,S,a1);			}while(0)
+#define jMAI_RPT2(fp,S,a1,a2)		do{_RPT2(_CRT_WARN,S,a1,a2);	  fprintf(fp,S,a1,a2);		}while(0)
+#define jMAI_RPT3(fp,S,a1,a2,a3)	do{_RPT3(_CRT_WARN,S,a1,a2,a3);	  fprintf(fp,S,a1,a2,a3);	}while(0)
+#define jMAI_RPT4(fp,S,a1,a2,a3,a4)	do{_RPT4(_CRT_WARN,S,a1,a2,a3,a4);fprintf(fp,S,a1,a2,a3,a4);}while(0)
+
+#define jMAI_INCLUDE				(1<<0)		// Add this file
+#define jMAI_EXCLUDE				(1<<1)		// Exclude this file
+
+typedef struct grMemAllocInfoBPCallChain grMemAllocInfoBPCallChain;
+typedef struct grMemAllocInfoDataChain	grMemAllocInfoDataChain;
+typedef struct grMemAllocInfoChain		grMemAllocInfoChain;
+typedef struct grMemAllocInfoBreakPoint grMemAllocInfoBreakPoint;
+typedef struct grMemAllocInfoFileChain	grMemAllocInfoFileChain;
+
+
+
+typedef struct grMemAllocInfoPtr
+{
+	char						*NamePtr;
+	uint32						LNr;
+	grMemAllocInfoChain			*Data;
+	uint32						Pad;
+} grMemAllocInfoPtr;
+
+typedef struct grMemAllocInfoChain
+{
+	char						*AllocFileName;
+	int							AllocLineNr;
+	uint32						CurrCallNr;
+	grBoolean					GlobalBreak;
+	grBoolean					IsActive;
+	grMemAllocInfoBPCallChain   *BreakPoints;
+	grMemAllocInfoDataChain		*DataChain;
+	grMemAllocInfoDataChain		*FreedChain;
+	grMemAllocInfoChain			*Next;
+} grMemAllocInfoChain;
+
+typedef struct grMemAllocInfoBPCallChain
+{
+	uint32						CallNr;
+	grMemAllocInfoBPCallChain	*Next;
+} grMemAllocInfoBPCallChain;
+
+typedef struct grMemAllocInfoDataChain
+{
+	uint32						CallNr;
+	int32						AllocSize;
+	
+	int							ReAllocLineNr;
+	int32						ReAllocSize;
+	char						*ReAllocFileName;
+
+	int							FreeLineNr;
+	char						*FreeFileName;
+
+	void						*CurrentPointer;
+	grMemAllocInfoDataChain		*Prev;
+	grMemAllocInfoDataChain		*Next;
+	grMemAllocInfoChain			*Root;
+} grMemAllocInfoDataChain;
+
+
+typedef struct grMemAllocInfoBreakPoint
+{
+	char						*AllocFileName;
+	int							AllocLineNr;
+	uint32						CallNr;
+	grMemAllocInfoBreakPoint	*Next;
+	grMemAllocInfoBreakPoint	*Prev;
+} grMemAllocInfoBreakPoint;
+
+typedef struct grMemAllocInfoFileChain
+{
+	char						*FileName;
+	uint32						Flags;
+	grMemAllocInfoFileChain		*Next;
+	grMemAllocInfoFileChain		*Prev;
+} grMemAllocInfoFileChain;
+
+// private functions
+
+// Query
+static grMemAllocInfoChain* GRCC grMemAllocInfo_GetInfoChain(const char *FName, int LNr);
+static grMemAllocInfoChain* grMemAllocInfo_GetChain(const char *FName, int LNr, grBoolean FreedChain);
+
+// Destroy
+static void GRCC grMemAllocInfo_KillDataChain(grMemAllocInfoDataChain **DataChain);
+static void GRCC grMemAllocInfo_KillInfoChain(grMemAllocInfoChain **InfoChain);
+static void GRCC grMemAllocInfo_KillPtrArray(grMemAllocInfoPtr **PtrChain);
+static void GRCC grMemAllocInfo_KillBPCallChain(grMemAllocInfoBPCallChain **CallChain);
+static void GRCC grMemAllocInfo_KillFileChain(grMemAllocInfoFileChain **FChain);
+static void GRCC grMemAllocInfo_KillBreakPoints(grMemAllocInfoBreakPoint **BChain);
+
+// Breakpoints
+static void GRCC grMemAllocInfo_AddBreakpoint(const char *FileName, int LineNr, uint32 CallNr);
+static void GRCC grMemAllocInfo_LoadBreakpoints();
+static void GRCC grMemAllocInfo_UpdateAllBreakPoints();
+static void GRCC grMemAllocInfo_UpdateBreakPoints(grMemAllocInfoChain *InfoChain);
+
+// Include/Exclude-Files
+static void GRCC grMemAllocInfo_AddFile(const char *FileName, uint32 Flags);
+static void GRCC grMemAllocInfo_LoadActiveFileFlags();
+static void GRCC grMemAllocInfo_UpdateAllActiveFlags();
+static void GRCC grMemAllocInfo_UpdateFileFlags(grMemAllocInfoChain *InfoChain);
+
+// Report
+static void GRCC grMemAllocInfo_Report(grBoolean FreedMemoryReport);
+static void GRCC grMemAllocInfo_InfoReport_(FILE *fp, grMemAllocInfoChain *InfoChain, grBoolean ShowFreed,
+											 uint32 *PtrNum, uint32 *PtrMem);
+
+// Misc
+static void GRCC grMemAllocInfo_LoadFlags();
+static void GRCC grMemAllocInfo_LoadFileNames();
+static grMemAllocInfoPtr *jMAI_pushPtrChain_x86(uint32 MoveNum);
+static grMemAllocInfoPtr *jMAI_pushPtrChain_mmx(uint32 MoveNum);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

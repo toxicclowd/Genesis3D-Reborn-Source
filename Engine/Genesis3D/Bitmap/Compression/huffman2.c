@@ -146,18 +146,18 @@ void Huff2_CleanUp(struct Huff2Info *HI);
 
 void Huff2_GetMaxCharCount(struct Huff2Info *HI,long * CharCounts);
 void Huff2_ScaleCounts(struct Huff2Info *HI,long * CharCounts,long MaxVal);
-jeBoolean Huff2_BuildCodeLens(struct Huff2Info *HI,long *CharCounts);
+grBoolean Huff2_BuildCodeLens(struct Huff2Info *HI,long *CharCounts);
 
-jeBoolean Huff2_BuildEncodeTable(struct Huff2Info *HI);
-jeBoolean Huff2_BuildDecodeTable(struct Huff2Info *HI);
-jeBoolean Huff2_BuildFastDecodeTable(struct Huff2Info *HI);
+grBoolean Huff2_BuildEncodeTable(struct Huff2Info *HI);
+grBoolean Huff2_BuildDecodeTable(struct Huff2Info *HI);
+grBoolean Huff2_BuildFastDecodeTable(struct Huff2Info *HI);
 
 void Huff2_EncodeC(struct Huff2Info *HI,uint16 C);
 uint16 Huff2_DecodeC(struct Huff2Info *HI);
 uint16 Huff2_FastDecodeC(struct Huff2Info *HI);
-jeBoolean Huff2_FastDecodeArray(struct Huff2Info *HI,uint8 * Array,long ArrayLen);
+grBoolean Huff2_FastDecodeArray(struct Huff2Info *HI,uint8 * Array,long ArrayLen);
 
-jeBoolean Huff2_FindDecodeOne(struct Huff2Info *HI);
+grBoolean Huff2_FindDecodeOne(struct Huff2Info *HI);
 
 void Huff2_SetMinMaxCodeLen(struct Huff2Info *HI);
 
@@ -168,7 +168,7 @@ void Huff2_PackCodeLens_Delta(struct Huff2Info *HI,long * LastCodeLens);
 void Huff2_UnPackCodeLens_Delta(struct Huff2Info *HI,long * LastCodeLens);
 
 //sort protos:
-jeBoolean  Huff2RadixSort(struct Huff2CodeNode ** BucketArray,
+grBoolean  Huff2RadixSort(struct Huff2CodeNode ** BucketArray,
 	long MaxCharCount,struct Huff2CodeNode ** Array,long ArraySize);
 void Huff2QuickSort(long Left,long Right);
 struct Huff2CodeNode ** Huff2QuickSortArray; //global for recursion non-stacking
@@ -181,7 +181,7 @@ struct Huff2Info * Huff2_Init(long NumSymbols,struct LBitIOInfo * BII,long SortT
 {
 struct Huff2Info * HI;
 
-if ( (HI = (struct Huff2Info *)jeRam_AllocateClear(sizeof(struct Huff2Info))) == NULL )
+if ( (HI = (struct Huff2Info *)grRam_AllocateClear(sizeof(struct Huff2Info))) == NULL )
 	return(NULL);
 
 HI->GotNumSymbols = 0;
@@ -191,19 +191,19 @@ HI->BII = BII;
 HI->SortType = SortType;
 HI->CodeNodeHunkI = 0;
 
-if ( (HI->CodeLenTable = (long *)jeRam_AllocateClear(HI->NumSymbols*sizeof(long))) == NULL )
+if ( (HI->CodeLenTable = (long *)grRam_AllocateClear(HI->NumSymbols*sizeof(long))) == NULL )
 	{
 	Huff2_CleanUp(HI);
 	return(NULL);
 	}
 
-if ( (HI->NumCodesOfLen = (long *)jeRam_AllocateClear(32*sizeof(long))) == NULL )
+if ( (HI->NumCodesOfLen = (long *)grRam_AllocateClear(32*sizeof(long))) == NULL )
 	{
 	Huff2_CleanUp(HI);
 	return(NULL);
 	}
 
-if ( (HI->CodePrefixByLen = (uint32 *)jeRam_AllocateClear(32*sizeof(uint32))) == NULL )
+if ( (HI->CodePrefixByLen = (uint32 *)grRam_AllocateClear(32*sizeof(uint32))) == NULL )
 	{
 	Huff2_CleanUp(HI);
 	return(NULL);
@@ -239,7 +239,7 @@ FreeMem(HI,sizeof(struct Huff2Info));
 
 NOTEZ: MadeNodeWork is large enough, but you may have the problem of looping
 	i.e. ( (MadeNodeWorkIn - MadeNodeWorkOut) < NumSymbols )  is just fine, 
-		the problem is ( MadeNodeWorkIn < NumSymbols ) isn't JE_TRUE
+		the problem is ( MadeNodeWorkIn < NumSymbols ) isn't GR_TRUE
 	thus all made-array lookups are done: [MadeNodeWorkIn % NumSymbols]
 
 10-15-95 : alloced MadeNodeWork to double length so as to eliminate this.
@@ -253,7 +253,7 @@ NOTEZ: MadeNodeWork is large enough, but you may have the problem of looping
  *		0 = error
  *
  */
-jeBoolean Huff2_BuildCodeLens(struct Huff2Info *HI,long *CharCounts)
+grBoolean Huff2_BuildCodeLens(struct Huff2Info *HI,long *CharCounts)
 {
 register struct Huff2CodeNode * CurNode;
 register struct Huff2CodeNode ** NodeWork;
@@ -268,9 +268,9 @@ if ( !HI->CodeNodeHunk ||	!HI->NodeWork || !HI->MadeNodeWork )
 		return(0);
 		}
 
-	HI->NodeWork = (struct Huff2CodeNode **)jeRam_Allocate(sizeofpointer*HI->NumSymbols);
-	HI->MadeNodeWork = (struct Huff2CodeNode **)jeRam_Allocate(sizeofpointer*2*HI->NumSymbols);
-	HI->CodeNodeHunk = (struct Huff2CodeNode *)jeRam_Allocate(sizeof(struct Huff2CodeNode)*2*HI->NumSymbols);
+	HI->NodeWork = (struct Huff2CodeNode **)grRam_Allocate(sizeofpointer*HI->NumSymbols);
+	HI->MadeNodeWork = (struct Huff2CodeNode **)grRam_Allocate(sizeofpointer*2*HI->NumSymbols);
+	HI->CodeNodeHunk = (struct Huff2CodeNode *)grRam_Allocate(sizeof(struct Huff2CodeNode)*2*HI->NumSymbols);
 
 	if ( !HI->CodeNodeHunk ||	!HI->NodeWork ||	!HI->MadeNodeWork )
 		{
@@ -359,7 +359,7 @@ switch(HI->SortType)
 				{
 				return(0);
 				}
-			if ( (HI->SortWork = jeRam_Allocate(sizeofpointer*(HI->MaxCharCount + 1))) == NULL )
+			if ( (HI->SortWork = grRam_Allocate(sizeofpointer*(HI->MaxCharCount + 1))) == NULL )
 				{
 				return(0);
 				}
@@ -572,7 +572,7 @@ if ( HI->NodeBase == NULL )
 	
 	if ( ! HI->StackArray )
 		{
-		if ( (HI->StackArray = (uint32 *)jeRam_Allocate(2*(HI->NumSymbols)*sizeof(uint32))) == NULL )
+		if ( (HI->StackArray = (uint32 *)grRam_Allocate(2*(HI->NumSymbols)*sizeof(uint32))) == NULL )
 			return(0);
 		}
 	
@@ -657,7 +657,7 @@ return(1);
  * at this point CodeLenTable & NumCodesOfLen are filled out
  *
  */
-jeBoolean Huff2_BuildEncodeTable(struct Huff2Info *HI)
+grBoolean Huff2_BuildEncodeTable(struct Huff2Info *HI)
 {
 uint32 LastCodePrefix;
 uint32 * CodePrefixByLen;
@@ -685,7 +685,7 @@ if ( HI->EnDe_codeTable )
 	}
 else
 	{
-	if ( (CharToCodeTable = (uint32 *)jeRam_AllocateClear(NumSymbols*sizeof(uint32))) == NULL )
+	if ( (CharToCodeTable = (uint32 *)grRam_AllocateClear(NumSymbols*sizeof(uint32))) == NULL )
 		return(0);
 
 	HI->EnDe_codeTable = (void *) CharToCodeTable;
@@ -722,7 +722,7 @@ return(1);
  * at this point CodeLenTable & NumCodesOfLen are filled out
  *
  */
-jeBoolean Huff2_BuildDecodeTable(struct Huff2Info *HI)
+grBoolean Huff2_BuildDecodeTable(struct Huff2Info *HI)
 {
 uint32 BaseCodeByLen[32]; /* I'm lazy! So sue me! */
 uint32 LastCodePrefix;
@@ -752,7 +752,7 @@ if ( HI->EnDe_codeTable )
 else
 	{
 	HI->EnDe_codeTableLen = 2*NumSymbols*sizeof(uint16);
-	if ( (DecodeTable = (uint16 *)jeRam_AllocateClear(HI->EnDe_codeTableLen)) == NULL )
+	if ( (DecodeTable = (uint16 *)grRam_AllocateClear(HI->EnDe_codeTableLen)) == NULL )
 		return(0);
 
 	HI->EnDe_codeTable = (void *) DecodeTable;
@@ -813,7 +813,7 @@ return(1);
  *
  */
 
-jeBoolean Huff2_BuildFastDecodeTable(struct Huff2Info *HI)
+grBoolean Huff2_BuildFastDecodeTable(struct Huff2Info *HI)
 {
 struct FastDecodeItem * FastDecodeTable;
 uint16 * DecodeTable;
@@ -849,7 +849,7 @@ if ( HI->EnDe_codeTable )
 else
 	{
 	HI->EnDe_codeTableLen = DecodeTableLen + FastDecodeTableLen;
-	if ( (HI->EnDe_codeTable = jeRam_AllocateClear(HI->EnDe_codeTableLen)) == NULL )
+	if ( (HI->EnDe_codeTable = grRam_AllocateClear(HI->EnDe_codeTableLen)) == NULL )
 		return(0);
 
 	DecodeTable = (uint16 *)HI->EnDe_codeTable;
@@ -952,7 +952,7 @@ LBitIO_WriteBits(BII,CurCode,CurCodeLen);
 
 #define FASTDECODE_PAD 6
 
-jeBoolean Huff2_FastDecodeArray(struct Huff2Info *HI,uint8 * Array,long ArrayLen)
+grBoolean Huff2_FastDecodeArray(struct Huff2Info *HI,uint8 * Array,long ArrayLen)
 {
 register uint32 PeekedCode;
 register struct FastDecodeItem * FastDecodeTable;
@@ -963,7 +963,7 @@ uint16 * DecodeTable;
 uint32 * CodePrefixByLen;
 uint32 CurCode,PackedCode;
 long CurCodeLen;
-jeBoolean bit;
+grBoolean bit;
 uint8 *CurArrayPtr,*ArrayPtrDone;
 LocalLBitIO_Variables();
 
@@ -1055,7 +1055,7 @@ while ( CurArrayPtr < ArrayPtrDone )
 return(1);
 }
 
-jeBoolean Huff2_FindDecodeOne(struct Huff2Info *HI)
+grBoolean Huff2_FindDecodeOne(struct Huff2Info *HI)
 {
 uint16 i;
 
@@ -1128,7 +1128,7 @@ else /* use old decode method, can read 9 bits automatically */
 	uint32 * CodePrefixByLen;
 	uint32 CurCode,PackedCode;
 	long CurCodeLen;
-	jeBoolean bit;
+	grBoolean bit;
 	
 	DecodeTable = (uint16 *)HI->EnDe_codeTable;
 	CodePrefixByLen = HI->CodePrefixByLen;
@@ -1174,7 +1174,7 @@ uint32 * CodePrefixByLen;
 uint32 CurCode,PackedCode;
 long CurCodeLen;
 struct LBitIOInfo * BII;
-jeBoolean bit;
+grBoolean bit;
 
 if ( HI->GotNumSymbols < 2 ) return(HI->OneChar);
 
@@ -1403,7 +1403,7 @@ long i,j,GotNumSymbols;
 long MinCodeLen,MaxCodeLen,CurCodeLen;
 long RunLen,CurCode;
 struct LBitIOInfo * BII;
-jeBoolean bit;
+grBoolean bit;
 
 HI->GotNumSymbols = 0;
 
@@ -1676,7 +1676,7 @@ long i,j,GotNumSymbols;
 long MinCodeLen,MaxCodeLen,CurCodeLen;
 long RunLen,CurCode;
 struct LBitIOInfo * BII;
-jeBoolean bit;
+grBoolean bit;
 long sign;
 
 BII = HI->BII;
@@ -1843,7 +1843,7 @@ else
  *  			resets ->Up to NULL when its done
  *
  */
-jeBoolean  Huff2RadixSort(struct Huff2CodeNode ** BucketArray,
+grBoolean  Huff2RadixSort(struct Huff2CodeNode ** BucketArray,
 	long MaxCharCount,struct Huff2CodeNode ** Array,long ArraySize)
 {
 register struct Huff2CodeNode * CurNode;

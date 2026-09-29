@@ -23,7 +23,7 @@
 
 todos:
 
-1. use the jeErrorLog * for threads
+1. use the grErrorLog * for threads
 
 ************/
 
@@ -70,15 +70,15 @@ typedef struct	LZFile
 	uint32		Size;
 	int32		HintsSize;
 
-	jeThreadQueue_Semaphore * Lock;	// the Lock applies to all stuff below:
+	grThreadQueue_Semaphore * Lock;	// the Lock applies to all stuff below:
 
 	uint32		RefCount;
-	jeVFile *	BaseFile;	// never touched by the main-thread accessor functions
-	jeVFile *	HintsBaseFile;
-	jeVFile *	MemFile;
-	jeVFile *	HintsMemFile;
+	grVFile *	BaseFile;	// never touched by the main-thread accessor functions
+	grVFile *	HintsBaseFile;
+	grVFile *	MemFile;
+	grVFile *	HintsMemFile;
 	uint32		MemFileLen;
-	jeThreadQueue_Job * ReaderJob;
+	grThreadQueue_Job * ReaderJob;
 
 	// stuff only used by the ReaderJob:
 	lzaDecoder * Decoder;
@@ -91,18 +91,18 @@ typedef struct	LZFile
 static void __inline FSLZ_Lock(LZFile * File);
 static void __inline FSLZ_UnLock(LZFile * File);
 
-static	jeBoolean	JETCC FSLZ_Close(void *Handle);
-static	jeBoolean	JETCC FSLZ_Close2(void *Handle,jeBoolean Reader);
-static	jeBoolean	JETCC FSLZ_BytesAvailable(void *Handle, int32 *pCount);
+static	grBoolean	GRCC FSLZ_Close(void *Handle);
+static	grBoolean	GRCC FSLZ_Close2(void *Handle,grBoolean Reader);
+static	grBoolean	GRCC FSLZ_BytesAvailable(void *Handle, int32 *pCount);
 
-void FSLZReader_Func(jeThreadQueue_Job * Job,void * Context);
+void FSLZReader_Func(grThreadQueue_Job * Job,void * Context);
 void FSLZReader_Peek(LZFile * File);
-static jeBoolean jeVFile_CopyData(jeVFile * Fm,jeVFile *To,int Size);
+static grBoolean grVFile_CopyData(grVFile * Fm,grVFile *To,int Size);
 
 /*}{******************* Implemented ******************************/
 
-static	void *	JETCC FSLZ_OpenNewSystem(
-	jeVFile *		FS,
+static	void *	GRCC FSLZ_OpenNewSystem(
+	grVFile *		FS,
 	const char *	Name,
 	void *			Context,
 	unsigned int			OpenModeFlags)
@@ -112,66 +112,66 @@ LZFile * File;
 	if ( Name || Context || !FS )
 		return NULL;
 
-	if	(OpenModeFlags & JE_VFILE_OPEN_DIRECTORY)
+	if	(OpenModeFlags & GR_VFILE_OPEN_DIRECTORY)
 		return NULL;
 
-	File = (LZFile *)jeRam_AllocateClear(sizeof(*File));
+	File = (LZFile *)grRam_AllocateClear(sizeof(*File));
 	if	(!File)
 		return NULL;
 
 	File->BaseFile = FS;
-	jeVFile_CreateRef(File->BaseFile);
+	grVFile_CreateRef(File->BaseFile);
 
-	File->HintsBaseFile = jeVFile_GetHintsFile(File->BaseFile);
+	File->HintsBaseFile = grVFile_GetHintsFile(File->BaseFile);
 	if ( ! File->HintsBaseFile )
 		File->HintsBaseFile = File->BaseFile;
-	jeVFile_CreateRef(File->HintsBaseFile);
+	grVFile_CreateRef(File->HintsBaseFile);
 
 	File->Tag = FSLZ_TAG;
 
-	if ( OpenModeFlags & JE_VFILE_OPEN_READONLY)
-		File->Reading = JE_TRUE;
+	if ( OpenModeFlags & GR_VFILE_OPEN_READONLY)
+		File->Reading = GR_TRUE;
 
 	if ( File->Reading )
 	{
-		jeVFile_Read(File->HintsBaseFile,&(File->Tag),sizeof(File->Tag));
+		grVFile_Read(File->HintsBaseFile,&(File->Tag),sizeof(File->Tag));
 		if ( File->Tag == FSLZ_TAG_UNC )
 		{
-		jeVFile_MemoryContext MemContext;
-		jeVFile * NewBaseFile,*NewHintsBaseFile;
+		grVFile_MemoryContext MemContext;
+		grVFile * NewBaseFile,*NewHintsBaseFile;
 
-			if ( ! jeVFile_Read(File->HintsBaseFile,&(File->Size),sizeof(File->Size)) )
+			if ( ! grVFile_Read(File->HintsBaseFile,&(File->Size),sizeof(File->Size)) )
 			{
-				jeErrorLog_AddString(-1,"FSLZ : Read Hints failed!",NULL);
+				grErrorLog_AddString(-1,"FSLZ : Read Hints failed!",NULL);
 				FSLZ_Close(File);
 				return NULL;
 			}
 			
-			if ( ! jeVFile_Read(File->HintsBaseFile,&(File->HintsSize),sizeof(File->HintsSize)) )
+			if ( ! grVFile_Read(File->HintsBaseFile,&(File->HintsSize),sizeof(File->HintsSize)) )
 			{
-				jeErrorLog_AddString(-1,"FSLZ_OpenNew : Base Read failed!",NULL);
+				grErrorLog_AddString(-1,"FSLZ_OpenNew : Base Read failed!",NULL);
 				assert(0);
 				FSLZ_Close(File);
 				return NULL;
 			}
 
 			MemContext.DataLength = File->HintsSize;
-			MemContext.Data = jeRam_Allocate(MemContext.DataLength);
+			MemContext.Data = grRam_Allocate(MemContext.DataLength);
 			if ( ! MemContext.Data )
 			{
-				jeErrorLog_AddString(-1,"FSLZ : Allocate failed!",NULL);
+				grErrorLog_AddString(-1,"FSLZ : Allocate failed!",NULL);
 				FSLZ_Close(File);
 				return NULL;
 			}
 
-			if ( ! jeVFile_Read(File->HintsBaseFile,MemContext.Data,MemContext.DataLength) )
+			if ( ! grVFile_Read(File->HintsBaseFile,MemContext.Data,MemContext.DataLength) )
 			{
-				jeErrorLog_AddString(-1,"FSLZ : Allocate failed!",NULL);
+				grErrorLog_AddString(-1,"FSLZ : Allocate failed!",NULL);
 				FSLZ_Close(File);
 				return NULL;
 			}
 
-			NewHintsBaseFile = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_MEMORY,NULL,&MemContext,JE_VFILE_OPEN_READONLY);
+			NewHintsBaseFile = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_MEMORY,NULL,&MemContext,GR_VFILE_OPEN_READONLY);
 			if ( ! File->HintsBaseFile )
 			{
 				FSLZ_Close(File);
@@ -179,32 +179,32 @@ LZFile * File;
 			}
 
 			MemContext.DataLength = File->Size;
-			MemContext.Data = jeRam_Allocate(MemContext.DataLength);
+			MemContext.Data = grRam_Allocate(MemContext.DataLength);
 			if ( ! MemContext.Data )
 			{
-				jeErrorLog_AddString(-1,"FSLZ : Allocate failed!",NULL);
+				grErrorLog_AddString(-1,"FSLZ : Allocate failed!",NULL);
 				FSLZ_Close(File);
 				return NULL;
 			}
 
-			if ( ! jeVFile_Read(FS,MemContext.Data,MemContext.DataLength) )
+			if ( ! grVFile_Read(FS,MemContext.Data,MemContext.DataLength) )
 			{
-				jeErrorLog_AddString(-1,"FSLZ : Allocate failed!",NULL);
+				grErrorLog_AddString(-1,"FSLZ : Allocate failed!",NULL);
 				FSLZ_Close(File);
 				return NULL;
 			}
 			
-			NewBaseFile = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_MEMORY,NULL,&MemContext,JE_VFILE_OPEN_READONLY);
+			NewBaseFile = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_MEMORY,NULL,&MemContext,GR_VFILE_OPEN_READONLY);
 			if ( ! File->BaseFile )
 			{
 				FSLZ_Close(File);
 				return NULL;
 			}
 
-			File->Uncompressed = JE_TRUE;
+			File->Uncompressed = GR_TRUE;
 
-			jeVFile_Close(File->HintsBaseFile);
-			jeVFile_Close(File->BaseFile);
+			grVFile_Close(File->HintsBaseFile);
+			grVFile_Close(File->BaseFile);
 
 			File->HintsBaseFile = NewHintsBaseFile;
 			File->BaseFile = NewBaseFile;
@@ -213,21 +213,21 @@ LZFile * File;
 		}
 		else if ( File->Tag != FSLZ_TAG )
 		{
-			jeVFile_Seek(File->HintsBaseFile,- (int)sizeof(File->Tag),JE_VFILE_SEEKCUR);
-			jeErrorLog_AddString(-1,"FSLZ : Opening uncompressed without UNC header!",NULL);
+			grVFile_Seek(File->HintsBaseFile,- (int)sizeof(File->Tag),GR_VFILE_SEEKCUR);
+			grErrorLog_AddString(-1,"FSLZ : Opening uncompressed without UNC header!",NULL);
 			#pragma message("FSLZ : UNC NoHeader open may pass back hintsfile == file !")
-			File->Uncompressed = JE_TRUE;
+			File->Uncompressed = GR_TRUE;
 
 			return File;
 		}
 	}
 
 	{
-	jeVFile_MemoryContext MemContext;
+	grVFile_MemoryContext MemContext;
 		MemContext.Data = NULL;
 		MemContext.DataLength = 0;
 
-		File->MemFile = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_MEMORY,NULL,&MemContext,OpenModeFlags);
+		File->MemFile = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_MEMORY,NULL,&MemContext,OpenModeFlags);
 		if ( ! File->MemFile )
 		{
 			FSLZ_Close(File);
@@ -236,7 +236,7 @@ LZFile * File;
 		MemContext.Data = NULL;
 		MemContext.DataLength = 0;
 
-		File->HintsMemFile = jeVFile_OpenNewSystem(NULL,JE_VFILE_TYPE_MEMORY,NULL,&MemContext,OpenModeFlags);
+		File->HintsMemFile = grVFile_OpenNewSystem(NULL,GR_VFILE_TYPE_MEMORY,NULL,&MemContext,OpenModeFlags);
 		if ( ! File->MemFile )
 		{
 			FSLZ_Close(File);
@@ -246,25 +246,25 @@ LZFile * File;
 
 	if ( File->Reading )
 	{
-		if ( ! jeVFile_Read(File->HintsBaseFile,&(File->Size),sizeof(File->Size)) )
+		if ( ! grVFile_Read(File->HintsBaseFile,&(File->Size),sizeof(File->Size)) )
 		{
-			jeErrorLog_AddString(-1,"FSLZ_OpenNew : Base Read failed!",NULL);
+			grErrorLog_AddString(-1,"FSLZ_OpenNew : Base Read failed!",NULL);
 			assert(0);
 			FSLZ_Close(File);
 			return NULL;
 		}
 
-		if ( ! jeVFile_Read(File->HintsBaseFile,&(File->CompLen),sizeof(File->CompLen)) )
+		if ( ! grVFile_Read(File->HintsBaseFile,&(File->CompLen),sizeof(File->CompLen)) )
 		{
-			jeErrorLog_AddString(-1,"FSLZ_OpenNew : Base Read failed!",NULL);
+			grErrorLog_AddString(-1,"FSLZ_OpenNew : Base Read failed!",NULL);
 			assert(0);
 			FSLZ_Close(File);
 			return NULL;
 		}
 
-		if ( ! jeVFile_Read(File->HintsBaseFile,&(File->HintsSize),sizeof(File->HintsSize)) )
+		if ( ! grVFile_Read(File->HintsBaseFile,&(File->HintsSize),sizeof(File->HintsSize)) )
 		{
-			jeErrorLog_AddString(-1,"FSLZ_OpenNew : Base Read failed!",NULL);
+			grErrorLog_AddString(-1,"FSLZ_OpenNew : Base Read failed!",NULL);
 			assert(0);
 			FSLZ_Close(File);
 			return NULL;
@@ -272,9 +272,9 @@ LZFile * File;
 
 		if ( File->HintsSize > 0 )
 		{
-			if ( ! jeVFile_SetSize(File->HintsMemFile,File->HintsSize) )
+			if ( ! grVFile_SetSize(File->HintsMemFile,File->HintsSize) )
 			{
-				jeErrorLog_AddString(-1,"FSLZ_OpenNew : Hints SetSize failed!",NULL);
+				grErrorLog_AddString(-1,"FSLZ_OpenNew : Hints SetSize failed!",NULL);
 				FSLZ_Close(File);
 				return NULL;
 			}
@@ -282,50 +282,50 @@ LZFile * File;
 
 		// read hints
 		
-		if ( ! jeVFile_CopyData(File->HintsBaseFile,File->HintsMemFile,File->HintsSize) )
+		if ( ! grVFile_CopyData(File->HintsBaseFile,File->HintsMemFile,File->HintsSize) )
 		{
-			jeErrorLog_AddString(-1,"FSLZ_OpenNew : copy hints!",NULL);
+			grErrorLog_AddString(-1,"FSLZ_OpenNew : copy hints!",NULL);
 			FSLZ_Close(File);
 			return NULL;
 		}
-		jeVFile_Rewind(File->HintsMemFile);
+		grVFile_Rewind(File->HintsMemFile);
 
 		if ( File->Size > 0 )
 		{
-			if ( ! jeVFile_SetSize(File->MemFile,File->Size) )
+			if ( ! grVFile_SetSize(File->MemFile,File->Size) )
 			{
-				jeErrorLog_AddString(-1,"FSLZ_OpenNew : SetSize ailed!",NULL);
+				grErrorLog_AddString(-1,"FSLZ_OpenNew : SetSize ailed!",NULL);
 				FSLZ_Close(File);
 				return NULL;
 			}
 		}
 
-		if ( ! (File->CompArray = (uint8 *)jeRam_Allocate(File->CompLen) ) )
+		if ( ! (File->CompArray = (uint8 *)grRam_Allocate(File->CompLen) ) )
 		{
-			jeErrorLog_AddString(-1,"FSLZ_OpenNew : Allocate CompLen failed!",NULL);
+			grErrorLog_AddString(-1,"FSLZ_OpenNew : Allocate CompLen failed!",NULL);
 			FSLZ_Close(File);
 			return NULL;
 		}
 
 		{
-		jeVFile_Properties Prop;
-		memset(&Prop, 0 , sizeof(jeVFile_Properties) );
+		grVFile_Properties Prop;
+		memset(&Prop, 0 , sizeof(grVFile_Properties) );
 		
 			File->RefCount++;
-			if ( jeVFile_GetProperties(File->BaseFile,&Prop) && (Prop.AttributeFlags & JE_VFILE_ATTRIB_REMOTE) || ( FSLZ_ALWAYS_THREAD_READER == 1) )
+			if ( grVFile_GetProperties(File->BaseFile,&Prop) && (Prop.AttributeFlags & GR_VFILE_ATTRIB_REMOTE) || ( FSLZ_ALWAYS_THREAD_READER == 1) )
 			{
-				File->Lock = jeThreadQueue_Semaphore_Create();
+				File->Lock = grThreadQueue_Semaphore_Create();
 				if ( ! File->Lock )
 				{
-					jeErrorLog_AddString(-1,"FSLZ_OpenNew : Semaphore_Create failed!",NULL);
+					grErrorLog_AddString(-1,"FSLZ_OpenNew : Semaphore_Create failed!",NULL);
 					FSLZ_Close(File);
 					return NULL;
 				}
 
-				File->ReaderJob = jeThreadQueue_JobCreate(FSLZReader_Func,File,NULL,16384);
+				File->ReaderJob = grThreadQueue_JobCreate(FSLZReader_Func,File,NULL,16384);
 				if ( ! File->ReaderJob )
 				{
-					jeErrorLog_AddString(-1,"FSLZ_OpenNew : Thread_Create failed!",NULL);
+					grErrorLog_AddString(-1,"FSLZ_OpenNew : Thread_Create failed!",NULL);
 					FSLZ_Close(File);
 					return NULL;
 				}
@@ -340,10 +340,10 @@ LZFile * File;
 return File;
 }
 
-static	jeBoolean JETCC FSLZ_Close2(void *Handle,jeBoolean Reader)
+static	grBoolean GRCC FSLZ_Close2(void *Handle,grBoolean Reader)
 {
 LZFile * File;
-jeBoolean Ret = JE_TRUE;
+grBoolean Ret = GR_TRUE;
 	
 	File = (LZFile*)Handle;
 	
@@ -356,12 +356,12 @@ jeBoolean Ret = JE_TRUE;
 
 		if ( ! Reader && File->ReaderJob )
 		{
-			jeThreadQueue_WaitOnJob(File->ReaderJob,JE_THREADQUEUE_STATUS_COMPLETED);
-			jeThreadQueue_JobDestroy(&(File->ReaderJob));
+			grThreadQueue_WaitOnJob(File->ReaderJob,GR_THREADQUEUE_STATUS_COMPLETED);
+			grThreadQueue_JobDestroy(&(File->ReaderJob));
 			File->ReaderJob = NULL;
 
 			if ( File->Lock )
-				jeThreadQueue_Semaphore_Destroy(&(File->Lock));
+				grThreadQueue_Semaphore_Destroy(&(File->Lock));
 		}
 
 		// reader job must be gone now
@@ -369,12 +369,12 @@ jeBoolean Ret = JE_TRUE;
 		if ( File->RefCount > 0 )
 		{
 			File->RefCount--;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
 		if ( File->CompArray )
 		{
-			jeRam_Free(File->CompArray);
+			grRam_Free(File->CompArray);
 			File->CompArray = NULL;
 		}
 		if ( File->Decoder )
@@ -390,13 +390,13 @@ jeBoolean Ret = JE_TRUE;
 		if ( File->RefCount > 0 )
 		{
 			File->RefCount--;
-			return JE_TRUE;
+			return GR_TRUE;
 		}
 
 		{
-		jeVFile_MemoryContext MemContext;
+		grVFile_MemoryContext MemContext;
 			// compresss & write to BaseFile !
-			if ( jeVFile_UpdateContext(File->MemFile,&MemContext,sizeof(MemContext)) )
+			if ( grVFile_UpdateContext(File->MemFile,&MemContext,sizeof(MemContext)) )
 			{
 			uint8 * OutBuf;
 			uint32 OutLen;
@@ -407,40 +407,40 @@ jeBoolean Ret = JE_TRUE;
 					if ( OutLen < (uint32)MemContext.DataLength )
 					{
 						File->Tag = FSLZ_TAG;
-						if (! jeVFile_Write(File->HintsBaseFile,&(File->Tag),sizeof(File->Tag)) ||
-							! jeVFile_Write(File->HintsBaseFile,&(File->Size),sizeof(File->Size)) ||
-							! jeVFile_Write(File->HintsBaseFile,&OutLen,sizeof(OutLen)) )
+						if (! grVFile_Write(File->HintsBaseFile,&(File->Tag),sizeof(File->Tag)) ||
+							! grVFile_Write(File->HintsBaseFile,&(File->Size),sizeof(File->Size)) ||
+							! grVFile_Write(File->HintsBaseFile,&OutLen,sizeof(OutLen)) )
 						{
-							jeErrorLog_AddString(-1,"FSLZ_Close : VFile_WriteHints failed!",NULL);
-							Ret = JE_FALSE;
+							grErrorLog_AddString(-1,"FSLZ_Close : VFile_WriteHints failed!",NULL);
+							Ret = GR_FALSE;
 						}
 									// write hints
 			
-						if ( ! jeVFile_Size(File->HintsMemFile,&(File->HintsSize)) )
+						if ( ! grVFile_Size(File->HintsMemFile,&(File->HintsSize)) )
 						{
-							jeErrorLog_AddString(-1,"FSLZ_Close : VFile Hints Size failed!",NULL);
-							Ret = JE_FALSE;
+							grErrorLog_AddString(-1,"FSLZ_Close : VFile Hints Size failed!",NULL);
+							Ret = GR_FALSE;
 						}
 						else
 						{
-							if (! jeVFile_Write(File->HintsBaseFile,&(File->HintsSize),sizeof(File->HintsSize)) )
+							if (! grVFile_Write(File->HintsBaseFile,&(File->HintsSize),sizeof(File->HintsSize)) )
 							{
-								jeErrorLog_AddString(-1,"FSLZ_Close : VFile_WriteHints failed!",NULL);
-								Ret = JE_FALSE;
+								grErrorLog_AddString(-1,"FSLZ_Close : VFile_WriteHints failed!",NULL);
+								Ret = GR_FALSE;
 							}
 
-							jeVFile_Rewind(File->HintsMemFile);
-							if ( ! jeVFile_CopyData(File->HintsMemFile,File->HintsBaseFile,File->HintsSize) )
+							grVFile_Rewind(File->HintsMemFile);
+							if ( ! grVFile_CopyData(File->HintsMemFile,File->HintsBaseFile,File->HintsSize) )
 							{
-								jeErrorLog_AddString(-1,"FSLZ_Close : copy hints!",NULL);
-								Ret = JE_FALSE;
+								grErrorLog_AddString(-1,"FSLZ_Close : copy hints!",NULL);
+								Ret = GR_FALSE;
 							}
 						}
 
-						if ( ! jeVFile_Write(File->BaseFile,OutBuf,OutLen) )						
+						if ( ! grVFile_Write(File->BaseFile,OutBuf,OutLen) )						
 						{
-							jeErrorLog_AddString(-1,"FSLZ_Close : VFile_Write failed!",NULL);
-							Ret = JE_FALSE;
+							grErrorLog_AddString(-1,"FSLZ_Close : VFile_Write failed!",NULL);
+							Ret = GR_FALSE;
 						}
 
 						Log_Printf("FSLZ : compressed %d -> %d = %1.3f bpc\n",MemContext.DataLength,OutLen,(OutLen*8.0f/MemContext.DataLength));
@@ -449,11 +449,11 @@ jeBoolean Ret = JE_TRUE;
 						Header_Sizes += 12;
 						#endif
 						
-						jeRam_Free(OutBuf);
+						grRam_Free(OutBuf);
 					}
 					else
 					{
-						jeRam_Free(OutBuf);
+						grRam_Free(OutBuf);
 
 						// these hints cost 12 bytes :
 						// 4 hints header
@@ -464,39 +464,39 @@ jeBoolean Ret = JE_TRUE;
 						#pragma message("FSLZ : try passing through uncompressed without UNC header")
 
 						File->Tag = FSLZ_TAG_UNC;
-						if (	! jeVFile_Write(File->HintsBaseFile,&(File->Tag),sizeof(File->Tag))
-							||	! jeVFile_Write(File->HintsBaseFile,&(MemContext.DataLength),sizeof(MemContext.DataLength)) )
+						if (	! grVFile_Write(File->HintsBaseFile,&(File->Tag),sizeof(File->Tag))
+							||	! grVFile_Write(File->HintsBaseFile,&(MemContext.DataLength),sizeof(MemContext.DataLength)) )
 						{
-							jeErrorLog_AddString(-1,"FSLZ_Close : VFile_WriteHints failed!",NULL);
-							Ret = JE_FALSE;
+							grErrorLog_AddString(-1,"FSLZ_Close : VFile_WriteHints failed!",NULL);
+							Ret = GR_FALSE;
 						}
-						else if ( ! jeVFile_Size(File->HintsMemFile,&(File->HintsSize)) )
+						else if ( ! grVFile_Size(File->HintsMemFile,&(File->HintsSize)) )
 						{
-							jeErrorLog_AddString(-1,"FSLZ_Close : VFile Hints Size failed!",NULL);
-							Ret = JE_FALSE;
+							grErrorLog_AddString(-1,"FSLZ_Close : VFile Hints Size failed!",NULL);
+							Ret = GR_FALSE;
 						}
-						else if (! jeVFile_Write(File->HintsBaseFile,&(File->HintsSize),sizeof(File->HintsSize)) )
+						else if (! grVFile_Write(File->HintsBaseFile,&(File->HintsSize),sizeof(File->HintsSize)) )
 						{
-							jeErrorLog_AddString(-1,"FSLZ_Close : VFile_WriteHints failed!",NULL);
-							Ret = JE_FALSE;
+							grErrorLog_AddString(-1,"FSLZ_Close : VFile_WriteHints failed!",NULL);
+							Ret = GR_FALSE;
 						}
-						else if ( ! jeVFile_Rewind(File->HintsMemFile) ||
-								! jeVFile_CopyData(File->HintsMemFile,File->HintsBaseFile,File->HintsSize) )
+						else if ( ! grVFile_Rewind(File->HintsMemFile) ||
+								! grVFile_CopyData(File->HintsMemFile,File->HintsBaseFile,File->HintsSize) )
 						{
-							jeErrorLog_AddString(-1,"FSLZ_Close : copy hints!",NULL);
-							Ret = JE_FALSE;
+							grErrorLog_AddString(-1,"FSLZ_Close : copy hints!",NULL);
+							Ret = GR_FALSE;
 						}
-						else if ( ! jeVFile_Write(File->BaseFile,MemContext.Data,MemContext.DataLength) )
+						else if ( ! grVFile_Write(File->BaseFile,MemContext.Data,MemContext.DataLength) )
 						{
-							jeErrorLog_AddString(-1,"FSLZ_Close : VFile_Write failed!",NULL);
-							Ret = JE_FALSE;
+							grErrorLog_AddString(-1,"FSLZ_Close : VFile_Write failed!",NULL);
+							Ret = GR_FALSE;
 						}
 					}
 				}
 				else
 				{
-					jeErrorLog_AddString(-1,"FSLZ_Close : lzaEncode failed!",NULL);
-					Ret = JE_FALSE;
+					grErrorLog_AddString(-1,"FSLZ_Close : lzaEncode failed!",NULL);
+					Ret = GR_FALSE;
 				}
 			}
 
@@ -504,27 +504,27 @@ jeBoolean Ret = JE_TRUE;
 	}
 
 	if ( File->BaseFile )
-		jeVFile_Close(File->BaseFile);
+		grVFile_Close(File->BaseFile);
 	if ( File->HintsBaseFile )
-		jeVFile_Close(File->HintsBaseFile);
+		grVFile_Close(File->HintsBaseFile);
 	if ( File->MemFile )
-		jeVFile_Close(File->MemFile);
+		grVFile_Close(File->MemFile);
 	if ( File->HintsMemFile )
-		jeVFile_Close(File->HintsMemFile);
+		grVFile_Close(File->HintsMemFile);
 
-	jeRam_Free(File);
+	grRam_Free(File);
 
 return Ret;
 }
 
-static	jeBoolean JETCC FSLZ_Close(void *Handle)
+static	grBoolean GRCC FSLZ_Close(void *Handle)
 {
-return FSLZ_Close2(Handle,JE_FALSE);
+return FSLZ_Close2(Handle,GR_FALSE);
 }
 
 /*}{******************* The Reader Job ******************************/
 
-void FSLZReader_Func(jeThreadQueue_Job * Job,void * Context)
+void FSLZReader_Func(grThreadQueue_Job * Job,void * Context)
 {
 LZFile * File;
 uint32 CurLen;
@@ -535,26 +535,26 @@ uint32 NewMemFileLen;
 	while( File->CompLenRead < File->CompLen )
 	{
 
-		jeVFile_BytesAvailable(File->BaseFile,(int32 *)&CurLen);
+		grVFile_BytesAvailable(File->BaseFile,(int32 *)&CurLen);
 		while ( CurLen < 10 && (CurLen + File->CompLenRead != File->CompLen) )
 		{
-			if ( jeVFile_EOF(File->BaseFile) )
+			if ( grVFile_EOF(File->BaseFile) )
 				goto fail;
-			jeThreadQueue_Sleep(10);
-			jeVFile_BytesAvailable(File->BaseFile,(int32 *)&CurLen);
+			grThreadQueue_Sleep(10);
+			grVFile_BytesAvailable(File->BaseFile,(int32 *)&CurLen);
 		}
 
 		CurLen = min(CurLen, File->CompLen - File->CompLenRead );
 
 		FSLZ_Lock(File);
-		jeVFile_BytesAvailable(File->BaseFile,(int32 *)&CurLen);
+		grVFile_BytesAvailable(File->BaseFile,(int32 *)&CurLen);
 		
-		if ( jeVFile_Read(File->BaseFile,File->CompArray + File->CompLenRead, CurLen ) )
+		if ( grVFile_Read(File->BaseFile,File->CompArray + File->CompLenRead, CurLen ) )
 		{
 			if ( File->CompLenRead == 0 )
 			{
-			jeVFile_MemoryContext MemContext;
-				if ( ! jeVFile_UpdateContext(File->MemFile,&MemContext,sizeof(MemContext)) )
+			grVFile_MemoryContext MemContext;
+				if ( ! grVFile_UpdateContext(File->MemFile,&MemContext,sizeof(MemContext)) )
 				{
 					FSLZ_UnLock(File);
 					goto fail;
@@ -602,7 +602,7 @@ fail:
 
 	if ( File->CompArray )
 	{
-		jeRam_Free(File->CompArray);
+		grRam_Free(File->CompArray);
 		File->CompArray = NULL;
 	}
 	if ( File->Decoder )
@@ -613,32 +613,32 @@ fail:
 	
 	FSLZ_UnLock(File);
 
-	FSLZ_Close2(File,JE_TRUE);
+	FSLZ_Close2(File,GR_TRUE);
 
 return;
 }
 
 void FSLZReader_Peek(LZFile * File)
 {
-jeThreadQueue_JobStatus Status;
+grThreadQueue_JobStatus Status;
 
 	if ( ! File->ReaderJob )
 		return;
 
 	FSLZ_Lock(File);
 	
-	Status = jeThreadQueue_JobGetStatus(File->ReaderJob);
+	Status = grThreadQueue_JobGetStatus(File->ReaderJob);
 
 	FSLZ_UnLock(File);
 
-	if ( Status == JE_THREADQUEUE_STATUS_WAITINGFORTHREAD )
+	if ( Status == GR_THREADQUEUE_STATUS_WAITINGFORTHREAD )
 	{
-		jeThreadQueue_PollJobs();
+		grThreadQueue_PollJobs();
 	}
-	else if ( Status == JE_THREADQUEUE_STATUS_COMPLETED )
+	else if ( Status == GR_THREADQUEUE_STATUS_COMPLETED )
 	{
 		FSLZ_Lock(File);
-		jeThreadQueue_JobDestroy(&(File->ReaderJob));
+		grThreadQueue_JobDestroy(&(File->ReaderJob));
 		File->ReaderJob = NULL;
 		FSLZ_UnLock(File);
 	}
@@ -646,48 +646,48 @@ jeThreadQueue_JobStatus Status;
 
 /*}{******************* Utilities ******************************/
 
-static jeBoolean jeVFile_CopyData(jeVFile * Fm,jeVFile *To,int CurSize)
+static grBoolean grVFile_CopyData(grVFile * Fm,grVFile *To,int CurSize)
 {
 char CopyBuff[1024];
 int CurLen;
 	while(CurSize)
 	{
 		CurLen = min(1024,CurSize);
-		if ( ! jeVFile_Read( Fm,CopyBuff,CurLen) )
-			return JE_FALSE;
-		if ( ! jeVFile_Write(To,CopyBuff,CurLen) )
-			return JE_FALSE;
+		if ( ! grVFile_Read( Fm,CopyBuff,CurLen) )
+			return GR_FALSE;
+		if ( ! grVFile_Write(To,CopyBuff,CurLen) )
+			return GR_FALSE;
 		CurSize -= CurLen;
 	}
-return JE_TRUE;
+return GR_TRUE;
 }
 
 static void __inline FSLZ_Lock(LZFile * File)
 {
 	if ( File->ReaderJob )
-		jeThreadQueue_Semaphore_Lock(File->Lock);
+		grThreadQueue_Semaphore_Lock(File->Lock);
 }
 
 static void __inline FSLZ_UnLock(LZFile * File)
 {
 	if ( File->ReaderJob )
-		jeThreadQueue_Semaphore_UnLock(File->Lock);
+		grThreadQueue_Semaphore_UnLock(File->Lock);
 }
 
 
 /*}{******************* Pass-Throughs ******************************/
 
-static	jeBoolean	JETCC FSLZ_BytesAvailable(void *Handle, int32 *pCount)
+static	grBoolean	GRCC FSLZ_BytesAvailable(void *Handle, int32 *pCount)
 {
 	LZFile *	File;
 
 	File = (LZFile*)Handle;
 
 	if ( ! File->Reading )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( File->Uncompressed )
-		return jeVFile_BytesAvailable(File->BaseFile,pCount);
+		return grVFile_BytesAvailable(File->BaseFile,pCount);
 
 	FSLZReader_Peek(File);
 
@@ -697,10 +697,10 @@ static	jeBoolean	JETCC FSLZ_BytesAvailable(void *Handle, int32 *pCount)
 
 	FSLZ_UnLock(File);
 	
-return JE_TRUE;
+return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSLZ_Read(void *Handle, void *Buff, uint32 Count)
+static	grBoolean	GRCC FSLZ_Read(void *Handle, void *Buff, uint32 Count)
 {
 LZFile * File;
 uint32 Avail;
@@ -708,43 +708,43 @@ uint32 Avail;
 	File = (LZFile*)Handle;
 
 	if ( ! File->Reading )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	if ( File->Uncompressed )
 	{
-		return jeVFile_Read(File->BaseFile,Buff,Count);
+		return grVFile_Read(File->BaseFile,Buff,Count);
 	}
 	
 	if ( Count > (File->Size - File->Pos) )
-		return JE_FALSE;
+		return GR_FALSE;
 	if ( Count <= 0 )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	FSLZ_BytesAvailable(Handle,(int32 *)&Avail);
 	
 	if ( Avail < Count )
 	{
 		if ( ! File->ReaderJob )
-			return JE_FALSE;
+			return GR_FALSE;
 
-		if ( ! jeThreadQueue_WaitOnJob(File->ReaderJob,JE_THREADQUEUE_STATUS_RUNNING) )
-			return JE_FALSE;
+		if ( ! grThreadQueue_WaitOnJob(File->ReaderJob,GR_THREADQUEUE_STATUS_RUNNING) )
+			return GR_FALSE;
 			
 		do
 		{
-			jeThreadQueue_Sleep(1);
+			grThreadQueue_Sleep(1);
 			FSLZ_BytesAvailable(Handle,(int32 *)&Avail);
 		} while( Avail < Count );
 	}
 
 	if ( File->ReaderJob )
 	{
-	jeThreadQueue_JobStatus Status;	
-		Status = jeThreadQueue_JobGetStatus(File->ReaderJob);
-		if ( Status == JE_THREADQUEUE_STATUS_COMPLETED )
+	grThreadQueue_JobStatus Status;	
+		Status = grThreadQueue_JobGetStatus(File->ReaderJob);
+		if ( Status == GR_THREADQUEUE_STATUS_COMPLETED )
 		{
 			FSLZ_Lock(File);
-			jeThreadQueue_JobDestroy(&File->ReaderJob);
+			grThreadQueue_JobDestroy(&File->ReaderJob);
 			File->ReaderJob = NULL;
 			FSLZ_UnLock(File);
 		}
@@ -752,36 +752,36 @@ uint32 Avail;
 	
 	FSLZ_Lock(File);
 
-	if ( ! jeVFile_Read(File->MemFile,Buff,Count) )
-		return JE_FALSE;
+	if ( ! grVFile_Read(File->MemFile,Buff,Count) )
+		return GR_FALSE;
 
 	FSLZ_UnLock(File);
 
 	File->Pos += Count;
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSLZ_Write(void *Handle, const void *Buff, int Count)
+static	grBoolean	GRCC FSLZ_Write(void *Handle, const void *Buff, int Count)
 {
 LZFile * File;
 
 	File = (LZFile*)Handle;
 
 	if ( File->Reading )
-		return JE_FALSE;
+		return GR_FALSE;
 
-	if ( ! jeVFile_Write(File->MemFile,Buff,Count) )
-		return JE_FALSE;
+	if ( ! grVFile_Write(File->MemFile,Buff,Count) )
+		return GR_FALSE;
 
 	File->Pos += Count;
 	if ( File->Pos > File->Size )
 		File->Size = File->Pos;
 	File->MemFileLen = File->Size;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSLZ_Seek(void *Handle, int Where, jeVFile_Whence Whence)
+static	grBoolean	GRCC FSLZ_Seek(void *Handle, int Where, grVFile_Whence Whence)
 {
 LZFile * File;
 uint32 NewPos;
@@ -789,19 +789,19 @@ uint32 NewPos;
 	File = (LZFile*)Handle;
 
 	if ( File->Uncompressed )
-		return jeVFile_Seek(File->BaseFile,Where,Whence);
+		return grVFile_Seek(File->BaseFile,Where,Whence);
 	
 	switch(Whence)
 	{
-		case JE_VFILE_SEEKCUR:
+		case GR_VFILE_SEEKCUR:
 			NewPos = File->Pos + Where;
 			break;
 
-		case JE_VFILE_SEEKEND:
+		case GR_VFILE_SEEKEND:
 			NewPos = File->Size + Where;
 			break;
 
-		case JE_VFILE_SEEKSET:
+		case GR_VFILE_SEEKSET:
 			NewPos = Where;
 			break;
 	}
@@ -813,59 +813,59 @@ uint32 NewPos;
 		Len = File->MemFileLen;
 		FSLZ_UnLock(File);
 		if ( NewPos > Len )
-			 return JE_FALSE;
+			 return GR_FALSE;
 	}
 
 	File->Pos = NewPos;
 
-	return jeVFile_Seek(File->MemFile,Where,Whence);
+	return grVFile_Seek(File->MemFile,Where,Whence);
 }
 
-static	jeBoolean	JETCC FSLZ_EOF(const void *Handle)
+static	grBoolean	GRCC FSLZ_EOF(const void *Handle)
 {
 	const LZFile *	File;
 
 	File = (LZFile*)Handle;
 
 	if ( File->Uncompressed )
-		return jeVFile_EOF(File->BaseFile);
+		return grVFile_EOF(File->BaseFile);
 
 	if ( File->Pos == File->Size )
-		return JE_TRUE;
+		return GR_TRUE;
 
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSLZ_Tell(const void *Handle, int32 *pPosition)
+static	grBoolean	GRCC FSLZ_Tell(const void *Handle, int32 *pPosition)
 {
 	const LZFile *	File;
 
 	File = (LZFile*)Handle;
 
 	if ( File->Uncompressed )
-		return jeVFile_Tell(File->BaseFile,pPosition);
+		return grVFile_Tell(File->BaseFile,pPosition);
 
 	*pPosition = File->Pos;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSLZ_Size(const void *Handle, int32 *pSize)
+static	grBoolean	GRCC FSLZ_Size(const void *Handle, int32 *pSize)
 {
 	const LZFile *	File;
 
 	File = (LZFile*)Handle;
 
 	if ( File->Uncompressed )
-		return jeVFile_Size(File->BaseFile,pSize);
+		return grVFile_Size(File->BaseFile,pSize);
 
 	*pSize = File->Size;
 
-	return JE_TRUE;
+	return GR_TRUE;
 }
 
 
-static	jeVFile *	JETCC FSLZ_GetHintsFile(void *Handle)
+static	grVFile *	GRCC FSLZ_GetHintsFile(void *Handle)
 {
 LZFile *	File;
 
@@ -877,7 +877,7 @@ LZFile *	File;
 	if ( File->Reading )
 	{
 	int32 Size;
-		if ( ! jeVFile_Size(File->HintsMemFile,&Size) )
+		if ( ! grVFile_Size(File->HintsMemFile,&Size) )
 			return NULL;
 		if ( ! Size )
 			return NULL;
@@ -886,7 +886,7 @@ LZFile *	File;
 	return File->HintsMemFile;
 }
 
-static	int JETCC FSLZ_GetC(LZFile * File)
+static	int GRCC FSLZ_GetC(LZFile * File)
 {
 unsigned char C;
 	if ( ! FSLZ_Read(File,&C,1) )
@@ -894,7 +894,7 @@ unsigned char C;
 return C;
 }
 
-static	jeBoolean	JETCC FSLZ_GetS(void *Handle, char *Buff, int MaxLen)
+static	grBoolean	GRCC FSLZ_GetS(void *Handle, char *Buff, int MaxLen)
 {
 LZFile *	File;
 int C;
@@ -903,7 +903,7 @@ char * Ptr;
 	File = (LZFile*)Handle;
 
 	if ( ! File->Reading )
-		return JE_FALSE;
+		return GR_FALSE;
 
 	Ptr = Buff;
 	while( MaxLen > 1 && (C = FSLZ_GetC(File)) != -1 )
@@ -919,58 +919,58 @@ char * Ptr;
 		if (C == '\n' || C == '\r' || C == 0 )
 			continue;
 
-		if ( ! FSLZ_Seek(File,-1,JE_VFILE_SEEKCUR) )
-			return JE_FALSE;
+		if ( ! FSLZ_Seek(File,-1,GR_VFILE_SEEKCUR) )
+			return GR_FALSE;
 		break;
 	}
 
 	*Ptr = 0;
 
-return JE_TRUE;
+return GR_TRUE;
 }
 
-static	jeBoolean	JETCC FSLZ_GetProperties(const void *Handle, jeVFile_Properties *Properties)
+static	grBoolean	GRCC FSLZ_GetProperties(const void *Handle, grVFile_Properties *Properties)
 {
 const LZFile * File;
 
 	File = (LZFile*)Handle;
 
-	if ( ! jeVFile_GetProperties(File->BaseFile,Properties) )
-		return JE_FALSE;
+	if ( ! grVFile_GetProperties(File->BaseFile,Properties) )
+		return GR_FALSE;
 	
 	Properties->Size = File->Size;
-return JE_TRUE;
+return GR_TRUE;
 }
 
 /*}{******************* UnImplemented Bullshit ******************************/
 
-static	void *	JETCC FSLZ_FinderCreate(
-	jeVFile *			FS,
+static	void *	GRCC FSLZ_FinderCreate(
+	grVFile *			FS,
 	void *			Handle,
 	const char *	FileSpec)
 {
 	return NULL;
 }
 
-static	jeBoolean	JETCC FSLZ_FinderGetNextFile(void *Handle)
+static	grBoolean	GRCC FSLZ_FinderGetNextFile(void *Handle)
 {
 	assert(!Handle);
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSLZ_FinderGetProperties(void *Handle, jeVFile_Properties *Props)
+static	grBoolean	GRCC FSLZ_FinderGetProperties(void *Handle, grVFile_Properties *Props)
 {
 	assert(!Handle);
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	void JETCC FSLZ_FinderDestroy(void *Handle)
+static	void GRCC FSLZ_FinderDestroy(void *Handle)
 {
 	assert(!Handle);
 }
 
-static	void *	JETCC FSLZ_Open(
-	jeVFile *		FS,
+static	void *	GRCC FSLZ_Open(
+	grVFile *		FS,
 	void *			Handle,
 	const char *	Name,
 	void *			Context,
@@ -980,61 +980,61 @@ static	void *	JETCC FSLZ_Open(
 }
 
 
-static	jeBoolean	JETCC FSLZ_SetSize(void *Handle, int32 Size)
+static	grBoolean	GRCC FSLZ_SetSize(void *Handle, int32 Size)
 {
 	assert(!"Not implemented");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSLZ_SetAttributes(void *Handle, jeVFile_Attributes Attributes)
+static	grBoolean	GRCC FSLZ_SetAttributes(void *Handle, grVFile_Attributes Attributes)
 {
 	assert(!"Not implemented");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSLZ_SetTime(void *Handle, const jeVFile_Time *Time)
+static	grBoolean	GRCC FSLZ_SetTime(void *Handle, const grVFile_Time *Time)
 {
 	assert(!"Not implemented");
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSLZ_FileExists(jeVFile *FS, void *Handle, const char *Name)
+static	grBoolean	GRCC FSLZ_FileExists(grVFile *FS, void *Handle, const char *Name)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSLZ_Disperse(
-	jeVFile *	FS,
+static	grBoolean	GRCC FSLZ_Disperse(
+	grVFile *	FS,
 	void *		Handle,
 	const char *Directory)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSLZ_DeleteFile(jeVFile *FS, void *Handle, const char *Name)
+static	grBoolean	GRCC FSLZ_DeleteFile(grVFile *FS, void *Handle, const char *Name)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSLZ_RenameFile(jeVFile *FS, void *Handle, const char *Name, const char *NewName)
+static	grBoolean	GRCC FSLZ_RenameFile(grVFile *FS, void *Handle, const char *Name, const char *NewName)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
-static	jeBoolean	JETCC FSLZ_UpdateContext(
-	jeVFile *		FS,
+static	grBoolean	GRCC FSLZ_UpdateContext(
+	grVFile *		FS,
 	void *			Handle,
 	void *			Context,
 	int 			ContextSize)
 {
-	return JE_FALSE;
+	return GR_FALSE;
 }
 
 /*}{******************* The FSLZ Struct ******************************/
 
 #pragma warning (disable : 4113 4028)
 
-static	jeVFile_SystemAPIs	FSLZ_APIs =
+static	grVFile_SystemAPIs	FSLZ_APIs =
 {
 	FSLZ_FinderCreate,
 	FSLZ_FinderGetNextFile,
@@ -1068,7 +1068,7 @@ static	jeVFile_SystemAPIs	FSLZ_APIs =
 	FSLZ_GetHintsFile,
 };
 
-const jeVFile_SystemAPIs * JETCC FSLZ_GetAPIs(void)
+const grVFile_SystemAPIs * GRCC FSLZ_GetAPIs(void)
 {
 	return &FSLZ_APIs;
 }

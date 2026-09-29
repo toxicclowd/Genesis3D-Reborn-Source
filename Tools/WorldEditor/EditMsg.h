@@ -23,18 +23,18 @@
 
 typedef struct Select3dContextDef
 {
-	jeVec3d Front;
-	jeVec3d Back;
-	jeVec3d Impact;
+	grVec3d Front;
+	grVec3d Back;
+	grVec3d Impact;
 } Select3dContextDef;
 
 
 
 typedef enum {
-	JETEDITOR_GET_JEBRUSH = 4000,	// Context is pointer to jeBrush pointer (jeBrush**)
+	G3DEDITOR_GET_GRBRUSH = 4000,	// Context is pointer to grBrush pointer (grBrush**)
 	JETEDITOR_SELECT3D,				// Context is Select3dContextDef
-	JETEDITOR_APPLYMATERIAL,		// Context is jeBitmap
-	JETEDITOR_APPLYMATERIALSPEC,	// Context is jeMaterialSpec
+	JETEDITOR_APPLYMATERIAL,		// Context is grBitmap
+	JETEDITOR_APPLYMATERIALSPEC,	// Context is grMaterialSpec
 };
 
 #endif // EDITMSG_H
