@@ -31,6 +31,9 @@ GRAPI grTexture * GRCC grTexture_Create(grEngine *Engine, int32 Width, int32 Hei
 
 GRAPI grTexture * GRCC grTexture_CreateFromFile(grEngine *Engine, grVFile *File)
 {
+	// Drivers may leave this hook NULL (the D3D12 driver does)
+	if (!Engine->DriverInfo.RDriver->THandle_CreateFromFile)
+		return NULL;
 	return Engine->DriverInfo.RDriver->THandle_CreateFromFile(File);
 }
 

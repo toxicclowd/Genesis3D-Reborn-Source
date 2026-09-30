@@ -18,4 +18,4 @@
 /*  Copyright (C) 1996-1999 Eclipse Entertainment, L.L.C. All Rights Reserved           */
 /*                                                                                      */
 /****************************************************************************************/
-#define BUILD_TYPE "jStudio3D11 Project Build"
+#define BUILD_TYPE "Genesis3D: Reborn Build"

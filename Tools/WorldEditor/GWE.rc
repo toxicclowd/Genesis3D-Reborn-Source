@@ -886,7 +886,7 @@ BEGIN
     EDITTEXT        IDC_EDIT1,5,60,284,140,ES_MULTILINE | ES_READONLY | WS_VSCROLL
     PUSHBUTTON      "Tutorials",IDC_TUTORIAL,186,210,102,12
     RTEXT           "Informal Build",IDC_TEXT_BUILDINFO,180,30,107,8,SS_NOPREFIX
-    RTEXT           "jDesignerClassic11",IDC_STATIC_PROP,95,5,195,23,SS_CENTERIMAGE
+    RTEXT           "Genesis3D: Reborn World Editor",IDC_STATIC_PROP,95,5,195,23,SS_CENTERIMAGE
     CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,0,252,297,1
     CONTROL         "Don't show this dialog again....",IDC_SHOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,210,112,10
     PUSHBUTTON      "Demo 1",IDC_DEMO,186,234,50,12
@@ -1714,10 +1714,10 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// JEBITMAP
+// GRBITMAP
 //
 
-IDR_LIGHT               JEBITMAP                "res\\light.bmp"
+IDR_LIGHT               GRBITMAP                "res\\light.bmp"
 
 
 /////////////////////////////////////////////////////////////////////////////
