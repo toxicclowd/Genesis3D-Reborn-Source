@@ -26,7 +26,7 @@ All of this has to happen **without losing what makes Genesis3D feel like Genesi
 
 Everything below depends on this.
 
-Today the engine transforms and clips world polygons **on the CPU** and sends them to the driver as `grTLVertex` (`Engine/Include/grTypes.h`): screen-space `x, y, z`, a pre-lit color, one UV set and a specular color. The world path is `RENDER_W_POLY` (`Engine/Genesis3D/Engine/Drivers/Dcommon.h`), which the D3D12 driver batches in `D3D12PolyCache`. Its shaders (`Renderer/Direct3D12/D3D12PSOManager.cpp`, mirrored in `Shaders.hlsl`) just compute `texture × lightmap × vertex color`.
+Today the engine transforms and clips world polygons **on the CPU** and sends them to the driver as `grTLVertex` (`Engine/Include/grTypes.h`): screen-space `x, y, z`, a pre-lit color, one UV set and a specular color. The world path is `RENDER_W_POLY` (`Engine/Genesis3D/Engine/Drivers/Dcommon.h`), which the D3D12 driver batches in `D3D12PolyCache`. Its shaders (`Renderer/Direct3D12/Shaders/TLPoly.hlsl`) just compute `texture × lightmap × vertex color`.
 
 Screen-space vertices have **no world position, normal or tangent**, so per-pixel PBR, shadow maps, light probes and reflections **can't be built on this path**.
 
@@ -181,6 +181,17 @@ M6  Phase 4B/C + backlog
 **Recommended first step:** Phase 0 together with Track A's fly-camera. Phase 0 is needed by every rendering feature and is low risk to existing content. The fly-camera is a small, self-contained change to `G3DView.cpp` that improves the editor right away.
 
 ---
+
+## 4a. Progress
+
+**Track A — navigation (first step done).** The World Editor 3D view has RMB fly (WASD, Q/E, Shift, wheel speed), Alt+LMB orbit, MMB pan, wheel dolly and F / Shift+F framing, with a time-based, eased fly camera. "Classic Genesis Navigation" in the 3D view's context menu restores the original controls; the choice is stored in the app profile (`Navigation\Keymap`) rather than a `.ini`, like the editor's other settings. Still to do: numpad view snapping, maximize-view key, camera sync between views, gizmos and the rest of the editing list.
+
+**Phase 0 — done except bindless-lite and GPU timestamps.**
+- *Shader build:* HLSL lives in `Renderer/Direct3D12/Shaders/`. The `G3DCompileShaders` target compiles each entry point with the Windows SDK's DXC (SM 6.0) into the driver. The source is also embedded and compiled at run time (SM 5.0) when the device lacks SM 6.0, when `[Shaders] RuntimeCompile=1`, or from loose files via `[Shaders] SourceDir` for iterating on shaders.
+- *Frame structure:* the scene renders into an `R16G16B16A16_FLOAT` target, and `Shaders/Present.hlsl` copies it to the back buffer (pass-through for now; tonemapping and Look Profiles go there in Phase 3). Depth is `R32_TYPELESS` so later passes can sample it. `[Render] SceneTarget=0` draws straight to the back buffer. Constant data is still one 32-bit-constant root parameter; per-frame/per-view constant buffers come with Phase 1, which is their first real user.
+- *Debugging:* `bin/Direct3D12Driver.ini` controls the debug layer, GPU-based validation and WARP; any key can be overridden with `G3D_D3D12_<KEY>`. Debug-layer messages are written to `Direct3D12Driver.log`, and the command list carries PIX markers for the scene, each poly-cache flush and the present pass.
+- *Regression safety:* `G3DGameShell -screenshot` plus `tests/render/RenderRegression.ps1` (reference shots in `tests/render/shots.txt`, baseline recorded locally with `-Update`). Repeat runs are pixel-identical, and WARP matches the hardware image on the reference shots. The HDR path differs from direct rendering by at most 1/255 per channel (fp16 storage and unquantized blending), within the default tolerance of 2.
+- *Not done yet:* bindless-lite descriptor heap (needed by Phase 2) and GPU timestamp queries in the Game Shell overlay.
 
 ## 5. Risks and mitigations
 
