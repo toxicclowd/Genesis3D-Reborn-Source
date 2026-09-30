@@ -23,6 +23,7 @@
 #include <Memory.h>
 #include <String.h>
 #include <float.h>
+#include <math.h>
 
 #include "ErrorLog.h"
 #include "Genesis3D.h"
@@ -76,20 +77,68 @@ typedef struct tagLight
 
 //STATIC FUNCTIONS
 
+#define LIGHT_DEG_TO_RAD	(3.14159265f / 180.0f)
+
+// The engine light's type follows the spot angle.
+static grBoolean Light_Apply( Light * pLight )
+{
+	LightInfo	*pData = &pLight->LightData;
+	uint32		Flags = pData->Flags & ~GR_LIGHT_FLAG_TYPEMASK;
+
+	if( pData->SpotAngle > 0.0f )
+		Flags |= GR_LIGHT_FLAG_SPOT;
+	else
+		Flags |= pData->Flags & GR_LIGHT_FLAG_TYPEMASK & ~GR_LIGHT_FLAG_SPOT;
+	pData->Flags = Flags;
+
+	if( !grLight_SetAttributes(	pLight->pgeLight,
+								&pData->Pos,
+								&pData->Color,
+								pData->Radius,
+								pData->Brightness,
+								pData->Flags) )
+	{
+		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_SetData:grLight_SetAttributes" );
+		return( GR_FALSE );
+	}
+	if( pData->SpotAngle > 0.0f )
+	{
+		grVec3d		Dir;
+		grFloat		Pitch = pData->SpotPitch * LIGHT_DEG_TO_RAD;
+		grFloat		Yaw = pData->SpotYaw * LIGHT_DEG_TO_RAD;
+
+		grVec3d_Set( &Dir, (grFloat)(cos(Pitch) * sin(Yaw)), (grFloat)sin(Pitch), (grFloat)(cos(Pitch) * cos(Yaw)) );
+		grLight_SetSpot( pLight->pgeLight, &Dir, pData->SpotAngle * 0.75f, pData->SpotAngle );
+	}
+	return( GR_TRUE );
+}
+
+// The editor's spot settings from the engine light (after loading it).
+static void Light_ReadSpot( Light * pLight )
+{
+	LightInfo	*pData = &pLight->LightData;
+
+	pData->SpotAngle = 0.0f;
+	pData->SpotPitch = -90.0f;
+	pData->SpotYaw = 0.0f;
+	if( (pData->Flags & GR_LIGHT_FLAG_TYPEMASK) == GR_LIGHT_FLAG_SPOT )
+	{
+		grVec3d		Dir;
+		grFloat		Outer;
+
+		grLight_GetSpot( pLight->pgeLight, &Dir, NULL, &Outer );
+		pData->SpotAngle = Outer;
+		pData->SpotPitch = (grFloat)asin( (Dir.Y < -1.0f) ? -1.0f : (Dir.Y > 1.0f) ? 1.0f : Dir.Y ) / LIGHT_DEG_TO_RAD;
+		pData->SpotYaw = (grFloat)atan2( Dir.X, Dir.Z ) / LIGHT_DEG_TO_RAD;
+	}
+}
+
 static grBoolean Light_SetData( Light * pLight )
 {
 	if( pLight->pgeLight != NULL )
 	{
-		if( !grLight_SetAttributes(	pLight->pgeLight,
-									&pLight->LightData.Pos, 
-									&pLight->LightData.Color, 
-									pLight->LightData.Radius, 
-									pLight->LightData.Brightness, 
-									pLight->LightData.Flags) )
-		{
-			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_SetData:grLight_SetAttributes" );
+		if( !Light_Apply( pLight ) )
 			return( GR_FALSE );
-		}
 		Object_Dirty( &pLight->ObjectData );
 	}
 	return( GR_TRUE );
@@ -99,17 +148,8 @@ grBoolean Light_UpdateData( Light * pLight )
 {
 	if( pLight->pgeLight != NULL )
 	{
-		if( !grLight_SetAttributes(	pLight->pgeLight,
-									&pLight->LightData.Pos, 
-									&pLight->LightData.Color, 
-									pLight->LightData.Radius, 
-									pLight->LightData.Brightness, 
-									pLight->LightData.Flags) )
-		{
-			grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_SetData:grLight_SetAttributes" );
+		if( !Light_Apply( pLight ) )
 			return( GR_FALSE );
-		}
-
 	}
 	return( GR_TRUE );
 }
@@ -176,6 +216,7 @@ Light *	Light_Create( const char * const pszName, Group * pGroup, int32 nNumber,
 		grRam_Free( pLight );
 		return( NULL );
 	}
+	Light_ReadSpot( pLight );
 	grExtBox_Set( &pLight->WorldBounds, LIGHT_BOX_MIN, LIGHT_BOX_MIN, LIGHT_BOX_MIN,
 										LIGHT_BOX_MAX, LIGHT_BOX_MAX, LIGHT_BOX_MAX );
 	return( pLight );
@@ -725,7 +766,40 @@ grProperty_List *	Light_BuildDescriptor( Light * pLight )
 	grRam_Free( Name );
 	if( !grProperty_Append( pArray, &Property ) )
 		goto LBD_ERROR;
-	
+
+	// Spot lights and shadows (roadmap Phase 3)
+	Name = Util_LoadLocalRcString( IDS_SPOTANGLE_FIELD );
+	if( Name == NULL )
+		goto LBD_ERROR;
+	grProperty_FillFloat( &Property, Name, pLight->LightData.SpotAngle, LIGHT_SPOTANGLE_FIELD, 0.0f, 89.0f, 1.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
+		goto LBD_ERROR;
+
+	Name = Util_LoadLocalRcString( IDS_SPOTPITCH_FIELD );
+	if( Name == NULL )
+		goto LBD_ERROR;
+	grProperty_FillFloat( &Property, Name, pLight->LightData.SpotPitch, LIGHT_SPOTPITCH_FIELD, -90.0f, 90.0f, 5.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
+		goto LBD_ERROR;
+
+	Name = Util_LoadLocalRcString( IDS_SPOTYAW_FIELD );
+	if( Name == NULL )
+		goto LBD_ERROR;
+	grProperty_FillFloat( &Property, Name, pLight->LightData.SpotYaw, LIGHT_SPOTYAW_FIELD, -180.0f, 180.0f, 5.0f );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
+		goto LBD_ERROR;
+
+	Name = Util_LoadLocalRcString( IDS_SHADOWS_FIELD );
+	if( Name == NULL )
+		goto LBD_ERROR;
+	grProperty_FillCheck( &Property, Name, (pLight->LightData.Flags & GR_LIGHT_FLAG_CAST_SHADOWS) ? 1 : 0, LIGHT_SHADOWS_FIELD );
+	grRam_Free( Name );
+	if( !grProperty_Append( pArray, &Property ) )
+		goto LBD_ERROR;
+
 	return( pArray );
 
 LBD_ERROR:
@@ -759,6 +833,25 @@ void Light_SetProperty( Light * pLight, int DataId, int DataType, grProperty_Dat
 
 	case LIGHT_PICKER_FIELD:
 		pLight->LightData.Color = pData->Vector;
+		break;
+
+	case LIGHT_SPOTANGLE_FIELD:
+		pLight->LightData.SpotAngle = (pData->Float < 0.0f) ? 0.0f : (pData->Float > 89.0f) ? 89.0f : pData->Float;
+		break;
+
+	case LIGHT_SPOTPITCH_FIELD:
+		pLight->LightData.SpotPitch = pData->Float;
+		break;
+
+	case LIGHT_SPOTYAW_FIELD:
+		pLight->LightData.SpotYaw = pData->Float;
+		break;
+
+	case LIGHT_SHADOWS_FIELD:
+		if( pData->Bool )
+			pLight->LightData.Flags |= GR_LIGHT_FLAG_CAST_SHADOWS;
+		else
+			pLight->LightData.Flags &= ~GR_LIGHT_FLAG_CAST_SHADOWS;
 		break;
 	}
 	Light_SetData( pLight );
@@ -888,6 +981,7 @@ Light * Light_CreateFromFile( grVFile * pF, grWorld * pWorld, grPtrMgr * pPtrMgr
 		grErrorLog_Add( GR_ERR_INTERNAL_RESOURCE, "Light_ReattachCB:grLight_GetAttributes" );
 		return NULL;
 	}
+	Light_ReadSpot( pLight );
 
 	pLight->pWorld = pWorld;
 	grExtBox_Set( &pLight->WorldBounds, LIGHT_BOX_MIN, LIGHT_BOX_MIN, LIGHT_BOX_MIN,

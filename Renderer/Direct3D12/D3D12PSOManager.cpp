@@ -162,7 +162,7 @@ grBoolean D3D12PSOManager::CreateRootSignature()
 	HeapRange.RegisterSpace = 1;
 	HeapRange.OffsetInDescriptorsFromTableStart = 0;
 
-	D3D12_ROOT_PARAMETER Parameters[5] = {};
+	D3D12_ROOT_PARAMETER Parameters[ROOT_PARAM_COUNT] = {};
 	Parameters[ROOT_PARAM_DRAW].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 	Parameters[ROOT_PARAM_DRAW].Constants.ShaderRegister = 0;
 	Parameters[ROOT_PARAM_DRAW].Constants.Num32BitValues = 4;
@@ -188,7 +188,17 @@ grBoolean D3D12PSOManager::CreateRootSignature()
 		Parameters[ROOT_PARAM_WORLD_FACES].Descriptor.ShaderRegister = 0;
 		Parameters[ROOT_PARAM_WORLD_FACES].Descriptor.RegisterSpace = 2;
 		Parameters[ROOT_PARAM_WORLD_FACES].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;		// and the face's material
-		NumParameters = 5;
+
+		// Frame lighting (D3D12Lighting.h), read by PSWorldPBR
+		for (UINT i = 0; i < 4; ++i)
+		{
+			D3D12_ROOT_PARAMETER& Parameter = Parameters[ROOT_PARAM_LIGHTS + i];
+			Parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+			Parameter.Descriptor.ShaderRegister = i;
+			Parameter.Descriptor.RegisterSpace = 3;
+			Parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		}
+		NumParameters = ROOT_PARAM_COUNT;
 	}
 	else
 	{
@@ -202,12 +212,16 @@ grBoolean D3D12PSOManager::CreateRootSignature()
 		NumParameters = 4;
 	}
 
-	D3D12_STATIC_SAMPLER_DESC Samplers[4] = {
+	D3D12_STATIC_SAMPLER_DESC Samplers[5] = {
 		MakeSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP),
 		MakeSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
 		MakeSampler(2, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_WRAP),
-		MakeSampler(3, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
+		MakeSampler(3, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+		// Shadow maps: filtered depth comparison
+		MakeSampler(4, D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)
 	};
+	Samplers[4].ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	Samplers[4].MaxLOD = 0.0f;
 
 	D3D12_ROOT_SIGNATURE_DESC Desc = {};
 	Desc.NumParameters = NumParameters;
@@ -255,7 +269,7 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 		return GR_FALSE;
 
 	const bool bWorld = (Type == PSO_WORLD_TEXTURE || Type == PSO_WORLD_MULTITEX || Type == PSO_WORLD_PBR);
-	const bool bMesh = (Type == PSO_MESH_TEXTURE);
+	const bool bMesh = (Type == PSO_MESH_TEXTURE || Type == PSO_MESH_PBR);
 	if ((bWorld || bMesh) && !m_bBindless)
 		return GR_FALSE;
 
@@ -277,6 +291,13 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
+	D3D12_INPUT_ELEMENT_DESC MeshPBRInputLayout[] = {	// DRV_MeshVertexPBR
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
 
 	D3D12_SHADER_ID VertexShader = SHADER_TLPOLY_VS;
 	D3D12_SHADER_ID PixelShader = m_bBindless ? SHADER_TLPOLY_PS_GOURAUD_BINDLESS : SHADER_TLPOLY_PS_GOURAUD;
@@ -292,8 +313,8 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 	}
 	else if (bMesh)
 	{
-		VertexShader = SHADER_WORLD_VS_MESH;
-		PixelShader = SHADER_WORLD_PS_TEXTURE;
+		VertexShader = (Type == PSO_MESH_PBR) ? SHADER_WORLD_VS_MESH_PBR : SHADER_WORLD_VS_MESH;
+		PixelShader = (Type == PSO_MESH_PBR) ? SHADER_WORLD_PS_PBR : SHADER_WORLD_PS_TEXTURE;
 	}
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = {};
@@ -339,6 +360,8 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 
 	if (bWorld)
 		Desc.InputLayout = { WorldInputLayout, _countof(WorldInputLayout) };
+	else if (Type == PSO_MESH_PBR)
+		Desc.InputLayout = { MeshPBRInputLayout, _countof(MeshPBRInputLayout) };
 	else if (bMesh)
 		Desc.InputLayout = { MeshInputLayout, _countof(MeshInputLayout) };
 	else

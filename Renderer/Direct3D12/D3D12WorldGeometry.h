@@ -48,9 +48,9 @@ struct D3D12WorldFaceData
 	float	Roughness;
 	float	Metal;
 	float	AlphaCutoff;
-	float	MaterialPadding;
+	float	HeightScale;
 	float	Emissive[3];
-	float	MaterialPadding2;
+	uint32	HeightTexture;
 };
 
 // D3D12WorldFaceData::MaterialFlags (World.hlsl MAT_*).
@@ -61,6 +61,9 @@ struct D3D12WorldFaceData
 #define D3D12_WORLD_MATERIAL_RETRO		0x0010u
 #define D3D12_WORLD_MATERIAL_CUTOUT		0x0020u
 #define D3D12_WORLD_MATERIAL_TWO_SIDED	0x0040u
+#define D3D12_WORLD_MATERIAL_VERTEX_LIGHT	0x0080u	// irradiance from the vertex color (meshes)
+#define D3D12_WORLD_MATERIAL_HEIGHT		0x0100u
+#define D3D12_WORLD_MATERIAL_LEGACY		0x0200u	// DRV_MATERIAL_LEGACY
 
 struct D3D12WorldGeometry
 {
@@ -69,6 +72,15 @@ struct D3D12WorldGeometry
 	D3D12_VERTEX_BUFFER_VIEW	VertexBufferView;
 	std::vector<uint32>			Indices;		// copied into each frame's index buffer
 	std::vector<DRV_WorldFace>	Faces;
+
+	// Every face at once, for shadow maps (roadmap Phase 3)
+	ComPtr<ID3D12Resource>		IndexBuffer;
+	D3D12_INDEX_BUFFER_VIEW		IndexBufferView;
+	float						BoundsCenter[3];	// model space
+	float						BoundsRadius;
+	// The last model-to-world transform the engine drew it with (rows: rotation, w = translation)
+	float						ModelToWorld[3][4];
+	bool						HasTransform;
 
 	// This frame's per-face data (upload ring), allocated when the first face is queued.
 	UINT64						FaceDataFrame;
@@ -97,7 +109,17 @@ int32		DRIVERCC D3D12World_RenderFacePBR(uint32 Geometry, uint32 Face, const DRV
 											  grRDriver_Layer* Layers, int32 NumLayers,
 											  void* LMapCBContext, uint32 Flags, float Alpha,
 											  const DRV_WorldMaterial* Material);
+int32		DRIVERCC D3D12World_RenderMeshPBR(const DRV_MeshVertexPBR* Verts, int32 NumVerts, const DRV_WorldView* View,
+											  grRDriver_Layer* Layer, uint32 Flags, const DRV_WorldMaterial* Material);
 int32		DRIVERCC D3D12World_RenderMesh(const DRV_MeshVertex* Verts, int32 NumVerts, const DRV_WorldView* View,
 										   grRDriver_Layer* Layer, uint32 Flags);
+
+// Calls Fn for every live geometry that has been drawn at least once (shadow casters).
+template <typename F> void D3D12World_ForEachGeometry(F Fn);
+void		D3D12World_EnumGeometry(void (*Fn)(const D3D12WorldGeometry& Geometry, void* Context), void* Context);
+template <typename F> void D3D12World_ForEachGeometry(F Fn)
+{
+	D3D12World_EnumGeometry([](const D3D12WorldGeometry& Geometry, void* Context) { (*static_cast<F*>(Context))(Geometry); }, &Fn);
+}
 
 #endif // D3D12WORLDGEOMETRY_H

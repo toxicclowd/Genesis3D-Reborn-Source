@@ -275,6 +275,54 @@ GRAPI grFloat GRCC grEngine_GetFPS(grEngine *Engine);
 GRAPI grBoolean GRCC grEngine_DrawText(grEngine *Engine, char *text, int x,int y,uint32 color);
 GRAPI grBoolean GRCC grEngine_SetFog(grEngine *Engine, float r, float g, float b, float start, float endi, grBoolean enable);
 
+//--------- Look Profiles (roadmap Phase 3)
+// Classic draws like the original engine. Enhanced adds HDR lighting with per-pixel dynamic
+// lights, shadows and post-processing (tonemapping, exposure, bloom, fog, SSAO). Stylized is
+// Enhanced plus retro options (low render resolution, palette, dither, CRT, vertex snapping).
+// The defaults come from the driver's ini ([Look] in Direct3D12Driver.ini).
+#define GR_LOOK_CLASSIC			0
+#define GR_LOOK_ENHANCED		1
+#define GR_LOOK_STYLIZED		2
+
+#define GR_TONEMAP_NONE			0
+#define GR_TONEMAP_ACES			1
+#define GR_TONEMAP_AGX			2
+
+// Same layout as DRV_LookSettings (Dcommon.h).
+typedef struct grEngine_LookSettings
+{
+	int32		Profile;			// GR_LOOK_*
+	int32		Tonemapper;			// GR_TONEMAP_*
+	int32		AutoExposure;		// adapt to the scene's brightness
+	float		ExposureEV;			// manual exposure, or the compensation added to auto exposure
+	int32		Bloom;
+	float		BloomIntensity;		// 0..1
+	int32		SSAO;
+	float		SSAORadius;			// world units
+	float		SSAOIntensity;		// 0..1
+	int32		Shadows;			// real-time shadows for dynamic lights with GR_LIGHT_FLAG_CAST_SHADOWS
+	float		HeightFogDensity;	// 0 = off
+	float		HeightFogBase;		// world height where the fog is densest
+	float		HeightFogFalloff;	// per world unit above HeightFogBase
+	float		HeightFogColor[3];	// 0..1
+	// Stylized
+	float		RenderScale;		// 0.125..1, upscaled with nearest filtering
+	int32		PaletteBits;		// bits per channel, 0 = full color
+	int32		Dither;				// ordered dither before quantizing
+	int32		CRT;				// scanlines and a slight vignette
+	int32		VertexSnap;			// screen grid width in pixels that vertices snap to, 0 = off
+	int32		SnapLighting;		// dynamic lighting per lightmap texel
+} grEngine_LookSettings;
+
+// The profile alone; the other settings keep their values. Returns GR_FALSE if the driver
+// has no Look Profiles (it then draws Classic).
+GRAPI grBoolean GRCC grEngine_SetLookProfile(grEngine *Engine, int32 Profile);
+GRAPI int32 GRCC grEngine_GetLookProfile(const grEngine *Engine);
+GRAPI grBoolean GRCC grEngine_SetLookSettings(grEngine *Engine, const grEngine_LookSettings *Look);
+GRAPI grBoolean GRCC grEngine_GetLookSettings(const grEngine *Engine, grEngine_LookSettings *Look);
+// GR_TRUE when dynamic lights that cast shadows are lit and shadowed by the GPU.
+GRAPI grBoolean GRCC grEngine_GpuShadowsEnabled(const grEngine *Engine);
+
 // BEGIN - Hardware T&L - paradoxnj 6/8/2005
 GRAPI grBoolean GRCC grEngine_SetMatrix(grEngine *Engine, uint32 Type, grXForm3d *Matrix);
 GRAPI grBoolean GRCC grEngine_GetMatrix(grEngine *Engine, uint32 Type, grXForm3d *Matrix);

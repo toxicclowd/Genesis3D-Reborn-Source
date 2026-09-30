@@ -49,7 +49,11 @@ enum {
 	LIGHT_GREEN_FIELD,
 	LIGHT_BLUE_FIELD,
 	LIGHT_PICKER_FIELD,
-	LIGHT_COLOR_FIELD_END
+	LIGHT_COLOR_FIELD_END,
+	LIGHT_SPOTANGLE_FIELD,		// roadmap Phase 3: spot lights and shadows
+	LIGHT_SPOTPITCH_FIELD,
+	LIGHT_SPOTYAW_FIELD,
+	LIGHT_SHADOWS_FIELD
 };
 
 typedef struct LightInfo {
@@ -57,7 +61,10 @@ typedef struct LightInfo {
 	grVec3d Color; 
 	grFloat Radius; 
 	grFloat Brightness; 
-	uint32  Flags;
+	uint32  Flags;				// GR_LIGHT_FLAG_* (CAST_SHADOWS: while the light is moved, Enhanced look)
+	grFloat SpotAngle;			// cone half angle in degrees, 0 = a point light
+	grFloat SpotPitch;			// where the spot points: degrees above the horizon (-90 = down)
+	grFloat SpotYaw;			// degrees around the vertical axis (0 = +Z)
 } LightInfo;
 
 typedef struct LightInfoCB_Struct {

@@ -28,15 +28,43 @@ cbuffer DrawConstants : register(b0)
     uint  DrawPadding;
 };
 
-// Per frame (root CBV, written once per scene).
+// Per frame (root CBV): D3D12FrameConstants (D3D12PSOManager.h), the same in every
+// shader file. The 3D scene and the overlay each get their own copy.
 cbuffer FrameConstants : register(b1)
 {
-    float2 ViewportSize;
+    float2 ViewportSize;			// back buffer, engine pixel coordinates
     float2 InvViewportSize;
     uint   FrameNumber;
     float  TimeSeconds;
+    uint   FrameFlags;				// FRAME_*
+    float  RenderScale;
+    float4 MainWorldToCamera[3];
+    float  MainScale;
+    float  MainXCenter;
+    float  MainYCenter;
+    float  MainZScale;
+    uint   NumLights;
+    uint   NumDirLights;
+    uint   ShadowAtlasIndex;
+    float  ShadowAtlasTexel;
+    uint4  ClusterDims;
+    float2 ClusterTile;
+    float  ClusterZNear;
+    float  ClusterZLogScale;
+    float  MaxRadiance;
+    float  VertexSnap;
     float2 FramePadding;
 };
+
+#define FRAME_OUTPUT_LINEAR		0x0001u		// linear HDR scene (Enhanced/Stylized looks), tonemapped later
+
+// The scene is linear HDR in the Enhanced and Stylized looks.
+float4 OutputColor(float4 c)
+{
+    if ((FrameFlags & FRAME_OUTPUT_LINEAR) != 0)
+        c.rgb = pow(max(c.rgb, 0.0f), 2.2f);
+    return c;
+}
 
 // GR_RENDER_FLAG_* bits the pixel shaders look at.
 #define FLAG_ALPHA			0x00000001u
@@ -117,7 +145,7 @@ float4 SampleLight(float2 uv)
 
 float4 PSGouraud(VS_OUTPUT input) : SV_TARGET
 {
-    return input.Color;
+    return OutputColor(input.Color);
 }
 
 float4 PSTexture(VS_OUTPUT input) : SV_TARGET
@@ -129,7 +157,7 @@ float4 PSTexture(VS_OUTPUT input) : SV_TARGET
     float alpha = input.Color.a;
     if ((DrawFlags & (FLAG_ALPHA | FLAG_COLORKEY)) != 0)
         alpha *= base.a;
-    return saturate(float4(base.rgb * input.Color.rgb, alpha));
+    return OutputColor(saturate(float4(base.rgb * input.Color.rgb, alpha)));
 }
 
 float4 PSMultiTexture(VS_OUTPUT input) : SV_TARGET
@@ -142,5 +170,5 @@ float4 PSMultiTexture(VS_OUTPUT input) : SV_TARGET
     float alpha = input.Color.a;
     if ((DrawFlags & (FLAG_ALPHA | FLAG_COLORKEY)) != 0)
         alpha *= base.a;
-    return saturate(float4(base.rgb * light * input.Color.rgb, alpha));
+    return OutputColor(saturate(float4(base.rgb * light * input.Color.rgb, alpha)));
 }

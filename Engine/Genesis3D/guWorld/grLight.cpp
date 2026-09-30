@@ -20,6 +20,8 @@
 /****************************************************************************************/
 #include <assert.h>
 #include <memory.h>
+#include <stddef.h>
+#include <math.h>
 
 #include "grLight.h"
 
@@ -41,14 +43,29 @@ typedef struct grLight
 	grFloat		Brightness;
 
 	uint32		Flags;
+
+	// Version 1: spot lights (written only for them, so other lights stay readable by
+	// older engines)
+	grVec3d		SpotDir;		// unit length, where the light shines
+	grFloat		SpotInner;		// half angles, degrees
+	grFloat		SpotOuter;
 } grLight;
+
+#define GR_LIGHT_SIZE_V0		offsetof(grLight, SpotDir)
+
+static void grLight_SetSpotDefaults(grLight *Light)
+{
+	grVec3d_Set(&Light->SpotDir, 0.0f, -1.0f, 0.0f);
+	Light->SpotInner = 30.0f;
+	Light->SpotOuter = 45.0f;
+}
 
 #define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
 		((uint32)(uint8)(ch0) | ((uint32)(uint8)(ch1) << 8) |   \
 		((uint32)(uint8)(ch2) << 16) | ((uint32)(uint8)(ch3) << 24 ))
 
 #define GR_LIGHT_TAG			MAKEFOURCC('G', 'E', 'L', 'F')		// 'GE' 'L'ight 'F'ile
-#define GR_LIGHT_VERSION		0x0000
+#define GR_LIGHT_VERSION		0x0001
 
 //========================================================================================
 //	grLight_Create
@@ -68,6 +85,7 @@ GRAPI grLight * GRCC grLight_Create(void)
 
 	Light->Brightness = 1.0f;
 	Light->Radius = 200.0f;
+	grLight_SetSpotDefaults(Light);
 
 	Light->RefCount = 1;
 
@@ -107,7 +125,7 @@ GRAPI grLight * GRCC grLight_CreateFromFile(grVFile *VFile, grPtrMgr *PtrMgr)
 	if (!grVFile_Read(VFile, &Version, sizeof(Version)))
 		return NULL;
 
-	if (Version != GR_LIGHT_VERSION)
+	if (Version > GR_LIGHT_VERSION)
 		return NULL;
 
 	// Create and Read the light
@@ -117,8 +135,9 @@ GRAPI grLight * GRCC grLight_CreateFromFile(grVFile *VFile, grPtrMgr *PtrMgr)
 		return NULL;
 
 	ZeroMem(Light);
+	grLight_SetSpotDefaults(Light);
 	
-	if (!grVFile_Read(VFile, Light, sizeof(grLight)))
+	if (!grVFile_Read(VFile, Light, (Version >= 1) ? sizeof(grLight) : GR_LIGHT_SIZE_V0))
 		goto ExitWithError;
 
 	Light->RefCount = 1;	// Icestorm: Moved it AFTER reading Light, so saved refs are ignored
@@ -189,13 +208,13 @@ GRAPI grBoolean GRCC grLight_WriteToFile(const grLight *Light, grVFile *VFile, g
 		return GR_FALSE;
 
 	// Write version
-	Version = GR_LIGHT_VERSION;
+	Version = ((Light->Flags & GR_LIGHT_FLAG_TYPEMASK) == GR_LIGHT_FLAG_SPOT) ? GR_LIGHT_VERSION : 0;
 
 	if (!grVFile_Write(VFile, &Version, sizeof(Version)))
 		return GR_FALSE;
 	
 	// Write the light
-	if (!grVFile_Write(VFile, Light, sizeof(grLight)))
+	if (!grVFile_Write(VFile, Light, Version ? sizeof(grLight) : GR_LIGHT_SIZE_V0))
 		return GR_FALSE;
 
 	if (PtrMgr)
@@ -323,6 +342,7 @@ GRAPI grFloat GRCC grLight_GetRadius(const grLight *Light)
 
 		case 0: // <> for backward compatibility
 		case GR_LIGHT_FLAG_LINEAR_FALLOFF:
+		case GR_LIGHT_FLAG_SPOT:
 			return Light->Radius;
 
 		case GR_LIGHT_FLAG_INVERSE_FALLOFF:
@@ -372,6 +392,67 @@ GRAPI grBoolean GRCC grLight_SetInverseLight(grLight *Light,
 	Light->Radius = grLight_GetRadius(Light);
 
 return GR_TRUE;
+}
+
+//========================================================================================
+//	grLight_SetSpot
+//========================================================================================
+GRAPI grBoolean GRCC grLight_SetSpot(grLight *Light, const grVec3d *Direction, grFloat InnerAngle, grFloat OuterAngle)
+{
+	assert(grLight_IsValid(Light) == GR_TRUE);
+	assert(Direction);
+
+	Light->SpotDir = *Direction;
+	if (grVec3d_Normalize(&Light->SpotDir) <= 0.0f)
+		grVec3d_Set(&Light->SpotDir, 0.0f, -1.0f, 0.0f);
+	if (OuterAngle < 1.0f)
+		OuterAngle = 1.0f;
+	if (OuterAngle > 90.0f)
+		OuterAngle = 90.0f;
+	if (InnerAngle < 0.0f)
+		InnerAngle = 0.0f;
+	if (InnerAngle > OuterAngle)
+		InnerAngle = OuterAngle;
+	Light->SpotInner = InnerAngle;
+	Light->SpotOuter = OuterAngle;
+	return GR_TRUE;
+}
+
+GRAPI grBoolean GRCC grLight_GetSpot(const grLight *Light, grVec3d *Direction, grFloat *InnerAngle, grFloat *OuterAngle)
+{
+	assert(grLight_IsValid(Light) == GR_TRUE);
+
+	if (Direction)
+		*Direction = Light->SpotDir;
+	if (InnerAngle)
+		*InnerAngle = Light->SpotInner;
+	if (OuterAngle)
+		*OuterAngle = Light->SpotOuter;
+	return GR_TRUE;
+}
+
+GRAPI grFloat GRCC grLight_GetSpotFactor(const grLight *Light, const grVec3d *Pos)
+{
+	grVec3d		ToPos;
+	grFloat		CosAngle, CosInner, CosOuter, t;
+
+	assert(grLight_IsValid(Light) == GR_TRUE);
+
+	if ((Light->Flags & GR_LIGHT_FLAG_TYPEMASK) != GR_LIGHT_FLAG_SPOT)
+		return 1.0f;
+
+	grVec3d_Subtract(Pos, &Light->Pos, &ToPos);
+	if (grVec3d_Normalize(&ToPos) <= 0.0f)
+		return 1.0f;
+	CosAngle = grVec3d_DotProduct(&ToPos, &Light->SpotDir);
+	CosInner = (grFloat)cos(Light->SpotInner * (3.14159265f / 180.0f));
+	CosOuter = (grFloat)cos(Light->SpotOuter * (3.14159265f / 180.0f));
+	if (CosAngle <= CosOuter)
+		return 0.0f;
+	if (CosAngle >= CosInner || CosInner - CosOuter < 1e-5f)
+		return 1.0f;
+	t = (CosAngle - CosOuter) / (CosInner - CosOuter);
+	return t * t * (3.0f - 2.0f * t);		// smoothstep, as the GPU shader
 }
 
 GRAPI grBoolean GRCC grLight_SetInverseSquaredLight(grLight *Light, 
@@ -434,11 +515,12 @@ grFloat scale;
 		{
 			case 0: // <> for backward compatibility
 			case GR_LIGHT_FLAG_LINEAR_FALLOFF:
+			case GR_LIGHT_FLAG_SPOT:
 				
 				if ( len >= Light->Radius )
 					scale = 0.0f;
 				else
-					scale *= ( 1.0f - (len / Light->Radius) );
+					scale *= ( 1.0f - (len / Light->Radius) ) * grLight_GetSpotFactor(Light, pPos);
 
 				break;
 

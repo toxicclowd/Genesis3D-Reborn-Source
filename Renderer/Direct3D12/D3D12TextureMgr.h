@@ -20,6 +20,10 @@ using Microsoft::WRL::ComPtr;
 // id, so shaders can index it directly), followed by slots reserved for the driver.
 #define D3D12_RESERVED_SRV_COUNT		16
 #define D3D12_RESERVED_SRV_SCENE		0		// HDR scene color, read by the present pass
+#define D3D12_RESERVED_SRV_DEPTH		1		// scene depth (R32_FLOAT), read by post-processing
+#define D3D12_RESERVED_SRV_COMPOSITE	2		// post-processed scene plus overlay, read by the present pass
+#define D3D12_RESERVED_SRV_SHADOW		3		// shadow map atlas (D3D12Lighting.cpp)
+#define D3D12_RESERVED_SRV_POST			4		// post-processing targets, up to the end (D3D12Post.cpp)
 
 // Texture Manager initialization and shutdown
 grBoolean D3D12_THandle_Startup();
@@ -45,6 +49,8 @@ D3D12_GPU_DESCRIPTOR_HANDLE D3D12_THandle_GetGPUSRV(grTexture* Handle);
 ID3D12DescriptorHeap* D3D12_THandle_GetDescriptorHeap();
 UINT D3D12_THandle_GetDescriptorIndex(grTexture* Handle);
 void D3D12_THandle_GetReservedSRV(UINT Slot, D3D12_CPU_DESCRIPTOR_HANDLE* Cpu, D3D12_GPU_DESCRIPTOR_HANDLE* Gpu);
+// A reserved slot's index in the heap, for bindless shaders.
+UINT D3D12_THandle_GetReservedIndex(UINT Slot);
 grBoolean D3D12_THandle_UpdateLightmap(grTexture* Handle, const uint8* RGBData);
 int32 D3D12_LightmapBytesPerPixel(grPixelFormat Format);
 // Converts engine RGB lightmap texels to Format (rows RowPitch bytes apart).

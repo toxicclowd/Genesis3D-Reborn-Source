@@ -14,6 +14,9 @@
 #include "D3D12UploadRing.h"
 #include "D3D12GpuTimer.h"
 #include "D3D12WorldGeometry.h"
+#include "D3D12Lighting.h"
+#include "D3D12Post.h"
+#include "D3D12Look.h"
 #include <stdio.h>
 #include <unordered_map>
 #include <vector>
@@ -76,6 +79,26 @@ static grXForm3d g_ProjectionMatrix{};
 static bool g_HasWorld = false;
 static bool g_HasView = false;
 static bool g_HasProjection = false;
+
+uint32 D3D12GetFrameNumber()
+{
+	return static_cast<uint32>(g_nPresentedFrameCount);
+}
+
+float D3D12GetTimeSeconds()
+{
+	LARGE_INTEGER Now = {}, Frequency = {};
+	QueryPerformanceCounter(&Now);
+	QueryPerformanceFrequency(&Frequency);
+	return static_cast<float>(static_cast<double>(Now.QuadPart - g_StartTime.QuadPart) / static_cast<double>(Frequency.QuadPart));
+}
+
+// Marks the end of the 3D scene in the frame's draw order (DRV_Driver::World_EndPass).
+static void DRIVERCC D3D12Drv_WorldEndPass(void)
+{
+	if (g_pPolyCache)
+		g_pPolyCache->AddEndPass();
+}
 
 // Gamma LUT similar to D3D9
 static struct RGB_LUT { uint32 R[256]; uint32 G[256]; uint32 B[256]; uint32 A[256]; } g_Lut1;
@@ -760,6 +783,11 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 
 		// Needs the PSO manager, which decides whether textures are bindless.
 		D3D12World_Startup();
+		D3D12Look_Startup();
+		D3D12Lighting_Startup();
+		if (!D3D12Post_Startup())
+			D3D12Log::GetPtr()->Printf("WARNING: Post-processing unavailable; every look draws like Classic");
+		D3D12Post_Resize(swapChainDesc.Width, swapChainDesc.Height);
 
 		g_bInitialized = true;
 		g_bActive = true;
@@ -806,6 +834,9 @@ grBoolean DRIVERCC D3D12Drv_Shutdown()
 		delete g_pPolyCache;
 		g_pPolyCache = nullptr;
 	}
+
+	D3D12Post_Shutdown();
+	D3D12Lighting_Shutdown();
 
 	// Shutdown texture manager
 	D3D12_THandle_Shutdown();
@@ -1029,6 +1060,7 @@ grBoolean DRIVERCC D3D12Drv_BeginScene(grBoolean Clear, grBoolean ClearZ, RECT* 
 		D3D12Timer_BeginFrame(g_nCurrentFrameIndex);
 		D3D12Upload_BeginFrame(g_nCurrentFrameIndex);
 		D3D12World_BeginFrame();
+		D3D12Lighting_BeginFrame();
 		D3D12Timer_Mark(g_pCommandList.Get(), GPU_MARK_SCENE_BEGIN);
 		D3D12BeginMarker(g_pCommandList.Get(), "Scene");
 
@@ -1146,8 +1178,9 @@ grBoolean DRIVERCC D3D12Drv_EndScene(void)
 
 	try
 	{
-		// Flush any cached geometry
-		if (g_pPolyCache && !g_pPolyCache->Flush())
+		// Record the frame: lighting passes, scene, post-processing and overlay
+		bool UsedComposite = false;
+		if (g_pPolyCache && !g_pPolyCache->Flush(&UsedComposite))
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Failed to flush DX12 polygon cache");
 			g_bInScene = false;
@@ -1156,7 +1189,7 @@ grBoolean DRIVERCC D3D12Drv_EndScene(void)
 
 		D3D12Timer_Mark(g_pCommandList.Get(), GPU_MARK_PRESENT_BEGIN);
 		if (D3D12Scene_IsEnabled() &&
-			!D3D12Scene_Present(g_pCommandList.Get(), g_FrameResources[g_nCurrentFrameIndex].RTVHandle))
+			!D3D12Scene_Present(g_pCommandList.Get(), g_FrameResources[g_nCurrentFrameIndex].RTVHandle, UsedComposite))
 		{
 			D3D12Log::GetPtr()->Printf("ERROR: Present pass failed");
 			g_bInScene = false;
@@ -1577,7 +1610,7 @@ DRV_Driver g_D3D12Drv =
 	nullptr,  // SetupLightmap
 
 	nullptr,  // DrawText: none, so the engine draws its bitmap font through DrawDecal
-	nullptr,  // SetFog
+	D3D12Look_SetFog,	// applied by the post-processing pass
 
 	D3D12Drv_CreateStaticMesh,
 	D3D12Drv_RemoveStaticMesh,
@@ -1597,7 +1630,12 @@ DRV_Driver g_D3D12Drv =
 	D3D12World_RenderMesh,
 	D3D12World_SetLights,
 	D3D12World_RenderFacePBR,
-	D3D12_THandle_CreateFromDDS
+	D3D12_THandle_CreateFromDDS,
+	D3D12World_RenderMeshPBR,
+	D3D12Lighting_SetFrame,
+	D3D12Drv_WorldEndPass,
+	D3D12Look_SetLook,
+	D3D12Look_GetLook
 };
 
 //================================================================================

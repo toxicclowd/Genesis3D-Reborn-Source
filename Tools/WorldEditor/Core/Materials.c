@@ -335,6 +335,31 @@ const grMaterialSpec*	Materials_GetMaterialSpec( Material_Struct* Material )
 	return( Material->MaterialSpec );
 }
 
+const char *Materials_GetPath( Material_Struct* Material )
+{
+	assert( Material );
+	return( Material->PrimaryMaterialPath );
+}
+
+grBoolean Materials_Reload( Material_Struct* Material, grEngine* pEngine, grResourceMgr* pResMgr )
+{
+	grVFile			*MaterialFile;
+	grMaterialSpec	*MatSpec;
+
+	assert( Material );
+	MaterialFile = grVFile_OpenNewSystem( NULL, GR_VFILE_TYPE_DOS, Material->PrimaryMaterialPath, NULL, GR_VFILE_OPEN_READONLY );
+	if( MaterialFile == NULL )
+		return( GR_FALSE );
+	MatSpec = grMaterialSpec_CreateFromFile( MaterialFile, pEngine, pResMgr );
+	grVFile_Close( MaterialFile );
+	if( MatSpec == NULL )
+		return( GR_FALSE );
+	if( Material->MaterialSpec )
+		grMaterialSpec_Destroy( &Material->MaterialSpec );
+	Material->MaterialSpec = MatSpec;
+	return( GR_TRUE );
+}
+
 void Materials_Destroy( Material_Struct* Material )
 {
 	assert( Material );

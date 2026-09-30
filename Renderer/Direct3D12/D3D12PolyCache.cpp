@@ -15,6 +15,10 @@
 #include "D3D12WorldGeometry.h"
 #include "D3D12LightmapAtlas.h"
 #include "D3D12GpuTimer.h"
+#include "D3D12Lighting.h"
+#include "D3D12Look.h"
+#include "D3D12Post.h"
+#include "D3D12SceneTarget.h"
 
 namespace
 {
@@ -94,14 +98,11 @@ grBoolean D3D12PolyCache::AddPolygon(
 	if (!m_bInitialized || !g_bInScene || !Pnts || NumPoints < 3)
 		return GR_FALSE;
 
+	// The whole frame is recorded at EndScene (the lighting passes need every draw first),
+	// so the vertex store just grows.
 	const int32 TriangleVertexCount = (NumPoints - 2) * 3;
-	if (m_NumVerts + TriangleVertexCount > m_MaxVerts && !m_Cache.empty())
-	{
-		if (!Flush())
-			return GR_FALSE;
-	}
-	if (TriangleVertexCount > m_MaxVerts)
-		m_MaxVerts = TriangleVertexCount;
+	if (m_NumVerts + TriangleVertexCount > m_MaxVerts)
+		m_MaxVerts = (std::max)(m_MaxVerts * 2, m_NumVerts + TriangleVertexCount);
 
 	int32 UsableLayers = NumLayers;
 	if (UsableLayers < 0)
@@ -171,9 +172,6 @@ grBoolean D3D12PolyCache::AddPolygon(
 	}
 	m_NumVerts += TriangleVertexCount;
 	m_Cache.push_back(Entry);
-
-	if (Flags & GR_RENDER_FLAG_FLUSHBATCH)
-		return Flush();
 	return GR_TRUE;
 }
 
@@ -241,23 +239,31 @@ grBoolean D3D12PolyCache::AddWorldFace(
 	Entry.Flags = Flags;
 	Entry.WorldPBR = PBR;
 	m_Cache.push_back(Entry);
-
-	if (Flags & GR_RENDER_FLAG_FLUSHBATCH)
-		return Flush();
 	return GR_TRUE;
 }
 
+void D3D12PolyCache::AddEndPass()
+{
+	if (!m_bInitialized || !g_bInScene)
+		return;
+	PolyCacheEntry Entry = {};
+	Entry.EndPass = true;
+	m_Cache.push_back(Entry);
+}
+
 grBoolean D3D12PolyCache::AddWorldMesh(
-	const DRV_MeshVertex* Verts,
+	const void* Verts,
 	int32 NumVerts,
+	UINT Stride,
 	grTexture* Texture,
 	D3D12_GPU_VIRTUAL_ADDRESS View,
-	uint32 Flags)
+	uint32 Flags,
+	D3D12_GPU_VIRTUAL_ADDRESS Material)
 {
 	if (!m_bInitialized || !g_bInScene || !Verts || NumVerts < 3 || !Texture || !View)
 		return GR_FALSE;
 
-	const UINT64 Size = static_cast<UINT64>(NumVerts - NumVerts % 3) * sizeof(DRV_MeshVertex);
+	const UINT64 Size = static_cast<UINT64>(NumVerts - NumVerts % 3) * Stride;
 	D3D12UploadAllocation Upload = {};
 	if (!D3D12Upload_Allocate(Size, sizeof(float), &Upload))
 		return GR_FALSE;
@@ -271,11 +277,10 @@ grBoolean D3D12PolyCache::AddWorldMesh(
 	Entry.WorldView = View;
 	Entry.MeshVertices.BufferLocation = Upload.GPU;
 	Entry.MeshVertices.SizeInBytes = static_cast<UINT>(Size);
-	Entry.MeshVertices.StrideInBytes = sizeof(DRV_MeshVertex);
+	Entry.MeshVertices.StrideInBytes = Stride;
+	Entry.WorldFaces = Material;
+	Entry.WorldPBR = (Material != 0);
 	m_Cache.push_back(Entry);
-
-	if (Flags & GR_RENDER_FLAG_FLUSHBATCH)
-		return Flush();
 	return GR_TRUE;
 }
 
@@ -311,15 +316,49 @@ static int32 UsableLayers(const PolyCacheEntry& Entry)
 	return NumLayers;
 }
 
-grBoolean D3D12PolyCache::Flush()
+void D3D12PolyCache::BindCommon(D3D12_GPU_VIRTUAL_ADDRESS FrameConstants, const D3D12_INDEX_BUFFER_VIEW& WorldIndexView)
 {
-	if (!m_bInitialized || m_Cache.empty())
+	// The texture heap was set by BeginScene. Everything but the per-draw constants
+	// (and, without bindless, the texture tables) is bound once per pass.
+	g_pCommandList->SetGraphicsRootSignature(g_pPSOManager->GetRootSignature());
+	g_pCommandList->SetGraphicsRootConstantBufferView(ROOT_PARAM_FRAME, FrameConstants);
+	if (g_pPSOManager->IsBindless())
+	{
+		g_pCommandList->SetGraphicsRootDescriptorTable(ROOT_PARAM_TEXTURES,
+			D3D12_THandle_GetDescriptorHeap()->GetGPUDescriptorHandleForHeapStart());
+		D3D12Lighting_Bind(g_pCommandList.Get());
+	}
+	g_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	if (WorldIndexView.SizeInBytes)
+		g_pCommandList->IASetIndexBuffer(&WorldIndexView);
+}
+
+grBoolean D3D12PolyCache::Flush(bool* UsedComposite)
+{
+	if (UsedComposite)
+		*UsedComposite = false;
+	if (!m_bInitialized)
 		return GR_TRUE;
 	if (!g_bInScene || !g_pCommandList || !g_pPSOManager)
 		return GR_FALSE;
+	ID3D12GraphicsCommandList* CommandList = g_pCommandList.Get();
 
-	// Lightmap atlas texels queued by the world faces in this batch.
-	D3D12Lightmap_RecordUploads(g_pCommandList.Get());
+	// Lighting first (roadmap Phase 3): shadow maps from this frame's world and meshes, then
+	// the light clusters. Only meshes of the 3D scene cast shadows.
+	{
+		std::vector<D3D12ShadowCaster> Casters;
+		for (const PolyCacheEntry& Entry : m_Cache)
+		{
+			if (Entry.EndPass)
+				break;
+			if (Entry.MeshVertices.SizeInBytes)
+				Casters.push_back({ Entry.MeshVertices, Entry.MeshVertices.SizeInBytes / Entry.MeshVertices.StrideInBytes });
+		}
+		D3D12Lighting_Prepare(CommandList, Casters);
+	}
+
+	// Lightmap atlas texels queued by the world faces this frame.
+	D3D12Lightmap_RecordUploads(CommandList);
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView = {};
 	if (!UploadVertices(VertexBufferView))
@@ -359,28 +398,108 @@ grBoolean D3D12PolyCache::Flush()
 		}
 	}
 
-	D3D12BeginMarker(g_pCommandList.Get(), "PolyCache flush");
+	// Frame constants: the 3D scene's (linear HDR in the Enhanced and Stylized looks, at the
+	// render scale), and the overlay's (display space, full resolution).
+	const DRV_LookSettings& Look = D3D12Look_Get();
+	// Only a frame with a world is drawn in HDR; a menu alone stays in display space.
+	const bool HDRScene = D3D12Look_IsHDR() && D3D12Lighting_GetMainView(nullptr) && D3D12Post_Needed(true);
+	const float RenderScale = HDRScene ? D3D12Look_RenderScale() : 1.0f;
+	D3D12FrameConstants SceneFrame = {};
+	{
+		const float Width = static_cast<float>(g_nScreenWidth > 1 ? g_nScreenWidth : 1);
+		const float Height = static_cast<float>(g_nScreenHeight > 1 ? g_nScreenHeight : 1);
+		SceneFrame.ViewportSize[0] = Width;
+		SceneFrame.ViewportSize[1] = Height;
+		SceneFrame.InvViewportSize[0] = 1.0f / Width;
+		SceneFrame.InvViewportSize[1] = 1.0f / Height;
+		SceneFrame.FrameNumber = D3D12GetFrameNumber();
+		SceneFrame.TimeSeconds = D3D12GetTimeSeconds();
+		SceneFrame.RenderScale = 1.0f;
+		SceneFrame.MaxRadiance = 1.0f;
+		D3D12Lighting_FillFrameConstants(SceneFrame);
+	}
+	D3D12FrameConstants OverlayFrame = SceneFrame;
+	if (HDRScene)
+	{
+		SceneFrame.FrameFlags |= D3D12_FRAME_OUTPUT_LINEAR;
+		SceneFrame.RenderScale = RenderScale;
+		if (D3D12Look_IsStylized())
+		{
+			if (Look.SnapLighting)
+				SceneFrame.FrameFlags |= D3D12_FRAME_SNAP_LIGHTING;
+			SceneFrame.VertexSnap = static_cast<float>(Look.VertexSnap);
+		}
+	}
+	D3D12_GPU_VIRTUAL_ADDRESS SceneFrameGPU = 0, OverlayFrameGPU = 0;
+	{
+		D3D12UploadAllocation Upload = {};
+		if (!D3D12Upload_Allocate(sizeof(D3D12FrameConstants), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, &Upload))
+			return GR_FALSE;
+		std::memcpy(Upload.CPU, &SceneFrame, sizeof(SceneFrame));
+		SceneFrameGPU = Upload.GPU;
+		if (!D3D12Upload_Allocate(sizeof(D3D12FrameConstants), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, &Upload))
+			return GR_FALSE;
+		std::memcpy(Upload.CPU, &OverlayFrame, sizeof(OverlayFrame));
+		OverlayFrameGPU = Upload.GPU;
+		g_FrameConstantsGPU = OverlayFrameGPU;
+	}
+	const bool PostNeeded = D3D12Post_Needed(HDRScene);
 
-	// The texture heap was set by BeginScene. Everything but the per-draw constants
-	// (and, without bindless, the texture tables) is bound once per flush.
+	D3D12BeginMarker(CommandList, "Scene");
+
+	// The scene's targets. With a render scale below 1 it fills the top-left part of them.
+	D3D12_CPU_DESCRIPTOR_HANDLE ColorRTV = D3D12Scene_IsEnabled()
+		? D3D12Scene_Begin(CommandList)
+		: g_FrameResources[g_nCurrentFrameIndex].RTVHandle;
+	const D3D12_CPU_DESCRIPTOR_HANDLE DepthDSV = g_pDSVHeap->GetCPUDescriptorHandleForHeapStart();
+	auto SetTargets = [&](D3D12_CPU_DESCRIPTOR_HANDLE RTV, float Scale)
+	{
+		CommandList->OMSetRenderTargets(1, &RTV, FALSE, &DepthDSV);
+		const float Width = static_cast<float>(g_nScreenWidth > 0 ? g_nScreenWidth : 1024) * Scale;
+		const float Height = static_cast<float>(g_nScreenHeight > 0 ? g_nScreenHeight : 768) * Scale;
+		D3D12_VIEWPORT Viewport = { 0.0f, 0.0f, std::floor(Width + 0.5f), std::floor(Height + 0.5f), 0.0f, 1.0f };
+		D3D12_RECT Scissor = { 0, 0, static_cast<LONG>(Viewport.Width), static_cast<LONG>(Viewport.Height) };
+		CommandList->RSSetViewports(1, &Viewport);
+		CommandList->RSSetScissorRects(1, &Scissor);
+	};
+	SetTargets(ColorRTV, RenderScale);
+
 	const bool bBindless = g_pPSOManager->IsBindless();
-	g_pCommandList->SetGraphicsRootSignature(g_pPSOManager->GetRootSignature());
-	g_pCommandList->SetGraphicsRootConstantBufferView(ROOT_PARAM_FRAME, g_FrameConstantsGPU);
-	if (bBindless)
-		g_pCommandList->SetGraphicsRootDescriptorTable(ROOT_PARAM_TEXTURES,
-			D3D12_THandle_GetDescriptorHeap()->GetGPUDescriptorHandleForHeapStart());
-	g_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	if (WorldIndexView.SizeInBytes)
-		g_pCommandList->IASetIndexBuffer(&WorldIndexView);
+	BindCommon(SceneFrameGPU, WorldIndexView);
 
 	const D3D12WorldGeometry* BoundWorld = nullptr;	// nullptr = the transformed-poly buffer
 	bool bVertexBufferBound = false;
 	D3D12_GPU_VIRTUAL_ADDRESS BoundView = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS BoundFaces = 0;
+	bool SceneDone = false;
+	bool Composite = false;
+
+	// Ends the 3D scene: post-processing, then the overlay on its result.
+	auto EndScenePass = [&]()
+	{
+		SceneDone = true;
+		D3D12EndMarker(CommandList);
+		D3D12_CPU_DESCRIPTOR_HANDLE OverlayRTV = ColorRTV;
+		if (PostNeeded && D3D12Post_Run(CommandList, SceneFrame, HDRScene, &OverlayRTV))
+			Composite = true;
+		D3D12BeginMarker(CommandList, "Overlay");
+		SetTargets(OverlayRTV, 1.0f);
+		BindCommon(OverlayFrameGPU, WorldIndexView);
+		BoundWorld = nullptr;
+		bVertexBufferBound = false;
+		BoundView = BoundFaces = 0;
+	};
 
 	for (size_t Index = 0; Index < m_Cache.size(); ++Index)
 	{
 		const PolyCacheEntry& Entry = m_Cache[Index];
+
+		if (Entry.EndPass)
+		{
+			if (!SceneDone)
+				EndScenePass();
+			continue;
+		}
 
 		if (Entry.MeshVertices.SizeInBytes)
 		{
@@ -389,7 +508,7 @@ grBoolean D3D12PolyCache::Flush()
 			if (UsableLayers(Entry) < 1)
 				continue;
 
-			ID3D12PipelineState* Pipeline = g_pPSOManager->GetPSO(PSO_MESH_TEXTURE, Entry.Flags,
+			ID3D12PipelineState* Pipeline = g_pPSOManager->GetPSO(Entry.WorldPBR ? PSO_MESH_PBR : PSO_MESH_TEXTURE, Entry.Flags,
 				g_bWireframe ? GR_TRUE : GR_FALSE);
 			if (!Pipeline)
 				return GR_FALSE;
@@ -401,7 +520,12 @@ grBoolean D3D12PolyCache::Flush()
 				g_pCommandList->SetGraphicsRootConstantBufferView(ROOT_PARAM_WORLD_VIEW, Entry.WorldView);
 				BoundView = Entry.WorldView;
 			}
-			if (!BoundFaces)
+			if (Entry.WorldPBR && BoundFaces != Entry.WorldFaces)
+			{
+				g_pCommandList->SetGraphicsRootShaderResourceView(ROOT_PARAM_WORLD_FACES, Entry.WorldFaces);
+				BoundFaces = Entry.WorldFaces;
+			}
+			else if (!BoundFaces)
 			{
 				// VSMesh reads no face data, but every root parameter must be set.
 				g_pCommandList->SetGraphicsRootShaderResourceView(ROOT_PARAM_WORLD_FACES, Entry.WorldView);
@@ -410,7 +534,7 @@ grBoolean D3D12PolyCache::Flush()
 
 			const D3D12DrawConstants Constants = { Entry.Flags, D3D12_THandle_GetDescriptorIndex(Entry.Layers[0]), 0, 0 };
 			g_pCommandList->SetGraphicsRoot32BitConstants(ROOT_PARAM_DRAW, 4, &Constants, 0);
-			const UINT NumVertices = Entry.MeshVertices.SizeInBytes / sizeof(DRV_MeshVertex);
+			const UINT NumVertices = Entry.MeshVertices.SizeInBytes / Entry.MeshVertices.StrideInBytes;
 			g_pCommandList->DrawInstanced(NumVertices, 1, 0, 0);
 			g_D3D12Drv.NumRenderedPolys += static_cast<S32>(NumVertices / 3);
 			D3D12Timer_CountDraws(1, 1, 0);
@@ -485,7 +609,7 @@ grBoolean D3D12PolyCache::Flush()
 		{
 			const PolyCacheEntry& Prev = m_Cache[End - 1];
 			const PolyCacheEntry& Next = m_Cache[End];
-			if (Next.World || Next.MeshVertices.SizeInBytes || Next.Flags != Entry.Flags ||
+			if (Next.EndPass || Next.World || Next.MeshVertices.SizeInBytes || Next.Flags != Entry.Flags ||
 				Next.StartVertex != Prev.StartVertex + Prev.NumVertices ||
 				UsableLayers(Next) != NumLayers ||
 				(NumLayers > 0 && Next.Layers[0] != Entry.Layers[0]) ||
@@ -528,8 +652,13 @@ grBoolean D3D12PolyCache::Flush()
 		Index = End - 1;
 	}
 
-	D3D12EndMarker(g_pCommandList.Get());
+	// No overlay this frame: post-processing still applies to the scene
+	if (!SceneDone)
+		EndScenePass();
+	D3D12EndMarker(CommandList);
 
+	if (UsedComposite)
+		*UsedComposite = Composite;
 	m_Cache.clear();
 	m_Vertices.clear();
 	m_NumVerts = 0;

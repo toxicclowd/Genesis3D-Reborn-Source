@@ -310,6 +310,10 @@ GRAPI void GRCC grResource_ExportResource(grResourceMgr *ResourceMgr, int32 Type
 */
 GRAPI grBoolean GRCC grResource_ReleaseResource(grResourceMgr *ResourceMgr, int32 Type, char *Name);
 
+typedef struct grTexture grTexture;
+// After a driver restart: every manager's GR_RESOURCE_TEXTURE holding Old[i] gets New[i].
+GRAPI void GRCC grResource_RemapTextures(grTexture* const* Old, grTexture* const* New, int32 Count);
+
 #ifdef __cplusplus
 }
 #endif

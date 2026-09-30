@@ -50,6 +50,7 @@ typedef struct PolyCacheEntry
 	D3D12_GPU_VIRTUAL_ADDRESS WorldFaces;
 	bool WorldPBR;						// shaded with the face's PBR material
 	D3D12_VERTEX_BUFFER_VIEW MeshVertices;
+	bool EndPass;						// DRV_Driver::World_EndPass: the 3D scene ends here
 } PolyCacheEntry;
 
 // Static mesh buffer
@@ -100,13 +101,21 @@ public:
 	grBoolean AddWorldFace(const D3D12WorldGeometry* World, uint32 Face, D3D12_GPU_VIRTUAL_ADDRESS View,
 		D3D12_GPU_VIRTUAL_ADDRESS FaceData, int32 NumLayers, uint32 Flags, bool PBR = false);
 	// A world mesh (DRV_MeshVertex triangle list, see DRV_Driver::WorldMesh_Render).
-	grBoolean AddWorldMesh(const DRV_MeshVertex* Verts, int32 NumVerts, grTexture* Texture,
-		D3D12_GPU_VIRTUAL_ADDRESS View, uint32 Flags);
+	// Stride is sizeof(DRV_MeshVertex), or sizeof(DRV_MeshVertexPBR) with Material (the
+	// run's one-face material table) for a PBR mesh.
+	grBoolean AddWorldMesh(const void* Verts, int32 NumVerts, UINT Stride, grTexture* Texture,
+		D3D12_GPU_VIRTUAL_ADDRESS View, uint32 Flags, D3D12_GPU_VIRTUAL_ADDRESS Material);
 
-	// Flush cached geometry
-	grBoolean Flush();
+	// The end of the 3D scene (DRV_Driver::World_EndPass): post-processing runs here.
+	void AddEndPass();
+
+	// Records the frame: the lighting passes, the scene, post-processing and the overlay.
+	// Call once, at EndScene. *UsedComposite tells the present pass what to show.
+	grBoolean Flush(bool* UsedComposite = nullptr);
 
 private:
+	// Binds what every draw of the main root signature needs.
+	void BindCommon(D3D12_GPU_VIRTUAL_ADDRESS FrameConstants, const D3D12_INDEX_BUFFER_VIEW& WorldIndexView);
 	grBoolean AddPolygon(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers,
 		int32 NumLayers, uint32 Flags, grBoolean WorldCoordinates);
 	grBoolean UploadVertices(D3D12_VERTEX_BUFFER_VIEW& VertexBufferView);

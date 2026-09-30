@@ -5,3 +5,6 @@
 IDR_SHADER_TLPOLY		RCDATA		"Shaders\\TLPoly.hlsl"
 IDR_SHADER_PRESENT		RCDATA		"Shaders\\Present.hlsl"
 IDR_SHADER_WORLD		RCDATA		"Shaders\\World.hlsl"
+IDR_SHADER_SHADOW		RCDATA		"Shaders\\Shadow.hlsl"
+IDR_SHADER_CLUSTER		RCDATA		"Shaders\\Cluster.hlsl"
+IDR_SHADER_POST			RCDATA		"Shaders\\Post.hlsl"

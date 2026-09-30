@@ -24,6 +24,7 @@
 #include "grMaterial.h"
 #include "Engine.h"
 #include "XForm3d.h"
+#include "DCommon.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,7 +69,14 @@ typedef struct grMaterialSpec
 	uint16 Width;
 	uint16 Height;
 	grMaterialSpec_PBR PBR;		// valid with MATSPEC_PBR_FLAG
+	struct grMaterialSpec* pPrevLive;	// every live spec, for grMaterialSpec_RemapTextures
+	struct grMaterialSpec* pNextLive;
 } grMaterialSpec;
+
+// A layer's driver texture: a bitmap layer's THandle or a texture layer itself; NULL if missing.
+grTexture *grMaterialSpec_GetLayerTHandle(const grMaterialSpec *MatSpec, int32 Layer);
+// The driver's view of a PBR material (maps and scalars) for the GPU world path.
+void grMaterialSpec_GetDriverMaterial(const grMaterialSpec *MatSpec, DRV_WorldMaterial *Material);
 
 //=======================================================================================
 //	Function prototypes

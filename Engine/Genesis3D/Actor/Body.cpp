@@ -1918,6 +1918,25 @@ GRAPI grBody *GRCC grBody_CreateFromFile(grVFile *pFile)
 				goto CreateError;
 			}
 			grMaterialSpec_AddLayerFromFile(M->MatSpec, 0, SubFile, GR_TRUE, 255);
+
+			// A material override (G3D_MATERIAL_OVERRIDES) of the same name replaces the
+			// embedded bitmap, e.g. with a PBR material made by G3DTexImport.
+			{
+				const char *MaterialName = grStrBlock_GetString(B->MaterialNames, i);
+				if (getenv("G3D_MATERIAL_OVERRIDES"))
+					Log_Printf("grBody: material %d is \"%s\"%s\n", i, MaterialName,
+						grResource_HasMaterialOverride(MaterialName) ? " (overridden)" : "");
+				if (grResource_HasMaterialOverride(MaterialName))
+				{
+					grMaterialSpec *Override = (grMaterialSpec *)grResource_GetResource(grResourceMgr_GetSingleton(),
+						GR_RESOURCE_MATERIAL, (char *)MaterialName);
+					if (Override)
+					{
+						grMaterialSpec_Destroy(&M->MatSpec);
+						M->MatSpec = Override;
+					}
+				}
+			}
 			if (!grVFile_Close(SubFile))
 			{
 				grErrorLog_AddString( GR_ERR_FILEIO_CLOSE , "grBody_CreateFromFile: Failed to close bitmap subfile:",FName);

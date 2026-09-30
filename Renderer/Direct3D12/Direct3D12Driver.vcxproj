@@ -114,6 +114,9 @@
     <ClInclude Include="D3D12GpuTimer.h" />
     <ClInclude Include="D3D12WorldGeometry.h" />
     <ClInclude Include="D3D12LightmapAtlas.h" />
+    <ClInclude Include="D3D12Look.h" />
+    <ClInclude Include="D3D12Lighting.h" />
+    <ClInclude Include="D3D12Post.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Direct3D12Driver.cpp" />
@@ -128,6 +131,9 @@
     <ClCompile Include="D3D12GpuTimer.cpp" />
     <ClCompile Include="D3D12WorldGeometry.cpp" />
     <ClCompile Include="D3D12LightmapAtlas.cpp" />
+    <ClCompile Include="D3D12Look.cpp" />
+    <ClCompile Include="D3D12Lighting.cpp" />
+    <ClCompile Include="D3D12Post.cpp" />
     <ClCompile Include="$(G3DRoot)ThirdParty\DirectXTex\DDSTextureLoader\DDSTextureLoader12.cpp">
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -208,6 +214,11 @@
       <Profile>ps_6_0</Profile>
       <Var>g_World_PSWorldPBR</Var>
     </G3DShader>
+    <G3DShader Include="Shaders\World.hlsl">
+      <Entry>VSMeshPBR</Entry>
+      <Profile>vs_6_0</Profile>
+      <Var>g_World_VSMeshPBR</Var>
+    </G3DShader>
     <G3DShader Include="Shaders\Present.hlsl">
       <Entry>VSFullscreen</Entry>
       <Profile>vs_6_0</Profile>
@@ -218,7 +229,65 @@
       <Profile>ps_6_0</Profile>
       <Var>g_Present_PSPresent</Var>
     </G3DShader>
+    <G3DShader Include="Shaders\Shadow.hlsl">
+      <Entry>VSShadow</Entry>
+      <Profile>vs_6_0</Profile>
+      <Var>g_Shadow_VSShadow</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Cluster.hlsl">
+      <Entry>CSClusterLights</Entry>
+      <Profile>cs_6_0</Profile>
+      <Var>g_Cluster_CSClusterLights</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Post.hlsl">
+      <Entry>VSPost</Entry>
+      <Profile>vs_6_0</Profile>
+      <Var>g_Post_VSPost</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Post.hlsl">
+      <Entry>PSBloomDown</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_Post_PSBloomDown</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Post.hlsl">
+      <Entry>PSBloomUp</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_Post_PSBloomUp</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Post.hlsl">
+      <Entry>PSSSAO</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_Post_PSSSAO</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Post.hlsl">
+      <Entry>PSSSAOBlur</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_Post_PSSSAOBlur</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Post.hlsl">
+      <Entry>PSComposite</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_Post_PSComposite</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Post.hlsl">
+      <Entry>CSHistogramClear</Entry>
+      <Profile>cs_6_0</Profile>
+      <Var>g_Post_CSHistogramClear</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Post.hlsl">
+      <Entry>CSHistogram</Entry>
+      <Profile>cs_6_0</Profile>
+      <Var>g_Post_CSHistogram</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Post.hlsl">
+      <Entry>CSExposure</Entry>
+      <Profile>cs_6_0</Profile>
+      <Var>g_Post_CSExposure</Var>
+    </G3DShader>
     <None Include="Shaders\TLPoly.hlsl" />
+    <None Include="Shaders\Shadow.hlsl" />
+    <None Include="Shaders\Cluster.hlsl" />
+    <None Include="Shaders\Post.hlsl" />
     <None Include="Shaders\Present.hlsl" />
     <None Include="Shaders\World.hlsl" />
   </ItemGroup>

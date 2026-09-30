@@ -230,6 +230,9 @@ protected:
 	afx_msg void OnClose();
 //	afx_msg void OnViewToolbar();
 	afx_msg void OnViewAllmaterials();
+	afx_msg void OnNewMaterial();
+	afx_msg void OnEditMaterial();
+	afx_msg void OnUpdateMaterialCommand(CCmdUI* pCmdUI);
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 //	afx_msg void OnToolsUpdateSelection();

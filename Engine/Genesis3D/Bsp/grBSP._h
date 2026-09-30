@@ -83,7 +83,18 @@ typedef struct
 	grVec3d		Color;
 	int32		R, G, B;
 	uint32		Flags;
+	grVec3d		SpotDir;		// GR_LIGHT_FLAG_SPOT: model space, unit length
+	grFloat		SpotCosInner;
+	grFloat		SpotCosOuter;
+	grBoolean	OnGpu;			// shaded and shadowed by the GPU, not added to the lightmaps
 } grBSPNode_Light;
+
+// The spot cone's factor for Point (model space), 1 for other lights.
+grFloat grBSPNode_LightSpotFactor(const grBSPNode_Light *Light, const grVec3d *Point);
+
+// Set while a face is queued on the GPU world path, so the lightmap callback leaves out the
+// dynamic lights the GPU shades (grBSPNode_Light::OnGpu).
+extern grBoolean g_BSPGpuFace;
 
 // grBSP is the heart and soul object.  It is the BSPTree.
 typedef struct grBSP

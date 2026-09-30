@@ -48,6 +48,7 @@ typedef struct grResourceMgr
 	int		RefCount;
 
 	grEngine* Engine;
+	struct grResourceMgr* NextLive;	// every live manager, for grResource_RemapTextures
 } grResourceMgr;
 
 
@@ -66,6 +67,7 @@ typedef struct
 
 
 static grResourceMgr* g_pSingleResource = NULL;
+static grResourceMgr* g_pLiveMgrs = NULL;
 
 GRAPI grResourceMgr* GRCC grResourceMgr_GetSingleton()
 {
@@ -92,7 +94,10 @@ GRAPI grResourceMgr * GRCC grResource_MgrCreate(grEngine* pEngine)
 		return NULL;
 	}
 
-	g_pSingleResource = ResourceMgr;
+	if (g_pSingleResource == NULL)
+		g_pSingleResource = ResourceMgr;
+	ResourceMgr->NextLive = g_pLiveMgrs;
+	g_pLiveMgrs = ResourceMgr;
 
 	// init struct
 	ResourceMgr->List = grChain_Create();
@@ -237,13 +242,24 @@ GRAPI void GRCC grResource_MgrDestroy(
 		ResourceMgr->List = NULL;
 	}
 
+	if (g_pSingleResource == ResourceMgr)
+		g_pSingleResource = NULL;
+	{
+		grResourceMgr	**Link;
+
+		for (Link = &g_pLiveMgrs; *Link; Link = &(*Link)->NextLive) {
+			if (*Link == ResourceMgr) {
+				*Link = ResourceMgr->NextLive;
+				break;
+			}
+		}
+	}
+
 	// free main struct
 	grRam_Free( ResourceMgr );
 
 	// zap pointer
 	*DeadResourceMgr = NULL;
-
-	g_pSingleResource = NULL;
 
 } // grResource_MgrDestroy()
 
@@ -1109,6 +1125,30 @@ GRAPI void GRCC grResource_ExportResource(grResourceMgr *ResourceMgr, int32 Type
 	}
 }
 
+GRAPI void GRCC grResource_RemapTextures(grTexture* const* Old, grTexture* const* New, int32 Count)
+{
+	grResourceMgr	*ResourceMgr;
+	grChain_Link	*Link;
+	int32			i;
+
+	for (ResourceMgr = g_pLiveMgrs; ResourceMgr; ResourceMgr = ResourceMgr->NextLive) {
+		if (!ResourceMgr->List)
+			continue;
+		for (Link = grChain_GetFirstLink(ResourceMgr->List); Link; Link = grChain_LinkGetNext(Link)) {
+			grResource	*Resource = (grResource *)grChain_LinkGetLinkData(Link);
+
+			if (Resource->Type != GR_RESOURCE_TEXTURE || !Resource->Data)
+				continue;
+			for (i = 0; i < Count; i++) {
+				if (Resource->Data == Old[i]) {
+					Resource->Data = New[i];
+					break;
+				}
+			}
+		}
+	}
+}
+
 // Krouer 08/16/2005
 // release identified resource
 GRAPI grBoolean GRCC grResource_ReleaseResource(grResourceMgr *ResourceMgr, int32 Type, char *Name)
@@ -1117,8 +1157,12 @@ GRAPI grBoolean GRCC grResource_ReleaseResource(grResourceMgr *ResourceMgr, int3
 	grChain_Link	*CurNode;
 	grResource		*CurResource;
 
+	// a material outliving its manager (e.g. the editor's lists at exit)
+	if (ResourceMgr == NULL) {
+		return GR_FALSE;
+	}
+
 	// ensure valid data
-	assert( ResourceMgr != NULL );
 	assert( ResourceMgr->List != NULL );
 	assert( Name != NULL );
 

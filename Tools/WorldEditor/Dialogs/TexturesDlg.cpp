@@ -24,6 +24,7 @@
 #include "GWE.H"
 #include "MainFrm.h"
 #include "TexturesDlg.h"
+#include "MaterialEditorDlg.h"
 #include "BitmapResize.h"
 #include "Bmp.h"
 
@@ -598,9 +599,6 @@ bool	CTexturesDlg::InitMasterImageLists()
 						m_ImageList64.Replace(i, pBitmap64, NULL);
 						m_ImageList128.Replace(i, pBitmap128, NULL);
 
-						m_strArrayMaster.InsertAt(i, strMaterialName);
-						m_treeCtrlGroups.InsertItem(strMaterialName, m_htMaster);
-
 						//	cleanup
 						delete pBitmap32;
 						delete pBitmap64;
@@ -612,13 +610,18 @@ bool	CTexturesDlg::InitMasterImageLists()
 
 						DeleteObject(hBitmap);
 					}
+				}	//	if (pThumb)...
 
-					//	get the next texture on the list
-					pMaterial = NULL;
-					pMaterial = MaterialList_GetNextMaterial( m_pMaterialList, &MI ) ;
+				// A material without a thumbnail is listed with a blank image. (This used to
+				// be inside the if above, so such a material stopped the loop from advancing.)
+				m_strArrayMaster.InsertAt(i, strMaterialName);
+				m_treeCtrlGroups.InsertItem(strMaterialName, m_htMaster);
 
-					i++;
-				}	//	if (pBitmap)...
+				//	get the next texture on the list
+				pMaterial = NULL;
+				pMaterial = MaterialList_GetNextMaterial( m_pMaterialList, &MI ) ;
+
+				i++;
 #endif
 			}	//	while (pMaterial)...
 		}	//	if (m_htCurrentGroup == m_htMaster)...
@@ -821,7 +824,38 @@ void CTexturesDlg::OnContextMenu(CWnd* pWnd, CPoint point)
 
 	if (rectTreeList.PtInRect(ptCursor))
 		m_treeCtrlGroups.OnContextMenu(pWnd, point);
+	else
+	{
+		// The texture list: the Material Editor
+		CRect	rectTextures;
+		m_ListCtrlTextures.GetWindowRect(&rectTextures);
+		if (rectTextures.PtInRect(ptCursor))
+		{
+			CMenu	Menu;
+			Menu.CreatePopupMenu();
+			Menu.AppendMenu(MF_STRING, ID_TEX_NEW_MATERIAL, _T("New Material..."));
+			Menu.AppendMenu(MF_STRING | (m_strSelectedTexture.IsEmpty() ? MF_GRAYED : 0), ID_TEX_EDIT_MATERIAL,
+				_T("Edit Material (PBR)..."));
+			const UINT Command = Menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, ptCursor.x, ptCursor.y, this);
+			if (Command == ID_TEX_NEW_MATERIAL || Command == ID_TEX_EDIT_MATERIAL)
+				OpenMaterialEditor(Command == ID_TEX_NEW_MATERIAL);
+		}
+	}
 	// TODO: Add your message handler code here
+}
+
+
+void CTexturesDlg::OpenMaterialEditor(bool NewMaterial)
+{
+	if (!NewMaterial && m_strSelectedTexture.IsEmpty())
+	{
+		AfxMessageBox(_T("Select a material in the Textures list first."));
+		return;
+	}
+	CMaterialEditorDlg	Editor(NewMaterial ? CString() : m_strSelectedTexture, AfxGetMainWnd());
+	Editor.DoModal();
+	if (Editor.Imported())
+		OnBnClickedButtonTexRefresh();	// a new material, or a new thumbnail
 }
 
 

@@ -61,6 +61,8 @@
 #include "grVersion.h" // Incarnadine
 
 #include "grBSP.h"
+#include "grMaterial.h"
+#include "grResource.h"
 
 #ifdef _DEBUG
 	#define DEBUG_OUTPUT_LEVEL		0
@@ -268,6 +270,11 @@ GRAPI void GRCC grEngine_Free(grEngine *Engine)
 	if (Engine->ChangeDriverCBChain)
 		grChain_Destroy(&Engine->ChangeDriverCBChain);
 
+	for (int32 i = 0; i < Engine->NumFileTextures; i++)
+		grRam_Free(Engine->FileTextures[i].Data);
+	if (Engine->FileTextures)
+		grRam_Free(Engine->FileTextures);
+
 	List_Stop();
 
 	grRam_Free(Engine);
@@ -345,25 +352,23 @@ GRAPI grBoolean GRCC grEngine_UpdateWindow(grEngine *Engine)
 	assert(UpdateWindowRecursion == 0);
 
 	UpdateWindowRecursion++;
-	
-	// Driver->UpdateWindow ONLY supports re-positioning, and NOT resizing... (As of 2/24/99)
+
 	RDriver	= Engine->DriverInfo.RDriver;
 
-	if( RDriver)
+	// The D3D12 driver resizes its swap chain in place, keeping every texture. A full
+	// driver restart frees textures that nothing re-creates (e.g. PBR maps), so it is
+	// only the fallback.
+	if( RDriver && !(RDriver->UpdateWindow && RDriver->UpdateWindow()) )
 	{
-	#if 0
-		if (RDriver->UpdateWindow )
-			return RDriver->UpdateWindow();
-	#else
 		grDriver* Driver{};
 		grDriver_Mode* DriverMode{};
 
-		if (!grEngine_GetDriverAndMode(Engine, &Driver, &DriverMode))
+		if (!grEngine_GetDriverAndMode(Engine, &Driver, &DriverMode) ||
+			!grEngine_SetDriverAndMode(Engine, Engine->hWnd, Driver, DriverMode))
+		{
+			UpdateWindowRecursion--;
 			return GR_FALSE;
-
-		if (!grEngine_SetDriverAndMode(Engine, Engine->hWnd, Driver, DriverMode))
-			return GR_FALSE;		
-	#endif
+		}
 	}
 
 	UpdateWindowRecursion--;
@@ -710,7 +715,109 @@ GRAPI grBoolean GRCC grEngine_SetFog(grEngine *Engine, float r, float g, float b
 #pragma message ("Krouer: do not tested at 17th january 2005")
 
 	//MessageBox(Engine->hWnd,"poks","poks",MB_OK);
+	if (!Engine->DriverInfo.RDriver || !Engine->DriverInfo.RDriver->SetFog)
+		return GR_FALSE;
 	return Engine->DriverInfo.RDriver->SetFog(r,g,b,start,endi,enable);
+}
+
+//=====================================================================================
+//	Look Profiles
+//=====================================================================================
+static_assert(sizeof(grEngine_LookSettings) == sizeof(DRV_LookSettings), "grEngine_LookSettings must match DRV_LookSettings");
+
+// Sends the engine's look to a new driver, or takes the driver's defaults when the
+// application has not set one.
+static void Engine_SyncLook(grEngine *Engine)
+{
+	DRV_Driver	*RDriver = Engine->DriverInfo.RDriver;
+
+	if (!RDriver || !RDriver->SetLook || !RDriver->GetLook)
+	{
+		Engine->Look.Profile = GR_LOOK_CLASSIC;
+		return;
+	}
+	if (Engine->LookSet == ENGINE_LOOK_SET_ALL)
+		RDriver->SetLook((const DRV_LookSettings*)&Engine->Look);
+	else if (Engine->LookSet == ENGINE_LOOK_SET_PROFILE)
+	{
+		// Only the profile was chosen (before there was a driver): the driver's settings otherwise
+		DRV_LookSettings	Look;
+
+		RDriver->GetLook(&Look);
+		Look.Profile = Engine->Look.Profile;
+		RDriver->SetLook(&Look);
+	}
+	RDriver->GetLook((DRV_LookSettings*)&Engine->Look);
+}
+
+GRAPI grBoolean GRCC grEngine_SetLookSettings(grEngine *Engine, const grEngine_LookSettings *Look)
+{
+	DRV_Driver	*RDriver;
+
+	assert(grEngine_IsValid(Engine));
+	assert(Look);
+
+	Engine->Look = *Look;
+	Engine->LookSet = ENGINE_LOOK_SET_ALL;
+	RDriver = Engine->DriverInfo.RDriver;
+	if (!RDriver || !RDriver->SetLook)
+	{
+		Engine->Look.Profile = GR_LOOK_CLASSIC;
+		return GR_FALSE;
+	}
+	if (!RDriver->SetLook((const DRV_LookSettings*)&Engine->Look))
+		return GR_FALSE;
+	// The driver clamps what it cannot do
+	if (RDriver->GetLook)
+		RDriver->GetLook((DRV_LookSettings*)&Engine->Look);
+	return GR_TRUE;
+}
+
+GRAPI grBoolean GRCC grEngine_GetLookSettings(const grEngine *Engine, grEngine_LookSettings *Look)
+{
+	assert(grEngine_IsValid(Engine));
+	assert(Look);
+
+	*Look = Engine->Look;
+	return GR_TRUE;
+}
+
+GRAPI grBoolean GRCC grEngine_SetLookProfile(grEngine *Engine, int32 Profile)
+{
+	grEngine_LookSettings	Look;
+
+	assert(grEngine_IsValid(Engine));
+
+	if (Profile < GR_LOOK_CLASSIC || Profile > GR_LOOK_STYLIZED)
+		return GR_FALSE;
+	if (!Engine->DriverInfo.RDriver)
+	{
+		// Applied with the driver's other settings when it starts (Engine_SyncLook)
+		Engine->Look.Profile = Profile;
+		if (Engine->LookSet != ENGINE_LOOK_SET_ALL)
+			Engine->LookSet = ENGINE_LOOK_SET_PROFILE;
+		return GR_TRUE;
+	}
+	Look = Engine->Look;
+	Look.Profile = Profile;
+	return grEngine_SetLookSettings(Engine, &Look);
+}
+
+GRAPI int32 GRCC grEngine_GetLookProfile(const grEngine *Engine)
+{
+	if (!Engine)
+		return GR_LOOK_CLASSIC;
+	return Engine->Look.Profile;
+}
+
+GRAPI grBoolean GRCC grEngine_GpuShadowsEnabled(const grEngine *Engine)
+{
+	const DRV_Driver	*RDriver;
+
+	if (!Engine || Engine->Look.Profile == GR_LOOK_CLASSIC || !Engine->Look.Shadows)
+		return GR_FALSE;
+	RDriver = Engine->DriverInfo.RDriver;
+	return (RDriver && RDriver->World_SetFrame) ? GR_TRUE : GR_FALSE;
 }
 
 //=====================================================================================
@@ -1126,6 +1233,109 @@ GRAPI grBoolean GRCC grEngine_DrawBitmap(const grEngine *Engine,
 	return Ret;
 }
 
+//=====================================================================================
+//	File textures
+//	A driver restart frees every driver texture. Bitmaps re-attach themselves, but a
+//	grTexture is a bare driver handle, so the engine keeps each DDS file it made one from
+//	and re-creates it (Engine_RecreateFileTextures), then points the holders at the new
+//	handle.
+//=====================================================================================
+static grBoolean Engine_AddFileTexture(grEngine *Engine, grTexture *Texture, uint8 *Data, uint32 Size)
+{
+	if (Engine->NumFileTextures == Engine->MaxFileTextures)
+	{
+		int32				NewMax = Engine->MaxFileTextures ? Engine->MaxFileTextures * 2 : 64;
+		Engine_FileTexture	*NewList;
+
+		NewList = (Engine_FileTexture *)grRam_Realloc(Engine->FileTextures, NewMax * sizeof(Engine_FileTexture));
+		if (!NewList)
+			return GR_FALSE;
+		Engine->FileTextures = NewList;
+		Engine->MaxFileTextures = NewMax;
+	}
+
+	Engine->FileTextures[Engine->NumFileTextures].Texture = Texture;
+	Engine->FileTextures[Engine->NumFileTextures].Data = Data;
+	Engine->FileTextures[Engine->NumFileTextures].Size = Size;
+	Engine->NumFileTextures++;
+	return GR_TRUE;
+}
+
+static void Engine_RemoveFileTexture(grEngine *Engine, grTexture *Texture)
+{
+	for (int32 i = 0; i < Engine->NumFileTextures; i++)
+	{
+		if (Engine->FileTextures[i].Texture == Texture)
+		{
+			grRam_Free(Engine->FileTextures[i].Data);
+			Engine->FileTextures[i] = Engine->FileTextures[--Engine->NumFileTextures];
+			return;
+		}
+	}
+}
+
+// Called before the driver resets: its textures are about to go away.
+static void Engine_ReleaseFileTextures(grEngine *Engine)
+{
+	DRV_Driver	*RDriver = Engine->DriverInfo.RDriver;
+
+	for (int32 i = 0; i < Engine->NumFileTextures; i++)
+	{
+		if (Engine->FileTextures[i].Texture)
+			RDriver->THandle_Destroy(Engine->FileTextures[i].Texture);
+	}
+}
+
+// Called once the new driver is up. The old handles are only compared, never used.
+static void Engine_RecreateFileTextures(grEngine *Engine)
+{
+	DRV_Driver	*RDriver = Engine->DriverInfo.RDriver;
+	grTexture	**Old, **New;
+	int32		Count = Engine->NumFileTextures;
+
+	if (!Count)
+		return;
+
+	Old = (grTexture **)grRam_Allocate(Count * sizeof(grTexture *));
+	New = (grTexture **)grRam_Allocate(Count * sizeof(grTexture *));
+	if (!Old || !New)
+	{
+		if (Old) grRam_Free(Old);
+		if (New) grRam_Free(New);
+		return;
+	}
+
+	for (int32 i = 0; i < Count; i++)
+	{
+		Engine_FileTexture	*FileTexture = &Engine->FileTextures[i];
+
+		Old[i] = FileTexture->Texture;
+		New[i] = RDriver->THandle_CreateFromDDS ? RDriver->THandle_CreateFromDDS(FileTexture->Data, FileTexture->Size) : NULL;
+		FileTexture->Texture = New[i];
+		if (!New[i])
+			grErrorLog_AddString(-1, "Engine_RecreateFileTextures: texture re-create failed", NULL);
+	}
+
+	// All at once: a new handle can equal another texture's old one
+	grMaterialSpec_RemapTextures(Old, New, Count);
+	grResource_RemapTextures(Old, New, Count);
+
+	grRam_Free(Old);
+	grRam_Free(New);
+
+	// Drop the ones that failed; their holders now have NULL
+	for (int32 i = 0; i < Engine->NumFileTextures; )
+	{
+		if (!Engine->FileTextures[i].Texture)
+		{
+			grRam_Free(Engine->FileTextures[i].Data);
+			Engine->FileTextures[i] = Engine->FileTextures[--Engine->NumFileTextures];
+		}
+		else
+			i++;
+	}
+}
+
 GRAPI grTexture *GRCC grEngine_CreateTextureFromFile(const grEngine *Engine, grVFile *File)
 {
 	grBitmap* pBmp{};
@@ -1144,7 +1354,8 @@ GRAPI grTexture *GRCC grEngine_CreateTextureFromFile(const grEngine *Engine, grV
 				memcpy(Data, &Magic, sizeof(Magic));
 				if (grVFile_Read(File, Data + sizeof(Magic), Size - sizeof(Magic)))
 					Texture = Engine->DriverInfo.RDriver->THandle_CreateFromDDS(Data, (uint32)Size);
-				grRam_Free(Data);
+				if (!Texture || !Engine_AddFileTexture((grEngine*)Engine, Texture, Data, (uint32)Size))
+					grRam_Free(Data);
 			}
 			return Texture;
 		}
@@ -1164,7 +1375,9 @@ GRAPI grTexture *GRCC grEngine_CreateTextureFromFile(const grEngine *Engine, grV
 
 GRAPI void GRCC grEngine_DestroyTexture(const grEngine *Engine, grTexture *Texture)
 {
-	Engine->DriverInfo.RDriver->THandle_Destroy(Texture);
+	Engine_RemoveFileTexture((grEngine*)Engine, Texture);
+	if (Engine->DriverInfo.RDriver)
+		Engine->DriverInfo.RDriver->THandle_Destroy(Texture);
 }
 
 GRAPI grBoolean GRCC grEngine_DrawTexture(const grEngine *Engine, const grTexture *Texture, int32 x, int32 y)
@@ -1557,6 +1770,7 @@ grBoolean grEngine_ResetDriver(grEngine *Engine)
 		grErrorLog_AddString(-1, "grEngine_ResetDriver:  grEngine_DetachAll failed.", NULL);
 		return GR_FALSE;
 	}
+	Engine_ReleaseFileTextures(Engine);
 
 	for (Link = grChain_GetFirstLink(Engine->ChangeDriverCBChain); Link; Link = grChain_LinkGetNext(Link))
 	{
@@ -1877,6 +2091,9 @@ static grBoolean Engine_InitDriver(	grEngine		*Engine,
 	}
 
 	Engine->hWnd = hWnd;		// Store the new hWnd
+
+	Engine_SyncLook(Engine);
+	Engine_RecreateFileTextures(Engine);
 
 #if (DEBUG_OUTPUT_LEVEL >= 1)
 	OutputDebugString("BEGIN StartupDriverCB\n");

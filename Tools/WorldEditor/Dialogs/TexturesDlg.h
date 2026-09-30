@@ -136,6 +136,9 @@ public:
 	HTREEITEM	GetMasterTreeItem();
 	HTREEITEM	GetCurGroupTreeItem();
 	CString		GetSelectedTexture();
+	// Opens the Material Editor for a new material or the selected one, and refreshes the
+	// list when it imported something.
+	void		OpenMaterialEditor(bool NewMaterial);
 	int			GetTextureDisplayWidth();
 	void		SetTextureDisplayWidth(int iWidth);
 	void		SetWorkerThreadFlag(bool bActivity);

@@ -468,6 +468,16 @@ grBoolean grBSPNode_LightmapCalcLight(grBSPNode_Lightmap *Lightmap, grBSP *BSP, 
 			if (Val <= 0.0f)
 				continue;	// Light out of radius for this point
 			
+			if ((Flags & GR_LIGHT_FLAG_TYPEMASK) == GR_LIGHT_FLAG_SPOT)
+			{
+				grVec3d		WorldPoint;
+
+				grXForm3d_Transform(&BSP->ModelToWorldXForm, pPoint, &WorldPoint);
+				Val *= grLight_GetSpotFactor(pLight, &WorldPoint);
+				if (Val <= 0.0f)
+					continue;	// Outside the cone
+			}
+
 			if (grBSPNode_RayIntersects_r(RootNode, BSP, pPoint, &LPos))
 				continue;	// Ray is in shadow
 

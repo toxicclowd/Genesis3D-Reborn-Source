@@ -478,6 +478,17 @@ static grBoolean Level_GetMaterialIdx( Level * pLevel, const char * Name, grMate
 }  //Level_GetMaterialIdx
 #endif
 
+grBoolean Level_ReplaceMaterialSpec( Level * pLevel, const char * Name, grMaterialSpec * pMatSpec )
+{
+	grMaterial_ArrayIndex	Index;
+
+	assert( pLevel );
+	assert( Name );
+	if( !pLevel->pMatrArray || !pMatSpec || !Level_SearchMatrIdxByName( pLevel, Name, &Index ) )
+		return( GR_FALSE );
+	return( grMaterial_ArraySetMaterialSpec( pLevel->pMatrArray, Index, pMatSpec, Name ) );
+}  //Level_ReplaceMaterialSpec
+
 
 grBoolean Level_SetFaceInfoToCurMaterial( Level * pLevel )
 {

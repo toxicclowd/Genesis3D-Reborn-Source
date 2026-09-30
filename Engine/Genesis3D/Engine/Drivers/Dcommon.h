@@ -97,7 +97,7 @@ typedef struct tagRECT
 #endif
 
 #define DRV_VERSION_MAJOR		200			// Jet 2.0
-#define DRV_VERSION_MINOR		10			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry ; 7 adds DRV_WorldView clip planes and draw counts ; 8 adds WorldMesh_Render ; 9 adds PBR world faces and lights ; 10 adds THandle_CreateFromDDS
+#define DRV_VERSION_MINOR		13			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry ; 7 adds DRV_WorldView clip planes and draw counts ; 8 adds WorldMesh_Render ; 9 adds PBR world faces and lights ; 10 adds THandle_CreateFromDDS ; 11 adds WorldMesh_RenderPBR and parallax ; 12 adds static world lights, 32 lights ; 13 adds frame lighting (World_SetFrame/EndPass), DRV_WorldView.ModelToWorld and Look Profiles
 #define DRV_VMAJS				"200"
 #define DRV_VMINS				"4" 
 #define DRV_VMAJS_PLUS_DRV_VMINS	"200.4"
@@ -323,6 +323,9 @@ typedef struct
 	// 0 = use HalfWidth/HalfHeight. At most DRV_WORLD_MAX_CLIP_PLANES, including ZFar.
 	int32		NumClipPlanes;
 	float		ClipPlanes[8][4];
+	// Version 13: model to world space, for world-space lighting and shadows (identity for
+	// world-space geometry such as actors).
+	grXForm3d	ModelToWorld;
 } DRV_WorldView;
 
 #define DRV_WORLD_MAX_CLIP_PLANES	8
@@ -372,6 +375,7 @@ typedef int32 DRIVERCC WORLD_MESH_RENDER(const DRV_MeshVertex *Verts, int32 NumV
 
 #define DRV_MATERIAL_TWO_SIDED		0x0001
 #define DRV_MATERIAL_RETRO			0x0002	// point sampling and texel-snapped shading
+#define DRV_MATERIAL_LEGACY			0x0004	// version 13: no PBR data (Enhanced look): a fullbright face stays unlit
 
 typedef struct
 {
@@ -385,6 +389,9 @@ typedef struct
 	float		AlphaCutoff;
 	uint32		AlphaMode;		// DRV_MATERIAL_ALPHA_*
 	uint32		Flags;			// DRV_MATERIAL_*
+	// Version 11: parallax occlusion mapping
+	grTexture	*HeightMap;		// NULL = none; R = height, 1 = the surface
+	float		HeightScale;	// depth of height 0, in texture widths
 } DRV_WorldMaterial;
 
 // A point light in the model space of the geometry drawn next (see grBSPNode_Light).
@@ -393,16 +400,116 @@ typedef struct
 	float		Pos[3];
 	float		Radius;
 	float		Color[3];		// 0..1 * brightness
-	float		Padding;
+	uint32		Flags;			// DRV_WORLD_LIGHT_*
 } DRV_WorldLight;
 
-#define DRV_WORLD_MAX_LIGHTS		8
+// Version 12: a static light, already baked into the lightmap (or vertex lighting) with
+// shadows. It adds only the normal map's detail and specular, faded where the baked
+// lighting shows the light is blocked. Dynamic lights come first in the list.
+// Version 13 drivers light PBR surfaces from WORLD_SET_FRAME's lights instead.
+#define DRV_WORLD_LIGHT_STATIC		(1<<0)
+
+#define DRV_WORLD_MAX_LIGHTS		32
+
+//
+//	Frame lighting (version 13, roadmap Phase 3): every light of the frame in world space,
+//	binned into clusters by the driver (clustered forward). Point and spot lights fall off
+//	linearly to 0 at Radius like the engine's lightmaps: Color * (Radius - distance) * N.L,
+//	in 0..255 lightmap units. A directional light gives Color * N.L.
+//
+#define DRV_LIGHT_POINT				0
+#define DRV_LIGHT_SPOT				1
+#define DRV_LIGHT_DIRECTIONAL		2
+#define DRV_LIGHT_TYPE_MASK			0x0003
+#define DRV_LIGHT_STATIC			0x0004	// baked into the lightmaps (and actor lighting) with shadows
+#define DRV_LIGHT_CAST_SHADOWS		0x0008	// a dynamic light that casts real-time shadows
+
+typedef struct
+{
+	float		Pos[3];			// world space (not used by directional lights)
+	float		Radius;
+	float		Color[3];		// 0..1 * brightness
+	uint32		Flags;			// DRV_LIGHT_*
+	float		Dir[3];			// spot and directional: the direction the light travels (unit length)
+	float		CosOuter;		// spot: cosine of the cone's half angle, where it reaches 0
+	float		CosInner;		// spot: cosine of the half angle where it starts to fade
+	float		Padding[3];
+} DRV_Light;
+
+#define DRV_MAX_FRAME_LIGHTS		1024
+
+// Sets the frame's lights and its main camera (ModelToCamera = world to camera). The engine
+// calls it before it draws the world; the driver clusters the lights for this camera, and
+// views of other cameras (portals, mirrors) test every light.
+typedef void DRIVERCC WORLD_SET_FRAME(const DRV_WorldView *MainView, const DRV_Light *Lights, int32 NumLights);
+// Marks the end of the 3D scene: post-processing (exposure, tonemapping, bloom, fog...)
+// applies to what was drawn before it; what follows (the 2D overlay) is drawn on top.
+typedef void DRIVERCC WORLD_END_PASS(void);
+
+//
+//	Look Profiles (version 13, roadmap Phase 3). Classic draws exactly like earlier
+//	versions: gamma-space lighting, no post-processing. Enhanced adds HDR lighting with
+//	per-pixel dynamic lights, shadows and post-processing; Stylized is Enhanced with the
+//	retro options below. Settings that do not apply to the profile are ignored.
+//
+#define DRV_LOOK_CLASSIC			0
+#define DRV_LOOK_ENHANCED			1
+#define DRV_LOOK_STYLIZED			2
+
+#define DRV_TONEMAP_NONE			0
+#define DRV_TONEMAP_ACES			1
+#define DRV_TONEMAP_AGX				2
+
+typedef struct
+{
+	int32		Profile;			// DRV_LOOK_*
+	int32		Tonemapper;			// DRV_TONEMAP_*
+	int32		AutoExposure;		// adapt to the scene's brightness
+	float		ExposureEV;			// manual exposure, or the compensation added to auto exposure
+	int32		Bloom;
+	float		BloomIntensity;		// 0..1
+	int32		SSAO;
+	float		SSAORadius;			// world units
+	float		SSAOIntensity;		// 0..1
+	int32		Shadows;			// real-time shadows for dynamic lights that cast them
+	float		HeightFogDensity;	// 0 = off
+	float		HeightFogBase;		// world height where the fog is densest
+	float		HeightFogFalloff;	// per world unit above HeightFogBase
+	float		HeightFogColor[3];	// 0..1
+	// Stylized
+	float		RenderScale;		// 0.125..1, upscaled with nearest filtering
+	int32		PaletteBits;		// bits per channel, 0 = full color
+	int32		Dither;				// ordered dither before quantizing
+	int32		CRT;				// scanlines and a slight vignette
+	int32		VertexSnap;			// screen grid width in pixels that vertices snap to, 0 = off
+	int32		SnapLighting;		// dynamic lighting per lightmap texel
+} DRV_LookSettings;
+
+// Sets the look; GET_LOOK returns the current one (the driver's ini defaults at first).
+typedef grBoolean DRIVERCC SET_LOOK(const DRV_LookSettings *Look);
+typedef grBoolean DRIVERCC GET_LOOK(DRV_LookSettings *Look);
 
 // Version 10: a texture from a DDS file image (BC1-7 or uncompressed, with its mip chain), as
 // G3DTexImport writes them. sRGB formats load as their UNORM equivalents because the shaders
 // do the gamma conversion. Returns NULL for a format or layout the driver cannot use. Such
 // textures cannot be locked.
 typedef grTexture *DRIVERCC THANDLE_CREATE_FROM_DDS(const void *Data, uint32 Size);
+
+// Version 11: PBR world meshes (actors). The vertex color is the diffuse irradiance (the
+// engine's CPU lighting, dynamic lights included), as the lightmap is for world faces; the
+// lights set with WORLD_GEOMETRY_SET_LIGHTS (same space as Pos) add specular and the normal
+// map's detail. Returns as WORLD_MESH_RENDER.
+typedef struct
+{
+	float		Pos[3];			// model space
+	float		u, v;			// texture coordinates, as grTLVertex
+	float		r, g, b, a;		// 0..255, as grTLVertex
+	float		Normal[3];		// unit length
+	float		Tangent[4];		// texture U direction, w = bitangent sign
+} DRV_MeshVertexPBR;
+
+typedef int32 DRIVERCC WORLD_MESH_RENDER_PBR(const DRV_MeshVertexPBR *Verts, int32 NumVerts, const DRV_WorldView *View,
+											 grRDriver_Layer *Layer, uint32 Flags, const DRV_WorldMaterial *Material);
 
 // Sets the lights for the PBR faces queued after it (at most DRV_WORLD_MAX_LIGHTS are used).
 typedef void DRIVERCC WORLD_GEOMETRY_SET_LIGHTS(const DRV_WorldLight *Lights, int32 NumLights);
@@ -754,6 +861,15 @@ typedef struct
 
 	// Version 10: DDS textures (NULL if the driver has none).
 	THANDLE_CREATE_FROM_DDS			*THandle_CreateFromDDS;
+
+	// Version 11: PBR world meshes (NULL if the driver has none).
+	WORLD_MESH_RENDER_PBR			*WorldMesh_RenderPBR;
+
+	// Version 13: frame lighting and Look Profiles (NULL if the driver has none).
+	WORLD_SET_FRAME					*World_SetFrame;
+	WORLD_END_PASS					*World_EndPass;
+	SET_LOOK						*SetLook;
+	GET_LOOK						*GetLook;
 } DRV_Driver;
 
 enum grRenderState

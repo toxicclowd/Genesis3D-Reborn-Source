@@ -45,6 +45,10 @@ const char		*	Materials_GetName( Material_Struct* Material );
 const grBitmap		*	Materials_GetBitmap( Material_Struct* Material );
 #endif
 const grMaterialSpec*	Materials_GetMaterialSpec( Material_Struct* Material );
+// The .jmat file the material was loaded from.
+const char		*	Materials_GetPath( Material_Struct* Material );
+// Reads the material's .jmat again (e.g. after the Material Editor re-imported it).
+grBoolean			Materials_Reload( Material_Struct* Material, grEngine* pEngine, grResourceMgr* pResMgr );
 
 
 #ifdef __cplusplus

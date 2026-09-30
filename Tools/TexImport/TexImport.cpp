@@ -47,7 +47,9 @@ namespace
 	// Layer types (grMaterialSpec_LayerType) and the .jmat layout (grMaterialSpec.cpp).
 	const uint8_t LayerTypes[MAP_COUNT] = { 0, 3, 4, 5, 6 };
 	const uint16_t RESOURCE_TEXTURE = 0x0011;
+	const uint16_t MATSPEC_THUMBS_FLAG = 0x0020;
 	const uint16_t MATSPEC_SIZE_FLAG = 0x0040;
+	const size_t THUMB_SIZE = 64;		// the World Editor's texture list thumbnail
 	const uint16_t MATSPEC_PBR_FLAG = 0x0080;
 	const size_t NAME_SIZE = 256;
 	const size_t XFORM_SIZE = 64;		// grXForm3d, 16-byte aligned
@@ -63,8 +65,12 @@ namespace
 		float Emissive[3] = { -1.0f, -1.0f, -1.0f };
 		float Intensity = 1.0f;
 		float Cutoff = 0.5f;
+		float HeightScale = 0.04f;
 		uint8_t AlphaMode = 0;
 		uint16_t Flags = 0;
+		// Explicit inputs; empty = found by suffix next to the base image
+		fs::path Maps[5];
+		fs::path AOMap, RoughMap, GlossMap, MetalMap;
 	};
 
 	void Error(const wchar_t* Format, ...)
@@ -296,14 +302,40 @@ namespace
 		return Out;
 	}
 
-	// .jmat version 2: size, PBR block (grMaterialSpec_PBR), then one texture layer per map.
+	// The editor's thumbnail: THUMB_SIZE square, 24-bit bottom-up BGR (a DIB's rows).
+	bool MakeThumbnail(const ScratchImage& Base, std::vector<uint8_t>& Out)
+	{
+		ScratchImage Small;
+		// (TEX_FILTER_BOX only does 2:1 reductions; the default filter takes any size.)
+		if (FAILED(Resize(*Base.GetImage(0, 0, 0), THUMB_SIZE, THUMB_SIZE, TEX_FILTER_DEFAULT, Small)))
+			return false;
+		const Image* Pixels = Small.GetImage(0, 0, 0);
+		Out.resize(THUMB_SIZE * THUMB_SIZE * 3);
+		for (size_t y = 0; y < THUMB_SIZE; ++y)
+		{
+			const uint8_t* Src = Pixels->pixels + (THUMB_SIZE - 1 - y) * Pixels->rowPitch;
+			uint8_t* Dst = Out.data() + y * THUMB_SIZE * 3;
+			for (size_t x = 0; x < THUMB_SIZE; ++x)
+			{
+				Dst[x * 3 + 0] = Src[x * 4 + 2];
+				Dst[x * 3 + 1] = Src[x * 4 + 1];
+				Dst[x * 3 + 2] = Src[x * 4 + 0];
+			}
+		}
+		return true;
+	}
+
+	// .jmat version 3: size, PBR block (grMaterialSpec_PBR), one texture layer per map, then
+	// the thumbnail.
 	bool WriteMaterial(const fs::path& Path, const std::wstring& Name, const std::wstring& Pak,
-		const bool (&Present)[MAP_COUNT], size_t Width, size_t Height, const Options& Opts)
+		const bool (&Present)[MAP_COUNT], size_t Width, size_t Height, const std::vector<uint8_t>& Thumbnail,
+		const Options& Opts)
 	{
 		std::vector<uint8_t> Data;
 		Data.insert(Data.end(), { 'J', 'M', 'A', 'T' });
-		Put<uint8_t>(Data, 2);
-		Put<uint16_t>(Data, MATSPEC_SIZE_FLAG | MATSPEC_PBR_FLAG);
+		Put<uint8_t>(Data, 3);
+		Put<uint16_t>(Data, static_cast<uint16_t>(MATSPEC_SIZE_FLAG | MATSPEC_PBR_FLAG |
+			(Thumbnail.empty() ? 0 : MATSPEC_THUMBS_FLAG)));
 		uint8_t Count = 0;
 		for (int i = 0; i < MAP_COUNT; ++i)
 			Count = static_cast<uint8_t>(Count + (Present[i] ? 1 : 0));
@@ -326,6 +358,7 @@ namespace
 		Put<uint8_t>(Data, Opts.AlphaMode);
 		Put<uint8_t>(Data, 0);
 		Put<uint16_t>(Data, Opts.Flags);
+		Put(Data, Opts.HeightScale);
 
 		float Identity[XFORM_SIZE / sizeof(float)] = {};
 		Identity[0] = Identity[5] = Identity[10] = 1.0f;		// AX, BY, CZ
@@ -341,6 +374,12 @@ namespace
 			Put<uint8_t>(Data, 0);
 			PutName(Data, Narrow(Resource));
 			Put(Data, Identity);
+		}
+		if (!Thumbnail.empty())
+		{
+			Put<uint8_t>(Data, static_cast<uint8_t>(THUMB_SIZE));
+			Put<uint8_t>(Data, static_cast<uint8_t>(THUMB_SIZE));
+			Data.insert(Data.end(), Thumbnail.begin(), Thumbnail.end());
 		}
 
 		FILE* File = _wfopen(Path.c_str(), L"wb");
@@ -376,9 +415,20 @@ namespace
 		Inputs[MAP_ORM] = FindSibling(Dir, Stem, { L"_orm", L"_arm" });
 		Inputs[MAP_EMISSIVE] = FindSibling(Dir, Stem, { L"_e", L"_emissive", L"_emit", L"_emission" });
 		Inputs[MAP_HEIGHT] = FindSibling(Dir, Stem, { L"_h", L"_height", L"_disp", L"_displacement" });
-		fs::path AO, Rough, Metal;
+		for (int i = MAP_NORMAL; i < MAP_COUNT; ++i)
+			if (!Opts.Maps[i].empty())
+				Inputs[i] = Opts.Maps[i];
+		fs::path AO = Opts.AOMap, Rough = Opts.RoughMap, Metal = Opts.MetalMap;
 		bool Gloss = false;
-		if (Inputs[MAP_ORM].empty())
+		if (!Opts.GlossMap.empty())
+		{
+			Rough = Opts.GlossMap;
+			Gloss = true;
+		}
+		const bool ExplicitGray = !AO.empty() || !Rough.empty() || !Metal.empty();
+		if (ExplicitGray && Opts.Maps[MAP_ORM].empty())
+			Inputs[MAP_ORM].clear();		// explicit grayscale maps replace a found ORM map
+		if (Inputs[MAP_ORM].empty() && !ExplicitGray)
 		{
 			AO = FindSibling(Dir, Stem, { L"_ao", L"_occlusion" });
 			Rough = FindSibling(Dir, Stem, { L"_rough", L"_roughness" });
@@ -391,6 +441,7 @@ namespace
 		const fs::path TextureDir = Pak.empty() ? OutDir : OutDir / Pak;
 		bool Present[MAP_COUNT] = {};
 		size_t Width = 0, Height = 0;
+		std::vector<uint8_t> Thumbnail;
 		for (int i = 0; i < MAP_COUNT; ++i)
 		{
 			ScratchImage Image;
@@ -409,6 +460,11 @@ namespace
 			{
 				Width = Image.GetMetadata().width;
 				Height = Image.GetMetadata().height;
+				if (!MakeThumbnail(Image, Thumbnail))
+				{
+					wprintf(L"  warning: no thumbnail for the editor's texture list\n");
+					Thumbnail.clear();
+				}
 			}
 			if (!WriteMap(Image, static_cast<MapType>(i), TextureDir / (Name + MapSuffixes[i] + L".dds"), Opts))
 				return 1;
@@ -416,7 +472,7 @@ namespace
 		}
 		std::error_code Ignored;
 		fs::create_directories(MatDir, Ignored);
-		return WriteMaterial(MatDir / (Name + L".jmat"), Name, Pak, Present, Width, Height, Opts) ? 0 : 1;
+		return WriteMaterial(MatDir / (Name + L".jmat"), Name, Pak, Present, Width, Height, Thumbnail, Opts) ? 0 : 1;
 	}
 
 	void Usage()
@@ -431,6 +487,8 @@ namespace
 			L"  _n/_normal  _orm/_arm  _e/_emissive  _h/_height, or _ao _rough/_gloss _metal (packed into ORM)\n"
 			L"\n"
 			L"Options:\n"
+			L"  -normal -orm -emissivemap -heightmap <file>   use this map instead of searching\n"
+			L"  -ao -rough -gloss -metalmap <file>             grayscale maps to pack into ORM\n"
 			L"  -fast               quicker, lower quality BC7\n"
 			L"  -nomips             no mipmaps\n"
 			L"  -flipgreen          the normal map is OpenGL style (+Y up)\n"
@@ -438,7 +496,8 @@ namespace
 			L"  -roughness f        roughness (times the ORM map's G when there is one)\n"
 			L"  -metal f            metalness (times the ORM map's B when there is one)\n"
 			L"  -emissive r g b     emissive color; -intensity f scales it\n"
-			L"  -cutout f | -blend  alpha mode (default opaque)\n"
+			L"  -cutout f | -blend  alpha mode (default opaque)"
+			L"\n  -height f           parallax depth in texture widths (default 0.04)\n"
 			L"  -twosided -retro    material flags\n");
 	}
 }
@@ -510,6 +569,24 @@ int wmain(int argc, wchar_t** argv)
 			Opts.AlphaMode = 1;
 			Opts.Cutoff = Float();
 		}
+		else if (!_wcsicmp(Arg, L"-normal") && Left >= 1)
+			Opts.Maps[MAP_NORMAL] = argv[++i];
+		else if (!_wcsicmp(Arg, L"-orm") && Left >= 1)
+			Opts.Maps[MAP_ORM] = argv[++i];
+		else if (!_wcsicmp(Arg, L"-emissivemap") && Left >= 1)
+			Opts.Maps[MAP_EMISSIVE] = argv[++i];
+		else if (!_wcsicmp(Arg, L"-heightmap") && Left >= 1)
+			Opts.Maps[MAP_HEIGHT] = argv[++i];
+		else if (!_wcsicmp(Arg, L"-ao") && Left >= 1)
+			Opts.AOMap = argv[++i];
+		else if (!_wcsicmp(Arg, L"-rough") && Left >= 1)
+			Opts.RoughMap = argv[++i];
+		else if (!_wcsicmp(Arg, L"-gloss") && Left >= 1)
+			Opts.GlossMap = argv[++i];
+		else if (!_wcsicmp(Arg, L"-metalmap") && Left >= 1)
+			Opts.MetalMap = argv[++i];
+		else if (!_wcsicmp(Arg, L"-height") && Left >= 1)
+			Opts.HeightScale = Float();
 		else if (!_wcsicmp(Arg, L"-blend"))
 			Opts.AlphaMode = 2;
 		else if (!_wcsicmp(Arg, L"-twosided"))

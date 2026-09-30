@@ -7,7 +7,10 @@ PNG files to bin/GlobalMaterials/PBRSample/src/:
                    from the base texture's luminance used as a height map
   <name>_orm.png   R = occlusion (from the height map's cavities), G = roughness, B = metalness
                    (wallsectionb gets separate _ao, _rough and _metal maps instead, to test
-                   G3DTexImport's packing; tech_blue also gets an _e emissive map)
+                   G3DTexImport's packing; tech_blue also gets an _h height map for parallax and
+                   an _e emissive map)
+plus a gold "bikini" material for the dancer actor (a body material name; its base color
+is generated, since the actor's bitmaps are embedded in dancer.act).
 Then G3DTexImport -material turns each set into BC-compressed, mipmapped DDS textures in
 bin/GlobalMaterials/PBRSample/ (the "PBRSample" pak) and a version 2 <name>.jmat there.
 
@@ -42,6 +45,9 @@ PRESETS = {
 }
 SEPARATE_ORM = {'wallsectionb'}
 EMISSIVE = {'tech_blue'}
+HEIGHT = {'tech_blue'}
+# Actor materials (no shipped bitmap): name -> (base color, roughness, metal, normal strength)
+ACTOR_MATERIALS = {'bikini': ((1.0, 0.78, 0.34), 0.3, 1.0, 1.5)}
 
 
 def blur(a, passes=2):
@@ -55,8 +61,18 @@ def to_image(channels):
     return Image.fromarray(data, 'RGB')
 
 
-def make_sources(name, roughness, metal, strength):
-    base = Image.open(os.path.join(MATERIALS, name + '.bmp')).convert('RGB')
+def actor_base(color):
+    # Soft value noise tinted with the color, so the normal map has something to follow
+    rng = np.random.default_rng(1)
+    noise = blur(rng.random((128, 128)).astype(np.float32), 3)
+    noise = (noise - noise.min()) / max(float(np.ptp(noise)), 1e-6)
+    shade = 0.7 + 0.3 * noise
+    return to_image([shade * color[0], shade * color[1], shade * color[2]])
+
+
+def make_sources(name, roughness, metal, strength, base=None):
+    if base is None:
+        base = Image.open(os.path.join(MATERIALS, name + '.bmp')).convert('RGB')
     base.save(os.path.join(SRC, name + '.png'))
 
     rgb = np.asarray(base, dtype=np.float32) / 255.0
@@ -80,6 +96,9 @@ def make_sources(name, roughness, metal, strength):
     else:
         to_image([occlusion, rough, metalness]).save(os.path.join(SRC, name + '_orm.png'))
 
+    if name in HEIGHT:
+        to_image([height, height, height]).save(os.path.join(SRC, name + '_h.png'))
+
     if name in EMISSIVE:
         glow = np.clip((height - 0.55) * 4.0, 0.0, 1.0)
         to_image([glow * 0.1, glow * 0.6, glow]).save(os.path.join(SRC, name + '_e.png'))
@@ -88,10 +107,11 @@ def make_sources(name, roughness, metal, strength):
 def find_tool(argv):
     if len(argv) > 1:
         return argv[1]
-    for exe in ('G3DTexImport.exe', 'G3DTexImportd.exe'):
-        path = os.path.join(BIN, exe)
-        if os.path.exists(path):
-            return path
+    # The most recently built of Release and Debug
+    tools = [os.path.join(BIN, exe) for exe in ('G3DTexImport.exe', 'G3DTexImportd.exe')]
+    tools = [path for path in tools if os.path.exists(path)]
+    if tools:
+        return max(tools, key=os.path.getmtime)
     sys.exit('make_pbr_sample.py: build G3DTexImport first (Tools/TexImport)')
 
 
@@ -105,7 +125,15 @@ def main(argv):
                 '-tint', str(tint[0]), str(tint[1]), str(tint[2])]
         if name in EMISSIVE:
             args += ['-intensity', '2']
+        if name in HEIGHT:
+            args += ['-height', '0.03']
         subprocess.run(args, check=True, stdout=subprocess.DEVNULL)
+        print('wrote', name)
+    for name, (color, roughness, metal, strength) in ACTOR_MATERIALS.items():
+        make_sources(name, roughness, metal, strength, actor_base(color))
+        subprocess.run([tool, '-material', name, os.path.join(SRC, name + '.png'),
+                        '-outdir', MATERIALS, '-pak', PAK, '-matdir', OUT, '-fast'],
+                       check=True, stdout=subprocess.DEVNULL)
         print('wrote', name)
     return 0
 

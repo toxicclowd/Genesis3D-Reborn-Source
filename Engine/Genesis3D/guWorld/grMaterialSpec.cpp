@@ -38,6 +38,7 @@
 
 #include "log.h"
 #include "grTexture.h"
+#include "Bitmap._h"
 
 //========================================================================================
 //========================================================================================
@@ -57,6 +58,48 @@
 #define MATSPEC_SIZE_FLAG		0x0040
 #define MATSPEC_PBR_FLAG		0x0080		// version 2: a grMaterialSpec_PBR block follows the size
 
+static grMaterialSpec *g_pLiveSpecs = NULL;
+
+static void MatSpec_LinkLive(grMaterialSpec *MatSpec)
+{
+	MatSpec->pPrevLive = NULL;
+	MatSpec->pNextLive = g_pLiveSpecs;
+	if (g_pLiveSpecs)
+		g_pLiveSpecs->pPrevLive = MatSpec;
+	g_pLiveSpecs = MatSpec;
+}
+
+static void MatSpec_UnlinkLive(grMaterialSpec *MatSpec)
+{
+	if (MatSpec->pPrevLive)
+		MatSpec->pPrevLive->pNextLive = MatSpec->pNextLive;
+	else if (g_pLiveSpecs == MatSpec)
+		g_pLiveSpecs = MatSpec->pNextLive;
+	if (MatSpec->pNextLive)
+		MatSpec->pNextLive->pPrevLive = MatSpec->pPrevLive;
+}
+
+GRAPI void GRCC grMaterialSpec_RemapTextures(grTexture* const* Old, grTexture* const* New, int32 Count)
+{
+	grMaterialSpec	*MatSpec;
+	int				idx, i;
+
+	for (MatSpec = g_pLiveSpecs; MatSpec; MatSpec = MatSpec->pNextLive) {
+		for (idx=0; idx<MatSpec->LayerCounts; idx++) {
+			grMaterialSpec_Layer *pLayer = MatSpec->pLayers[idx];
+
+			if (!pLayer || pLayer->Kind == GR_RESOURCE_BITMAP || !pLayer->pTexture)
+				continue;
+			for (i=0; i<Count; i++) {
+				if (pLayer->pTexture == Old[i]) {
+					pLayer->pTexture = New[i];
+					break;
+				}
+			}
+		}
+	}
+}
+
 //=======================================================================================
 //	grMaterialSpec_Create
 //=======================================================================================
@@ -70,6 +113,7 @@ GRAPI grMaterialSpec * GRCC grMaterialSpec_Create(grEngine* pEngine, grResourceM
 		return NULL;
 
 	ZeroMem(MaterialSpec);
+	MatSpec_LinkLive(MaterialSpec);
 	MaterialSpec->pEngine = pEngine;
 
 	MaterialSpec->RefCnt = 1;
@@ -112,6 +156,7 @@ GRAPI void GRCC grMaterialSpec_Destroy(grMaterialSpec **MaterialSpec)
 		// destroy the shader
 
 		// free the resource
+		MatSpec_UnlinkLive(pMatSpec);
 		grRam_Free(*MaterialSpec);
 
 		*MaterialSpec = NULL;
@@ -123,7 +168,8 @@ GRAPI void GRCC grMaterialSpec_Destroy(grMaterialSpec **MaterialSpec)
 		((uint32)(uint8)(ch2) << 16) | ((uint32)(uint8)(ch3) << 24 ))
 
 #define GR_MATSPEC_TAG			MAKEFOURCC('J', 'M', 'A', 'T')		// 'J' 'MAT'erial definition
-#define GR_MATSPEC_VERSION		0x0002		// 2 adds the PBR block; files without one are still written as 1
+#define GR_MATSPEC_VERSION		0x0003		// 2 adds the PBR block, 3 its HeightScale; files without one are still written as 1
+#define GR_MATSPEC_PBR_SIZE_V2	48
 
 //========================================================================================
 //	grMaterialSpec_CreateFromFile
@@ -144,6 +190,7 @@ GRAPI grMaterialSpec* GRCC grMaterialSpec_CreateFromFile(grVFile *VFile, grEngin
 		goto ExitInError;
 	}
 	ZeroMem(MaterialSpec);
+	MatSpec_LinkLive(MaterialSpec);
 
 	MaterialSpec->pEngine = pEngine;
 	MaterialSpec->RefCnt = 1;
@@ -226,7 +273,8 @@ GRAPI grMaterialSpec* GRCC grMaterialSpec_CreateFromFile(grVFile *VFile, grEngin
 	}
 
 	if (FileVersion >= 2 && (MaterialSpec->Flags&MATSPEC_PBR_FLAG)) {
-		if (!grVFile_Read(VFile, &MaterialSpec->PBR, sizeof(MaterialSpec->PBR))) {
+		MaterialSpec->PBR.HeightScale = 0.04f;
+		if (!grVFile_Read(VFile, &MaterialSpec->PBR, (FileVersion >= 3) ? sizeof(MaterialSpec->PBR) : GR_MATSPEC_PBR_SIZE_V2)) {
 			goto ExitInError;
 		}
 	} else {
@@ -683,6 +731,7 @@ GRAPI void GRCC grMaterialSpec_DefaultPBR(grMaterialSpec_PBR* PBR)
 	PBR->EmissiveIntensity = 1.0f;
 	PBR->AlphaCutoff = 0.5f;
 	PBR->AlphaMode = GR_MATERIAL_ALPHA_OPAQUE;
+	PBR->HeightScale = 0.04f;
 }
 
 GRAPI grBoolean GRCC grMaterialSpec_GetPBR(const grMaterialSpec* MatSpec, grMaterialSpec_PBR* PBR)
@@ -718,6 +767,52 @@ GRAPI grBoolean GRCC grMaterialSpec_SetPBR(grMaterialSpec* MatSpec, const grMate
 		MatSpec->Flags &= ~MATSPEC_PBR_FLAG;
 	}
 	return GR_TRUE;
+}
+
+grTexture *grMaterialSpec_GetLayerTHandle(const grMaterialSpec *MatSpec, int32 Layer)
+{
+	grBitmap	*pBitmap;
+
+	if (Layer < 0)
+		return NULL;
+	pBitmap = grMaterialSpec_GetLayerBitmap(MatSpec, Layer);
+	if (pBitmap)
+		return grBitmap_GetTHandle(pBitmap);
+	return grMaterialSpec_GetLayerTexture(MatSpec, Layer);
+}
+
+// A PBR map's driver texture; layer 0 is always the base, whatever its type.
+static grTexture *GetMapTHandle(const grMaterialSpec *MatSpec, grMaterialSpec_LayerType Type)
+{
+	int32	Layer = grMaterialSpec_FindLayer(MatSpec, Type);
+
+	return (Layer > 0) ? grMaterialSpec_GetLayerTHandle(MatSpec, Layer) : NULL;
+}
+
+void grMaterialSpec_GetDriverMaterial(const grMaterialSpec *MatSpec, DRV_WorldMaterial *Material)
+{
+	grMaterialSpec_PBR	PBR;
+
+	grMaterialSpec_GetPBR(MatSpec, &PBR);
+
+	memset(Material, 0, sizeof(*Material));
+	Material->NormalMap = GetMapTHandle(MatSpec, GR_MATERIAL_LAYER_NORMAL);
+	Material->ORMMap = GetMapTHandle(MatSpec, GR_MATERIAL_LAYER_ORM);
+	Material->EmissiveMap = GetMapTHandle(MatSpec, GR_MATERIAL_LAYER_EMISSIVE);
+	Material->HeightMap = GetMapTHandle(MatSpec, GR_MATERIAL_LAYER_HEIGHT);
+	Material->HeightScale = PBR.HeightScale;
+	memcpy(Material->BaseColor, PBR.BaseColor, sizeof(Material->BaseColor));
+	Material->Roughness = PBR.Roughness;
+	Material->Metal = PBR.Metal;
+	Material->Emissive[0] = PBR.Emissive[0] * PBR.EmissiveIntensity;
+	Material->Emissive[1] = PBR.Emissive[1] * PBR.EmissiveIntensity;
+	Material->Emissive[2] = PBR.Emissive[2] * PBR.EmissiveIntensity;
+	Material->AlphaCutoff = PBR.AlphaCutoff;
+	Material->AlphaMode = PBR.AlphaMode;
+	if (PBR.Flags & GR_MATERIAL_PBR_TWO_SIDED)
+		Material->Flags |= DRV_MATERIAL_TWO_SIDED;
+	if (PBR.Flags & GR_MATERIAL_PBR_RETRO)
+		Material->Flags |= DRV_MATERIAL_RETRO;
 }
 
 GRAPI grXForm3d* GRCC grMaterialSpec_GetLayerTransform(const grMaterialSpec* MatSpec, int32 layerIndex)

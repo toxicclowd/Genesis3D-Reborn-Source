@@ -98,7 +98,8 @@ typedef enum grMaterialSpec_LayerType
 #define GR_MATERIAL_PBR_RETRO			0x0002	//!< point sampling and texel-snapped shading
 
 /*! @typedef grMaterialSpec_PBR
-	@brief Scalar PBR parameters; this is also their layout in a .jmat file (48 bytes).
+	@brief Scalar PBR parameters; this is also their layout in a .jmat file (52 bytes; version 2
+	files end before HeightScale).
 */
 typedef struct grMaterialSpec_PBR
 {
@@ -111,6 +112,7 @@ typedef struct grMaterialSpec_PBR
 	uint8	AlphaMode;			//!< GR_MATERIAL_ALPHA_*
 	uint8	Reserved;
 	uint16	Flags;				//!< GR_MATERIAL_PBR_*
+	float	HeightScale;		//!< parallax depth, in texture widths, with a height layer (default 0.04)
 } grMaterialSpec_PBR;
 /*!@}*/
 typedef grMaterialSpec_LayerType grMaterialSpec_LayerType;
@@ -231,6 +233,9 @@ GRAPI grBoolean GRCC grMaterialSpec_SetThumbnail(grMaterialSpec* MatSpec, grMate
 GRAPI uint32 GRCC grMaterialSpec_GetLayerCount(const grMaterialSpec* MatSpec);
 
 GRAPI grTexture* GRCC grMaterialSpec_GetLayerTexture(const grMaterialSpec* MatSpec, int32 layerIndex);
+
+// After a driver restart: every live spec's texture layer using Old[i] gets New[i].
+GRAPI void GRCC grMaterialSpec_RemapTextures(grTexture* const* Old, grTexture* const* New, int32 Count);
 
 GRAPI grBitmap* GRCC grMaterialSpec_GetLayerBitmap(const grMaterialSpec* MatSpec, int32 layerIndex);
 

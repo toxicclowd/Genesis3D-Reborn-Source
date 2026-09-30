@@ -199,8 +199,8 @@ static grBoolean DynamicLight_Create(
 									&( Object->Color ),
 									Object->Radius, 
 									Object->Brightness, 
-									GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone, dont know flags for cast shadow
-#pragma message ("shadow flags")	
+									GR_LIGHT_FLAG_FAST_LIGHTING_MODEL | (Object->CastShadow ? GR_LIGHT_FLAG_CAST_SHADOWS : 0) );
+	
 
 	if ( Result == GR_FALSE )
 	{
@@ -1135,9 +1135,9 @@ grBoolean GRCC SetProperty(
 											&( Object->Color ),
 											Object->Radius, 
 											Object->Brightness, 
-											GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags for cast shadow
+											GR_LIGHT_FLAG_FAST_LIGHTING_MODEL | (Object->CastShadow ? GR_LIGHT_FLAG_CAST_SHADOWS : 0) );
 			}
-#pragma message ("shadow flags")	
+	
 	}
 
 	// all done
@@ -1181,11 +1181,11 @@ grBoolean GRCC SetXForm(
 									&( Object->Color ),
 									Object->Radius, 
 									Object->Brightness, 
-									GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags
+									GR_LIGHT_FLAG_FAST_LIGHTING_MODEL | (Object->CastShadow ? GR_LIGHT_FLAG_CAST_SHADOWS : 0) );
 		}
 
 	return GR_TRUE;
-#pragma message ("shadow flags")	
+	
 
 } // SetXForm()
 

@@ -445,8 +445,8 @@ static grBoolean PulsingLight_Create(
 			&( pObject->Color ),
 			pObject->Radius, 
 			pObject->Brightness, 
-			GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone, dont know flags for cast shadow
-#pragma message ("shadow flags")	
+			GR_LIGHT_FLAG_FAST_LIGHTING_MODEL | (pObject->CastShadow ? GR_LIGHT_FLAG_CAST_SHADOWS : 0) );
+	
 
 		if ( Result == GR_FALSE )
 		{
@@ -940,7 +940,7 @@ grBoolean GRCC Render(
 					&( pObject->Color ),
 					pObject->Radius, 
 					pObject->Brightness, 
-					GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags for cast shadow
+					GR_LIGHT_FLAG_FAST_LIGHTING_MODEL | (pObject->CastShadow ? GR_LIGHT_FLAG_CAST_SHADOWS : 0) );
 			}	//	if (!pObject->iPulsing)...
 			else
 			{
@@ -978,7 +978,7 @@ grBoolean GRCC Render(
 						&( pObject->Color ),
 						fRadius, 
 						pObject->Brightness, 
-						GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );
+						GR_LIGHT_FLAG_FAST_LIGHTING_MODEL | (pObject->CastShadow ? GR_LIGHT_FLAG_CAST_SHADOWS : 0) );
 
 				}	//	if (pObject->fRadiusSpeed >...
 				pObject->fLastTime = (float)fmod(pObject->fLastTime + fPulseSpeed, pObject->fRadiusSpeed);
@@ -1968,12 +1968,12 @@ grBoolean GRCC SetXForm(
 				&( pObject->Color ),
 				pObject->Radius, 
 				pObject->Brightness, 
-				GR_LIGHT_FLAG_FAST_LIGHTING_MODEL );	//undone dont know flags
+				GR_LIGHT_FLAG_FAST_LIGHTING_MODEL | (pObject->CastShadow ? GR_LIGHT_FLAG_CAST_SHADOWS : 0) );
 		}
 
 		return GR_TRUE;
 	}
-#pragma message ("shadow flags")	
+	
 
 	return GR_TRUE;
 

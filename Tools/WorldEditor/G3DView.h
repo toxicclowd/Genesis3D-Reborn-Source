@@ -108,6 +108,7 @@ protected:
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnCaptureChanged(CWnd* pWnd);
 	afx_msg void On3dviewClassicNav();
+	afx_msg void On3dviewLook(UINT nID);
 	DECLARE_MESSAGE_MAP()
 private:
 	void RotateCameraUpDown(long Delta);

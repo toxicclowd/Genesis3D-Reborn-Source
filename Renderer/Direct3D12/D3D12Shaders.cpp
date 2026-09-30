@@ -30,8 +30,20 @@
 #include "Shaders/g_World_VSMesh.h"
 #include "Shaders/g_World_VSWorldPBR.h"
 #include "Shaders/g_World_PSWorldPBR.h"
+#include "Shaders/g_World_VSMeshPBR.h"
 #include "Shaders/g_Present_VSFullscreen.h"
 #include "Shaders/g_Present_PSPresent.h"
+#include "Shaders/g_Shadow_VSShadow.h"
+#include "Shaders/g_Cluster_CSClusterLights.h"
+#include "Shaders/g_Post_VSPost.h"
+#include "Shaders/g_Post_PSBloomDown.h"
+#include "Shaders/g_Post_PSBloomUp.h"
+#include "Shaders/g_Post_PSSSAO.h"
+#include "Shaders/g_Post_PSSSAOBlur.h"
+#include "Shaders/g_Post_PSComposite.h"
+#include "Shaders/g_Post_CSHistogramClear.h"
+#include "Shaders/g_Post_CSHistogram.h"
+#include "Shaders/g_Post_CSExposure.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -64,8 +76,20 @@ namespace
 		{ "World.hlsl",   IDR_SHADER_WORLD,   "VSMesh",              "vs_5_1", true,  g_World_VSMesh,              sizeof(g_World_VSMesh) },
 		{ "World.hlsl",   IDR_SHADER_WORLD,   "VSWorldPBR",          "vs_5_1", true,  g_World_VSWorldPBR,          sizeof(g_World_VSWorldPBR) },
 		{ "World.hlsl",   IDR_SHADER_WORLD,   "PSWorldPBR",          "ps_5_1", true,  g_World_PSWorldPBR,          sizeof(g_World_PSWorldPBR) },
+		{ "World.hlsl",   IDR_SHADER_WORLD,   "VSMeshPBR",           "vs_5_1", true,  g_World_VSMeshPBR,           sizeof(g_World_VSMeshPBR) },
 		{ "Present.hlsl", IDR_SHADER_PRESENT, "VSFullscreen",   "vs_5_0", false, g_Present_VSFullscreen,           sizeof(g_Present_VSFullscreen) },
 		{ "Present.hlsl", IDR_SHADER_PRESENT, "PSPresent",      "ps_5_0", false, g_Present_PSPresent,              sizeof(g_Present_PSPresent) },
+		{ "Shadow.hlsl",  IDR_SHADER_SHADOW,  "VSShadow",           "vs_5_1", false, g_Shadow_VSShadow,           sizeof(g_Shadow_VSShadow) },
+		{ "Cluster.hlsl", IDR_SHADER_CLUSTER, "CSClusterLights",    "cs_5_1", false, g_Cluster_CSClusterLights,   sizeof(g_Cluster_CSClusterLights) },
+		{ "Post.hlsl",    IDR_SHADER_POST,    "VSPost",             "vs_5_1", true,  g_Post_VSPost,               sizeof(g_Post_VSPost) },
+		{ "Post.hlsl",    IDR_SHADER_POST,    "PSBloomDown",        "ps_5_1", true,  g_Post_PSBloomDown,          sizeof(g_Post_PSBloomDown) },
+		{ "Post.hlsl",    IDR_SHADER_POST,    "PSBloomUp",          "ps_5_1", true,  g_Post_PSBloomUp,            sizeof(g_Post_PSBloomUp) },
+		{ "Post.hlsl",    IDR_SHADER_POST,    "PSSSAO",             "ps_5_1", true,  g_Post_PSSSAO,               sizeof(g_Post_PSSSAO) },
+		{ "Post.hlsl",    IDR_SHADER_POST,    "PSSSAOBlur",         "ps_5_1", true,  g_Post_PSSSAOBlur,           sizeof(g_Post_PSSSAOBlur) },
+		{ "Post.hlsl",    IDR_SHADER_POST,    "PSComposite",        "ps_5_1", true,  g_Post_PSComposite,          sizeof(g_Post_PSComposite) },
+		{ "Post.hlsl",    IDR_SHADER_POST,    "CSHistogramClear",   "cs_5_1", true,  g_Post_CSHistogramClear,     sizeof(g_Post_CSHistogramClear) },
+		{ "Post.hlsl",    IDR_SHADER_POST,    "CSHistogram",        "cs_5_1", true,  g_Post_CSHistogram,          sizeof(g_Post_CSHistogram) },
+		{ "Post.hlsl",    IDR_SHADER_POST,    "CSExposure",         "cs_5_1", true,  g_Post_CSExposure,           sizeof(g_Post_CSExposure) },
 	};
 
 	ComPtr<ID3DBlob>		Compiled[SHADER_COUNT];

@@ -1247,6 +1247,9 @@ extern grWorld_DebugInfo g_WorldDebugInfo;
 //	a puppet is still skinned and lit here, in world space, but its triangles are projected
 //	and clipped by the GPU with the same DRV_WorldView the world path uses, instead of by
 //	grTClip / grFrustum and grCamera on the CPU. Triangles are sent in runs of one texture.
+//	Materials with PBR maps or parameters (roadmap Phase 2) go through WorldMesh_RenderPBR
+//	with their vertex normals and a tangent per triangle; the frame's lights come from
+//	grWorld_Render (DRV_Driver::World_SetFrame).
 //=====================================================================================
 typedef struct
 {
@@ -1256,10 +1259,15 @@ typedef struct
 	uint32			Flags;
 	float			Alpha;			// fOverallAlpha, for every vertex
 	int32			NumVerts;
+	const grMaterialSpec *Spec;		// the current run's material
+	grBoolean		PBR;			// the run uses WorldMesh_RenderPBR
+	DRV_WorldMaterial Material;
 } grPuppet_MeshBatch;
 
 static DRV_MeshVertex	*grPuppet_MeshVerts = NULL;
+static DRV_MeshVertexPBR *grPuppet_MeshVertsPBR = NULL;
 static int32			grPuppet_MeshVertsMax = 0;
+static grVec3d			grPuppet_MeshNormals[3];	// the normals of the triangle being built
 
 static grTexture *grPuppet_MaterialTexture(const grMaterialSpec *Spec)
 {
@@ -1275,11 +1283,17 @@ static grTexture *grPuppet_MaterialTexture(const grMaterialSpec *Spec)
 	return Bmp ? grBitmap_GetTHandle(Bmp) : NULL;
 }
 
+static grBoolean grPuppet_MeshIsPBR(const grPuppet_MeshBatch *Batch, const grMaterialSpec *Spec)
+{
+	return Spec && Batch->Driver->WorldMesh_RenderPBR && Batch->Driver->WorldGeometry_SetLights &&
+		grMaterialSpec_IsPBR(Spec);
+}
+
 // Returns GR_FALSE when the puppet must use the CPU path: no driver support, a material
 // without a texture (drawn Gouraud there), or a frustum with too many planes.
 // CameraSpaceFrustum is NULL for the camera's own view.
-static grBoolean grPuppet_MeshBegin(const grPuppet *P, const grEngine *Engine, const grCamera *Camera,
-									const grFrustum *CameraSpaceFrustum, uint32 RenderFlags,
+static grBoolean grPuppet_MeshBegin(const grPuppet *P, const grEngine *Engine, const grWorld *World,
+									const grCamera *Camera, const grFrustum *CameraSpaceFrustum, uint32 RenderFlags,
 									grPuppet_MeshBatch *Batch)
 {
 	DRV_Driver	*Driver = Engine->DriverInfo.RDriver;
@@ -1304,6 +1318,7 @@ static grBoolean grPuppet_MeshBegin(const grPuppet *P, const grEngine *Engine, c
 	// Same view as grBSP_RenderGpuWorld, for world-space vertices. The CPU path clips
 	// actors to the camera rect (or the portal frustum) but not to the far plane.
 	Batch->View.ModelToCamera = *grCamera_XForm(Camera);
+	grXForm3d_SetIdentity(&Batch->View.ModelToWorld);		// the vertices are in world space
 	grCamera_GetScreenProjection(Camera, &Batch->View.Scale, &Batch->View.XCenter, &Batch->View.YCenter);
 	Batch->View.ZScale = grCamera_GetZScale(Camera);
 	grCamera_GetScreenSize(Camera, &Batch->View.HalfWidth, &Batch->View.HalfHeight);
@@ -1332,9 +1347,15 @@ static grBoolean grPuppet_MeshReserve(int32 NumFaces)
 	if (grPuppet_MeshVertsMax < NumFaces * 3)
 	{
 		DRV_MeshVertex *Verts = (DRV_MeshVertex *)grRam_Realloc(grPuppet_MeshVerts, sizeof(DRV_MeshVertex) * NumFaces * 3);
+		DRV_MeshVertexPBR *VertsPBR;
+
 		if (!Verts)
 			return GR_FALSE;
 		grPuppet_MeshVerts = Verts;
+		VertsPBR = (DRV_MeshVertexPBR *)grRam_Realloc(grPuppet_MeshVertsPBR, sizeof(DRV_MeshVertexPBR) * NumFaces * 3);
+		if (!VertsPBR)
+			return GR_FALSE;
+		grPuppet_MeshVertsPBR = VertsPBR;
 		grPuppet_MeshVertsMax = NumFaces * 3;
 	}
 	return GR_TRUE;
@@ -1343,18 +1364,79 @@ static grBoolean grPuppet_MeshReserve(int32 NumFaces)
 static void grPuppet_MeshFlush(grPuppet_MeshBatch *Batch)
 {
 	if (Batch->NumVerts > 0 && Batch->Layer.THandle)
-		Batch->Driver->WorldMesh_Render(grPuppet_MeshVerts, Batch->NumVerts, &Batch->View, &Batch->Layer, Batch->Flags);
+	{
+		if (Batch->PBR)
+		{
+			uint32	Flags = Batch->Flags;
+
+			if (Batch->Material.AlphaMode == DRV_MATERIAL_ALPHA_BLEND)
+				Flags |= GR_RENDER_FLAG_ALPHA;
+			Batch->Driver->WorldMesh_RenderPBR(grPuppet_MeshVertsPBR, Batch->NumVerts, &Batch->View, &Batch->Layer,
+				Flags, &Batch->Material);
+		}
+		else
+			Batch->Driver->WorldMesh_Render(grPuppet_MeshVerts, Batch->NumVerts, &Batch->View, &Batch->Layer, Batch->Flags);
+	}
 	Batch->NumVerts = 0;
 }
 
 static void grPuppet_MeshSetMaterial(grPuppet_MeshBatch *Batch, const grMaterialSpec *Spec)
 {
 	grTexture	*TH = grPuppet_MaterialTexture(Spec);
+	grBoolean	PBR = grPuppet_MeshIsPBR(Batch, Spec);
 
-	if (TH != Batch->Layer.THandle)
+	// Runs share a texture; a PBR run also shares the material's maps and scalars.
+	if (TH != Batch->Layer.THandle || PBR != Batch->PBR || (PBR && Spec != Batch->Spec))
 	{
 		grPuppet_MeshFlush(Batch);
 		Batch->Layer.THandle = TH;
+		Batch->PBR = PBR;
+		Batch->Spec = Spec;
+		if (PBR)
+			grMaterialSpec_GetDriverMaterial(Spec, &Batch->Material);
+	}
+}
+
+// A tangent for the triangle from its positions and texture coordinates (texture U
+// direction), with the bitangent sign for each vertex normal.
+static void grPuppet_MeshTangent(const grLVertex *Verts, DRV_MeshVertexPBR *Dst)
+{
+	grVec3d		e1, e2, T, B, Cross;
+	grFloat		du1, dv1, du2, dv2, r;
+	int32		i;
+
+	grVec3d_Subtract((grVec3d*)&Verts[1], (grVec3d*)&Verts[0], &e1);
+	grVec3d_Subtract((grVec3d*)&Verts[2], (grVec3d*)&Verts[0], &e2);
+	du1 = Verts[1].u - Verts[0].u;	dv1 = Verts[1].v - Verts[0].v;
+	du2 = Verts[2].u - Verts[0].u;	dv2 = Verts[2].v - Verts[0].v;
+	r = du1 * dv2 - du2 * dv1;
+	if (fabs(r) < 1e-12f)
+	{
+		// Degenerate mapping: any direction along the surface
+		grVec3d_Copy(&e1, &T);
+		grVec3d_Copy(&e2, &B);
+	}
+	else
+	{
+		grVec3d_Scale(&e1, dv2 / r, &T);
+		grVec3d_AddScaled(&T, &e2, -dv1 / r, &T);
+		grVec3d_Scale(&e2, du1 / r, &B);
+		grVec3d_AddScaled(&B, &e1, -du2 / r, &B);
+	}
+	if (grVec3d_Length(&T) < 1e-12f)
+		grVec3d_Set(&T, 1.0f, 0.0f, 0.0f);
+	grVec3d_Normalize(&T);
+
+	for (i = 0; i < 3; i++)
+	{
+		grVec3d_CrossProduct(&grPuppet_MeshNormals[i], &T, &Cross);
+		Dst[i].Tangent[0] = T.X;
+		Dst[i].Tangent[1] = T.Y;
+		Dst[i].Tangent[2] = T.Z;
+		Dst[i].Tangent[3] = (grVec3d_DotProduct(&Cross, &B) < 0.0f) ? -1.0f : 1.0f;
+		Dst[i].Normal[0] = grPuppet_MeshNormals[i].X;
+		Dst[i].Normal[1] = grPuppet_MeshNormals[i].Y;
+		Dst[i].Normal[2] = grPuppet_MeshNormals[i].Z;
 	}
 }
 
@@ -1368,8 +1450,30 @@ static void grPuppet_MeshAddTriangle(grPuppet_MeshBatch *Batch, const grLVertex 
 	grVec3d_Subtract((grVec3d*)&Verts[2], (grVec3d*)&Verts[1], &v1);
 	grVec3d_Subtract((grVec3d*)&Verts[0], (grVec3d*)&Verts[1], &v2);
 	grVec3d_CrossProduct(&v1, &v2, &v3);
-	if (grVec3d_DotProduct(&v3, Pov) - grVec3d_DotProduct(&v3, (grVec3d*)&Verts[0]) <= 0.0f)
+	if (grVec3d_DotProduct(&v3, Pov) - grVec3d_DotProduct(&v3, (grVec3d*)&Verts[0]) <= 0.0f &&
+		!(Batch->PBR && (Batch->Material.Flags & DRV_MATERIAL_TWO_SIDED)))
 		return;		// Backfaced to camera
+
+	if (Batch->PBR)
+	{
+		DRV_MeshVertexPBR	*DstPBR = &grPuppet_MeshVertsPBR[Batch->NumVerts];
+
+		grPuppet_MeshTangent(Verts, DstPBR);
+		for (i = 0; i < 3; i++, DstPBR++)
+		{
+			DstPBR->Pos[0] = Verts[i].X;
+			DstPBR->Pos[1] = Verts[i].Y;
+			DstPBR->Pos[2] = Verts[i].Z;
+			DstPBR->u = Verts[i].u;
+			DstPBR->v = Verts[i].v;
+			DstPBR->r = Verts[i].r;
+			DstPBR->g = Verts[i].g;
+			DstPBR->b = Verts[i].b;
+			DstPBR->a = Batch->Alpha;
+		}
+		Batch->NumVerts += 3;
+		return;
+	}
 
 	Dst = &grPuppet_MeshVerts[Batch->NumVerts];
 	for (i = 0; i < 3; i++, Dst++)
@@ -1476,7 +1580,7 @@ grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P,
 		else
 			RenderFlags = GR_RENDER_FLAG_COUNTER_CLOCKWISE;
 
-		UseMesh = grPuppet_MeshBegin(P, Engine, Camera, CameraSpaceFrustum, RenderFlags, &Mesh) &&
+		UseMesh = grPuppet_MeshBegin(P, Engine, World, Camera, CameraSpaceFrustum, RenderFlags, &Mesh) &&
 			grPuppet_MeshReserve(G->FaceCount);
 
 		grPuppet_StaticLightGrp.UseFillLight		 = P->UseFillLight;
@@ -1707,6 +1811,7 @@ grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P,
 
 					// Get RGB
 					grPuppet_SetVertexColor(LP, pLVert,SVert->ReferenceBoneIndex);
+					grPuppet_MeshNormals[v] = grPuppet_StaticLightGrp.SurfaceNormal;
 				}	//	for...
 
 				if (UseMesh)
@@ -1921,7 +2026,7 @@ grBoolean	grPuppet_Render(const grPuppet	*P,
 	grPose_GetScale(Joints,&Scale);
 
 	// The GPU path takes world-space vertices; the CPU path projects them here.
-	UseMesh = grPuppet_MeshBegin(P, Engine, Camera, NULL, GR_RENDER_FLAG_COUNTER_CLOCKWISE, &Mesh);
+	UseMesh = grPuppet_MeshBegin(P, Engine, World, Camera, NULL, GR_RENDER_FLAG_COUNTER_CLOCKWISE, &Mesh);
 	G = grBodyInst_GetGeometry(P->BodyInstance, &Scale, JointTransforms, 0, UseMesh ? NULL : Camera);
 	if (G && UseMesh && !grPuppet_MeshReserve(G->FaceCount))
 	{
@@ -2210,6 +2315,7 @@ grBoolean	grPuppet_Render(const grPuppet	*P,
 				List++;
 
 				grPuppet_SetVertexColor(LP, &v[j], SV->ReferenceBoneIndex);
+				grPuppet_MeshNormals[j] = grPuppet_StaticLightGrp.SurfaceNormal;
 
 			}
 		

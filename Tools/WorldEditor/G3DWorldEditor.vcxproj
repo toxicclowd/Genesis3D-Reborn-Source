@@ -213,6 +213,7 @@
     <ClCompile Include="Dialogs\Rebuild.cpp" />
     <ClCompile Include="Dialogs\Render.cpp" />
     <ClCompile Include="Dialogs\Stats.cpp" />
+    <ClCompile Include="Dialogs\MaterialEditorDlg.cpp" />
     <ClCompile Include="Dialogs\TexturesDlg.cpp" />
     <ClCompile Include="Dialogs\Timeline.cpp" />
     <ClCompile Include="Dialogs\DialogHelpers\BitmapResize.cpp" />
@@ -400,6 +401,7 @@
     <ClInclude Include="Dialogs\Render.h" />
     <ClInclude Include="Dialogs\ReportErr.h" />
     <ClInclude Include="Dialogs\Stats.h" />
+    <ClInclude Include="Dialogs\MaterialEditorDlg.h" />
     <ClInclude Include="Dialogs\TexturesDlg.h" />
     <ClInclude Include="Dialogs\Timeline.h" />
     <ClInclude Include="Dialogs\DialogHelpers\BitmapResize.h" />

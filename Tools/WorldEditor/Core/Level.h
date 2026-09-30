@@ -132,6 +132,8 @@ grBitmap *				Level_GetMaterialBitmapByName( const Level * pLevel, char* szBitma
 #else
 grMaterialSpec *		Level_GetMaterialSpecByName( const Level * pLevel, char* szMatName );
 grMaterialSpec *		Level_GetCurMaterialSpec( const Level * pLevel );
+// Gives the level's material of that name a new spec; GR_FALSE if the level does not use it.
+grBoolean				Level_ReplaceMaterialSpec( Level * pLevel, const char * Name, grMaterialSpec * pMatSpec );
 #endif
 
 // Added by cjp

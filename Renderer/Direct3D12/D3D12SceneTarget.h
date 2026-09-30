@@ -28,7 +28,13 @@ DXGI_FORMAT		D3D12Scene_GetFormat();
 
 // Makes the scene target renderable and returns its RTV.
 D3D12_CPU_DESCRIPTOR_HANDLE	D3D12Scene_Begin(ID3D12GraphicsCommandList* CommandList);
-// Draws the scene into BackBufferRTV (already in the render-target state).
-grBoolean		D3D12Scene_Present(ID3D12GraphicsCommandList* CommandList, D3D12_CPU_DESCRIPTOR_HANDLE BackBufferRTV);
+// The scene target's RTV (without a state change).
+D3D12_CPU_DESCRIPTOR_HANDLE	D3D12Scene_GetRTV();
+// Moves the scene target to State (post-processing reads it).
+void			D3D12Scene_TransitionColor(ID3D12GraphicsCommandList* CommandList, D3D12_RESOURCE_STATES State);
+// Draws the scene into BackBufferRTV (already in the render-target state). FromComposite:
+// show the post-processing's composite target (D3D12Post.h) instead of the scene target.
+grBoolean		D3D12Scene_Present(ID3D12GraphicsCommandList* CommandList, D3D12_CPU_DESCRIPTOR_HANDLE BackBufferRTV,
+								   bool FromComposite);
 
 #endif // D3D12SCENETARGET_H

@@ -57,6 +57,9 @@ static char THIS_FILE[] = __FILE__;
 
 static const char* s_pszNavSection = "Navigation";
 static const char* s_pszNavKeymapKey = "Keymap";
+// The 3D view's Look Profile (roadmap Phase 3), kept between sessions
+static const char* s_pszLookSection = "3DView";
+static const char* s_pszLookKey = "Look";
 static int s_NavKeymap = -1;
 
 int CG3DView::m_CXDRAG = 2;
@@ -132,6 +135,7 @@ BEGIN_MESSAGE_MAP(CG3DView, CG3DMfcView)
 	ON_WM_KEYDOWN()
 	ON_WM_CAPTURECHANGED()
 	ON_COMMAND(ID_3DVIEW_CLASSICNAV, On3dviewClassicNav)
+	ON_COMMAND_RANGE(ID_3DVIEW_LOOK_CLASSIC, ID_3DVIEW_LOOK_STYLIZED, On3dviewLook)
 	ON_COMMAND_RANGE(IDM_VIEW_TEXTURED, IDM_VIEW_RESERVED2, OnViewType)
 	ON_UPDATE_COMMAND_UI_RANGE(IDM_VIEW_TEXTURED, IDM_VIEW_RESERVED2, OnUpdateViewType)
 END_MESSAGE_MAP()
@@ -455,6 +459,8 @@ void CG3DView::ShowMenu(CPoint point)
 
 	if (GetNavKeymap() == NavKeymap_Classic)
 		ContextMenu.CheckMenuItem(ID_3DVIEW_CLASSICNAV, MF_BYCOMMAND | MF_CHECKED);
+	ContextMenu.CheckMenuRadioItem(ID_3DVIEW_LOOK_CLASSIC, ID_3DVIEW_LOOK_STYLIZED,
+		ID_3DVIEW_LOOK_CLASSIC + grEngine_GetLookProfile(m_pEngine), MF_BYCOMMAND);
 
 
 	SubMenu = ContextMenu.GetSubMenu(0);
@@ -597,6 +603,10 @@ void CG3DView::OnInitialUpdate()
 		// FM: This was getting called after DestroyWindow - caused problems
 		//grEngine_SetGamma(m_pEngine, 1.0f);	//trilobite orig
 		grEngine_SetGamma(m_pEngine, G3DVIEW_GAMMA);	//trilobite revise
+		// The look chosen in an earlier session; else the driver's ([Look] Profile)
+		const int SavedLook = AfxGetApp()->GetProfileInt(s_pszLookSection, s_pszLookKey, -1);
+		if (SavedLook >= GR_LOOK_CLASSIC)
+			grEngine_SetLookProfile(m_pEngine, SavedLook);
 		grEngine_UpdateGamma(m_pEngine);	//trilobite add
 		CG3DMfcView::OnInitialUpdate();
 	}
@@ -871,6 +881,15 @@ void CG3DView::SetNavKeymap(NavKeymap Keymap)
 void CG3DView::On3dviewClassicNav()
 {
 	SetNavKeymap((GetNavKeymap() == NavKeymap_Classic) ? NavKeymap_Modern : NavKeymap_Classic);
+}
+
+void CG3DView::On3dviewLook(UINT nID)
+{
+	const int32 Profile = static_cast<int32>(nID - ID_3DVIEW_LOOK_CLASSIC);
+
+	if (grEngine_SetLookProfile(m_pEngine, Profile))
+		AfxGetApp()->WriteProfileInt(s_pszLookSection, s_pszLookKey, Profile);
+	Invalidate(FALSE);
 }
 
 BOOL CG3DView::PreTranslateMessage(MSG* pMsg)

@@ -234,6 +234,10 @@
 #define IDR_TEXT2                       870
 #define IDS_BRIGHTNESS_FIELD            874
 #define IDS_RADIUS_FIELD                878
+#define IDS_SPOTANGLE_FIELD             7001
+#define IDS_SPOTPITCH_FIELD             7002
+#define IDS_SPOTYAW_FIELD               7003
+#define IDS_SHADOWS_FIELD               7004
 #define IDR_VIEW                        882
 #define IDS_RED_FIELD                   886
 #define IDR_3DVIEW                      890
@@ -902,6 +906,9 @@
 #define IDM_ANIMATE                     3546
 #define IDM_BILINEAR                    3550
 #define ID_3DVIEW_CLASSICNAV            5046
+#define ID_3DVIEW_LOOK_CLASSIC          5049
+#define ID_3DVIEW_LOOK_ENHANCED         5050
+#define ID_3DVIEW_LOOK_STYLIZED         5051
 #define IDS_UPDATE_ALL                  3554
 #define ID_EDIT_CLONE                   3558
 #define IDM_OPTIONS_MOUSEPROP           3562
@@ -1014,14 +1021,55 @@
 #define ID_VIEW_APPLOOK_OFF_2007_SILVER 6039
 #define ID_VIEW_APPLOOK_OFF_2007_AQUA   6040
 
+#define IDD_MATERIAL_EDITOR             4016
+#define ID_TEX_EDIT_MATERIAL            5047
+#define ID_TEX_NEW_MATERIAL             5048
+#define IDC_MATED_NAME                  6041
+#define IDC_MATED_BASE                  6042
+#define IDC_MATED_BASE_BROWSE           6043
+#define IDC_MATED_NORMAL                6044
+#define IDC_MATED_NORMAL_BROWSE         6045
+#define IDC_MATED_ORM                   6046
+#define IDC_MATED_ORM_BROWSE            6047
+#define IDC_MATED_EMISSIVE              6048
+#define IDC_MATED_EMISSIVE_BROWSE       6049
+#define IDC_MATED_HEIGHT                6050
+#define IDC_MATED_HEIGHT_BROWSE         6051
+#define IDC_MATED_AO                    6052
+#define IDC_MATED_AO_BROWSE             6053
+#define IDC_MATED_ROUGH                 6054
+#define IDC_MATED_ROUGH_BROWSE          6055
+#define IDC_MATED_METAL                 6056
+#define IDC_MATED_METAL_BROWSE          6057
+#define IDC_MATED_GLOSS                 6058
+#define IDC_MATED_AUTOFIND              6059
+#define IDC_MATED_TINT_R                6060
+#define IDC_MATED_TINT_G                6061
+#define IDC_MATED_TINT_B                6062
+#define IDC_MATED_ROUGHNESS             6063
+#define IDC_MATED_METALNESS             6064
+#define IDC_MATED_EMIT_R                6065
+#define IDC_MATED_EMIT_G                6066
+#define IDC_MATED_EMIT_B                6067
+#define IDC_MATED_INTENSITY             6068
+#define IDC_MATED_HEIGHTSCALE           6069
+#define IDC_MATED_ALPHAMODE             6070
+#define IDC_MATED_CUTOFF                6071
+#define IDC_MATED_TWOSIDED              6072
+#define IDC_MATED_RETRO                 6073
+#define IDC_MATED_FLIPGREEN             6074
+#define IDC_MATED_PAK                   6075
+#define IDC_MATED_APPLY                 6076
+#define IDC_MATED_LOG                   6077
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        4016
-#define _APS_NEXT_COMMAND_VALUE         5047
-#define _APS_NEXT_CONTROL_VALUE         6041
-#define _APS_NEXT_SYMED_VALUE           7001
+#define _APS_NEXT_RESOURCE_VALUE        4017
+#define _APS_NEXT_COMMAND_VALUE         5052
+#define _APS_NEXT_CONTROL_VALUE         6078
+#define _APS_NEXT_SYMED_VALUE           7005
 #endif
 #endif

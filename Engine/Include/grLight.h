@@ -40,9 +40,11 @@ typedef struct grLight grLight;
 #define	GR_LIGHT_FLAG_LINEAR_FALLOFF			(1<<1)
 #define	GR_LIGHT_FLAG_INVERSE_FALLOFF			(1<<2)
 #define	GR_LIGHT_FLAG_INVERSE_SQUARE_FALLOFF	(1<<3)
+#define	GR_LIGHT_FLAG_SPOT						(1<<4)	// linear falloff in a cone (grLight_SetSpot)
 #define GR_LIGHT_FLAG_TYPEMASK					((1<<8) - 1)
 
 #define	GR_LIGHT_FLAG_FAST_LIGHTING_MODEL		(1<<8)
+#define	GR_LIGHT_FLAG_CAST_SHADOWS				(1<<9)	// dynamic lights: real-time shadows (Enhanced look)
 
 //========================================================================================
 // standard utilities :
@@ -95,10 +97,18 @@ GRAPI grBoolean	GRCC grLight_SetInverseLight(grLight *Light,
 								const grVec3d *Color, 
 								grFloat Brightness);
 
-GRAPI grBoolean	GRCC grLight_SetInverseSquaredLight(grLight *Light, 
-								const grVec3d *Pos, 
-								const grVec3d *Color, 
+GRAPI grBoolean	GRCC grLight_SetInverseSquaredLight(grLight *Light,
+								const grVec3d *Pos,
+								const grVec3d *Color,
 								grFloat Brightness);
+
+// Spot lights: set GR_LIGHT_FLAG_SPOT with grLight_SetAttributes (Pos, Color, Radius and
+// Brightness work as for a linear light), then the cone. Direction is where the light shines;
+// the light fades from InnerAngle to 0 at OuterAngle (half angles in degrees, 0..90).
+GRAPI grBoolean	GRCC grLight_SetSpot(grLight *Light, const grVec3d *Direction, grFloat InnerAngle, grFloat OuterAngle);
+GRAPI grBoolean	GRCC grLight_GetSpot(const grLight *Light, grVec3d *Direction, grFloat *InnerAngle, grFloat *OuterAngle);
+// How much of the light reaches Pos because of the spot cone (1 for other lights).
+GRAPI grFloat		GRCC grLight_GetSpotFactor(const grLight *Light, const grVec3d *Pos);
 
 //========================================================================================
 

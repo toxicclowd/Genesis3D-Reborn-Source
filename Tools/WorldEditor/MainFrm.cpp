@@ -70,6 +70,10 @@ BEGIN_MESSAGE_MAP(CMainFrame, CG3DMfcMainFrame)
 //	ON_UPDATE_COMMAND_UI(ID_VIEW_TOOLBAR, OnUpdateViewToolbar)
 
 	ON_COMMAND(IDM_VIEW_ALLMATERIALS, OnViewAllmaterials)
+	ON_COMMAND(ID_TEX_NEW_MATERIAL, OnNewMaterial)
+	ON_COMMAND(ID_TEX_EDIT_MATERIAL, OnEditMaterial)
+	ON_UPDATE_COMMAND_UI(ID_TEX_NEW_MATERIAL, OnUpdateMaterialCommand)
+	ON_UPDATE_COMMAND_UI(ID_TEX_EDIT_MATERIAL, OnUpdateMaterialCommand)
 
 	ON_COMMAND(ID_MODE_ABORT, OnModeAbort)
 	ON_UPDATE_COMMAND_UI(ID_MODE_ABORT, OnUpdateModeAbort)
@@ -940,6 +944,26 @@ void CMainFrame::OnUpdateObjectPosSizeItem(CCmdUI* pCmdUI)
     pCmdUI->Enable(TRUE);
 }
 // end krouer - enable Object position and size
+
+// Materials menu (Material Editor, roadmap Phase 2)
+void CMainFrame::OnNewMaterial()
+{
+	m_TextureDialog.OpenMaterialEditor(true);
+}
+
+void CMainFrame::OnEditMaterial()
+{
+	m_TextureDialog.OpenMaterialEditor(false);
+}
+
+void CMainFrame::OnUpdateMaterialCommand(CCmdUI* pCmdUI)
+{
+	// The material list lives with an open level
+	BOOL Enable = GetCurrentDocument() != NULL;
+	if (pCmdUI->m_nID == ID_TEX_EDIT_MATERIAL)
+		Enable = Enable && !m_TextureDialog.GetSelectedTexture().IsEmpty();
+	pCmdUI->Enable(Enable);
+}
 
 void CMainFrame::OnViewAllmaterials() 
 {

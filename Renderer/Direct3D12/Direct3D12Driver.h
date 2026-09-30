@@ -120,6 +120,11 @@ UINT64 D3D12GetCompletedFenceValue();
 UINT64 D3D12GetPendingFenceValue();
 // Per-frame constants (b1) for the current scene; 0 outside a scene.
 extern D3D12_GPU_VIRTUAL_ADDRESS			g_FrameConstantsGPU;
+// The frames presented so far, and seconds since the driver started.
+uint32 D3D12GetFrameNumber();
+float D3D12GetTimeSeconds();
+extern FrameResources						g_FrameResources[FRAME_COUNT];
+extern ComPtr<ID3D12DescriptorHeap>			g_pDSVHeap;
 
 //================================================================================
 //	Driver Interface Functions (from DCommon.h)

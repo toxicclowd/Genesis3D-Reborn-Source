@@ -415,10 +415,9 @@ void CTextureListControl::OnNMRclick(NMHDR *pNMHDR, LRESULT *pResult)
 				if (pMatSpec) {
 					strFormat = "GR_PIXELFORMAT_24BIT_RGB";
 
-					grMaterialSpec_Thumbnail* pMatThumb = grMaterialSpec_GetThumbnail(pMatSpec);
-
-					strHeight.Format("%d", pMatThumb->height);
-					strWidth.Format("%d", pMatThumb->width);
+					// The texture's size, not the thumbnail's (which a material may not have)
+					strHeight.Format("%d", grMaterialSpec_Height(pMatSpec));
+					strWidth.Format("%d", grMaterialSpec_Width(pMatSpec));
 #endif
 					rectItem.SetRect(rectItem.left, rectItem.top, rectItem.left + 410, rectItem.top + 60);
 

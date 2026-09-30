@@ -809,6 +809,7 @@ grBoolean grBSP_VisFrame(grBSP *BSPTree, const grCamera *Camera, const grFrustum
 // traversals come from portal/mirror faces, whose views the CPU clips to the portal
 // polygon, which the GPU path does not do yet.
 static int32 g_BSPFaceTraversalDepth = 0;
+grBoolean g_BSPGpuFace = GR_FALSE;
 
 typedef struct
 {
@@ -1037,6 +1038,7 @@ grBoolean grBSP_RenderFrontToBack(grBSP *Tree, grCamera *Camera, grFrustum *Came
 
 		memset(&SceneInfo.WorldView, 0, sizeof(SceneInfo.WorldView));
 		SceneInfo.WorldView.ModelToCamera = *ModelToCameraXForm;
+		SceneInfo.WorldView.ModelToWorld = Tree->ModelToWorldXForm;
 		grCamera_GetScreenProjection(Camera, &SceneInfo.WorldView.Scale,
 			&SceneInfo.WorldView.XCenter, &SceneInfo.WorldView.YCenter);
 		SceneInfo.WorldView.ZScale = grCamera_GetZScale(Camera);
@@ -3068,6 +3070,28 @@ static grBoolean CombineDLightWithRGBMapFastLightingModel(grBSP *BSP, int32 *Lig
 }
 
 //=======================================================================================
+//	grBSPNode_LightSpotFactor
+//=======================================================================================
+grFloat grBSPNode_LightSpotFactor(const grBSPNode_Light *Light, const grVec3d *Point)
+{
+	grVec3d		ToPoint;
+	grFloat		CosAngle, t;
+
+	if ((Light->Flags & GR_LIGHT_FLAG_TYPEMASK) != GR_LIGHT_FLAG_SPOT)
+		return 1.0f;
+	grVec3d_Subtract(Point, &Light->Pos, &ToPoint);
+	if (grVec3d_Normalize(&ToPoint) <= 0.0f)
+		return 1.0f;
+	CosAngle = grVec3d_DotProduct(&ToPoint, &Light->SpotDir);
+	if (CosAngle <= Light->SpotCosOuter)
+		return 0.0f;
+	if (CosAngle >= Light->SpotCosInner || Light->SpotCosInner - Light->SpotCosOuter < 1e-5f)
+		return 1.0f;
+	t = (CosAngle - Light->SpotCosOuter) / (Light->SpotCosInner - Light->SpotCosOuter);
+	return t * t * (3.0f - 2.0f * t);
+}
+
+//=======================================================================================
 //	CombineDLightWithRGBMap
 //=======================================================================================
 static grBoolean CombineDLightWithRGBMap(grBSP *BSP, int32 *LightData, grBSPNode_Light *Light, grBSPNode_DrawFace *Face)
@@ -3131,7 +3155,7 @@ static grBoolean CombineDLightWithRGBMap(grBSP *BSP, int32 *LightData, grBSPNode
 				goto Skip;
 		}
 			
-		Val = (Light->Radius - Dist) * Angle;
+		Val = (Light->Radius - Dist) * Angle * grBSPNode_LightSpotFactor(Light, pPoint);
 
 		if (Val <= 0.0f)
 			goto Skip;	// Light out of radius for this point
@@ -3296,6 +3320,10 @@ static void GRCC grBSP_SetupLightmap(grRDriver_LMapCBInfo *Info, void *LMapCBCon
 
 			Light = &BSP->DLights[i];
 
+			// The GPU path lights (and shadows) this light itself
+			if (Light->OnGpu && g_BSPGpuFace)
+				continue;
+
 			if (Light->Flags & GR_LIGHT_FLAG_FAST_LIGHTING_MODEL)
 			{
 				if (CombineDLightWithRGBMapFastLightingModel(BSP, TempRGB32, Light, pFace))
@@ -3386,6 +3414,11 @@ static grBoolean UpdateDLights(grBSP *BSP)
 		if (!grLight_GetAttributes(Light, &BSPLight->Pos, &BSPLight->Color, &BSPLight->Radius, &Brightness, &BSPLight->Flags))
 			return GR_FALSE;
 
+		// Dynamic suns have no position for the lightmaps; the GPU lights them
+		// (grWorld_SubmitGpuFrame)
+		if ((BSPLight->Flags & GR_LIGHT_FLAG_TYPEMASK) == GR_LIGHT_FLAG_SUN)
+			continue;
+
 		// Rotate the light into the BSP, so we can send it down the tree
 		grXForm3d_Transform(&BSP->WorldToModelXForm, &BSPLight->Pos, &BSPLight->Pos);
 
@@ -3393,6 +3426,21 @@ static grBoolean UpdateDLights(grBSP *BSP)
 			grVec3d_Scale(&BSPLight->Color, 1.0f/255.0f, &BSPLight->Color);
 
 		grVec3d_Scale(&BSPLight->Color, Brightness, &BSPLight->Color);
+
+		BSPLight->SpotCosInner = BSPLight->SpotCosOuter = -1.0f;
+		grVec3d_Set(&BSPLight->SpotDir, 0.0f, -1.0f, 0.0f);
+		if ((BSPLight->Flags & GR_LIGHT_FLAG_TYPEMASK) == GR_LIGHT_FLAG_SPOT)
+		{
+			grFloat		Inner, Outer;
+
+			grLight_GetSpot(Light, &BSPLight->SpotDir, &Inner, &Outer);
+			grXForm3d_Rotate(&BSP->WorldToModelXForm, &BSPLight->SpotDir, &BSPLight->SpotDir);
+			BSPLight->SpotCosInner = (grFloat)cos(Inner * (GR_PI / 180.0f));
+			BSPLight->SpotCosOuter = (grFloat)cos(Outer * (GR_PI / 180.0f));
+		}
+		// Enhanced look: the GPU shades lights that cast shadows (see grWorld_SubmitGpuFrame)
+		BSPLight->OnGpu = (BSP->Engine && (BSPLight->Flags & GR_LIGHT_FLAG_CAST_SHADOWS) &&
+			grEngine_GpuShadowsEnabled(BSP->Engine)) ? GR_TRUE : GR_FALSE;
 
 		BSPLight->R = COLOR_TO_FIXED(BSPLight->Color.X);
 		BSPLight->G = COLOR_TO_FIXED(BSPLight->Color.Y);

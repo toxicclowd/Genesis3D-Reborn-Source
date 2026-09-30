@@ -28,6 +28,7 @@ enum D3D12_PSO_TYPE
 	PSO_WORLD_MULTITEX,   // GPU world faces with lightmap
 	PSO_MESH_TEXTURE,     // GPU world meshes (actors), textured and vertex lit
 	PSO_WORLD_PBR,        // GPU world faces with a PBR material (roadmap Phase 2)
+	PSO_MESH_PBR,         // GPU world meshes with a PBR material
 	PSO_COUNT
 };
 
@@ -40,7 +41,13 @@ enum D3D12_ROOT_PARAM
 	ROOT_PARAM_BASE_TABLE = ROOT_PARAM_TEXTURES,	// descriptor tables: t0
 	ROOT_PARAM_LIGHT_TABLE,						// descriptor tables: t1
 	ROOT_PARAM_WORLD_VIEW = ROOT_PARAM_LIGHT_TABLE,	// bindless: DRV_WorldView CBV, b2
-	ROOT_PARAM_WORLD_FACES						// bindless: per-face data (t0, space2)
+	ROOT_PARAM_WORLD_FACES,						// bindless: per-face data (t0, space2)
+	// Bindless: frame lighting (D3D12Lighting.h), t0..t3 space3
+	ROOT_PARAM_LIGHTS,							// the frame's lights
+	ROOT_PARAM_CLUSTER_COUNTS,					// lights per cluster
+	ROOT_PARAM_CLUSTER_ITEMS,					// their light indices
+	ROOT_PARAM_SHADOW_VIEWS,					// shadow map views
+	ROOT_PARAM_COUNT
 };
 
 // Vertex of the GPU world path (DRV_WorldVertex, VS_INPUT in Shaders/World.hlsl).
@@ -55,13 +62,38 @@ struct D3D12DrawConstants
 	uint32 Padding;
 };
 
-// Per-frame constant buffer (FrameConstants in Shaders/TLPoly.hlsl).
+// D3D12FrameConstants::FrameFlags (FRAME_* in the shaders).
+#define D3D12_FRAME_OUTPUT_LINEAR	0x0001u		// Enhanced/Stylized scene: linear HDR color, tonemapped later
+#define D3D12_FRAME_CLUSTERS		0x0002u		// the light clusters are valid
+#define D3D12_FRAME_SNAP_LIGHTING	0x0004u		// Stylized: dynamic lighting per lightmap texel
+#define D3D12_FRAME_DYNAMIC_UNBAKED	0x0008u		// lights with DRV_LIGHT_CAST_SHADOWS are not in the lightmaps
+
+// Per-frame constant buffer (FrameConstants in the shaders; the same layout in every .hlsl).
 struct D3D12FrameConstants
 {
-	float ViewportSize[2];
+	float ViewportSize[2];			// the back buffer (engine pixel coordinates)
 	float InvViewportSize[2];
 	uint32 FrameNumber;
 	float TimeSeconds;
+	uint32 FrameFlags;				// D3D12_FRAME_*
+	float RenderScale;				// scene resolution / back buffer resolution
+	// The main camera (World_SetFrame): world-to-camera rows and screen projection
+	float MainWorldToCamera[3][4];
+	float MainScale;
+	float MainXCenter;
+	float MainYCenter;
+	float MainZScale;
+	// Lights (D3D12Lighting.cpp)
+	uint32 NumLights;
+	uint32 NumDirLights;			// the first NumDirLights lights are directional
+	uint32 ShadowAtlasIndex;		// heap index of the shadow atlas
+	float ShadowAtlasTexel;			// 1 / its size
+	uint32 ClusterDims[4];			// x, y, z, lights per cluster
+	float ClusterTile[2];			// a cluster's size in back buffer pixels
+	float ClusterZNear;				// slice = log(Z / ZNear) * ZLogScale
+	float ClusterZLogScale;
+	float MaxRadiance;				// a light's strongest contribution (1 in Classic)
+	float VertexSnap;				// Stylized: snap grid width in pixels, 0 = off
 	float Padding[2];
 };
 

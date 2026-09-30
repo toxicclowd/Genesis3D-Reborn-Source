@@ -17,6 +17,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 
 	G3DGameShell -screenshot out.bmp [-level Levels\x.j3d] [-camera x y z yaw pitch]
 	             [-frames n] [-size w h] [-overlay] [-dlight x y z radius r g b]...
+	             [-shadowlight x y z radius r g b]... [-spotlight x y z radius r g b dx dy dz angle]...
+	             [-look classic|enhanced|stylized] [-restartdriver]
 
 	Runs the startup script, optionally swaps in another level, places the camera,
 	renders a fixed number of frames with a fixed timestep (so animated lights and
@@ -24,6 +26,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	The exit code is 0 on success and 1 on failure. -overlay keeps the engine's debug
 	text (FPS, GPU times), which is left out of reference images by default. -dlight
 	adds a dynamic light (color 0..255), up to four, e.g. to show PBR specular.
+	-restartdriver shuts the driver down and starts it again halfway through (as a
+	display mode change does), so textures must survive it. -shadowlight is a -dlight
+	that casts shadows, -spotlight one shaped by a cone (direction and half angle in
+	degrees) that casts shadows too; both need the Enhanced or Stylized look (-look,
+	or [Look] Profile in Direct3D12Driver.ini) to cast them.
 */
 struct ShellOptions
 {
@@ -31,9 +38,12 @@ struct ShellOptions
 	const char						*Level;
 	bool							HasCamera;
 	bool							Overlay;
+	bool							RestartDriver;
 	float							Camera[5];			// x y z yaw pitch (degrees)
 	int								NumDLights;
-	float							DLights[4][7];		// x y z radius r g b
+	float							DLights[4][11];		// x y z radius r g b, spot: dx dy dz angle
+	uint32							DLightFlags[4];		// GR_LIGHT_FLAG_*
+	int								Look;				// GR_LOOK_*, -1 = the driver's
 	int								Frames;
 	int								Width, Height;
 };
@@ -41,6 +51,7 @@ struct ShellOptions
 static void ParseOptions(ShellOptions *Opts)
 {
 	memset(Opts, 0, sizeof(*Opts));
+	Opts->Look = -1;
 	Opts->Frames = 30;
 	Opts->Width = 800;
 	Opts->Height = 600;
@@ -56,6 +67,8 @@ static void ParseOptions(ShellOptions *Opts)
 			Opts->Level = __argv[++i];
 		else if (!_stricmp(Arg, "-overlay"))
 			Opts->Overlay = true;
+		else if (!_stricmp(Arg, "-restartdriver"))
+			Opts->RestartDriver = true;
 		else if (!_stricmp(Arg, "-frames") && Left >= 1)
 			Opts->Frames = atoi(__argv[++i]);
 		else if (!_stricmp(Arg, "-size") && Left >= 2)
@@ -69,14 +82,33 @@ static void ParseOptions(ShellOptions *Opts)
 				Opts->Camera[c] = (float)atof(__argv[++i]);
 			Opts->HasCamera = true;
 		}
-		else if (!_stricmp(Arg, "-dlight") && Left >= 7)
+		else if ((!_stricmp(Arg, "-dlight") || !_stricmp(Arg, "-shadowlight")) && Left >= 7)
 		{
-			float					*Light = Opts->DLights[(Opts->NumDLights < 4) ? Opts->NumDLights : 3];
+			const int				Index = (Opts->NumDLights < 4) ? Opts->NumDLights : 3;
+			float					*Light = Opts->DLights[Index];
 
 			for (int c = 0; c < 7; c++)
 				Light[c] = (float)atof(__argv[++i]);
+			Opts->DLightFlags[Index] = !_stricmp(Arg, "-shadowlight") ? GR_LIGHT_FLAG_CAST_SHADOWS : 0;
 			if (Opts->NumDLights < 4)
 				Opts->NumDLights++;
+		}
+		else if (!_stricmp(Arg, "-spotlight") && Left >= 11)
+		{
+			const int				Index = (Opts->NumDLights < 4) ? Opts->NumDLights : 3;
+			float					*Light = Opts->DLights[Index];
+
+			for (int c = 0; c < 11; c++)
+				Light[c] = (float)atof(__argv[++i]);
+			Opts->DLightFlags[Index] = GR_LIGHT_FLAG_SPOT | GR_LIGHT_FLAG_CAST_SHADOWS;
+			if (Opts->NumDLights < 4)
+				Opts->NumDLights++;
+		}
+		else if (!_stricmp(Arg, "-look") && Left >= 1)
+		{
+			const char				*Name = __argv[++i];
+
+			Opts->Look = !_stricmp(Name, "enhanced") ? GR_LOOK_ENHANCED : !_stricmp(Name, "stylized") ? GR_LOOK_STYLIZED : GR_LOOK_CLASSIC;
 		}
 	}
 
@@ -103,7 +135,7 @@ static bool PumpMessages()
 	return true;
 }
 
-static int RunScreenshot(const ShellOptions *Opts)
+static int RunScreenshot(const ShellOptions *Opts, HWND hWnd)
 {
 	CGameMgr						*Game = CGameMgr::GetPtr();
 
@@ -135,13 +167,27 @@ static int RunScreenshot(const ShellOptions *Opts)
 
 		grVec3d_Set(&Pos, L[0], L[1], L[2]);
 		grVec3d_Set(&Color, L[4], L[5], L[6]);
-		if (!Light || !grLight_SetAttributes(Light, &Pos, &Color, L[3], 1.0f, 0) ||
-			!grWorld_AddDLight(Game->m_pWorld, Light))
+		if (!Light || !grLight_SetAttributes(Light, &Pos, &Color, L[3], 1.0f, Opts->DLightFlags[i]))
+		{
+			GLOG("Screenshot - could not add a dynamic light");
+			return 1;
+		}
+		if (Opts->DLightFlags[i] & GR_LIGHT_FLAG_SPOT)
+		{
+			grVec3d					Dir;
+
+			grVec3d_Set(&Dir, L[7], L[8], L[9]);
+			grLight_SetSpot(Light, &Dir, L[10] * 0.75f, L[10]);
+		}
+		if (!grWorld_AddDLight(Game->m_pWorld, Light))
 		{
 			GLOG("Screenshot - could not add a dynamic light");
 			return 1;
 		}
 	}
+
+	if (Opts->Look >= 0)
+		grEngine_SetLookProfile(Game->m_pEngine, Opts->Look);
 
 	// The frame-rate text changes every run, so keep it out of reference images.
 	grEngine_EnableFrameRateCounter(Game->m_pEngine, Opts->Overlay ? GR_TRUE : GR_FALSE);
@@ -151,6 +197,18 @@ static int RunScreenshot(const ShellOptions *Opts)
 	{
 		if (!PumpMessages())
 			return 1;
+		if (Opts->RestartDriver && i == Opts->Frames / 2)
+		{
+			grDriver				*Driver;
+			grDriver_Mode			*Mode;
+
+			if (!grEngine_GetDriverAndMode(Game->m_pEngine, &Driver, &Mode) ||
+				!grEngine_SetDriverAndMode(Game->m_pEngine, hWnd, Driver, Mode))
+			{
+				GLOG("Screenshot - driver restart failed");
+				return 1;
+			}
+		}
 		if (!Game->Frame())
 		{
 			GLOG("Screenshot - frame failed");
@@ -228,7 +286,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	if (Opts.Screenshot)
 	{
-		ExitCode = RunScreenshot(&Opts);
+		ExitCode = RunScreenshot(&Opts, hWnd);
 		running = false;
 	}
 

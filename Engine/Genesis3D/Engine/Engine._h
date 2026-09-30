@@ -131,6 +131,19 @@ typedef struct
 
 typedef struct BitmapList BitmapList;
 
+// grEngine::LookSet
+#define ENGINE_LOOK_SET_NONE		0	// the driver's settings (its ini)
+#define ENGINE_LOOK_SET_PROFILE		1	// the driver's settings with the application's profile
+#define ENGINE_LOOK_SET_ALL			2	// the application's settings
+
+// A texture made from a DDS file, kept with the file so a driver restart can re-create it
+typedef struct
+{
+	grTexture			*Texture;
+	uint8				*Data;
+	uint32				Size;
+} Engine_FileTexture;
+
 // System globals initialized by module it belongs to...
 struct grEngine
 {
@@ -166,12 +179,19 @@ struct grEngine
 
 	BitmapList			*AttachedBitmaps;
 
+	Engine_FileTexture	*FileTextures;		// see grEngine_CreateTextureFromFile
+	int32				NumFileTextures;
+	int32				MaxFileTextures;
+
 	float				CurrentGamma;
 	float				BitmapGamma;
 
 	grEngine_FrameState	FrameState;
 
 	uint32				DefaultRenderFlags;
+
+	grEngine_LookSettings	Look;			// sent to the driver (DRV_Driver::SetLook)
+	int32				LookSet;			// ENGINE_LOOK_SET_*: what the application chose; else the driver's defaults
 
 	grBoolean			SplashDisplayed;	// Have we already done the splash screen?
 

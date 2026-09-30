@@ -10,6 +10,8 @@
 #include "D3D12Log.h"
 #include "D3D12Common.h"
 #include "D3D12TextureMgr.h"
+#include "D3D12Post.h"
+#include "D3D12Lighting.h"
 
 namespace
 {
@@ -168,7 +170,10 @@ grBoolean D3D12Scene_Create(UINT NewWidth, UINT NewHeight)
 	Width = NewWidth;
 	Height = NewHeight;
 	D3D12Log::GetPtr()->Printf("Scene target created (%ux%u, R16G16B16A16_FLOAT)", Width, Height);
-	return GR_TRUE;
+
+	// The other driver-owned views in the heap's reserved slots
+	D3D12Lighting_WriteDescriptors();
+	return D3D12Post_Resize(Width, Height);
 }
 
 void D3D12Scene_Release()
@@ -193,16 +198,30 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Scene_Begin(ID3D12GraphicsCommandList* CommandL
 	return RTVHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
-grBoolean D3D12Scene_Present(ID3D12GraphicsCommandList* CommandList, D3D12_CPU_DESCRIPTOR_HANDLE BackBufferRTV)
+D3D12_CPU_DESCRIPTOR_HANDLE D3D12Scene_GetRTV()
+{
+	return RTVHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
+void D3D12Scene_TransitionColor(ID3D12GraphicsCommandList* CommandList, D3D12_RESOURCE_STATES State)
+{
+	if (Color)
+		Transition(CommandList, State);
+}
+
+grBoolean D3D12Scene_Present(ID3D12GraphicsCommandList* CommandList, D3D12_CPU_DESCRIPTOR_HANDLE BackBufferRTV,
+							 bool FromComposite)
 {
 	if (!Color || !CreatePresentPipeline())
 		return GR_FALSE;
 
 	D3D12BeginMarker(CommandList, "Present pass");
 	Transition(CommandList, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	if (FromComposite)
+		D3D12Post_EndFrame(CommandList);
 
 	D3D12_GPU_DESCRIPTOR_HANDLE SceneSRV = {};
-	D3D12_THandle_GetReservedSRV(D3D12_RESERVED_SRV_SCENE, nullptr, &SceneSRV);
+	D3D12_THandle_GetReservedSRV(FromComposite ? D3D12_RESERVED_SRV_COMPOSITE : D3D12_RESERVED_SRV_SCENE, nullptr, &SceneSRV);
 	CommandList->OMSetRenderTargets(1, &BackBufferRTV, FALSE, nullptr);
 	CommandList->SetGraphicsRootSignature(PresentRootSignature.Get());
 	CommandList->SetGraphicsRootDescriptorTable(0, SceneSRV);

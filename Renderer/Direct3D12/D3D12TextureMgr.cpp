@@ -788,6 +788,11 @@ void D3D12_THandle_GetReservedSRV(UINT Slot, D3D12_CPU_DESCRIPTOR_HANDLE* Cpu, D
 	}
 }
 
+UINT D3D12_THandle_GetReservedIndex(UINT Slot)
+{
+	return MAX_THANDLES + Slot;
+}
+
 int32 D3D12_LightmapBytesPerPixel(grPixelFormat Format)
 {
 	return BytesPerPixel(Format);

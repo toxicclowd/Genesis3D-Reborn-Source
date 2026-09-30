@@ -13,3 +13,13 @@ sky_portal  | Levels\tutorial1.j3d         | 0 100 0 0 80
 portal      | Levels\tutorial2_complete.j3d | -656 148 -600 0 0
 dlight      | Levels\tutorial1.j3d         |                              | -dlight 0 0 -60 400 255 240 220
 pbr_tutorial1 | Levels\tutorial1.j3d       |                              | G3D_MATERIAL_OVERRIDES=GlobalMaterials\PBRSample -dlight 0 0 -60 400 255 240 220
+pbr_dancer  | Levels\dancer.j3d            | 0 200 400 0 -20              | G3D_MATERIAL_OVERRIDES=GlobalMaterials\PBRSample -dlight 0 150 150 500 255 240 220
+pbr_tutorial1_restart | Levels\tutorial1.j3d |                          | G3D_MATERIAL_OVERRIDES=GlobalMaterials\PBRSample -dlight 0 0 -60 400 255 240 220 -restartdriver
+pbr_dancer_restart | Levels\dancer.j3d       | 0 200 400 0 -20              | G3D_MATERIAL_OVERRIDES=GlobalMaterials\PBRSample -dlight 0 150 150 500 255 240 220 -restartdriver
+p3_enhanced | Levels\tutorial1.j3d         |                              | G3D_MATERIAL_OVERRIDES=GlobalMaterials\PBRSample -look enhanced
+p3_stylized | Levels\tutorial1.j3d         |                              | G3D_MATERIAL_OVERRIDES=GlobalMaterials\PBRSample -look stylized
+p3_shadow   | Levels\dancer.j3d            | 0 200 400 0 -20              | -look enhanced -shadowlight 0 150 150 500 255 240 220
+p3_spot     | Levels\dancer.j3d            | 0 200 400 0 -20              | -look enhanced -spotlight 0 250 200 700 255 240 220 0 -0.8 -0.6 30
+p3_effects  | Levels\StreetScene.j3d       |                              | -look enhanced G3D_D3D12_SSAO=1 G3D_D3D12_HEIGHTFOGDENSITY=0.0005 G3D_D3D12_TONEMAPPER=AgX
+p3_retro    | Levels\tutorial1.j3d         | 0 100 0 0 80                 | -look stylized G3D_D3D12_VERTEXSNAP=320 G3D_D3D12_CRT=1 G3D_D3D12_SNAPLIGHTING=1 -dlight 0 0 -60 400 255 240 220
+p3_portal   | Levels\tutorial2_complete.j3d | -656 148 -600 0 0           | -look enhanced -shadowlight -656 200 -700 500 255 220 200

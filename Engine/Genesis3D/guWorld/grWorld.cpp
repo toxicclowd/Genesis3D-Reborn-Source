@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h> //free
+#include <math.h>
 
 #include "Dcommon.h"
 #include "Engine.h"
@@ -50,6 +51,7 @@
 #include "Util.h"			// Added by Icestorm [MLB-ICE]
 
 #include "grPtrMgr._h"
+#include "Camera._h"		// grCamera_XForm
 #include "log.h"
 
 //#define FIRST_OBJECT_IN_HIERARCHY_IS_MODEL_HACK
@@ -1127,6 +1129,130 @@ GRAPI grBoolean GRCC grEngine_RenderSprite(const grUserPoly *Poly, const grEngin
 */
 
 //========================================================================================
+//	grWorld_GpuLight
+//	A light as the driver's frame lighting takes it (world space, 0..1 color * brightness).
+//	Returns GR_FALSE for lights it does not draw.
+//========================================================================================
+static grBoolean grWorld_GpuLight(const grLight *Light, grBoolean Static, grBoolean GpuShadows, DRV_Light *Out)
+{
+	grVec3d		Pos, Color;
+	grFloat		Radius, Brightness;
+	uint32		Flags, Type;
+
+	if (!grLight_GetAttributes(Light, &Pos, &Color, &Radius, &Brightness, &Flags))
+		return GR_FALSE;
+
+	memset(Out, 0, sizeof(*Out));
+	if (Color.X > 1.0f || Color.Y > 1.0f || Color.Z > 1.0f)
+		grVec3d_Scale(&Color, 1.0f/255.0f, &Color);
+	grVec3d_Scale(&Color, Brightness, &Color);
+	Out->Color[0] = Color.X;
+	Out->Color[1] = Color.Y;
+	Out->Color[2] = Color.Z;
+	Out->Pos[0] = Pos.X;
+	Out->Pos[1] = Pos.Y;
+	Out->Pos[2] = Pos.Z;
+	Out->Radius = Radius;
+	Out->Dir[1] = -1.0f;
+	Out->CosInner = Out->CosOuter = -1.0f;
+
+	Type = Flags & GR_LIGHT_FLAG_TYPEMASK;
+	if (Type == GR_LIGHT_FLAG_SUN)
+	{
+		// Static suns are not baked (see grBSPNode_LightmapCalcLight)
+		if (Static)
+			return GR_FALSE;
+		// Pos is the direction to the sun
+		if (grVec3d_Normalize(&Pos) <= 0.0f)
+			return GR_FALSE;
+		Out->Flags = DRV_LIGHT_DIRECTIONAL;
+		Out->Dir[0] = -Pos.X;
+		Out->Dir[1] = -Pos.Y;
+		Out->Dir[2] = -Pos.Z;
+		Out->Pos[0] = Out->Pos[1] = Out->Pos[2] = 0.0f;
+		Out->Color[0] = Color.X;
+		Out->Color[1] = Color.Y;
+		Out->Color[2] = Color.Z;
+	}
+	else
+	{
+		if (Radius <= 0.0f)
+			return GR_FALSE;
+		Out->Flags = DRV_LIGHT_POINT;
+		if (Type == GR_LIGHT_FLAG_SPOT)
+		{
+			grVec3d		Dir;
+			grFloat		Inner, Outer;
+
+			grLight_GetSpot(Light, &Dir, &Inner, &Outer);
+			Out->Flags = DRV_LIGHT_SPOT;
+			Out->Dir[0] = Dir.X;
+			Out->Dir[1] = Dir.Y;
+			Out->Dir[2] = Dir.Z;
+			Out->CosInner = (float)cos(Inner * (GR_PI / 180.0f));
+			Out->CosOuter = (float)cos(Outer * (GR_PI / 180.0f));
+		}
+	}
+
+	if (Static)
+		Out->Flags |= DRV_LIGHT_STATIC;
+	else if ((Flags & GR_LIGHT_FLAG_CAST_SHADOWS) && GpuShadows)
+		Out->Flags |= DRV_LIGHT_CAST_SHADOWS;	// grBSP leaves it out of the lightmaps (OnGpu)
+	return GR_TRUE;
+}
+
+//========================================================================================
+//	grWorld_SubmitGpuFrame
+//	Gives the driver the frame's lights and main camera (DRV_Driver::World_SetFrame).
+//========================================================================================
+static void grWorld_SubmitGpuFrame(grWorld *World, grCamera *Camera)
+{
+	static DRV_Light	Lights[DRV_MAX_FRAME_LIGHTS];
+	DRV_Driver			*RDriver;
+	DRV_WorldView		View;
+	grChain_Link		*Link;
+	int32				NumLights = 0;
+	grBoolean			GpuShadows;
+	int					Pass;
+
+	RDriver = grEngine_GetDriver(World->Engine);
+	if (!RDriver || !RDriver->World_SetFrame)
+		return;
+
+	GpuShadows = grEngine_GpuShadowsEnabled(World->Engine);
+
+	// Dynamic lights first, so they are kept if there are too many
+	for (Pass = 0; Pass < 2; Pass++)
+	{
+		const grChain	*Chain = (Pass == 0) ? World->DLightChain : World->LightChain;
+
+		for (Link = grChain_GetFirstLink((grChain*)Chain); Link && NumLights < DRV_MAX_FRAME_LIGHTS; Link = grChain_LinkGetNext(Link))
+		{
+			if (grWorld_GpuLight((const grLight*)grChain_LinkGetLinkData(Link), (Pass == 1) ? GR_TRUE : GR_FALSE,
+				GpuShadows, &Lights[NumLights]))
+				NumLights++;
+		}
+	}
+
+	memset(&View, 0, sizeof(View));
+	View.ModelToCamera = *grCamera_XForm(Camera);
+	grXForm3d_SetIdentity(&View.ModelToWorld);
+	grCamera_GetScreenProjection(Camera, &View.Scale, &View.XCenter, &View.YCenter);
+	View.ZScale = grCamera_GetZScale(Camera);
+	grCamera_GetScreenSize(Camera, &View.HalfWidth, &View.HalfHeight);
+	View.HalfWidth *= 0.5f;
+	View.HalfHeight *= 0.5f;
+	{
+		grBoolean	ZFarEnable;
+		grFloat		ZFar;
+
+		grCamera_GetFarClipPlane(Camera, &ZFarEnable, &ZFar);
+		View.ZFar = ZFarEnable ? ZFar : 0.0f;
+	}
+	RDriver->World_SetFrame(&View, Lights, NumLights);
+}
+
+//========================================================================================
 //	grWorld_Render
 //	This function can be recursively re-entered...
 //========================================================================================
@@ -1152,6 +1278,7 @@ GRAPI grBoolean GRCC grWorld_Render(grWorld *World, grCamera *Camera, grFrustum 
 	if (World->Recursion == 0)
 	{
 		memset(&g_WorldDebugInfo, 0, sizeof(g_WorldDebugInfo));
+		grWorld_SubmitGpuFrame(World, Camera);
 	}
 
 	World->Recursion++;
@@ -1167,6 +1294,12 @@ GRAPI grBoolean GRCC grWorld_Render(grWorld *World, grCamera *Camera, grFrustum 
 
 	if (World->Recursion == 0)
 	{
+		DRV_Driver	*RDriver = grEngine_GetDriver(World->Engine);
+
+		// Post-processing covers the world; what the application draws next is overlay
+		if (RDriver && RDriver->World_EndPass)
+			RDriver->World_EndPass();
+
 		// Destroy all AutoRemove UserPolys
 		if (!grWorld_DestroyAutoRemoveUserPolys(World))
 			return GR_FALSE;

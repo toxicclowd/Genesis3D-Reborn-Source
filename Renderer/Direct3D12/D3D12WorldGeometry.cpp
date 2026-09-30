@@ -15,6 +15,7 @@
 #include "D3D12UploadRing.h"
 #include "D3D12LightmapAtlas.h"
 #include "D3D12Config.h"
+#include "D3D12Lighting.h"
 #include "Direct3D12Driver.h"
 #include "D3D12Log.h"
 
@@ -36,11 +37,6 @@ namespace
 	DRV_WorldView								LastView;
 	UINT64										LastViewFrame = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS					LastViewGPU = 0;
-	// Lights for PBR faces (WorldGeometry_SetLights), part of the view constants.
-	DRV_WorldLight								Lights[DRV_WORLD_MAX_LIGHTS];
-	int32										NumLights = 0;
-	UINT64										LightsSerial = 0;
-	UINT64										LastViewLights = 0;
 
 	struct ViewConstants
 	{
@@ -54,12 +50,22 @@ namespace
 		float	HalfHeight;
 		uint32	NumClipPlanes;
 		float	ClipPlanes[DRV_WORLD_MAX_CLIP_PLANES][4];
-		float	EyePos[4];						// the camera in model space
-		uint32	NumLights;
-		uint32	LightPadding[3];
-		float	LightPosRadius[DRV_WORLD_MAX_LIGHTS][4];	// model space
-		float	LightColor[DRV_WORLD_MAX_LIGHTS][4];
+		float	EyePos[4];						// the camera in world space
+		float	ModelToWorld[3][4];
+		uint32	UseClusters;					// the frame's main camera: light clusters apply
+		uint32	ViewPadding[3];
 	};
+
+	// Rows of a rigid transform (rotation, w = translation).
+	void XFormRows(const grXForm3d& M, float Rows[3][4])
+	{
+		const float R[3][4] = {
+			{ M.AX, M.AY, M.AZ, M.Translation.X },
+			{ M.BX, M.BY, M.BZ, M.Translation.Y },
+			{ M.CX, M.CY, M.CZ, M.Translation.Z }
+		};
+		std::memcpy(Rows, R, sizeof(R));
+	}
 
 	float SafeReciprocal(float Value)
 	{
@@ -88,10 +94,9 @@ namespace
 			Handle->ResourceState == D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	}
 
-	bool UploadVertices(D3D12WorldGeometry& Geometry, const DRV_WorldVertex* Verts, int32 NumVerts)
+	// A static buffer filled once and left in FinalState.
+	bool UploadBuffer(const void* Data, UINT64 Size, D3D12_RESOURCE_STATES FinalState, ComPtr<ID3D12Resource>& Buffer)
 	{
-		const UINT64 Size = static_cast<UINT64>(NumVerts) * sizeof(DRV_WorldVertex);
-
 		D3D12_RESOURCE_DESC Desc = {};
 		Desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		Desc.Width = Size;
@@ -109,11 +114,11 @@ namespace
 		// Buffers start in COMMON and are promoted to COPY_DEST by the copy.
 		ComPtr<ID3D12Resource> Upload;
 		if (FAILED(g_pDevice->CreateCommittedResource(&DefaultHeap, D3D12_HEAP_FLAG_NONE, &Desc,
-				D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&Geometry.VertexBuffer))) ||
+				D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&Buffer))) ||
 			FAILED(g_pDevice->CreateCommittedResource(&UploadHeap, D3D12_HEAP_FLAG_NONE, &Desc,
 				D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&Upload))))
 		{
-			D3D12Log::GetPtr()->Printf("ERROR: World vertex buffer (%llu bytes) creation failed",
+			D3D12Log::GetPtr()->Printf("ERROR: World buffer (%llu bytes) creation failed",
 				static_cast<unsigned long long>(Size));
 			return false;
 		}
@@ -122,7 +127,7 @@ namespace
 		D3D12_RANGE NoReads = { 0, 0 };
 		if (FAILED(Upload->Map(0, &NoReads, &Mapped)))
 			return false;
-		std::memcpy(Mapped, Verts, static_cast<size_t>(Size));
+		std::memcpy(Mapped, Data, static_cast<size_t>(Size));
 		Upload->Unmap(0, nullptr);
 
 		// A one-off copy on the queue. Everything already queued finishes first, and the
@@ -134,29 +139,66 @@ namespace
 				IID_PPV_ARGS(&CommandList))))
 			return false;
 
-		CommandList->CopyBufferRegion(Geometry.VertexBuffer.Get(), 0, Upload.Get(), 0, Size);
+		CommandList->CopyBufferRegion(Buffer.Get(), 0, Upload.Get(), 0, Size);
 		D3D12_RESOURCE_BARRIER Barrier = {};
 		Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		Barrier.Transition.pResource = Geometry.VertexBuffer.Get();
+		Barrier.Transition.pResource = Buffer.Get();
 		Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-		Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+		Barrier.Transition.StateAfter = FinalState;
 		CommandList->ResourceBarrier(1, &Barrier);
 		if (FAILED(CommandList->Close()))
 			return false;
 		ID3D12CommandList* Lists[] = { CommandList.Get() };
 		g_pCommandQueue->ExecuteCommandLists(1, Lists);
 		D3D12WaitForGPU();
+		return true;
+	}
+
+	bool UploadGeometry(D3D12WorldGeometry& Geometry, const DRV_WorldVertex* Verts, int32 NumVerts)
+	{
+		const UINT64 VertexSize = static_cast<UINT64>(NumVerts) * sizeof(DRV_WorldVertex);
+		const UINT64 IndexSize = static_cast<UINT64>(Geometry.Indices.size()) * sizeof(uint32);
+		if (!UploadBuffer(Verts, VertexSize, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, Geometry.VertexBuffer) ||
+			!UploadBuffer(Geometry.Indices.data(), IndexSize, D3D12_RESOURCE_STATE_INDEX_BUFFER, Geometry.IndexBuffer))
+			return false;
 
 		Geometry.VertexBufferView.BufferLocation = Geometry.VertexBuffer->GetGPUVirtualAddress();
-		Geometry.VertexBufferView.SizeInBytes = static_cast<UINT>(Size);
+		Geometry.VertexBufferView.SizeInBytes = static_cast<UINT>(VertexSize);
 		Geometry.VertexBufferView.StrideInBytes = sizeof(DRV_WorldVertex);
+		Geometry.IndexBufferView.BufferLocation = Geometry.IndexBuffer->GetGPUVirtualAddress();
+		Geometry.IndexBufferView.SizeInBytes = static_cast<UINT>(IndexSize);
+		Geometry.IndexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+		// Bounding sphere: the box's center and the farthest vertex from it
+		float Min[3] = { Verts[0].Pos[0], Verts[0].Pos[1], Verts[0].Pos[2] };
+		float Max[3] = { Min[0], Min[1], Min[2] };
+		for (int32 i = 1; i < NumVerts; ++i)
+		{
+			for (int c = 0; c < 3; ++c)
+			{
+				Min[c] = (std::min)(Min[c], Verts[i].Pos[c]);
+				Max[c] = (std::max)(Max[c], Verts[i].Pos[c]);
+			}
+		}
+		for (int c = 0; c < 3; ++c)
+			Geometry.BoundsCenter[c] = (Min[c] + Max[c]) * 0.5f;
+		float Radius2 = 0.0f;
+		for (int32 i = 0; i < NumVerts; ++i)
+		{
+			float d2 = 0.0f;
+			for (int c = 0; c < 3; ++c)
+				d2 += (Verts[i].Pos[c] - Geometry.BoundsCenter[c]) * (Verts[i].Pos[c] - Geometry.BoundsCenter[c]);
+			Radius2 = (std::max)(Radius2, d2);
+		}
+		Geometry.BoundsRadius = std::sqrt(Radius2);
+		Geometry.HasTransform = false;
 		return true;
 	}
 
 	D3D12_GPU_VIRTUAL_ADDRESS ViewConstantsFor(const DRV_WorldView* View)
 	{
-		if (LastViewFrame == FrameSerial && LastViewGPU && LastViewLights == LightsSerial &&
+		if (LastViewFrame == FrameSerial && LastViewGPU &&
 			std::memcmp(&LastView, View, sizeof(DRV_WorldView)) == 0)
 			return LastViewGPU;
 
@@ -164,14 +206,11 @@ namespace
 		if (!D3D12Upload_Allocate(sizeof(ViewConstants), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, &Upload))
 			return 0;
 
-		const grXForm3d& M = View->ModelToCamera;
 		ViewConstants Constants = {};
-		const float Rows[3][4] = {
-			{ M.AX, M.AY, M.AZ, M.Translation.X },
-			{ M.BX, M.BY, M.BZ, M.Translation.Y },
-			{ M.CX, M.CY, M.CZ, M.Translation.Z }
-		};
+		float Rows[3][4];
+		XFormRows(View->ModelToCamera, Rows);
 		std::memcpy(Constants.ModelToCamera, Rows, sizeof(Rows));
+		XFormRows(View->ModelToWorld, Constants.ModelToWorld);
 		Constants.Scale = View->Scale;
 		Constants.XCenter = View->XCenter;
 		Constants.YCenter = View->YCenter;
@@ -182,22 +221,19 @@ namespace
 		Constants.NumClipPlanes = (View->NumClipPlanes <= 0) ? 0u :
 			static_cast<uint32>((View->NumClipPlanes < DRV_WORLD_MAX_CLIP_PLANES) ? View->NumClipPlanes : DRV_WORLD_MAX_CLIP_PLANES);
 		std::memcpy(Constants.ClipPlanes, View->ClipPlanes, sizeof(Constants.ClipPlanes));
-		// The rotation is orthonormal (mirrors only flip it), so the eye is -R^T t.
+		// The rotation is orthonormal (mirrors only flip it), so the eye is -R^T t in model
+		// space, then taken to world space.
+		float EyeModel[3];
 		for (int i = 0; i < 3; ++i)
-			Constants.EyePos[i] = -(Rows[0][i] * Rows[0][3] + Rows[1][i] * Rows[1][3] + Rows[2][i] * Rows[2][3]);
+			EyeModel[i] = -(Rows[0][i] * Rows[0][3] + Rows[1][i] * Rows[1][3] + Rows[2][i] * Rows[2][3]);
+		for (int i = 0; i < 3; ++i)
+			Constants.EyePos[i] = Constants.ModelToWorld[i][0] * EyeModel[0] + Constants.ModelToWorld[i][1] * EyeModel[1] +
+				Constants.ModelToWorld[i][2] * EyeModel[2] + Constants.ModelToWorld[i][3];
 		Constants.EyePos[3] = 1.0f;
-		Constants.NumLights = static_cast<uint32>(NumLights);
-		for (int32 i = 0; i < NumLights; ++i)
-		{
-			std::memcpy(Constants.LightPosRadius[i], Lights[i].Pos, sizeof(float) * 3);
-			Constants.LightPosRadius[i][3] = Lights[i].Radius;
-			std::memcpy(Constants.LightColor[i], Lights[i].Color, sizeof(float) * 3);
-			Constants.LightColor[i][3] = 0.0f;
-		}
+		Constants.UseClusters = (View->NumClipPlanes == 0 && D3D12Lighting_IsMainCamera(Rows, Constants.ModelToWorld)) ? 1u : 0u;
 		std::memcpy(Upload.CPU, &Constants, sizeof(Constants));
 
 		LastView = *View;
-		LastViewLights = LightsSerial;
 		LastViewFrame = FrameSerial;
 		LastViewGPU = Upload.GPU;
 		return Upload.GPU;
@@ -283,7 +319,7 @@ uint32 DRIVERCC D3D12World_Create(const DRV_WorldVertex* Verts, int32 NumVerts,
 	Geometry->FaceDataGPU = 0;
 	Geometry->Retired = false;
 	Geometry->RetireFence = 0;
-	if (!UploadVertices(*Geometry, Verts, NumVerts))
+	if (!UploadGeometry(*Geometry, Verts, NumVerts))
 		return 0;
 
 	size_t Slot = 0;
@@ -317,6 +353,50 @@ grBoolean DRIVERCC D3D12World_Destroy(uint32 Handle)
 	return GR_TRUE;
 }
 
+// A PBR material's part of a face record.
+static void FillMaterial(D3D12WorldFaceData& Data, const DRV_WorldMaterial& Mat, bool Lightmap)
+{
+	const DRV_WorldMaterial* Material = &Mat;
+	// A map that is not ready yet shades with its constant, like a missing one.
+	Data.NormalTexture = Data.OrmTexture = Data.EmissiveTexture = 0;
+	if (Material->NormalMap && TextureReady(Material->NormalMap))
+	{
+		Data.NormalTexture = D3D12_THandle_GetDescriptorIndex(Material->NormalMap);
+		Data.MaterialFlags |= D3D12_WORLD_MATERIAL_NORMAL;
+	}
+	if (Material->ORMMap && TextureReady(Material->ORMMap))
+	{
+		Data.OrmTexture = D3D12_THandle_GetDescriptorIndex(Material->ORMMap);
+		Data.MaterialFlags |= D3D12_WORLD_MATERIAL_ORM;
+	}
+	if (Material->EmissiveMap && TextureReady(Material->EmissiveMap))
+	{
+		Data.EmissiveTexture = D3D12_THandle_GetDescriptorIndex(Material->EmissiveMap);
+		Data.MaterialFlags |= D3D12_WORLD_MATERIAL_EMISSIVE;
+	}
+	Data.MaterialFlags |= Lightmap ? D3D12_WORLD_MATERIAL_LIGHTMAP : D3D12_WORLD_MATERIAL_VERTEX_LIGHT;
+	if (Material->Flags & DRV_MATERIAL_RETRO)
+		Data.MaterialFlags |= D3D12_WORLD_MATERIAL_RETRO;
+	if (Material->Flags & DRV_MATERIAL_TWO_SIDED)
+		Data.MaterialFlags |= D3D12_WORLD_MATERIAL_TWO_SIDED;
+	if (Material->Flags & DRV_MATERIAL_LEGACY)
+		Data.MaterialFlags |= D3D12_WORLD_MATERIAL_LEGACY;
+	if (Material->AlphaMode == DRV_MATERIAL_ALPHA_CUTOUT)
+		Data.MaterialFlags |= D3D12_WORLD_MATERIAL_CUTOUT;
+	std::memcpy(Data.BaseColor, Material->BaseColor, sizeof(Data.BaseColor));
+	Data.Roughness = Material->Roughness;
+	Data.Metal = Material->Metal;
+	Data.AlphaCutoff = Material->AlphaCutoff;
+	std::memcpy(Data.Emissive, Material->Emissive, sizeof(Data.Emissive));
+	Data.HeightScale = Material->HeightScale;
+	Data.HeightTexture = 0;
+	if (Material->HeightMap && Material->HeightScale > 0.0f && TextureReady(Material->HeightMap))
+	{
+		Data.HeightTexture = D3D12_THandle_GetDescriptorIndex(Material->HeightMap);
+		Data.MaterialFlags |= D3D12_WORLD_MATERIAL_HEIGHT;
+	}
+}
+
 static int32 RenderFace(uint32 Handle, uint32 Face, const DRV_WorldView* View,
 						grRDriver_Layer* Layers, int32 NumLayers,
 						void* LMapCBContext, uint32 Flags, float Alpha,
@@ -328,6 +408,8 @@ static int32 RenderFace(uint32 Handle, uint32 Face, const DRV_WorldView* View,
 	D3D12WorldGeometry* Geometry = Lookup(Handle);
 	if (!Geometry || Face >= Geometry->Faces.size())
 		return DRV_WORLD_FACE_STALE;
+	XFormRows(View->ModelToWorld, Geometry->ModelToWorld);
+	Geometry->HasTransform = true;
 
 	// The lightmap goes into the atlas when it can, else into its own handle exactly
 	// as D3D12PolyCache::AddWorldPoly does it.
@@ -399,39 +481,7 @@ static int32 RenderFace(uint32 Handle, uint32 Face, const DRV_WorldView* View,
 	Data.Padding[0] = Data.Padding[1] = 0;
 	Data.MaterialFlags = 0;
 	if (Material)
-	{
-		// A map that is not ready yet shades with its constant, like a missing one.
-		Data.NormalTexture = Data.OrmTexture = Data.EmissiveTexture = 0;
-		if (Material->NormalMap && TextureReady(Material->NormalMap))
-		{
-			Data.NormalTexture = D3D12_THandle_GetDescriptorIndex(Material->NormalMap);
-			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_NORMAL;
-		}
-		if (Material->ORMMap && TextureReady(Material->ORMMap))
-		{
-			Data.OrmTexture = D3D12_THandle_GetDescriptorIndex(Material->ORMMap);
-			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_ORM;
-		}
-		if (Material->EmissiveMap && TextureReady(Material->EmissiveMap))
-		{
-			Data.EmissiveTexture = D3D12_THandle_GetDescriptorIndex(Material->EmissiveMap);
-			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_EMISSIVE;
-		}
-		if (NumLayers > 1)
-			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_LIGHTMAP;
-		if (Material->Flags & DRV_MATERIAL_RETRO)
-			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_RETRO;
-		if (Material->Flags & DRV_MATERIAL_TWO_SIDED)
-			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_TWO_SIDED;
-		if (Material->AlphaMode == DRV_MATERIAL_ALPHA_CUTOUT)
-			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_CUTOUT;
-		std::memcpy(Data.BaseColor, Material->BaseColor, sizeof(Data.BaseColor));
-		Data.Roughness = Material->Roughness;
-		Data.Metal = Material->Metal;
-		Data.AlphaCutoff = Material->AlphaCutoff;
-		std::memcpy(Data.Emissive, Material->Emissive, sizeof(Data.Emissive));
-		Data.MaterialPadding = Data.MaterialPadding2 = 0.0f;
-	}
+		FillMaterial(Data, *Material, NumLayers > 1);
 	return g_pPolyCache->AddWorldFace(Geometry, Face, ViewGPU, Geometry->FaceDataGPU, NumLayers, Flags, Material != nullptr)
 		? DRV_WORLD_FACE_DRAWN
 		: DRV_WORLD_FACE_FALLBACK;
@@ -452,19 +502,45 @@ int32 DRIVERCC D3D12World_RenderFacePBR(uint32 Handle, uint32 Face, const DRV_Wo
 	return RenderFace(Handle, Face, View, Layers, NumLayers, LMapCBContext, Flags, Alpha, Material);
 }
 
-void DRIVERCC D3D12World_SetLights(const DRV_WorldLight* NewLights, int32 NewNumLights)
+int32 DRIVERCC D3D12World_RenderMeshPBR(const DRV_MeshVertexPBR* Verts, int32 NumVerts, const DRV_WorldView* View,
+										grRDriver_Layer* Layer, uint32 Flags, const DRV_WorldMaterial* Material)
 {
-	if (!NewLights || NewNumLights < 0)
-		NewNumLights = 0;
-	if (NewNumLights > DRV_WORLD_MAX_LIGHTS)
-		NewNumLights = DRV_WORLD_MAX_LIGHTS;
-	if (NewNumLights == NumLights &&
-		(NewNumLights == 0 || std::memcmp(Lights, NewLights, sizeof(DRV_WorldLight) * NewNumLights) == 0))
+	if (!Enabled || !g_pPolyCache || !g_bInScene || !Verts || !View || !Layer || !Material || NumVerts < 3 ||
+		!TextureReady(Layer->THandle))
+		return DRV_WORLD_FACE_FALLBACK;
+	const D3D12_GPU_VIRTUAL_ADDRESS ViewGPU = ViewConstantsFor(View);
+	// The run's material, as a one-face table: VSMeshPBR gives every vertex face 0.
+	D3D12UploadAllocation Upload = {};
+	if (!ViewGPU || !D3D12Upload_Allocate(sizeof(D3D12WorldFaceData), 256, &Upload))
+		return DRV_WORLD_FACE_FALLBACK;
+	D3D12WorldFaceData Data = {};
+	Data.BaseTexture = D3D12_THandle_GetDescriptorIndex(Layer->THandle);
+	Data.InvScaleU = Data.InvScaleV = 1.0f;
+	Data.TextureScale = 1.0f;
+	Data.Alpha = 1.0f;
+	Data.LightDivU = Data.LightDivV = 1.0f;
+	FillMaterial(Data, *Material, false);
+	std::memcpy(Upload.CPU, &Data, sizeof(Data));
+	return g_pPolyCache->AddWorldMesh(Verts, NumVerts, sizeof(DRV_MeshVertexPBR), Layer->THandle, ViewGPU, Flags, Upload.GPU)
+		? DRV_WORLD_FACE_DRAWN
+		: DRV_WORLD_FACE_FALLBACK;
+}
+
+// Version 9-12 per-draw lights. PBR shading uses the frame's lights (World_SetFrame) since
+// version 13, so these are ignored.
+void DRIVERCC D3D12World_SetLights(const DRV_WorldLight*, int32)
+{
+}
+
+void D3D12World_EnumGeometry(void (*Fn)(const D3D12WorldGeometry& Geometry, void* Context), void* Context)
+{
+	if (!Enabled)
 		return;
-	if (NewNumLights > 0)
-		std::memcpy(Lights, NewLights, sizeof(DRV_WorldLight) * NewNumLights);
-	NumLights = NewNumLights;
-	++LightsSerial;
+	for (const auto& Slot : Slots)
+	{
+		if (Slot && !Slot->Retired && Slot->HasTransform && Slot->IndexBuffer)
+			Fn(*Slot, Context);
+	}
 }
 
 int32 DRIVERCC D3D12World_RenderMesh(const DRV_MeshVertex* Verts, int32 NumVerts, const DRV_WorldView* View,
@@ -481,7 +557,7 @@ int32 DRIVERCC D3D12World_RenderMesh(const DRV_MeshVertex* Verts, int32 NumVerts
 	if (!ViewGPU)
 		return DRV_WORLD_FACE_FALLBACK;
 
-	return g_pPolyCache->AddWorldMesh(Verts, NumVerts, Layer->THandle, ViewGPU, Flags)
+	return g_pPolyCache->AddWorldMesh(Verts, NumVerts, sizeof(DRV_MeshVertex), Layer->THandle, ViewGPU, Flags, 0)
 		? DRV_WORLD_FACE_DRAWN
 		: DRV_WORLD_FACE_FALLBACK;
 }
