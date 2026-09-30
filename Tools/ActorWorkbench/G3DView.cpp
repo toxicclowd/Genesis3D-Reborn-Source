@@ -5,7 +5,26 @@
 #include "ActorWorkbench.h"
 #include "G3DView.h"
 #include "ActorWorkbenchDoc.h"
+#include "MainFrm.h"
 #include ".\G3DView.h"
+
+// Opening an actor from the command line, the recent-file list or Explorer goes through
+// the document template rather than CMainFrame::OnFileOpen, so load it from here.
+static void LoadDocumentActor(CView* pView)
+{
+	CDocument* pDoc = pView->GetDocument();
+	CMainFrame* pFrame = (CMainFrame*)pView->GetParentFrame();
+	if (!pDoc || !pFrame)
+		return;
+
+	CString Path = pDoc->GetPathName();
+	if (Path.IsEmpty())
+		return;
+
+	CString Name = Path.Mid(Path.ReverseFind('\\') + 1);
+	if (!pFrame->LoadActor(Path, Name))
+		AfxMessageBox("Could not load actor!!", 48, 0);
+}
 
 #define TIMER_ID							1
 #define TIMER_INTERVAL						40
@@ -111,7 +130,14 @@ void CG3DView::OnInitialUpdate()
 {
 	CView::OnInitialUpdate();
 
-	// TODO: Add your specialized code here and/or call the base class
+	// SDI: this runs again on every File/New or document open, but the engine,
+	// world and driver must only be set up once.
+	if (m_bInitialized)
+	{
+		LoadDocumentActor(this);
+		return;
+	}
+
 	m_pEngine = grEngine_Create(this->GetSafeHwnd(), "ActorWorkbench", ".");
 	if (!m_pEngine)
 	{
@@ -187,6 +213,8 @@ void CG3DView::OnInitialUpdate()
     
 	this->SetTimer(TIMER_ID, TIMER_INTERVAL, NULL);
 	m_bInitialized = GR_TRUE;
+
+	LoadDocumentActor(this);
 }
 
 void CG3DView::OnTimer(UINT_PTR nIDEvent)
