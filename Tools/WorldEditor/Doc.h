@@ -423,7 +423,7 @@ public:
     grMaterialSpec *	LightBitmap;
 #endif
     BOOL     m_RenderMode;
-	grResourceMgr *	m_pResourceMgr; // krouer
+	grResourceMgr *	m_pResourceMgr = nullptr; // krouer
 
 	//	tom morris feb 2005
 	const CString	m_strRebuild;

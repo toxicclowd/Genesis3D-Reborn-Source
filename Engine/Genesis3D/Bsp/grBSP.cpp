@@ -1466,19 +1466,11 @@ grBoolean grBSP_SetEngine(grBSP *Tree, grEngine *Engine)
 grBoolean grBSP_SetWorld(grBSP *Tree, grWorld *World)
 {
 	assert(Tree);
-	
-	if (Tree->World)
-	{
-		grWorld_Destroy(&Tree->World);
-		Tree->World = NULL;
-	}
 
+	// Weak back-pointer: the world owns the objects whose models own this tree and
+	// detaches them (setting this to NULL) before it is freed. Taking a reference here
+	// made a cycle that kept the world, and through it the engine and driver, alive forever.
 	Tree->World = World;
-
-	if (World)
-	{
-		grWorld_CreateRef(World);
-	}
 
 	return GR_TRUE;
 }

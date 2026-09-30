@@ -71,21 +71,9 @@ CG3DView::CG3DView() : m_nViewType(0), m_bDragging(false), m_RenderMode(RenderMo
 
 CG3DView::~CG3DView()
 {
-
-	// BEGIN: Added 02/13/05 by Jeff
-	// This is needed because of the grWorld_SetWorld in the CJetView::OnInitialUpdate 
-	CGweDoc* Doc = nullptr;
-	grWorld* pWorld = nullptr;
-
-	Doc = (CGweDoc*)GetDocument();
-	if (Doc)
-	{
-		pWorld = Doc->GetWorld();
-		if (pWorld != nullptr)
-			grWorld_Destroy(&pWorld);
-	}
-	// END
-
+	// The document owns the world and releases it in CGweDoc::DeleteContents. The view
+	// takes no reference of its own, so it must not destroy the world here (doing so
+	// freed it before Level_Destroy ran once model BSPs stopped holding extra refs).
 
 	// 
 	//

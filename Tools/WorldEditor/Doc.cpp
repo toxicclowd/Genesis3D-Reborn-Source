@@ -763,6 +763,11 @@ void CGweDoc::DeleteContents()
 		m_pWorld = nullptr;
 	}
 
+	// The world holds its own reference; release the document's
+	if( m_pResourceMgr != nullptr )
+		grResource_MgrDestroy( &m_pResourceMgr );
+	m_pResourceMgr = nullptr;
+
 	CG3DMfcDoc::DeleteContents();
 }// DeleteContents
 
@@ -3338,6 +3343,13 @@ BOOL CGweDoc::OnOpenDocument(LPCTSTR lpszPathName)
 	pResourceMgr = Level_CreateResourceMgr(pG3DView->GetEngine());
 	if( pResourceMgr == nullptr )
 		return( FALSE );
+
+	// Opening a level before any File/New must still set up the global materials
+	if (!App->HasInitMaterialList()) {
+		if (!App->InitMaterialList(pG3DView->GetEngine(), pResourceMgr))
+			return( FALSE );
+	}
+
 	pNewWorld = grWorld_CreateFromFile( pF, pPtrMgr, pResourceMgr );
 
 	grVFile_Close( pF ) ;
@@ -3397,6 +3409,7 @@ BOOL CGweDoc::OnOpenDocument(LPCTSTR lpszPathName)
 	DeleteContents() ;
 	m_pWorld = pNewWorld ;
 	m_pLevel = pNewLevel ;
+	m_pResourceMgr = pResourceMgr ;
 	grPtrMgr_Destroy( &pPtrMgr );
 	grWorld_AttachSoundSystem( m_pWorld, pMainFrm->GetSoundSystem() );
 	Level_GetBSPBuildOptions( m_pLevel, &Options, &Logic, &LogicBalance );

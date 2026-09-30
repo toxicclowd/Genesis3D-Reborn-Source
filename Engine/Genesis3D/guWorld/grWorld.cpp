@@ -505,11 +505,14 @@ static grWorld *grWorld_CreateBase(grResourceMgr *ResourceMgr)
 	if (!World->AutoRemoveUserPolys)
 		goto ExitWithError;
 
-	// Assign the resource mgr
+	// Assign the resource mgr. The world holds its own reference (released in
+	// grWorld_Destroy); callers keep and release theirs.
 	World->ResourceMgr = ResourceMgr;
 
 	if ( World->ResourceMgr == nullptr )
 		goto ExitWithError;
+
+	grResource_MgrIncRefcount( World->ResourceMgr );
 
 	// Register the built-in objects
 	{
@@ -830,14 +833,20 @@ GRAPI void GRCC grWorld_Destroy(grWorld **pWorld)
 				Object = (grObject *)grChain_LinkGetLinkData( Link );
 
 				// BEGIN - Proper destruction of objects - paradoxnj 5/9/2005
-				grObject_RemoveChild(World->Model,Object);
+				// Worlds made with grWorld_Create (no level loaded) have no model object
+				if (World->Model != nullptr)
+					grObject_RemoveChild(World->Model,Object);
 
-				grObject_DettachWorld(Object, World);
-				
+				// Detach in the reverse of the attach order in grWorld_AddObject (and the
+				// same order as grWorld_RemoveObject): objects free world-owned resources
+				// in DettachWorld that their DettachEngine may still need.
 				if (World->SoundSystem != nullptr)
 					grObject_DettachSoundSystem(Object, World->SoundSystem);
 
-				grObject_DettachEngine(Object, World->Engine);
+				if (World->Engine != nullptr)
+					grObject_DettachEngine(Object, World->Engine);
+
+				grObject_DettachWorld(Object, World);
 				// END - Proper destruction of objects - paradoxnj 5/9/2005
 
 				grObject_Destroy( &Object );
@@ -1522,7 +1531,8 @@ GRAPI grBoolean GRCC grWorld_RemoveObject(grWorld *World, grObject *Object)
 		return grObject_RemoveChild(HackModelObject, Object);
 #endif
 
-	grObject_RemoveChild(World->Model, Object); 
+	if (World->Model != nullptr)
+		grObject_RemoveChild(World->Model, Object);
 
 	assert(grChain_FindLink(World->Objects, Object));
 
@@ -3216,9 +3226,9 @@ GRAPI grWorld	* GRCC grWorld_CreateFromEditorFile(const char* FileName, grPtrMgr
 	grVFile_Close(pMapFile);			
 	grPtrMgr_Destroy( &pPtrMgr );
 
-	// pWorld uses the resource manager, so only destroy
-	// (decrease refcount) if we didn't create the manager.
-	if(!bCreated) grResource_MgrDestroy(&pResourceMgr);
+	// The world took its own reference; drop the one this function holds
+	// (either the one it created or the temporary one on the caller's manager).
+	grResource_MgrDestroy(&pResourceMgr);
 
 	return pWorld;
 }
