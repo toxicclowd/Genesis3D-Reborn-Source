@@ -9,6 +9,7 @@
 #include "Direct3D12Driver.h"
 #include "D3D12Log.h"
 #include "D3D12Common.h"
+#include "D3D12TextureMgr.h"
 
 namespace
 {
@@ -21,7 +22,8 @@ namespace
 	ComPtr<ID3D12Resource>		Color;
 	D3D12_RESOURCE_STATES		ColorState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	ComPtr<ID3D12DescriptorHeap>	RTVHeap;
-	ComPtr<ID3D12DescriptorHeap>	SRVHeap;			// shader visible, for the present pass
+	// The SRV lives in the texture heap's reserved slot D3D12_RESERVED_SRV_SCENE, so
+	// the whole frame runs on one shader-visible heap.
 	ComPtr<ID3D12RootSignature>	PresentRootSignature;
 	ComPtr<ID3D12PipelineState>	PresentPSO;
 
@@ -128,12 +130,9 @@ grBoolean D3D12Scene_Create(UINT NewWidth, UINT NewHeight)
 		HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		if (FAILED(g_pDevice->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&RTVHeap))))
 			return GR_FALSE;
-
-		HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		if (FAILED(g_pDevice->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&SRVHeap))))
-			return GR_FALSE;
 	}
+	if (!D3D12_THandle_GetDescriptorHeap())
+		return GR_FALSE;
 
 	D3D12_RESOURCE_DESC Desc = {};
 	Desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -162,7 +161,9 @@ grBoolean D3D12Scene_Create(UINT NewWidth, UINT NewHeight)
 	ColorState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
 	g_pDevice->CreateRenderTargetView(Color.Get(), nullptr, RTVHeap->GetCPUDescriptorHandleForHeapStart());
-	g_pDevice->CreateShaderResourceView(Color.Get(), nullptr, SRVHeap->GetCPUDescriptorHandleForHeapStart());
+	D3D12_CPU_DESCRIPTOR_HANDLE SceneSRV = {};
+	D3D12_THandle_GetReservedSRV(D3D12_RESERVED_SRV_SCENE, &SceneSRV, nullptr);
+	g_pDevice->CreateShaderResourceView(Color.Get(), nullptr, SceneSRV);
 
 	Width = NewWidth;
 	Height = NewHeight;
@@ -182,7 +183,6 @@ void D3D12Scene_Shutdown()
 	D3D12Scene_Release();
 	PresentPSO.Reset();
 	PresentRootSignature.Reset();
-	SRVHeap.Reset();
 	RTVHeap.Reset();
 	Enabled = -1;
 }
@@ -201,11 +201,11 @@ grBoolean D3D12Scene_Present(ID3D12GraphicsCommandList* CommandList, D3D12_CPU_D
 	D3D12BeginMarker(CommandList, "Present pass");
 	Transition(CommandList, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-	ID3D12DescriptorHeap* Heaps[] = { SRVHeap.Get() };
+	D3D12_GPU_DESCRIPTOR_HANDLE SceneSRV = {};
+	D3D12_THandle_GetReservedSRV(D3D12_RESERVED_SRV_SCENE, nullptr, &SceneSRV);
 	CommandList->OMSetRenderTargets(1, &BackBufferRTV, FALSE, nullptr);
-	CommandList->SetDescriptorHeaps(1, Heaps);
 	CommandList->SetGraphicsRootSignature(PresentRootSignature.Get());
-	CommandList->SetGraphicsRootDescriptorTable(0, SRVHeap->GetGPUDescriptorHandleForHeapStart());
+	CommandList->SetGraphicsRootDescriptorTable(0, SceneSRV);
 	CommandList->SetPipelineState(PresentPSO.Get());
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 

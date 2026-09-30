@@ -97,7 +97,7 @@ typedef struct tagRECT
 #endif
 
 #define DRV_VERSION_MAJOR		200			// Jet 2.0
-#define DRV_VERSION_MINOR		4			// version 3 has specular rgb in the verts ; 4 has bigger debug info
+#define DRV_VERSION_MINOR		5			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings
 #define DRV_VMAJS				"200"
 #define DRV_VMINS				"4" 
 #define DRV_VMAJS_PLUS_DRV_VMINS	"200.4"
@@ -267,6 +267,16 @@ typedef struct
 	float		MipBias;
 	int32		Balances,BalancesFailed;
 } DRV_CacheInfo;
+
+// GPU time spent on the last completed frame, measured with timestamp queries.
+// Valid is 0 until the driver has read back its first frame.
+typedef struct
+{
+	float		SceneMs;		// BeginScene to the present pass
+	float		PresentMs;		// present pass (HDR target to back buffer)
+	float		TotalMs;
+	int32		Valid;
+} DRV_GPUTimings;
 
 typedef struct
 {
@@ -592,6 +602,9 @@ typedef struct
 	// BEGIN - Render state access - paradoxnj 12/25/2005
 	SET_RENDER_STATE	*SetRenderState;
 	// END - Render state access - paradoxnj 12/25/2005
+
+	// Version 5: GPU timings for the debug overlay (NULL if the driver has none).
+	DRV_GPUTimings		*GPUTimings;
 } DRV_Driver;
 
 enum grRenderState

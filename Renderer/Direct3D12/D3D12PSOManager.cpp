@@ -9,6 +9,7 @@
 #include "D3D12PSOManager.h"
 #include "D3D12Shaders.h"
 #include "D3D12SceneTarget.h"
+#include "D3D12Config.h"
 #include "Direct3D12Driver.h"
 #include "D3D12Log.h"
 
@@ -44,6 +45,7 @@ namespace
 
 D3D12PSOManager::D3D12PSOManager()
 	: m_bInitialized(false)
+	, m_bBindless(false)
 {
 }
 
@@ -55,6 +57,16 @@ D3D12PSOManager::~D3D12PSOManager()
 grBoolean D3D12PSOManager::Initialize()
 {
 	Shutdown();
+	// Bindless-lite needs resource binding tier 2 for a heap-sized SRV table.
+	D3D12_FEATURE_DATA_D3D12_OPTIONS Options = {};
+	const bool bTier2 = SUCCEEDED(g_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &Options, sizeof(Options))) &&
+		Options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_2;
+	m_bBindless = bTier2 && D3D12Config_GetBool("Render", "Bindless", true);
+	D3D12Log::GetPtr()->Printf(m_bBindless
+		? "Textures: bindless (indexed from the shader-visible heap)"
+		: (bTier2 ? "Textures: descriptor tables ([Render] Bindless=0)"
+		          : "Textures: descriptor tables (resource binding tier 1)"));
+
 	if (!D3D12Shaders_Load(g_pDevice.Get()) || !CreateRootSignature())
 	{
 		Shutdown();
@@ -130,6 +142,10 @@ ID3D12RootSignature* D3D12PSOManager::GetRootSignature()
 
 grBoolean D3D12PSOManager::CreateRootSignature()
 {
+	// Root parameters (ROOT_PARAM_* in D3D12PSOManager.h):
+	//   draw constants b0 (flags + texture indices), frame constants b1 (root CBV),
+	//   then either one table spanning the whole SRV heap (t0 space1, bindless) or
+	//   one single-texture table each for t0 and t1.
 	D3D12_DESCRIPTOR_RANGE Ranges[2] = {};
 	for (UINT i = 0; i < 2; ++i)
 	{
@@ -139,19 +155,42 @@ grBoolean D3D12PSOManager::CreateRootSignature()
 		Ranges[i].RegisterSpace = 0;
 		Ranges[i].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 	}
+	D3D12_DESCRIPTOR_RANGE HeapRange = {};
+	HeapRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	HeapRange.NumDescriptors = UINT_MAX;		// unbounded: the shader indexes the heap
+	HeapRange.BaseShaderRegister = 0;
+	HeapRange.RegisterSpace = 1;
+	HeapRange.OffsetInDescriptorsFromTableStart = 0;
 
-	D3D12_ROOT_PARAMETER Parameters[3] = {};
-	Parameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	Parameters[0].Constants.ShaderRegister = 0;
-	Parameters[0].Constants.RegisterSpace = 0;
-	Parameters[0].Constants.Num32BitValues = 4;
-	Parameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-	for (UINT i = 0; i < 2; ++i)
+	D3D12_ROOT_PARAMETER Parameters[4] = {};
+	Parameters[ROOT_PARAM_DRAW].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	Parameters[ROOT_PARAM_DRAW].Constants.ShaderRegister = 0;
+	Parameters[ROOT_PARAM_DRAW].Constants.Num32BitValues = 4;
+	Parameters[ROOT_PARAM_DRAW].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	Parameters[ROOT_PARAM_FRAME].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	Parameters[ROOT_PARAM_FRAME].Descriptor.ShaderRegister = 1;
+	Parameters[ROOT_PARAM_FRAME].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	UINT NumParameters = 2;
+	if (m_bBindless)
 	{
-		Parameters[i + 1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-		Parameters[i + 1].DescriptorTable.NumDescriptorRanges = 1;
-		Parameters[i + 1].DescriptorTable.pDescriptorRanges = &Ranges[i];
-		Parameters[i + 1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		Parameters[ROOT_PARAM_TEXTURES].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		Parameters[ROOT_PARAM_TEXTURES].DescriptorTable.NumDescriptorRanges = 1;
+		Parameters[ROOT_PARAM_TEXTURES].DescriptorTable.pDescriptorRanges = &HeapRange;
+		Parameters[ROOT_PARAM_TEXTURES].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		NumParameters = 3;
+	}
+	else
+	{
+		for (UINT i = 0; i < 2; ++i)
+		{
+			Parameters[ROOT_PARAM_BASE_TABLE + i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+			Parameters[ROOT_PARAM_BASE_TABLE + i].DescriptorTable.NumDescriptorRanges = 1;
+			Parameters[ROOT_PARAM_BASE_TABLE + i].DescriptorTable.pDescriptorRanges = &Ranges[i];
+			Parameters[ROOT_PARAM_BASE_TABLE + i].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		}
+		NumParameters = 4;
 	}
 
 	D3D12_STATIC_SAMPLER_DESC Samplers[4] = {
@@ -162,7 +201,7 @@ grBoolean D3D12PSOManager::CreateRootSignature()
 	};
 
 	D3D12_ROOT_SIGNATURE_DESC Desc = {};
-	Desc.NumParameters = _countof(Parameters);
+	Desc.NumParameters = NumParameters;
 	Desc.pParameters = Parameters;
 	Desc.NumStaticSamplers = _countof(Samplers);
 	Desc.pStaticSamplers = Samplers;
@@ -212,11 +251,11 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	D3D12_SHADER_ID PixelShader = SHADER_TLPOLY_PS_GOURAUD;
+	D3D12_SHADER_ID PixelShader = m_bBindless ? SHADER_TLPOLY_PS_GOURAUD_BINDLESS : SHADER_TLPOLY_PS_GOURAUD;
 	if (Type == PSO_TEXTURE)
-		PixelShader = SHADER_TLPOLY_PS_TEXTURE;
+		PixelShader = m_bBindless ? SHADER_TLPOLY_PS_TEXTURE_BINDLESS : SHADER_TLPOLY_PS_TEXTURE;
 	else if (Type == PSO_MULTITEX)
-		PixelShader = SHADER_TLPOLY_PS_MULTITEX;
+		PixelShader = m_bBindless ? SHADER_TLPOLY_PS_MULTITEX_BINDLESS : SHADER_TLPOLY_PS_MULTITEX;
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = {};
 	Desc.pRootSignature = m_pRootSignature.Get();

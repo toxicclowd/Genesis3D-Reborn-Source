@@ -21,6 +21,9 @@
 #include "Shaders/g_TLPoly_PSGouraud.h"
 #include "Shaders/g_TLPoly_PSTexture.h"
 #include "Shaders/g_TLPoly_PSMultiTexture.h"
+#include "Shaders/g_TLPoly_PSGouraud_Bindless.h"
+#include "Shaders/g_TLPoly_PSTexture_Bindless.h"
+#include "Shaders/g_TLPoly_PSMultiTexture_Bindless.h"
 #include "Shaders/g_Present_VSFullscreen.h"
 #include "Shaders/g_Present_PSPresent.h"
 
@@ -34,18 +37,23 @@ namespace
 		int						ResourceId;		// embedded source
 		const char*				Entry;
 		const char*				RuntimeTarget;	// D3DCompile profile for the fallback
+		bool					Bindless;		// compiled with G3D_BINDLESS=1
 		const unsigned char*	Dxil;
 		SIZE_T					DxilSize;
 	};
 
+	// Bindless variants index a descriptor array, which needs SM 5.1 in the fallback.
 	const ShaderDesc Shaders[SHADER_COUNT] =
 	{
-		{ "TLPoly.hlsl", IDR_SHADER_TLPOLY, "VSMain",         "vs_5_0", g_TLPoly_VSMain,         sizeof(g_TLPoly_VSMain) },
-		{ "TLPoly.hlsl", IDR_SHADER_TLPOLY, "PSGouraud",      "ps_5_0", g_TLPoly_PSGouraud,      sizeof(g_TLPoly_PSGouraud) },
-		{ "TLPoly.hlsl", IDR_SHADER_TLPOLY, "PSTexture",      "ps_5_0", g_TLPoly_PSTexture,      sizeof(g_TLPoly_PSTexture) },
-		{ "TLPoly.hlsl", IDR_SHADER_TLPOLY, "PSMultiTexture", "ps_5_0", g_TLPoly_PSMultiTexture, sizeof(g_TLPoly_PSMultiTexture) },
-		{ "Present.hlsl", IDR_SHADER_PRESENT, "VSFullscreen", "vs_5_0", g_Present_VSFullscreen, sizeof(g_Present_VSFullscreen) },
-		{ "Present.hlsl", IDR_SHADER_PRESENT, "PSPresent",    "ps_5_0", g_Present_PSPresent,    sizeof(g_Present_PSPresent) },
+		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "VSMain",         "vs_5_0", false, g_TLPoly_VSMain,                  sizeof(g_TLPoly_VSMain) },
+		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "PSGouraud",      "ps_5_0", false, g_TLPoly_PSGouraud,               sizeof(g_TLPoly_PSGouraud) },
+		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "PSTexture",      "ps_5_0", false, g_TLPoly_PSTexture,               sizeof(g_TLPoly_PSTexture) },
+		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "PSMultiTexture", "ps_5_0", false, g_TLPoly_PSMultiTexture,          sizeof(g_TLPoly_PSMultiTexture) },
+		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "PSGouraud",      "ps_5_1", true,  g_TLPoly_PSGouraud_Bindless,      sizeof(g_TLPoly_PSGouraud_Bindless) },
+		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "PSTexture",      "ps_5_1", true,  g_TLPoly_PSTexture_Bindless,      sizeof(g_TLPoly_PSTexture_Bindless) },
+		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "PSMultiTexture", "ps_5_1", true,  g_TLPoly_PSMultiTexture_Bindless, sizeof(g_TLPoly_PSMultiTexture_Bindless) },
+		{ "Present.hlsl", IDR_SHADER_PRESENT, "VSFullscreen",   "vs_5_0", false, g_Present_VSFullscreen,           sizeof(g_Present_VSFullscreen) },
+		{ "Present.hlsl", IDR_SHADER_PRESENT, "PSPresent",      "ps_5_0", false, g_Present_PSPresent,              sizeof(g_Present_PSPresent) },
 	};
 
 	ComPtr<ID3DBlob>		Compiled[SHADER_COUNT];
@@ -95,8 +103,12 @@ namespace
 #else
 		Flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
+		// The bindless shaders index the whole descriptor heap.
+		if (Desc.Bindless)
+			Flags |= D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
+		const D3D_SHADER_MACRO Bindless[] = { { "G3D_BINDLESS", "1" }, { nullptr, nullptr } };
 		const HRESULT Hr = D3DCompile(
-			Source.data(), Source.size(), Name, nullptr, nullptr,
+			Source.data(), Source.size(), Name, Desc.Bindless ? Bindless : nullptr, nullptr,
 			Desc.Entry, Desc.RuntimeTarget, Flags, 0, &Shader, &Errors);
 		if (FAILED(Hr))
 		{
@@ -164,14 +176,20 @@ grBoolean D3D12Shaders_Load(ID3D12Device* Device)
 				Bytecode[Id].BytecodeLength = Compiled[Id]->GetBufferSize();
 				continue;
 			}
-			// DXIL still works on an SM 6.0 device, so an edit that does not compile
-			// falls back to the shaders the driver was built with.
+
+			// A pipeline cannot mix DXBC and DXIL, so one failure means none of the
+			// run-time shaders can be used. On an SM 6.0 device the shaders the driver
+			// was built with still work (for example after a bad edit in SourceDir).
+			D3D12Shaders_Unload();
 			if (!bSM6)
-			{
-				D3D12Shaders_Unload();
 				return GR_FALSE;
+			D3D12Log::GetPtr()->Printf("WARNING: Shaders: run-time compile failed, using the precompiled DXIL for all shaders");
+			for (int Each = 0; Each < SHADER_COUNT; ++Each)
+			{
+				Bytecode[Each].pShaderBytecode = Shaders[Each].Dxil;
+				Bytecode[Each].BytecodeLength = Shaders[Each].DxilSize;
 			}
-			D3D12Log::GetPtr()->Printf("WARNING: Shaders: using precompiled %s:%s", Desc.File, Desc.Entry);
+			return GR_TRUE;
 		}
 
 		Bytecode[Id].pShaderBytecode = Desc.Dxil;

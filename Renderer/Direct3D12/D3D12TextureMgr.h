@@ -16,6 +16,11 @@
 
 using Microsoft::WRL::ComPtr;
 
+// The shader-visible SRV heap holds one descriptor per texture handle (index = handle
+// id, so shaders can index it directly), followed by slots reserved for the driver.
+#define D3D12_RESERVED_SRV_COUNT		16
+#define D3D12_RESERVED_SRV_SCENE		0		// HDR scene color, read by the present pass
+
 // Texture Manager initialization and shutdown
 grBoolean D3D12_THandle_Startup();
 grBoolean D3D12_THandle_Shutdown();
@@ -37,6 +42,8 @@ int32 D3D12_THandle_GetID(grTexture* Handle);
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12_THandle_GetSRV(grTexture* Handle);
 D3D12_GPU_DESCRIPTOR_HANDLE D3D12_THandle_GetGPUSRV(grTexture* Handle);
 ID3D12DescriptorHeap* D3D12_THandle_GetDescriptorHeap();
+UINT D3D12_THandle_GetDescriptorIndex(grTexture* Handle);
+void D3D12_THandle_GetReservedSRV(UINT Slot, D3D12_CPU_DESCRIPTOR_HANDLE* Cpu, D3D12_GPU_DESCRIPTOR_HANDLE* Gpu);
 grBoolean D3D12_THandle_UpdateLightmap(grTexture* Handle, const uint8* RGBData);
 
 // Texture structure for D3D12
@@ -69,6 +76,11 @@ typedef struct grTexture
 
 	D3D12_CPU_DESCRIPTOR_HANDLE SRVHandle;  // Shader Resource View handle
 	UINT SRVDescriptorIndex;                // Index in descriptor heap
+
+	// A destroyed handle keeps its resource and descriptor until the GPU has finished
+	// every frame that could still read them (fence value RetireFence).
+	grBoolean Retired;
+	UINT64 RetireFence;
 } grTexture;
 
 #endif // D3D12_TEXTURE_MANAGER_H

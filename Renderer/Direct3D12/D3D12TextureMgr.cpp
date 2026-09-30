@@ -19,6 +19,28 @@
 static grTexture g_TextureList[MAX_THANDLES];
 static ComPtr<ID3D12DescriptorHeap> g_pSRVHeap;
 static UINT g_nSRVDescriptorSize = 0;
+static const UINT SRV_HEAP_SIZE = MAX_THANDLES + D3D12_RESERVED_SRV_COUNT;
+
+static D3D12_CPU_DESCRIPTOR_HANDLE CpuSRV(UINT Index)
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE Handle = g_pSRVHeap->GetCPUDescriptorHandleForHeapStart();
+	Handle.ptr += static_cast<SIZE_T>(Index) * g_nSRVDescriptorSize;
+	return Handle;
+}
+
+// Every slot always holds a valid view, so indexing the heap from a shader never
+// touches an uninitialized descriptor.
+static void WriteNullSRV(UINT Index)
+{
+	if (!g_pSRVHeap)
+		return;
+	D3D12_SHADER_RESOURCE_VIEW_DESC Desc = {};
+	Desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	Desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	Desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	Desc.Texture2D.MipLevels = 1;
+	g_pDevice->CreateShaderResourceView(nullptr, &Desc, CpuSRV(Index));
+}
 
 // Resources referenced by an open command list stay alive until its frame slot is
 // reused. D3D12_THandle_BeginFrame is called only after that slot's fence completes.
@@ -93,6 +115,8 @@ static void ResetTexture(grTexture& Handle, int32 Id)
 		Handle.MipData[MipLevel] = nullptr;
 		Handle.MipDataCapacity[MipLevel] = 0;
 	}
+	if (Handle.pTexture)
+		WriteNullSRV(static_cast<UINT>(Id));
 	Handle.pTexture.Reset();
 	Handle.id = Id;
 	Handle.Active = GR_FALSE;
@@ -109,20 +133,42 @@ static void ResetTexture(grTexture& Handle, int32 Id)
 	Handle.ResourceState = D3D12_RESOURCE_STATE_COMMON;
 	Handle.SRVHandle.ptr = 0;
 	Handle.SRVDescriptorIndex = 0;
+	Handle.Retired = GR_FALSE;
+	Handle.RetireFence = 0;
+}
+
+static grTexture* FindFreeTHandle(UINT64 CompletedFence, bool* bAnyRetired)
+{
+	for (int32 i = 0; i < MAX_THANDLES; ++i)
+	{
+		grTexture& Handle = g_TextureList[i];
+		if (Handle.Active)
+			continue;
+		if (!Handle.Retired || Handle.RetireFence <= CompletedFence)
+			return &Handle;
+		*bAnyRetired = true;
+	}
+	return nullptr;
 }
 
 static grTexture* GetNextTHandle()
 {
-	for (int32 i = 0; i < MAX_THANDLES; ++i)
+	bool bAnyRetired = false;
+	grTexture* Handle = FindFreeTHandle(D3D12GetCompletedFenceValue(), &bAnyRetired);
+
+	// Every free slot may still be in use by queued frames. Outside a scene nothing
+	// unsubmitted refers to them, so waiting for the GPU frees them all.
+	if (!Handle && bAnyRetired && !g_bInScene)
 	{
-		if (g_TextureList[i].Active == GR_FALSE)
-		{
-			ResetTexture(g_TextureList[i], i);
-			g_TextureList[i].Active = GR_TRUE;
-			return &g_TextureList[i];
-		}
+		D3D12WaitForGPU();
+		Handle = FindFreeTHandle(D3D12GetCompletedFenceValue(), &bAnyRetired);
 	}
-	return nullptr;
+	if (!Handle)
+		return nullptr;
+
+	ResetTexture(*Handle, Handle->id);
+	Handle->Active = GR_TRUE;
+	return Handle;
 }
 
 static D3D12_RESOURCE_DESC BufferDescription(UINT64 Size)
@@ -313,6 +359,7 @@ static grBoolean UploadLockedTexture(grTexture* Handle, int32 MipLevel)
 grBoolean D3D12_THandle_Startup()
 {
 	D3D12Log::GetPtr()->Printf("D3D12_THandle_Startup called");
+	g_pSRVHeap.Reset();
 	for (int32 i = 0; i < MAX_THANDLES; ++i)
 		ResetTexture(g_TextureList[i], i);
 	for (UINT i = 0; i < FRAME_COUNT; ++i)
@@ -320,7 +367,7 @@ grBoolean D3D12_THandle_Startup()
 
 	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
 	HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	HeapDesc.NumDescriptors = MAX_SRV_DESCRIPTORS;
+	HeapDesc.NumDescriptors = SRV_HEAP_SIZE;
 	HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	HRESULT Hr = g_pDevice->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&g_pSRVHeap));
 	if (FAILED(Hr))
@@ -329,16 +376,18 @@ grBoolean D3D12_THandle_Startup()
 		return GR_FALSE;
 	}
 	g_nSRVDescriptorSize = g_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	for (UINT i = 0; i < SRV_HEAP_SIZE; ++i)
+		WriteNullSRV(i);
 	return GR_TRUE;
 }
 
 grBoolean D3D12_THandle_Shutdown()
 {
+	g_pSRVHeap.Reset();
 	for (int32 i = 0; i < MAX_THANDLES; ++i)
 		ResetTexture(g_TextureList[i], i);
 	for (UINT i = 0; i < FRAME_COUNT; ++i)
 		g_FrameUploadResources[i].clear();
-	g_pSRVHeap.Reset();
 	g_nSRVDescriptorSize = 0;
 	return GR_TRUE;
 }
@@ -422,8 +471,7 @@ grTexture* DRIVERCC D3D12_THandle_Create(
 	}
 
 	Handle->SRVDescriptorIndex = static_cast<UINT>(Handle->id);
-	Handle->SRVHandle = g_pSRVHeap->GetCPUDescriptorHandleForHeapStart();
-	Handle->SRVHandle.ptr += static_cast<SIZE_T>(Handle->SRVDescriptorIndex) * g_nSRVDescriptorSize;
+	Handle->SRVHandle = CpuSRV(Handle->SRVDescriptorIndex);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
 	SrvDesc.Format = Handle->Format;
@@ -451,8 +499,19 @@ grBoolean DRIVERCC D3D12_THandle_Destroy(grTexture* Handle)
 {
 	if (!Handle || !Handle->Active)
 		return GR_FALSE;
-	const int32 Id = Handle->id;
-	ResetTexture(*Handle, Id);
+
+	// Queued frames may still sample this texture, so the resource and its descriptor
+	// stay put until the GPU passes the current fence; GetNextTHandle recycles the slot.
+	for (int32 MipLevel = 0; MipLevel < MAX_TEXTURE_MIP_LEVELS; ++MipLevel)
+	{
+		delete[] Handle->MipData[MipLevel];
+		Handle->MipData[MipLevel] = nullptr;
+		Handle->MipDataCapacity[MipLevel] = 0;
+	}
+	Handle->LockedMipMask = 0;
+	Handle->Active = GR_FALSE;
+	Handle->Retired = GR_TRUE;
+	Handle->RetireFence = D3D12GetPendingFenceValue();
 	return GR_TRUE;
 }
 
@@ -552,6 +611,23 @@ D3D12_GPU_DESCRIPTOR_HANDLE D3D12_THandle_GetGPUSRV(grTexture* Handle)
 ID3D12DescriptorHeap* D3D12_THandle_GetDescriptorHeap()
 {
 	return g_pSRVHeap.Get();
+}
+
+UINT D3D12_THandle_GetDescriptorIndex(grTexture* Handle)
+{
+	return (Handle && Handle->Active) ? Handle->SRVDescriptorIndex : 0;
+}
+
+void D3D12_THandle_GetReservedSRV(UINT Slot, D3D12_CPU_DESCRIPTOR_HANDLE* Cpu, D3D12_GPU_DESCRIPTOR_HANDLE* Gpu)
+{
+	const UINT Index = MAX_THANDLES + Slot;
+	if (Cpu)
+		*Cpu = CpuSRV(Index);
+	if (Gpu)
+	{
+		*Gpu = g_pSRVHeap->GetGPUDescriptorHandleForHeapStart();
+		Gpu->ptr += static_cast<UINT64>(Index) * g_nSRVDescriptorSize;
+	}
 }
 
 grBoolean D3D12_THandle_UpdateLightmap(grTexture* Handle, const uint8* RGBData)

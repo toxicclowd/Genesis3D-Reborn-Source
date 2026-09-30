@@ -114,6 +114,12 @@ struct ConstantBufferData
 void D3D12Matrix_ToXForm3d(const D3D12Matrix* mat, grXForm3d* XForm);
 void grXForm3d_ToD3D12Matrix(const grXForm3d* XForm, D3D12Matrix* mat);
 void D3D12WaitForGPU();
+// Fence value the GPU has finished, and the value that will cover the work recorded so
+// far (including the open command list).
+UINT64 D3D12GetCompletedFenceValue();
+UINT64 D3D12GetPendingFenceValue();
+// Per-frame constants (b1) for the current scene; 0 outside a scene.
+extern D3D12_GPU_VIRTUAL_ADDRESS			g_FrameConstantsGPU;
 
 //================================================================================
 //	Driver Interface Functions (from DCommon.h)
@@ -175,7 +181,6 @@ grBoolean DRIVERCC D3D12Drv_DestroyFont(grFont** Font);
 
 // Render state functions
 grBoolean DRIVERCC D3D12Drv_SetRenderState(uint32 state, uint32 value);
-grBoolean DRIVERCC D3D12Drv_DrawText(char* text, int x, int y, uint32 color);
 
 //================================================================================
 //	Driver Structure Export

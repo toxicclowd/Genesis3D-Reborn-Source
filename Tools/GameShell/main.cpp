@@ -16,18 +16,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	Render-regression mode (roadmap Phase 0):
 
 	G3DGameShell -screenshot out.bmp [-level Levels\x.j3d] [-camera x y z yaw pitch]
-	             [-frames n] [-size w h]
+	             [-frames n] [-size w h] [-overlay]
 
 	Runs the startup script, optionally swaps in another level, places the camera,
 	renders a fixed number of frames with a fixed timestep (so animated lights and
 	textures land in the same state every run), saves the last frame and exits.
-	The exit code is 0 on success and 1 on failure.
+	The exit code is 0 on success and 1 on failure. -overlay keeps the engine's debug
+	text (FPS, GPU times), which is left out of reference images by default.
 */
 struct ShellOptions
 {
 	const char						*Screenshot;
 	const char						*Level;
 	bool							HasCamera;
+	bool							Overlay;
 	float							Camera[5];			// x y z yaw pitch (degrees)
 	int								Frames;
 	int								Width, Height;
@@ -49,6 +51,8 @@ static void ParseOptions(ShellOptions *Opts)
 			Opts->Screenshot = __argv[++i];
 		else if (!_stricmp(Arg, "-level") && Left >= 1)
 			Opts->Level = __argv[++i];
+		else if (!_stricmp(Arg, "-overlay"))
+			Opts->Overlay = true;
 		else if (!_stricmp(Arg, "-frames") && Left >= 1)
 			Opts->Frames = atoi(__argv[++i]);
 		else if (!_stricmp(Arg, "-size") && Left >= 2)
@@ -112,7 +116,7 @@ static int RunScreenshot(const ShellOptions *Opts)
 	}
 
 	// The frame-rate text changes every run, so keep it out of reference images.
-	grEngine_EnableFrameRateCounter(Game->m_pEngine, GR_FALSE);
+	grEngine_EnableFrameRateCounter(Game->m_pEngine, Opts->Overlay ? GR_TRUE : GR_FALSE);
 	Game->SetFixedTimeStep(1.0f / 60.0f);
 
 	for (int i = 0; i < Opts->Frames; i++)

@@ -64,7 +64,6 @@ private:
 	std::vector<PolyVert> m_Vertices;
 	std::vector<StaticBuffer> m_StaticBuffers;
 
-	std::vector<ComPtr<ID3D12Resource>> m_FrameVertexBuffers[FRAME_COUNT];
 	
 	int32 m_NumVerts;
 	int32 m_MaxVerts;
@@ -92,8 +91,7 @@ public:
 private:
 	grBoolean AddPolygon(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers,
 		int32 NumLayers, uint32 Flags, grBoolean WorldCoordinates);
-	grBoolean UploadVertices(ComPtr<ID3D12Resource>& VertexBuffer,
-		D3D12_VERTEX_BUFFER_VIEW& VertexBufferView);
+	grBoolean UploadVertices(D3D12_VERTEX_BUFFER_VIEW& VertexBufferView);
 };
 
 #endif // D3D12_POLY_CACHE_H

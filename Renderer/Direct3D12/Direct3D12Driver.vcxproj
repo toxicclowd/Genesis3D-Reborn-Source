@@ -110,6 +110,8 @@
     <ClInclude Include="D3D12Shaders.h" />
     <ClInclude Include="D3D12Resource.h" />
     <ClInclude Include="D3D12SceneTarget.h" />
+    <ClInclude Include="D3D12UploadRing.h" />
+    <ClInclude Include="D3D12GpuTimer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Direct3D12Driver.cpp" />
@@ -120,12 +122,14 @@
     <ClCompile Include="D3D12Config.cpp" />
     <ClCompile Include="D3D12Shaders.cpp" />
     <ClCompile Include="D3D12SceneTarget.cpp" />
+    <ClCompile Include="D3D12UploadRing.cpp" />
+    <ClCompile Include="D3D12GpuTimer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Direct3D12Driver.rc" />
   </ItemGroup>
   <!--
-    Shaders: each G3DShader item is one entry point compiled by DXC into
+    Shaders: each G3DShader item is one entry point (plus optional DXC -D Defines) compiled by DXC into
     $(IntDir)Shaders\<Var>.h as a byte array named <Var> (see D3D12Shaders.cpp).
   -->
   <ItemGroup>
@@ -148,6 +152,24 @@
       <Entry>PSMultiTexture</Entry>
       <Profile>ps_6_0</Profile>
       <Var>g_TLPoly_PSMultiTexture</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\TLPoly.hlsl">
+      <Entry>PSGouraud</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_TLPoly_PSGouraud_Bindless</Var>
+      <Defines>-D G3D_BINDLESS=1</Defines>
+    </G3DShader>
+    <G3DShader Include="Shaders\TLPoly.hlsl">
+      <Entry>PSTexture</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_TLPoly_PSTexture_Bindless</Var>
+      <Defines>-D G3D_BINDLESS=1</Defines>
+    </G3DShader>
+    <G3DShader Include="Shaders\TLPoly.hlsl">
+      <Entry>PSMultiTexture</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_TLPoly_PSMultiTexture_Bindless</Var>
+      <Defines>-D G3D_BINDLESS=1</Defines>
     </G3DShader>
     <G3DShader Include="Shaders\Present.hlsl">
       <Entry>VSFullscreen</Entry>
@@ -184,7 +206,7 @@
   <!-- Batched per shader so only changed sources are rebuilt. -->
   <Target Name="G3DCompileShaders" BeforeTargets="ClCompile" Inputs="@(G3DShader)" Outputs="$(G3DShaderOutDir)%(G3DShader.Var).h">
     <MakeDir Directories="$(G3DShaderOutDir)" />
-    <Exec Command="&quot;$(G3DDxc)&quot; -nologo -T %(G3DShader.Profile) -E %(G3DShader.Entry) -Vn %(G3DShader.Var) $(G3DShaderFlags) -Fh &quot;$(G3DShaderOutDir)%(G3DShader.Var).h&quot; &quot;%(G3DShader.FullPath)&quot;" />
+    <Exec Command="&quot;$(G3DDxc)&quot; -nologo -T %(G3DShader.Profile) -E %(G3DShader.Entry) -Vn %(G3DShader.Var) %(G3DShader.Defines) $(G3DShaderFlags) -Fh &quot;$(G3DShaderOutDir)%(G3DShader.Var).h&quot; &quot;%(G3DShader.FullPath)&quot;" />
   </Target>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

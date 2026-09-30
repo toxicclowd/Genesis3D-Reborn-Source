@@ -27,6 +27,35 @@ enum D3D12_PSO_TYPE
 	PSO_COUNT
 };
 
+// Root parameter slots of the TLPoly root signature.
+enum D3D12_ROOT_PARAM
+{
+	ROOT_PARAM_DRAW = 0,		// 4 x 32-bit constants, b0
+	ROOT_PARAM_FRAME,			// frame constants CBV, b1
+	ROOT_PARAM_TEXTURES,		// bindless: the whole SRV heap (t0, space1)
+	ROOT_PARAM_BASE_TABLE = ROOT_PARAM_TEXTURES,	// descriptor tables: t0
+	ROOT_PARAM_LIGHT_TABLE						// descriptor tables: t1
+};
+
+// Per-draw root constants (DrawConstants in Shaders/TLPoly.hlsl).
+struct D3D12DrawConstants
+{
+	uint32 Flags;
+	uint32 BaseTextureIndex;
+	uint32 LightTextureIndex;
+	uint32 Padding;
+};
+
+// Per-frame constant buffer (FrameConstants in Shaders/TLPoly.hlsl).
+struct D3D12FrameConstants
+{
+	float ViewportSize[2];
+	float InvViewportSize[2];
+	uint32 FrameNumber;
+	float TimeSeconds;
+	float Padding[2];
+};
+
 // PSO Manager class
 class D3D12PSOManager
 {
@@ -41,6 +70,8 @@ public:
 	// Get a PSO by type
 	ID3D12PipelineState* GetPSO(D3D12_PSO_TYPE type, uint32 flags, grBoolean sceneWireframe);
 	ID3D12RootSignature* GetRootSignature();
+	// True when pixel shaders read textures by heap index (ROOT_PARAM_TEXTURES).
+	bool IsBindless() const { return m_bBindless; }
 
 private:
 	// Create all PSOs
@@ -53,6 +84,7 @@ private:
 	ComPtr<ID3D12PipelineState> m_PSOs[PSO_COUNT][PSO_STATE_COUNT];
 
 	bool m_bInitialized;
+	bool m_bBindless;
 };
 
 #endif // D3D12_PSO_MANAGER_H

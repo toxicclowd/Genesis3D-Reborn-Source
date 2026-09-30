@@ -9,14 +9,33 @@
 //	as a resource and compiled at run time (shader model 5.0) when the device has no
 //	SM 6.0 support or [Shaders] SourceDir is set in Direct3D12Driver.ini, so it must
 //	stay valid for both compilers and must not #include other files.
+//
+//	G3D_BINDLESS=1 builds the pixel shaders that read textures straight from the
+//	driver's shader-visible heap by index (resource binding tier 2+). Without it
+//	they read the two textures bound through descriptor tables.
 //=====================================================================================
 
+#ifndef G3D_BINDLESS
+#define G3D_BINDLESS 0
+#endif
+
+// Per draw (root constants).
 cbuffer DrawConstants : register(b0)
 {
-    float ViewportWidth;
-    float ViewportHeight;
     uint  DrawFlags;			// GR_RENDER_FLAG_*
+    uint  BaseTextureIndex;		// heap indices, used by the bindless variant
+    uint  LightTextureIndex;
     uint  DrawPadding;
+};
+
+// Per frame (root CBV, written once per scene).
+cbuffer FrameConstants : register(b1)
+{
+    float2 ViewportSize;
+    float2 InvViewportSize;
+    uint   FrameNumber;
+    float  TimeSeconds;
+    float2 FramePadding;
 };
 
 // GR_RENDER_FLAG_* bits the pixel shaders look at.
@@ -25,8 +44,16 @@ cbuffer DrawConstants : register(b0)
 #define FLAG_CLAMP_UV		0x00000008u
 #define FLAG_BILINEAR		0x00000400u
 
+#if G3D_BINDLESS
+Texture2D Textures[] : register(t0, space1);
+#define BASE_TEXTURE	Textures[BaseTextureIndex]
+#define LIGHT_TEXTURE	Textures[LightTextureIndex]
+#else
 Texture2D BaseTexture : register(t0);
 Texture2D LightTexture : register(t1);
+#define BASE_TEXTURE	BaseTexture
+#define LIGHT_TEXTURE	LightTexture
+#endif
 SamplerState LinearWrapSampler  : register(s0);
 SamplerState LinearClampSampler : register(s1);
 SamplerState PointWrapSampler   : register(s2);
@@ -55,8 +82,8 @@ VS_OUTPUT VSMain(VS_INPUT input)
     // grTLVertex contains pixel-space x/y and positive camera-space z. The legacy
     // driver used XYZRHW with depth = 1 - 1/z. Constructing this clip position
     // reproduces that projection and preserves perspective-correct UV interpolation.
-    float width = max(ViewportWidth, 1.0f);
-    float height = max(ViewportHeight, 1.0f);
+    float width = max(ViewportSize.x, 1.0f);
+    float height = max(ViewportSize.y, 1.0f);
     float cameraZ = max(input.Position.z, 0.0001f);
     float ndcX = input.Position.x * (2.0f / width) - 1.0f;
     float ndcY = 1.0f - input.Position.y * (2.0f / height);
@@ -73,17 +100,17 @@ float4 SampleBase(float2 uv)
     bool clampUV = (DrawFlags & FLAG_CLAMP_UV) != 0;
     bool linearFilter = (DrawFlags & FLAG_BILINEAR) != 0;
     if (linearFilter)
-        return clampUV ? BaseTexture.Sample(LinearClampSampler, uv)
-                       : BaseTexture.Sample(LinearWrapSampler, uv);
-    return clampUV ? BaseTexture.Sample(PointClampSampler, uv)
-                   : BaseTexture.Sample(PointWrapSampler, uv);
+        return clampUV ? BASE_TEXTURE.Sample(LinearClampSampler, uv)
+                       : BASE_TEXTURE.Sample(LinearWrapSampler, uv);
+    return clampUV ? BASE_TEXTURE.Sample(PointClampSampler, uv)
+                   : BASE_TEXTURE.Sample(PointWrapSampler, uv);
 }
 
 float4 SampleLight(float2 uv)
 {
     return ((DrawFlags & FLAG_BILINEAR) != 0)
-        ? LightTexture.Sample(LinearClampSampler, uv)
-        : LightTexture.Sample(PointClampSampler, uv);
+        ? LIGHT_TEXTURE.Sample(LinearClampSampler, uv)
+        : LIGHT_TEXTURE.Sample(PointClampSampler, uv);
 }
 
 float4 PSGouraud(VS_OUTPUT input) : SV_TARGET

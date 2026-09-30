@@ -11,6 +11,8 @@
 #include "D3D12PSOManager.h"
 #include "D3D12Config.h"
 #include "D3D12SceneTarget.h"
+#include "D3D12UploadRing.h"
+#include "D3D12GpuTimer.h"
 #include <stdio.h>
 #include <unordered_map>
 #include <vector>
@@ -42,6 +44,8 @@ UINT64									g_nFenceValue = 0;
 HANDLE									g_hFenceEvent = nullptr;
 
 FrameResources							g_FrameResources[FRAME_COUNT];
+D3D12_GPU_VIRTUAL_ADDRESS				g_FrameConstantsGPU = 0;
+static LARGE_INTEGER					g_StartTime = {};
 
 bool									g_bInitialized = false;
 bool									g_bActive = false;
@@ -190,6 +194,17 @@ static void __stdcall D3D12DebugMessage(
 	const char* Level = (Severity == D3D12_MESSAGE_SEVERITY_WARNING) ? "WARNING"
 		: (Severity == D3D12_MESSAGE_SEVERITY_CORRUPTION) ? "CORRUPTION" : "ERROR";
 	D3D12Log::GetPtr()->Printf("D3D12 %s #%d: %s", Level, static_cast<int>(Id), Description ? Description : "");
+}
+
+UINT64 D3D12GetCompletedFenceValue()
+{
+	return g_pFence ? g_pFence->GetCompletedValue() : 0;
+}
+
+UINT64 D3D12GetPendingFenceValue()
+{
+	// The next Signal (end of frame or D3D12WaitForGPU) uses g_nFenceValue.
+	return g_nFenceValue;
 }
 
 static void MoveToNextFrame()
@@ -664,12 +679,6 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		g_pDevice->CreateDepthStencilView(g_pDepthStencil.Get(), &dsvDesc, dsvHandle);
 		D3D12Log::GetPtr()->Printf("Depth/stencil buffer created");
 
-		if (!D3D12Scene_Create(swapChainDesc.Width, swapChainDesc.Height))
-		{
-			strcpy_s(g_szLastError, "Failed to create the scene target");
-			return GR_FALSE;
-		}
-
 		// Create Command List
 		hr = g_pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
 			g_FrameResources[0].pCommandAllocator.Get(), nullptr, IID_PPV_ARGS(&g_pCommandList));
@@ -712,6 +721,23 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 			strcpy_s(g_szLastError, "Failed to initialize texture manager");
 			return GR_FALSE;
 		}
+
+		// The scene target's SRV lives in the texture heap's reserved slots.
+		if (!D3D12Scene_Create(swapChainDesc.Width, swapChainDesc.Height))
+		{
+			strcpy_s(g_szLastError, "Failed to create the scene target");
+			return GR_FALSE;
+		}
+
+		if (!D3D12Upload_Startup())
+		{
+			strcpy_s(g_szLastError, "Failed to create the upload ring");
+			return GR_FALSE;
+		}
+
+		// Optional: without timestamps the overlay just omits GPU times.
+		D3D12Timer_Startup();
+		QueryPerformanceCounter(&g_StartTime);
 
 		// Create and initialize PolyCache
 		g_pPolyCache = new D3D12PolyCache();
@@ -758,6 +784,9 @@ grBoolean DRIVERCC D3D12Drv_Shutdown()
 		return GR_TRUE;
 	}
 
+	// Nothing may be released while the GPU could still be using it.
+	D3D12WaitForGPU();
+
 	// Shutdown PSO Manager
 	if (g_pPSOManager)
 	{
@@ -777,9 +806,10 @@ grBoolean DRIVERCC D3D12Drv_Shutdown()
 	// Shutdown texture manager
 	D3D12_THandle_Shutdown();
 
-	// Wait for GPU to finish
-	D3D12WaitForGPU();
 	D3D12Scene_Shutdown();
+	D3D12Upload_Shutdown();
+	D3D12Timer_Shutdown();
+	g_FrameConstantsGPU = 0;
 
 	// Close fence event
 	if (g_hFenceEvent)
@@ -824,6 +854,7 @@ grBoolean DRIVERCC D3D12Drv_Reset()
     D3D12_THandle_Shutdown();
     if (g_pPolyCache) g_pPolyCache->Shutdown();
     if (!D3D12_THandle_Startup()) { D3D12Log::GetPtr()->Printf("ERROR: Texture manager restart failed"); return GR_FALSE; }
+    if (!D3D12Scene_Create(static_cast<UINT>(g_nScreenWidth), static_cast<UINT>(g_nScreenHeight))) { D3D12Log::GetPtr()->Printf("ERROR: Scene target re-init failed"); return GR_FALSE; }
     if (g_pPolyCache && !g_pPolyCache->Initialize(10000)) { D3D12Log::GetPtr()->Printf("ERROR: PolyCache re-init failed"); return GR_FALSE; }
     return GR_TRUE;
 }
@@ -856,6 +887,7 @@ grBoolean DRIVERCC D3D12Drv_UpdateWindow()
 	for (UINT i = 0; i < FRAME_COUNT; ++i)
 	{
 		D3D12_THandle_BeginFrame(i);
+		D3D12Upload_BeginFrame(i);
 		if (g_pPolyCache)
 			g_pPolyCache->BeginFrame(i);
 		g_FrameResources[i].pRenderTarget.Reset();
@@ -986,10 +1018,44 @@ grBoolean DRIVERCC D3D12Drv_BeginScene(grBoolean Clear, grBoolean ClearZ, RECT* 
 			return GR_FALSE;
 		}
 
+		// The frame-slot fence has completed before this allocator is reused, so
+		// transient vertex and texture upload resources for this slot can be released,
+		// and its GPU timestamps can be read.
+		D3D12Timer_BeginFrame(g_nCurrentFrameIndex);
+		D3D12Upload_BeginFrame(g_nCurrentFrameIndex);
+		D3D12Timer_Mark(g_pCommandList.Get(), GPU_MARK_SCENE_BEGIN);
 		D3D12BeginMarker(g_pCommandList.Get(), "Scene");
 
-		// The frame-slot fence has completed before this allocator is reused, so
-		// transient vertex and texture upload resources for this slot can be released.
+		// One shader-visible heap (textures + reserved driver slots) for the whole frame.
+		ID3D12DescriptorHeap* TextureHeap = D3D12_THandle_GetDescriptorHeap();
+		g_pCommandList->SetDescriptorHeaps(1, &TextureHeap);
+
+		// Per-frame constants (FrameConstants, b1).
+		D3D12UploadAllocation FrameUpload = {};
+		if (!D3D12Upload_Allocate(sizeof(D3D12FrameConstants), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, &FrameUpload))
+		{
+			D3D12Log::GetPtr()->Printf("ERROR: Frame constants allocation failed");
+			g_pCommandList->Close();
+			return GR_FALSE;
+		}
+		{
+			LARGE_INTEGER Now = {}, Frequency = {};
+			QueryPerformanceCounter(&Now);
+			QueryPerformanceFrequency(&Frequency);
+			const float Width = static_cast<float>(g_nScreenWidth > 1 ? g_nScreenWidth : 1);
+			const float Height = static_cast<float>(g_nScreenHeight > 1 ? g_nScreenHeight : 1);
+			D3D12FrameConstants Constants = {};
+			Constants.ViewportSize[0] = Width;
+			Constants.ViewportSize[1] = Height;
+			Constants.InvViewportSize[0] = 1.0f / Width;
+			Constants.InvViewportSize[1] = 1.0f / Height;
+			Constants.FrameNumber = static_cast<uint32>(g_nPresentedFrameCount);
+			Constants.TimeSeconds = static_cast<float>(
+				static_cast<double>(Now.QuadPart - g_StartTime.QuadPart) / static_cast<double>(Frequency.QuadPart));
+			std::memcpy(FrameUpload.CPU, &Constants, sizeof(Constants));
+			g_FrameConstantsGPU = FrameUpload.GPU;
+		}
+
 		D3D12_THandle_BeginFrame(g_nCurrentFrameIndex);
 		if (g_pPolyCache)
 			g_pPolyCache->BeginFrame(g_nCurrentFrameIndex);
@@ -1082,6 +1148,7 @@ grBoolean DRIVERCC D3D12Drv_EndScene(void)
 			return GR_FALSE;
 		}
 
+		D3D12Timer_Mark(g_pCommandList.Get(), GPU_MARK_PRESENT_BEGIN);
 		if (D3D12Scene_IsEnabled() &&
 			!D3D12Scene_Present(g_pCommandList.Get(), g_FrameResources[g_nCurrentFrameIndex].RTVHandle))
 		{
@@ -1090,6 +1157,8 @@ grBoolean DRIVERCC D3D12Drv_EndScene(void)
 			return GR_FALSE;
 		}
 		D3D12EndMarker(g_pCommandList.Get());
+		D3D12Timer_Mark(g_pCommandList.Get(), GPU_MARK_FRAME_END);
+		D3D12Timer_EndFrame(g_pCommandList.Get());
 
 		// Transition render target back to PRESENT state
 		D3D12_RESOURCE_BARRIER barrier = {};
@@ -1499,7 +1568,7 @@ DRV_Driver g_D3D12Drv =
 
 	nullptr,  // SetupLightmap
 
-	D3D12Drv_DrawText,
+	nullptr,  // DrawText: none, so the engine draws its bitmap font through DrawDecal
 	nullptr,  // SetFog
 
 	D3D12Drv_CreateStaticMesh,
@@ -1510,7 +1579,9 @@ DRV_Driver g_D3D12Drv =
 	D3D12Drv_DrawFont,
 	D3D12Drv_DestroyFont,
 
-	D3D12Drv_SetRenderState
+	D3D12Drv_SetRenderState,
+
+	nullptr		// GPUTimings, set in DriverHook
 };
 
 //================================================================================
@@ -1545,6 +1616,7 @@ extern "C" DRIVERAPI BOOL DriverHook(DRV_Driver** Driver)
 		g_EngineSettings.CanSupportFlags = (DRV_SUPPORT_ALPHA | DRV_SUPPORT_COLORKEY | DRV_SUPPORT_GAMMA);
 		g_EngineSettings.PreferenceFlags = 0;
 
+		g_D3D12Drv.GPUTimings = D3D12Timer_GetTimings();
 		*Driver = &g_D3D12Drv;
 
 		D3D12Log::GetPtr()->Printf("DriverHook successful - returning driver structure at 0x%p", *Driver);
@@ -1591,8 +1663,4 @@ grBoolean DRIVERCC D3D12Drv_SetRenderState(uint32 state, uint32 value)
     g_RenderStates[state] = value; return GR_TRUE;
 }
 
-grBoolean DRIVERCC D3D12Drv_DrawText(char* text, int x, int y, uint32 color)
-{
-    // Stub
-    return (text != nullptr) ? GR_TRUE : GR_FALSE;
-}
+

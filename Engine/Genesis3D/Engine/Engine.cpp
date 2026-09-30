@@ -583,6 +583,13 @@ GRAPI grBoolean GRCC grEngine_EndFrame(grEngine *Engine)
 		AverageFps *= (1.0f/(float)AVERAGE_FPS_HISTORY);
 
 		grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "Fps    : %2.2f / %2.2f", Fps, AverageFps);
+
+		if (Engine->DriverInfo.RDriver->GPUTimings && Engine->DriverInfo.RDriver->GPUTimings->Valid)
+		{
+			const DRV_GPUTimings *Gpu = Engine->DriverInfo.RDriver->GPUTimings;
+			grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "GPU    : %2.2f ms (scene %2.2f, present %2.2f)",
+									Gpu->TotalMs, Gpu->SceneMs, Gpu->PresentMs);
+		}
 		
 		
 		Engine->DebugInfo.RenderedPolys = Engine->DriverInfo.RDriver->NumRenderedPolys;
@@ -1926,9 +1933,9 @@ static void Engine_Tick(grEngine *Engine)
 //===================================================================================
 static void Engine_DrawFontBuffer(grEngine *Engine)
 {
-	//grRect			Rect;
+	grRect			Rect{};
 	int32			i{}, x{}, y{}, size{}, StrLength{};
-	//int32           w, r,g,b;
+	int32			w{};
 	Engine_FontInfo* Fi{};
 	char* Str{};
 	int32			FontWidth{}, FontHeight{};
@@ -1970,18 +1977,14 @@ static void Engine_DrawFontBuffer(grEngine *Engine)
 		{
 			Engine->DriverInfo.RDriver->DrawText(Str, x, y, color);
 		}
-		/*else 
+		else
 		{
+		   // No driver text: draw the built-in 8x15 bitmap font as decals.
 		   for (w=0; w< StrLength; w++)
 		   {
-			   //Rect.left = (Fi->FontLUT1[*Str]>>16)+1;
-			   //Rect.right = Rect.left+16;
-			   //Rect.top = (Fi->FontLUT1[*Str]&0xffff)+1;
-			   //Rect.bottom = Rect.top+16;
-			   
-			   Rect.Left = (Fi->FontLUT1[*Str]>>16);
+			   Rect.Left = (Fi->FontLUT1[*Str & 0x7f]>>16);
 			   Rect.Right = Rect.Left + FontWidth - 1;
-			   Rect.Top = (Fi->FontLUT1[*Str]&0xffff);
+			   Rect.Top = (Fi->FontLUT1[*Str & 0x7f]&0xffff);
 			   Rect.Bottom = Rect.Top + FontHeight - 1;
 
 			   if ( ! grEngine_DrawBitmap(Engine, Fi->FontBitmap, &Rect, x, y) )
@@ -1994,7 +1997,7 @@ static void Engine_DrawFontBuffer(grEngine *Engine)
 			   x += FontWidth;
 			   Str++;
 		   }
-		}*/
+		}
 	}
 
 	Fi->NumStrings = 0;
