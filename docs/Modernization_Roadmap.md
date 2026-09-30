@@ -1,24 +1,38 @@
-# Genesis3D: Reborn — Modernization Roadmap
+# Genesis3D: Reborn — Roadmap
 
-This roadmap covers the next stage of the engine and tools now that everything builds and runs on the DirectX 12 driver. The goals are:
+Genesis3D: Reborn is growing from an engine with separate tools into a **game authoring system**: one application, the World Editor, in which a game is made from start to finish and then built into a package that players run. The goals are:
 
-- PBR materials
-- Advanced lighting and global illumination
-- Lua scripting
-- Modern editor navigation
-- Other modern features
+- **Engine:** PBR materials, advanced lighting and global illumination, and other modern features (sections 2–3).
+- **Authoring (section 4):**
+  - projects and templates,
+  - the World Editor as the hub for every tool: levels, actors, materials, scripts, UI and game settings,
+  - Lua scripting, and visual scripting that compiles to Lua,
+  - a menu and screen editor (main menu, loading, pause, options, HUD...),
+  - a game framework, so a game needs scripts and data but no C++,
+  - play-in-editor, and building and packaging the finished game from the editor.
+- **Editor UX:** modern navigation and editing (Track A).
 
 All of this has to happen **without losing what makes Genesis3D feel like Genesis3D**: brush/CSG level building, BSP + PVS worlds, compiled lighting and a 4-view CAD editor.
 
 ---
 
-## 1. Ground rules for keeping the retro feel
+## 1. Ground rules
+
+### Keeping the retro feel
 
 1. **Brushes stay the way levels are built.** New features add to CSG + BSP; they don't replace it. Meshes stay props, and brushes stay the world.
 2. **Lighting is still compiled.** Baked lightmaps are the "retro-authentic" GI. The main GI path upgrades the bake (bounces, HDR, direction) instead of switching to fully dynamic GI. Runtime GI is an optional extra tier.
 3. **Existing content keeps loading, and old levels look the same by default.** Every file-format change is a new chunk version. A material with no PBR maps renders like today's diffuse × lightmap.
 4. **A "Look Profile" switch is built in from day one.** `Classic` (point filtering, LDR lightmaps, no post-processing), `Enhanced` (PBR, HDR, shadows, baked GI) and `Stylized` (Enhanced lighting plus texel-snapped lighting, palette/dither, low internal resolution, optional vertex snapping). The same level works in all three.
 5. **Old editor habits keep working.** New navigation ships as the default keymap, and the current controls remain as a `Classic Genesis` preset.
+
+### Authoring system
+
+6. **The World Editor is the hub.** Every tool (actor editor, material editor, script and visual script editors, UI editor, project settings, build) opens from it and works on the open project. Stand-alone tools may remain, but only as command-line back ends the editor drives (as it already drives G3DTexImport).
+7. **What you play in the editor is what ships.** Play-in-editor, the packaged game and the Game Shell run the same runtime and the same scripts; nothing is emulated in the editor. Editor previews (UI canvas, actor viewer, material preview) render through the real engine.
+8. **Games are content, scripts and settings.** A complete game can be made without writing or compiling C++. C++ remains possible through the existing object DLL plug-ins (`Objects/`), and Lua can define entity classes too.
+9. **Project files are text where they can be,** and diff-friendly: the project file, UI screens, visual script graphs, input maps and settings. Levels and binary assets keep their chunked formats, under the versioning rule above.
+10. **Templates are real projects.** Each template is an ordinary project that ships with the editor and is copied on *New Project*, so templates are built and tested with the same tools as games.
 
 ---
 
@@ -36,7 +50,7 @@ The good news is that a starting point already exists: the "Hardware T&L" and "S
 
 ## 3. Phases
 
-The phases form a dependency chain (0 → 1 → 2 → 3 → 4). **Tracks A (editor) and B (Lua) are independent** and can run in parallel with the renderer work.
+The engine phases form a dependency chain (0 → 1 → 2 → 3 → 4). **Track A (editor UX)** runs in parallel with them and with the authoring system (§4), which builds on the engine but not on Phase 4.
 
 ### Phase 0 — Renderer foundations
 
@@ -134,55 +148,174 @@ Current state: the World Editor's 3D view (`Tools/WorldEditor/G3DView.cpp`) uses
 - Translate/rotate/scale gizmos in the 3D view, with grid and angle snapping.
 - A clipping tool, vertex/edge/face editing, texture lock, and face alignment (fit / align to neighbour / justify).
 - A real-time lit 3D viewport: the editor uses the Phase 1–3 renderer with an "unlit / lightmaps / full" toggle.
-- A searchable entity and texture browser, a property grid with tooltips from the object definitions, and a Lua console dock (Track B).
+- A searchable entity and texture browser, a property grid with tooltips from the object definitions, and a Lua console dock (these become panels of the editor hub, §4.2).
 - Undo/redo covering every operation (extending `Core/Undo.c`).
 - A high-DPI aware MFC shell and a dark theme.
 
 **Done when:** a new user who knows Hammer++, TrenchBroom or Unreal can get around without reading docs, and a veteran can switch to `Classic Genesis`.
 
-### Track B — Lua scripting (parallel)
+### Track B — Lua scripting
 
-- **Runtime:** Lua 5.4 (vendored source under `Engine/External/lua`, built as a static library), bound with **sol2** (header-only C++17).
-- **Architecture:** add a small `IScriptVM` interface behind `Tools/GameShell/ScriptMgr.cpp` with two back-ends, **Eos (existing)** and **Lua (new)**. `G3DMain.eos` keeps working during the transition. New samples and docs target Lua.
-- **Move the script host into the engine:** a new `grScript` module in `Genesis3D.dll` rather than per tool, so the Game Shell, the editor and any game share it.
-- **API surface (v1):** `engine`, `world` (trace/ray, find entities, spawn), `entity` (position, properties, targets), `actor` (motions, sockets), `camera`, `light`, `sound`, `input`, `timer`, `log`, `ui` (text/decals).
-- **Entity-attached scripts in classic style:** any entity can have a `script` property pointing to a `.lua` file with hooks `OnSpawn`, `OnThink(dt)`, `OnTouch(other)`, `OnTrigger(activator)`, `OnUse(user)` and `OnDamage`. The `target`/`targetname` wiring from BSP-era games stays the main way to connect a level; Lua adds logic on top.
-- **Workflow:**
-  - Hot-reload on file change.
-  - Scripts are loaded through `VFile` so they work from packs.
-  - The sandbox has no `os`/`io` by default.
-  - Per-script CPU budget and clear error reporting with file:line in the Game Shell log and editor console.
-- **Tests:** a headless Lua test harness that runs scripts against a loaded level with no window.
+Now part of the authoring system: see §4.3.
 
 ### Other modern nice-to-haves (backlog, roughly by value)
 
-1. **glTF 2.0 import** for static meshes and skinned actors (via cgltf). It replaces the unbuilt 3ds Max exporter in `legacy/` as the main art path, and glTF PBR materials map directly onto Phase 2.
-2. **Audio:** XAudio2 in place of DirectSound; keep MP3/Ogg streaming; HRTF optional.
-3. **Input:** XInput/GameInput controller support and rebindable actions.
-4. **Packages:** a zip-based `.pk3`-style package mounted by `VFile`, alongside the existing formats.
-5. **Physics:** replace the collision pieces with **Jolt Physics** for rigid bodies and character controllers, keeping BSP hulls for world collision (ODE is in `Engine/External` but ageing).
+1. **glTF 2.0 import** for static meshes and skinned actors (via cgltf). It replaces the unbuilt 3ds Max exporter in `legacy/` as the main art path, and glTF PBR materials map directly onto Phase 2. Surfaces in the editor as an importer in the asset browser (§4.2).
+2. **Audio:** XAudio2 in place of DirectSound; keep MP3/Ogg streaming; HRTF optional. A mixer with buses (music, effects, voice, UI) that the options screen and scripts control.
+3. ~~Input~~ → moved into the game framework (§4.5): action mapping, controllers, rebinding.
+4. ~~Packages~~ → moved into build and packaging (§4.6).
+5. **Physics:** replace the collision pieces with **Jolt Physics** for rigid bodies and character controllers, keeping BSP hulls for world collision (ODE is in `Engine/External` but ageing). The game framework's character controller (§4.5) is designed so it can switch to Jolt later.
 6. **Anti-aliasing:** MSAA, FXAA or TAA, selectable (TAA off by default to keep crisp pixels).
-7. **Build and CI:** GitHub Actions on `windows-latest` building the solution in Debug/Release, plus the Phase 0 screenshot regression.
-8. **Tooling:** asset hot-reload for textures, materials and levels in the Game Shell; an in-game Dear ImGui debug overlay (engine side only; the editor stays MFC).
+7. **Build and CI:** GitHub Actions on `windows-latest` building the solution in Debug/Release, plus the screenshot regression and a command-line build of every template (§4.6).
+8. **Tooling:** asset hot-reload for textures, materials and levels in the Game Shell and play-in-editor; an in-game Dear ImGui debug overlay, sharing the editor's ImGui host (§4.2).
+9. **Phase 3 follow-ups:** a per-level exposure setting stored in the level (the API exists), volume fog, and actors receiving real-time shadows (they cast them).
 
 ---
 
-## 4. Suggested order and milestones
+## 4. Game Authoring System
 
-```
-M1  Phase 0 (foundations)            ─┐
-M2  Phase 1 (world-space GPU path)    │   Track A: editor navigation  ──  can start now
-M3  Phase 2 (PBR materials + editor)  │   Track B: Lua host + API v1  ──  can start now
-M4  Phase 3 (clustered lights, HDR, shadows, Look Profiles)
-M5  Phase 4A (new lightmap baker, probes, reflection probes)
-M6  Phase 4B/C + backlog
-```
+The engine becomes the runtime of an authoring system. Today a game is assembled by hand: levels come from the World Editor, actors from Actor Studio and ActBuild, textures from G3DTexImport, logic from Eos scripts run by the Game Shell, and shipping means copying `bin/` and editing scripts. The goal is one workflow in one application: **create a project from a template → build levels, actors, materials, scripts and screens → play in the editor → build and package the game.**
 
-**Recommended first step:** Phase 0 together with Track A's fly-camera. Phase 0 is needed by every rendering feature and is low risk to existing content. The fly-camera is a small, self-contained change to `G3DView.cpp` that improves the editor right away.
+What exists to build on: the MFC World Editor (`Tools/WorldEditor`, already running the Phase 1–3 renderer in its 3D view), the Game Shell and its script manager (`Tools/GameShell`, Eos), object DLL plug-ins (`Objects/`), the property system (`grProperty`) that drives entity panels, VFile (directories, packs, virtual files), the actor tools (`Tools/ActorTools`), G3DTexImport, and the Material Editor dialog.
+
+### 4.1 Projects and templates
+
+- **Project file** `<Name>.g3dproj` (JSON): name, version, start screen or level, window and video defaults, Look Profile and look settings, input map, audio buses, the content folders and the engine library it builds on.
+- **Project layout:**
+  ```
+  MyGame/
+    MyGame.g3dproj
+    Levels/  Actors/  Materials/  Textures/  Scripts/  Graphs/  UI/  Fonts/  Audio/
+    Config/        input map, game settings, localized string tables
+    Build/         package output (not source)
+  ```
+- **Content search path:** VFile mounts the project's folders first and the engine library (today's `bin/GlobalMaterials`, actors, sounds and the PBR library) under them, read-only. A project overrides an engine asset by adding one with the same name, as `G3D_MATERIAL_OVERRIDES` does today. The editor's hard-coded `bin/` paths (`Level_CreateResourceMgr` and friends) become project-relative.
+- **Asset database:** a per-project index (names, types, dependencies, thumbnails, import settings) kept in `Build/` and rebuilt when missing, so the asset browser, references ("where is this material used?") and packaging don't rescan everything.
+- **Templates** (ordinary projects shipped under `Templates/`):
+  - *Blank*: one room, a player start and the default screens.
+  - *Retro FPS*: first-person movement, weapons and pickups, doors, lifts, triggers and a HUD; the genre Genesis3D is built for.
+  - *Third-person adventure*: an actor with a camera boom, interaction and a dialogue box.
+  - *Top-down*: an orthographic or angled camera with click-to-move.
+  - *Walkthrough*: a showcase or architectural fly-through with a menu and no gameplay.
+- **New Project wizard:** pick a template, name and folder; the editor copies the template, renames it and opens it. *Recent projects* and an optional start page.
+
+**Done when:** a new project made from any template opens in the editor and plays straight away, and the existing sample levels work as an "Engine Samples" project.
+
+### 4.2 The World Editor as the hub
+
+- **UI toolkit (decided):** the editor stays **MFC**, and new complex editors are built with **Dear ImGui**.
+  - *MFC* keeps everything that exists (the 4 views, dialogs, property panels, ~37k lines) and hosts the shell. Its editing logic is not rewritten.
+  - *Dear ImGui* (with its docking branch, plus a node-editor extension such as imgui-node-editor) is used for the editors MFC is weak at: the visual script graph, the UI/screen editor, the actor editor, and later tools of the same kind. Each is a panel the MFC shell hosts: a child window with its own D3D12 swap chain on the engine's device, drawn by the engine each frame, with input forwarded from MFC. Previews inside them (actor, UI canvas, materials) are drawn by the engine too (rule 7).
+  - The ImGui host is shared by the editor and the engine's debug overlay (backlog item 8), so there is one integration to maintain.
+  - A full port of the editor to another toolkit is not planned; the core (`Tools/WorldEditor/Core`) is kept UI-free so the option stays open.
+- **Shell:** move the main frame to the MFC Feature Pack (`CFrameWndEx`, `CDockablePane`, `CMFCVisualManager`): dockable, saved layouts, the dark theme and high DPI from Track A. The 4-view layout stays the default workspace. ImGui panels dock like any other pane.
+- **Panels:** Project/asset browser (folders, filters, search, thumbnails, drag and drop into the level), Properties (the `grProperty` grid, with tooltips from object definitions), Outliner (entities and brushes in the level), Output/Console (log plus a Lua REPL), and the existing Textures/Groups/Models lists folded into the asset browser.
+- **Editors opened from the hub**, each as a document tab or dockable window working on the project:
+  - *Level editor* (today's views),
+  - *Actor editor*: Actor Studio and Actor Workbench functionality (motions, materials, sockets, preview) moved into the World Editor, with ActBuild as its back end,
+  - *Material editor*: the Phase 2 dialog, docked, with a preview sphere,
+  - *Script editor* and *visual script editor* (§4.3),
+  - *UI editor* (§4.4),
+  - *Project settings* and *Build* (§4.6),
+  - importers (textures via G3DTexImport, glTF from the backlog, sounds) run from the asset browser.
+- **Play-in-editor:** Play runs the game runtime (§4.6) in the 3D view or in its own window, from the current camera or the player start, with the project's start screen optional. Stop returns to editing with the level untouched. Script, material and texture edits hot-reload while playing. Errors show in the console with file:line links.
+- **Undo/redo** across every editor (extending `Core/Undo.c`), and autosave.
+
+**Done when:** a game can be made from a template without leaving the World Editor or opening another tool.
+
+### 4.3 Scripting: Lua and visual scripting
+
+*Lua runtime* (formerly Track B):
+- **Runtime:** Lua 5.4 (vendored under `Engine/External/lua`, a static library), bound with **sol2** (header-only C++17).
+- **In the engine:** a `grScript` module in `Genesis3D.dll`, so the Game Shell, play-in-editor, the packaged game and the editor's console share one host. An `IScriptVM` interface keeps **Eos** working for the existing samples; Eos is frozen, and new samples, templates and docs use Lua.
+- **API (v1):** `engine`, `world` (trace/ray, find entities, spawn), `entity` (position, properties, targets), `actor` (motions, sockets), `camera`, `light`, `sound`, `input` (actions, §4.5), `timer`, `log`, `ui` (§4.4), `game` (modes, save/load, levels, §4.5), `settings`. Documented from the binding definitions, so the docs and the editor's autocomplete never drift.
+- **Entity scripts in classic style:** any entity can have a `script` property pointing to a `.lua` file with hooks `OnSpawn`, `OnThink(dt)`, `OnTouch(other)`, `OnTrigger(activator)`, `OnUse(user)` and `OnDamage`. `target`/`targetname` wiring stays the main way to connect a level; Lua adds logic on top. Lua can also declare new entity classes, with properties that appear in the editor's property grid like an object DLL's.
+- **Workflow:** hot reload; scripts load through VFile so they work from packages; a sandbox without `os`/`io`; a per-script time budget; errors with file:line in the log and the editor console.
+- **Tests:** a headless harness that runs scripts against a loaded level without a window (also used by CI on templates).
+
+*Script editor:* a Scintilla-based editor tab with Lua highlighting, API autocomplete and signatures, go-to-definition for project scripts, and a debugger (breakpoints, stepping, locals and a watch list, through Lua debug hooks) connected to play-in-editor.
+
+*Visual scripting:*
+- **Graphs compile to Lua**, so there is one runtime, one debugger and one API: a graph is a generated `.lua` file plus its `.g3dgraph` source (JSON), and graphs and hand-written scripts can call each other.
+- **Kinds of graph:** entity graphs (the same hooks as entity scripts), level graphs (level start, triggers, sequences) and screen graphs for UI logic (§4.4).
+- **Nodes:** events, flow (branch, sequence, loop, delay, gate, do-once), variables, math, and every API function, generated from the same binding definitions as the docs; custom nodes can be written in Lua.
+- **Editor:** a Dear ImGui node canvas in an editor panel (§4.2), with pan/zoom, search-to-add, comments and groups, validation while editing, and the running node highlighted while playing (through the generated code's line map).
+
+**Done when:** each template's gameplay is written in Lua or graphs with no C++, and a breakpoint set in the editor stops a running play-in-editor session.
+
+### 4.4 UI and screens
+
+- **UI runtime (engine):** a retained widget tree drawn in the overlay pass after `World_EndPass`: panel, image (with 9-slice), text (TrueType through stb_truetype into signed-distance-field atlases, so text stays sharp at any size), button, toggle, slider, list, scroll view, progress bar, text entry, and a 3D view widget (a camera into the world, e.g. for a menu background). Anchors and layout groups adapt to resolution and aspect; styles and themes; animation (tweened properties, timelines); mouse, keyboard and controller navigation with focus; localized strings from string tables.
+- **Screens** are `.g3dui` files (JSON), with their logic in Lua or a screen graph and data binding to script values (health, ammo, options).
+- **Screen flow:** the project defines its screens and how they connect: splash, main menu, options (video, audio, controls with rebinding), loading screen, HUD, pause, game over, credits, and custom ones. The runtime handles the stack (pause over gameplay, dialogs over pause), transitions, and pausing the game world.
+- **Loading screens are real:** level loading reports progress (BSP, textures, lightmaps, actors, scripts) to the loading screen, which keeps animating while the level loads.
+- **UI editor:** a WYSIWYG canvas drawn by the engine's own UI runtime (rule 7), with a widget palette, hierarchy, anchors/layout gizmos, a property grid, style editing, preview at chosen resolutions and languages, and a screen-flow view of how screens connect.
+- **Templates** ship a default set of screens, so every new project has working menus, options and a pause screen from the start.
+
+**Done when:** the Blank template's splash, main menu, options, loading, HUD and pause screens are made entirely in the UI editor, and work with mouse, keyboard and controller.
+
+### 4.5 Game framework
+
+Common game systems, in the engine and its Lua API, so templates and games don't each re-invent them:
+- **Game flow:** game modes (rules for a level or session: spawn, win/lose, respawn), level transitions with persistent data, and save/load of entity state, player state and script variables.
+- **Player and cameras:** character controllers (first-person, third-person, top-down, fly) on the BSP collision, designed to move to Jolt later (backlog); camera rigs (boom with collision, fixed, rail, cutscene) with blending.
+- **Level building blocks** as entities with editor properties: triggers, doors, movers and lifts, buttons, pickups, spawners, teleporters, sound emitters, cameras, info points, and particle effects.
+- **Input:** named actions and axes mapped to keyboard, mouse and controllers (XInput/GameInput), in the project's input map, rebindable by players in the options screen.
+- **Audio:** the mixer buses from the backlog, music playlists and ambience zones.
+- **AI basics:** waypoint graphs (or BSP-leaf-based navigation), steering, and simple behaviours scriptable in Lua or graphs.
+- **Settings:** video, audio, controls and gameplay settings saved per player, and applied by the options screen.
+
+**Done when:** the Retro FPS and Third-person templates are complete, playable games built only from these systems, scripts and content.
+
+### 4.6 Runtime, build and packaging
+
+- **Game runtime:** a player executable derived from the Game Shell that boots a project or a package: reads the project settings, mounts content, shows the start screen and runs the game. Play-in-editor and the packaged game use it (rule 7); the Game Shell stays as the developer runner.
+- **Build** (from the editor's Build menu, or the command line for CI):
+  1. validate: missing or unused assets, broken references, script and graph errors, levels with stale lighting;
+  2. cook: build BSP and lighting where needed, compress textures (G3DTexImport), compile graphs to Lua and optionally scripts to bytecode, pack UI and fonts;
+  3. package: content in `.g3dpak` files (zip-based, mounted by VFile; the backlog "packages" item), with the Release runtime, the D3D12 driver and its ini, the game's name, icon and version, and the licenses of the third-party libraries;
+  4. output: a folder or a zip, ready to run. An installer is optional later.
+- **Configurations:** *Development* (console, logging, hot reload) and *Shipping* (no console, content packed, scripts precompiled).
+- **Incremental builds:** only changed assets are re-cooked, using the asset database (§4.1).
+
+**Done when:** *Build → Package* turns each template into a folder that runs on a machine without the editor, and CI builds every template from the command line.
 
 ---
 
-## 4a. Progress
+## 5. Suggested order and milestones
+
+```
+M1  Phase 0 (foundations)                                  done
+M2  Phase 1 (world-space GPU path)                         done
+M3  Phase 2 (PBR materials + editor)                       done
+M4  Phase 3 (clustered lights, HDR, shadows, Look Profiles) done, wrap-up below
+─── authoring system ─────────────────────────────────────────────────────────
+M5  Authoring foundations: grScript (Lua in the engine, API v1), project file and
+    content search path, game runtime, package MVP (a Blank project runs as a
+    packaged folder)                                        §4.1 §4.3 §4.6
+M6  Editor hub: docking shell, ImGui panel host, project/asset browser, play-in-editor, console,
+    script editor and debugger, actor editor in the hub     §4.2 §4.3
+M7  UI and screens: UI runtime, UI editor, screen flow, loading/pause/options,
+    input actions                                           §4.4 §4.5
+M8  Game framework and templates (Retro FPS, Third-person, Top-down, Walkthrough),
+    full Build (validate, cook, .g3dpak, Shipping), CI      §4.1 §4.5 §4.6
+M9  Visual scripting                                        §4.3
+─── in parallel ──────────────────────────────────────────────────────────────
+    Track A: editor navigation and editing (continues through M6's shell work)
+    Phase 4: GI (can start any time after M5; the bake is an editor feature, so
+             its UI lands in the hub)
+    Backlog
+```
+
+Why this order: everything in the authoring system runs on the script host, the project model and the runtime, so M5 comes first and delivers something usable on its own (a packaged game). The hub (M6) then gives every later editor a home. UI (M7) comes before the game framework because every template needs menus, a HUD and a loading screen. Visual scripting (M9) comes last because it compiles to Lua and generates its nodes from the API, which must be stable first.
+
+**Phase 3 wrap-up before M5:** a Release build and test of everything, and a hands-on check of the World Editor's Look menu and the new light properties. The remaining Phase 3 extras (per-level exposure, volume fog, actors receiving shadows) are in the backlog.
+
+**Recommended first step for M5:** `grScript` with the Lua runtime and API v1 inside `Genesis3D.dll`, driven by the Game Shell, with one sample converted from Eos. The project file and content search path come next, then the runtime and package MVP.
+
+---
+
+## 5a. Progress
 
 **Track A — navigation (first step done).** The World Editor 3D view has RMB fly (WASD, Q/E, Shift, wheel speed), Alt+LMB orbit, MMB pan, wheel dolly and F / Shift+F framing, with a time-based, eased fly camera. "Classic Genesis Navigation" in the 3D view's context menu restores the original controls; the choice is stored in the app profile (`Navigation\Keymap`) rather than a `.ini`, like the editor's other settings. Still to do: numpad view snapping, maximize-view key, camera sync between views, gizmos and the rest of the editing list.
 
@@ -231,7 +364,7 @@ M6  Phase 4B/C + backlog
 - *Tests:* new shots `p3_enhanced`, `p3_stylized`, `p3_shadow` (point light shadows of the dancer's pillars), `p3_spot`, `p3_effects` (AgX, SSAO, height fog), `p3_retro` (vertex snap, CRT, per-texel lighting) and `p3_portal`; `G3DGameShell` gains `-look`, `-shadowlight` and `-spotlight`. All 22 shots pass, repeat runs are pixel-identical, and the debug layer reports nothing.
 - *Left for later:* area and tube lights; actors receive shadows only through their CPU lighting (they cast them); a per-level exposure override stored in the level (the API is there); editor controls for the other look settings (the ini covers them); alpha-tested and sky faces cast solid shadows.
 
-## 5. Risks and mitigations
+## 6. Risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
@@ -240,3 +373,10 @@ M6  Phase 4B/C + backlog
 | Losing the retro look | Look Profiles and a per-material `Retro` flag. Classic is always one switch away and is tested in CI. |
 | Scope creep in GI | Tier A (baked) is the product, and Tiers B/C are optional extras behind capability checks. |
 | No Windows build or test in cloud sessions | Changes are validated locally in Visual Studio. The CI workflow (backlog item 7) closes this gap. |
+| The authoring scope is much larger than the engine work | Milestones M5–M9 each end with something usable (a packaged game, a hub, menus, templates, graphs), and templates double as end-to-end tests, so the project is shippable at every step. |
+| MFC for complex editors (node graphs, UI canvas, docking) | Decided: the MFC Feature Pack covers docking and theming, and the complex editors are Dear ImGui panels the engine draws inside the MFC shell (§4.2), which also keeps previews true to the runtime (rule 7). No rewrite of the existing editor. |
+| Two UI toolkits in one editor | Clear split: MFC for the shell and the existing editors, ImGui only for new canvas-style editors. One shared ImGui host, one theme mapped from the MFC visual manager's colors, and input routing between the two handled in one place. |
+| Two script languages | Eos is frozen for the existing samples; everything new is Lua, and graphs compile to Lua, so there is only one runtime to support. |
+| Editor and runtime drifting apart | Play-in-editor and packages run the same runtime; CI builds and runs every template headless and packaged (§4.6). |
+| Third-party licenses in shipped games | Only permissive dependencies (MIT/BSD/zlib, e.g. Lua, sol2, stb, Scintilla, Jolt, Dear ImGui); packages include their license texts. |
+| Hard-coded `bin/` paths throughout the tools | Moving to the project content search path (§4.1) happens early in M5, behind VFile, with the engine library as the fallback so existing levels keep loading. |
