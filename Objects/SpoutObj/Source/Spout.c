@@ -1135,8 +1135,13 @@ static float Util_Frand(
 	// locals
 	float	Range;
 
-	// ensure valid data
-	assert( High >= Low );
+	// levels can store min/max reversed (e.g. StreetScene.j3d); accept either order
+	if ( High < Low )
+	{
+		float Temp = Low;
+		Low = High;
+		High = Temp;
+	}
 
 	// if they are the same then just return one of them
 	if ( High == Low )

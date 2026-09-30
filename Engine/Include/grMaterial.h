@@ -224,7 +224,9 @@ GRAPI uint32 GRCC grMaterialSpec_Width(const grMaterialSpec* MatSpec);
 *   @brief A reference to a Material used by the Engine
 */
 typedef struct grMaterial grMaterial;
-typedef uint16 grMaterial_ArrayIndex;
+/* Must stay grArray_Index (uint32): face infos store it on disk and
+   GR_MATERIAL_ARRAY_NULL_INDEX does not fit in 16 bits. */
+typedef grArray_Index grMaterial_ArrayIndex;
 
 /*! @fn void grMaterial_Destroy(grMaterial **ppMaterial)
 *   @brief Destroy the current grMaterial

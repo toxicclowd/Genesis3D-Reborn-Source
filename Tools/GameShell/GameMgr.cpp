@@ -165,11 +165,13 @@ grBoolean CGameMgr::SetDriverMode(int32 w, int32 h, int32 b)
 	grEngine_RegisterObjects("Objects");
 
 	grRect						r;
+	RECT						Client;
 
+	GetClientRect(m_hWnd, &Client);
 	r.Left = 0;
 	r.Top = 0;
-	r.Bottom = 800 - 1;
-	r.Right = 600 - 1;
+	r.Right = Client.right - 1;
+	r.Bottom = Client.bottom - 1;
 
 	m_pCamera = grCamera_Create(2.0f, &r);
 
@@ -229,11 +231,6 @@ grBoolean CGameMgr::Frame()
 
 	if (!grEngine_EndFrame(m_pEngine))
 		return GR_FALSE;
-
-	// Temporary end-to-end renderer verification; removed after the capture build.
-	static grBoolean CapturedFrame = GR_FALSE;
-	if (!CapturedFrame)
-		CapturedFrame = grEngine_ScreenShot(m_pEngine, ".codex-gameshell-d3d12.bmp");
 
 	m_LastTime = currTime;
 
