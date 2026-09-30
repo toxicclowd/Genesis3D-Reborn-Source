@@ -1130,6 +1130,27 @@ GRAPI grTexture *GRCC grEngine_CreateTextureFromFile(const grEngine *Engine, grV
 {
 	grBitmap* pBmp{};
 
+	// DDS files (G3DTexImport) go to the driver as a memory image.
+	if (Engine->DriverInfo.RDriver->THandle_CreateFromDDS) {
+		long		Size = 0;
+		uint32		Magic = 0;
+
+		if (grVFile_Size(File, &Size) && Size > 128 &&
+			grVFile_Read(File, &Magic, sizeof(Magic)) && Magic == 0x20534444) {	// "DDS "
+			uint8		*Data = (uint8*)grRam_Allocate(Size);
+			grTexture	*Texture = NULL;
+
+			if (Data) {
+				memcpy(Data, &Magic, sizeof(Magic));
+				if (grVFile_Read(File, Data + sizeof(Magic), Size - sizeof(Magic)))
+					Texture = Engine->DriverInfo.RDriver->THandle_CreateFromDDS(Data, (uint32)Size);
+				grRam_Free(Data);
+			}
+			return Texture;
+		}
+		grVFile_Seek(File, 0, GR_VFILE_SEEKSET);
+	}
+
 	if (Engine->DriverInfo.RDriver->THandle_CreateFromFile) {
 		return Engine->DriverInfo.RDriver->THandle_CreateFromFile(File);
 	}

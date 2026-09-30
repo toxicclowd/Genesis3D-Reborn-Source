@@ -207,7 +207,7 @@ if ($Only) { $shots = $shots | Where-Object { $_.Name -like "*$Only*" } }
 if (($shots | Where-Object { $_.Extra -match "PBRSample" }) -and
     -not (Test-Path (Join-Path $Bin "GlobalMaterials\PBRSample"))) {
     & python (Join-Path $Here "pbr\make_pbr_sample.py")
-    if ($LASTEXITCODE -ne 0) { throw "make_pbr_sample.py failed (needs Python with Pillow and NumPy)" }
+    if ($LASTEXITCODE -ne 0) { throw "make_pbr_sample.py failed (needs Python with Pillow and NumPy, and a built G3DTexImport)" }
 }
 
 $failed = 0

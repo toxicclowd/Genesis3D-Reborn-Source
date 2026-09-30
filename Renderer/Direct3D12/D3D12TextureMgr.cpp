@@ -13,6 +13,7 @@
 #include "Direct3D12Driver.h"
 #include "D3D12Log.h"
 #include "D3D12LightmapAtlas.h"
+#include "DDSTextureLoader12.h"
 
 #define MAX_THANDLES 4096
 #define MAX_TEXTURE_MIP_LEVELS 16
@@ -498,6 +499,157 @@ grTexture* DRIVERCC D3D12_THandle_Create(
 grTexture* DRIVERCC D3D12_THandle_CreateFromFile(grVFile*)
 {
 	return nullptr;
+}
+
+// Records the copy of every subresource of a freshly created texture (in COPY_DEST) and
+// its transition to PIXEL_SHADER_RESOURCE, on the scene's command list when a scene is
+// open (the upload buffer then lives until the frame completes), else on a one-off list.
+static grBoolean UploadSubresources(grTexture* Handle, const std::vector<D3D12_SUBRESOURCE_DATA>& Subresources)
+{
+	const UINT NumSubresources = static_cast<UINT>(Subresources.size());
+	const D3D12_RESOURCE_DESC TextureDesc = Handle->pTexture->GetDesc();
+	std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> Footprints(NumSubresources);
+	std::vector<UINT> NumRows(NumSubresources);
+	std::vector<UINT64> RowSizes(NumSubresources);
+	UINT64 UploadSize = 0;
+	g_pDevice->GetCopyableFootprints(&TextureDesc, 0, NumSubresources, 0,
+		Footprints.data(), NumRows.data(), RowSizes.data(), &UploadSize);
+
+	D3D12_HEAP_PROPERTIES UploadHeap = {};
+	UploadHeap.Type = D3D12_HEAP_TYPE_UPLOAD;
+	D3D12_RESOURCE_DESC UploadDesc = BufferDescription(UploadSize);
+	ComPtr<ID3D12Resource> Upload;
+	HRESULT Hr = g_pDevice->CreateCommittedResource(&UploadHeap, D3D12_HEAP_FLAG_NONE, &UploadDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&Upload));
+	if (FAILED(Hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: DDS upload buffer creation failed - HR: 0x%08X", Hr);
+		return GR_FALSE;
+	}
+
+	uint8* Mapped = nullptr;
+	D3D12_RANGE ReadRange = { 0, 0 };
+	if (FAILED(Upload->Map(0, &ReadRange, reinterpret_cast<void**>(&Mapped))))
+		return GR_FALSE;
+	for (UINT i = 0; i < NumSubresources; ++i)
+	{
+		// Rows are block rows for BC formats; RowSizes[i] is the packed size of one.
+		const uint8* Source = static_cast<const uint8*>(Subresources[i].pData);
+		uint8* Destination = Mapped + Footprints[i].Offset;
+		for (UINT Row = 0; Row < NumRows[i]; ++Row)
+			std::memcpy(Destination + static_cast<size_t>(Row) * Footprints[i].Footprint.RowPitch,
+				Source + static_cast<size_t>(Row) * Subresources[i].RowPitch,
+				static_cast<size_t>(RowSizes[i]));
+	}
+	Upload->Unmap(0, nullptr);
+
+	auto Record = [&](ID3D12GraphicsCommandList* CommandList)
+	{
+		for (UINT i = 0; i < NumSubresources; ++i)
+		{
+			D3D12_TEXTURE_COPY_LOCATION Destination = {};
+			Destination.pResource = Handle->pTexture.Get();
+			Destination.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+			Destination.SubresourceIndex = i;
+			D3D12_TEXTURE_COPY_LOCATION Source = {};
+			Source.pResource = Upload.Get();
+			Source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+			Source.PlacedFootprint = Footprints[i];
+			CommandList->CopyTextureRegion(&Destination, 0, 0, 0, &Source, nullptr);
+		}
+		D3D12_RESOURCE_BARRIER ToShader = {};
+		ToShader.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		ToShader.Transition.pResource = Handle->pTexture.Get();
+		ToShader.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		ToShader.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+		ToShader.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		CommandList->ResourceBarrier(1, &ToShader);
+	};
+
+	if (g_bInScene && g_pCommandList)
+	{
+		Record(g_pCommandList.Get());
+		g_FrameUploadResources[g_nCurrentFrameIndex].push_back(Upload);
+		g_FrameUploadResources[g_nCurrentFrameIndex].push_back(Handle->pTexture);
+	}
+	else
+	{
+		ComPtr<ID3D12CommandAllocator> Allocator;
+		ComPtr<ID3D12GraphicsCommandList> CommandList;
+		if (FAILED(g_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Allocator))) ||
+			FAILED(g_pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator.Get(), nullptr,
+				IID_PPV_ARGS(&CommandList))))
+			return GR_FALSE;
+		Record(CommandList.Get());
+		if (FAILED(CommandList->Close()))
+			return GR_FALSE;
+		ID3D12CommandList* Lists[] = { CommandList.Get() };
+		g_pCommandQueue->ExecuteCommandLists(1, Lists);
+		D3D12WaitForGPU();
+	}
+	Handle->ResourceState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	return GR_TRUE;
+}
+
+grTexture* DRIVERCC D3D12_THandle_CreateFromDDS(const void* Data, uint32 Size)
+{
+	if (!g_pDevice || !g_pSRVHeap || !Data || Size < 128)
+		return nullptr;
+
+	ComPtr<ID3D12Resource> Resource;
+	std::vector<D3D12_SUBRESOURCE_DATA> Subresources;
+	bool IsCubeMap = false;
+	HRESULT Hr = DirectX::LoadDDSTextureFromMemoryEx(g_pDevice.Get(), static_cast<const uint8_t*>(Data), Size,
+		0, D3D12_RESOURCE_FLAG_NONE, DirectX::DDS_LOADER_IGNORE_SRGB, Resource.GetAddressOf(), Subresources,
+		nullptr, &IsCubeMap);
+	if (FAILED(Hr))
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: DDS texture load failed - HR: 0x%08X", Hr);
+		return nullptr;
+	}
+	const D3D12_RESOURCE_DESC Desc = Resource->GetDesc();
+	if (IsCubeMap || Desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D || Desc.DepthOrArraySize != 1 ||
+		Desc.MipLevels > MAX_TEXTURE_MIP_LEVELS)
+	{
+		D3D12Log::GetPtr()->Printf("ERROR: DDS texture is not a plain 2D texture");
+		return nullptr;
+	}
+
+	grTexture* Handle = GetNextTHandle();
+	if (!Handle)
+		return nullptr;
+	Handle->pTexture = Resource;
+	Handle->Width = static_cast<int32>(Desc.Width);
+	Handle->Height = static_cast<int32>(Desc.Height);
+	Handle->NumMipLevels = Desc.MipLevels;
+	Handle->Log = static_cast<uint8>(GetLog(Handle->Width, Handle->Height));
+	Handle->stride = Handle->Width;
+	Handle->Format = Desc.Format;
+	Handle->DriverFormat.PixelFormat = GR_PIXELFORMAT_32BIT_ARGB;	// what GetInfo reports
+	Handle->DriverFormat.Flags = RDRIVER_PF_3D;
+	Handle->Lightmap = GR_FALSE;
+	Handle->DriverOwned = GR_TRUE;		// compressed texels cannot be locked
+	Handle->ResourceState = D3D12_RESOURCE_STATE_COPY_DEST;
+
+	Handle->SRVDescriptorIndex = static_cast<UINT>(Handle->id);
+	Handle->SRVHandle = CpuSRV(Handle->SRVDescriptorIndex);
+	if (!UploadSubresources(Handle, Subresources))
+	{
+		const int32 Id = Handle->id;
+		ResetTexture(*Handle, Id);
+		return nullptr;
+	}
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
+	SrvDesc.Format = Handle->Format;
+	SrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	SrvDesc.Texture2D.MipLevels = static_cast<UINT>(Handle->NumMipLevels);
+	g_pDevice->CreateShaderResourceView(Handle->pTexture.Get(), &SrvDesc, Handle->SRVHandle);
+
+	D3D12Log::GetPtr()->Printf("DDS texture created - ID %d, %dx%d, %d mip(s), format %d",
+		Handle->id, Handle->Width, Handle->Height, Handle->NumMipLevels, static_cast<int>(Handle->Format));
+	return Handle;
 }
 
 grBoolean DRIVERCC D3D12_THandle_Destroy(grTexture* Handle)

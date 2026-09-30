@@ -97,7 +97,7 @@ typedef struct tagRECT
 #endif
 
 #define DRV_VERSION_MAJOR		200			// Jet 2.0
-#define DRV_VERSION_MINOR		9			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry ; 7 adds DRV_WorldView clip planes and draw counts ; 8 adds WorldMesh_Render ; 9 adds PBR world faces and lights
+#define DRV_VERSION_MINOR		10			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry ; 7 adds DRV_WorldView clip planes and draw counts ; 8 adds WorldMesh_Render ; 9 adds PBR world faces and lights ; 10 adds THandle_CreateFromDDS
 #define DRV_VMAJS				"200"
 #define DRV_VMINS				"4" 
 #define DRV_VMAJS_PLUS_DRV_VMINS	"200.4"
@@ -397,6 +397,12 @@ typedef struct
 } DRV_WorldLight;
 
 #define DRV_WORLD_MAX_LIGHTS		8
+
+// Version 10: a texture from a DDS file image (BC1-7 or uncompressed, with its mip chain), as
+// G3DTexImport writes them. sRGB formats load as their UNORM equivalents because the shaders
+// do the gamma conversion. Returns NULL for a format or layout the driver cannot use. Such
+// textures cannot be locked.
+typedef grTexture *DRIVERCC THANDLE_CREATE_FROM_DDS(const void *Data, uint32 Size);
 
 // Sets the lights for the PBR faces queued after it (at most DRV_WORLD_MAX_LIGHTS are used).
 typedef void DRIVERCC WORLD_GEOMETRY_SET_LIGHTS(const DRV_WorldLight *Lights, int32 NumLights);
@@ -745,6 +751,9 @@ typedef struct
 	// Version 9: PBR world faces (NULL if the driver has none).
 	WORLD_GEOMETRY_SET_LIGHTS		*WorldGeometry_SetLights;
 	WORLD_GEOMETRY_RENDER_FACE_PBR	*WorldGeometry_RenderFacePBR;
+
+	// Version 10: DDS textures (NULL if the driver has none).
+	THANDLE_CREATE_FROM_DDS			*THandle_CreateFromDDS;
 } DRV_Driver;
 
 enum grRenderState

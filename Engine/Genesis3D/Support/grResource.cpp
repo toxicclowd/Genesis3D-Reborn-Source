@@ -932,11 +932,15 @@ GRAPI void * GRCC grResource_GetResource(
 				DirRes = (grResource *)grChain_LinkGetLinkData( CurNode ); 
 
 				// now, we have to add a grVFile to the ResourceMgr - we add a directory because normally it's already done by the editor or the game
-				Directory = (grVFile *) grVFile_OpenNewSystem((grVFile*) DirRes->Data,
-							                                  GR_VFILE_TYPE_DOS,
-							                                  Paks,
-							                                  NULL,
-							                                  GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
+				// (a subdirectory of GlobalMaterials: grVFile_OpenNewSystem would ignore the
+				// parent and look in the current directory)
+				Directory = grVFile_Open((grVFile*) DirRes->Data, Paks,
+										 GR_VFILE_OPEN_READONLY|GR_VFILE_OPEN_DIRECTORY);
+				if (Directory == NULL) {
+					grErrorLog_AddString(GR_ERR_SYSTEM_RESOURCE, "grResource_GetResource: no such pak directory", Paks);
+					grRam_Free(CopyName);
+					return NULL;
+				}
 
 				// add it to the resource for the next time
 				grResource_AddVFile(ResourceMgr, Paks, Directory);
@@ -999,8 +1003,13 @@ GRAPI void * GRCC grResource_GetResource(
 			case GR_RESOURCE_TEXTURE:
 				{
 				char* extension = ResNameCopy + strlen(ResName);
-				strcpy(extension, ".png");
+				// DDS first: G3DTexImport's compressed, mipmapped output
+				strcpy(extension, ".dds");
 				ResFile = grVFile_Open(Directory, ResNameCopy, GR_VFILE_OPEN_READONLY);
+				if (ResFile == NULL) {
+					strcpy(extension, ".png");
+					ResFile = grVFile_Open(Directory, ResNameCopy, GR_VFILE_OPEN_READONLY);
+				}
 				if (ResFile == NULL) {
 					strcpy(extension, ".bmp");
 					ResFile = grVFile_Open(Directory, ResNameCopy, GR_VFILE_OPEN_READONLY);

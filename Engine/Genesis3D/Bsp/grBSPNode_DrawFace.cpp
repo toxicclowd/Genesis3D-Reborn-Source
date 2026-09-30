@@ -271,6 +271,31 @@ grBoolean grBSPNode_DrawFaceCreateUVInfo(grBSPNode_DrawFace *Face, grBSP *BSP)
 extern grBoolean h_LeftHanded;
 
 //=======================================================================================
+//	grBSPNode_LayerTHandle
+//	A material layer's driver texture: the THandle of a bitmap layer, or a texture layer
+//	itself (a DDS made by G3DTexImport). NULL when the layer is missing.
+//=======================================================================================
+static grTexture *grBSPNode_LayerTHandle(const grMaterialSpec *pMatSpec, int32 Layer)
+{
+	const grBitmap		*pBitmap;
+
+	if (Layer < 0)
+		return NULL;
+	pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, Layer);
+	if (pBitmap)
+		return grBitmap_GetTHandle(pBitmap);
+	return grMaterialSpec_GetLayerTexture(pMatSpec, Layer);
+}
+
+// A PBR map's driver texture; layer 0 is always the base, whatever its type.
+static grTexture *grBSPNode_MapTHandle(const grMaterialSpec *pMatSpec, grMaterialSpec_LayerType Type)
+{
+	int32				Layer = grMaterialSpec_FindLayer(pMatSpec, Type);
+
+	return (Layer > 0) ? grBSPNode_LayerTHandle(pMatSpec, Layer) : NULL;
+}
+
+//=======================================================================================
 //	grBSPNode_GetPBRMaterial
 //	Fills a driver material from a PBR material spec (roadmap Phase 2). Layers without a
 //	driver handle fall back to the driver's constants.
@@ -278,21 +303,13 @@ extern grBoolean h_LeftHanded;
 static void grBSPNode_GetPBRMaterial(const grMaterialSpec *pMatSpec, DRV_WorldMaterial *Material)
 {
 	grMaterialSpec_PBR	PBR;
-	const grBitmap		*pBitmap;
-	int32				Layer;
 
 	grMaterialSpec_GetPBR(pMatSpec, &PBR);
 
 	memset(Material, 0, sizeof(*Material));
-	Layer = grMaterialSpec_FindLayer(pMatSpec, GR_MATERIAL_LAYER_NORMAL);
-	if (Layer > 0 && (pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, Layer)) != NULL)
-		Material->NormalMap = grBitmap_GetTHandle(pBitmap);
-	Layer = grMaterialSpec_FindLayer(pMatSpec, GR_MATERIAL_LAYER_ORM);
-	if (Layer > 0 && (pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, Layer)) != NULL)
-		Material->ORMMap = grBitmap_GetTHandle(pBitmap);
-	Layer = grMaterialSpec_FindLayer(pMatSpec, GR_MATERIAL_LAYER_EMISSIVE);
-	if (Layer > 0 && (pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, Layer)) != NULL)
-		Material->EmissiveMap = grBitmap_GetTHandle(pBitmap);
+	Material->NormalMap = grBSPNode_MapTHandle(pMatSpec, GR_MATERIAL_LAYER_NORMAL);
+	Material->ORMMap = grBSPNode_MapTHandle(pMatSpec, GR_MATERIAL_LAYER_ORM);
+	Material->EmissiveMap = grBSPNode_MapTHandle(pMatSpec, GR_MATERIAL_LAYER_EMISSIVE);
 
 	memcpy(Material->BaseColor, PBR.BaseColor, sizeof(Material->BaseColor));
 	Material->Roughness = PBR.Roughness;
@@ -348,7 +365,7 @@ static grBoolean grBSPNode_DrawFaceRenderGpu(const grBSPNode_DrawFace *Face, grB
 	const grFaceInfo		*pFaceInfo;
 	const grMaterial		*pMaterial;
 	const grMaterialSpec	*pMatSpec;
-	const grBitmap			*pBitmap;
+	grTexture				*BaseTHandle;
 	grRDriver_Layer			Layers[2];
 	int32					NumLayers;
 	void					*LMapCBContext;
@@ -361,8 +378,8 @@ static grBoolean grBSPNode_DrawFaceRenderGpu(const grBSPNode_DrawFace *Face, grB
 	pMatSpec = grMaterial_GetMaterialSpec(pMaterial);
 	if (pMatSpec == NULL)
 		return GR_TRUE;			// the transformed-poly path draws nothing either
-	pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, 0);
-	if (!pBitmap)
+	BaseTHandle = grBSPNode_LayerTHandle(pMatSpec, 0);
+	if (!BaseTHandle)
 		return GR_FALSE;		// untextured faces are gouraud polys
 
 	if (pFaceInfo->Flags & FACEINFO_RENDER_PORTAL_ONLY)
@@ -384,7 +401,7 @@ static grBoolean grBSPNode_DrawFaceRenderGpu(const grBSPNode_DrawFace *Face, grB
 	if (h_LeftHanded)
 		Flags |= GR_RENDER_FLAG_COUNTER_CLOCKWISE;
 
-	Layers[0].THandle = grBitmap_GetTHandle(pBitmap);
+	Layers[0].THandle = BaseTHandle;
 	Layers[0].Rop = Rop_Multiply;
 	Layers[0].ShiftU = pFaceInfo->ShiftU;
 	Layers[0].ShiftV = pFaceInfo->ShiftV;
@@ -450,9 +467,9 @@ void grBSPNode_DrawFaceRender(const grBSPNode_DrawFace *Face, grBSP *BSP, grBSPN
 	const grMaterial	*pMaterial;
 	const grBitmap		*pBitmap;
 	uint32				Flags;
+	grTexture			*BaseTHandle;
 #ifndef _USE_BITMAPS
 	const grMaterialSpec*		pMatSpec;
-//	grTexture*			pTexture;
 #endif
 
 	assert(Face);
@@ -545,11 +562,11 @@ void grBSPNode_DrawFaceRender(const grBSPNode_DrawFace *Face, grBSP *BSP, grBSPN
 	pMaterial = grMaterial_ArrayGetMaterialByIndex(BSP->MaterialArray, pFaceInfo->MaterialIndex);
 #ifdef _USE_BITMAPS
 	pBitmap = grMaterial_GetBitmap(pMaterial);
+	BaseTHandle = pBitmap ? grBitmap_GetTHandle(pBitmap) : NULL;
 #else
 	pMatSpec = grMaterial_GetMaterialSpec(pMaterial);
     if (pMatSpec == NULL) return;
-	pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, 0);
-#pragma message("Krouer: think to add the grTexture support here")
+	BaseTHandle = grBSPNode_LayerTHandle(pMatSpec, 0);	// a bitmap's THandle or a DDS texture
 #endif
 
 	Flags = SceneInfo->DefaultRenderFlags;
@@ -655,13 +672,12 @@ void grBSPNode_DrawFaceRender(const grBSPNode_DrawFace *Face, grBSP *BSP, grBSPN
 	{
 		g_WorldDebugInfo.NumRenderedPolys++;
 	
-		if (pBitmap)
+		if (BaseTHandle)
 		{
 			grTexture	*THandle;
 			grRDriver_Layer		Layers[2];
 	
-			THandle = grBitmap_GetTHandle(pBitmap);
-			assert(THandle);
+			THandle = BaseTHandle;
 	
 			Layers[0].THandle = THandle;
 			Layers[0].Rop = Rop_Multiply;

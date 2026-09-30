@@ -1596,7 +1596,8 @@ DRV_Driver g_D3D12Drv =
 	D3D12World_RenderFace,
 	D3D12World_RenderMesh,
 	D3D12World_SetLights,
-	D3D12World_RenderFacePBR
+	D3D12World_RenderFacePBR,
+	D3D12_THandle_CreateFromDDS
 };
 
 //================================================================================

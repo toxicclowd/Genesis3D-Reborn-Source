@@ -29,6 +29,7 @@ void D3D12_THandle_BeginFrame(UINT FrameIndex);
 // Texture creation and destruction
 grTexture* DRIVERCC D3D12_THandle_Create(int32 Width, int32 Height, int32 NumMipLevels, const grRDriver_PixelFormat* PixelFormat);
 grTexture* DRIVERCC D3D12_THandle_CreateFromFile(grVFile* File);
+grTexture* DRIVERCC D3D12_THandle_CreateFromDDS(const void* Data, uint32 Size);
 grBoolean DRIVERCC D3D12_THandle_Destroy(grTexture* Handle);
 
 // Texture locking and unlocking
