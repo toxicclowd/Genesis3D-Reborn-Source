@@ -27,6 +27,7 @@
 #include "Shaders/g_World_VSWorld.h"
 #include "Shaders/g_World_PSWorldTexture.h"
 #include "Shaders/g_World_PSWorldMultiTexture.h"
+#include "Shaders/g_World_VSMesh.h"
 #include "Shaders/g_Present_VSFullscreen.h"
 #include "Shaders/g_Present_PSPresent.h"
 
@@ -58,6 +59,7 @@ namespace
 		{ "World.hlsl",   IDR_SHADER_WORLD,   "VSWorld",             "vs_5_1", true,  g_World_VSWorld,             sizeof(g_World_VSWorld) },
 		{ "World.hlsl",   IDR_SHADER_WORLD,   "PSWorldTexture",      "ps_5_1", true,  g_World_PSWorldTexture,      sizeof(g_World_PSWorldTexture) },
 		{ "World.hlsl",   IDR_SHADER_WORLD,   "PSWorldMultiTexture", "ps_5_1", true,  g_World_PSWorldMultiTexture, sizeof(g_World_PSWorldMultiTexture) },
+		{ "World.hlsl",   IDR_SHADER_WORLD,   "VSMesh",              "vs_5_1", true,  g_World_VSMesh,              sizeof(g_World_VSMesh) },
 		{ "Present.hlsl", IDR_SHADER_PRESENT, "VSFullscreen",   "vs_5_0", false, g_Present_VSFullscreen,           sizeof(g_Present_VSFullscreen) },
 		{ "Present.hlsl", IDR_SHADER_PRESENT, "PSPresent",      "ps_5_0", false, g_Present_PSPresent,              sizeof(g_Present_PSPresent) },
 	};

@@ -321,8 +321,6 @@ const grBodyInst_Geometry * GRCF grBodyInst_GetGeometry(
 				}
 		} // camera != NULL
 
-// @@ NEED TO ADD BLEND CODE HERE
-#pragma message("blend doesn't work for a NULL camera")
 		else  // camera is NULL
 		{
 			// transform all appropriate points
@@ -347,8 +345,32 @@ const grBodyInst_Geometry * GRCF grBodyInst_GetGeometry(
 					if ( S->LevelOfDetailMask && LevelOfDetailBit )
 						{
 							grVec3d *VecDestPtr = &(D->SVPoint);
-							grXForm3d_Transform(  &(ObjectToWorld),
-												&(S->XPoint),VecDestPtr);
+							if (S->nBlends == 0)
+							{
+								grXForm3d_Transform(  &(ObjectToWorld),
+													&(S->XPoint),VecDestPtr);
+							}
+							else // blend as the camera path does, without the camera transform
+							{
+								int iblend;
+								grVec3d worldLoc;
+
+								grVec3d_Clear(VecDestPtr);
+								for (iblend = S->bdaOffset; iblend < (S->nBlends + S->bdaOffset); iblend++)
+								{
+									grVec3d ScaledPoint;
+									grBody_BlendData* pBD = &B->blendDataArray[iblend];
+
+									ScaledPoint.X = pBD->XPoint.X * ScaleVector->X;
+									ScaledPoint.Y = pBD->XPoint.Y * ScaleVector->Y;
+									ScaledPoint.Z = pBD->XPoint.Z * ScaleVector->Z;
+									grXForm3d_Transform(&BoneXFArray[pBD->boneIndex], &ScaledPoint, &worldLoc);
+
+									VecDestPtr->X += pBD->weight * worldLoc.X;
+									VecDestPtr->Y += pBD->weight * worldLoc.Y;
+									VecDestPtr->Z += pBD->weight * worldLoc.Z;
+								}
+							}
 							D->SVU = S->XU;
 							D->SVV = S->XV;
 

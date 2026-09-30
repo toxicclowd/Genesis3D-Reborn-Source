@@ -181,6 +181,11 @@
       <Var>g_World_VSWorld</Var>
     </G3DShader>
     <G3DShader Include="Shaders\World.hlsl">
+      <Entry>VSMesh</Entry>
+      <Profile>vs_6_0</Profile>
+      <Var>g_World_VSMesh</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\World.hlsl">
       <Entry>PSWorldTexture</Entry>
       <Profile>ps_6_0</Profile>
       <Var>g_World_PSWorldTexture</Var>

@@ -101,12 +101,9 @@ struct VS_OUTPUT
     float4 ClipB    : SV_ClipDistance1;		// outer view: x = far plane
 };
 
-VS_OUTPUT VSWorld(VS_INPUT input)
+// Transforms a model-space point by the view and fills Position and the clip distances.
+void ProjectToView(float3 p, inout VS_OUTPUT output)
 {
-    VS_OUTPUT output;
-    WorldFace face = WorldFaces[input.Face];
-    float3 p = input.Position;
-
     // grXForm3d_Transform, same operation order.
     float cx = (p.x * ModelToCamera[0].x) + (p.y * ModelToCamera[0].y) + (p.z * ModelToCamera[0].z) + ModelToCamera[0].w;
     float cy = (p.x * ModelToCamera[1].x) + (p.y * ModelToCamera[1].y) + (p.z * ModelToCamera[1].z) + ModelToCamera[1].w;
@@ -146,6 +143,13 @@ VS_OUTPUT VSWorld(VS_INPUT input)
         output.ClipA = float4(d[0], d[1], d[2], d[3]);
         output.ClipB = float4(d[4], d[5], d[6], d[7]);
     }
+}
+
+VS_OUTPUT VSWorld(VS_INPUT input)
+{
+    VS_OUTPUT output;
+    WorldFace face = WorldFaces[input.Face];
+    ProjectToView(input.Position, output);
 
     output.Color = float4(1.0f, 1.0f, 1.0f, face.Alpha);
 
@@ -155,6 +159,26 @@ VS_OUTPUT VSWorld(VS_INPUT input)
     output.LMCoord.x = (input.FaceUV.x - face.LightShiftU + 8.0f + face.LightOffset.x) / face.LightDiv.x;
     output.LMCoord.y = (input.FaceUV.y - face.LightShiftV + 8.0f + face.LightOffset.y) / face.LightDiv.y;
     output.Textures = uint2(face.BaseTexture, face.LightTexture);
+    return output;
+}
+
+// World meshes (DRV_MeshVertex): CPU-skinned actors. Texture coordinates and colors are
+// used as given, like a transformed poly's; the texture comes from the draw constants.
+struct VS_MESH_INPUT
+{
+    float3 Position : POSITION;
+    float2 TexCoord : TEXCOORD0;
+    float4 Color    : COLOR;		// 0..255
+};
+
+VS_OUTPUT VSMesh(VS_MESH_INPUT input)
+{
+    VS_OUTPUT output;
+    ProjectToView(input.Position, output);
+    output.Color = saturate(input.Color * (1.0f / 255.0f));
+    output.TexCoord = input.TexCoord;
+    output.LMCoord = float2(0.0f, 0.0f);
+    output.Textures = uint2(BaseTextureIndex, 0);
     return output;
 }
 

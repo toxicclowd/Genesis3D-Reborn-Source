@@ -255,7 +255,8 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 		return GR_FALSE;
 
 	const bool bWorld = (Type == PSO_WORLD_TEXTURE || Type == PSO_WORLD_MULTITEX);
-	if (bWorld && !m_bBindless)
+	const bool bMesh = (Type == PSO_MESH_TEXTURE);
+	if ((bWorld || bMesh) && !m_bBindless)
 		return GR_FALSE;
 
 	D3D12_INPUT_ELEMENT_DESC TLInputLayout[] = {
@@ -271,6 +272,11 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "FACE",     0, DXGI_FORMAT_R32_UINT,           0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
+	D3D12_INPUT_ELEMENT_DESC MeshInputLayout[] = {		// DRV_MeshVertex
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
 
 	D3D12_SHADER_ID VertexShader = SHADER_TLPOLY_VS;
 	D3D12_SHADER_ID PixelShader = m_bBindless ? SHADER_TLPOLY_PS_GOURAUD_BINDLESS : SHADER_TLPOLY_PS_GOURAUD;
@@ -282,6 +288,11 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 	{
 		VertexShader = SHADER_WORLD_VS;
 		PixelShader = (Type == PSO_WORLD_MULTITEX) ? SHADER_WORLD_PS_MULTITEX : SHADER_WORLD_PS_TEXTURE;
+	}
+	else if (bMesh)
+	{
+		VertexShader = SHADER_WORLD_VS_MESH;
+		PixelShader = SHADER_WORLD_PS_TEXTURE;
 	}
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = {};
@@ -327,6 +338,8 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 
 	if (bWorld)
 		Desc.InputLayout = { WorldInputLayout, _countof(WorldInputLayout) };
+	else if (bMesh)
+		Desc.InputLayout = { MeshInputLayout, _countof(MeshInputLayout) };
 	else
 		Desc.InputLayout = { TLInputLayout, _countof(TLInputLayout) };
 	Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;

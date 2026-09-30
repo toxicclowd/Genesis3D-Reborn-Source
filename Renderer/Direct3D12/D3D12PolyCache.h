@@ -33,7 +33,9 @@ typedef struct PolyVert
 struct D3D12WorldGeometry;
 
 // Cached draw, kept in submission order. Transformed polys use StartVertex/NumVertices
-// in the flush's vertex buffer; GPU world faces (World != NULL) use a face of World.
+// in the flush's vertex buffer; GPU world faces (World != NULL) use a face of World;
+// world meshes (MeshVertices.SizeInBytes != 0) use their own vertices in the upload ring,
+// with Layers[0] and WorldView.
 typedef struct PolyCacheEntry
 {
 	int32 StartVertex;
@@ -46,6 +48,7 @@ typedef struct PolyCacheEntry
 	uint32 WorldFace;
 	D3D12_GPU_VIRTUAL_ADDRESS WorldView;
 	D3D12_GPU_VIRTUAL_ADDRESS WorldFaces;
+	D3D12_VERTEX_BUFFER_VIEW MeshVertices;
 } PolyCacheEntry;
 
 // Static mesh buffer
@@ -95,6 +98,9 @@ public:
 	// A face of GPU world geometry (see D3D12WorldGeometry.h).
 	grBoolean AddWorldFace(const D3D12WorldGeometry* World, uint32 Face, D3D12_GPU_VIRTUAL_ADDRESS View,
 		D3D12_GPU_VIRTUAL_ADDRESS FaceData, int32 NumLayers, uint32 Flags);
+	// A world mesh (DRV_MeshVertex triangle list, see DRV_Driver::WorldMesh_Render).
+	grBoolean AddWorldMesh(const DRV_MeshVertex* Verts, int32 NumVerts, grTexture* Texture,
+		D3D12_GPU_VIRTUAL_ADDRESS View, uint32 Flags);
 
 	// Flush cached geometry
 	grBoolean Flush();

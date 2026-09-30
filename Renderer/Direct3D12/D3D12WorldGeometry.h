@@ -71,5 +71,7 @@ grBoolean	DRIVERCC D3D12World_Destroy(uint32 Geometry);
 int32		DRIVERCC D3D12World_RenderFace(uint32 Geometry, uint32 Face, const DRV_WorldView* View,
 										   grRDriver_Layer* Layers, int32 NumLayers,
 										   void* LMapCBContext, uint32 Flags, float Alpha);
+int32		DRIVERCC D3D12World_RenderMesh(const DRV_MeshVertex* Verts, int32 NumVerts, const DRV_WorldView* View,
+										   grRDriver_Layer* Layer, uint32 Flags);
 
 #endif // D3D12WORLDGEOMETRY_H

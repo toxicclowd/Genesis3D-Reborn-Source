@@ -245,6 +245,38 @@ grBoolean D3D12PolyCache::AddWorldFace(
 	return GR_TRUE;
 }
 
+grBoolean D3D12PolyCache::AddWorldMesh(
+	const DRV_MeshVertex* Verts,
+	int32 NumVerts,
+	grTexture* Texture,
+	D3D12_GPU_VIRTUAL_ADDRESS View,
+	uint32 Flags)
+{
+	if (!m_bInitialized || !g_bInScene || !Verts || NumVerts < 3 || !Texture || !View)
+		return GR_FALSE;
+
+	const UINT64 Size = static_cast<UINT64>(NumVerts - NumVerts % 3) * sizeof(DRV_MeshVertex);
+	D3D12UploadAllocation Upload = {};
+	if (!D3D12Upload_Allocate(Size, sizeof(float), &Upload))
+		return GR_FALSE;
+	std::memcpy(Upload.CPU, Verts, static_cast<size_t>(Size));
+
+	PolyCacheEntry Entry = {};
+	Entry.World = nullptr;
+	Entry.Layers[0] = Texture;
+	Entry.NumLayers = 1;
+	Entry.Flags = Flags;
+	Entry.WorldView = View;
+	Entry.MeshVertices.BufferLocation = Upload.GPU;
+	Entry.MeshVertices.SizeInBytes = static_cast<UINT>(Size);
+	Entry.MeshVertices.StrideInBytes = sizeof(DRV_MeshVertex);
+	m_Cache.push_back(Entry);
+
+	if (Flags & GR_RENDER_FLAG_FLUSHBATCH)
+		return Flush();
+	return GR_TRUE;
+}
+
 grBoolean D3D12PolyCache::UploadVertices(D3D12_VERTEX_BUFFER_VIEW& VertexBufferView)
 {
 	if (m_Vertices.empty())
@@ -348,6 +380,41 @@ grBoolean D3D12PolyCache::Flush()
 	{
 		const PolyCacheEntry& Entry = m_Cache[Index];
 
+		if (Entry.MeshVertices.SizeInBytes)
+		{
+			// A texture still uploading: the transformed-poly path would draw it untextured
+			// for this frame; a mesh is skipped instead.
+			if (UsableLayers(Entry) < 1)
+				continue;
+
+			ID3D12PipelineState* Pipeline = g_pPSOManager->GetPSO(PSO_MESH_TEXTURE, Entry.Flags,
+				g_bWireframe ? GR_TRUE : GR_FALSE);
+			if (!Pipeline)
+				return GR_FALSE;
+			g_pCommandList->SetPipelineState(Pipeline);
+			g_pCommandList->IASetVertexBuffers(0, 1, &Entry.MeshVertices);
+			bVertexBufferBound = false;
+			if (BoundView != Entry.WorldView)
+			{
+				g_pCommandList->SetGraphicsRootConstantBufferView(ROOT_PARAM_WORLD_VIEW, Entry.WorldView);
+				BoundView = Entry.WorldView;
+			}
+			if (!BoundFaces)
+			{
+				// VSMesh reads no face data, but every root parameter must be set.
+				g_pCommandList->SetGraphicsRootShaderResourceView(ROOT_PARAM_WORLD_FACES, Entry.WorldView);
+				BoundFaces = Entry.WorldView;
+			}
+
+			const D3D12DrawConstants Constants = { Entry.Flags, D3D12_THandle_GetDescriptorIndex(Entry.Layers[0]), 0, 0 };
+			g_pCommandList->SetGraphicsRoot32BitConstants(ROOT_PARAM_DRAW, 4, &Constants, 0);
+			const UINT NumVertices = Entry.MeshVertices.SizeInBytes / sizeof(DRV_MeshVertex);
+			g_pCommandList->DrawInstanced(NumVertices, 1, 0, 0);
+			g_D3D12Drv.NumRenderedPolys += static_cast<S32>(NumVertices / 3);
+			D3D12Timer_CountDraws(1, 1, 0);
+			continue;
+		}
+
 		if (Entry.World)
 		{
 			// Merge the run of faces that share geometry, view, layers and flags.
@@ -416,7 +483,7 @@ grBoolean D3D12PolyCache::Flush()
 		{
 			const PolyCacheEntry& Prev = m_Cache[End - 1];
 			const PolyCacheEntry& Next = m_Cache[End];
-			if (Next.World || Next.Flags != Entry.Flags ||
+			if (Next.World || Next.MeshVertices.SizeInBytes || Next.Flags != Entry.Flags ||
 				Next.StartVertex != Prev.StartVertex + Prev.NumVertices ||
 				UsableLayers(Next) != NumLayers ||
 				(NumLayers > 0 && Next.Layers[0] != Entry.Layers[0]) ||

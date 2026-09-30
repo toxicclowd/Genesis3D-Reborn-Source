@@ -1593,7 +1593,8 @@ DRV_Driver g_D3D12Drv =
 
 	D3D12World_Create,
 	D3D12World_Destroy,
-	D3D12World_RenderFace
+	D3D12World_RenderFace,
+	D3D12World_RenderMesh
 };
 
 //================================================================================

@@ -1242,8 +1242,153 @@ extern grBoolean	h_LeftHanded;		// Hack of all mothers, need to check camera to 
 
 extern grWorld_DebugInfo g_WorldDebugInfo;
 
-grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P, 
-										const grPose		*Joints, 
+//=====================================================================================
+//	GPU world meshes (roadmap Phase 1): with a driver that has DRV_Driver::WorldMesh_Render,
+//	a puppet is still skinned and lit here, in world space, but its triangles are projected
+//	and clipped by the GPU with the same DRV_WorldView the world path uses, instead of by
+//	grTClip / grFrustum and grCamera on the CPU. Triangles are sent in runs of one texture.
+//=====================================================================================
+typedef struct
+{
+	DRV_Driver		*Driver;
+	DRV_WorldView	View;
+	grRDriver_Layer	Layer;
+	uint32			Flags;
+	float			Alpha;			// fOverallAlpha, for every vertex
+	int32			NumVerts;
+} grPuppet_MeshBatch;
+
+static DRV_MeshVertex	*grPuppet_MeshVerts = NULL;
+static int32			grPuppet_MeshVertsMax = 0;
+
+static grTexture *grPuppet_MaterialTexture(const grMaterialSpec *Spec)
+{
+	grTexture	*TH;
+	grBitmap	*Bmp;
+
+	if (!Spec)
+		return NULL;
+	TH = grMaterialSpec_GetLayerTexture(Spec, 0);
+	if (TH)
+		return TH;
+	Bmp = grMaterialSpec_GetLayerBitmap(Spec, 0);
+	return Bmp ? grBitmap_GetTHandle(Bmp) : NULL;
+}
+
+// Returns GR_FALSE when the puppet must use the CPU path: no driver support, a material
+// without a texture (drawn Gouraud there), or a frustum with too many planes.
+// CameraSpaceFrustum is NULL for the camera's own view.
+static grBoolean grPuppet_MeshBegin(const grPuppet *P, const grEngine *Engine, const grCamera *Camera,
+									const grFrustum *CameraSpaceFrustum, uint32 RenderFlags,
+									grPuppet_MeshBatch *Batch)
+{
+	DRV_Driver	*Driver = Engine->DriverInfo.RDriver;
+	int32		i;
+
+	if (!Driver || !Driver->WorldMesh_Render ||
+		Driver->WorldMesh_Render(NULL, 0, NULL, NULL, 0) != DRV_WORLD_FACE_DRAWN)
+		return GR_FALSE;
+	if (CameraSpaceFrustum && CameraSpaceFrustum->NumPlanes > DRV_WORLD_MAX_CLIP_PLANES)
+		return GR_FALSE;
+	for (i = 0; i < P->MaterialCount; i++)
+	{
+		if (!grPuppet_MaterialTexture(P->MaterialArray[i].Material))
+			return GR_FALSE;
+	}
+
+	memset(Batch, 0, sizeof(*Batch));
+	Batch->Driver = Driver;
+	Batch->Alpha = P->fOverallAlpha;
+	Batch->Flags = RenderFlags | Engine->DefaultRenderFlags;		// as grEngine_RenderPoly
+
+	// Same view as grBSP_RenderGpuWorld, for world-space vertices. The CPU path clips
+	// actors to the camera rect (or the portal frustum) but not to the far plane.
+	Batch->View.ModelToCamera = *grCamera_XForm(Camera);
+	grCamera_GetScreenProjection(Camera, &Batch->View.Scale, &Batch->View.XCenter, &Batch->View.YCenter);
+	Batch->View.ZScale = grCamera_GetZScale(Camera);
+	grCamera_GetScreenSize(Camera, &Batch->View.HalfWidth, &Batch->View.HalfHeight);
+	Batch->View.HalfWidth *= 0.5f;
+	Batch->View.HalfHeight *= 0.5f;
+	if (CameraSpaceFrustum)
+	{
+		// Same planes and sides as grFrustum_ClipLVerts* (inside: N.p - Dist >= 0)
+		for (i = 0; i < CameraSpaceFrustum->NumPlanes; i++)
+		{
+			const grPlane	*Plane = &CameraSpaceFrustum->Planes[i];
+
+			Batch->View.ClipPlanes[i][0] = Plane->Normal.X;
+			Batch->View.ClipPlanes[i][1] = Plane->Normal.Y;
+			Batch->View.ClipPlanes[i][2] = Plane->Normal.Z;
+			Batch->View.ClipPlanes[i][3] = -Plane->Dist;
+		}
+		Batch->View.NumClipPlanes = CameraSpaceFrustum->NumPlanes;
+	}
+	return GR_TRUE;
+}
+
+// Room for NumFaces triangles.
+static grBoolean grPuppet_MeshReserve(int32 NumFaces)
+{
+	if (grPuppet_MeshVertsMax < NumFaces * 3)
+	{
+		DRV_MeshVertex *Verts = (DRV_MeshVertex *)grRam_Realloc(grPuppet_MeshVerts, sizeof(DRV_MeshVertex) * NumFaces * 3);
+		if (!Verts)
+			return GR_FALSE;
+		grPuppet_MeshVerts = Verts;
+		grPuppet_MeshVertsMax = NumFaces * 3;
+	}
+	return GR_TRUE;
+}
+
+static void grPuppet_MeshFlush(grPuppet_MeshBatch *Batch)
+{
+	if (Batch->NumVerts > 0 && Batch->Layer.THandle)
+		Batch->Driver->WorldMesh_Render(grPuppet_MeshVerts, Batch->NumVerts, &Batch->View, &Batch->Layer, Batch->Flags);
+	Batch->NumVerts = 0;
+}
+
+static void grPuppet_MeshSetMaterial(grPuppet_MeshBatch *Batch, const grMaterialSpec *Spec)
+{
+	grTexture	*TH = grPuppet_MaterialTexture(Spec);
+
+	if (TH != Batch->Layer.THandle)
+	{
+		grPuppet_MeshFlush(Batch);
+		Batch->Layer.THandle = TH;
+	}
+}
+
+// Adds a world-space triangle if it faces the camera (the test grPuppet_RenderThroughFrustum uses).
+static void grPuppet_MeshAddTriangle(grPuppet_MeshBatch *Batch, const grLVertex *Verts, const grVec3d *Pov)
+{
+	grVec3d			v1, v2, v3;
+	int32			i;
+	DRV_MeshVertex	*Dst;
+
+	grVec3d_Subtract((grVec3d*)&Verts[2], (grVec3d*)&Verts[1], &v1);
+	grVec3d_Subtract((grVec3d*)&Verts[0], (grVec3d*)&Verts[1], &v2);
+	grVec3d_CrossProduct(&v1, &v2, &v3);
+	if (grVec3d_DotProduct(&v3, Pov) - grVec3d_DotProduct(&v3, (grVec3d*)&Verts[0]) <= 0.0f)
+		return;		// Backfaced to camera
+
+	Dst = &grPuppet_MeshVerts[Batch->NumVerts];
+	for (i = 0; i < 3; i++, Dst++)
+	{
+		Dst->Pos[0] = Verts[i].X;
+		Dst->Pos[1] = Verts[i].Y;
+		Dst->Pos[2] = Verts[i].Z;
+		Dst->u = Verts[i].u;
+		Dst->v = Verts[i].v;
+		Dst->r = Verts[i].r;
+		Dst->g = Verts[i].g;
+		Dst->b = Verts[i].b;
+		Dst->a = Batch->Alpha;
+	}
+	Batch->NumVerts += 3;
+}
+
+grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P,
+										const grPose		*Joints,
 										const grExtBox		*Box, 
 										grEngine			*Engine, 
 										const grWorld		*World,
@@ -1259,7 +1404,10 @@ grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P,
 	const grXFArray				*JointTransforms = NULL;
 	const grBodyInst_Geometry	*G = NULL;
 	grFrustum					WorldSpaceFrustum;
+	const grFrustum				*CameraSpaceFrustum;
 	grPuppet					*LP = NULL;
+	grPuppet_MeshBatch			Mesh;
+	grBoolean					UseMesh;
 
 	assert( P      );
 	assert( Engine );
@@ -1276,6 +1424,7 @@ grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P,
 	G = grBodyInst_GetGeometry(P->BodyInstance, &Scale, JointTransforms, 0, NULL);
 
 	grFrustum_TransformToWorldSpace(Frustum, Camera, &WorldSpaceFrustum);
+	CameraSpaceFrustum = Frustum;
 	Frustum = &WorldSpaceFrustum;
 
 	// Setup clip flags to clip to all frustum planes...
@@ -1326,6 +1475,9 @@ grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P,
 			RenderFlags = 0;
 		else
 			RenderFlags = GR_RENDER_FLAG_COUNTER_CLOCKWISE;
+
+		UseMesh = grPuppet_MeshBegin(P, Engine, Camera, CameraSpaceFrustum, RenderFlags, &Mesh) &&
+			grPuppet_MeshReserve(G->FaceCount);
 
 		grPuppet_StaticLightGrp.UseFillLight		 = P->UseFillLight;
 		grPuppet_StaticLightGrp.FillLightNormal		 = P->FillLightNormal;
@@ -1557,6 +1709,17 @@ grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P,
 					grPuppet_SetVertexColor(LP, pLVert,SVert->ReferenceBoneIndex);
 				}	//	for...
 
+				if (UseMesh)
+				{
+					if (PM)
+					{
+						grPuppet_MeshSetMaterial(&Mesh, PM->Material);
+						grPuppet_MeshAddTriangle(&Mesh, LVerts1, grCamera_GetPov(Camera));
+						g_WorldDebugInfo.NumActorPolys++;
+					}
+					continue;
+				}
+
 #pragma message ("This backface rejection code should go above uv/lighting computations...")
 				grVec3d_Subtract((grVec3d*)&LVerts1[2], (grVec3d*)&LVerts1[1], &v1);
 				grVec3d_Subtract((grVec3d*)&LVerts1[0], (grVec3d*)&LVerts1[1], &v2);
@@ -1606,6 +1769,8 @@ grBoolean grPuppet_RenderThroughFrustum(const grPuppet		*P,
 //			}
 
 		}
+		if (UseMesh)
+			grPuppet_MeshFlush(&Mesh);
 	}
 
 	//"Need to write a RenderShadowThroughFrustum...")
@@ -1656,6 +1821,8 @@ grBoolean	grPuppet_Render(const grPuppet	*P,
 	#define BACK_EDGE (1.0f)
 
 	const grBodyInst_Geometry *G;
+	grPuppet_MeshBatch Mesh;
+	grBoolean UseMesh;
 //	[MacroArt::Begin]
 	uint32	RenderFlags;
 //	[MacroArt::End]
@@ -1753,7 +1920,14 @@ grBoolean	grPuppet_Render(const grPuppet	*P,
 //#pragma message ("Level of detail hacked:")
 	grPose_GetScale(Joints,&Scale);
 
-	G = grBodyInst_GetGeometry(P->BodyInstance, &Scale, JointTransforms, 0,Camera);
+	// The GPU path takes world-space vertices; the CPU path projects them here.
+	UseMesh = grPuppet_MeshBegin(P, Engine, Camera, NULL, GR_RENDER_FLAG_COUNTER_CLOCKWISE, &Mesh);
+	G = grBodyInst_GetGeometry(P->BodyInstance, &Scale, JointTransforms, 0, UseMesh ? NULL : Camera);
+	if (G && UseMesh && !grPuppet_MeshReserve(G->FaceCount))
+	{
+		UseMesh = GR_FALSE;
+		G = grBodyInst_GetGeometry(P->BodyInstance, &Scale, JointTransforms, 0, Camera);
+	}
 
 	if ( G == NULL )
 	{
@@ -1771,7 +1945,8 @@ grBoolean	grPuppet_Render(const grPuppet	*P,
 #endif
 
 
-	// check for trivial rejection:
+	// check for trivial rejection (screen space: CPU path only)
+	if (!UseMesh)
 	{
 		if (   (G->Maxs.X < ClippingRect.Left) 
 			|| (G->Mins.X > ClippingRect.Right)
@@ -1970,8 +2145,8 @@ grBoolean	grPuppet_Render(const grPuppet	*P,
 				// ZCROSS is z the component of a 2d vector cross product of ABxAC
 				//#define ZCROSS(Ax,Ay,Bx,By,Cx,Cy)  ((((Bx)-(Ax))*((Cy)-(Ay))) - (((By)-(Ay))*((Cx)-(Ax))))
 				// 2d cross product of AB cross AC   (A is vtx[0], B is vtx[1], C is vtx[2]
-				
-				if ( ((BXMinusAX * CYMinusAY) - (BYMinusAY * CXMinusAX)) > 0.0f )
+				// (screen space; the GPU path tests in world space in grPuppet_MeshAddTriangle)
+				if ( !UseMesh && ((BXMinusAX * CYMinusAY) - (BYMinusAY * CXMinusAX)) > 0.0f )
 				{
 					List = List2;
 					continue;
@@ -1983,6 +2158,8 @@ grBoolean	grPuppet_Render(const grPuppet	*P,
 			{
 				PM = &(P->MaterialArray[Material]);
 				grTClip_SetTexture(PM->Material,0);
+				if (UseMesh)
+					grPuppet_MeshSetMaterial(&Mesh, PM->Material);
 				grPuppet_StaticLightGrp.MaterialColor = PM->Color;
 
 				if (PM->Mapper != grUVMap_Projection)
@@ -2038,7 +2215,11 @@ grBoolean	grPuppet_Render(const grPuppet	*P,
 		
 			g_WorldDebugInfo.NumActorPolys++;
 
-			if (Clipping)
+			if (UseMesh)
+			{
+				grPuppet_MeshAddTriangle(&Mesh, v, grCamera_GetPov(Camera));
+			}
+			else if (Clipping)
 			{
 				grTClip_Triangle(v);
 			}
@@ -2056,6 +2237,8 @@ grBoolean	grPuppet_Render(const grPuppet	*P,
 			}
 
 		}
+		if (UseMesh)
+			grPuppet_MeshFlush(&Mesh);
 		assert( ((uint32)List) - ((uint32)G->FaceList) == (uint32)(G->FaceListSize) );
 	}
 

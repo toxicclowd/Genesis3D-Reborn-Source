@@ -378,3 +378,22 @@ int32 DRIVERCC D3D12World_RenderFace(uint32 Handle, uint32 Face, const DRV_World
 		? DRV_WORLD_FACE_DRAWN
 		: DRV_WORLD_FACE_FALLBACK;
 }
+
+int32 DRIVERCC D3D12World_RenderMesh(const DRV_MeshVertex* Verts, int32 NumVerts, const DRV_WorldView* View,
+									 grRDriver_Layer* Layer, uint32 Flags)
+{
+	if (!Enabled || !g_pPolyCache)
+		return DRV_WORLD_FACE_FALLBACK;
+	if (!Verts)
+		return DRV_WORLD_FACE_DRAWN;	// the path is available
+	if (!g_bInScene || !View || !Layer || !Layer->THandle || !D3D12_THandle_GetResource(Layer->THandle) || NumVerts < 3)
+		return DRV_WORLD_FACE_FALLBACK;
+
+	const D3D12_GPU_VIRTUAL_ADDRESS ViewGPU = ViewConstantsFor(View);
+	if (!ViewGPU)
+		return DRV_WORLD_FACE_FALLBACK;
+
+	return g_pPolyCache->AddWorldMesh(Verts, NumVerts, Layer->THandle, ViewGPU, Flags)
+		? DRV_WORLD_FACE_DRAWN
+		: DRV_WORLD_FACE_FALLBACK;
+}

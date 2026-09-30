@@ -97,7 +97,7 @@ typedef struct tagRECT
 #endif
 
 #define DRV_VERSION_MAJOR		200			// Jet 2.0
-#define DRV_VERSION_MINOR		7			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry ; 7 adds DRV_WorldView clip planes and draw counts
+#define DRV_VERSION_MINOR		8			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry ; 7 adds DRV_WorldView clip planes and draw counts ; 8 adds WorldMesh_Render
 #define DRV_VMAJS				"200"
 #define DRV_VMINS				"4" 
 #define DRV_VMAJS_PLUS_DRV_VMINS	"200.4"
@@ -337,6 +337,24 @@ typedef grBoolean DRIVERCC WORLD_GEOMETRY_DESTROY(uint32 Geometry);
 typedef int32 DRIVERCC WORLD_GEOMETRY_RENDER_FACE(uint32 Geometry, uint32 Face, const DRV_WorldView *View,
 												  grRDriver_Layer *Layers, int32 NumLayers,
 												  void *LMapCBContext, uint32 Flags, float Alpha);
+
+//
+//	World meshes (version 8): per-frame triangles in model space with vertex colors (actors,
+//	skinned and lit on the CPU), projected by the GPU with a DRV_WorldView like world faces.
+//
+typedef struct
+{
+	float		Pos[3];			// model space
+	float		u, v;			// texture coordinates, as grTLVertex
+	float		r, g, b, a;		// 0..255, as grTLVertex
+} DRV_MeshVertex;
+
+// Queues a triangle list (NumVerts / 3 triangles) textured with Layer, in order with the other
+// render calls. Flags mean the same as for RENDER_MISC_TEXTURE_POLY. Returns
+// DRV_WORLD_FACE_DRAWN, or DRV_WORLD_FACE_FALLBACK when nothing was drawn. Verts == NULL
+// only asks whether the path is available.
+typedef int32 DRIVERCC WORLD_MESH_RENDER(const DRV_MeshVertex *Verts, int32 NumVerts, const DRV_WorldView *View,
+										 grRDriver_Layer *Layer, uint32 Flags);
 
 typedef struct
 {
@@ -670,6 +688,9 @@ typedef struct
 	WORLD_GEOMETRY_CREATE		*WorldGeometry_Create;
 	WORLD_GEOMETRY_DESTROY		*WorldGeometry_Destroy;
 	WORLD_GEOMETRY_RENDER_FACE	*WorldGeometry_RenderFace;
+
+	// Version 8: world meshes (NULL if the driver has none).
+	WORLD_MESH_RENDER			*WorldMesh_Render;
 } DRV_Driver;
 
 enum grRenderState

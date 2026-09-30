@@ -26,6 +26,7 @@ enum D3D12_PSO_TYPE
 	PSO_ALPHA_TEXTURE,    // Textured with alpha blending
 	PSO_WORLD_TEXTURE,    // GPU world faces (Shaders/World.hlsl), no lightmap
 	PSO_WORLD_MULTITEX,   // GPU world faces with lightmap
+	PSO_MESH_TEXTURE,     // GPU world meshes (actors), textured and vertex lit
 	PSO_COUNT
 };
 
