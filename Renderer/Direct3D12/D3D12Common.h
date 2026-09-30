@@ -11,6 +11,7 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 #include <string>
+#include <cstring>
 
 using Microsoft::WRL::ComPtr;
 
@@ -21,6 +22,17 @@ using Microsoft::WRL::ComPtr;
         D3D12Log::GetPtr()->Printf("ERROR: HRESULT failed at %s:%d - HR: 0x%08X", __FILE__, __LINE__, hr); \
     }
 #endif
+
+// PIX / GPU-capture event markers (ANSI strings, PIX_EVENT_ANSI_VERSION = 1).
+inline void D3D12BeginMarker(ID3D12GraphicsCommandList* commandList, const char* name)
+{
+    commandList->BeginEvent(1, name, static_cast<UINT>(std::strlen(name) + 1));
+}
+
+inline void D3D12EndMarker(ID3D12GraphicsCommandList* commandList)
+{
+    commandList->EndEvent();
+}
 
 // Alignment helper
 inline UINT Align(UINT size, UINT alignment)

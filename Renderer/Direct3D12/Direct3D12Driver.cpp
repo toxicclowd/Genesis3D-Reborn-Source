@@ -10,6 +10,7 @@
 #include "D3D12PolyCache.h"
 #include "D3D12PSOManager.h"
 #include "D3D12Config.h"
+#include "D3D12SceneTarget.h"
 #include <stdio.h>
 #include <unordered_map>
 #include <vector>
@@ -166,6 +167,29 @@ void D3D12WaitForGPU()
 		g_pFence->SetEventOnCompletion(fence, g_hFenceEvent);
 		WaitForSingleObject(g_hFenceEvent, INFINITE);
 	}
+}
+
+// Debug-layer messages go to Direct3D12Driver.log, since the tools rarely run
+// under a debugger that would show them.
+static void __stdcall D3D12DebugMessage(
+	D3D12_MESSAGE_CATEGORY,
+	D3D12_MESSAGE_SEVERITY Severity,
+	D3D12_MESSAGE_ID Id,
+	LPCSTR Description,
+	void*)
+{
+	static int Logged = 0;
+	const int MaxLogged = 200;
+	if (Severity > D3D12_MESSAGE_SEVERITY_WARNING || Logged > MaxLogged)
+		return;
+	if (++Logged > MaxLogged)
+	{
+		D3D12Log::GetPtr()->Printf("D3D12 debug layer: further messages suppressed");
+		return;
+	}
+	const char* Level = (Severity == D3D12_MESSAGE_SEVERITY_WARNING) ? "WARNING"
+		: (Severity == D3D12_MESSAGE_SEVERITY_CORRUPTION) ? "CORRUPTION" : "ERROR";
+	D3D12Log::GetPtr()->Printf("D3D12 %s #%d: %s", Level, static_cast<int>(Id), Description ? Description : "");
 }
 
 static void MoveToNextFrame()
@@ -459,6 +483,19 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		}
 		D3D12Log::GetPtr()->Printf("D3D12 Device created successfully");
 
+		if (bDebugLayer)
+		{
+			// ID3D12InfoQueue1 needs a recent debug layer (Windows 11 / Agility SDK).
+			ComPtr<ID3D12InfoQueue1> InfoQueue;
+			DWORD CallbackCookie = 0;
+			if (SUCCEEDED(g_pDevice.As(&InfoQueue)) &&
+				SUCCEEDED(InfoQueue->RegisterMessageCallback(
+					D3D12DebugMessage, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &CallbackCookie)))
+				D3D12Log::GetPtr()->Printf("D3D12 debug-layer messages are logged here");
+			else
+				D3D12Log::GetPtr()->Printf("D3D12 debug-layer messages go to the debugger output only");
+		}
+
 		// Create Command Queue
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -587,7 +624,7 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		depthStencilDesc.Height = swapChainDesc.Height;
 		depthStencilDesc.DepthOrArraySize = 1;
 		depthStencilDesc.MipLevels = 1;
-		depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
+		depthStencilDesc.Format = DXGI_FORMAT_R32_TYPELESS;	// sampled as R32_FLOAT by later passes
 		depthStencilDesc.SampleDesc.Count = 1;
 		depthStencilDesc.SampleDesc.Quality = 0;
 		depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -626,6 +663,12 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = g_pDSVHeap->GetCPUDescriptorHandleForHeapStart();
 		g_pDevice->CreateDepthStencilView(g_pDepthStencil.Get(), &dsvDesc, dsvHandle);
 		D3D12Log::GetPtr()->Printf("Depth/stencil buffer created");
+
+		if (!D3D12Scene_Create(swapChainDesc.Width, swapChainDesc.Height))
+		{
+			strcpy_s(g_szLastError, "Failed to create the scene target");
+			return GR_FALSE;
+		}
 
 		// Create Command List
 		hr = g_pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -736,6 +779,7 @@ grBoolean DRIVERCC D3D12Drv_Shutdown()
 
 	// Wait for GPU to finish
 	D3D12WaitForGPU();
+	D3D12Scene_Shutdown();
 
 	// Close fence event
 	if (g_hFenceEvent)
@@ -818,6 +862,7 @@ grBoolean DRIVERCC D3D12Drv_UpdateWindow()
 		g_FrameResources[i].FenceValue = 0;
 	}
 	g_pDepthStencil.Reset();
+	D3D12Scene_Release();
 
 	HRESULT Hr = g_pSwapChain->ResizeBuffers(
 		FRAME_COUNT, static_cast<UINT>(Width), static_cast<UINT>(Height),
@@ -852,7 +897,7 @@ grBoolean DRIVERCC D3D12Drv_UpdateWindow()
 	DepthDesc.Height = static_cast<UINT>(Height);
 	DepthDesc.DepthOrArraySize = 1;
 	DepthDesc.MipLevels = 1;
-	DepthDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	DepthDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 	DepthDesc.SampleDesc.Count = 1;
 	DepthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	DepthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
@@ -877,6 +922,9 @@ grBoolean DRIVERCC D3D12Drv_UpdateWindow()
 	g_pDevice->CreateDepthStencilView(
 		g_pDepthStencil.Get(), &DsvDesc,
 		g_pDSVHeap->GetCPUDescriptorHandleForHeapStart());
+
+	if (!D3D12Scene_Create(static_cast<UINT>(Width), static_cast<UINT>(Height)))
+		return GR_FALSE;
 
 	g_nScreenWidth = Width;
 	g_nScreenHeight = Height;
@@ -938,6 +986,8 @@ grBoolean DRIVERCC D3D12Drv_BeginScene(grBoolean Clear, grBoolean ClearZ, RECT* 
 			return GR_FALSE;
 		}
 
+		D3D12BeginMarker(g_pCommandList.Get(), "Scene");
+
 		// The frame-slot fence has completed before this allocator is reused, so
 		// transient vertex and texture upload resources for this slot can be released.
 		D3D12_THandle_BeginFrame(g_nCurrentFrameIndex);
@@ -956,8 +1006,11 @@ grBoolean DRIVERCC D3D12Drv_BeginScene(grBoolean Clear, grBoolean ClearZ, RECT* 
 		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		g_pCommandList->ResourceBarrier(1, &barrier);
 
-		// Set render target with depth/stencil
-		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = g_FrameResources[g_nCurrentFrameIndex].RTVHandle;
+		// Set render target with depth/stencil. With the scene target on, the engine
+		// draws into it and EndScene's present pass fills the back buffer.
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = D3D12Scene_IsEnabled()
+			? D3D12Scene_Begin(g_pCommandList.Get())
+			: g_FrameResources[g_nCurrentFrameIndex].RTVHandle;
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = g_pDSVHeap->GetCPUDescriptorHandleForHeapStart();
 		g_pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
@@ -1028,6 +1081,15 @@ grBoolean DRIVERCC D3D12Drv_EndScene(void)
 			g_bInScene = false;
 			return GR_FALSE;
 		}
+
+		if (D3D12Scene_IsEnabled() &&
+			!D3D12Scene_Present(g_pCommandList.Get(), g_FrameResources[g_nCurrentFrameIndex].RTVHandle))
+		{
+			D3D12Log::GetPtr()->Printf("ERROR: Present pass failed");
+			g_bInScene = false;
+			return GR_FALSE;
+		}
+		D3D12EndMarker(g_pCommandList.Get());
 
 		// Transition render target back to PRESENT state
 		D3D12_RESOURCE_BARRIER barrier = {};

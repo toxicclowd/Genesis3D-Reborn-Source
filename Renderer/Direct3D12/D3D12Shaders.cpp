@@ -21,6 +21,8 @@
 #include "Shaders/g_TLPoly_PSGouraud.h"
 #include "Shaders/g_TLPoly_PSTexture.h"
 #include "Shaders/g_TLPoly_PSMultiTexture.h"
+#include "Shaders/g_Present_VSFullscreen.h"
+#include "Shaders/g_Present_PSPresent.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -42,6 +44,8 @@ namespace
 		{ "TLPoly.hlsl", IDR_SHADER_TLPOLY, "PSGouraud",      "ps_5_0", g_TLPoly_PSGouraud,      sizeof(g_TLPoly_PSGouraud) },
 		{ "TLPoly.hlsl", IDR_SHADER_TLPOLY, "PSTexture",      "ps_5_0", g_TLPoly_PSTexture,      sizeof(g_TLPoly_PSTexture) },
 		{ "TLPoly.hlsl", IDR_SHADER_TLPOLY, "PSMultiTexture", "ps_5_0", g_TLPoly_PSMultiTexture, sizeof(g_TLPoly_PSMultiTexture) },
+		{ "Present.hlsl", IDR_SHADER_PRESENT, "VSFullscreen", "vs_5_0", g_Present_VSFullscreen, sizeof(g_Present_VSFullscreen) },
+		{ "Present.hlsl", IDR_SHADER_PRESENT, "PSPresent",    "ps_5_0", g_Present_PSPresent,    sizeof(g_Present_PSPresent) },
 	};
 
 	ComPtr<ID3DBlob>		Compiled[SHADER_COUNT];

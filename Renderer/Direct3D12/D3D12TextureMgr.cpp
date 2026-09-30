@@ -190,9 +190,11 @@ static grBoolean FillUploadBuffer(
 		}
 	}
 
+	// The last row is not padded out to RowPitch, and the buffer ends right after it.
 	D3D12_RANGE WrittenRange = {
 		static_cast<SIZE_T>(Footprint.Offset),
-		static_cast<SIZE_T>(Footprint.Offset + static_cast<UINT64>(Footprint.Footprint.RowPitch) * NumRows)
+		static_cast<SIZE_T>(Footprint.Offset +
+			static_cast<UINT64>(Footprint.Footprint.RowPitch) * (NumRows - 1) + RowSize)
 	};
 	Upload->Unmap(0, &WrittenRange);
 	return GR_TRUE;

@@ -3,3 +3,4 @@
 
 // HLSL source for the run-time compile fallback (see D3D12Shaders.h).
 IDR_SHADER_TLPOLY		RCDATA		"Shaders\\TLPoly.hlsl"
+IDR_SHADER_PRESENT		RCDATA		"Shaders\\Present.hlsl"

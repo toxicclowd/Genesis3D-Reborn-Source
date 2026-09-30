@@ -109,6 +109,7 @@
     <ClInclude Include="D3D12Config.h" />
     <ClInclude Include="D3D12Shaders.h" />
     <ClInclude Include="D3D12Resource.h" />
+    <ClInclude Include="D3D12SceneTarget.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Direct3D12Driver.cpp" />
@@ -118,6 +119,7 @@
     <ClCompile Include="D3D12PSOManager.cpp" />
     <ClCompile Include="D3D12Config.cpp" />
     <ClCompile Include="D3D12Shaders.cpp" />
+    <ClCompile Include="D3D12SceneTarget.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Direct3D12Driver.rc" />
@@ -147,7 +149,18 @@
       <Profile>ps_6_0</Profile>
       <Var>g_TLPoly_PSMultiTexture</Var>
     </G3DShader>
+    <G3DShader Include="Shaders\Present.hlsl">
+      <Entry>VSFullscreen</Entry>
+      <Profile>vs_6_0</Profile>
+      <Var>g_Present_VSFullscreen</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\Present.hlsl">
+      <Entry>PSPresent</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_Present_PSPresent</Var>
+    </G3DShader>
     <None Include="Shaders\TLPoly.hlsl" />
+    <None Include="Shaders\Present.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BUILD_SUCCESS.md" />

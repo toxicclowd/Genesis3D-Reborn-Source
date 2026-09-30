@@ -10,6 +10,7 @@
 #include "D3D12PolyCache.h"
 #include "D3D12PSOManager.h"
 #include "D3D12Log.h"
+#include "D3D12Common.h"
 
 namespace
 {
@@ -283,6 +284,7 @@ grBoolean D3D12PolyCache::Flush()
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView = {};
 	if (!UploadVertices(VertexBuffer, VertexBufferView))
 		return GR_FALSE;
+	D3D12BeginMarker(g_pCommandList.Get(), "PolyCache flush");
 	m_FrameVertexBuffers[g_nCurrentFrameIndex].push_back(VertexBuffer);
 
 	ID3D12DescriptorHeap* TextureHeap = D3D12_THandle_GetDescriptorHeap();
@@ -341,6 +343,8 @@ grBoolean D3D12PolyCache::Flush()
 			0);
 		++g_D3D12Drv.NumRenderedPolys;
 	}
+
+	D3D12EndMarker(g_pCommandList.Get());
 
 	m_Cache.clear();
 	m_Vertices.clear();

@@ -8,6 +8,7 @@
 
 #include "D3D12PSOManager.h"
 #include "D3D12Shaders.h"
+#include "D3D12SceneTarget.h"
 #include "Direct3D12Driver.h"
 #include "D3D12Log.h"
 
@@ -261,7 +262,7 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 	Desc.InputLayout = { InputLayout, _countof(InputLayout) };
 	Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	Desc.NumRenderTargets = 1;
-	Desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	Desc.RTVFormats[0] = D3D12Scene_GetFormat();
 	Desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	Desc.SampleDesc.Count = 1;
 

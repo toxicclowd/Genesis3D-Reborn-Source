@@ -8,5 +8,6 @@
 
 // Embedded HLSL source (RCDATA) for the run-time compile fallback.
 #define IDR_SHADER_TLPOLY				101
+#define IDR_SHADER_PRESENT				102
 
 #endif // D3D12RESOURCE_H
