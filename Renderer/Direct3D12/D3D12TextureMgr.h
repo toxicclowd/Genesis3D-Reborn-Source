@@ -45,6 +45,10 @@ ID3D12DescriptorHeap* D3D12_THandle_GetDescriptorHeap();
 UINT D3D12_THandle_GetDescriptorIndex(grTexture* Handle);
 void D3D12_THandle_GetReservedSRV(UINT Slot, D3D12_CPU_DESCRIPTOR_HANDLE* Cpu, D3D12_GPU_DESCRIPTOR_HANDLE* Gpu);
 grBoolean D3D12_THandle_UpdateLightmap(grTexture* Handle, const uint8* RGBData);
+int32 D3D12_LightmapBytesPerPixel(grPixelFormat Format);
+// Converts engine RGB lightmap texels to Format (rows RowPitch bytes apart).
+void D3D12_ConvertLightmapTexels(grPixelFormat Format, const uint8* RGBData, int32 Width, int32 Height,
+								 uint8* Destination, size_t RowPitch);
 
 // Texture structure for D3D12
 typedef struct grTexture
@@ -81,6 +85,12 @@ typedef struct grTexture
 	// every frame that could still read them (fence value RetireFence).
 	grBoolean Retired;
 	UINT64 RetireFence;
+
+	// A lightmap's place in the GPU world path's atlas (D3D12LightmapAtlas.cpp).
+	int32 AtlasPage;                        // -1 = not placed, -2 = does not fit the atlas
+	uint16 AtlasX;                          // interior origin, inside the 1-texel border
+	uint16 AtlasY;
+	grBoolean AtlasResident;                // texels uploaded
 } grTexture;
 
 #endif // D3D12_TEXTURE_MANAGER_H

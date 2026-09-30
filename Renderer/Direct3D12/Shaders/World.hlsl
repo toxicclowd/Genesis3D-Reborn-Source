@@ -61,11 +61,12 @@ struct WorldFace
     float ShiftU;				// layer 0 shift
     float ShiftV;
     float TextureScale;			// 1 << Log of the base texture
+    float Alpha;				// 0..1
     float LightShiftU;			// lightmap StartU/StartV
     float LightShiftV;
-    float LightScale;			// (1 << Log) << 4 of the lightmap
-    float Alpha;				// 0..1
-    uint  FacePadding;
+    float2 LightOffset;			// the lightmap's origin in its texture (an atlas page), * 16
+    float2 LightDiv;			// that texture's size * 16
+    uint2 FacePadding;
 };
 StructuredBuffer<WorldFace> WorldFaces : register(t0, space2);
 
@@ -151,8 +152,8 @@ VS_OUTPUT VSWorld(VS_INPUT input)
     // D3D12PolyCache::AddPolygon (world coordinates)
     output.TexCoord.x = (input.FaceUV.x * face.InvScaleU + face.ShiftU) / face.TextureScale;
     output.TexCoord.y = (input.FaceUV.y * face.InvScaleV + face.ShiftV) / face.TextureScale;
-    output.LMCoord.x = (input.FaceUV.x - face.LightShiftU + 8.0f) / face.LightScale;
-    output.LMCoord.y = (input.FaceUV.y - face.LightShiftV + 8.0f) / face.LightScale;
+    output.LMCoord.x = (input.FaceUV.x - face.LightShiftU + 8.0f + face.LightOffset.x) / face.LightDiv.x;
+    output.LMCoord.y = (input.FaceUV.y - face.LightShiftV + 8.0f + face.LightOffset.y) / face.LightDiv.y;
     output.Textures = uint2(face.BaseTexture, face.LightTexture);
     return output;
 }

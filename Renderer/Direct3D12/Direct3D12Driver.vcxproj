@@ -113,6 +113,7 @@
     <ClInclude Include="D3D12UploadRing.h" />
     <ClInclude Include="D3D12GpuTimer.h" />
     <ClInclude Include="D3D12WorldGeometry.h" />
+    <ClInclude Include="D3D12LightmapAtlas.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Direct3D12Driver.cpp" />
@@ -126,6 +127,7 @@
     <ClCompile Include="D3D12UploadRing.cpp" />
     <ClCompile Include="D3D12GpuTimer.cpp" />
     <ClCompile Include="D3D12WorldGeometry.cpp" />
+    <ClCompile Include="D3D12LightmapAtlas.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Direct3D12Driver.rc" />

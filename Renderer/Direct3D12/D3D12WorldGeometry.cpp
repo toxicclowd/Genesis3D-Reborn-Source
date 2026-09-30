@@ -13,6 +13,7 @@
 #include "D3D12PSOManager.h"
 #include "D3D12TextureMgr.h"
 #include "D3D12UploadRing.h"
+#include "D3D12LightmapAtlas.h"
 #include "D3D12Config.h"
 #include "Direct3D12Driver.h"
 #include "D3D12Log.h"
@@ -203,6 +204,7 @@ grBoolean D3D12World_Startup()
 	D3D12Log::GetPtr()->Printf(Enabled
 		? "World: GPU world path enabled"
 		: "World: GPU world path disabled (needs bindless textures; [Render] WorldPath)");
+	D3D12Lightmap_Startup();
 	return GR_TRUE;
 }
 
@@ -303,14 +305,26 @@ int32 DRIVERCC D3D12World_RenderFace(uint32 Handle, uint32 Face, const DRV_World
 	if (!Geometry || Face >= Geometry->Faces.size())
 		return DRV_WORLD_FACE_STALE;
 
-	// Lightmap upload, exactly as D3D12PolyCache::AddWorldPoly does it.
-	if (LMapCBContext && NumLayers > 1 && Layers[1].THandle && g_D3D12Drv.SetupLightmap)
+	// The lightmap goes into the atlas when it can, else into its own handle exactly
+	// as D3D12PolyCache::AddWorldPoly does it.
+	D3D12LightmapPlacement Atlas = {};
+	bool InAtlas = false;
+	if (NumLayers > 1 && Layers[1].THandle)
 	{
-		grRDriver_LMapCBInfo LightInfo = {};
-		g_D3D12Drv.SetupLightmap(&LightInfo, LMapCBContext);
-		if (LightInfo.RGBLight[0] && (LightInfo.Dynamic || !Layers[1].THandle->Lightmap))
+		grTexture* Lightmap = Layers[1].THandle;
+		const uint8* RGB = nullptr;
+		bool Dynamic = false;
+		if (LMapCBContext && g_D3D12Drv.SetupLightmap)
 		{
-			if (!D3D12_THandle_UpdateLightmap(Layers[1].THandle, static_cast<const uint8*>(LightInfo.RGBLight[0])))
+			grRDriver_LMapCBInfo LightInfo = {};
+			g_D3D12Drv.SetupLightmap(&LightInfo, LMapCBContext);
+			RGB = static_cast<const uint8*>(LightInfo.RGBLight[0]);
+			Dynamic = LightInfo.Dynamic != 0;
+		}
+		InAtlas = D3D12Lightmap_Place(Lightmap, (RGB && (Dynamic || !Lightmap->AtlasResident)) ? RGB : nullptr, &Atlas) != 0;
+		if (!InAtlas && RGB && (Dynamic || !Lightmap->Lightmap))
+		{
+			if (!D3D12_THandle_UpdateLightmap(Lightmap, RGB))
 				NumLayers = 1;
 		}
 	}
@@ -318,7 +332,7 @@ int32 DRIVERCC D3D12World_RenderFace(uint32 Handle, uint32 Face, const DRV_World
 	// The transformed-poly path draws a face whose texture is not ready untextured.
 	if (!TextureReady(Layers[0].THandle))
 		return DRV_WORLD_FACE_FALLBACK;
-	if (NumLayers > 1 && !TextureReady(Layers[1].THandle))
+	if (NumLayers > 1 && !InAtlas && !TextureReady(Layers[1].THandle))
 		NumLayers = 1;
 	if (NumLayers > 2)
 		NumLayers = 2;
@@ -335,21 +349,30 @@ int32 DRIVERCC D3D12World_RenderFace(uint32 Handle, uint32 Face, const DRV_World
 	Data.ShiftU = Layers[0].ShiftU;
 	Data.ShiftV = Layers[0].ShiftV;
 	Data.TextureScale = static_cast<float>(1u << Layers[0].THandle->Log);
+	Data.LightTexture = 0;
+	Data.LightShiftU = Data.LightShiftV = 0.0f;
+	Data.LightOffsetU = Data.LightOffsetV = 0.0f;
+	Data.LightDivU = Data.LightDivV = 1.0f;
 	if (NumLayers > 1)
 	{
-		Data.LightTexture = D3D12_THandle_GetDescriptorIndex(Layers[1].THandle);
 		Data.LightShiftU = Layers[1].ShiftU;
 		Data.LightShiftV = Layers[1].ShiftV;
-		Data.LightScale = static_cast<float>((1u << Layers[1].THandle->Log) << 4);
-	}
-	else
-	{
-		Data.LightTexture = 0;
-		Data.LightShiftU = Data.LightShiftV = 0.0f;
-		Data.LightScale = 1.0f;
+		if (InAtlas)
+		{
+			Data.LightTexture = Atlas.DescriptorIndex;
+			Data.LightOffsetU = Atlas.OffsetU;
+			Data.LightOffsetV = Atlas.OffsetV;
+			Data.LightDivU = Data.LightDivV = Atlas.PageSize;
+		}
+		else
+		{
+			Data.LightTexture = D3D12_THandle_GetDescriptorIndex(Layers[1].THandle);
+			Data.LightDivU = static_cast<float>(Layers[1].THandle->Width * 16);
+			Data.LightDivV = static_cast<float>(Layers[1].THandle->Height * 16);
+		}
 	}
 	Data.Alpha = NormalizeColor(Alpha);
-	Data.Padding = 0;
+	Data.Padding[0] = Data.Padding[1] = 0;
 
 	return g_pPolyCache->AddWorldFace(Geometry, Face, ViewGPU, Geometry->FaceDataGPU, NumLayers, Flags)
 		? DRV_WORLD_FACE_DRAWN

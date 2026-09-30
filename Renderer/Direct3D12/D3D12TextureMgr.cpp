@@ -12,6 +12,7 @@
 #include "D3D12TextureMgr.h"
 #include "Direct3D12Driver.h"
 #include "D3D12Log.h"
+#include "D3D12LightmapAtlas.h"
 
 #define MAX_THANDLES 4096
 #define MAX_TEXTURE_MIP_LEVELS 16
@@ -133,6 +134,9 @@ static void ResetTexture(grTexture& Handle, int32 Id)
 	Handle.ResourceState = D3D12_RESOURCE_STATE_COMMON;
 	Handle.SRVHandle.ptr = 0;
 	Handle.SRVDescriptorIndex = 0;
+	Handle.AtlasPage = -1;
+	Handle.AtlasX = Handle.AtlasY = 0;
+	Handle.AtlasResident = GR_FALSE;
 	Handle.Retired = GR_FALSE;
 	Handle.RetireFence = 0;
 }
@@ -383,6 +387,7 @@ grBoolean D3D12_THandle_Startup()
 
 grBoolean D3D12_THandle_Shutdown()
 {
+	D3D12Lightmap_Shutdown();	// its pages are handles in g_TextureList
 	g_pSRVHeap.Reset();
 	for (int32 i = 0; i < MAX_THANDLES; ++i)
 		ResetTexture(g_TextureList[i], i);
@@ -509,6 +514,7 @@ grBoolean DRIVERCC D3D12_THandle_Destroy(grTexture* Handle)
 		Handle->MipDataCapacity[MipLevel] = 0;
 	}
 	Handle->LockedMipMask = 0;
+	D3D12Lightmap_Release(Handle);
 	Handle->Active = GR_FALSE;
 	Handle->Retired = GR_TRUE;
 	Handle->RetireFence = D3D12GetPendingFenceValue();
@@ -630,6 +636,59 @@ void D3D12_THandle_GetReservedSRV(UINT Slot, D3D12_CPU_DESCRIPTOR_HANDLE* Cpu, D
 	}
 }
 
+int32 D3D12_LightmapBytesPerPixel(grPixelFormat Format)
+{
+	return BytesPerPixel(Format);
+}
+
+void D3D12_ConvertLightmapTexels(grPixelFormat Format, const uint8* RGBData, int32 Width, int32 Height,
+								  uint8* Destination, size_t RowPitch)
+{
+	for (int32 y = 0; y < Height; ++y)
+	{
+		const uint8* Source = RGBData + static_cast<size_t>(y) * Width * 3;
+		uint8* Row = Destination + static_cast<size_t>(y) * RowPitch;
+		for (int32 x = 0; x < Width; ++x)
+		{
+			const uint8 R = Source[x * 3 + 0];
+			const uint8 G = Source[x * 3 + 1];
+			const uint8 B = Source[x * 3 + 2];
+			switch (Format)
+			{
+			case GR_PIXELFORMAT_8BIT:
+				Row[x] = static_cast<uint8>((static_cast<uint32>(R) + G + B) / 3);
+				break;
+			case GR_PIXELFORMAT_16BIT_555_RGB:
+			case GR_PIXELFORMAT_16BIT_1555_ARGB:
+				reinterpret_cast<uint16*>(Row)[x] = static_cast<uint16>(
+					0x8000u | ((R >> 3) << 10) | ((G >> 3) << 5) | (B >> 3));
+				break;
+			case GR_PIXELFORMAT_16BIT_565_RGB:
+				reinterpret_cast<uint16*>(Row)[x] = static_cast<uint16>(
+					((R >> 3) << 11) | ((G >> 2) << 5) | (B >> 3));
+				break;
+			case GR_PIXELFORMAT_16BIT_4444_ARGB:
+				reinterpret_cast<uint16*>(Row)[x] = static_cast<uint16>(
+					0xF000u | ((R >> 4) << 8) | ((G >> 4) << 4) | (B >> 4));
+				break;
+			case GR_PIXELFORMAT_24BIT_RGB:
+				Row[x * 3 + 0] = R;
+				Row[x * 3 + 1] = G;
+				Row[x * 3 + 2] = B;
+				break;
+			case GR_PIXELFORMAT_32BIT_XRGB:
+			case GR_PIXELFORMAT_32BIT_ARGB:
+			default:
+				Row[x * 4 + 0] = B;
+				Row[x * 4 + 1] = G;
+				Row[x * 4 + 2] = R;
+				Row[x * 4 + 3] = 255;
+				break;
+			}
+		}
+	}
+}
+
 grBoolean D3D12_THandle_UpdateLightmap(grTexture* Handle, const uint8* RGBData)
 {
 	if (!Handle || !RGBData)
@@ -639,46 +698,8 @@ grBoolean D3D12_THandle_UpdateLightmap(grTexture* Handle, const uint8* RGBData)
 	if (!D3D12_THandle_Lock(Handle, 0, &Bits))
 		return GR_FALSE;
 
-	uint8* Destination = static_cast<uint8*>(Bits);
-	const size_t PixelCount = static_cast<size_t>(Handle->Width) * Handle->Height;
-	for (size_t i = 0; i < PixelCount; ++i)
-	{
-		const uint8 R = RGBData[i * 3 + 0];
-		const uint8 G = RGBData[i * 3 + 1];
-		const uint8 B = RGBData[i * 3 + 2];
-		switch (Handle->DriverFormat.PixelFormat)
-		{
-		case GR_PIXELFORMAT_8BIT:
-			Destination[i] = static_cast<uint8>((static_cast<uint32>(R) + G + B) / 3);
-			break;
-		case GR_PIXELFORMAT_16BIT_555_RGB:
-		case GR_PIXELFORMAT_16BIT_1555_ARGB:
-			reinterpret_cast<uint16*>(Destination)[i] = static_cast<uint16>(
-				0x8000u | ((R >> 3) << 10) | ((G >> 3) << 5) | (B >> 3));
-			break;
-		case GR_PIXELFORMAT_16BIT_565_RGB:
-			reinterpret_cast<uint16*>(Destination)[i] = static_cast<uint16>(
-				((R >> 3) << 11) | ((G >> 2) << 5) | (B >> 3));
-			break;
-		case GR_PIXELFORMAT_16BIT_4444_ARGB:
-			reinterpret_cast<uint16*>(Destination)[i] = static_cast<uint16>(
-				0xF000u | ((R >> 4) << 8) | ((G >> 4) << 4) | (B >> 4));
-			break;
-		case GR_PIXELFORMAT_24BIT_RGB:
-			Destination[i * 3 + 0] = R;
-			Destination[i * 3 + 1] = G;
-			Destination[i * 3 + 2] = B;
-			break;
-		case GR_PIXELFORMAT_32BIT_XRGB:
-		case GR_PIXELFORMAT_32BIT_ARGB:
-		default:
-			Destination[i * 4 + 0] = B;
-			Destination[i * 4 + 1] = G;
-			Destination[i * 4 + 2] = R;
-			Destination[i * 4 + 3] = 255;
-			break;
-		}
-	}
+	D3D12_ConvertLightmapTexels(Handle->DriverFormat.PixelFormat, RGBData, Handle->Width, Handle->Height,
+		static_cast<uint8*>(Bits), static_cast<size_t>(Handle->Width) * BytesPerPixel(Handle->DriverFormat.PixelFormat));
 
 	if (!D3D12_THandle_Unlock(Handle, 0))
 		return GR_FALSE;

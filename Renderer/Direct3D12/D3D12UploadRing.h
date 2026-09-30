@@ -18,6 +18,8 @@ struct D3D12UploadAllocation
 {
 	void*						CPU;
 	D3D12_GPU_VIRTUAL_ADDRESS	GPU;
+	ID3D12Resource*				Resource;	// for copies: the page buffer and the offset in it
+	UINT64						Offset;
 };
 
 grBoolean	D3D12Upload_Startup();

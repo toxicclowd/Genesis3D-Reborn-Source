@@ -128,5 +128,7 @@ grBoolean D3D12Upload_Allocate(UINT64 Size, UINT64 Alignment, D3D12UploadAllocat
 	Target->Used = Offset + Size;
 	Out->CPU = Target->CPU + Offset;
 	Out->GPU = Target->Buffer->GetGPUVirtualAddress() + Offset;
+	Out->Resource = Target->Buffer.Get();
+	Out->Offset = Offset;
 	return GR_TRUE;
 }

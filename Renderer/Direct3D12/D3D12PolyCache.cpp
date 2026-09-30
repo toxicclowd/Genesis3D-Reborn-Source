@@ -13,6 +13,7 @@
 #include "D3D12Common.h"
 #include "D3D12UploadRing.h"
 #include "D3D12WorldGeometry.h"
+#include "D3D12LightmapAtlas.h"
 #include "D3D12GpuTimer.h"
 
 namespace
@@ -145,9 +146,9 @@ grBoolean D3D12PolyCache::AddPolygon(
 			if (UsableLayers > 1)
 			{
 				const grRDriver_Layer& LightLayer = Layers[1];
-				const float LightScale = static_cast<float>((1u << LightLayer.THandle->Log) << 4);
-				Vertex.lu = (Pnts[i].u - LightLayer.ShiftU + 8.0f) / LightScale;
-				Vertex.lv = (Pnts[i].v - LightLayer.ShiftV + 8.0f) / LightScale;
+				// Lightmap texels are 16 texture units; the texture is exactly Width x Height.
+				Vertex.lu = (Pnts[i].u - LightLayer.ShiftU + 8.0f) / static_cast<float>(LightLayer.THandle->Width * 16);
+				Vertex.lv = (Pnts[i].v - LightLayer.ShiftV + 8.0f) / static_cast<float>(LightLayer.THandle->Height * 16);
 			}
 		}
 	}
@@ -282,6 +283,9 @@ grBoolean D3D12PolyCache::Flush()
 		return GR_TRUE;
 	if (!g_bInScene || !g_pCommandList || !g_pPSOManager)
 		return GR_FALSE;
+
+	// Lightmap atlas texels queued by the world faces in this batch.
+	D3D12Lightmap_RecordUploads(g_pCommandList.Get());
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView = {};
 	if (!UploadVertices(VertexBufferView))

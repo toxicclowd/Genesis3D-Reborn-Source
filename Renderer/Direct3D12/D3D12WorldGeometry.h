@@ -31,11 +31,14 @@ struct D3D12WorldFaceData
 	float	ShiftU;
 	float	ShiftV;
 	float	TextureScale;
-	float	LightShiftU;
-	float	LightShiftV;
-	float	LightScale;
 	float	Alpha;
-	uint32	Padding;
+	float	LightShiftU;	// lightmap StartU/StartV
+	float	LightShiftV;
+	float	LightOffsetU;	// the lightmap's origin in its texture (atlas page), * 16
+	float	LightOffsetV;
+	float	LightDivU;		// that texture's width/height * 16
+	float	LightDivV;
+	uint32	Padding[2];
 };
 
 struct D3D12WorldGeometry
