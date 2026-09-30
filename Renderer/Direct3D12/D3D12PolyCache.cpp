@@ -13,6 +13,7 @@
 #include "D3D12Common.h"
 #include "D3D12UploadRing.h"
 #include "D3D12WorldGeometry.h"
+#include "D3D12GpuTimer.h"
 
 namespace
 {
@@ -264,6 +265,17 @@ grBoolean D3D12PolyCache::UploadVertices(D3D12_VERTEX_BUFFER_VIEW& VertexBufferV
 	return GR_TRUE;
 }
 
+// Layers a transformed poly can sample: a texture still uploading draws as if absent.
+static int32 UsableLayers(const PolyCacheEntry& Entry)
+{
+	int32 NumLayers = Entry.NumLayers;
+	if (NumLayers > 0 && Entry.Layers[0]->ResourceState != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
+		NumLayers = 0;
+	if (NumLayers > 1 && Entry.Layers[1]->ResourceState != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
+		NumLayers = 1;
+	return NumLayers;
+}
+
 grBoolean D3D12PolyCache::Flush()
 {
 	if (!m_bInitialized || m_Cache.empty())
@@ -377,6 +389,7 @@ grBoolean D3D12PolyCache::Flush()
 			g_pCommandList->SetGraphicsRoot32BitConstants(ROOT_PARAM_DRAW, 4, &Constants, 0);
 			g_pCommandList->DrawIndexedInstanced(NumIndices, 1, WorldStart[Index], 0, 0);
 			g_D3D12Drv.NumRenderedPolys += static_cast<S32>(End - Index);
+			D3D12Timer_CountDraws(1, 1, static_cast<int32>(End - Index));
 
 			Index = End - 1;
 			continue;
@@ -389,11 +402,25 @@ grBoolean D3D12PolyCache::Flush()
 			bVertexBufferBound = true;
 		}
 
-		int32 NumLayers = Entry.NumLayers;
-		if (NumLayers > 0 && Entry.Layers[0]->ResourceState != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
-			NumLayers = 0;
-		if (NumLayers > 1 && Entry.Layers[1]->ResourceState != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
-			NumLayers = 1;
+		const int32 NumLayers = UsableLayers(Entry);
+
+		// Merge the run of polys that share flags and textures and whose vertices follow
+		// each other. Primitives of one draw rasterize in order, so blending is unchanged.
+		size_t End = Index + 1;
+		UINT NumVertices = static_cast<UINT>(Entry.NumVertices);
+		while (End < m_Cache.size())
+		{
+			const PolyCacheEntry& Prev = m_Cache[End - 1];
+			const PolyCacheEntry& Next = m_Cache[End];
+			if (Next.World || Next.Flags != Entry.Flags ||
+				Next.StartVertex != Prev.StartVertex + Prev.NumVertices ||
+				UsableLayers(Next) != NumLayers ||
+				(NumLayers > 0 && Next.Layers[0] != Entry.Layers[0]) ||
+				(NumLayers > 1 && Next.Layers[1] != Entry.Layers[1]))
+				break;
+			NumVertices += static_cast<UINT>(Next.NumVertices);
+			++End;
+		}
 
 		D3D12_PSO_TYPE Type = PSO_GOURAUD;
 		if (NumLayers == 1)
@@ -421,12 +448,11 @@ grBoolean D3D12PolyCache::Flush()
 		if (!bBindless && NumLayers > 1)
 			g_pCommandList->SetGraphicsRootDescriptorTable(ROOT_PARAM_LIGHT_TABLE, D3D12_THandle_GetGPUSRV(Entry.Layers[1]));
 
-		g_pCommandList->DrawInstanced(
-			static_cast<UINT>(Entry.NumVertices),
-			1,
-			static_cast<UINT>(Entry.StartVertex),
-			0);
-		++g_D3D12Drv.NumRenderedPolys;
+		g_pCommandList->DrawInstanced(NumVertices, 1, static_cast<UINT>(Entry.StartVertex), 0);
+		g_D3D12Drv.NumRenderedPolys += static_cast<S32>(End - Index);
+		D3D12Timer_CountDraws(1, 0, 0);
+
+		Index = End - 1;
 	}
 
 	D3D12EndMarker(g_pCommandList.Get());

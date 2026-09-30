@@ -18,6 +18,9 @@ namespace
 	bool						Marked[FRAME_COUNT][GPU_MARK_COUNT];
 	bool						Resolved[FRAME_COUNT];
 	DRV_GPUTimings				Timings;
+	int32						DrawCalls = 0;		// this frame, published at EndFrame
+	int32						WorldDraws = 0;
+	int32						WorldFaces = 0;
 
 	UINT QueryIndex(UINT Frame, UINT Mark)
 	{
@@ -86,6 +89,7 @@ void D3D12Timer_Shutdown()
 			Marked[Frame][Mark] = false;
 	}
 	Timings = DRV_GPUTimings{};
+	DrawCalls = WorldDraws = WorldFaces = 0;
 }
 
 void D3D12Timer_BeginFrame(UINT FrameIndex)
@@ -128,8 +132,20 @@ void D3D12Timer_Mark(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_MARK Mark
 	Marked[CurrentFrame][Mark] = true;
 }
 
+void D3D12Timer_CountDraws(int32 Draws, int32 NumWorldDraws, int32 NumWorldFaces)
+{
+	DrawCalls += Draws;
+	WorldDraws += NumWorldDraws;
+	WorldFaces += NumWorldFaces;
+}
+
 void D3D12Timer_EndFrame(ID3D12GraphicsCommandList* CommandList)
 {
+	Timings.DrawCalls = DrawCalls;
+	Timings.WorldDraws = WorldDraws;
+	Timings.WorldFaces = WorldFaces;
+	DrawCalls = WorldDraws = WorldFaces = 0;
+
 	if (!QueryHeap)
 		return;
 	for (UINT Mark = 0; Mark < GPU_MARK_COUNT; ++Mark)

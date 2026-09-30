@@ -46,7 +46,8 @@ namespace
 		float	ZFar;
 		float	HalfWidth;
 		float	HalfHeight;
-		float	Padding;
+		uint32	NumClipPlanes;
+		float	ClipPlanes[DRV_WORLD_MAX_CLIP_PLANES][4];
 	};
 
 	float SafeReciprocal(float Value)
@@ -167,6 +168,9 @@ namespace
 		Constants.ZFar = View->ZFar;
 		Constants.HalfWidth = View->HalfWidth;
 		Constants.HalfHeight = View->HalfHeight;
+		Constants.NumClipPlanes = (View->NumClipPlanes <= 0) ? 0u :
+			static_cast<uint32>((View->NumClipPlanes < DRV_WORLD_MAX_CLIP_PLANES) ? View->NumClipPlanes : DRV_WORLD_MAX_CLIP_PLANES);
+		std::memcpy(Constants.ClipPlanes, View->ClipPlanes, sizeof(Constants.ClipPlanes));
 		std::memcpy(Upload.CPU, &Constants, sizeof(Constants));
 
 		LastView = *View;

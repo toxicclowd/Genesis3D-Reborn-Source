@@ -8,3 +8,5 @@ pknight     | Levels\pknight.j3d           |
 dancer      | Levels\dancer.j3d            | 0 200 400 0 -20
 level1_box  | Levels\Level1.j3d            | 0 200 400 0 -20
 alpha_test  | Levels\alpha_test.j3d        | 0 200 400 0 -20
+sky_portal  | Levels\tutorial1.j3d         | 0 100 0 0 80
+portal      | Levels\tutorial2_complete.j3d | -656 148 -600 0 0

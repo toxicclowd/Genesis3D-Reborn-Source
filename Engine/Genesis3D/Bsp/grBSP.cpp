@@ -1007,15 +1007,32 @@ grBoolean grBSP_RenderFrontToBack(grBSP *Tree, grCamera *Camera, grFrustum *Came
 
 	grEngine_GetDefaultRenderFlags(Tree->Engine, &SceneInfo.DefaultRenderFlags);
 
-	// GPU world path (outermost traversal only, see g_BSPFaceTraversalDepth)
+	// GPU world path. The geometry is only rebuilt in the outermost traversal (see
+	// g_BSPFaceTraversalDepth). Nested traversals (portal and mirror views) clip to their
+	// camera-space frustum on the GPU, so they need it to fit in the driver's clip planes.
 	if (Tree->GpuDirty && g_BSPFaceTraversalDepth == 0)
 		grBSP_GpuGeometryBuild(Tree);
 
-	SceneInfo.GpuWorld = (Tree->GpuGeometry && g_BSPFaceTraversalDepth == 0) ? GR_TRUE : GR_FALSE;
+	SceneInfo.GpuWorld = Tree->GpuGeometry ? GR_TRUE : GR_FALSE;
 	if (SceneInfo.GpuWorld)
 	{
 		grBoolean	ZFarEnable;
 		grFloat		ZFar;
+		int32		NumPlanes;
+
+		grCamera_GetFarClipPlane(Camera, &ZFarEnable, &ZFar);
+		if (g_BSPFaceTraversalDepth > 0)
+		{
+			NumPlanes = CameraSpaceFrustum ? CameraSpaceFrustum->NumPlanes + (ZFarEnable ? 1 : 0) : 0;
+			if (NumPlanes <= 0 || NumPlanes > DRV_WORLD_MAX_CLIP_PLANES)
+				SceneInfo.GpuWorld = GR_FALSE;
+		}
+	}
+	if (SceneInfo.GpuWorld)
+	{
+		grBoolean	ZFarEnable;
+		grFloat		ZFar;
+		int32		i;
 
 		memset(&SceneInfo.WorldView, 0, sizeof(SceneInfo.WorldView));
 		SceneInfo.WorldView.ModelToCamera = *ModelToCameraXForm;
@@ -1027,6 +1044,32 @@ grBoolean grBSP_RenderFrontToBack(grBSP *Tree, grCamera *Camera, grFrustum *Came
 		SceneInfo.WorldView.HalfHeight *= 0.5f;
 		grCamera_GetFarClipPlane(Camera, &ZFarEnable, &ZFar);
 		SceneInfo.WorldView.ZFar = ZFarEnable ? ZFar : 0.0f;
+
+		if (g_BSPFaceTraversalDepth > 0)
+		{
+			// Same planes and sides as grFrustum_ClipLVerts* (inside: N.p - Dist >= 0)
+			for (i = 0; i < CameraSpaceFrustum->NumPlanes; i++)
+			{
+				const grPlane	*Plane = &CameraSpaceFrustum->Planes[i];
+				float			*Dst = SceneInfo.WorldView.ClipPlanes[i];
+
+				Dst[0] = Plane->Normal.X;
+				Dst[1] = Plane->Normal.Y;
+				Dst[2] = Plane->Normal.Z;
+				Dst[3] = -Plane->Dist;
+			}
+			if (ZFarEnable)
+			{
+				// Camera space looks down -Z: inside when -Z <= ZFar
+				float	*Dst = SceneInfo.WorldView.ClipPlanes[i++];
+
+				Dst[0] = 0.0f;
+				Dst[1] = 0.0f;
+				Dst[2] = 1.0f;
+				Dst[3] = ZFar;
+			}
+			SceneInfo.WorldView.NumClipPlanes = i;
+		}
 	}
 
 	// Setup clipflags

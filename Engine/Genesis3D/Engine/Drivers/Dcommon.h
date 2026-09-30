@@ -97,7 +97,7 @@ typedef struct tagRECT
 #endif
 
 #define DRV_VERSION_MAJOR		200			// Jet 2.0
-#define DRV_VERSION_MINOR		6			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry
+#define DRV_VERSION_MINOR		7			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry ; 7 adds DRV_WorldView clip planes and draw counts
 #define DRV_VMAJS				"200"
 #define DRV_VMINS				"4" 
 #define DRV_VMAJS_PLUS_DRV_VMINS	"200.4"
@@ -276,6 +276,11 @@ typedef struct
 	float		PresentMs;		// present pass (HDR target to back buffer)
 	float		TotalMs;
 	int32		Valid;
+
+	// Version 7: draw counts of the last frame recorded (independent of Valid).
+	int32		DrawCalls;		// scene draws, world path included
+	int32		WorldDraws;		// indexed draws of the GPU world path
+	int32		WorldFaces;		// faces those draws covered
 } DRV_GPUTimings;
 
 //
@@ -308,8 +313,14 @@ typedef struct
 	float		ZFar;			// camera-space far clip distance, 0 = none
 	float		HalfWidth;		// the frustum spans XCenter +/- HalfWidth, YCenter +/- HalfHeight
 	float		HalfHeight;
-	float		Pad;
+	// Nested views (portals, mirrors) clip to their camera-space frustum instead of the
+	// camera rect: a point is inside when Plane.xyz . p + Plane.w >= 0 for every plane.
+	// 0 = use HalfWidth/HalfHeight. At most DRV_WORLD_MAX_CLIP_PLANES, including ZFar.
+	int32		NumClipPlanes;
+	float		ClipPlanes[8][4];
 } DRV_WorldView;
+
+#define DRV_WORLD_MAX_CLIP_PLANES	8
 
 // Results of WORLD_GEOMETRY_RENDER_FACE.
 #define DRV_WORLD_FACE_DRAWN		1	// queued on the GPU path

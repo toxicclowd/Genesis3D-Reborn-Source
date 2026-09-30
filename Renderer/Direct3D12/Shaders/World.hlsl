@@ -47,7 +47,8 @@ cbuffer WorldView : register(b2)
     float  ZFar;				// 0 = no far clip
     float  HalfWidth;			// camera rect: XCenter +/- HalfWidth, YCenter +/- HalfHeight
     float  HalfHeight;
-    float  ViewPadding;
+    uint   NumClipPlanes;		// > 0: nested view, clip to ClipPlanes instead of the rect
+    float4 ClipPlanes[8];		// camera space, inside when dot(xyz, p) + w >= 0
 };
 
 // Per face, written by the driver for every face drawn this frame.
@@ -95,8 +96,8 @@ struct VS_OUTPUT
     float2 TexCoord : TEXCOORD0;
     float2 LMCoord  : TEXCOORD1;
     nointerpolation uint2 Textures : TEXINDEX;
-    float4 SideClip : SV_ClipDistance0;		// grFrustum's side planes through the eye
-    float  FarClip  : SV_ClipDistance1;
+    float4 ClipA    : SV_ClipDistance0;		// outer view: grFrustum's side planes through the eye
+    float4 ClipB    : SV_ClipDistance1;		// outer view: x = far plane
 };
 
 VS_OUTPUT VSWorld(VS_INPUT input)
@@ -125,11 +126,25 @@ VS_OUTPUT VSWorld(VS_INPUT input)
     // The camera rect may be smaller than the viewport, so clip to the camera's own
     // frustum like the CPU path does: screen x within XCenter +/- HalfWidth is
     // cx*Scale/Z within +/- HalfWidth, i.e. (+/-cx)*Scale + HalfWidth*Z >= 0.
-    output.SideClip = float4(cx * ProjScale + HalfWidth * Z,
-                             HalfWidth * Z - cx * ProjScale,
-                             HalfHeight * Z - cy * ProjScale,
-                             cy * ProjScale + HalfHeight * Z);
-    output.FarClip = (ZFar > 0.0f) ? (ZFar - Z) : 1.0f;
+    if (NumClipPlanes == 0)
+    {
+        output.ClipA = float4(cx * ProjScale + HalfWidth * Z,
+                              HalfWidth * Z - cx * ProjScale,
+                              HalfHeight * Z - cy * ProjScale,
+                              cy * ProjScale + HalfHeight * Z);
+        output.ClipB = float4((ZFar > 0.0f) ? (ZFar - Z) : 1.0f, 1.0f, 1.0f, 1.0f);
+    }
+    else
+    {
+        // A portal or mirror view: its frustum is the portal polygon's edges seen from
+        // the eye (grFrustum_SetFromLVerts2), plus the far plane, set by the engine.
+        float4 c = float4(cx, cy, cz, 1.0f);
+        float d[8];
+        [unroll] for (uint i = 0; i < 8; i++)
+            d[i] = (i < NumClipPlanes) ? dot(ClipPlanes[i], c) : 1.0f;
+        output.ClipA = float4(d[0], d[1], d[2], d[3]);
+        output.ClipB = float4(d[4], d[5], d[6], d[7]);
+    }
 
     output.Color = float4(1.0f, 1.0f, 1.0f, face.Alpha);
 

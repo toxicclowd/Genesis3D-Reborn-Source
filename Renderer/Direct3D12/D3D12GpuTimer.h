@@ -30,5 +30,7 @@ void			D3D12Timer_Mark(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_MARK Ma
 // Resolves this frame's timestamps; call after the last mark, before Close.
 void			D3D12Timer_EndFrame(ID3D12GraphicsCommandList* CommandList);
 DRV_GPUTimings*	D3D12Timer_GetTimings();
+// Scene draw statistics for DRV_GPUTimings (counted even without timestamp support).
+void			D3D12Timer_CountDraws(int32 Draws, int32 WorldDraws, int32 WorldFaces);
 
 #endif // D3D12GPUTIMER_H

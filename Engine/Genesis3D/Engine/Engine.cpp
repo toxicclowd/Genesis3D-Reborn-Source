@@ -590,6 +590,12 @@ GRAPI grBoolean GRCC grEngine_EndFrame(grEngine *Engine)
 			grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "GPU    : %2.2f ms (scene %2.2f, present %2.2f)",
 									Gpu->TotalMs, Gpu->SceneMs, Gpu->PresentMs);
 		}
+		if (Engine->DriverInfo.RDriver->GPUTimings)
+		{
+			const DRV_GPUTimings *Gpu = Engine->DriverInfo.RDriver->GPUTimings;
+			grEngine_DebugPrintf(Engine, GR_COLOR_XRGB(255, 255, 255), "Draws  : %4i (world %4i for %5i faces)",
+									Gpu->DrawCalls, Gpu->WorldDraws, Gpu->WorldFaces);
+		}
 		
 		
 		Engine->DebugInfo.RenderedPolys = Engine->DriverInfo.RDriver->NumRenderedPolys;
