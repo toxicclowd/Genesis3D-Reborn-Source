@@ -1055,6 +1055,11 @@ GRAPI void * GRCC grResource_GetResource(
             }
             if (Data) {
 				grResource_Add(ResourceMgr, Name, Type, Data);
+				// The cache keeps a reference of its own, as the lookups above take one each:
+				// otherwise the caller's destroy frees the spec the cache still hands out
+				// (e.g. a level loaded after another one that shares its materials)
+				if (Type == GR_RESOURCE_MATERIAL)
+					grMaterialSpec_CreateRef((grMaterialSpec*)Data);
 			}
 			grRam_Free(ResNameCopy);
 		} else {

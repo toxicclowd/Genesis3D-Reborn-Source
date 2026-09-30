@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 #include "DirectXTex.h"
+#include "GenesisBitmap.h"
 
 namespace fs = std::filesystem;
 using namespace DirectX;
@@ -91,6 +92,24 @@ namespace
 	// Any image as R8G8B8A8_UNORM with a single level.
 	bool LoadImage(const fs::path& Path, ScratchImage& Out)
 	{
+		// The engine's own bitmap format (the shipped library textures), read by the engine
+		if (IsGenesisBitmapFile(Path.c_str()))
+		{
+			std::vector<unsigned char> RGBA;
+			int Width = 0, Height = 0;
+			bool HasColorKey = false;
+			if (!LoadGenesisBitmap(Path.c_str(), RGBA, Width, Height, HasColorKey) ||
+				FAILED(Out.Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, static_cast<size_t>(Width), static_cast<size_t>(Height), 1, 1)))
+			{
+				Error(L"cannot read %ls as a Genesis3D bitmap (needs the engine DLL next to G3DTexImport)", Path.c_str());
+				return false;
+			}
+			const Image* Target = Out.GetImage(0, 0, 0);
+			for (int y = 0; y < Height; ++y)
+				std::memcpy(Target->pixels + y * Target->rowPitch, &RGBA[static_cast<size_t>(y) * Width * 4], static_cast<size_t>(Width) * 4);
+			return true;
+		}
+
 		ScratchImage Loaded;
 		TexMetadata Info;
 		HRESULT Hr;
@@ -482,8 +501,10 @@ namespace
 			L"\n"
 			L"  G3DTexImport <image> [-type base|normal|orm|emissive|height] [-o out.dds]\n"
 			L"  G3DTexImport -material <name> <base image> [-outdir dir] [-pak Pak] [-matdir dir]\n"
+			L"  G3DTexImport -decode <image> <out.png>     any input as an RGBA PNG\n"
 			L"\n"
-			L"Inputs: PNG, TGA, DDS, JPEG, BMP, TIFF. Maps next to the base image are found by suffix:\n"
+			L"Inputs: PNG, TGA, DDS, JPEG, BMP, TIFF, and the engine's own bitmaps (read through the\n"
+			L"engine DLL; color-keyed texels get alpha 0). Maps next to the base image are found by suffix:\n"
 			L"  _n/_normal  _orm/_arm  _e/_emissive  _h/_height, or _ao _rough/_gloss _metal (packed into ORM)\n"
 			L"\n"
 			L"Options:\n"
@@ -512,7 +533,7 @@ int wmain(int argc, wchar_t** argv)
 
 	Options Opts;
 	std::wstring MaterialName, Pak;
-	fs::path Input, Output, OutDir = L".", MatDir;
+	fs::path Input, Output, OutDir = L".", MatDir, DecodeTo;
 	MapType Type = MAP_COUNT;
 	for (int i = 1; i < argc; ++i)
 	{
@@ -523,6 +544,11 @@ int wmain(int argc, wchar_t** argv)
 		{
 			MaterialName = argv[++i];
 			Input = argv[++i];
+		}
+		else if (!_wcsicmp(Arg, L"-decode") && Left >= 2)
+		{
+			Input = argv[++i];
+			DecodeTo = argv[++i];
 		}
 		else if (!_wcsicmp(Arg, L"-type") && Left >= 1)
 		{
@@ -615,7 +641,15 @@ int wmain(int argc, wchar_t** argv)
 	}
 
 	int Result = 0;
-	if (!MaterialName.empty())
+	if (!DecodeTo.empty())
+	{
+		ScratchImage Image;
+		Result = (LoadImage(Input, Image) &&
+			SUCCEEDED(SaveToWICFile(*Image.GetImage(0, 0, 0), WIC_FLAGS_NONE, GetWICCodec(WIC_CODEC_PNG), DecodeTo.c_str()))) ? 0 : 1;
+		if (Result)
+			Error(L"cannot write %ls", DecodeTo.c_str());
+	}
+	else if (!MaterialName.empty())
 		Result = ImportMaterial(MaterialName, Input, OutDir, MatDir.empty() ? OutDir : MatDir, Pak, Opts);
 	else
 	{
