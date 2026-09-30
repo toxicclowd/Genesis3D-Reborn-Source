@@ -19,6 +19,7 @@
 /*                                                                                      */
 /****************************************************************************************/
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 #include "grBSP._h"
@@ -270,6 +271,72 @@ grBoolean grBSPNode_DrawFaceCreateUVInfo(grBSPNode_DrawFace *Face, grBSP *BSP)
 extern grBoolean h_LeftHanded;
 
 //=======================================================================================
+//	grBSPNode_GetPBRMaterial
+//	Fills a driver material from a PBR material spec (roadmap Phase 2). Layers without a
+//	driver handle fall back to the driver's constants.
+//=======================================================================================
+static void grBSPNode_GetPBRMaterial(const grMaterialSpec *pMatSpec, DRV_WorldMaterial *Material)
+{
+	grMaterialSpec_PBR	PBR;
+	const grBitmap		*pBitmap;
+	int32				Layer;
+
+	grMaterialSpec_GetPBR(pMatSpec, &PBR);
+
+	memset(Material, 0, sizeof(*Material));
+	Layer = grMaterialSpec_FindLayer(pMatSpec, GR_MATERIAL_LAYER_NORMAL);
+	if (Layer > 0 && (pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, Layer)) != NULL)
+		Material->NormalMap = grBitmap_GetTHandle(pBitmap);
+	Layer = grMaterialSpec_FindLayer(pMatSpec, GR_MATERIAL_LAYER_ORM);
+	if (Layer > 0 && (pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, Layer)) != NULL)
+		Material->ORMMap = grBitmap_GetTHandle(pBitmap);
+	Layer = grMaterialSpec_FindLayer(pMatSpec, GR_MATERIAL_LAYER_EMISSIVE);
+	if (Layer > 0 && (pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, Layer)) != NULL)
+		Material->EmissiveMap = grBitmap_GetTHandle(pBitmap);
+
+	memcpy(Material->BaseColor, PBR.BaseColor, sizeof(Material->BaseColor));
+	Material->Roughness = PBR.Roughness;
+	Material->Metal = PBR.Metal;
+	Material->Emissive[0] = PBR.Emissive[0] * PBR.EmissiveIntensity;
+	Material->Emissive[1] = PBR.Emissive[1] * PBR.EmissiveIntensity;
+	Material->Emissive[2] = PBR.Emissive[2] * PBR.EmissiveIntensity;
+	Material->AlphaCutoff = PBR.AlphaCutoff;
+	Material->AlphaMode = PBR.AlphaMode;
+	Material->Flags = 0;
+	if (PBR.Flags & GR_MATERIAL_PBR_TWO_SIDED)
+		Material->Flags |= DRV_MATERIAL_TWO_SIDED;
+	if (PBR.Flags & GR_MATERIAL_PBR_RETRO)
+		Material->Flags |= DRV_MATERIAL_RETRO;
+}
+
+//=======================================================================================
+//	grBSPNode_SetGpuLights
+//	Gives the driver this BSP's visible dynamic lights (model space) for PBR faces. The
+//	driver ignores a call that repeats the current set.
+//=======================================================================================
+static void grBSPNode_SetGpuLights(const grBSP *BSP)
+{
+	DRV_WorldLight		Lights[DRV_WORLD_MAX_LIGHTS];
+	int32				i, NumLights;
+
+	NumLights = (BSP->NumDLights < DRV_WORLD_MAX_LIGHTS) ? BSP->NumDLights : DRV_WORLD_MAX_LIGHTS;
+	for (i = 0; i < NumLights; i++)
+	{
+		const grBSPNode_Light	*Light = &BSP->DLights[i];
+
+		Lights[i].Pos[0] = Light->Pos.X;
+		Lights[i].Pos[1] = Light->Pos.Y;
+		Lights[i].Pos[2] = Light->Pos.Z;
+		Lights[i].Radius = Light->Radius;
+		Lights[i].Color[0] = Light->Color.X;
+		Lights[i].Color[1] = Light->Color.Y;
+		Lights[i].Color[2] = Light->Color.Z;
+		Lights[i].Padding = 0.0f;
+	}
+	BSP->Driver->WorldGeometry_SetLights(Lights, NumLights);
+}
+
+//=======================================================================================
 //	grBSPNode_DrawFaceRenderGpu
 //	Queues a face on the driver's GPU world path. The driver gets the same layers, flags
 //	and lightmap callback context as RenderWorldPoly, but no vertices: the face was
@@ -339,8 +406,22 @@ static grBoolean grBSPNode_DrawFaceRenderGpu(const grBSPNode_DrawFace *Face, grB
 		LMapCBContext = (void*)Face;
 	}
 
-	Result = BSP->Driver->WorldGeometry_RenderFace(BSP->GpuGeometry, (uint32)Face->GpuFace, &SceneInfo->WorldView,
-		Layers, NumLayers, LMapCBContext, Flags, Alpha);
+	if (BSP->Driver->WorldGeometry_RenderFacePBR && grMaterialSpec_IsPBR(pMatSpec))
+	{
+		DRV_WorldMaterial	Material;
+
+		grBSPNode_GetPBRMaterial(pMatSpec, &Material);
+		if (Material.AlphaMode == DRV_MATERIAL_ALPHA_BLEND)
+			Flags |= GR_RENDER_FLAG_ALPHA;
+		grBSPNode_SetGpuLights(BSP);
+		Result = BSP->Driver->WorldGeometry_RenderFacePBR(BSP->GpuGeometry, (uint32)Face->GpuFace, &SceneInfo->WorldView,
+			Layers, NumLayers, LMapCBContext, Flags, Alpha, &Material);
+	}
+	else
+	{
+		Result = BSP->Driver->WorldGeometry_RenderFace(BSP->GpuGeometry, (uint32)Face->GpuFace, &SceneInfo->WorldView,
+			Layers, NumLayers, LMapCBContext, Flags, Alpha);
+	}
 
 	if (Result == DRV_WORLD_FACE_DRAWN)
 	{

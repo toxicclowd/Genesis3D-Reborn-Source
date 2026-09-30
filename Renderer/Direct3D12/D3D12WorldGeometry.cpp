@@ -36,6 +36,11 @@ namespace
 	DRV_WorldView								LastView;
 	UINT64										LastViewFrame = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS					LastViewGPU = 0;
+	// Lights for PBR faces (WorldGeometry_SetLights), part of the view constants.
+	DRV_WorldLight								Lights[DRV_WORLD_MAX_LIGHTS];
+	int32										NumLights = 0;
+	UINT64										LightsSerial = 0;
+	UINT64										LastViewLights = 0;
 
 	struct ViewConstants
 	{
@@ -49,6 +54,11 @@ namespace
 		float	HalfHeight;
 		uint32	NumClipPlanes;
 		float	ClipPlanes[DRV_WORLD_MAX_CLIP_PLANES][4];
+		float	EyePos[4];						// the camera in model space
+		uint32	NumLights;
+		uint32	LightPadding[3];
+		float	LightPosRadius[DRV_WORLD_MAX_LIGHTS][4];	// model space
+		float	LightColor[DRV_WORLD_MAX_LIGHTS][4];
 	};
 
 	float SafeReciprocal(float Value)
@@ -146,7 +156,7 @@ namespace
 
 	D3D12_GPU_VIRTUAL_ADDRESS ViewConstantsFor(const DRV_WorldView* View)
 	{
-		if (LastViewFrame == FrameSerial && LastViewGPU &&
+		if (LastViewFrame == FrameSerial && LastViewGPU && LastViewLights == LightsSerial &&
 			std::memcmp(&LastView, View, sizeof(DRV_WorldView)) == 0)
 			return LastViewGPU;
 
@@ -172,9 +182,22 @@ namespace
 		Constants.NumClipPlanes = (View->NumClipPlanes <= 0) ? 0u :
 			static_cast<uint32>((View->NumClipPlanes < DRV_WORLD_MAX_CLIP_PLANES) ? View->NumClipPlanes : DRV_WORLD_MAX_CLIP_PLANES);
 		std::memcpy(Constants.ClipPlanes, View->ClipPlanes, sizeof(Constants.ClipPlanes));
+		// The rotation is orthonormal (mirrors only flip it), so the eye is -R^T t.
+		for (int i = 0; i < 3; ++i)
+			Constants.EyePos[i] = -(Rows[0][i] * Rows[0][3] + Rows[1][i] * Rows[1][3] + Rows[2][i] * Rows[2][3]);
+		Constants.EyePos[3] = 1.0f;
+		Constants.NumLights = static_cast<uint32>(NumLights);
+		for (int32 i = 0; i < NumLights; ++i)
+		{
+			std::memcpy(Constants.LightPosRadius[i], Lights[i].Pos, sizeof(float) * 3);
+			Constants.LightPosRadius[i][3] = Lights[i].Radius;
+			std::memcpy(Constants.LightColor[i], Lights[i].Color, sizeof(float) * 3);
+			Constants.LightColor[i][3] = 0.0f;
+		}
 		std::memcpy(Upload.CPU, &Constants, sizeof(Constants));
 
 		LastView = *View;
+		LastViewLights = LightsSerial;
 		LastViewFrame = FrameSerial;
 		LastViewGPU = Upload.GPU;
 		return Upload.GPU;
@@ -294,9 +317,10 @@ grBoolean DRIVERCC D3D12World_Destroy(uint32 Handle)
 	return GR_TRUE;
 }
 
-int32 DRIVERCC D3D12World_RenderFace(uint32 Handle, uint32 Face, const DRV_WorldView* View,
-									 grRDriver_Layer* Layers, int32 NumLayers,
-									 void* LMapCBContext, uint32 Flags, float Alpha)
+static int32 RenderFace(uint32 Handle, uint32 Face, const DRV_WorldView* View,
+						grRDriver_Layer* Layers, int32 NumLayers,
+						void* LMapCBContext, uint32 Flags, float Alpha,
+						const DRV_WorldMaterial* Material)
 {
 	if (!g_bInScene || !g_pPolyCache || !View || !Layers || NumLayers < 1)
 		return DRV_WORLD_FACE_FALLBACK;
@@ -373,10 +397,74 @@ int32 DRIVERCC D3D12World_RenderFace(uint32 Handle, uint32 Face, const DRV_World
 	}
 	Data.Alpha = NormalizeColor(Alpha);
 	Data.Padding[0] = Data.Padding[1] = 0;
-
-	return g_pPolyCache->AddWorldFace(Geometry, Face, ViewGPU, Geometry->FaceDataGPU, NumLayers, Flags)
+	Data.MaterialFlags = 0;
+	if (Material)
+	{
+		// A map that is not ready yet shades with its constant, like a missing one.
+		Data.NormalTexture = Data.OrmTexture = Data.EmissiveTexture = 0;
+		if (Material->NormalMap && TextureReady(Material->NormalMap))
+		{
+			Data.NormalTexture = D3D12_THandle_GetDescriptorIndex(Material->NormalMap);
+			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_NORMAL;
+		}
+		if (Material->ORMMap && TextureReady(Material->ORMMap))
+		{
+			Data.OrmTexture = D3D12_THandle_GetDescriptorIndex(Material->ORMMap);
+			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_ORM;
+		}
+		if (Material->EmissiveMap && TextureReady(Material->EmissiveMap))
+		{
+			Data.EmissiveTexture = D3D12_THandle_GetDescriptorIndex(Material->EmissiveMap);
+			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_EMISSIVE;
+		}
+		if (NumLayers > 1)
+			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_LIGHTMAP;
+		if (Material->Flags & DRV_MATERIAL_RETRO)
+			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_RETRO;
+		if (Material->Flags & DRV_MATERIAL_TWO_SIDED)
+			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_TWO_SIDED;
+		if (Material->AlphaMode == DRV_MATERIAL_ALPHA_CUTOUT)
+			Data.MaterialFlags |= D3D12_WORLD_MATERIAL_CUTOUT;
+		std::memcpy(Data.BaseColor, Material->BaseColor, sizeof(Data.BaseColor));
+		Data.Roughness = Material->Roughness;
+		Data.Metal = Material->Metal;
+		Data.AlphaCutoff = Material->AlphaCutoff;
+		std::memcpy(Data.Emissive, Material->Emissive, sizeof(Data.Emissive));
+		Data.MaterialPadding = Data.MaterialPadding2 = 0.0f;
+	}
+	return g_pPolyCache->AddWorldFace(Geometry, Face, ViewGPU, Geometry->FaceDataGPU, NumLayers, Flags, Material != nullptr)
 		? DRV_WORLD_FACE_DRAWN
 		: DRV_WORLD_FACE_FALLBACK;
+}
+
+int32 DRIVERCC D3D12World_RenderFace(uint32 Handle, uint32 Face, const DRV_WorldView* View,
+									 grRDriver_Layer* Layers, int32 NumLayers,
+									 void* LMapCBContext, uint32 Flags, float Alpha)
+{
+	return RenderFace(Handle, Face, View, Layers, NumLayers, LMapCBContext, Flags, Alpha, nullptr);
+}
+
+int32 DRIVERCC D3D12World_RenderFacePBR(uint32 Handle, uint32 Face, const DRV_WorldView* View,
+										grRDriver_Layer* Layers, int32 NumLayers,
+										void* LMapCBContext, uint32 Flags, float Alpha,
+										const DRV_WorldMaterial* Material)
+{
+	return RenderFace(Handle, Face, View, Layers, NumLayers, LMapCBContext, Flags, Alpha, Material);
+}
+
+void DRIVERCC D3D12World_SetLights(const DRV_WorldLight* NewLights, int32 NewNumLights)
+{
+	if (!NewLights || NewNumLights < 0)
+		NewNumLights = 0;
+	if (NewNumLights > DRV_WORLD_MAX_LIGHTS)
+		NewNumLights = DRV_WORLD_MAX_LIGHTS;
+	if (NewNumLights == NumLights &&
+		(NewNumLights == 0 || std::memcmp(Lights, NewLights, sizeof(DRV_WorldLight) * NewNumLights) == 0))
+		return;
+	if (NewNumLights > 0)
+		std::memcpy(Lights, NewLights, sizeof(DRV_WorldLight) * NewNumLights);
+	NumLights = NewNumLights;
+	++LightsSerial;
 }
 
 int32 DRIVERCC D3D12World_RenderMesh(const DRV_MeshVertex* Verts, int32 NumVerts, const DRV_WorldView* View,

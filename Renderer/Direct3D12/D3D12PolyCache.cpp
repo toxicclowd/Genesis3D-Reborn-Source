@@ -226,7 +226,8 @@ grBoolean D3D12PolyCache::AddWorldFace(
 	D3D12_GPU_VIRTUAL_ADDRESS View,
 	D3D12_GPU_VIRTUAL_ADDRESS FaceData,
 	int32 NumLayers,
-	uint32 Flags)
+	uint32 Flags,
+	bool PBR)
 {
 	if (!m_bInitialized || !g_bInScene || !World || Face >= World->Faces.size())
 		return GR_FALSE;
@@ -238,6 +239,7 @@ grBoolean D3D12PolyCache::AddWorldFace(
 	Entry.WorldFaces = FaceData;
 	Entry.NumLayers = NumLayers;
 	Entry.Flags = Flags;
+	Entry.WorldPBR = PBR;
 	m_Cache.push_back(Entry);
 
 	if (Flags & GR_RENDER_FLAG_FLUSHBATCH)
@@ -425,14 +427,14 @@ grBoolean D3D12PolyCache::Flush()
 				const PolyCacheEntry& Next = m_Cache[End];
 				if (Next.World != Entry.World || Next.WorldView != Entry.WorldView ||
 					Next.WorldFaces != Entry.WorldFaces || Next.NumLayers != Entry.NumLayers ||
-					Next.Flags != Entry.Flags)
+					Next.Flags != Entry.Flags || Next.WorldPBR != Entry.WorldPBR)
 					break;
 				NumIndices += Next.World->Faces[Next.WorldFace].NumIndices;
 				++End;
 			}
 
 			ID3D12PipelineState* Pipeline = g_pPSOManager->GetPSO(
-				(Entry.NumLayers > 1) ? PSO_WORLD_MULTITEX : PSO_WORLD_TEXTURE,
+				Entry.WorldPBR ? PSO_WORLD_PBR : (Entry.NumLayers > 1) ? PSO_WORLD_MULTITEX : PSO_WORLD_TEXTURE,
 				Entry.Flags,
 				g_bWireframe ? GR_TRUE : GR_FALSE);
 			if (!Pipeline)

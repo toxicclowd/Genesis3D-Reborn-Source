@@ -16,13 +16,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	Render-regression mode (roadmap Phase 0):
 
 	G3DGameShell -screenshot out.bmp [-level Levels\x.j3d] [-camera x y z yaw pitch]
-	             [-frames n] [-size w h] [-overlay]
+	             [-frames n] [-size w h] [-overlay] [-dlight x y z radius r g b]...
 
 	Runs the startup script, optionally swaps in another level, places the camera,
 	renders a fixed number of frames with a fixed timestep (so animated lights and
 	textures land in the same state every run), saves the last frame and exits.
 	The exit code is 0 on success and 1 on failure. -overlay keeps the engine's debug
-	text (FPS, GPU times), which is left out of reference images by default.
+	text (FPS, GPU times), which is left out of reference images by default. -dlight
+	adds a dynamic light (color 0..255), up to four, e.g. to show PBR specular.
 */
 struct ShellOptions
 {
@@ -31,6 +32,8 @@ struct ShellOptions
 	bool							HasCamera;
 	bool							Overlay;
 	float							Camera[5];			// x y z yaw pitch (degrees)
+	int								NumDLights;
+	float							DLights[4][7];		// x y z radius r g b
 	int								Frames;
 	int								Width, Height;
 };
@@ -65,6 +68,15 @@ static void ParseOptions(ShellOptions *Opts)
 			for (int c = 0; c < 5; c++)
 				Opts->Camera[c] = (float)atof(__argv[++i]);
 			Opts->HasCamera = true;
+		}
+		else if (!_stricmp(Arg, "-dlight") && Left >= 7)
+		{
+			float					*Light = Opts->DLights[(Opts->NumDLights < 4) ? Opts->NumDLights : 3];
+
+			for (int c = 0; c < 7; c++)
+				Light[c] = (float)atof(__argv[++i]);
+			if (Opts->NumDLights < 4)
+				Opts->NumDLights++;
 		}
 	}
 
@@ -115,6 +127,22 @@ static int RunScreenshot(const ShellOptions *Opts)
 		Game->SetCamera(&Pos, Opts->Camera[3], Opts->Camera[4]);
 	}
 
+	for (int i = 0; i < Opts->NumDLights; i++)
+	{
+		const float					*L = Opts->DLights[i];
+		grLight						*Light = grLight_Create();
+		grVec3d						Pos, Color;
+
+		grVec3d_Set(&Pos, L[0], L[1], L[2]);
+		grVec3d_Set(&Color, L[4], L[5], L[6]);
+		if (!Light || !grLight_SetAttributes(Light, &Pos, &Color, L[3], 1.0f, 0) ||
+			!grWorld_AddDLight(Game->m_pWorld, Light))
+		{
+			GLOG("Screenshot - could not add a dynamic light");
+			return 1;
+		}
+	}
+
 	// The frame-rate text changes every run, so keep it out of reference images.
 	grEngine_EnableFrameRateCounter(Game->m_pEngine, Opts->Overlay ? GR_TRUE : GR_FALSE);
 	Game->SetFixedTimeStep(1.0f / 60.0f);
@@ -136,7 +164,8 @@ static int RunScreenshot(const ShellOptions *Opts)
 		return 1;
 	}
 
-	CGameLog::GetPtr()->Printf("Screenshot - wrote %s", Opts->Screenshot);
+	CGameLog::GetPtr()->Printf("Screenshot - wrote %s (camera at %.1f %.1f %.1f)", Opts->Screenshot,
+		Game->m_CameraXForm.Translation.X, Game->m_CameraXForm.Translation.Y, Game->m_CameraXForm.Translation.Z);
 	return 0;
 }
 

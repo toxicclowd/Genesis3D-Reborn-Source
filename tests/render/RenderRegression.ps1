@@ -153,7 +153,22 @@ function Invoke-Shot($Shot) {
     if ($Shot.Level) { $shellArgs += @("-level", "`"$($Shot.Level)`"") }
     if ($Shot.Camera) { $shellArgs += @("-camera") + $Shot.Camera }
 
-    $proc = Start-Process -FilePath $Exe -ArgumentList $shellArgs -WorkingDirectory $Bin -PassThru
+    # Extra column: NAME=value sets an environment variable for this shot, anything else
+    # is passed to the shell (e.g. -dlight).
+    $saved = @{}
+    foreach ($a in $Shot.Extra) {
+        if ($a -match '^([A-Za-z_][A-Za-z0-9_]*)=(.*)$') {
+            $saved[$Matches[1]] = [Environment]::GetEnvironmentVariable($Matches[1])
+            [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2])
+        } else {
+            $shellArgs += $a
+        }
+    }
+    try {
+        $proc = Start-Process -FilePath $Exe -ArgumentList $shellArgs -WorkingDirectory $Bin -PassThru
+    } finally {
+        foreach ($k in $saved.Keys) { [Environment]::SetEnvironmentVariable($k, $saved[$k]) }
+    }
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     while (-not $proc.HasExited) {
         Start-Sleep -Milliseconds 500
@@ -173,6 +188,7 @@ function Invoke-Shot($Shot) {
 }
 
 # shots.txt: name | level (blank = the startup script's level) | camera "x y z yaw pitch" (blank = origin)
+#            | extra (optional): shell arguments and NAME=value environment variables
 $shots = foreach ($line in Get-Content (Join-Path $Here "shots.txt")) {
     $line = $line.Trim()
     if (-not $line -or $line.StartsWith("#")) { continue }
@@ -181,10 +197,18 @@ $shots = foreach ($line in Get-Content (Join-Path $Here "shots.txt")) {
         Name = $f[0]
         Level = $(if ($f.Count -gt 1 -and $f[1]) { $f[1] } else { $null })
         Camera = $(if ($f.Count -gt 2 -and $f[2]) { $f[2] -split "\s+" } else { $null })
+        Extra = $(if ($f.Count -gt 3 -and $f[3]) { $f[3] -split "\s+" } else { @() })
         Width = 640; Height = 480; Frames = 30
     }
 }
 if ($Only) { $shots = $shots | Where-Object { $_.Name -like "*$Only*" } }
+
+# The PBR shots use generated sample materials (tests/render/pbr/make_pbr_sample.py).
+if (($shots | Where-Object { $_.Extra -match "PBRSample" }) -and
+    -not (Test-Path (Join-Path $Bin "GlobalMaterials\PBRSample"))) {
+    & python (Join-Path $Here "pbr\make_pbr_sample.py")
+    if ($LASTEXITCODE -ne 0) { throw "make_pbr_sample.py failed (needs Python with Pillow and NumPy)" }
+}
 
 $failed = 0
 foreach ($shot in $shots) {

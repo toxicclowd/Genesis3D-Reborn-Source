@@ -55,6 +55,7 @@
 #define MATSPEC_SHADER_FLAG		0x0010
 #define MATSPEC_THUMBS_FLAG		0x0020
 #define MATSPEC_SIZE_FLAG		0x0040
+#define MATSPEC_PBR_FLAG		0x0080		// version 2: a grMaterialSpec_PBR block follows the size
 
 //=======================================================================================
 //	grMaterialSpec_Create
@@ -122,7 +123,7 @@ GRAPI void GRCC grMaterialSpec_Destroy(grMaterialSpec **MaterialSpec)
 		((uint32)(uint8)(ch2) << 16) | ((uint32)(uint8)(ch3) << 24 ))
 
 #define GR_MATSPEC_TAG			MAKEFOURCC('J', 'M', 'A', 'T')		// 'J' 'MAT'erial definition
-#define GR_MATSPEC_VERSION		0x0001
+#define GR_MATSPEC_VERSION		0x0002		// 2 adds the PBR block; files without one are still written as 1
 
 //========================================================================================
 //	grMaterialSpec_CreateFromFile
@@ -130,6 +131,7 @@ GRAPI void GRCC grMaterialSpec_Destroy(grMaterialSpec **MaterialSpec)
 GRAPI grMaterialSpec* GRCC grMaterialSpec_CreateFromFile(grVFile *VFile, grEngine* pEngine, grResourceMgr *ResMgr)
 {
 	uint8 Version;
+	uint8 FileVersion;
 	uint16 Flags;
 	uint32 Tag;
 	grRGBA Color;
@@ -163,6 +165,7 @@ GRAPI grMaterialSpec* GRCC grMaterialSpec_CreateFromFile(grVFile *VFile, grEngin
 	if (Version > GR_MATSPEC_VERSION) {
 		goto ExitInError;
 	}
+	FileVersion = Version;
 
 	// Read the material spec flags
 	if (!grVFile_Read(VFile, &Flags, sizeof(Flags))) {
@@ -220,6 +223,14 @@ GRAPI grMaterialSpec* GRCC grMaterialSpec_CreateFromFile(grVFile *VFile, grEngin
 	if (MaterialSpec->Flags&MATSPEC_SIZE_FLAG) {
 		grVFile_Read(VFile, &MaterialSpec->Width, sizeof(MaterialSpec->Width));
 		grVFile_Read(VFile, &MaterialSpec->Height, sizeof(MaterialSpec->Height));
+	}
+
+	if (FileVersion >= 2 && (MaterialSpec->Flags&MATSPEC_PBR_FLAG)) {
+		if (!grVFile_Read(VFile, &MaterialSpec->PBR, sizeof(MaterialSpec->PBR))) {
+			goto ExitInError;
+		}
+	} else {
+		MaterialSpec->Flags &= ~MATSPEC_PBR_FLAG;
 	}
 
 	// Read the layer descriptions
@@ -322,7 +333,8 @@ GRAPI grBoolean GRCC grMaterialSpec_WriteToFile(grMaterialSpec* MatSpec, grVFile
 	}
 
 	// Write the JMAT version
-	Version = GR_MATSPEC_VERSION;
+	// Only materials with PBR parameters need version 2, so older engines still read the rest
+	Version = (MatSpec->Flags&MATSPEC_PBR_FLAG) ? GR_MATSPEC_VERSION : 1;
 	if (!grVFile_Write(VFile, &Version, sizeof(Version))) {
 		return GR_FALSE;
 	}
@@ -385,6 +397,12 @@ GRAPI grBoolean GRCC grMaterialSpec_WriteToFile(grMaterialSpec* MatSpec, grVFile
 	if (MatSpec->Flags&MATSPEC_SIZE_FLAG) {
 		grVFile_Write(VFile, &MatSpec->Width, sizeof(MatSpec->Width));
 		grVFile_Write(VFile, &MatSpec->Height, sizeof(MatSpec->Height));
+	}
+
+	if (MatSpec->Flags&MATSPEC_PBR_FLAG) {
+		if (!grVFile_Write(VFile, &MatSpec->PBR, sizeof(MatSpec->PBR))) {
+			return GR_FALSE;
+		}
 	}
 
 	// Write the layers descriptions
@@ -618,6 +636,88 @@ GRAPI grBitmap* GRCC grMaterialSpec_GetLayerBitmap(const grMaterialSpec* MatSpec
 		return MatSpec->pLayers[layerIndex]->pBitmap;
 	}
 	return NULL;
+}
+
+GRAPI int32 GRCC grMaterialSpec_GetLayerType(const grMaterialSpec* MatSpec, int32 layerIndex)
+{
+	assert(MatSpec);
+
+	if (layerIndex>=GR_MATERIAL_MAX_LAYER || layerIndex<0 || !MatSpec->pLayers[layerIndex]) {
+		return -1;
+	}
+	return MatSpec->pLayers[layerIndex]->Type;
+}
+
+GRAPI int32 GRCC grMaterialSpec_FindLayer(const grMaterialSpec* MatSpec, grMaterialSpec_LayerType layerType)
+{
+	int32 idx;
+
+	assert(MatSpec);
+
+	for (idx=0; idx<GR_MATERIAL_MAX_LAYER; idx++) {
+		if (MatSpec->pLayers[idx] && MatSpec->pLayers[idx]->Type == (uint8)layerType) {
+			return idx;
+		}
+	}
+	return -1;
+}
+
+GRAPI grBoolean GRCC grMaterialSpec_IsPBR(const grMaterialSpec* MatSpec)
+{
+	assert(MatSpec);
+
+	return (MatSpec->Flags&MATSPEC_PBR_FLAG)
+		|| grMaterialSpec_FindLayer(MatSpec, GR_MATERIAL_LAYER_NORMAL) >= 0
+		|| grMaterialSpec_FindLayer(MatSpec, GR_MATERIAL_LAYER_ORM) >= 0
+		|| grMaterialSpec_FindLayer(MatSpec, GR_MATERIAL_LAYER_EMISSIVE) >= 0;
+}
+
+GRAPI void GRCC grMaterialSpec_DefaultPBR(grMaterialSpec_PBR* PBR)
+{
+	assert(PBR);
+
+	ZeroMem(PBR);
+	PBR->BaseColor[0] = PBR->BaseColor[1] = PBR->BaseColor[2] = PBR->BaseColor[3] = 1.0f;
+	PBR->Roughness = 1.0f;
+	PBR->Metal = 1.0f;
+	PBR->EmissiveIntensity = 1.0f;
+	PBR->AlphaCutoff = 0.5f;
+	PBR->AlphaMode = GR_MATERIAL_ALPHA_OPAQUE;
+}
+
+GRAPI grBoolean GRCC grMaterialSpec_GetPBR(const grMaterialSpec* MatSpec, grMaterialSpec_PBR* PBR)
+{
+	assert(MatSpec);
+	assert(PBR);
+
+	if (MatSpec->Flags&MATSPEC_PBR_FLAG) {
+		*PBR = MatSpec->PBR;
+		return GR_TRUE;
+	}
+	grMaterialSpec_DefaultPBR(PBR);
+	// Without parameters the maps alone decide: no ORM map means a dielectric, and an
+	// emissive map shows as it is.
+	if (grMaterialSpec_FindLayer(MatSpec, GR_MATERIAL_LAYER_ORM) < 0) {
+		PBR->Metal = 0.0f;
+	}
+	if (grMaterialSpec_FindLayer(MatSpec, GR_MATERIAL_LAYER_EMISSIVE) >= 0) {
+		PBR->Emissive[0] = PBR->Emissive[1] = PBR->Emissive[2] = 1.0f;
+	}
+	return GR_FALSE;
+}
+
+GRAPI grBoolean GRCC grMaterialSpec_SetPBR(grMaterialSpec* MatSpec, const grMaterialSpec_PBR* PBR)
+{
+	assert(MatSpec);
+
+	if (PBR) {
+		MatSpec->PBR = *PBR;
+		MatSpec->Flags |= MATSPEC_PBR_FLAG;
+	} else {
+		ZeroMem(&MatSpec->PBR);
+		MatSpec->Flags &= ~MATSPEC_PBR_FLAG;
+	}
+	return GR_TRUE;
 }
 
 GRAPI grXForm3d* GRCC grMaterialSpec_GetLayerTransform(const grMaterialSpec* MatSpec, int32 layerIndex)

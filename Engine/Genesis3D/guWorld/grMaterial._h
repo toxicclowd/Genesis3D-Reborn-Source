@@ -67,6 +67,7 @@ typedef struct grMaterialSpec
 	grMaterialSpec_Thumbnail* pThumbnail;
 	uint16 Width;
 	uint16 Height;
+	grMaterialSpec_PBR PBR;		// valid with MATSPEC_PBR_FLAG
 } grMaterialSpec;
 
 //=======================================================================================

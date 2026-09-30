@@ -854,8 +854,9 @@ static void grBSP_GpuGather_r(grBSPNode *Node, grBSP *BSP, grBSP_GpuBuild *Build
 			grVec3d				Tangent, Bitangent, Cross;
 			grFloat				Sign;
 
+			// The side the face is seen (and lit) from, as grBSPNode_Light computes it
 			Plane = *grPlaneArray_GetPlaneByIndex(BSP->PlaneArray, Face->PlaneIndex);
-			if (!grPlaneArray_IndexSided(Face->PlaneIndex))
+			if (grPlaneArray_IndexSided(Face->PlaneIndex))
 				grPlane_Inverse(&Plane);
 
 			pTexVec = grTexVec_ArrayGetTexVecByIndex(BSP->TexVecArray, Face->TexVecIndex);

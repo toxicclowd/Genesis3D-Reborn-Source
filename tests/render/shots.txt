@@ -1,5 +1,6 @@
 # Render regression shots (see RenderRegression.ps1).
 # name | level (blank = the level G3DMain.eos loads) | camera: x y z yaw pitch, degrees (blank = origin)
+#      | extra: shell arguments (-dlight x y z radius r g b) and NAME=value environment variables
 startup     |                              |
 tutorial1   | Levels\tutorial1.j3d         |
 streetscene | Levels\StreetScene.j3d       |
@@ -10,3 +11,5 @@ level1_box  | Levels\Level1.j3d            | 0 200 400 0 -20
 alpha_test  | Levels\alpha_test.j3d        | 0 200 400 0 -20
 sky_portal  | Levels\tutorial1.j3d         | 0 100 0 0 80
 portal      | Levels\tutorial2_complete.j3d | -656 148 -600 0 0
+dlight      | Levels\tutorial1.j3d         |                              | -dlight 0 0 -60 400 255 240 220
+pbr_tutorial1 | Levels\tutorial1.j3d       |                              | G3D_MATERIAL_OVERRIDES=GlobalMaterials\PBRSample -dlight 0 0 -60 400 255 240 220

@@ -97,7 +97,7 @@ typedef struct tagRECT
 #endif
 
 #define DRV_VERSION_MAJOR		200			// Jet 2.0
-#define DRV_VERSION_MINOR		8			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry ; 7 adds DRV_WorldView clip planes and draw counts ; 8 adds WorldMesh_Render
+#define DRV_VERSION_MINOR		9			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry ; 7 adds DRV_WorldView clip planes and draw counts ; 8 adds WorldMesh_Render ; 9 adds PBR world faces and lights
 #define DRV_VMAJS				"200"
 #define DRV_VMINS				"4" 
 #define DRV_VMAJS_PLUS_DRV_VMINS	"200.4"
@@ -146,6 +146,11 @@ typedef struct
 #define LAYER_TYPE_BASE 0 
 #define LAYER_TYPE_LIGHTMAP 1 
 #define LAYER_TYPE_BUMPMAP 2 
+// PBR layers (roadmap Phase 2, .jmat version 2). A missing layer falls back to a constant.
+#define LAYER_TYPE_NORMAL 3			// tangent-space normal map (RG used, Z rebuilt)
+#define LAYER_TYPE_ORM 4			// R = occlusion, G = roughness, B = metalness (linear)
+#define LAYER_TYPE_EMISSIVE 5		// sRGB
+#define LAYER_TYPE_HEIGHT 6			// parallax height (optional, not used by the renderer yet)
 // END - Material layer type enumerations - krouer 8/16/2005
 
 
@@ -355,6 +360,51 @@ typedef struct
 // only asks whether the path is available.
 typedef int32 DRIVERCC WORLD_MESH_RENDER(const DRV_MeshVertex *Verts, int32 NumVerts, const DRV_WorldView *View,
 										 grRDriver_Layer *Layer, uint32 Flags);
+
+//
+//	PBR world faces (version 9): metallic/roughness GGX shading for materials with PBR layers
+//	or parameters. The lightmap is the diffuse irradiance; the lights set with
+//	WORLD_GEOMETRY_SET_LIGHTS add specular and normal-map detail.
+//
+#define DRV_MATERIAL_ALPHA_OPAQUE	0
+#define DRV_MATERIAL_ALPHA_CUTOUT	1	// clip below AlphaCutoff
+#define DRV_MATERIAL_ALPHA_BLEND	2	// blended; the engine also sets GR_RENDER_FLAG_ALPHA
+
+#define DRV_MATERIAL_TWO_SIDED		0x0001
+#define DRV_MATERIAL_RETRO			0x0002	// point sampling and texel-snapped shading
+
+typedef struct
+{
+	grTexture	*NormalMap;		// NULL = flat normal
+	grTexture	*ORMMap;		// NULL = white: the scalars below are the values
+	grTexture	*EmissiveMap;	// NULL = white
+	float		BaseColor[4];	// linear tint, multiplies layer 0
+	float		Roughness;		// times ORMMap.g
+	float		Metal;			// times ORMMap.b
+	float		Emissive[3];	// linear color * intensity, times EmissiveMap
+	float		AlphaCutoff;
+	uint32		AlphaMode;		// DRV_MATERIAL_ALPHA_*
+	uint32		Flags;			// DRV_MATERIAL_*
+} DRV_WorldMaterial;
+
+// A point light in the model space of the geometry drawn next (see grBSPNode_Light).
+typedef struct
+{
+	float		Pos[3];
+	float		Radius;
+	float		Color[3];		// 0..1 * brightness
+	float		Padding;
+} DRV_WorldLight;
+
+#define DRV_WORLD_MAX_LIGHTS		8
+
+// Sets the lights for the PBR faces queued after it (at most DRV_WORLD_MAX_LIGHTS are used).
+typedef void DRIVERCC WORLD_GEOMETRY_SET_LIGHTS(const DRV_WorldLight *Lights, int32 NumLights);
+// As WORLD_GEOMETRY_RENDER_FACE, shaded with Material.
+typedef int32 DRIVERCC WORLD_GEOMETRY_RENDER_FACE_PBR(uint32 Geometry, uint32 Face, const DRV_WorldView *View,
+													  grRDriver_Layer *Layers, int32 NumLayers,
+													  void *LMapCBContext, uint32 Flags, float Alpha,
+													  const DRV_WorldMaterial *Material);
 
 typedef struct
 {
@@ -691,6 +741,10 @@ typedef struct
 
 	// Version 8: world meshes (NULL if the driver has none).
 	WORLD_MESH_RENDER			*WorldMesh_Render;
+
+	// Version 9: PBR world faces (NULL if the driver has none).
+	WORLD_GEOMETRY_SET_LIGHTS		*WorldGeometry_SetLights;
+	WORLD_GEOMETRY_RENDER_FACE_PBR	*WorldGeometry_RenderFacePBR;
 } DRV_Driver;
 
 enum grRenderState

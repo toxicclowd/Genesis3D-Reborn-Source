@@ -183,11 +183,11 @@ grBoolean D3D12PSOManager::CreateRootSignature()
 		// GPU world path: its view and per-face data, read by the vertex shader.
 		Parameters[ROOT_PARAM_WORLD_VIEW].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 		Parameters[ROOT_PARAM_WORLD_VIEW].Descriptor.ShaderRegister = 2;
-		Parameters[ROOT_PARAM_WORLD_VIEW].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		Parameters[ROOT_PARAM_WORLD_VIEW].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;		// PSWorldPBR reads the eye and lights
 		Parameters[ROOT_PARAM_WORLD_FACES].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
 		Parameters[ROOT_PARAM_WORLD_FACES].Descriptor.ShaderRegister = 0;
 		Parameters[ROOT_PARAM_WORLD_FACES].Descriptor.RegisterSpace = 2;
-		Parameters[ROOT_PARAM_WORLD_FACES].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		Parameters[ROOT_PARAM_WORLD_FACES].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;		// and the face's material
 		NumParameters = 5;
 	}
 	else
@@ -254,7 +254,7 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 		Type == PSO_ALPHA_TEXTURE || State >= PSO_STATE_COUNT)
 		return GR_FALSE;
 
-	const bool bWorld = (Type == PSO_WORLD_TEXTURE || Type == PSO_WORLD_MULTITEX);
+	const bool bWorld = (Type == PSO_WORLD_TEXTURE || Type == PSO_WORLD_MULTITEX || Type == PSO_WORLD_PBR);
 	const bool bMesh = (Type == PSO_MESH_TEXTURE);
 	if ((bWorld || bMesh) && !m_bBindless)
 		return GR_FALSE;
@@ -286,8 +286,9 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 		PixelShader = m_bBindless ? SHADER_TLPOLY_PS_MULTITEX_BINDLESS : SHADER_TLPOLY_PS_MULTITEX;
 	else if (bWorld)
 	{
-		VertexShader = SHADER_WORLD_VS;
-		PixelShader = (Type == PSO_WORLD_MULTITEX) ? SHADER_WORLD_PS_MULTITEX : SHADER_WORLD_PS_TEXTURE;
+		VertexShader = (Type == PSO_WORLD_PBR) ? SHADER_WORLD_VS_PBR : SHADER_WORLD_VS;
+		PixelShader = (Type == PSO_WORLD_PBR) ? SHADER_WORLD_PS_PBR :
+			(Type == PSO_WORLD_MULTITEX) ? SHADER_WORLD_PS_MULTITEX : SHADER_WORLD_PS_TEXTURE;
 	}
 	else if (bMesh)
 	{

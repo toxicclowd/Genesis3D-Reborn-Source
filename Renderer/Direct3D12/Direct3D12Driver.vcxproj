@@ -195,6 +195,16 @@
       <Profile>ps_6_0</Profile>
       <Var>g_World_PSWorldMultiTexture</Var>
     </G3DShader>
+    <G3DShader Include="Shaders\World.hlsl">
+      <Entry>VSWorldPBR</Entry>
+      <Profile>vs_6_0</Profile>
+      <Var>g_World_VSWorldPBR</Var>
+    </G3DShader>
+    <G3DShader Include="Shaders\World.hlsl">
+      <Entry>PSWorldPBR</Entry>
+      <Profile>ps_6_0</Profile>
+      <Var>g_World_PSWorldPBR</Var>
+    </G3DShader>
     <G3DShader Include="Shaders\Present.hlsl">
       <Entry>VSFullscreen</Entry>
       <Profile>vs_6_0</Profile>

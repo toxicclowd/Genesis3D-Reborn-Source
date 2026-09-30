@@ -49,6 +49,12 @@ cbuffer WorldView : register(b2)
     float  HalfHeight;
     uint   NumClipPlanes;		// > 0: nested view, clip to ClipPlanes instead of the rect
     float4 ClipPlanes[8];		// camera space, inside when dot(xyz, p) + w >= 0
+    // PBR faces only (roadmap Phase 2): the eye and WorldGeometry_SetLights' lights, model space.
+    float4 EyePos;
+    uint   NumLights;
+    uint3  LightPadding;
+    float4 LightPosRadius[8];
+    float4 LightColor[8];		// 0..1 * brightness
 };
 
 // Per face, written by the driver for every face drawn this frame.
@@ -67,7 +73,27 @@ struct WorldFace
     float2 LightOffset;			// the lightmap's origin in its texture (an atlas page), * 16
     float2 LightDiv;			// that texture's size * 16
     uint2 FacePadding;
+    // PBR material (PSWorldPBR only)
+    uint  NormalTexture;
+    uint  OrmTexture;
+    uint  EmissiveTexture;
+    uint  MaterialFlags;		// MAT_*
+    float4 BaseColor;			// linear tint
+    float Roughness;			// times ORM.g
+    float Metal;				// times ORM.b
+    float AlphaCutoff;
+    float MaterialPadding;
+    float3 Emissive;			// linear, times the emissive map
+    float MaterialPadding2;
 };
+
+#define MAT_NORMAL			0x0001u
+#define MAT_ORM				0x0002u
+#define MAT_EMISSIVE		0x0004u
+#define MAT_LIGHTMAP		0x0008u
+#define MAT_RETRO			0x0010u
+#define MAT_CUTOUT			0x0020u
+#define MAT_TWO_SIDED		0x0040u
 StructuredBuffer<WorldFace> WorldFaces : register(t0, space2);
 
 #define FLAG_ALPHA			0x00000001u
@@ -224,4 +250,218 @@ float4 PSWorldMultiTexture(VS_OUTPUT input) : SV_TARGET
     if ((DrawFlags & (FLAG_ALPHA | FLAG_COLORKEY)) != 0)
         alpha *= base.a;
     return saturate(float4(base.rgb * light * input.Color.rgb, alpha));
+}
+
+
+//=====================================================================================
+//	PBR world faces (roadmap Phase 2): metallic/roughness GGX (Cook-Torrance) with a
+//	Lambert diffuse and Schlick Fresnel, shaded in linear space.
+//
+//	The lightmap is the diffuse irradiance, as before. It has no direction, so it also
+//	lights the specular through a split-sum approximation. The dynamic lights (which
+//	the engine has already added to the lightmap on the flat face) add GGX specular and
+//	the normal map's diffuse detail. Normal maps use the DirectX convention (+Y down the
+//	image, i.e. along +v). The pipeline is gamma space, so the result goes back to gamma 2.2.
+//=====================================================================================
+struct VS_PBR_OUTPUT
+{
+    float4 Position : SV_POSITION;
+    float2 TexCoord : TEXCOORD0;
+    float2 LMCoord  : TEXCOORD1;
+    float3 ModelPos : TEXCOORD2;
+    float3 Normal   : TEXCOORD3;
+    float4 Tangent  : TEXCOORD4;
+    float  Alpha    : TEXCOORD5;
+    nointerpolation uint Face : FACEINDEX;
+    float4 ClipA    : SV_ClipDistance0;
+    float4 ClipB    : SV_ClipDistance1;
+};
+
+VS_PBR_OUTPUT VSWorldPBR(VS_INPUT input)
+{
+    VS_OUTPUT world = VSWorld(input);
+    VS_PBR_OUTPUT output;
+    output.Position = world.Position;
+    output.TexCoord = world.TexCoord;
+    output.LMCoord = world.LMCoord;
+    output.ModelPos = input.Position;
+    output.Normal = input.Normal;
+    output.Tangent = input.Tangent;
+    output.Alpha = world.Color.a;
+    output.Face = input.Face;
+    output.ClipA = world.ClipA;
+    output.ClipB = world.ClipB;
+    return output;
+}
+
+static const float PI = 3.14159265f;
+
+// A pure 2.2 power curve rather than the piecewise sRGB one: it keeps products exact
+// (pow(a, 2.2) * pow(b, 2.2) = pow(a * b, 2.2)), so the base times the lightmap gives the
+// same result as the gamma-space path, even in the dark scenes typical of old levels.
+float3 SrgbToLinear(float3 c)
+{
+    return pow(max(c, 0.0f), 2.2f);
+}
+
+float3 LinearToSrgb(float3 c)
+{
+    return pow(saturate(c), 1.0f / 2.2f);
+}
+
+float D_GGX(float NoH, float a)
+{
+    float a2 = a * a;
+    float d = NoH * NoH * (a2 - 1.0f) + 1.0f;
+    return a2 / (PI * d * d);
+}
+
+// Height-correlated Smith visibility, V = G / (4 NoL NoV).
+float V_SmithGGX(float NoV, float NoL, float a)
+{
+    float a2 = a * a;
+    float GGXV = NoL * sqrt(NoV * NoV * (1.0f - a2) + a2);
+    float GGXL = NoV * sqrt(NoL * NoL * (1.0f - a2) + a2);
+    return 0.5f / max(GGXV + GGXL, 1e-5f);
+}
+
+float3 F_Schlick(float3 F0, float VoH)
+{
+    return F0 + (1.0f - F0) * pow(1.0f - VoH, 5.0f);
+}
+
+// Analytic fit of the split-sum environment BRDF (Karis, "Physically Based Shading on Mobile").
+float3 EnvBRDFApprox(float3 F0, float roughness, float NoV)
+{
+    const float4 c0 = float4(-1.0f, -0.0275f, -0.572f, 0.022f);
+    const float4 c1 = float4(1.0f, 0.0425f, 1.04f, -0.04f);
+    float4 r = roughness * c0 + c1;
+    float a004 = min(r.x * r.x, exp2(-9.28f * NoV)) * r.x + r.y;
+    float2 AB = float2(-1.04f, 1.04f) * a004 + r.zw;
+    return F0 * AB.x + AB.y;
+}
+
+float4 SampleMaterial(uint index, float2 uv, bool retro)
+{
+    return retro ? Textures[index].Sample(PointWrapSampler, uv)
+                 : Textures[index].Sample(LinearWrapSampler, uv);
+}
+
+float4 PSWorldPBR(VS_PBR_OUTPUT input) : SV_TARGET
+{
+    WorldFace face = WorldFaces[input.Face];
+    bool retro = (face.MaterialFlags & MAT_RETRO) != 0;
+
+    float2 uv = input.TexCoord;
+    float2 lmuv = input.LMCoord;
+    float3 P = input.ModelPos;
+
+    // Derivatives outside any branch: faces with different flags can share a quad.
+    float2 uvDX = ddx(uv), uvDY = ddy(uv);
+    float2 lmDX = ddx(lmuv), lmDY = ddy(lmuv);
+    float3 pDX = ddx(P), pDY = ddy(P);
+
+    if (retro)
+    {
+        // Texel-snapped shading: move the shading point to the base texel's center.
+        float2 size;
+        Textures[face.BaseTexture].GetDimensions(size.x, size.y);
+        float2 snapped = (floor(uv * size) + 0.5f) / size;
+        float2 duv = snapped - uv;
+        float det = uvDX.x * uvDY.y - uvDX.y * uvDY.x;
+        if (abs(det) > 1e-12f)
+        {
+            float2 s = float2(duv.x * uvDY.y - duv.y * uvDY.x, uvDX.x * duv.y - uvDX.y * duv.x) / det;
+            P += pDX * s.x + pDY * s.y;
+            lmuv += lmDX * s.x + lmDY * s.y;
+        }
+        uv = snapped;
+    }
+
+    float4 base = retro ? Textures[face.BaseTexture].Sample(PointWrapSampler, uv)
+                        : SampleBase(face.BaseTexture, uv);
+    if ((DrawFlags & FLAG_COLORKEY) != 0)
+        clip(base.a - 0.5f);
+    float alpha = input.Alpha;
+    if ((DrawFlags & (FLAG_ALPHA | FLAG_COLORKEY)) != 0 || (face.MaterialFlags & MAT_CUTOUT) != 0)
+        alpha *= base.a * face.BaseColor.a;
+    if ((face.MaterialFlags & MAT_CUTOUT) != 0)
+        clip(alpha - face.AlphaCutoff);
+
+    // Tangent frame (Gram-Schmidt: texture vectors need not be orthogonal).
+    float3 Nface = normalize(input.Normal);
+    float3 T = input.Tangent.xyz - Nface * dot(Nface, input.Tangent.xyz);
+    T = (dot(T, T) > 1e-12f) ? normalize(T) : float3(1.0f, 0.0f, 0.0f);
+    float3 B = cross(Nface, T) * input.Tangent.w;
+    float3 N = Nface;
+    if ((face.MaterialFlags & MAT_NORMAL) != 0)
+    {
+        float2 nxy = SampleMaterial(face.NormalTexture, uv, retro).rg * 2.0f - 1.0f;
+        float nz = sqrt(saturate(1.0f - dot(nxy, nxy)));
+        N = normalize(T * nxy.x + B * nxy.y + Nface * nz);
+    }
+
+    float3 V = normalize(EyePos.xyz - P);
+    if ((face.MaterialFlags & MAT_TWO_SIDED) != 0 && dot(Nface, V) < 0.0f)
+    {
+        N = -N;
+        Nface = -Nface;
+    }
+    float NoV = max(dot(N, V), 1e-4f);
+
+    float3 orm = ((face.MaterialFlags & MAT_ORM) != 0) ? SampleMaterial(face.OrmTexture, uv, retro).rgb : float3(1.0f, 1.0f, 1.0f);
+    float ao = orm.r;
+    float roughness = clamp(orm.g * face.Roughness, 0.045f, 1.0f);
+    float metal = saturate(orm.b * face.Metal);
+    float a = roughness * roughness;
+
+    float3 albedo = SrgbToLinear(base.rgb) * face.BaseColor.rgb;
+    float3 diffuseColor = albedo * (1.0f - metal);
+    float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo, metal);
+
+    // Without a lightmap the face is fullbright, like PSWorldTexture.
+    float3 E = float3(1.0f, 1.0f, 1.0f);
+    if ((face.MaterialFlags & MAT_LIGHTMAP) != 0)
+    {
+        E = retro ? Textures[face.LightTexture].Sample(PointClampSampler, lmuv).rgb
+                  : SampleLight(face.LightTexture, lmuv).rgb;
+        E = SrgbToLinear(E);
+    }
+    float specAO = saturate(pow(NoV + ao, exp2(-16.0f * roughness - 1.0f)) - 1.0f + ao);
+    float3 color = diffuseColor * E * ao + E * EnvBRDFApprox(F0, roughness, NoV) * specAO;
+
+    [loop] for (uint i = 0; i < NumLights; i++)
+    {
+        float3 L = LightPosRadius[i].xyz - P;
+        float dist = length(L);
+        float falloff = LightPosRadius[i].w - dist;
+        if (falloff <= 0.0f || dist < 1e-4f)
+            continue;
+        L /= dist;
+        // The engine's dlight model (CombineDLightWithRGBMap): Color * (Radius - d) * NoL,
+        // in 0..255 lightmap units.
+        float3 radiance = SrgbToLinear(saturate(LightColor[i].rgb * (falloff / 255.0f)));
+        float NoL = saturate(dot(N, L));
+        float NoLflat = saturate(dot(Nface, L));
+        // The lightmap already holds this light on the flat face: add the normal map's change.
+        if ((face.MaterialFlags & MAT_LIGHTMAP) != 0)
+            color += diffuseColor * (NoL - NoLflat) * radiance;
+        else
+            color += diffuseColor * NoL * radiance;
+        if (NoL > 0.0f)
+        {
+            float3 H = normalize(V + L);
+            float NoH = saturate(dot(N, H));
+            float VoH = saturate(dot(V, H));
+            float3 spec = D_GGX(NoH, a) * V_SmithGGX(NoV, NoL, a) * F_Schlick(F0, VoH);
+            color += spec * (PI * NoL) * radiance;
+        }
+    }
+
+    float3 emissive = face.Emissive;
+    if ((face.MaterialFlags & MAT_EMISSIVE) != 0)
+        emissive *= SrgbToLinear(SampleMaterial(face.EmissiveTexture, uv, retro).rgb);
+    color += emissive;
+
+    return float4(LinearToSrgb(max(color, 0.0f)), saturate(alpha));
 }

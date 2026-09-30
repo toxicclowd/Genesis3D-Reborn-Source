@@ -48,6 +48,7 @@ typedef struct PolyCacheEntry
 	uint32 WorldFace;
 	D3D12_GPU_VIRTUAL_ADDRESS WorldView;
 	D3D12_GPU_VIRTUAL_ADDRESS WorldFaces;
+	bool WorldPBR;						// shaded with the face's PBR material
 	D3D12_VERTEX_BUFFER_VIEW MeshVertices;
 } PolyCacheEntry;
 
@@ -97,7 +98,7 @@ public:
 	grBoolean AddWorldPoly(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers, int32 NumLayers, void* LMapCBContext, uint32 Flags);
 	// A face of GPU world geometry (see D3D12WorldGeometry.h).
 	grBoolean AddWorldFace(const D3D12WorldGeometry* World, uint32 Face, D3D12_GPU_VIRTUAL_ADDRESS View,
-		D3D12_GPU_VIRTUAL_ADDRESS FaceData, int32 NumLayers, uint32 Flags);
+		D3D12_GPU_VIRTUAL_ADDRESS FaceData, int32 NumLayers, uint32 Flags, bool PBR = false);
 	// A world mesh (DRV_MeshVertex triangle list, see DRV_Driver::WorldMesh_Render).
 	grBoolean AddWorldMesh(const DRV_MeshVertex* Verts, int32 NumVerts, grTexture* Texture,
 		D3D12_GPU_VIRTUAL_ADDRESS View, uint32 Flags);

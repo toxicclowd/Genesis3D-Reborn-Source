@@ -39,7 +39,28 @@ struct D3D12WorldFaceData
 	float	LightDivU;		// that texture's width/height * 16
 	float	LightDivV;
 	uint32	Padding[2];
+	// PBR material (roadmap Phase 2), read by PSWorldPBR only.
+	uint32	NormalTexture;
+	uint32	OrmTexture;
+	uint32	EmissiveTexture;
+	uint32	MaterialFlags;	// D3D12_WORLD_MATERIAL_*
+	float	BaseColor[4];
+	float	Roughness;
+	float	Metal;
+	float	AlphaCutoff;
+	float	MaterialPadding;
+	float	Emissive[3];
+	float	MaterialPadding2;
 };
+
+// D3D12WorldFaceData::MaterialFlags (World.hlsl MAT_*).
+#define D3D12_WORLD_MATERIAL_NORMAL		0x0001u
+#define D3D12_WORLD_MATERIAL_ORM		0x0002u
+#define D3D12_WORLD_MATERIAL_EMISSIVE	0x0004u
+#define D3D12_WORLD_MATERIAL_LIGHTMAP	0x0008u
+#define D3D12_WORLD_MATERIAL_RETRO		0x0010u
+#define D3D12_WORLD_MATERIAL_CUTOUT		0x0020u
+#define D3D12_WORLD_MATERIAL_TWO_SIDED	0x0040u
 
 struct D3D12WorldGeometry
 {
@@ -71,6 +92,11 @@ grBoolean	DRIVERCC D3D12World_Destroy(uint32 Geometry);
 int32		DRIVERCC D3D12World_RenderFace(uint32 Geometry, uint32 Face, const DRV_WorldView* View,
 										   grRDriver_Layer* Layers, int32 NumLayers,
 										   void* LMapCBContext, uint32 Flags, float Alpha);
+void		DRIVERCC D3D12World_SetLights(const DRV_WorldLight* Lights, int32 NumLights);
+int32		DRIVERCC D3D12World_RenderFacePBR(uint32 Geometry, uint32 Face, const DRV_WorldView* View,
+											  grRDriver_Layer* Layers, int32 NumLayers,
+											  void* LMapCBContext, uint32 Flags, float Alpha,
+											  const DRV_WorldMaterial* Material);
 int32		DRIVERCC D3D12World_RenderMesh(const DRV_MeshVertex* Verts, int32 NumVerts, const DRV_WorldView* View,
 										   grRDriver_Layer* Layer, uint32 Flags);
 

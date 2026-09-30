@@ -78,8 +78,41 @@ typedef struct grXForm3d grXForm3d;
 typedef enum grMaterialSpec_LayerType
 {
     GR_MATERIAL_LAYER_BASE=0,
-    GR_MATERIAL_LAYER_ALPHA
+    GR_MATERIAL_LAYER_ALPHA,
+    // PBR layers (.jmat version 2, same values as LAYER_TYPE_* in DCommon.h)
+    GR_MATERIAL_LAYER_NORMAL=3,		// tangent-space normal map, linear
+    GR_MATERIAL_LAYER_ORM=4,		// R = occlusion, G = roughness, B = metalness, linear
+    GR_MATERIAL_LAYER_EMISSIVE=5,	// sRGB
+    GR_MATERIAL_LAYER_HEIGHT=6		// parallax height, linear (optional)
 } grMaterialSpec_LayerType;
+
+/*! @name PBR material parameters (roadmap Phase 2)
+	A material without them, and without PBR layers, renders exactly as before.
+	@{
+*/
+#define GR_MATERIAL_ALPHA_OPAQUE		0
+#define GR_MATERIAL_ALPHA_CUTOUT		1	//!< clip below AlphaCutoff
+#define GR_MATERIAL_ALPHA_BLEND			2	//!< blended like a transparent face
+
+#define GR_MATERIAL_PBR_TWO_SIDED		0x0001
+#define GR_MATERIAL_PBR_RETRO			0x0002	//!< point sampling and texel-snapped shading
+
+/*! @typedef grMaterialSpec_PBR
+	@brief Scalar PBR parameters; this is also their layout in a .jmat file (48 bytes).
+*/
+typedef struct grMaterialSpec_PBR
+{
+	float	BaseColor[4];		//!< linear tint of the base layer (default 1,1,1,1)
+	float	Roughness;			//!< roughness, times the ORM map's G when there is one (default 1)
+	float	Metal;				//!< metalness, times the ORM map's B when there is one (default 1)
+	float	Emissive[3];		//!< linear emissive color, times the emissive map when there is one (default 0)
+	float	EmissiveIntensity;	//!< multiplies Emissive (default 1)
+	float	AlphaCutoff;		//!< for GR_MATERIAL_ALPHA_CUTOUT (default 0.5)
+	uint8	AlphaMode;			//!< GR_MATERIAL_ALPHA_*
+	uint8	Reserved;
+	uint16	Flags;				//!< GR_MATERIAL_PBR_*
+} grMaterialSpec_PBR;
+/*!@}*/
 typedef grMaterialSpec_LayerType grMaterialSpec_LayerType;
 
 
@@ -214,6 +247,37 @@ GRAPI grMaterialSpec_Thumbnail* GRCC grMaterialSpec_GetThumbnail(const grMateria
 GRAPI uint32 GRCC grMaterialSpec_Height(const grMaterialSpec* MatSpec);
 
 GRAPI uint32 GRCC grMaterialSpec_Width(const grMaterialSpec* MatSpec);
+
+/*! @fn int32 grMaterialSpec_FindLayer(const grMaterialSpec* MatSpec, grMaterialSpec_LayerType layerType)
+	@brief Index of the first layer of that type, or -1
+*/
+GRAPI int32 GRCC grMaterialSpec_FindLayer(const grMaterialSpec* MatSpec, grMaterialSpec_LayerType layerType);
+
+/*! @fn grBoolean grMaterialSpec_IsPBR(const grMaterialSpec* MatSpec)
+	@brief True when the material has PBR parameters or a normal, ORM or emissive layer
+*/
+GRAPI grBoolean GRCC grMaterialSpec_IsPBR(const grMaterialSpec* MatSpec);
+
+/*! @fn grBoolean grMaterialSpec_GetPBR(const grMaterialSpec* MatSpec, grMaterialSpec_PBR* PBR)
+	@brief Fills PBR with the material's parameters and returns GR_TRUE, or returns GR_FALSE with
+	the defaults adjusted to its maps (Metal 0 without an ORM map, Emissive 1 with an emissive map)
+*/
+GRAPI grBoolean GRCC grMaterialSpec_GetPBR(const grMaterialSpec* MatSpec, grMaterialSpec_PBR* PBR);
+
+/*! @fn grBoolean grMaterialSpec_SetPBR(grMaterialSpec* MatSpec, const grMaterialSpec_PBR* PBR)
+	@brief Sets the PBR parameters; NULL removes them (the file is then written as version 1)
+*/
+GRAPI grBoolean GRCC grMaterialSpec_SetPBR(grMaterialSpec* MatSpec, const grMaterialSpec_PBR* PBR);
+
+/*! @fn void grMaterialSpec_DefaultPBR(grMaterialSpec_PBR* PBR)
+	@brief The parameters a material without its own gets
+*/
+GRAPI void GRCC grMaterialSpec_DefaultPBR(grMaterialSpec_PBR* PBR);
+
+/*! @fn int32 grMaterialSpec_GetLayerType(const grMaterialSpec* MatSpec, int32 layerIndex)
+	@brief The layer's grMaterialSpec_LayerType, or -1
+*/
+GRAPI int32 GRCC grMaterialSpec_GetLayerType(const grMaterialSpec* MatSpec, int32 layerIndex);
 
 /*!@}*/
 

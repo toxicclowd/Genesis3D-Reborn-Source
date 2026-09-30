@@ -275,6 +275,12 @@ GRAPI grResourceMgr* GRCC grResource_MgrCreateDefault(grEngine* pEngine);
 */
 GRAPI void* GRCC grResource_GetResource(grResourceMgr *ResourceMgr, int32 Type, char *Name);
 
+/*! @fn grBoolean grResource_HasMaterialOverride(const char *Name);
+	@brief True when the G3D_MATERIAL_OVERRIDES directory has a .jmat for this material name
+	(the part after the last ':'). Levels then use it instead of their own material.
+*/
+GRAPI grBoolean GRCC grResource_HasMaterialOverride(const char *Name);
+
 /*! @fn void grResource_ExportResource(grResourceMgr *ResourceMgr, int32 Type, char *Name);
 	@brief Save a resource to its format on the disk
 

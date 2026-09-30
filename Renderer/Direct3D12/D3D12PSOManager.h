@@ -27,6 +27,7 @@ enum D3D12_PSO_TYPE
 	PSO_WORLD_TEXTURE,    // GPU world faces (Shaders/World.hlsl), no lightmap
 	PSO_WORLD_MULTITEX,   // GPU world faces with lightmap
 	PSO_MESH_TEXTURE,     // GPU world meshes (actors), textured and vertex lit
+	PSO_WORLD_PBR,        // GPU world faces with a PBR material (roadmap Phase 2)
 	PSO_COUNT
 };
 

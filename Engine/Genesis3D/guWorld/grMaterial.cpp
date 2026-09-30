@@ -235,6 +235,43 @@ GRAPI const char * GRCC grMaterial_GetBitmapName( const grMaterial *Mat)
 //	** grMaterial_Array **
 //=======================================================================================
 
+#ifndef _USE_BITMAPS
+//=======================================================================================
+//	AttachPBRLayers
+//	The PBR layers (normal, ORM, emissive) need driver handles too. Layer 0 is attached
+//	and detached by the callers, as before.
+//=======================================================================================
+static void AttachPBRLayers(grEngine *Engine, const grMaterialSpec *MatSpec, grBoolean Attach)
+{
+	int32		idx;
+
+	if (!Engine || !MatSpec)
+		return;
+
+	for (idx=1; idx<GR_MATERIAL_MAX_LAYER; idx++)
+	{
+		int32		Type = grMaterialSpec_GetLayerType(MatSpec, idx);
+		grBitmap	*pBitmap;
+
+		if (Type != GR_MATERIAL_LAYER_NORMAL && Type != GR_MATERIAL_LAYER_ORM && Type != GR_MATERIAL_LAYER_EMISSIVE)
+			continue;
+		pBitmap = grMaterialSpec_GetLayerBitmap(MatSpec, idx);
+		if (!pBitmap)
+			continue;
+		if (Attach)
+		{
+			if (!grEngine_AddBitmap(Engine, pBitmap, GR_ENGINE_BITMAP_TYPE_3D))
+				grErrorLog_AddString(-1, "AttachPBRLayers:  grEngine_AddBitmap failed.", NULL);
+		}
+		else
+		{
+			if (!grEngine_RemoveBitmap(Engine, pBitmap))
+				grErrorLog_AddString(-1, "AttachPBRLayers:  grEngine_RemoveBitmap failed.", NULL);
+		}
+	}
+}
+#endif
+
 //=======================================================================================
 //	grMaterial_ArrayCreate
 //=======================================================================================
@@ -354,6 +391,22 @@ static grBoolean ReadMaterial(grVFile *File, void *Element,void *Context)
             Material->MatSpec = (grMaterialSpec*) grResource_GetResource(WorldContext->ResMgr, Material->ResourceKind, Material->BitmapName);
 		}
 	}
+
+#ifndef _USE_BITMAPS
+	// A material override (G3D_MATERIAL_OVERRIDES) replaces a bitmap material too, e.g. with
+	// a PBR version; its base layer still finds the level's bitmap by name.
+	if (Material->ResourceKind != GR_RESOURCE_MATERIAL && grResource_HasMaterialOverride(Material->BitmapName))
+	{
+		grMaterialSpec *Override = (grMaterialSpec*) grResource_GetResource(WorldContext->ResMgr, GR_RESOURCE_MATERIAL, Material->BitmapName);
+
+		if (Override)
+		{
+			if (Material->MatSpec)
+				grMaterialSpec_Destroy(&Material->MatSpec);
+			Material->MatSpec = Override;
+		}
+	}
+#endif
 
 #ifdef _USE_BITMAPS
 	if (!Material->Bitmap)
@@ -619,6 +672,7 @@ GRAPI void GRCC grMaterial_ArrayDestroy(grMaterial_Array **Array)
 						grErrorLog_AddString(-1, "grMaterial_ArrayDestroy:  grEngine_RemoveBitmap failed.", NULL);
 					}
 				}
+				AttachPBRLayers((*Array)->Engine, Material->MatSpec, GR_FALSE);
 
 				grMaterialSpec_Destroy(&Material->MatSpec);
 			}
@@ -688,6 +742,7 @@ GRAPI void GRCC grMaterial_ArrayDestroyMaterial(grMaterial_Array *MatArray, grMa
 			pBitmap = grMaterialSpec_GetLayerBitmap(Material->MatSpec, 0);
 			if (!grEngine_RemoveBitmap(MatArray->Engine, pBitmap))
 				grErrorLog_AddString(-1, "grMaterial_ArrayDestroyMaterial:  grEngine_RemoveBitmap failed.", NULL);
+			AttachPBRLayers(MatArray->Engine, Material->MatSpec, GR_FALSE);
 		}
 		grMaterialSpec_Destroy(&Material->MatSpec);
 	}
@@ -784,6 +839,7 @@ GRAPI grBoolean GRCC grMaterial_ArraySetMaterialSpec(grMaterial_Array *Array, gr
 				return GR_FALSE;
 			}
 		}
+		AttachPBRLayers(Array->Engine, pMaterial->MatSpec, GR_FALSE);
 	}
 
 	grMaterialSpec_CreateRef(MatSpec);
@@ -793,6 +849,7 @@ GRAPI grBoolean GRCC grMaterial_ArraySetMaterialSpec(grMaterial_Array *Array, gr
     strcpy(pMaterial->BitmapName, BitmapName);
 
 	// now add the new bitmap if any, nothing to do if the spec contains grTexture
+	AttachPBRLayers(Array->Engine, pMaterial->MatSpec, GR_TRUE);
 	pBitmap = grMaterialSpec_GetLayerBitmap(pMaterial->MatSpec, 0);
 	if (pBitmap && Array->Engine)
 	{
@@ -873,6 +930,8 @@ grBoolean grMaterial_ArraySetEngine(grMaterial_Array *Array, grEngine *Engine)
 				return GR_FALSE;
 			}
 		}
+		AttachPBRLayers(Array->Engine, Material->MatSpec, GR_FALSE);
+		AttachPBRLayers(Engine, Material->MatSpec, GR_TRUE);
 #endif
 	}
 

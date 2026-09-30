@@ -21,6 +21,9 @@
 //
 //	Used to manage a list of resources.
 //
+#include <windows.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <memory.h>
 #include <assert.h>
 #include <string.h>
@@ -810,6 +813,65 @@ GRAPI grResourceMgr* GRCC grResource_MgrCreateDefault(grEngine* pEngine)
 #include "Bitmap.h"
 #include "grMaterial.h"
 
+//=====================================================================================
+//	OpenMaterialOverride
+//	G3D_MATERIAL_OVERRIDES=<directory>: a .jmat there replaces the one of the same name,
+//	e.g. to try PBR versions of a level's materials without changing the level or the
+//	shipped materials. Its layers still load from GlobalMaterials (or a pak under it).
+//=====================================================================================
+static const char *MaterialOverrideDir(void)
+{
+	static grBoolean	Checked = GR_FALSE;
+	static char			Dir[_MAX_PATH];
+	const char			*Env;
+
+	if (!Checked)
+	{
+		Env = getenv("G3D_MATERIAL_OVERRIDES");
+		if (Env)
+		{
+			strncpy(Dir, Env, sizeof(Dir) - 1);
+			Dir[sizeof(Dir) - 1] = 0;
+		}
+		Checked = GR_TRUE;
+	}
+	return Dir;
+}
+
+static grBoolean MaterialOverridePath(const char *FileName, char *Path, int32 PathSize)
+{
+	const char			*Dir = MaterialOverrideDir();
+
+	if (!Dir[0])
+		return GR_FALSE;
+	_snprintf(Path, PathSize - 1, "%s\\%s", Dir, FileName);
+	Path[PathSize - 1] = 0;
+	return (GetFileAttributesA(Path) != INVALID_FILE_ATTRIBUTES) ? GR_TRUE : GR_FALSE;
+}
+
+static grVFile *OpenMaterialOverride(const char *FileName)
+{
+	char				Path[_MAX_PATH * 2];
+
+	if (!MaterialOverridePath(FileName, Path, sizeof(Path)))
+		return NULL;
+	return grVFile_OpenNewSystem(NULL, GR_VFILE_TYPE_DOS, Path, NULL, GR_VFILE_OPEN_READONLY);
+}
+
+GRAPI grBoolean GRCC grResource_HasMaterialOverride(const char *Name)
+{
+	char				FileName[_MAX_PATH];
+	char				Path[_MAX_PATH * 2];
+	const char			*Colon;
+
+	if (!Name || !MaterialOverrideDir()[0])
+		return GR_FALSE;
+	Colon = strrchr(Name, ':');
+	_snprintf(FileName, sizeof(FileName) - 1, "%s.jmat", Colon ? Colon + 1 : Name);
+	FileName[sizeof(FileName) - 1] = 0;
+	return MaterialOverridePath(FileName, Path, sizeof(Path));
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////
 //
 //	grResource_GetResource()
@@ -918,7 +980,9 @@ GRAPI void * GRCC grResource_GetResource(
 				break;
 			case GR_RESOURCE_MATERIAL:
 				strcat(ResNameCopy, ".jmat");
-				ResFile = grVFile_Open(Directory, ResNameCopy, GR_VFILE_OPEN_READONLY);
+				ResFile = OpenMaterialOverride(ResNameCopy);
+				if (!ResFile)
+					ResFile = grVFile_Open(Directory, ResNameCopy, GR_VFILE_OPEN_READONLY);
 				if (ResFile) {
 					Data = grMaterialSpec_CreateFromFile(ResFile, ResourceMgr->Engine, ResourceMgr);
                 } else {
