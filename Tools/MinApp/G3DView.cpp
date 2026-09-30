@@ -106,7 +106,7 @@ BOOL CG3DView::PreCreateWindow(CREATESTRUCT& cs)
 //	modify the window style for the display window
 
 #ifdef _DEBUG	//	windowed display
-	cs.lpszName = _T("jMinApp_DEBUG");
+	cs.lpszName = _T("G3DMinApp_DEBUG");
 //	cs.dwExStyle |= WS_EX_TOPMOST;
 //	cs.style &=~WS_VISIBLE;
 	cs.style&=~WS_BORDER;
@@ -118,7 +118,7 @@ BOOL CG3DView::PreCreateWindow(CREATESTRUCT& cs)
 #endif
 
 #ifdef NDEBUG	//	fullscreen
-	cs.lpszName = _T("jMinApp");
+	cs.lpszName = _T("G3DMinApp");
 	cs.dwExStyle |= WS_EX_TOPMOST;
 	cs.style &=~WS_VISIBLE;
 	cs.style &= SW_SHOWMAXIMIZED;
@@ -196,7 +196,7 @@ int CG3DView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			/*SWP_NOCOPYBITS | SWP_NOZORDER |*/ WS_EX_TOPMOST | SW_SHOWMAXIMIZED);	
 
 #endif
-/*		//	get the prefs from the jMinApp.ini and set prefs accordingly
+/*		//	get the prefs from the G3DMinApp.ini and set prefs accordingly
 
 		if (pMainFrame)
 		{

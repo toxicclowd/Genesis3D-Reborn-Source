@@ -142,7 +142,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties RESOURCE_FILE="jMinApp.rc" />
+      <UserProperties RESOURCE_FILE="MinApp.rc" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

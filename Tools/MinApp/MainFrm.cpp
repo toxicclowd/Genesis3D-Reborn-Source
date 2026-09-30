@@ -492,7 +492,7 @@ bool	CMainFrame::InitializeG3D()
 
 	if (m_hWnd)
 	{
-		//	get the prefs from the jMinApp.ini and set prefs accordingly
+		//	get the prefs from the G3DMinApp.ini and set prefs accordingly
 
 //		if (pMainFrame)
 		{
@@ -503,7 +503,7 @@ bool	CMainFrame::InitializeG3D()
 				return false;
 			}
 
-			//	if the BROWSE line is set to 'true' in jMinapp.ini,
+			//	if the BROWSE line is set to 'true' in G3DMinApp.ini,
 			//	open a CFileDialog and browse for the level we want.
 			if (m_bBrowseLevel)
 			{
@@ -588,7 +588,7 @@ bool	CMainFrame::InitializeG3D()
 
 ///////////////////////////////////////////////////////////////////////////////
 //	SetAppPreferences
-//	Reads the jMinApp.ini file for config settings
+//	Reads the G3DMinApp.ini file for config settings
 ///////////////////////////////////////////////////////////////////////////////
 bool	CMainFrame::SetAppPreferences()
 {
@@ -600,12 +600,12 @@ bool	CMainFrame::SetAppPreferences()
 	::GetCurrentDirectory(dwcNameSize, tempPathString);
 	pathString = tempPathString;
 	iniString = pathString;
-	iniString += _T("\\jMinApp.ini");
+	iniString += _T("\\G3DMinApp.ini");
 
-	CStdioFile		file;			//	treat jMinApp.ini as a CSdtioFile
+	CStdioFile		file;			//	treat G3DMinApp.ini as a CSdtioFile
 	CFileException	exception;		//	our exception receiver
 
-	//	try to open jMinApp.ini				
+	//	try to open G3DMinApp.ini				
 	if (file.Open(iniString, CFile::modeRead, &exception))
 	{
 		CString	tempString = _T("");	//	initialize, just to be safe
@@ -1086,7 +1086,7 @@ bool	CMainFrame::LoadDriver()
 
 ///////////////////////////////////////////////////////////////////////////////
 //	BrowseForWorld
-//	This is called if the BROWSE line of jMinApp.ini is set to true
+//	This is called if the BROWSE line of G3DMinApp.ini is set to true
 ///////////////////////////////////////////////////////////////////////////////
 CString CMainFrame::BrowseForWorld() 
 {

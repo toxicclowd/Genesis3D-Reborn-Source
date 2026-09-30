@@ -130,9 +130,9 @@ BEGIN
             VALUE "CompanyName", "Eclipse Entertainment LLC"
             VALUE "FileDescription", "Genesis3D: Reborn Minimal Application"
             VALUE "FileVersion", "1.0.0.1"
-            VALUE "InternalName", "jMinApp.exe"
+            VALUE "InternalName", "G3DMinApp.exe"
             VALUE "LegalCopyright", "(c) Eclipse Entertainment 2011.  All rights reserved."
-            VALUE "OriginalFilename", "jMinApp.exe"
+            VALUE "OriginalFilename", "G3DMinApp.exe"
             VALUE "ProductName", "Genesis3D: Reborn MinApp"
             VALUE "ProductVersion", "1.0.0.1"
         END
@@ -170,7 +170,7 @@ END
 
 IDR_MAINFRAME MENU
 BEGIN
-    MENUITEM "jMinApp",                     0
+    MENUITEM "G3DMinApp",                     0
 END
 
 
