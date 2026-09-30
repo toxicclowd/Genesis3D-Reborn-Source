@@ -24,6 +24,8 @@ CGameMgr::CGameMgr()
 
 	m_hWnd = NULL;
 	m_Width = m_Height = m_BPP = -1;
+	m_LastTime = 0;
+	m_FixedTimeStep = 0.0f;
 	strcpy(m_DriverName, "(D3D) DirectX 12");
 
 	this->register_func("EnableFrameRateCounter", cpp_method(this, CGameMgr, EOSEnableFrameRateCounter));
@@ -198,6 +200,18 @@ grBoolean CGameMgr::LoadWorld(const char *filename)
 	if (!m_pPtrMgr || !m_pResMgr)
 		return GR_FALSE;
 
+	// A command-line -level replaces the world the startup script loaded. The pointer
+	// manager still maps shared objects from the first load, which are freed with that
+	// world, so reading the next file needs a fresh one.
+	if (m_pWorld)
+	{
+		grWorld_Destroy(&m_pWorld);
+		grPtrMgr_Destroy(&m_pPtrMgr);
+		m_pPtrMgr = grPtrMgr_Create();
+		if (!m_pPtrMgr)
+			return GR_FALSE;
+	}
+
 	m_pWorld = grWorld_CreateFromEditorFile(filename, m_pPtrMgr, m_pResMgr);
 	if (!m_pWorld)
 		return GR_FALSE;
@@ -210,6 +224,25 @@ grBoolean CGameMgr::LoadWorld(const char *filename)
 	return GR_TRUE;
 }
 
+void CGameMgr::SetCamera(const grVec3d *Pos, float YawDegrees, float PitchDegrees)
+{
+	const float					DegToRad = 3.14159265f / 180.0f;
+	grXForm3d					Pitch;
+
+	// Same yaw-then-pitch construction the World Editor camera uses.
+	grXForm3d_SetYRotation(&m_CameraXForm, YawDegrees * DegToRad);
+	grXForm3d_SetXRotation(&Pitch, PitchDegrees * DegToRad);
+	grXForm3d_Multiply(&m_CameraXForm, &Pitch, &m_CameraXForm);
+	grXForm3d_Translate(&m_CameraXForm, Pos->X, Pos->Y, Pos->Z);
+	if (m_pCamera)
+		grCamera_SetXForm(m_pCamera, &m_CameraXForm);
+}
+
+void CGameMgr::SetFixedTimeStep(float Seconds)
+{
+	m_FixedTimeStep = Seconds;
+}
+
 grBoolean CGameMgr::Frame()
 {
 	DWORD						currTime;
@@ -219,6 +252,8 @@ grBoolean CGameMgr::Frame()
 
 	currTime = timeGetTime();
 	deltaTime = ((float)(currTime - m_LastTime)) * 0.001f;
+	if (m_FixedTimeStep > 0.0f)
+		deltaTime = m_FixedTimeStep;
 
 	if (!grEngine_BeginFrame(m_pEngine, m_pCamera, GR_TRUE))
 		return GR_FALSE;

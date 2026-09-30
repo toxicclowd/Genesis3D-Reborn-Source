@@ -1,0 +1,10 @@
+# Render regression shots (see RenderRegression.ps1).
+# name | level (blank = the level G3DMain.eos loads) | camera: x y z yaw pitch, degrees (blank = origin)
+startup     |                              |
+tutorial1   | Levels\tutorial1.j3d         |
+streetscene | Levels\StreetScene.j3d       |
+mod1_actor  | Levels\tutorial2_mod1.j3d    |
+pknight     | Levels\pknight.j3d           |
+dancer      | Levels\dancer.j3d            | 0 200 400 0 -20
+level1_box  | Levels\Level1.j3d            | 0 200 400 0 -20
+alpha_test  | Levels\alpha_test.j3d        | 0 200 400 0 -20

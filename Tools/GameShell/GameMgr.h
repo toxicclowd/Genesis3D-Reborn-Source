@@ -36,6 +36,7 @@ public:
 	grXForm3d						m_CameraXForm;
 
 	DWORD							m_LastTime;
+	float							m_FixedTimeStep;		// seconds per frame, 0 = real time
 
 public:
 	bool							Release();
@@ -47,6 +48,8 @@ public:
 	grBoolean						SetDriverMode(int32 w, int32 h, int32 b);
 
 	grBoolean						LoadWorld(const char *filename);
+	void							SetCamera(const grVec3d *Pos, float YawDegrees, float PitchDegrees);
+	void							SetFixedTimeStep(float Seconds);
 
 	grBoolean						Frame();
 
