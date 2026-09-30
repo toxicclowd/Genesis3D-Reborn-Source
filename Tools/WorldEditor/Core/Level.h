@@ -166,6 +166,7 @@ int32				Level_EnumSubSelected( Level * pLevel, void * lParam, ObjectListCB Call
 // STATE CHANGES
 void				Level_SetChanged( Level * pLevel, grBoolean bChanged );
 void				Level_SetCurCamXYRot( const Level * pLevel, float XRot, float YRot );
+grBoolean			Level_SetCurCamXForm( const Level * pLevel, const grXForm3d * pXForm );
 void				Level_ClearMiscFlags( Level * pLevel, const uint32 nFlags ) ;
 void				Level_RebuildAll( Level * pLevel, grBSP_Options Options, grBSP_Logic Logic, grBSP_LogicBalance LogicBalance );
 void				Level_RebuildLights( Level * pLevel );

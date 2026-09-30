@@ -260,7 +260,11 @@ public:
    grObject *	GetCurCamObject( );
    void		GetCurCamXYRot( float *XRot, float *YRot );
    void		SetCurCamXYRot( float XRot, float YRot );
-   
+   grBoolean	GetCurCamXForm( grXForm3d * pXForm );
+   float		GetCurCamFOV( );
+   void		SetCurCam( float XRot, float YRot, const grVec3d * pPos );
+   grBoolean	GetLevelBounds( grExtBox * pBounds );
+
    grBoolean	HasChanged();
    void		Save();
    void		UpdateStats();

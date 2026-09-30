@@ -384,6 +384,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Bi-linear Filtering",         IDM_BILINEAR, GRAYED
         MENUITEM SEPARATOR
+        MENUITEM "Classic Genesis Navigation",  ID_3DVIEW_CLASSICNAV
+        MENUITEM SEPARATOR
         MENUITEM "Rebuild All",                 3374
     END
 END

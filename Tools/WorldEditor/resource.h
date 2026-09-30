@@ -901,6 +901,7 @@
 #define IDM_VIDEOSETTINGS_WINDOWMODE    3542
 #define IDM_ANIMATE                     3546
 #define IDM_BILINEAR                    3550
+#define ID_3DVIEW_CLASSICNAV            5046
 #define IDS_UPDATE_ALL                  3554
 #define ID_EDIT_CLONE                   3558
 #define IDM_OPTIONS_MOUSEPROP           3562
@@ -1019,7 +1020,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        4016
-#define _APS_NEXT_COMMAND_VALUE         5046
+#define _APS_NEXT_COMMAND_VALUE         5047
 #define _APS_NEXT_CONTROL_VALUE         6041
 #define _APS_NEXT_SYMED_VALUE           7001
 #endif

@@ -3911,6 +3911,73 @@ void CGweDoc::SetCurCamXYRot( float XRot, float YRot )
 	Level_SetCurCamXYRot( m_pLevel, XRot, YRot );
 }
 
+grBoolean CGweDoc::GetCurCamXForm( grXForm3d * pXForm )
+{
+	return( Level_GetCurCamXForm( m_pLevel, pXForm ) );
+}
+
+float CGweDoc::GetCurCamFOV( )
+{
+	float FOV = 2.0f;
+
+	Level_GetCurCamFOV( m_pLevel, &FOV );
+	return( FOV );
+}
+
+// Places the current camera at an absolute rotation and position with a single view update.
+// The rotation is built the same way Camera_RotCurCamX/Y build it.
+void CGweDoc::SetCurCam( float XRot, float YRot, const grVec3d * pPos )
+{
+	grXForm3d	XForm{};
+	grXForm3d	XRot_XForm{};
+
+	grXForm3d_SetYRotation( &XForm, YRot );
+	grXForm3d_SetXRotation( &XRot_XForm, XRot );
+	grXForm3d_Multiply( &XForm, &XRot_XForm, &XForm );
+	grXForm3d_Translate( &XForm, pPos->X, pPos->Y, pPos->Z );
+
+	Level_SetChanged( m_pLevel, GR_TRUE );
+	Level_SetCurCamXYRot( m_pLevel, XRot, YRot );
+	Level_SetCurCamXForm( m_pLevel, &XForm );
+	UpdateAllViews( nullptr, DOC_HINT_ALL, (CObject*)nullptr );
+}
+
+typedef struct
+{
+	grExtBox	Bounds;
+	grBoolean	bValid;
+} LevelBoundsInfo;
+
+static grBoolean CGweDoc_LevelBoundsCB( Object * pObject, void * pVoid )
+{
+	LevelBoundsInfo *	pInfo = (LevelBoundsInfo*)pVoid;
+	grExtBox			ObjectBounds{};
+
+	// The editor cameras would stretch the bounds to wherever the view happens to be.
+	if( Object_GetKind( pObject ) == KIND_CAMERA )
+		return( GR_TRUE );
+
+	if( Object_GetWorldAxialBounds( pObject, &ObjectBounds ) )
+	{
+		if( pInfo->bValid )
+			grExtBox_Union( &pInfo->Bounds, &ObjectBounds, &pInfo->Bounds );
+		else
+			pInfo->Bounds = ObjectBounds;
+		pInfo->bValid = GR_TRUE;
+	}
+	return( GR_TRUE );
+}
+
+grBoolean CGweDoc::GetLevelBounds( grExtBox * pBounds )
+{
+	LevelBoundsInfo	Info{};
+
+	Level_EnumObjects( m_pLevel, &Info, CGweDoc_LevelBoundsCB );
+	if( Info.bValid )
+		*pBounds = Info.Bounds;
+	return( Info.bValid );
+}
+
 grBoolean CGweDoc::HasChanged()
 {
 	if( m_pLevel == nullptr )

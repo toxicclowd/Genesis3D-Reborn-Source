@@ -27,6 +27,7 @@
 #include "ErrorLog.h"
 #include "drvlist.h"
 #include "mainfrm.h"
+#include <math.h>
 
 
 #ifdef _DEBUG
@@ -39,6 +40,24 @@ static char THIS_FILE[] = __FILE__;
 #define G3DVIEW_PERIOD		50
 
 #define G3DVIEW_GAMMA		1.2f
+
+#define G3DVIEW_FLYTIMER	3
+#define G3DVIEW_FLYPERIOD	10
+
+// Modern navigation tuning
+#define NAV_FLY_SPEED		400.0f				// world units per second at speed scale 1
+#define NAV_FAST_SCALE		4.0f				// Shift multiplier for fly, dolly and pan
+#define NAV_ACCEL			12.0f				// how quickly fly velocity catches up with input (1/s)
+#define NAV_LOOK_SCALE		(1.0f / 150.0f)		// radians per pixel, same as the classic RMB look
+#define NAV_PITCH_LIMIT		1.55f
+#define NAV_DOLLY_STEP		32.0f				// world units per wheel notch
+#define NAV_ORBIT_DISTANCE	256.0f				// orbit pivot distance when nothing is selected
+#define NAV_SPEED_MIN		0.05f
+#define NAV_SPEED_MAX		20.0f
+
+static const char* s_pszNavSection = "Navigation";
+static const char* s_pszNavKeymapKey = "Keymap";
+static int s_NavKeymap = -1;
 
 int CG3DView::m_CXDRAG = 2;
 int CG3DView::m_CYDRAG = 2;
@@ -56,8 +75,13 @@ static	grFloat			Fullscreen_Framerate = 0;
 
 IMPLEMENT_DYNCREATE(CG3DView, CG3DMfcView)
 
-CG3DView::CG3DView() : m_nViewType(0), m_bDragging(false), m_RenderMode(RenderMode_TexturedAndLit), m_bAnimate(false)
+CG3DView::CG3DView() : m_nViewType(0), m_bDragging(false), m_RenderMode(RenderMode_TexturedAndLit), m_bAnimate(false),
+	m_bFlying(false), m_bFlyMoved(false), m_bOrbiting(false), m_bPanning(false), m_bCursorHidden(false), m_bEatAltUp(false),
+	m_FlySpeedScale(1.0f)
 {
+	grVec3d_Clear(&m_FlyVelocity);
+	grVec3d_Clear(&m_OrbitPivot);
+	m_FlyLastTick.QuadPart = 0;
 	m_bRecalcCamera = TRUE;
 	m_pCamera = nullptr;
 
@@ -102,6 +126,12 @@ BEGIN_MESSAGE_MAP(CG3DView, CG3DMfcView)
 	ON_COMMAND(ID_3DVIEW_BSPSPLITS, On3dviewBspsplits)
 	ON_COMMAND(IDM_BILINEAR, OnBilinear)
 	//}}AFX_MSG_MAP
+	ON_WM_MBUTTONDOWN()
+	ON_WM_MBUTTONUP()
+	ON_WM_MOUSEWHEEL()
+	ON_WM_KEYDOWN()
+	ON_WM_CAPTURECHANGED()
+	ON_COMMAND(ID_3DVIEW_CLASSICNAV, On3dviewClassicNav)
 	ON_COMMAND_RANGE(IDM_VIEW_TEXTURED, IDM_VIEW_RESERVED2, OnViewType)
 	ON_UPDATE_COMMAND_UI_RANGE(IDM_VIEW_TEXTURED, IDM_VIEW_RESERVED2, OnUpdateViewType)
 END_MESSAGE_MAP()
@@ -224,7 +254,46 @@ void CG3DView::OnMouseMove(UINT nFlags, CPoint point)
 		{
 			m_bDragging = true;
 		}
-		if (m_bDragging)
+		if (m_bDragging && m_bFlying)
+		{
+			if (!m_bCursorHidden)
+			{
+				ShowCursor(FALSE);
+				m_bCursorHidden = true;
+			}
+
+			delta = m_FlyCursorHome - point;
+			if (delta.x != 0 || delta.y != 0)
+			{
+				FlyLook(delta.x, delta.y);
+
+				// Pin the cursor so mouse look never runs into the edge of the screen.
+				CPoint ScreenPt = m_FlyCursorHome;
+				ClientToScreen(&ScreenPt);
+				::SetCursorPos(ScreenPt.x, ScreenPt.y);
+			}
+			m_Anchor = m_FlyCursorHome;
+		}
+		else if (m_bDragging && m_bOrbiting)
+		{
+			delta = m_Anchor - point;
+			if (delta.x != 0 || delta.y != 0)
+				OrbitCamera(delta.x, delta.y);
+			m_Anchor = point;
+		}
+		else if (m_bDragging && m_bPanning)
+		{
+			// Grab-style pan: the world follows the cursor.
+			long Scale = (nFlags & MK_SHIFT) ? (long)NAV_FAST_SCALE : 1;
+
+			delta = m_Anchor - point;
+			if (delta.x != 0)
+				MoveCameraLeftRight(-delta.x * Scale);
+			if (delta.y != 0)
+				MoveCameraUpDown(-delta.y * Scale);
+			m_Anchor = point;
+		}
+		else if (m_bDragging)
 		{
 			delta = m_Anchor - point; // the order is important to generate the desired motion
 
@@ -278,15 +347,32 @@ void CG3DView::OnMouseMove(UINT nFlags, CPoint point)
 
 void CG3DView::OnLButtonDown(UINT nFlags, CPoint point)
 {
+	SetFocus();
+
+	// Clicking while flying or panning would steal the anchor from the active drag.
+	if (m_bFlying || m_bPanning)
+		return;
+
 	m_Anchor = point;
 	SetCapture();
+
+	if (GetNavKeymap() == NavKeymap_Modern && (GetKeyState(VK_MENU) & 0x8000))
+		BeginOrbit(point);
 
 	CG3DMfcView::OnLButtonDown(nFlags, point);
 }
 
 void CG3DView::OnLButtonUp(UINT nFlags, CPoint point)
 {
-	if (GetCapture() == this)
+	if (m_bOrbiting)
+	{
+		// An Alt+click orbit never selects.
+		m_bOrbiting = false;
+		m_bDragging = false;
+		if (GetCapture() == this)
+			ReleaseCapture();
+	}
+	else if (GetCapture() == this)
 	{
 		CGweDoc* Doc{};
 		grBoolean	bControlHeld{};
@@ -367,6 +453,9 @@ void CG3DView::ShowMenu(CPoint point)
 			ContextMenu.EnableMenuItem(IDM_BILINEAR, MF_BYCOMMAND | MF_ENABLED);
 	}
 
+	if (GetNavKeymap() == NavKeymap_Classic)
+		ContextMenu.CheckMenuItem(ID_3DVIEW_CLASSICNAV, MF_BYCOMMAND | MF_CHECKED);
+
 
 	SubMenu = ContextMenu.GetSubMenu(0);
 	SubMenu->TrackPopupMenu(TPM_LEFTALIGN, point.x, point.y, this, nullptr);
@@ -377,9 +466,16 @@ void CG3DView::OnRButtonDown(UINT nFlags, CPoint point)
 {
 	//Rect MenuRect = { 4, 4, 128, 20 };  // Need to figure out true text box
 
+	SetFocus();
+	if (m_bOrbiting || m_bPanning)
+		return;
 
 	m_Anchor = point;
 	SetCapture();
+
+	// LMB+RMB stays the classic pan, so only a lone RMB starts flying.
+	if (GetNavKeymap() == NavKeymap_Modern && !(nFlags & (MK_LBUTTON | MK_MBUTTON)))
+		BeginFly(point);
 
 	CG3DMfcView::OnRButtonDown(nFlags, point);
 }
@@ -388,7 +484,25 @@ void CG3DView::OnRButtonUp(UINT nFlags, CPoint point)
 {
 	grBoolean OldAnimate{};
 
-	if (GetCapture() == this)
+	if (m_bFlying)
+	{
+		bool bMoved = m_bDragging || m_bFlyMoved;
+
+		EndFly();
+		m_bDragging = false;
+		if (GetCapture() == this)
+			ReleaseCapture();
+
+		// A plain right click (no look, no movement) still opens the context menu.
+		if (!bMoved)
+		{
+			OldAnimate = m_bAnimate;
+			Animate(GR_FALSE);
+			ShowMenu(point);
+			Animate(OldAnimate);
+		}
+	}
+	else if (GetCapture() == this)
 	{
 		ReleaseCapture();
 		if (m_bDragging)
@@ -551,6 +665,12 @@ void CG3DView::OnTimer(UINT nIDEvent)
 	float			CurTime{};
 	//MSG	Msg;
 
+	if (nIDEvent == G3DVIEW_FLYTIMER)
+	{
+		UpdateFly();
+		return;
+	}
+
 	pDoc = GetDocument();
 	ASSERT(pDoc != nullptr);
 
@@ -700,6 +820,371 @@ void CG3DView::On3dviewBspsplits()
 
 
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Modern navigation (roadmap Track A)
+//
+//	Hold RMB		fly: mouse look, WASD move, Q/E down/up, Shift fast, wheel changes speed
+//	Alt + LMB		orbit around the selection (or a point ahead of the camera)
+//	MMB drag		pan
+//	Wheel			dolly
+//	F / Shift+F		frame the selection / the whole level
+//
+// The Classic Genesis keymap turns all of this off and keeps the original controls.
+
+static float Nav_ClampPitch(float XRot)
+{
+	if (XRot > NAV_PITCH_LIMIT)
+		return NAV_PITCH_LIMIT;
+	if (XRot < -NAV_PITCH_LIMIT)
+		return -NAV_PITCH_LIMIT;
+	return XRot;
+}
+
+// Same rotation the editor camera object builds from its X/Y angles.
+static void Nav_CamXFormFromRot(float XRot, float YRot, grXForm3d* pXForm)
+{
+	grXForm3d XRot_XForm{};
+
+	grXForm3d_SetYRotation(pXForm, YRot);
+	grXForm3d_SetXRotation(&XRot_XForm, XRot);
+	grXForm3d_Multiply(pXForm, &XRot_XForm, pXForm);
+}
+
+CG3DView::NavKeymap CG3DView::GetNavKeymap(void)
+{
+	if (s_NavKeymap < 0)
+	{
+		CString Keymap = AfxGetApp()->GetProfileString(s_pszNavSection, s_pszNavKeymapKey, "Modern");
+
+		s_NavKeymap = (Keymap.CompareNoCase("Classic") == 0) ? NavKeymap_Classic : NavKeymap_Modern;
+	}
+	return (NavKeymap)s_NavKeymap;
+}
+
+void CG3DView::SetNavKeymap(NavKeymap Keymap)
+{
+	s_NavKeymap = Keymap;
+	AfxGetApp()->WriteProfileString(s_pszNavSection, s_pszNavKeymapKey, (Keymap == NavKeymap_Classic) ? "Classic" : "Modern");
+}
+
+void CG3DView::On3dviewClassicNav()
+{
+	SetNavKeymap((GetNavKeymap() == NavKeymap_Classic) ? NavKeymap_Modern : NavKeymap_Classic);
+}
+
+BOOL CG3DView::PreTranslateMessage(MSG* pMsg)
+{
+	// While flying, WASD/QE/Shift drive the camera; keep them away from the accelerators.
+	if (m_bFlying && pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST)
+		return TRUE;
+
+	if (m_bEatAltUp && pMsg->message == WM_SYSKEYUP && pMsg->wParam == VK_MENU)
+	{
+		m_bEatAltUp = false;
+		return TRUE;
+	}
+
+	return CG3DMfcView::PreTranslateMessage(pMsg);
+}
+
+void CG3DView::OnCaptureChanged(CWnd* pWnd)
+{
+	// Losing capture (Alt+Tab, a dialog) must not leave a drag running or the cursor hidden.
+	if (pWnd != this)
+	{
+		EndFly();
+		EndNavDrag();
+		m_bDragging = false;
+	}
+
+	CG3DMfcView::OnCaptureChanged(pWnd);
+}
+
+void CG3DView::BeginFly(CPoint point)
+{
+	m_bFlying = true;
+	m_bFlyMoved = false;
+	m_FlyCursorHome = point;
+	grVec3d_Clear(&m_FlyVelocity);
+	QueryPerformanceCounter(&m_FlyLastTick);
+	SetTimer(G3DVIEW_FLYTIMER, G3DVIEW_FLYPERIOD, nullptr);
+}
+
+void CG3DView::EndFly(void)
+{
+	if (!m_bFlying)
+		return;
+
+	m_bFlying = false;
+	KillTimer(G3DVIEW_FLYTIMER);
+	grVec3d_Clear(&m_FlyVelocity);
+
+	if (m_bCursorHidden)
+	{
+		ShowCursor(TRUE);
+		m_bCursorHidden = false;
+	}
+}
+
+void CG3DView::EndNavDrag(void)
+{
+	m_bOrbiting = false;
+	m_bPanning = false;
+}
+
+void CG3DView::FlyLook(long DeltaX, long DeltaY)
+{
+	CGweDoc* pDoc = GetDocument();
+	grXForm3d XForm{};
+	float XRot = 0.0f, YRot = 0.0f;
+
+	if (!pDoc->GetCurCamXForm(&XForm))
+		return;
+
+	pDoc->GetCurCamXYRot(&XRot, &YRot);
+	YRot += (float)DeltaX * NAV_LOOK_SCALE;
+	XRot = Nav_ClampPitch(XRot + (float)DeltaY * NAV_LOOK_SCALE);
+	pDoc->SetCurCam(XRot, YRot, &XForm.Translation);
+}
+
+void CG3DView::UpdateFly(void)
+{
+	CGweDoc* pDoc = GetDocument();
+	LARGE_INTEGER Now{}, Freq{};
+	grXForm3d XForm{};
+	grVec3d In{}, Left{}, Wish{}, Diff{}, Pos{};
+	float XRot = 0.0f, YRot = 0.0f;
+	float TimeDelta, Blend;
+	bool bInput;
+
+	QueryPerformanceCounter(&Now);
+	QueryPerformanceFrequency(&Freq);
+	TimeDelta = (float)(Now.QuadPart - m_FlyLastTick.QuadPart) / (float)Freq.QuadPart;
+	m_FlyLastTick = Now;
+	if (TimeDelta <= 0.0f)
+		return;
+	if (TimeDelta > 0.1f)
+		TimeDelta = 0.1f;
+
+	if (!pDoc->GetCurCamXForm(&XForm))
+		return;
+
+	grXForm3d_GetIn(&XForm, &In);
+	grXForm3d_GetLeft(&XForm, &Left);
+
+	if (Util_IsKeyDown('W'))
+		grVec3d_Add(&Wish, &In, &Wish);
+	if (Util_IsKeyDown('S'))
+		grVec3d_Subtract(&Wish, &In, &Wish);
+	if (Util_IsKeyDown('A'))
+		grVec3d_Add(&Wish, &Left, &Wish);
+	if (Util_IsKeyDown('D'))
+		grVec3d_Subtract(&Wish, &Left, &Wish);
+	// Up and down are along the world axis, so Q/E never drift with the pitch.
+	if (Util_IsKeyDown('E'))
+		Wish.Y += 1.0f;
+	if (Util_IsKeyDown('Q'))
+		Wish.Y -= 1.0f;
+
+	bInput = grVec3d_LengthSquared(&Wish) > 0.0001f;
+	if (bInput)
+	{
+		m_bFlyMoved = true;
+		grVec3d_Normalize(&Wish);
+		grVec3d_Scale(&Wish, NAV_FLY_SPEED * m_FlySpeedScale * (Util_IsKeyDown(VK_SHIFT) ? NAV_FAST_SCALE : 1.0f), &Wish);
+	}
+
+	// Ease toward the wished velocity so starts and stops are smooth but still responsive.
+	Blend = 1.0f - expf(-NAV_ACCEL * TimeDelta);
+	grVec3d_Subtract(&Wish, &m_FlyVelocity, &Diff);
+	grVec3d_AddScaled(&m_FlyVelocity, &Diff, Blend, &m_FlyVelocity);
+
+	if (!bInput && grVec3d_Length(&m_FlyVelocity) < 1.0f)
+	{
+		grVec3d_Clear(&m_FlyVelocity);
+		return;
+	}
+
+	grVec3d_AddScaled(&XForm.Translation, &m_FlyVelocity, TimeDelta, &Pos);
+	pDoc->GetCurCamXYRot(&XRot, &YRot);
+	pDoc->SetCurCam(XRot, YRot, &Pos);
+}
+
+void CG3DView::BeginOrbit(CPoint point)
+{
+	CGweDoc* pDoc = GetDocument();
+	grExtBox SelBounds{};
+	grXForm3d XForm{};
+	grVec3d In{};
+
+	if (pDoc->HasSelections(&SelBounds))
+	{
+		grExtBox_GetTranslation(&SelBounds, &m_OrbitPivot);
+	}
+	else if (pDoc->GetCurCamXForm(&XForm))
+	{
+		grXForm3d_GetIn(&XForm, &In);
+		grVec3d_AddScaled(&XForm.Translation, &In, NAV_ORBIT_DISTANCE, &m_OrbitPivot);
+	}
+	else
+	{
+		return;
+	}
+
+	m_bOrbiting = true;
+	m_bEatAltUp = true;
+	m_Anchor = point;
+}
+
+void CG3DView::OrbitCamera(long DeltaX, long DeltaY)
+{
+	CGweDoc* pDoc = GetDocument();
+	grXForm3d XForm{}, NewXForm{};
+	grVec3d Offset{}, Left{}, Up{}, In{}, Pos{};
+	float XRot = 0.0f, YRot = 0.0f;
+	float OffLeft, OffUp, OffIn;
+
+	if (!pDoc->GetCurCamXForm(&XForm))
+		return;
+
+	// Express the camera's offset from the pivot in camera space, turn the camera, then
+	// rebuild the offset from the new axes. The pivot keeps its place on screen.
+	grVec3d_Subtract(&XForm.Translation, &m_OrbitPivot, &Offset);
+	grXForm3d_GetLeft(&XForm, &Left);
+	grXForm3d_GetUp(&XForm, &Up);
+	grXForm3d_GetIn(&XForm, &In);
+	OffLeft = grVec3d_DotProduct(&Offset, &Left);
+	OffUp = grVec3d_DotProduct(&Offset, &Up);
+	OffIn = grVec3d_DotProduct(&Offset, &In);
+
+	pDoc->GetCurCamXYRot(&XRot, &YRot);
+	YRot += (float)DeltaX * NAV_LOOK_SCALE;
+	XRot = Nav_ClampPitch(XRot + (float)DeltaY * NAV_LOOK_SCALE);
+
+	Nav_CamXFormFromRot(XRot, YRot, &NewXForm);
+	grXForm3d_GetLeft(&NewXForm, &Left);
+	grXForm3d_GetUp(&NewXForm, &Up);
+	grXForm3d_GetIn(&NewXForm, &In);
+
+	Pos = m_OrbitPivot;
+	grVec3d_AddScaled(&Pos, &Left, OffLeft, &Pos);
+	grVec3d_AddScaled(&Pos, &Up, OffUp, &Pos);
+	grVec3d_AddScaled(&Pos, &In, OffIn, &Pos);
+	pDoc->SetCurCam(XRot, YRot, &Pos);
+}
+
+void CG3DView::FrameBounds(const grExtBox* pBounds)
+{
+	CGweDoc* pDoc = GetDocument();
+	grXForm3d XForm{};
+	grVec3d Center{}, Size{}, In{}, Pos{};
+	float XRot = 0.0f, YRot = 0.0f;
+	float Radius, FOV, HalfH, HalfV, Half;
+	CRect Client;
+
+	if (!pDoc->GetCurCamXForm(&XForm))
+		return;
+
+	grExtBox_GetTranslation(pBounds, &Center);
+	grVec3d_Subtract(&pBounds->Max, &pBounds->Min, &Size);
+	Radius = 0.5f * grVec3d_Length(&Size);
+	if (Radius < 16.0f)
+		Radius = 16.0f;
+
+	// The camera FOV is horizontal; fit the bounding sphere in the narrower direction.
+	FOV = pDoc->GetCurCamFOV();
+	if (FOV < 0.2f)
+		FOV = 0.2f;
+	if (FOV > 3.0f)
+		FOV = 3.0f;
+	HalfH = FOV * 0.5f;
+	HalfV = HalfH;
+	GetClientRect(&Client);
+	if (Client.Width() > 0 && Client.Height() > 0)
+		HalfV = atanf(tanf(HalfH) * (float)Client.Height() / (float)Client.Width());
+	Half = (HalfV < HalfH) ? HalfV : HalfH;
+
+	grXForm3d_GetIn(&XForm, &In);
+	grVec3d_AddScaled(&Center, &In, -Radius / sinf(Half), &Pos);
+	pDoc->GetCurCamXYRot(&XRot, &YRot);
+	pDoc->SetCurCam(XRot, YRot, &Pos);
+}
+
+void CG3DView::OnMButtonDown(UINT nFlags, CPoint point)
+{
+	SetFocus();
+	if (GetNavKeymap() == NavKeymap_Modern && !m_bFlying && !m_bOrbiting && GetCapture() != this)
+	{
+		m_bPanning = true;
+		m_Anchor = point;
+		SetCapture();
+	}
+
+	CG3DMfcView::OnMButtonDown(nFlags, point);
+}
+
+void CG3DView::OnMButtonUp(UINT nFlags, CPoint point)
+{
+	if (m_bPanning)
+	{
+		m_bPanning = false;
+		m_bDragging = false;
+		if (GetCapture() == this)
+			ReleaseCapture();
+	}
+
+	CG3DMfcView::OnMButtonUp(nFlags, point);
+}
+
+BOOL CG3DView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	if (GetNavKeymap() == NavKeymap_Modern)
+	{
+		float Notches = (float)zDelta / (float)WHEEL_DELTA;
+
+		if (m_bFlying)
+		{
+			m_FlySpeedScale *= powf(1.25f, Notches);
+			if (m_FlySpeedScale < NAV_SPEED_MIN)
+				m_FlySpeedScale = NAV_SPEED_MIN;
+			if (m_FlySpeedScale > NAV_SPEED_MAX)
+				m_FlySpeedScale = NAV_SPEED_MAX;
+		}
+		else
+		{
+			long Step = (long)(Notches * NAV_DOLLY_STEP * ((nFlags & MK_SHIFT) ? NAV_FAST_SCALE : 1.0f));
+
+			if (Step != 0)
+				MoveCameraInOut(Step);
+		}
+		return TRUE;
+	}
+
+	return CG3DMfcView::OnMouseWheel(nFlags, zDelta, pt);
+}
+
+void CG3DView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	if (GetNavKeymap() == NavKeymap_Modern && nChar == 'F' && !(GetKeyState(VK_CONTROL) & 0x8000))
+	{
+		CGweDoc* pDoc = GetDocument();
+		grExtBox Bounds{};
+
+		if (GetKeyState(VK_SHIFT) & 0x8000)
+		{
+			if (pDoc->GetLevelBounds(&Bounds))
+				FrameBounds(&Bounds);
+		}
+		else if (pDoc->HasSelections(&Bounds))
+		{
+			FrameBounds(&Bounds);
+		}
+		return;
+	}
+
+	CG3DMfcView::OnKeyDown(nChar, nRepCnt, nFlags);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //

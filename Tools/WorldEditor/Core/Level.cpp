@@ -1897,6 +1897,13 @@ void	Level_SetCurCamXYRot( const Level * pLevel, float XRot, float YRot )
 	Camera_SetCurCamY( pLevel->pCurCamera, YRot );
 	Camera_SetCurCamX( pLevel->pCurCamera, XRot );
 }
+
+grBoolean	Level_SetCurCamXForm( const Level * pLevel, const grXForm3d * pXForm )
+{
+	if( pLevel->pCurCamera == nullptr )
+		return( GR_FALSE );
+	return( Camera_SetXForm( pLevel->pCurCamera, pXForm ) );
+}
 static grBoolean Level_ClearMiscFlagsCB( Object *pObject, void* lParam )
 {
 	Object_ClearMiscFlags( pObject, (const uint32)lParam ) ;

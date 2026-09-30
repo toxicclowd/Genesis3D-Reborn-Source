@@ -38,6 +38,15 @@ protected:
 
 // Attributes
 public:
+	// 3D view navigation keymaps. Modern adds RMB fly (WASD/QE), Alt+LMB orbit, MMB pan,
+	// wheel dolly and F framing; Classic Genesis keeps only the original mouse controls.
+	enum NavKeymap
+	{
+		NavKeymap_Modern = 0,
+		NavKeymap_Classic = 1
+	};
+	static NavKeymap GetNavKeymap(void);
+	static void SetNavKeymap(NavKeymap Keymap);
 
 // Operations
 public:
@@ -61,6 +70,7 @@ public:
 	public:
 	virtual void OnInitialUpdate();
 	virtual void OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	protected:
 	virtual void OnDraw(CDC* pDC);
 	//}}AFX_VIRTUAL
@@ -92,6 +102,12 @@ protected:
 	afx_msg void OnBilinear();
 	//}}AFX_MSG
 	afx_msg void OnUpdateViewType( CCmdUI* pCmdUI ) ;
+	afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnMButtonUp(UINT nFlags, CPoint point);
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+	afx_msg void OnCaptureChanged(CWnd* pWnd);
+	afx_msg void On3dviewClassicNav();
 	DECLARE_MESSAGE_MAP()
 private:
 	void RotateCameraUpDown(long Delta);
@@ -101,6 +117,16 @@ private:
 	void MoveCameraUpDown(long Delta);
 	char * GetModeName( );
 	void ShowMenu( CPoint point);
+
+	// Modern navigation
+	void BeginFly(CPoint point);
+	void EndFly(void);
+	void UpdateFly(void);
+	void FlyLook(long DeltaX, long DeltaY);
+	void BeginOrbit(CPoint point);
+	void OrbitCamera(long DeltaX, long DeltaY);
+	void EndNavDrag(void);
+	void FrameBounds(const grExtBox* pBounds);
 
 	CPoint m_Anchor;
 	UINT m_nViewType;
@@ -121,6 +147,18 @@ private:
 	static int m_CYDRAG ;
 	int		m_RenderMode;
 	float	m_LastTime;
+
+	bool	m_bFlying;			// RMB held in the Modern keymap
+	bool	m_bFlyMoved;		// a movement key was used, so RMB-up is not a context-menu click
+	bool	m_bOrbiting;
+	bool	m_bPanning;
+	bool	m_bCursorHidden;
+	bool	m_bEatAltUp;		// Alt+LMB orbit must not open the menu bar on Alt release
+	CPoint	m_FlyCursorHome;
+	grVec3d	m_FlyVelocity;
+	float	m_FlySpeedScale;
+	LARGE_INTEGER m_FlyLastTick;
+	grVec3d	m_OrbitPivot;
 
 };
 
