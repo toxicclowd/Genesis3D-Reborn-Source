@@ -9,6 +9,7 @@
 #include "D3D12TextureMgr.h"
 #include "D3D12PolyCache.h"
 #include "D3D12PSOManager.h"
+#include "D3D12Config.h"
 #include <stdio.h>
 #include <unordered_map>
 #include <vector>
@@ -360,8 +361,13 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 
 		HRESULT hr;
 
-		// Enable debug layer in debug builds
+		// Debug layer: on by default in Debug builds, [Debug] DebugLayer in the ini.
 #ifdef ENABLE_D3D12_DEBUG_LAYER
+		const bool bDebugLayer = D3D12Config_GetBool("Debug", "DebugLayer", true);
+#else
+		const bool bDebugLayer = D3D12Config_GetBool("Debug", "DebugLayer", false);
+#endif
+		if (bDebugLayer)
 		{
 			D3D12Log::GetPtr()->Printf("Attempting to enable D3D12 debug layer...");
 			ComPtr<ID3D12Debug> debugController;
@@ -369,15 +375,24 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 			{
 				debugController->EnableDebugLayer();
 				D3D12Log::GetPtr()->Printf("D3D12 Debug layer enabled");
+
+				ComPtr<ID3D12Debug1> debugController1;
+				if (D3D12Config_GetBool("Debug", "GPUValidation", false) &&
+					SUCCEEDED(debugController.As(&debugController1)))
+				{
+					debugController1->SetEnableGPUBasedValidation(TRUE);
+					D3D12Log::GetPtr()->Printf("D3D12 GPU-based validation enabled");
+				}
 			}
 			else
 			{
 				D3D12Log::GetPtr()->Printf("WARNING: Failed to enable D3D12 debug layer");
 			}
 		}
-#else
-		D3D12Log::GetPtr()->Printf("D3D12 debug layer not enabled (release build)");
-#endif
+		else
+		{
+			D3D12Log::GetPtr()->Printf("D3D12 debug layer not enabled");
+		}
 
 		// Create DXGI Factory
 		D3D12Log::GetPtr()->Printf("Creating DXGI Factory...");
@@ -394,7 +409,17 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 		// Get hardware adapter
 		D3D12Log::GetPtr()->Printf("Enumerating adapters...");
 		ComPtr<IDXGIAdapter1> pAdapter;
-		for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &pAdapter); ++adapterIndex)
+		bool bWarp = false;
+		if (D3D12Config_GetBool("Device", "Warp", false))
+		{
+			// WARP renders the same image on every machine (render regression, CI).
+			bWarp = SUCCEEDED(pFactory->EnumWarpAdapter(IID_PPV_ARGS(&pAdapter)));
+			if (bWarp)
+				D3D12Log::GetPtr()->Printf("Using the WARP software adapter ([Device] Warp)");
+			else
+				D3D12Log::GetPtr()->Printf("WARNING: WARP adapter unavailable, using hardware");
+		}
+		for (UINT adapterIndex = 0; !bWarp && DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &pAdapter); ++adapterIndex)
 		{
 			DXGI_ADAPTER_DESC1 desc;
 			pAdapter->GetDesc1(&desc);

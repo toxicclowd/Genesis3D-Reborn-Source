@@ -1,0 +1,5 @@
+// Resources for the DirectX 12 driver.
+#include "D3D12Resource.h"
+
+// HLSL source for the run-time compile fallback (see D3D12Shaders.h).
+IDR_SHADER_TLPOLY		RCDATA		"Shaders\\TLPoly.hlsl"

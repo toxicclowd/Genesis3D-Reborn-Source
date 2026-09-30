@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "D3D12PSOManager.h"
+#include "D3D12Shaders.h"
 #include "Direct3D12Driver.h"
 #include "D3D12Log.h"
 
@@ -16,107 +17,6 @@ namespace
 	const uint32 STATE_NO_ZTEST = 0x2;
 	const uint32 STATE_NO_ZWRITE = 0x4;
 	const uint32 STATE_WIREFRAME = 0x8;
-
-	const char* ShaderCode = R"(
-cbuffer DrawConstants : register(b0)
-{
-    float ViewportWidth;
-    float ViewportHeight;
-    uint  DrawFlags;
-    uint  DrawPadding;
-};
-
-Texture2D BaseTexture : register(t0);
-Texture2D LightTexture : register(t1);
-SamplerState LinearWrapSampler  : register(s0);
-SamplerState LinearClampSampler : register(s1);
-SamplerState PointWrapSampler   : register(s2);
-SamplerState PointClampSampler  : register(s3);
-
-struct VS_INPUT
-{
-    float4 Position : POSITION;
-    float4 Color    : COLOR;
-    float2 TexCoord : TEXCOORD0;
-    float2 LMCoord  : TEXCOORD1;
-};
-
-struct VS_OUTPUT
-{
-    float4 Position : SV_POSITION;
-    float4 Color    : COLOR;
-    float2 TexCoord : TEXCOORD0;
-    float2 LMCoord  : TEXCOORD1;
-};
-
-VS_OUTPUT VSMain(VS_INPUT input)
-{
-    VS_OUTPUT output;
-
-    // grTLVertex contains pixel-space x/y and positive camera-space z. The legacy
-    // driver used XYZRHW with depth = 1 - 1/z. Constructing this clip position
-    // reproduces that projection and preserves perspective-correct UV interpolation.
-    float width = max(ViewportWidth, 1.0f);
-    float height = max(ViewportHeight, 1.0f);
-    float cameraZ = max(input.Position.z, 0.0001f);
-    float ndcX = input.Position.x * (2.0f / width) - 1.0f;
-    float ndcY = 1.0f - input.Position.y * (2.0f / height);
-    float depth = saturate(1.0f - rcp(cameraZ));
-    output.Position = float4(ndcX * cameraZ, ndcY * cameraZ, depth * cameraZ, cameraZ);
-    output.Color = saturate(input.Color);
-    output.TexCoord = input.TexCoord;
-    output.LMCoord = input.LMCoord;
-    return output;
-}
-
-float4 SampleBase(float2 uv)
-{
-    bool clampUV = (DrawFlags & 0x00000008u) != 0;
-    bool linearFilter = (DrawFlags & 0x00000400u) != 0;
-    if (linearFilter)
-        return clampUV ? BaseTexture.Sample(LinearClampSampler, uv)
-                       : BaseTexture.Sample(LinearWrapSampler, uv);
-    return clampUV ? BaseTexture.Sample(PointClampSampler, uv)
-                   : BaseTexture.Sample(PointWrapSampler, uv);
-}
-
-float4 SampleLight(float2 uv)
-{
-    return ((DrawFlags & 0x00000400u) != 0)
-        ? LightTexture.Sample(LinearClampSampler, uv)
-        : LightTexture.Sample(PointClampSampler, uv);
-}
-
-float4 PSGouraud(VS_OUTPUT input) : SV_TARGET
-{
-    return input.Color;
-}
-
-float4 PSTexture(VS_OUTPUT input) : SV_TARGET
-{
-    float4 base = SampleBase(input.TexCoord);
-    if ((DrawFlags & 0x00000004u) != 0)
-        clip(base.a - 0.5f);
-
-    float alpha = input.Color.a;
-    if ((DrawFlags & 0x00000005u) != 0)
-        alpha *= base.a;
-    return saturate(float4(base.rgb * input.Color.rgb, alpha));
-}
-
-float4 PSMultiTexture(VS_OUTPUT input) : SV_TARGET
-{
-    float4 base = SampleBase(input.TexCoord);
-    if ((DrawFlags & 0x00000004u) != 0)
-        clip(base.a - 0.5f);
-
-    float3 light = SampleLight(input.LMCoord).rgb;
-    float alpha = input.Color.a;
-    if ((DrawFlags & 0x00000005u) != 0)
-        alpha *= base.a;
-    return saturate(float4(base.rgb * light * input.Color.rgb, alpha));
-}
-)";
 
 	D3D12_STATIC_SAMPLER_DESC MakeSampler(
 		UINT ShaderRegister,
@@ -154,7 +54,7 @@ D3D12PSOManager::~D3D12PSOManager()
 grBoolean D3D12PSOManager::Initialize()
 {
 	Shutdown();
-	if (!CompileShaders() || !CreateRootSignature())
+	if (!D3D12Shaders_Load(g_pDevice.Get()) || !CreateRootSignature())
 	{
 		Shutdown();
 		return GR_FALSE;
@@ -183,10 +83,7 @@ void D3D12PSOManager::Shutdown()
 			m_PSOs[Type][State].Reset();
 	}
 	m_pRootSignature.Reset();
-	m_VS_Gouraud.Reset();
-	m_PS_Gouraud.Reset();
-	m_PS_Texture.Reset();
-	m_PS_MultiTex.Reset();
+	D3D12Shaders_Unload();
 	m_bInitialized = false;
 }
 
@@ -228,54 +125,6 @@ ID3D12PipelineState* D3D12PSOManager::GetPSO(
 ID3D12RootSignature* D3D12PSOManager::GetRootSignature()
 {
 	return m_pRootSignature.Get();
-}
-
-grBoolean D3D12PSOManager::CompileShaders()
-{
-	m_VS_Gouraud = CompileShader(ShaderCode, "VSMain", "vs_5_0");
-	m_PS_Gouraud = CompileShader(ShaderCode, "PSGouraud", "ps_5_0");
-	m_PS_Texture = CompileShader(ShaderCode, "PSTexture", "ps_5_0");
-	m_PS_MultiTex = CompileShader(ShaderCode, "PSMultiTexture", "ps_5_0");
-	return (m_VS_Gouraud && m_PS_Gouraud && m_PS_Texture && m_PS_MultiTex)
-		? GR_TRUE
-		: GR_FALSE;
-}
-
-ComPtr<ID3DBlob> D3D12PSOManager::CompileShader(
-	const char* Code,
-	const char* EntryPoint,
-	const char* Target)
-{
-	ComPtr<ID3DBlob> Shader;
-	ComPtr<ID3DBlob> Errors;
-	UINT CompileFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG
-	CompileFlags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-	CompileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
-#endif
-	const HRESULT Hr = D3DCompile(
-		Code,
-		std::strlen(Code),
-		"Jet3D_D3D12.hlsl",
-		nullptr,
-		nullptr,
-		EntryPoint,
-		Target,
-		CompileFlags,
-		0,
-		&Shader,
-		&Errors);
-	if (FAILED(Hr))
-	{
-		D3D12Log::GetPtr()->Printf(
-			"ERROR: %s compilation failed (0x%08X): %s",
-			EntryPoint,
-			Hr,
-			Errors ? static_cast<const char*>(Errors->GetBufferPointer()) : "no compiler details");
-		return nullptr;
-	}
-	return Shader;
 }
 
 grBoolean D3D12PSOManager::CreateRootSignature()
@@ -362,16 +211,16 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	ID3DBlob* PixelShader = m_PS_Gouraud.Get();
+	D3D12_SHADER_ID PixelShader = SHADER_TLPOLY_PS_GOURAUD;
 	if (Type == PSO_TEXTURE)
-		PixelShader = m_PS_Texture.Get();
+		PixelShader = SHADER_TLPOLY_PS_TEXTURE;
 	else if (Type == PSO_MULTITEX)
-		PixelShader = m_PS_MultiTex.Get();
+		PixelShader = SHADER_TLPOLY_PS_MULTITEX;
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = {};
 	Desc.pRootSignature = m_pRootSignature.Get();
-	Desc.VS = { m_VS_Gouraud->GetBufferPointer(), m_VS_Gouraud->GetBufferSize() };
-	Desc.PS = { PixelShader->GetBufferPointer(), PixelShader->GetBufferSize() };
+	Desc.VS = D3D12Shaders_Get(SHADER_TLPOLY_VS);
+	Desc.PS = D3D12Shaders_Get(PixelShader);
 
 	Desc.BlendState.AlphaToCoverageEnable = FALSE;
 	Desc.BlendState.IndependentBlendEnable = FALSE;

@@ -47,20 +47,10 @@ private:
 	grBoolean CreateRootSignature();
 	grBoolean CreatePSO(D3D12_PSO_TYPE type, uint32 stateIndex);
 
-	// Compile shaders
-	grBoolean CompileShaders();
-	ComPtr<ID3DBlob> CompileShader(const char* shaderCode, const char* entryPoint, const char* target);
-
 	// Root signature and PSOs
 	ComPtr<ID3D12RootSignature> m_pRootSignature;
 	static const uint32 PSO_STATE_COUNT = 16;
 	ComPtr<ID3D12PipelineState> m_PSOs[PSO_COUNT][PSO_STATE_COUNT];
-
-	// Compiled shaders
-	ComPtr<ID3DBlob> m_VS_Gouraud;
-	ComPtr<ID3DBlob> m_PS_Gouraud;
-	ComPtr<ID3DBlob> m_PS_Texture;
-	ComPtr<ID3DBlob> m_PS_MultiTex;
 
 	bool m_bInitialized;
 };
