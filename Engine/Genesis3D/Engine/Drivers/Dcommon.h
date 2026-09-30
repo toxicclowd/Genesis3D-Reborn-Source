@@ -97,7 +97,7 @@ typedef struct tagRECT
 #endif
 
 #define DRV_VERSION_MAJOR		200			// Jet 2.0
-#define DRV_VERSION_MINOR		5			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings
+#define DRV_VERSION_MINOR		6			// version 3 has specular rgb in the verts ; 4 has bigger debug info ; 5 adds GPUTimings ; 6 adds WorldGeometry
 #define DRV_VMAJS				"200"
 #define DRV_VMINS				"4" 
 #define DRV_VMAJS_PLUS_DRV_VMINS	"200.4"
@@ -277,6 +277,55 @@ typedef struct
 	float		TotalMs;
 	int32		Valid;
 } DRV_GPUTimings;
+
+//
+//	World geometry (version 6): BSP draw faces uploaded once and drawn by the GPU in
+//	world space, instead of being clipped, transformed and projected on the CPU.
+//
+typedef struct
+{
+	float		Pos[3];			// model space
+	float		Normal[3];		// face plane normal (facing side)
+	float		Tangent[4];		// texture U direction, w = bitangent sign
+	float		u, v;			// face texture coordinates (texvec projection, FixShift applied)
+	uint32		Face;			// index into the geometry's face table
+} DRV_WorldVertex;
+
+typedef struct
+{
+	uint32		FirstIndex;		// triangle list range in the index array
+	uint32		NumIndices;
+} DRV_WorldFace;
+
+// Model-to-camera transform and the camera's screen projection (see grCamera_Project).
+typedef struct
+{
+	grXForm3d	ModelToCamera;
+	float		Scale;
+	float		XCenter;
+	float		YCenter;
+	float		ZScale;
+	float		ZFar;			// camera-space far clip distance, 0 = none
+	float		HalfWidth;		// the frustum spans XCenter +/- HalfWidth, YCenter +/- HalfHeight
+	float		HalfHeight;
+	float		Pad;
+} DRV_WorldView;
+
+// Results of WORLD_GEOMETRY_RENDER_FACE.
+#define DRV_WORLD_FACE_DRAWN		1	// queued on the GPU path
+#define DRV_WORLD_FACE_FALLBACK		0	// not drawn; use the transformed-poly path for this face
+#define DRV_WORLD_FACE_STALE		2	// not drawn; the geometry handle is gone, rebuild it
+
+// Returns 0 when the driver cannot (or is configured not to) use world geometry.
+typedef uint32 DRIVERCC WORLD_GEOMETRY_CREATE(const DRV_WorldVertex *Verts, int32 NumVerts,
+											  const uint32 *Indices, int32 NumIndices,
+											  const DRV_WorldFace *Faces, int32 NumFaces);
+typedef grBoolean DRIVERCC WORLD_GEOMETRY_DESTROY(uint32 Geometry);
+// Queues one face, in order with the other render calls. Layers, LMapCBContext and
+// Flags mean the same as for RENDER_W_POLY; Alpha is 0..255.
+typedef int32 DRIVERCC WORLD_GEOMETRY_RENDER_FACE(uint32 Geometry, uint32 Face, const DRV_WorldView *View,
+												  grRDriver_Layer *Layers, int32 NumLayers,
+												  void *LMapCBContext, uint32 Flags, float Alpha);
 
 typedef struct
 {
@@ -605,6 +654,11 @@ typedef struct
 
 	// Version 5: GPU timings for the debug overlay (NULL if the driver has none).
 	DRV_GPUTimings		*GPUTimings;
+
+	// Version 6: world geometry (NULL if the driver has none).
+	WORLD_GEOMETRY_CREATE		*WorldGeometry_Create;
+	WORLD_GEOMETRY_DESTROY		*WorldGeometry_Destroy;
+	WORLD_GEOMETRY_RENDER_FACE	*WorldGeometry_RenderFace;
 } DRV_Driver;
 
 enum grRenderState

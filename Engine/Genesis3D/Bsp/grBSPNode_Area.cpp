@@ -411,6 +411,7 @@ grBoolean grBSPNode_AreaRenderFlood_r(grBSPNode_Area *Area, grBSP *BSP, const gr
 	SceneInfo.Camera = (grCamera*)Camera;
 	SceneInfo.Frustum = (grFrustum*)Frustum;
 	SceneInfo.RecursionBit = RecursionBit;
+	SceneInfo.GpuWorld = GR_FALSE;
 
 	//@@ set up area clip flags!
 	ClipFlags = (1UL<<Frustum->NumPlanes)-1;

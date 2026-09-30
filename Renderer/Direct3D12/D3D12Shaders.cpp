@@ -24,6 +24,9 @@
 #include "Shaders/g_TLPoly_PSGouraud_Bindless.h"
 #include "Shaders/g_TLPoly_PSTexture_Bindless.h"
 #include "Shaders/g_TLPoly_PSMultiTexture_Bindless.h"
+#include "Shaders/g_World_VSWorld.h"
+#include "Shaders/g_World_PSWorldTexture.h"
+#include "Shaders/g_World_PSWorldMultiTexture.h"
 #include "Shaders/g_Present_VSFullscreen.h"
 #include "Shaders/g_Present_PSPresent.h"
 
@@ -52,6 +55,9 @@ namespace
 		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "PSGouraud",      "ps_5_1", true,  g_TLPoly_PSGouraud_Bindless,      sizeof(g_TLPoly_PSGouraud_Bindless) },
 		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "PSTexture",      "ps_5_1", true,  g_TLPoly_PSTexture_Bindless,      sizeof(g_TLPoly_PSTexture_Bindless) },
 		{ "TLPoly.hlsl",  IDR_SHADER_TLPOLY,  "PSMultiTexture", "ps_5_1", true,  g_TLPoly_PSMultiTexture_Bindless, sizeof(g_TLPoly_PSMultiTexture_Bindless) },
+		{ "World.hlsl",   IDR_SHADER_WORLD,   "VSWorld",             "vs_5_1", true,  g_World_VSWorld,             sizeof(g_World_VSWorld) },
+		{ "World.hlsl",   IDR_SHADER_WORLD,   "PSWorldTexture",      "ps_5_1", true,  g_World_PSWorldTexture,      sizeof(g_World_PSWorldTexture) },
+		{ "World.hlsl",   IDR_SHADER_WORLD,   "PSWorldMultiTexture", "ps_5_1", true,  g_World_PSWorldMultiTexture, sizeof(g_World_PSWorldMultiTexture) },
 		{ "Present.hlsl", IDR_SHADER_PRESENT, "VSFullscreen",   "vs_5_0", false, g_Present_VSFullscreen,           sizeof(g_Present_VSFullscreen) },
 		{ "Present.hlsl", IDR_SHADER_PRESENT, "PSPresent",      "ps_5_0", false, g_Present_PSPresent,              sizeof(g_Present_PSPresent) },
 	};

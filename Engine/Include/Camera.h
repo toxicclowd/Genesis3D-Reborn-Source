@@ -71,6 +71,11 @@ GRAPI void     GRCC grCamera_GetAttributes(grCamera *Camera, grFloat *FovRadians
 GRAPI void		GRCC grCamera_SetAttributes(grCamera *Camera, grFloat FovRadians, const grRect *Rect);
 GRAPI void		GRCC grCamera_SetZScale(grCamera *Camera, grFloat ZScale);
 GRAPI grFloat	GRCC grCamera_GetZScale(const grCamera *Camera);
+// Screen projection used by grCamera_Project*: x = XCenter + X*Scale/Z, y = YCenter - Y*Scale/Z
+// with Z = -(camera-space z); the projected z is Z*ZScale.
+GRAPI void		GRCC grCamera_GetScreenProjection(const grCamera *Camera, grFloat *Scale, grFloat *XCenter, grFloat *YCenter);
+// Size of the camera rect the frustum spans (XCenter +/- Width/2, YCenter +/- Height/2).
+GRAPI void		GRCC grCamera_GetScreenSize(const grCamera *Camera, grFloat *Width, grFloat *Height);
 
 // BEGIN - Far clip plane - paradoxnj 2/9/2005
 GRAPI void		GRCC grCamera_SetFarClipPlane(grCamera *Camera, grBoolean Enable, grFloat ZFar);

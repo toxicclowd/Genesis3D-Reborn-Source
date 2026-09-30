@@ -13,6 +13,7 @@
 #include "D3D12SceneTarget.h"
 #include "D3D12UploadRing.h"
 #include "D3D12GpuTimer.h"
+#include "D3D12WorldGeometry.h"
 #include <stdio.h>
 #include <unordered_map>
 #include <vector>
@@ -757,6 +758,9 @@ grBoolean DRIVERCC D3D12Drv_Init(DRV_DriverHook* hook)
 			return GR_FALSE;
 		}
 
+		// Needs the PSO manager, which decides whether textures are bindless.
+		D3D12World_Startup();
+
 		g_bInitialized = true;
 		g_bActive = true;
 
@@ -806,6 +810,7 @@ grBoolean DRIVERCC D3D12Drv_Shutdown()
 	// Shutdown texture manager
 	D3D12_THandle_Shutdown();
 
+	D3D12World_Shutdown();
 	D3D12Scene_Shutdown();
 	D3D12Upload_Shutdown();
 	D3D12Timer_Shutdown();
@@ -1023,6 +1028,7 @@ grBoolean DRIVERCC D3D12Drv_BeginScene(grBoolean Clear, grBoolean ClearZ, RECT* 
 		// and its GPU timestamps can be read.
 		D3D12Timer_BeginFrame(g_nCurrentFrameIndex);
 		D3D12Upload_BeginFrame(g_nCurrentFrameIndex);
+		D3D12World_BeginFrame();
 		D3D12Timer_Mark(g_pCommandList.Get(), GPU_MARK_SCENE_BEGIN);
 		D3D12BeginMarker(g_pCommandList.Get(), "Scene");
 
@@ -1273,11 +1279,13 @@ grBoolean DRIVERCC D3D12Drv_DrawDecal(grTexture* Handle, RECT* SrcRect, int32 x,
 	const float V0 = static_cast<float>(Source.top) / Handle->Height;
 	const float U1 = static_cast<float>(Source.right) / Handle->Width;
 	const float V1 = static_cast<float>(Source.bottom) / Handle->Height;
+	// Quad edges on pixel edges, so each texel lands on one pixel. TLPoly.hlsl adds
+	// half a pixel (engine coordinates put pixel centers on integers), so take it off.
 	grTLVertex Vertices[4] = {};
-	const float X[4] = { static_cast<float>(x), static_cast<float>(x + Width),
-		static_cast<float>(x + Width), static_cast<float>(x) };
-	const float Y[4] = { static_cast<float>(y), static_cast<float>(y),
-		static_cast<float>(y + Height), static_cast<float>(y + Height) };
+	const float Left = static_cast<float>(x) - 0.5f;
+	const float Top = static_cast<float>(y) - 0.5f;
+	const float X[4] = { Left, Left + Width, Left + Width, Left };
+	const float Y[4] = { Top, Top, Top + Height, Top + Height };
 	const float U[4] = { U0, U1, U1, U0 };
 	const float V[4] = { V0, V0, V1, V1 };
 	for (int32 i = 0; i < 4; ++i)
@@ -1581,7 +1589,11 @@ DRV_Driver g_D3D12Drv =
 
 	D3D12Drv_SetRenderState,
 
-	nullptr		// GPUTimings, set in DriverHook
+	nullptr,	// GPUTimings, set in DriverHook
+
+	D3D12World_Create,
+	D3D12World_Destroy,
+	D3D12World_RenderFace
 };
 
 //================================================================================

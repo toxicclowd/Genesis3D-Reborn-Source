@@ -82,11 +82,13 @@ VS_OUTPUT VSMain(VS_INPUT input)
     // grTLVertex contains pixel-space x/y and positive camera-space z. The legacy
     // driver used XYZRHW with depth = 1 - 1/z. Constructing this clip position
     // reproduces that projection and preserves perspective-correct UV interpolation.
+    // Like Direct3D 9, the engine puts pixel centers at integer coordinates (its
+    // frustum spans -0.5 .. width-0.5), so shift by half a pixel to D3D12's centers.
     float width = max(ViewportSize.x, 1.0f);
     float height = max(ViewportSize.y, 1.0f);
     float cameraZ = max(input.Position.z, 0.0001f);
-    float ndcX = input.Position.x * (2.0f / width) - 1.0f;
-    float ndcY = 1.0f - input.Position.y * (2.0f / height);
+    float ndcX = (input.Position.x + 0.5f) * (2.0f / width) - 1.0f;
+    float ndcY = 1.0f - (input.Position.y + 0.5f) * (2.0f / height);
     float depth = saturate(1.0f - rcp(cameraZ));
     output.Position = float4(ndcX * cameraZ, ndcY * cameraZ, depth * cameraZ, cameraZ);
     output.Color = saturate(input.Color);

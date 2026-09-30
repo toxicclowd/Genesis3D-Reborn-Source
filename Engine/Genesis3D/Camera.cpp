@@ -401,6 +401,27 @@ GRAPI grFloat GRCC grCamera_GetZScale(const grCamera *Camera)
 	return Camera->ZScale;
 }
 
+//=====================================================================================
+//	grCamera_GetScreenProjection
+//=====================================================================================
+GRAPI void GRCC grCamera_GetScreenProjection(const grCamera *Camera, grFloat *Scale, grFloat *XCenter, grFloat *YCenter)
+{
+	assert(Camera);
+	*Scale = Camera->Scale;
+	*XCenter = Camera->XCenter;
+	*YCenter = Camera->YCenter;
+}
+
+//=====================================================================================
+//	grCamera_GetScreenSize
+//=====================================================================================
+GRAPI void GRCC grCamera_GetScreenSize(const grCamera *Camera, grFloat *Width, grFloat *Height)
+{
+	assert(Camera);
+	*Width = Camera->Width;
+	*Height = Camera->Height;
+}
+
 // BEGIN - Far clip plane - paradoxnj 2/9/2005
 //=====================================================================================
 //	grCamera_SetFarClipPlane
@@ -598,9 +619,9 @@ float X,Y,Z,ZScale;
 		Z = Scale / Z;
 
 		X = XCenter + ( FmPoints->X * Z );
-		ToPoints->X = GR_CLAMP(X,Camera->Left,Camera->Right);
+		ToPoints->X = GR_CLAMP(X,Camera->Left-0.5f,Camera->Right+0.5f);
 		Y = YCenter - ( FmPoints->Y * Z );
-		ToPoints->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
+		ToPoints->Y = GR_CLAMP(Y,Camera->Top-0.5f,Camera->Bottom+0.5f);
 
 		FmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
 		ToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
@@ -621,10 +642,10 @@ float X,Y,Z,ZScale;
 		Z = Scale / Z;
 
 		X = XCenter + ( FmPoints->X * Z );
-		ToPoints->X = GR_CLAMP(X,Camera->Left,Camera->Right);
+		ToPoints->X = GR_CLAMP(X,Camera->Left-0.5f,Camera->Right+0.5f);
 
 		Y = YCenter - ( FmPoints->Y * Z );
-		ToPoints->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
+		ToPoints->Y = GR_CLAMP(Y,Camera->Top-0.5f,Camera->Bottom+0.5f);
 
 		FmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
 		ToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
@@ -636,9 +657,9 @@ float X,Y,Z,ZScale;
 		ToPoints->Z = Z * ZScale;
 		Z = Scale / Z;
 		X = XCenter + ( FmPoints->X * Z );
-		ToPoints->X = GR_CLAMP(X,Camera->Left,Camera->Right);
+		ToPoints->X = GR_CLAMP(X,Camera->Left-0.5f,Camera->Right+0.5f);
 		Y = YCenter - ( FmPoints->Y * Z );
-		ToPoints->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
+		ToPoints->Y = GR_CLAMP(Y,Camera->Top-0.5f,Camera->Bottom+0.5f);
 		FmPoints = (const grVec3d *)(((uint32)FmPoints) + FmStride);
 		ToPoints = (      grVec3d *)(((uint32)ToPoints) + ToStride);
 	}
@@ -707,11 +728,11 @@ GRAPI void GRCC grCamera_ProjectAndClamp(const grCamera	*Camera,
 
 	X = ( PointInCameraSpace->X * ScaleOverZ ) + Camera->XCenter;
 	
-	ProjectedPoint->X = GR_CLAMP(X,Camera->Left,Camera->Right);
+	ProjectedPoint->X = GR_CLAMP(X,Camera->Left-0.5f,Camera->Right+0.5f);
 	
 	Y = Camera->YCenter - ( PointInCameraSpace->Y * ScaleOverZ );
 
-	ProjectedPoint->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
+	ProjectedPoint->Y = GR_CLAMP(Y,Camera->Top-0.5f,Camera->Bottom+0.5f);
 }
 
 //========================================================================================
@@ -968,8 +989,8 @@ int c;
 		X = XCenter + ( Point.X * Z );
 		Y = YCenter - ( Point.Y * Z );
 
-		ToPoints->X = GR_CLAMP(X,Camera->Left,Camera->Right);
-		ToPoints->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
+		ToPoints->X = GR_CLAMP(X,Camera->Left-0.5f,Camera->Right+0.5f);
+		ToPoints->Y = GR_CLAMP(Y,Camera->Top-0.5f,Camera->Bottom+0.5f);
 
 		FmPoints = NextFmPoints;
 		ToPoints = NextToPoints;
@@ -1107,11 +1128,11 @@ GRAPI void GRCC grCamera_TransformAndProjectAndClamp(	const	grCamera *Camera,
 
 	X =   ( ProjectedPoint->X * Z ) + Camera->XCenter;
 
-	ProjectedPoint->X = GR_CLAMP(X,Camera->Left,Camera->Right);
+	ProjectedPoint->X = GR_CLAMP(X,Camera->Left-0.5f,Camera->Right+0.5f);
 
 	Y = - ( ProjectedPoint->Y * Z ) + Camera->YCenter;
 		
-	ProjectedPoint->Y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
+	ProjectedPoint->Y = GR_CLAMP(Y,Camera->Top-0.5f,Camera->Bottom+0.5f);
 }
 
 
@@ -1195,10 +1216,10 @@ GRAPI void GRCC grCamera_ProjectAndClampL(const grCamera	*Camera,
 	ProjectedPoint->z = Z*Camera->ZScale;
 
 	X =   ( Point->X * ScaleOverZ ) + Camera->XCenter;
-	ProjectedPoint->x = GR_CLAMP(X,Camera->Left,Camera->Right);
+	ProjectedPoint->x = GR_CLAMP(X,Camera->Left-0.5f,Camera->Right+0.5f);
 
 	Y = - ( Point->Y * ScaleOverZ ) + Camera->YCenter;
-	ProjectedPoint->y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
+	ProjectedPoint->y = GR_CLAMP(Y,Camera->Top-0.5f,Camera->Bottom+0.5f);
 
 	ProjectedPoint->u = Point->u;
 	ProjectedPoint->v = Point->v;
@@ -1236,11 +1257,11 @@ GRAPI void GRCC grCamera_TransformAndProjectAndClampL(const		grCamera *Camera,
 	ProjectedPoint->z = Z*Camera->ZScale;
 	X =   ( ProjectedPoint->x * ScaleOverZ ) + Camera->XCenter;
 	
-	ProjectedPoint->x = GR_CLAMP(X,Camera->Left,Camera->Right);
+	ProjectedPoint->x = GR_CLAMP(X,Camera->Left-0.5f,Camera->Right+0.5f);
 
 	Y = - ( ProjectedPoint->y * ScaleOverZ ) + Camera->YCenter;
 		
-	ProjectedPoint->y = GR_CLAMP(Y,Camera->Top,Camera->Bottom);
+	ProjectedPoint->y = GR_CLAMP(Y,Camera->Top-0.5f,Camera->Bottom+0.5f);
 
 	ProjectedPoint->u = Point->u;
 	ProjectedPoint->v = Point->v;

@@ -42,6 +42,8 @@
 // Public dependents
 #include "grBSP.h"
 
+static void grBSP_GpuGeometryDestroy(grBSP *BSP);
+
 #ifdef _DEBUG
 	#define GR_BSP_DEBUG_OUTPUT_LEVEL		1
 	//#define GR_BSP_DEBUG_OUTPUT_LEVEL		2
@@ -317,6 +319,9 @@ void grBSP_Destroy(grBSP **BSPTree)
 {
 	assert(BSPTree);
 	assert(*BSPTree);
+
+	// Release the GPU geometry while the driver is still attached.
+	grBSP_GpuGeometryDestroy(*BSPTree);
 
 	// Detach from the engine (if any)
 	if ((*BSPTree)->Engine)
@@ -793,6 +798,169 @@ grBoolean grBSP_VisFrame(grBSP *BSPTree, const grCamera *Camera, const grFrustum
 }
 
 //=======================================================================================
+//	GPU world geometry
+//
+//	Every draw face on a node is uploaded once as a small triangle fan (model-space
+//	positions, face normal/tangent and the face's texture coordinates) so the driver
+//	can draw it without the CPU clipping, transforming and projecting it each frame.
+//=======================================================================================
+
+// Nesting depth of face traversals. Only the outermost one uses the GPU path: nested
+// traversals come from portal/mirror faces, whose views the CPU clips to the portal
+// polygon, which the GPU path does not do yet.
+static int32 g_BSPFaceTraversalDepth = 0;
+
+typedef struct
+{
+	int32				NumFaces;
+	int32				NumVerts;
+	int32				NumIndices;
+	DRV_WorldVertex		*Verts;
+	uint32				*Indices;
+	DRV_WorldFace		*Faces;
+} grBSP_GpuBuild;
+
+static grBoolean grBSP_GpuFaceUsable(const grBSPNode_DrawFace *Face)
+{
+	return (Face && Face->Poly && Face->TVerts && Face->Poly->NumVerts >= 3) ? GR_TRUE : GR_FALSE;
+}
+
+static void grBSP_GpuGather_r(grBSPNode *Node, grBSP *BSP, grBSP_GpuBuild *Build)
+{
+	int32		i;
+
+	if (!Node || Node->Leaf)
+		return;
+
+	for (i = 0; i < Node->NumDrawFaces; i++)
+	{
+		grBSPNode_DrawFace	*Face = Node->DrawFaces[i];
+		int32				NumVerts, v;
+
+		if (!Face)
+			continue;
+		Face->GpuFace = -1;
+		if (!grBSP_GpuFaceUsable(Face))
+			continue;
+
+		NumVerts = Face->Poly->NumVerts;
+
+		// First pass (no arrays yet) only counts.
+		if (Build->Verts)
+		{
+			DRV_WorldFace		*pFace = &Build->Faces[Build->NumFaces];
+			const grTexVec		*pTexVec;
+			grPlane				Plane;
+			grVec3d				Tangent, Bitangent, Cross;
+			grFloat				Sign;
+
+			Plane = *grPlaneArray_GetPlaneByIndex(BSP->PlaneArray, Face->PlaneIndex);
+			if (!grPlaneArray_IndexSided(Face->PlaneIndex))
+				grPlane_Inverse(&Plane);
+
+			pTexVec = grTexVec_ArrayGetTexVecByIndex(BSP->TexVecArray, Face->TexVecIndex);
+			Tangent = pTexVec->VecU;
+			Bitangent = pTexVec->VecV;
+			grVec3d_Normalize(&Tangent);
+			grVec3d_CrossProduct(&Plane.Normal, &Tangent, &Cross);
+			Sign = (grVec3d_DotProduct(&Cross, &Bitangent) < 0.0f) ? -1.0f : 1.0f;
+
+			for (v = 0; v < NumVerts; v++)
+			{
+				DRV_WorldVertex	*pVert = &Build->Verts[Build->NumVerts + v];
+				const grVec3d	*pPos = grVertArray_GetVertByIndex(BSP->VertArray, Face->Poly->Verts[v]);
+
+				pVert->Pos[0] = pPos->X;
+				pVert->Pos[1] = pPos->Y;
+				pVert->Pos[2] = pPos->Z;
+				pVert->Normal[0] = Plane.Normal.X;
+				pVert->Normal[1] = Plane.Normal.Y;
+				pVert->Normal[2] = Plane.Normal.Z;
+				pVert->Tangent[0] = Tangent.X;
+				pVert->Tangent[1] = Tangent.Y;
+				pVert->Tangent[2] = Tangent.Z;
+				pVert->Tangent[3] = Sign;
+				pVert->u = Face->TVerts[v].u;
+				pVert->v = Face->TVerts[v].v;
+				pVert->Face = (uint32)Build->NumFaces;
+			}
+
+			// Same fan as the transformed-poly path (0, i, i+1).
+			pFace->FirstIndex = (uint32)Build->NumIndices;
+			pFace->NumIndices = (uint32)((NumVerts - 2) * 3);
+			for (v = 1; v < NumVerts - 1; v++)
+			{
+				uint32 *pIndex = &Build->Indices[Build->NumIndices + (v - 1) * 3];
+
+				pIndex[0] = (uint32)(Build->NumVerts);
+				pIndex[1] = (uint32)(Build->NumVerts + v);
+				pIndex[2] = (uint32)(Build->NumVerts + v + 1);
+			}
+
+			Face->GpuFace = Build->NumFaces;
+		}
+
+		Build->NumFaces++;
+		Build->NumVerts += NumVerts;
+		Build->NumIndices += (NumVerts - 2) * 3;
+	}
+
+	grBSP_GpuGather_r(Node->Children[NODE_FRONT], BSP, Build);
+	grBSP_GpuGather_r(Node->Children[NODE_BACK], BSP, Build);
+}
+
+//=======================================================================================
+//	grBSP_GpuGeometryDestroy
+//=======================================================================================
+static void grBSP_GpuGeometryDestroy(grBSP *BSP)
+{
+	if (BSP->GpuGeometry && BSP->Driver && BSP->Driver->WorldGeometry_Destroy)
+		BSP->Driver->WorldGeometry_Destroy(BSP->GpuGeometry);
+	BSP->GpuGeometry = 0;
+}
+
+//=======================================================================================
+//	grBSP_GpuGeometryBuild
+//	(Re)creates the BSP's GPU world geometry. A driver without world geometry, or one
+//	that declines it, leaves GpuGeometry at 0 and every face on the transformed-poly path.
+//=======================================================================================
+static void grBSP_GpuGeometryBuild(grBSP *BSP)
+{
+	grBSP_GpuBuild		Build;
+
+	grBSP_GpuGeometryDestroy(BSP);
+	BSP->GpuDirty = GR_FALSE;
+
+	if (!BSP->RootNode || !BSP->Driver || !BSP->Driver->WorldGeometry_Create)
+		return;
+
+	memset(&Build, 0, sizeof(Build));
+	grBSP_GpuGather_r(BSP->RootNode, BSP, &Build);		// count
+	if (Build.NumFaces == 0)
+		return;
+
+	Build.Verts = GR_RAM_ALLOCATE_ARRAY(DRV_WorldVertex, Build.NumVerts);
+	Build.Indices = GR_RAM_ALLOCATE_ARRAY(uint32, Build.NumIndices);
+	Build.Faces = GR_RAM_ALLOCATE_ARRAY(DRV_WorldFace, Build.NumFaces);
+
+	if (Build.Verts && Build.Indices && Build.Faces)
+	{
+		Build.NumFaces = Build.NumVerts = Build.NumIndices = 0;
+		grBSP_GpuGather_r(BSP->RootNode, BSP, &Build);		// fill, assigning GpuFace
+
+		BSP->GpuGeometry = BSP->Driver->WorldGeometry_Create(Build.Verts, Build.NumVerts,
+			Build.Indices, Build.NumIndices, Build.Faces, Build.NumFaces);
+	}
+
+	if (Build.Verts)
+		grRam_Free(Build.Verts);
+	if (Build.Indices)
+		grRam_Free(Build.Indices);
+	if (Build.Faces)
+		grRam_Free(Build.Faces);
+}
+
+//=======================================================================================
 //	grBSP_RenderFrontToBack
 //=======================================================================================
 grBoolean grBSP_RenderFrontToBack(grBSP *Tree, grCamera *Camera, grFrustum *CameraSpaceFrustum, grFrustum *ModelSpaceFrustum, grXForm3d *ModelToCameraXForm)
@@ -839,6 +1007,28 @@ grBoolean grBSP_RenderFrontToBack(grBSP *Tree, grCamera *Camera, grFrustum *Came
 
 	grEngine_GetDefaultRenderFlags(Tree->Engine, &SceneInfo.DefaultRenderFlags);
 
+	// GPU world path (outermost traversal only, see g_BSPFaceTraversalDepth)
+	if (Tree->GpuDirty && g_BSPFaceTraversalDepth == 0)
+		grBSP_GpuGeometryBuild(Tree);
+
+	SceneInfo.GpuWorld = (Tree->GpuGeometry && g_BSPFaceTraversalDepth == 0) ? GR_TRUE : GR_FALSE;
+	if (SceneInfo.GpuWorld)
+	{
+		grBoolean	ZFarEnable;
+		grFloat		ZFar;
+
+		memset(&SceneInfo.WorldView, 0, sizeof(SceneInfo.WorldView));
+		SceneInfo.WorldView.ModelToCamera = *ModelToCameraXForm;
+		grCamera_GetScreenProjection(Camera, &SceneInfo.WorldView.Scale,
+			&SceneInfo.WorldView.XCenter, &SceneInfo.WorldView.YCenter);
+		SceneInfo.WorldView.ZScale = grCamera_GetZScale(Camera);
+		grCamera_GetScreenSize(Camera, &SceneInfo.WorldView.HalfWidth, &SceneInfo.WorldView.HalfHeight);
+		SceneInfo.WorldView.HalfWidth *= 0.5f;
+		SceneInfo.WorldView.HalfHeight *= 0.5f;
+		grCamera_GetFarClipPlane(Camera, &ZFarEnable, &ZFar);
+		SceneInfo.WorldView.ZFar = ZFarEnable ? ZFar : 0.0f;
+	}
+
 	// Setup clipflags
 	ClipFlags = (1<<ModelSpaceFrustum->NumPlanes)-1;
 
@@ -846,7 +1036,9 @@ grBoolean grBSP_RenderFrontToBack(grBSP *Tree, grCamera *Camera, grFrustum *Came
 
 	NumMakeFaces = 0;
 
+	g_BSPFaceTraversalDepth++;
 	grBSPNode_RenderFrontToBack_r(Tree->RootNode, Tree, &SceneInfo, ClipFlags);
+	g_BSPFaceTraversalDepth--;
 
 	assert(Tree->RenderRecursion > 0);
 	Tree->RenderRecursion--;
@@ -3230,6 +3422,10 @@ static grBoolean UpdateObjects(grBSP *BSP)
 static grBoolean GRCC ShutdownDriverCB(DRV_Driver *Driver, void *Context)
 {
 	grBSP	*Tree = (grBSP*)Context;
+
+	// The GPU geometry belongs to this driver; build it again for the next one.
+	grBSP_GpuGeometryDestroy(Tree);
+	Tree->GpuDirty = GR_TRUE;
 
 	if (Tree->RootNode)
 	{

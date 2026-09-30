@@ -162,7 +162,7 @@ grBoolean D3D12PSOManager::CreateRootSignature()
 	HeapRange.RegisterSpace = 1;
 	HeapRange.OffsetInDescriptorsFromTableStart = 0;
 
-	D3D12_ROOT_PARAMETER Parameters[4] = {};
+	D3D12_ROOT_PARAMETER Parameters[5] = {};
 	Parameters[ROOT_PARAM_DRAW].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 	Parameters[ROOT_PARAM_DRAW].Constants.ShaderRegister = 0;
 	Parameters[ROOT_PARAM_DRAW].Constants.Num32BitValues = 4;
@@ -179,7 +179,16 @@ grBoolean D3D12PSOManager::CreateRootSignature()
 		Parameters[ROOT_PARAM_TEXTURES].DescriptorTable.NumDescriptorRanges = 1;
 		Parameters[ROOT_PARAM_TEXTURES].DescriptorTable.pDescriptorRanges = &HeapRange;
 		Parameters[ROOT_PARAM_TEXTURES].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-		NumParameters = 3;
+
+		// GPU world path: its view and per-face data, read by the vertex shader.
+		Parameters[ROOT_PARAM_WORLD_VIEW].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		Parameters[ROOT_PARAM_WORLD_VIEW].Descriptor.ShaderRegister = 2;
+		Parameters[ROOT_PARAM_WORLD_VIEW].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		Parameters[ROOT_PARAM_WORLD_FACES].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+		Parameters[ROOT_PARAM_WORLD_FACES].Descriptor.ShaderRegister = 0;
+		Parameters[ROOT_PARAM_WORLD_FACES].Descriptor.RegisterSpace = 2;
+		Parameters[ROOT_PARAM_WORLD_FACES].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		NumParameters = 5;
 	}
 	else
 	{
@@ -241,25 +250,43 @@ grBoolean D3D12PSOManager::CreateRootSignature()
 
 grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 {
-	if (Type < PSO_GOURAUD || Type > PSO_MULTITEX || State >= PSO_STATE_COUNT)
+	if (Type < PSO_GOURAUD || Type >= PSO_COUNT || Type == PSO_ALPHA_GOURAUD ||
+		Type == PSO_ALPHA_TEXTURE || State >= PSO_STATE_COUNT)
 		return GR_FALSE;
 
-	D3D12_INPUT_ELEMENT_DESC InputLayout[] = {
+	const bool bWorld = (Type == PSO_WORLD_TEXTURE || Type == PSO_WORLD_MULTITEX);
+	if (bWorld && !m_bBindless)
+		return GR_FALSE;
+
+	D3D12_INPUT_ELEMENT_DESC TLInputLayout[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
+	D3D12_INPUT_ELEMENT_DESC WorldInputLayout[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "FACE",     0, DXGI_FORMAT_R32_UINT,           0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
 
+	D3D12_SHADER_ID VertexShader = SHADER_TLPOLY_VS;
 	D3D12_SHADER_ID PixelShader = m_bBindless ? SHADER_TLPOLY_PS_GOURAUD_BINDLESS : SHADER_TLPOLY_PS_GOURAUD;
 	if (Type == PSO_TEXTURE)
 		PixelShader = m_bBindless ? SHADER_TLPOLY_PS_TEXTURE_BINDLESS : SHADER_TLPOLY_PS_TEXTURE;
 	else if (Type == PSO_MULTITEX)
 		PixelShader = m_bBindless ? SHADER_TLPOLY_PS_MULTITEX_BINDLESS : SHADER_TLPOLY_PS_MULTITEX;
+	else if (bWorld)
+	{
+		VertexShader = SHADER_WORLD_VS;
+		PixelShader = (Type == PSO_WORLD_MULTITEX) ? SHADER_WORLD_PS_MULTITEX : SHADER_WORLD_PS_TEXTURE;
+	}
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = {};
 	Desc.pRootSignature = m_pRootSignature.Get();
-	Desc.VS = D3D12Shaders_Get(SHADER_TLPOLY_VS);
+	Desc.VS = D3D12Shaders_Get(VertexShader);
 	Desc.PS = D3D12Shaders_Get(PixelShader);
 
 	Desc.BlendState.AlphaToCoverageEnable = FALSE;
@@ -298,7 +325,10 @@ grBoolean D3D12PSOManager::CreatePSO(D3D12_PSO_TYPE Type, uint32 State)
 	Desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	Desc.DepthStencilState.StencilEnable = FALSE;
 
-	Desc.InputLayout = { InputLayout, _countof(InputLayout) };
+	if (bWorld)
+		Desc.InputLayout = { WorldInputLayout, _countof(WorldInputLayout) };
+	else
+		Desc.InputLayout = { TLInputLayout, _countof(TLInputLayout) };
 	Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	Desc.NumRenderTargets = 1;
 	Desc.RTVFormats[0] = D3D12Scene_GetFormat();

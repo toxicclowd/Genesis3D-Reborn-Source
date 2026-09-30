@@ -30,7 +30,10 @@ typedef struct PolyVert
 	float lu, lv;  // Lightmap coordinates
 } PolyVert;
 
-// Cached polygon entry
+struct D3D12WorldGeometry;
+
+// Cached draw, kept in submission order. Transformed polys use StartVertex/NumVertices
+// in the flush's vertex buffer; GPU world faces (World != NULL) use a face of World.
 typedef struct PolyCacheEntry
 {
 	int32 StartVertex;
@@ -38,6 +41,11 @@ typedef struct PolyCacheEntry
 	grTexture* Layers[MAX_LAYERS];
 	int32 NumLayers;
 	uint32 Flags;
+
+	const D3D12WorldGeometry* World;
+	uint32 WorldFace;
+	D3D12_GPU_VIRTUAL_ADDRESS WorldView;
+	D3D12_GPU_VIRTUAL_ADDRESS WorldFaces;
 } PolyCacheEntry;
 
 // Static mesh buffer
@@ -84,6 +92,9 @@ public:
 	grBoolean AddGouraudPoly(grTLVertex* Pnts, int32 NumPoints, uint32 Flags);
 	grBoolean AddMiscTexturePoly(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers, int32 NumLayers, uint32 Flags);
 	grBoolean AddWorldPoly(grTLVertex* Pnts, int32 NumPoints, grRDriver_Layer* Layers, int32 NumLayers, void* LMapCBContext, uint32 Flags);
+	// A face of GPU world geometry (see D3D12WorldGeometry.h).
+	grBoolean AddWorldFace(const D3D12WorldGeometry* World, uint32 Face, D3D12_GPU_VIRTUAL_ADDRESS View,
+		D3D12_GPU_VIRTUAL_ADDRESS FaceData, int32 NumLayers, uint32 Flags);
 
 	// Flush cached geometry
 	grBoolean Flush();

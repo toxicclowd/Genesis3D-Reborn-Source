@@ -24,6 +24,8 @@ enum D3D12_PSO_TYPE
 	PSO_MULTITEX,         // Texture + Lightmap
 	PSO_ALPHA_GOURAUD,    // Colored with alpha blending
 	PSO_ALPHA_TEXTURE,    // Textured with alpha blending
+	PSO_WORLD_TEXTURE,    // GPU world faces (Shaders/World.hlsl), no lightmap
+	PSO_WORLD_MULTITEX,   // GPU world faces with lightmap
 	PSO_COUNT
 };
 
@@ -34,8 +36,13 @@ enum D3D12_ROOT_PARAM
 	ROOT_PARAM_FRAME,			// frame constants CBV, b1
 	ROOT_PARAM_TEXTURES,		// bindless: the whole SRV heap (t0, space1)
 	ROOT_PARAM_BASE_TABLE = ROOT_PARAM_TEXTURES,	// descriptor tables: t0
-	ROOT_PARAM_LIGHT_TABLE						// descriptor tables: t1
+	ROOT_PARAM_LIGHT_TABLE,						// descriptor tables: t1
+	ROOT_PARAM_WORLD_VIEW = ROOT_PARAM_LIGHT_TABLE,	// bindless: DRV_WorldView CBV, b2
+	ROOT_PARAM_WORLD_FACES						// bindless: per-face data (t0, space2)
 };
+
+// Vertex of the GPU world path (DRV_WorldVertex, VS_INPUT in Shaders/World.hlsl).
+#define D3D12_WORLD_VERTEX_STRIDE	52
 
 // Per-draw root constants (DrawConstants in Shaders/TLPoly.hlsl).
 struct D3D12DrawConstants

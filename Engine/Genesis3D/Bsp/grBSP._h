@@ -147,6 +147,11 @@ typedef struct grBSP
 
 	grVertexBuffer			*pVertexBuffer;
 	grIndexBuffer			*pIndexBuffer;
+
+	// GPU world geometry (driver WorldGeometry_*). GpuDirty is set whenever draw faces
+	// or their UVs change; the geometry is rebuilt at the start of the next render.
+	uint32					GpuGeometry;
+	grBoolean				GpuDirty;
 } grBSP;
 
 typedef struct 
@@ -158,6 +163,9 @@ typedef struct
 	uint32					RecursionBit;
 
 	uint32					DefaultRenderFlags;
+
+	grBoolean				GpuWorld;			// faces may use the GPU world path
+	DRV_WorldView			WorldView;
 } grBSPNode_SceneInfo;
 
 typedef struct
@@ -441,6 +449,8 @@ typedef struct grBSPNode_DrawFace
 	uint32					RecursionBits;
 
 	grBrush_Face			*grBrushFace;	// If set, this face only touches one grBrushFace
+
+	int32					GpuFace;		// face index in BSP->GpuGeometry, -1 if none
 } grBSPNode_DrawFace;
 
 typedef struct grBSPNode_LeafSide

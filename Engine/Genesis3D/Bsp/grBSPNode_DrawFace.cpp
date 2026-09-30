@@ -55,6 +55,8 @@ grBSPNode_DrawFace *grBSPNode_DrawFaceCreate(grBSP *BSP)
 	Face->TexVecIndex = GR_TEXVEC_ARRAY_NULL_INDEX;
 
 	Face->BSP = BSP;
+	Face->GpuFace = -1;
+	BSP->GpuDirty = GR_TRUE;
 
 	return Face;
 }
@@ -70,6 +72,7 @@ void grBSPNode_DrawFaceDestroy(grBSPNode_DrawFace **Face, grBSP *BSP)
 	assert(*Face);
 
 	DFace = *Face;
+	BSP->GpuDirty = GR_TRUE;
 
 	if (DFace->PortalObject)
 		grObject_Destroy(&DFace->PortalObject);
@@ -257,11 +260,97 @@ grBoolean grBSPNode_DrawFaceCreateUVInfo(grBSPNode_DrawFace *Face, grBSP *BSP)
 #endif
 	}
 	#endif
-	
+
+	// The GPU copy of this face's UVs is now out of date.
+	BSP->GpuDirty = GR_TRUE;
+
 	return GR_TRUE;
 }
 
 extern grBoolean h_LeftHanded;
+
+//=======================================================================================
+//	grBSPNode_DrawFaceRenderGpu
+//	Queues a face on the driver's GPU world path. The driver gets the same layers, flags
+//	and lightmap callback context as RenderWorldPoly, but no vertices: the face was
+//	uploaded with the BSP's GPU geometry, and the GPU transforms it.
+//	Returns GR_FALSE when the face must go through the transformed-poly path instead.
+//=======================================================================================
+static grBoolean grBSPNode_DrawFaceRenderGpu(const grBSPNode_DrawFace *Face, grBSP *BSP, grBSPNode_SceneInfo *SceneInfo)
+{
+	const grFaceInfo		*pFaceInfo;
+	const grMaterial		*pMaterial;
+	const grMaterialSpec	*pMatSpec;
+	const grBitmap			*pBitmap;
+	grRDriver_Layer			Layers[2];
+	int32					NumLayers;
+	void					*LMapCBContext;
+	uint32					Flags;
+	grFloat					Alpha;
+	int32					Result;
+
+	pFaceInfo = grFaceInfo_ArrayGetFaceInfoByIndex(BSP->FaceInfoArray, Face->FaceInfoIndex);
+	pMaterial = grMaterial_ArrayGetMaterialByIndex(BSP->MaterialArray, pFaceInfo->MaterialIndex);
+	pMatSpec = grMaterial_GetMaterialSpec(pMaterial);
+	if (pMatSpec == NULL)
+		return GR_TRUE;			// the transformed-poly path draws nothing either
+	pBitmap = grMaterialSpec_GetLayerBitmap(pMatSpec, 0);
+	if (!pBitmap)
+		return GR_FALSE;		// untextured faces are gouraud polys
+
+	if (pFaceInfo->Flags & FACEINFO_RENDER_PORTAL_ONLY)
+		return GR_TRUE;
+
+	// Same flags as grBSPNode_DrawFaceRender
+	Flags = SceneInfo->DefaultRenderFlags;
+	if (pFaceInfo->Flags & FACEINFO_TRANSPARENT)
+	{
+		Flags |= GR_RENDER_FLAG_ALPHA;
+		Alpha = pFaceInfo->Alpha;
+	}
+	else
+	{
+		if (BSP->DefaultContents & GR_BSP_CONTENTS_SOLID)
+			Flags |= (GR_RENDER_FLAG_SWRITE | GR_RENDER_FLAG_STEST);
+		Alpha = 255.0f;
+	}
+	if (h_LeftHanded)
+		Flags |= GR_RENDER_FLAG_COUNTER_CLOCKWISE;
+
+	Layers[0].THandle = grBitmap_GetTHandle(pBitmap);
+	Layers[0].Rop = Rop_Multiply;
+	Layers[0].ShiftU = pFaceInfo->ShiftU;
+	Layers[0].ShiftV = pFaceInfo->ShiftV;
+	Layers[0].ScaleU = pFaceInfo->DrawScaleU/pFaceInfo->LMapScaleU;
+	Layers[0].ScaleV = pFaceInfo->DrawScaleV/pFaceInfo->LMapScaleV;
+	NumLayers = 1;
+	LMapCBContext = NULL;
+
+	if (Face->Lightmap && BSP->RenderMode == RenderMode_TexturedAndLit)
+	{
+		assert(Face->Lightmap->THandle);
+		Layers[1].THandle = Face->Lightmap->THandle;
+		Layers[1].Rop = Rop_None;
+		Layers[1].ShiftU = Face->Lightmap->StartU;
+		Layers[1].ShiftV = Face->Lightmap->StartV;
+		Layers[1].ScaleU = 16.0f;
+		Layers[1].ScaleV = 16.0f;
+		NumLayers = 2;
+		LMapCBContext = (void*)Face;
+	}
+
+	Result = BSP->Driver->WorldGeometry_RenderFace(BSP->GpuGeometry, (uint32)Face->GpuFace, &SceneInfo->WorldView,
+		Layers, NumLayers, LMapCBContext, Flags, Alpha);
+
+	if (Result == DRV_WORLD_FACE_DRAWN)
+	{
+		g_WorldDebugInfo.NumRenderedPolys++;
+		return GR_TRUE;
+	}
+	if (Result == DRV_WORLD_FACE_STALE)
+		BSP->GpuDirty = GR_TRUE;	// e.g. the driver was re-initialized
+	return GR_FALSE;
+}
 
 //=======================================================================================
 //	grBSPNode_DrawFaceRender
@@ -290,6 +379,16 @@ void grBSPNode_DrawFaceRender(const grBSPNode_DrawFace *Face, grBSP *BSP, grBSPN
 	assert(SceneInfo);
 
 	g_WorldDebugInfo.NumTransformedPolys++;
+
+	// Faces the GPU world path can take skip the CPU clip/transform/project below.
+	// Portal faces render another view, and CALL_CB faces hand their projected verts
+	// to the editor, so both stay on the transformed-poly path.
+	if (SceneInfo->GpuWorld && Face->GpuFace >= 0 && !Face->PortalObject &&
+		!(Face->TopSideFlags & TOPSIDE_CALL_CB))
+	{
+		if (grBSPNode_DrawFaceRenderGpu(Face, BSP, SceneInfo))
+			return;
+	}
 
 	// Get the poly pointer, and num verts to start with
 	Poly = Face->Poly;
